@@ -1,18 +1,88 @@
 {
-  "claims": {},
+  "claims": {
+    "docs/DELEGATION.md": {
+      "agent": "lp",
+      "at": "2026-08-20T05:40:59+00:00",
+      "task": "F-269",
+      "token": null
+    },
+    "docs/SPECS.md": {
+      "agent": "lp",
+      "at": "2026-08-20T05:40:19+00:00",
+      "task": "F-269",
+      "token": null
+    },
+    "tools/findings_hygiene_check.py": {
+      "agent": "lp",
+      "at": "2026-08-20T05:36:09+00:00",
+      "task": "F-269",
+      "token": null
+    },
+    "tools/resource_scatter_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-20T05:37:13+00:00",
+      "task": "F-271",
+      "token": null
+    },
+    "tools/worldgen_noise_reuse_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-20T05:38:16+00:00",
+      "task": "F-271",
+      "token": null
+    },
+    "world/gen/biome_def.gd": {
+      "agent": "lm",
+      "at": "2026-08-20T05:39:08+00:00",
+      "task": "F-271",
+      "token": null
+    },
+    "world/gen/poi_def.gd": {
+      "agent": "lm",
+      "at": "2026-08-20T05:39:08+00:00",
+      "task": "F-271",
+      "token": null
+    },
+    "world/gen/resource_scatter.gd": {
+      "agent": "lm",
+      "at": "2026-08-20T05:36:38+00:00",
+      "task": "F-271",
+      "token": null
+    }
+  },
   "in_flight": {
     "F-269": {
       "agent": "lp",
       "dispatched": true,
-      "files": [],
-      "notes": [],
+      "files": [
+        "tools/findings_hygiene_check.py",
+        "docs/SPECS.md",
+        "docs/DELEGATION.md"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-20T05:37:02+00:00",
+          "by": "lp",
+          "text": "Baseline before any doc move: tools/findings_hygiene_check.py reports failures=9 \u2014 8 drifted (F-236 F-243 F-256 F-260 F-262 F-263 F-267 F-270) plus F-256 self-resolved. Order named 4; the sweep is the other 4."
+        },
+        {
+          "at": "2026-08-20T05:37:02+00:00",
+          "by": "lp",
+          "text": "docs/FINDINGS.md is deliberately unclaimed (F-006) \u2014 every move here goes through 'agent resolve'/'agent reopen', which take the findings lock. Taking an exact claim on it would block every other lane from filing a finding for this task's whole length, which is F-262's own bug."
+        }
+      ],
       "started": "2026-08-20T05:33:13+00:00",
       "token": null
     },
     "F-271": {
       "agent": "lm",
       "dispatched": true,
-      "files": [],
+      "files": [
+        "world/gen/resource_scatter.gd",
+        "tools/resource_scatter_check.gd",
+        "tools/worldgen_noise_reuse_check.gd",
+        "world/gen/biome_def.gd",
+        "world/gen/poi_def.gd"
+      ],
       "notes": [],
       "started": "2026-08-20T05:35:09+00:00",
       "token": null
@@ -2329,6 +2399,20 @@
       "task": "4.14",
       "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
+    "tools/terrain_look_check.gd": {
+      "agent": "lc1",
+      "at": "2026-08-20T05:42:19+00:00",
+      "hash": "d8e01c486f146c5b20ad0e42a865a2218f3e485547c4fd14aa72358fd26cdb93",
+      "task": "4.13-review",
+      "token": null
+    },
+    "tools/terrain_look_check.gd.uid": {
+      "agent": "lc1",
+      "at": "2026-08-20T05:42:19+00:00",
+      "hash": "6adbfa20be12150fe0a5b8bbdd33f906fd98463420b78193db6e1194d6c339fe",
+      "task": "4.13-review",
+      "token": null
+    },
     "tools/terrain_map_render.gd": {
       "agent": "lm",
       "at": "2026-08-20T05:29:07+00:00",
@@ -3403,6 +3487,16 @@
       "tier": "T2",
       "title": "Terrain look: domain warp + masked ridged layer + per-biome amplitude tables (`WORLDGEN.md` \u00a71, D-142); extend `check_determinism`, re-run `bench_chunks`"
     },
+    "4.13-review": {
+      "done_at": "2026-08-20T05:42:19+00:00",
+      "done_by": "lc1",
+      "est": "0.5",
+      "milestone": "M4",
+      "review_of": "4.13",
+      "status": "done",
+      "tier": "T1",
+      "title": "Review 4.13 @ 0192b38 \u2014 judge the commit, file findings, no edits"
+    },
     "4.14": {
       "done_at": "2026-08-19T17:58:40+00:00",
       "done_by": "yarrow21",
@@ -3429,6 +3523,14 @@
       "status": "done",
       "tier": "T1",
       "title": "Map-contract parity: both-map check matrix, F-112 fold-in, MireGrid binding"
+    },
+    "4.16-review": {
+      "est": "0.5",
+      "milestone": "M4",
+      "review_of": "4.16",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Review 4.16 @ 74aeb60 \u2014 judge the commit, file findings, no edits"
     },
     "4.17": {
       "est": "1.5",
@@ -3794,6 +3896,14 @@
       "status": "done",
       "tier": "T1",
       "title": "Wellspring re-corruption over time"
+    },
+    "6.4-review": {
+      "est": "0.5",
+      "milestone": "M6",
+      "review_of": "6.4",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Review 6.4 @ ac99417 \u2014 judge the commit, file findings, no edits"
     },
     "6.5": {
       "done_at": "2026-08-19T02:33:53+00:00",
@@ -6122,11 +6232,9 @@
       "title": "A telegraphed attack's reach and tell length cannot deny \"just take one step back\" \u2014 no `EnemyDef` field makes retreating-through-a-tell fail, so that pressure isn't available to future enemy content"
     },
     "F-236": {
-      "done_at": "2026-08-19T18:56:56+00:00",
-      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "done",
+      "status": "todo",
       "tier": "F",
       "title": "Three shipped systems have essentially no content in them: the Cycle Modifier deck holds 1 card, the unlock tree 1 unlock, the ranged rack 1 weapon"
     },
@@ -6440,11 +6548,9 @@
       "title": "cmd_claim's load-check-save on state.json has no file lock, so two lanes can both pass the conflict check and both believe they hold the same claim"
     },
     "F-267": {
-      "done_at": "2026-08-19T22:45:40+00:00",
-      "done_by": "bram1",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "done",
+      "status": "todo",
       "tier": "F",
       "title": "ship sweeps a sibling's uncommitted hunks when its claimed file carries them \u2014 F-197's shape reached source files and carried a debug probe into HEAD"
     },
@@ -6547,6 +6653,13 @@
       "status": "todo",
       "tier": "F",
       "title": "F-243's reset enumeration is short by three more run-scoped systems: DayNight's clock, HaulService's spawned haulables, AttunementService's selections"
+    },
+    "F-282": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The Hunt spawns one Cycle late because WaveSpawner reads the modifier stack before CycleModifierService draws"
     }
   },
   "version": 1

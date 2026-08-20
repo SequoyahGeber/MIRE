@@ -6628,3 +6628,42 @@ Notes along the way:
 - Changes required: filed F-282 for The Hunt's one-Cycle-late spawn caused by EventBus subscriber/autoload ordering. Exact commit 94cf796 also fails both modifier checks with 21 raw ERROR lines because swept F-243 subscribers reference run_restarted EventBus APIs absent from that snapshot; later 6d7e756 supplies them and current HEAD checks are green.
 
 Commit at time of writing: `519012e`
+
+---
+
+### REOPEN · F-236 · lp · 2026-08-20T05:37:08+00:00
+
+**Three shipped systems have essentially no content in them: the Cycle Modifier deck holds 1 card, the unlock tree 1 unlock, the ranged rack 1 weapon**
+
+Reopened (was marked done 2026-08-19 by lp).
+
+Its own text says so: 'the unlocks/ third is fixed; cycle_modifiers/ and ranged_weapons/ are not, so this finding stays under ## Open'. Re-counted at HEAD 2026-08-20 by lp — content/cycle_modifiers/ is 7 (task 6.3 closed that row) and content/unlocks/ is 7, but content/ranged_weapons/ is still exactly 1 (short_bow.tres) against nine melee. One of the three rows this finding is named for is untouched, so 'done' was a session ending, not a resolution (F-131).
+
+Commit at time of writing: `3dc02e9`
+
+---
+
+### REOPEN · F-267 · lp · 2026-08-20T05:37:13+00:00
+
+**ship sweeps a sibling's uncommitted hunks when its claimed file carries them — F-197's shape reached source files and carried a debug probe into HEAD**
+
+Reopened (was marked done 2026-08-19 by bram1).
+
+The fix this finding asks for was never built — its own last line says 'Filed for design rather than patched inline; the probe itself is stripped in this finding's own commit'. Verified at HEAD 2026-08-20 by lp: cmd_ship still stages every claimed file in full, with no pre-stage diff of hunks older than the claim timestamp and no warning when a staged file carries another task's id. What closed was the incident (the swept DEBUG_PROBE), not the mechanism, and claim-late (D-154) widens the window it fires in.
+
+Commit at time of writing: `3dc02e9`
+
+---
+
+### DONE · 4.13-review · lc1 · 2026-08-20T05:42:19+00:00
+
+**Review 4.13 @ 0192b38 — judge the commit, file findings, no edits**
+
+Changes required. Focused check against 0192b38: 7/9 pass, 2 fail — ridge subtracts at 1,651 active samples (worst -40.237m; corrected by 158bf6c), and ChunkMesher emits biome-blind 48.128m instead of authored-scaled 46.075m (existing F-274, still open). check_determinism: 7 hashes, 0 ERROR. bench_chunks: deterministic true/true, 3.821ms direct, 8.330ms pooled. Current full boot: 0 ERROR.
+
+Notes along the way:
+- Review target 0192b38 fails focused terrain-look acceptance: 1651 sampled active-ridge points are subtractive (worst -40.237m at -72,44), contradicting D-144/DELEGATION's only-add contract; fixed later in 158bf6c. Production ChunkMesher vertex at chunk (0,0) local (0,0) is 48.128m biome-blind vs 46.075m authored-scaled; remains open as F-274, so no duplicate finding. Target check_determinism emitted all hashes with 0 ERROR; target bench_chunks 3.821ms direct / 8.330ms pooled, deterministic true/true; current full boot 0 ERROR.
+
+Files: `tools/terrain_look_check.gd`, `tools/terrain_look_check.gd.uid`
+
+Commit at time of writing: `3dc02e9`

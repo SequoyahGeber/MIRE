@@ -375,166 +375,6 @@ real `PowerupDef` and actually appears as a POWERUP entry in an authored loot ta
 
 ---
 
-### F-243 · The run loop is a line, not a circle — after defeat or extraction there is no path to a next run short of relaunching the process
-
-**Area:** systems · **Severity:** high · **Found:** 2026-08-19 by hollow7
-
-Verified by the 2026-08-19 game-loop audit (`tools/loop_audit_check.gd`, both endings driven on the
-shipped `levels/hollowmere.tscn`): every link of DESIGN.md §5's run arc now works — spawn, harvest,
-craft, build, eat, night wave, chests, Wellspring rewards, Mire response, Cycle+modifier,
-extraction with full banking, defeat with fraction banking. The arc then stops. Nothing anywhere
-starts the next run:
-
-- `ui/hud/defeat_hud.gd` has no actions at all — it subscribes to `run_wiped`/`salvage_banked` and
-  renders; there is no "new run" control for the player staring at the summary.
-- `ExtractionShip`'s successful departure likewise ends in a HUD state, not a flow.
-- No file under `ui/`, `autoload/`, `core/`, or `systems/` calls `reload_current_scene()` /
-  `change_scene_to_*` for a run reset, and no service exposes a `reset_run()` — grep for
-  restart/new_run/reload comes back empty of any run-scoped hit.
-- The run-scoped state that would need resetting is spread across at least: CycleService (cycle,
-  spread multiplier), CycleModifierService (active draws), MireGrid (the whole grid),
-  SalvageService (`wellsprings_capped_this_run`), PowerupService stacks, InventoryService stores,
-  PlayerHealth states, EnemyWorld population, WorldDeltaLog, placed buildables, opened chests,
-  capped Wellsprings, repaired ship. Nothing owns the set.
-
-6.8 (run summary) and 6.10 (menu/lobby) are both marked done, and no D-number records "relaunch to
-restart" as a deliberate ship decision — so this is a gap, not a choice. It bites hardest in
-co-op: a six-player lobby that wipes must fully relaunch six processes and re-invite through Steam
-to play again, which turns the "one more run" moment — the exact moment DESIGN.md §5.2 is built
-around — into a lobby teardown.
-
-Suggested shape (not prescribed): a HOST-scope `run restart` through the existing command front
-door plus a DefeatHud/extraction button that submits it; host reloads the level scene and
-broadcasts, services reset on a `run_started` signal they already mostly subscribe to
-(CycleService.run_started exists). The per-service reset inventory above is the real work; the
-audit doc carries the full trace.
-
----
-
-### F-256 · Arming several one-shot revives to cover an unattended stretch stacks saturate chains, and the lane idles while they queue on its own lock
-
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by bram1
-
-`lane-revive` (F-091) fires once at a named time, which is right for a known reset and wrong for a
-long unattended stretch. Covering five window rollovers means arming five daemons, each of which
-starts its own `agent saturate` chain. They then serialise on the per-lane saturate lock — and every
-chain in that queue burns its full `EMPTY_QUEUE_GRACE_SECONDS` (F-202) before releasing, so the lane
-sits idle while the others wait their turn.
-
-Measured 2026-08-19, and it was self-inflicted: five revives armed for an overnight window left LM
-**idle with six orders queued** and four chains alive, one holding `.agent/locks/saturate-lm.lock`
-and three blocked behind it. The two fixes interact badly — the grace period assumes a single chain,
-and one-shot revives assume they are the only one.
-
-**Fixed:** `.agent/bin/lane-keeper <LANE> [--hours N]` — one long-lived daemon per lane that polls
-every five minutes and starts a chain **only when there is queued work and no chain already exists
-for that lane**. Because it checks before acting it cannot stack, running two keepers is harmless,
-and a chain that stops for any reason (reserve stop, error, drained queue) is picked back up at the
-next poll rather than at a time somebody guessed in advance. `lane-revive` stays for the case it is
-good at: a known reset far in the future, like a weekly window.
-
-**Verified:** `_queued()` returns LM's five and LP's one from real order files, skipping done tasks;
-`_chain_alive()` reports True for the lane that is running and False for an idle one; with both
-keepers armed, each lane converged to exactly one chain and started work (LM on F-243, LP on 8.11)
-with no pile-up on either lock.
-
----
-
-### F-260 · docs/DECISIONS.md has no atomic number allocator, so two agents took D-146 within minutes of each other
-
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by bram1
-
-`agent finding` allocates F-numbers under a lock precisely because concurrent lanes reading "the next
-number" from the document both get the same answer — that is F-058, and it cost a renumbering pass
-(F-087) plus three findings that routed to the wrong entry. `docs/DECISIONS.md` has the identical
-shape and no equivalent allocator: an agent reads the highest `### D-NNN`, adds one, and appends.
-
-It fired on 2026-08-19. A lane recorded D-146 (task 6.3's Cycle Modifier count) while the director
-was writing a different D-146 (the LM lane's Opus/second-pass change) in the same minutes; by the
-time the collision was noticed the numbers had run on to D-149, so the director's entry became D-150.
-Nothing was lost because the collision was caught by eye, which is exactly the part that does not
-scale — F-058's pairs were not caught by eye, and two of them were still mis-routing weeks later.
-
-The fix is the one already proven for findings: an `agent decision "title"` that takes the body on
-stdin, allocates the next `D-NNN` under `.agent/locks/`, and appends atomically — so the number is
-reserved before the text is written rather than after. It should also decline to run while another
-agent holds an exact claim on `docs/DECISIONS.md`, which is the second half of the same race and the
-thing that blocked this commit.
-
-Worth noting the pre-commit hook did catch the claim half correctly, refusing a hand-commit that
-touched `docs/DECISIONS.md` while another lane held it — F-072's enforcement working as designed.
-
----
-
-### F-262 · Claims are held for the whole task — grabbed up front and released only at close-out — so a file locks for up to 2h even when it is edited for minutes, stalling other agents
-
-**Area:** tooling · **Severity:** high · **Found:** 2026-08-19 by bram1
-
-`cmd_claim` takes a task's whole file list at task START; `_release` runs only from
-`done`/`handoff`/`drop`, i.e. at close-out. So every claimed file is locked for the entire task —
-now up to the 7200s timeout with LM on Opus-high — regardless of when, or whether, it is actually
-edited. Sequoyah identified this as the stall cause on 2026-08-19, and the session's evidence agrees:
-`net_version.gd` held across four sessions (F-189), `graphics_quality.gd` blocking F-130 for hours,
-`mire_grid.gd` colliding between F-243 and F-253, F-144 holding twelve files for six hours with no
-writes. In nearly every case the file was claimed but not being edited.
-
-The fix has two halves of unequal value:
-
-**Claim late — near-pure win.** Claim a file only when the agent is about to edit it, not at task
-start. A task that edits eight files over two hours currently locks files seven and eight for two
-hours before touching them. Late claiming shrinks each lock to the minutes of actual work. The
-work-order template already lists the claim command up front; it should instead instruct the agent to
-claim each file (or tight group) immediately before its first edit.
-
-**Release after verification, not at close-out — the safe half of early release.** A task's files are
-one coherent change that is not final until its check passes: release `mire_grid.gd` mid-task and a
-sibling can edit it, then the task's own failed check needs it back and it has moved underneath. So
-per-file-on-finish is unsafe. But once the task's verification passes the files ARE done, and holding
-them through the docs-writing close-out (SPECS/DECISIONS/DELEGATION, which are separate files) blocks
-others for nothing. Release source claims at green-check time; keep only the docs files through
-close-out.
-
-Not a live flip: this changes how every agent claims, so it wants the work-order template rewritten,
-`AGENTS.md`'s claim rule updated, and a decision recorded — done deliberately, not while a fleet is
-mid-run. The `agent claim`/`_release` mechanics already support partial claim sets; the change is
-behavioural, in what the templates instruct, plus a helper to release a subset at verification.
-
----
-
-### F-263 · Hardening pass: chains run stale code after harness edits, one failing task stops a whole queue, dup-grabs under claim-late, re-reviews refuse, and D-numbers still race
-
-**Area:** tooling · **Severity:** high · **Found:** 2026-08-19 by bram1
-
-Five failure classes, every one observed live on 2026-08-19, one hardening pass:
-
-1. **Long-running chains execute stale code.** Python loads the harness at process start, so every
-   fix ships only to future chains: the 7200s timeout fix did not reach the chain that then timed out
-   at 3600s, and the second-pass mechanism silently did not exist in the slot-1 chain that predated
-   it. Fix: a chain checks the harness files' mtimes between tasks and re-execs itself when they
-   changed — same queue, same flags, new code.
-
-2. **One failing task stops the entire queue behind it.** F-243's timeout stopped the chain three
-   times; each restart re-hit F-243 first and died again, starving eight queued orders. "Do not chain
-   work onto a broken lane" is right for lane-level failure (exhausted, auth) and wrong for one bad
-   task. Fix: on a task failure with the lane still healthy, log it, leave the order for later, and
-   continue; stop only after two consecutive task failures or a lane-level stop.
-
-3. **Claim-late widens the duplicate-grab window.** in_flight used to register at the up-front claim;
-   with claim-late (D-154) the first claim can come minutes in, so concurrent slots drain the same
-   queue and grab the same task. Fix: the chain registers a lightweight in_flight marker at DISPATCH
-   under the slot's own identity; sibling chains skip in-flight tasks; the marker is removed if the
-   run dies before any real claim, and a real claim simply inherits it.
-
-4. **A review id, once done, refuses to review again.** cmd_order --review registers <tid>-review;
-   re-ordering after new commits found the stale done record and the chain skipped it. Reviewing a
-   NEW sha is new work: re-ordering a done review resets it to todo with the new sha.
-
-5. **D-numbers still race** (F-260, hit three times in one day). `agent decision "title"` now
-   allocates the next D-NNN under a lock, body on stdin, refusing while another agent holds an exact
-   claim on docs/DECISIONS.md — the same shape that fixed F-058 for findings.
-
----
-
 ### F-264 · `Boss._tick_move_lunge()` duplicates `Enemy._tick_lunge()`'s logic instead of calling it, because the inherited method reads its speed off a def field rather than taking one as a parameter
 
 **Area:** enemies · **Severity:** low · **Found:** 2026-08-19 by lm during F-247
@@ -726,93 +566,6 @@ correct and already failing.
 `core/net/net_session.gd`'s note that a spawner replays every existing spawn to a newly connected
 peer). Clearing `_placed` without actually freeing the nodes would leave a joiner receiving the
 previous run's buildables from the spawner's own replay while the host believes none exist.
-
----
-
-### F-269 · Four resolved findings still sit under '## Open' after the day's sweep chaos — F-243, F-256, F-260, F-262 are all fixed and still read as routable work
-
-**Area:** process · **Severity:** low · **Found:** 2026-08-20 by bram1
-
-Records drift, the exact class agent brief's stale-warning and the reviewer bookkeeping duty exist
-for: F-243 shipped in 6d7e756 (run restart, verified twice), F-256's lane-keeper is running in
-production, F-260's allocator exists as `agent decision` and has recorded D-157, F-262's claim-late
-is in the order template and AGENTS.md. All four sections still sit under `## Open`, so the board
-counts them as open work and a drain could route a dispatch at any of them. Verify each is genuinely
-closed (run the named checks, confirm the shipped commits), move the sections to `## Resolved` with
-fix+verification notes, and re-run findings_numbering_check.
-
----
-
-### F-270 · _sync_findings silently marks every F-*-review task done at registration — review tasks inherit the finding's milestone, have no doc section, and the left-the-doc inference kills them
-
-**Area:** tooling · **Severity:** high · **Found:** 2026-08-20 by bram1
-
-A review of a finding (`F-243-review`) inherits the reviewed task's milestone — the Findings
-milestone — so `_sync_findings`' left-the-doc rule (F-049) governs it. It has no `## Open` section
-under its own id, so the very first sync after registration infers "resolved out-of-band" and marks
-it done. Every chain then skips it forever. This silently killed F-244-review, F-246-review and both
-of tonight's fresh LC1 review orders within minutes of their creation, with no journal entry —
-exactly the false-done shape F-086 taught, produced by the harness itself.
-
-Two-layer fix, because the first layer alone was insufficient and proven so by re-testing through the
-actual kill path: `_is_finding` is now a fullmatch on `F-\d+` (routing correctness), and the sync
-loop itself skips any Findings-milestone task whose id is not a pure finding id (the actual kill
-site — the loop keys on milestone, not on `_is_finding`). Verified by resurrecting both dead reviews
-to todo, deliberately re-running `_sync_findings`, and confirming they survive. harness_check 34/34.
-
----
-
-### F-271 · ResourceScatter classifies a point's biome from height(), BiomeMap.biome_at() classifies from continent() — the same point resolves to two different biomes depending on which system asks
-
-**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-20 by lm
-
-Found by F-261's sweep, filed rather than fixed there because the fix moves scatter output on every
-seed — a content decision, not a performance one.
-
-D-144 settled how a biome is decided: from `IslandHeightmap.continent()`, never `height()`. The
-reasoning is in `biome_map.gd`'s own header — since 4.13 a `BiomeDef` carries terrain amplitudes, so
-`height()` DEPENDS on which biome a point is in, and choosing the biome from `height()` would pick it
-from a surface the biome itself shaped. `BiomeMap.biome_at()` obeys this. It also states the
-consequence for content: "the `height_min`/`height_max` a BiomeDef authors are therefore CONTINENTAL
-heights."
-
-`world/gen/resource_scatter.gd`'s `_placement_at()` does not obey it:
-
-    var height: float = ISLAND_HEIGHTMAP.height_from_set(world_x, world_z, noise_set.island, world_seed)
-    var moisture: float = BIOME_MAP.moisture_from_set(world_x, world_z, noise_set)
-    var biome_id: StringName = BIOME_MAP.assign(height, moisture, biome_defs)
-
-It calls `assign()` directly with the FULL surface height — continent plus the detail and ridge
-layers — rather than calling `biome_at()`/`biome_at_from_set()`, which would pass the continent. The
-`height` local is genuinely needed for the placement's `position.y`, so the bug is easy to miss: the
-value is right for one use and wrong for the other, and one line serves both.
-
-**What it costs.** Anywhere the rough layers add height — which is everywhere the ridge mask is
-non-zero, i.e. all the high ground — scatter classifies the point into a HIGHER-`height_min` biome
-than `biome_at()` would. The immediate effect is the `biome_id != def.get("biome_id")` guard four
-lines down rejecting points it should keep and keeping points it should reject, so a scatter table
-authored for one biome places against a slightly different footprint than the biome actually
-occupies on the ground. `tools/resource_scatter_check.gd` cannot catch it: it re-derives the
-expected biome the same wrong way (`height()` + `moisture()` + `assign()` at lines 121-123), so the
-check and the code agree with each other and neither agrees with D-144.
-
-**The fix**, once someone accepts the content churn: replace the `assign()` call with
-`BIOME_MAP.biome_at_from_set(world_x, world_z, noise_set, world_seed, biome_defs)` — F-261 added that
-API and it takes the same set — and update `resource_scatter_check.gd:121-123` to re-derive through
-`continent()` rather than `height()`, so the check stays an independent witness rather than a mirror.
-
-**Why it is not free.** Every scattered point on high ground can change biome, so the scatter layout
-of every existing seed moves. That is not a regression, but it IS a visible change to worlds, and
-`tools/worldgen_noise_reuse_check.gd`'s `GOLDEN_*` hashes exist precisely to notice it — this task
-must re-capture them and say so in its close-out (D-160 names that as the intended use).
-
-**Worth checking at the same time:** `poi_map.gd` tests a dart's height constraints
-(`definition.call("accepts", height, slope, distance_fraction)`) against `height()` too, while its
-biome test goes through `biome_at()`. That may well be correct — a POI's `height_min`/`height_max`
-plausibly means "how high is the ground I stand on", not "how continental is this point" — but the
-two fields are documented in the same units (`poi_def.gd`: "Metres, in IslandHeightmap.height()'s
-units") and `biome_def.gd` says the same thing while meaning continental metres. At minimum the two
-doc comments disagree with each other and one of them is wrong.
 
 ---
 
@@ -1035,7 +788,537 @@ map with all three services live.
 
 ---
 
+### F-283 · Three D-numbers each head two different decisions — D-050, D-144 and D-150 are live collisions from before F-260's allocator, and no check detects them
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-20 by lp
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-20 by lp during F-269
+
+F-260 fixed the *cause* — `agent decision` now allocates the next `D-NNN` under a lock — and left the
+collisions already in the file. At HEAD `grep -o '^### D-[0-9]*' docs/DECISIONS.md | sort | uniq -d`
+returns three:
+
+- **D-050** ×2
+- **D-144** ×2
+- **D-150** ×2 — `chunk_stream_check.gd`'s union-of-interest sizing, and the LM lane's Opus/
+  second-pass routing. Two unrelated systems, one number. This pair is the collateral of F-260's own
+  incident: the D-146 collision was repaired by renumbering the director's entry *to D-150*, which
+  was already taken.
+
+**Why this is worse than a dangling citation.** F-229 established that a reference which resolves to
+*something* is the dangerous case, because nothing about it looks broken until you read the target
+and it is about a different system. A duplicate is that case by construction: every `D-150` citation
+in the docs tree and in code comments resolves, silently, to whichever of the two a reader finds
+first. `docs/SPECS.md` and this file both cite these numbers.
+
+**Nothing detects it.** `tools/decision_ref_check.py` only flags a `D-NNN` with *no* `### D-NNN`
+heading, so a duplicated heading passes it twice over. `tools/findings_numbering_check.gd` is the
+right shape but is FINDINGS-only by design, and `tools/findings_hygiene_check.py` (F-269)
+deliberately stayed out of DECISIONS.md so it would not ship failing.
+
+**What fixing it takes** — a renumbering pass, not a doc edit, which is why it is filed rather than
+done inline. The harness's own `_duplicate_findings()` says the same thing about the F-number pairs
+it declines to renumber: code comments and queued work orders cite both members, so the citations
+have to move with the headings. Concretely: give the later member of each pair a fresh number from
+`agent decision`'s allocator, rewrite every citation of it across `docs/` and `--include=*.gd`, then
+add the duplicate assertion to `decision_ref_check.py` so it cannot come back.
+
+Deciding NOT to renumber is also a legitimate outcome — the pairs are historical record — but it
+needs the detector either way, so a reader hits a named exception instead of a silent wrong page.
+
+---
+
 ## Resolved
+
+### F-271 · ResourceScatter classifies a point's biome from height(), BiomeMap.biome_at() classifies from continent() — the same point resolves to two different biomes depending on which system asks — **fixed**
+
+**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-20 by lm
+
+Found by F-261's sweep, filed rather than fixed there because the fix moves scatter output on every
+seed — a content decision, not a performance one.
+
+D-144 settled how a biome is decided: from `IslandHeightmap.continent()`, never `height()`. The
+reasoning is in `biome_map.gd`'s own header — since 4.13 a `BiomeDef` carries terrain amplitudes, so
+`height()` DEPENDS on which biome a point is in, and choosing the biome from `height()` would pick it
+from a surface the biome itself shaped. `BiomeMap.biome_at()` obeys this. It also states the
+consequence for content: "the `height_min`/`height_max` a BiomeDef authors are therefore CONTINENTAL
+heights."
+
+`world/gen/resource_scatter.gd`'s `_placement_at()` does not obey it:
+
+    var height: float = ISLAND_HEIGHTMAP.height_from_set(world_x, world_z, noise_set.island, world_seed)
+    var moisture: float = BIOME_MAP.moisture_from_set(world_x, world_z, noise_set)
+    var biome_id: StringName = BIOME_MAP.assign(height, moisture, biome_defs)
+
+It calls `assign()` directly with the FULL surface height — continent plus the detail and ridge
+layers — rather than calling `biome_at()`/`biome_at_from_set()`, which would pass the continent. The
+`height` local is genuinely needed for the placement's `position.y`, so the bug is easy to miss: the
+value is right for one use and wrong for the other, and one line serves both.
+
+**What it costs.** Anywhere the rough layers add height — which is everywhere the ridge mask is
+non-zero, i.e. all the high ground — scatter classifies the point into a HIGHER-`height_min` biome
+than `biome_at()` would. The immediate effect is the `biome_id != def.get("biome_id")` guard four
+lines down rejecting points it should keep and keeping points it should reject, so a scatter table
+authored for one biome places against a slightly different footprint than the biome actually
+occupies on the ground. `tools/resource_scatter_check.gd` cannot catch it: it re-derives the
+expected biome the same wrong way (`height()` + `moisture()` + `assign()` at lines 121-123), so the
+check and the code agree with each other and neither agrees with D-144.
+
+**The fix**, once someone accepts the content churn: replace the `assign()` call with
+`BIOME_MAP.biome_at_from_set(world_x, world_z, noise_set, world_seed, biome_defs)` — F-261 added that
+API and it takes the same set — and update `resource_scatter_check.gd:121-123` to re-derive through
+`continent()` rather than `height()`, so the check stays an independent witness rather than a mirror.
+
+**Why it is not free.** Every scattered point on high ground can change biome, so the scatter layout
+of every existing seed moves. That is not a regression, but it IS a visible change to worlds, and
+`tools/worldgen_noise_reuse_check.gd`'s `GOLDEN_*` hashes exist precisely to notice it — this task
+must re-capture them and say so in its close-out (D-160 names that as the intended use).
+
+**Worth checking at the same time:** `poi_map.gd` tests a dart's height constraints
+(`definition.call("accepts", height, slope, distance_fraction)`) against `height()` too, while its
+biome test goes through `biome_at()`. That may well be correct — a POI's `height_min`/`height_max`
+plausibly means "how high is the ground I stand on", not "how continental is this point" — but the
+two fields are documented in the same units (`poi_def.gd`: "Metres, in IslandHeightmap.height()'s
+units") and `biome_def.gd` says the same thing while meaning continental metres. At minimum the two
+doc comments disagree with each other and one of them is wrong.
+
+---
+
+**Resolved 2026-08-20 by lm.** **Fixed.** `ResourceScatter._placement_at()` now resolves a point's biome through
+`BiomeMap.biome_at_from_set(world_x, world_z, noise_set, world_seed, biome_defs)` — the API F-261
+added, taking the same chunk-scoped `NoiseSet` — instead of calling `BiomeMap.assign()` with the
+full surface height. `height_from_set()` remains, for `position.y` alone, and the biome gate moved
+ABOVE it so only surviving candidates pay for the surface sample; neither test touches `rng`, so the
+per-point stream is consumed in the same order and the reordering is free.
+
+`tools/resource_scatter_check.gd`'s `_check_biome_gate()` now re-derives through `continent()` +
+`moisture()` + `assign()`, spelled out rather than calling `biome_at()`, so it stays an independent
+witness to D-144 rather than a mirror of the shipped path — the property whose absence let this
+survive.
+
+**The doc half.** `BiomeDef.height_min`/`height_max` and `PoiDef.height_min`/`height_max` both read
+"Metres, in IslandHeightmap.height()'s units" while meaning different surfaces, which this finding
+flagged as "one of them is wrong." It was `BiomeDef`'s: those are CONTINENTAL metres. `PoiDef` keeps
+`height()` on purpose — a landmark's height constraint is about the ground its feet land on, not
+about the landmass under it. **D-163** settles the split, states the rule so it cannot be read
+narrowly (`assign()` is a primitive; nothing outside `biome_map.gd` and `biome_check.gd` should call
+it), and records what would change it. Both doc comments now name their own surface and point at the
+other.
+
+**Sweep.** One shipped violation existed and it was this one: `grep -rn "assign(" --include="*.gd"`
+returns `biome_map.gd`'s own two internal calls, `tools/biome_check.gd`'s direct unit tests of the
+primitive, and four unrelated `Array.assign()` calls. `poi_map.gd` was already correct under D-163
+(`height()` for its own bounds, `biome_at_from_set()` for biome); `terrain_map_render.gd` was already
+correct.
+
+**The churn, measured.** Over an 81x81 grid at 8 m spacing, 5-9 points in 6561 (0.08%-0.14%)
+classify differently under the two rules, across five seeds. Every seed's scatter layout hash moved;
+placement counts changed by at most 2 per seed. Small today only because biome content is thin
+(F-236) — three defs with wide height bands — and it grows with every biome authored against a
+tighter one.
+
+**Verified** (`.agent/bin/agent godot --script ...`, no undeclared ERROR lines in any run):
+- `tools/resource_scatter_check.gd` -> `RESOURCE_SCATTER_CHECK failures=0`, with the gate now
+  re-derived continentally.
+- `tools/worldgen_noise_reuse_check.gd` -> `WORLDGEN_NOISE_REUSE failures=0`, and the three
+  pre-existing `GOLDEN_*` hashes (POI sites, biome grid, terrain amplitudes) are UNCHANGED. That is
+  the load-bearing result: it proves this task moved scatter and only scatter, rather than asserting
+  it. D-160 named re-capturing them as the intended response to a deliberate worldgen change; here
+  the correct response was that three of them must NOT move.
+- A fourth golden, `GOLDEN_SCATTER` (placement id / asset / position over an 8x8 chunk block, same
+  five seeds), was added and captured post-fix — scatter had no layout witness of its own, which is
+  why this defect survived F-252 and F-261 rewriting the file around it. Pre-fix values are recorded
+  in the constant's comment. Captured at HEAD before the first edit via a throwaway
+  `tools/_tmp_f271_baseline.gd`, since `agent baseline` cannot run a script that does not exist at
+  HEAD (the F-261/D-160 technique), then deleted.
+- `tools/biome_check.gd` -> `failures=0`; `tools/poi_check.gd` -> `failures=0`;
+  `tools/check_determinism.gd` -> `terrain_hash c20eed19b44270a1`, unchanged.
+
+Spec written at `docs/SPECS.md` F-271 (none existed). Decision: **D-163**.
+
+### F-269 · Four resolved findings still sit under '## Open' after the day's sweep chaos — F-243, F-256, F-260, F-262 are all fixed and still read as routable work — **fixed**
+
+**Area:** process · **Severity:** low · **Found:** 2026-08-20 by bram1
+
+Records drift, the exact class agent brief's stale-warning and the reviewer bookkeeping duty exist
+for: F-243 shipped in 6d7e756 (run restart, verified twice), F-256's lane-keeper is running in
+production, F-260's allocator exists as `agent decision` and has recorded D-157, F-262's claim-late
+is in the order template and AGENTS.md. All four sections still sit under `## Open`, so the board
+counts them as open work and a drain could route a dispatch at any of them. Verify each is genuinely
+closed (run the named checks, confirm the shipped commits), move the sections to `## Resolved` with
+fix+verification notes, and re-run findings_numbering_check.
+
+---
+
+**Resolved 2026-08-20 by lp.** Scope was eight, not four. The order named F-243/F-256/F-260/F-262; the pre-work baseline named the
+rest, and they did not all resolve the same way.
+
+**Six moved to `## Resolved`** — F-243, F-256, F-260, F-262 (the order's four), plus **F-263** (all
+five hardening items read back individually against the code) and **F-270** (both layers of the
+`_sync_findings` guard). **Two were `agent reopen`ed, not moved:** F-236, whose own closing paragraph
+says it stays open and whose `content/ranged_weapons/` row is still exactly one file at HEAD; and
+F-267, whose ship-sweep mechanism was explicitly filed for design and never built — `cmd_ship` still
+stages every claimed file in full. Four of the eight were `agent done` meaning "my session ended",
+which is not the same fact as resolved (F-131), and reopening clears the drift by correcting the
+status rather than by moving the section.
+
+**The general fix, so this is a check and not a habit: `tools/findings_hygiene_check.py`.** It
+imports `.agent/bin/agent` and calls the harness's own `_findings_drift()` and
+`_self_resolved_findings()` — the two detectors `agent start` has always *printed a warning* about,
+which is exactly how eight of these accumulated in one day above a board everyone was reading past.
+Same argument `findings_numbering_check.gd` makes for the numbering half, now made for the drift
+half. Importing rather than reimplementing is deliberate: a second copy of the rule would let the
+check and the board disagree about the queue, which is the two-records-of-one-fact bug (F-071) the
+whole area is about.
+
+**D-162** is the reusable half: a finding resolves when the defect *its own text asserts* is false at
+HEAD, not when the area is perfect; gaps found while fixing it live as their own findings, cited by
+number. That is what made the F-243 call — its "no path to a next run" is a negative existence claim
+and it is false now, while its residue (F-268, F-275–F-281) is fully filed.
+
+**Verified 2026-08-20 by lp:**
+`python3 tools/findings_hygiene_check.py` → `FINDINGS_HYGIENE_CHECK failures=0`. **Before any doc
+was touched the same command reported `failures=9`** — 8 drifted plus F-256 self-resolved — so the
+assertions are evidence rather than decoration.
+`--self-test` → `SELF_TEST failures=0` (4 synthetic cases, including that reopening clears drift
+without moving a section, and that marking a self-resolved entry done converts it to drift rather
+than silencing it).
+`python3 tools/harness_check.py` → `34/34 passed`.
+`agent godot --script tools/findings_numbering_check.gd` → `open=26 resolved=259 failures=0`, run
+**after** all six moves — F-134's failure mode is a move eating the `## Resolved` heading, and six
+moves in one session is the volume that produced both historical incidents.
+`agent godot --quit-after 120` → **0 `ERROR:` lines**.
+F-243's own two re-run at HEAD, not quoted from its review: `run_restart_check` failures=1 (F-268),
+`run_restart_net_check` failures=8, every one mapping to F-275/276/277/278/279/280.
+
+**Filed from the sweep: F-283** — `D-050`, `D-144` and `D-150` each head two different decisions, so
+every citation of them resolves silently to one of two unrelated pages. F-260's allocator prevents
+new collisions and repairs none of these; nothing detects them, since `decision_ref_check.py` only
+flags citations with no target at all.
+
+### F-270 · _sync_findings silently marks every F-*-review task done at registration — review tasks inherit the finding's milestone, have no doc section, and the left-the-doc inference kills them — **fixed**
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-20 by bram1
+
+A review of a finding (`F-243-review`) inherits the reviewed task's milestone — the Findings
+milestone — so `_sync_findings`' left-the-doc rule (F-049) governs it. It has no `## Open` section
+under its own id, so the very first sync after registration infers "resolved out-of-band" and marks
+it done. Every chain then skips it forever. This silently killed F-244-review, F-246-review and both
+of tonight's fresh LC1 review orders within minutes of their creation, with no journal entry —
+exactly the false-done shape F-086 taught, produced by the harness itself.
+
+Two-layer fix, because the first layer alone was insufficient and proven so by re-testing through the
+actual kill path: `_is_finding` is now a fullmatch on `F-\d+` (routing correctness), and the sync
+loop itself skips any Findings-milestone task whose id is not a pure finding id (the actual kill
+site — the loop keys on milestone, not on `_is_finding`). Verified by resurrecting both dead reviews
+to todo, deliberately re-running `_sync_findings`, and confirming they survive. harness_check 34/34.
+
+---
+
+**Resolved 2026-08-20 by lp.** Both layers are at HEAD and read back 2026-08-20 by lp, in the two places the finding names:
+
+- **Routing correctness:** `_is_finding()` is `re.fullmatch(r"F-\d+", tid.upper())`, with the
+  comment that a prefix match is what let `F-243-review` be treated as a finding id.
+- **The actual kill site:** the `_sync_findings` loop keys on *milestone*, not on `_is_finding`, so
+  the fullmatch alone was insufficient — the finding says so, having proven it by re-testing through
+  the kill path. The loop now carries its own `if not re.fullmatch(r"F-\d+", fid.upper()): continue`
+  guard ahead of the left-the-doc inference, so only ids that ARE finding ids answer to FINDINGS.md.
+
+**Verified, live, not just by reading:** `python3 tools/harness_check.py` → **34/34 passed**. And
+this task drove `_sync_findings` repeatedly — six `agent resolve` runs and two `agent reopen` runs,
+each of which syncs — with six `*-review` tasks registered under the Findings milestone the whole
+time. None was touched by the inference. The one that changed status during the window,
+`F-245-review`, changed because lc1 closed it for real at 05:35:46: it carries `done_by: lc1` and a
+`done_at`, which is exactly the signature the silent kill lacks (a sync-inferred close writes
+neither — that asymmetry is F-131's, and it is what makes the two cases distinguishable after the
+fact).
+
+This one mattered to F-269 directly: a review order killed at registration is the same false-done
+shape as a finding left under `## Open` after being fixed — the board reporting work as finished
+that nobody did, or as routable that somebody already did. `tools/findings_hygiene_check.py`
+(F-269) now fails on the second shape rather than warning about it.
+
+### F-263 · Hardening pass: chains run stale code after harness edits, one failing task stops a whole queue, dup-grabs under claim-late, re-reviews refuse, and D-numbers still race — **fixed**
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-19 by bram1
+
+Five failure classes, every one observed live on 2026-08-19, one hardening pass:
+
+1. **Long-running chains execute stale code.** Python loads the harness at process start, so every
+   fix ships only to future chains: the 7200s timeout fix did not reach the chain that then timed out
+   at 3600s, and the second-pass mechanism silently did not exist in the slot-1 chain that predated
+   it. Fix: a chain checks the harness files' mtimes between tasks and re-execs itself when they
+   changed — same queue, same flags, new code.
+
+2. **One failing task stops the entire queue behind it.** F-243's timeout stopped the chain three
+   times; each restart re-hit F-243 first and died again, starving eight queued orders. "Do not chain
+   work onto a broken lane" is right for lane-level failure (exhausted, auth) and wrong for one bad
+   task. Fix: on a task failure with the lane still healthy, log it, leave the order for later, and
+   continue; stop only after two consecutive task failures or a lane-level stop.
+
+3. **Claim-late widens the duplicate-grab window.** in_flight used to register at the up-front claim;
+   with claim-late (D-154) the first claim can come minutes in, so concurrent slots drain the same
+   queue and grab the same task. Fix: the chain registers a lightweight in_flight marker at DISPATCH
+   under the slot's own identity; sibling chains skip in-flight tasks; the marker is removed if the
+   run dies before any real claim, and a real claim simply inherits it.
+
+4. **A review id, once done, refuses to review again.** cmd_order --review registers <tid>-review;
+   re-ordering after new commits found the stale done record and the chain skipped it. Reviewing a
+   NEW sha is new work: re-ordering a done review resets it to todo with the new sha.
+
+5. **D-numbers still race** (F-260, hit three times in one day). `agent decision "title"` now
+   allocates the next D-NNN under a lock, body on stdin, refusing while another agent holds an exact
+   claim on docs/DECISIONS.md — the same shape that fixed F-058 for findings.
+
+---
+
+**Resolved 2026-08-20 by lp.** All five failure classes landed, recorded as **D-157**. Each one read back at HEAD 2026-08-20 by lp
+against the numbered item it answers — this entry is five findings in a trenchcoat, so resolving it
+on a summary would have been resolving it on nothing:
+
+1. **Stale code in long-running chains.** `_harness_mtimes()` is captured into `_HARNESS_LOADED` at
+   import, and the chain loop compares it between tasks and re-execs — *"is the one safe moment to
+   notice and re-exec: same queue, same flags, new code"*.
+2. **One failing task stopping a queue.** The loop tracks `failed` as *consecutive* failures, not
+   total, and stops only at *"two consecutive task failures"* with the lane still healthy.
+3. **Claim-late's duplicate-grab window.** in_flight now carries a `dispatched` marker the sibling
+   chains test, so the registration no longer waits for the first real claim (which under D-154 can
+   be minutes in).
+4. **A review id refusing to review again.** `cmd_order`'s already-done guard is `if t["status"] ==
+   "done" and not review` — a review reads a commit that already exists, so "already done" is its
+   normal precondition, and the refusal now names the review form in its own message.
+5. **D-numbers still racing.** `cmd_decision` — resolved separately above as **F-260**, and
+   exercised by this task, which allocated D-162 through it.
+
+**Verified:** `python3 tools/harness_check.py` → **34/34 passed**, including the four cases that pin
+`agent resolve`/`agent reopen` behaviour this task then depended on (F-131, F-134).
+
+**Filed, not swept under this:** F-283 — the D-number allocator from item 5 prevents new collisions
+and repairs none of the three already in `docs/DECISIONS.md`.
+
+### F-262 · Claims are held for the whole task — grabbed up front and released only at close-out — so a file locks for up to 2h even when it is edited for minutes, stalling other agents — **fixed**
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-19 by bram1
+
+`cmd_claim` takes a task's whole file list at task START; `_release` runs only from
+`done`/`handoff`/`drop`, i.e. at close-out. So every claimed file is locked for the entire task —
+now up to the 7200s timeout with LM on Opus-high — regardless of when, or whether, it is actually
+edited. Sequoyah identified this as the stall cause on 2026-08-19, and the session's evidence agrees:
+`net_version.gd` held across four sessions (F-189), `graphics_quality.gd` blocking F-130 for hours,
+`mire_grid.gd` colliding between F-243 and F-253, F-144 holding twelve files for six hours with no
+writes. In nearly every case the file was claimed but not being edited.
+
+The fix has two halves of unequal value:
+
+**Claim late — near-pure win.** Claim a file only when the agent is about to edit it, not at task
+start. A task that edits eight files over two hours currently locks files seven and eight for two
+hours before touching them. Late claiming shrinks each lock to the minutes of actual work. The
+work-order template already lists the claim command up front; it should instead instruct the agent to
+claim each file (or tight group) immediately before its first edit.
+
+**Release after verification, not at close-out — the safe half of early release.** A task's files are
+one coherent change that is not final until its check passes: release `mire_grid.gd` mid-task and a
+sibling can edit it, then the task's own failed check needs it back and it has moved underneath. So
+per-file-on-finish is unsafe. But once the task's verification passes the files ARE done, and holding
+them through the docs-writing close-out (SPECS/DECISIONS/DELEGATION, which are separate files) blocks
+others for nothing. Release source claims at green-check time; keep only the docs files through
+close-out.
+
+Not a live flip: this changes how every agent claims, so it wants the work-order template rewritten,
+`AGENTS.md`'s claim rule updated, and a decision recorded — done deliberately, not while a fleet is
+mid-run. The `agent claim`/`_release` mechanics already support partial claim sets; the change is
+behavioural, in what the templates instruct, plus a helper to release a subset at verification.
+
+---
+
+**Resolved 2026-08-20 by lp.** Adopted as **D-154** — the claim-late half of this finding is live protocol, and the early-release
+half was considered and deliberately rejected. Both halves settled, so the entry is closed rather
+than left open for the rejected one.
+
+**Verified at HEAD 2026-08-20 by lp, in the two places that actually govern agent behaviour** —
+this fix is behavioural, so its evidence is the instructions, not a code path:
+
+- `AGENTS.md` rule 1 is now titled *"Claim each file late — right before you edit it, and release
+  everything at the end"*. The finding's own prescription was that "the work-order template already
+  lists the claim command up front; it should instead instruct the agent to claim each file (or tight
+  group) immediately before its first edit" — that is the rule as written.
+- The dispatched work-order template carries it as a numbered section of its own, with the
+  anti-example (`# NOT this — do not claim your whole file list up front`) next to the right shape.
+  **This task's own order arrived that way**, and the task was executed that way:
+  `tools/findings_hygiene_check.py` was claimed in the same minute it was first written, and
+  `docs/FINDINGS.md` was never claimed at all, because it is deliberately unclaimed (F-006) and
+  every move here went through `agent resolve`/`agent reopen` under the findings lock instead. That
+  is the F-262 stall this finding describes, not happening.
+- No new mechanism was needed and none was added: `agent claim` is additive, so late claiming is
+  reachable with the existing `cmd_claim`, which is what D-154 records.
+
+**Rejected half, recorded so it is not refiled:** releasing source claims at green-check time. A
+task's files are one change that is not final until its own verification passes; release mid-task and
+a sibling can edit, and a failed check then sends the task back into a file that moved underneath it
+— the exact two-agents-one-file race claims exist to prevent. D-154 carries the reversal trigger
+(measured evidence that the docs-writing tail is where contention lives).
+
+**Not a clean win, and the receipt is in this file:** claim-late widened the duplicate-grab window
+(F-263 item 3, since fixed with a dispatch-time in_flight marker) and made **F-267** more likely to
+fire, since a sibling can now edit a file before the shipping task ever claims it. F-267 is open.
+
+### F-260 · docs/DECISIONS.md has no atomic number allocator, so two agents took D-146 within minutes of each other — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by bram1
+
+`agent finding` allocates F-numbers under a lock precisely because concurrent lanes reading "the next
+number" from the document both get the same answer — that is F-058, and it cost a renumbering pass
+(F-087) plus three findings that routed to the wrong entry. `docs/DECISIONS.md` has the identical
+shape and no equivalent allocator: an agent reads the highest `### D-NNN`, adds one, and appends.
+
+It fired on 2026-08-19. A lane recorded D-146 (task 6.3's Cycle Modifier count) while the director
+was writing a different D-146 (the LM lane's Opus/second-pass change) in the same minutes; by the
+time the collision was noticed the numbers had run on to D-149, so the director's entry became D-150.
+Nothing was lost because the collision was caught by eye, which is exactly the part that does not
+scale — F-058's pairs were not caught by eye, and two of them were still mis-routing weeks later.
+
+The fix is the one already proven for findings: an `agent decision "title"` that takes the body on
+stdin, allocates the next `D-NNN` under `.agent/locks/`, and appends atomically — so the number is
+reserved before the text is written rather than after. It should also decline to run while another
+agent holds an exact claim on `docs/DECISIONS.md`, which is the second half of the same race and the
+thing that blocked this commit.
+
+Worth noting the pre-commit hook did catch the claim half correctly, refusing a hand-commit that
+touched `docs/DECISIONS.md` while another lane held it — F-072's enforcement working as designed.
+
+---
+
+**Resolved 2026-08-20 by lp.** `agent decision "title"` exists and is the allocator this finding specified, built the same way
+`agent finding` was built for F-058.
+
+**Read at HEAD 2026-08-20 by lp — `cmd_decision`, both halves of the race:** the number is taken
+inside `file_lock("decisions")` as `max(### D-(\d+)) + 1` and the entry is appended through a
+`.tmp` + `os.replace`, so the number is reserved before the text exists anywhere; and it refuses
+outright — `"docs/DECISIONS.md is exact-claimed by %s for %s"` — when another agent holds an exact
+claim on the file, which is the second half the finding called out and the thing that blocked its own
+commit. It also enforces a `**Would change my mind:**` line, so the allocator carries F-218's rule
+rather than being a bare counter.
+
+**Verified by using it, which is the only honest test of an allocator:** this task recorded **D-162**
+through `agent decision`, and it allocated 162 against a file whose highest heading was D-161 — a
+real append, under the lock, with no hand-edit.
+
+**Filed rather than fixed here: F-283.** The allocator stops new collisions and does nothing about
+the three already in the file — `### D-050`, `### D-144` and `### D-150` each head two different
+decisions at HEAD, so a `D-150` citation resolves to one of two unrelated pages and nothing detects
+it. `tools/decision_ref_check.py` only catches citations with no target at all, and
+`findings_numbering_check.gd` is FINDINGS-only by design. That is a renumbering pass across every
+citing doc (F-087's shape), not a doc edit, so it gets its own number.
+
+### F-256 · Arming several one-shot revives to cover an unattended stretch stacks saturate chains, and the lane idles while they queue on its own lock — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by bram1
+
+`lane-revive` (F-091) fires once at a named time, which is right for a known reset and wrong for a
+long unattended stretch. Covering five window rollovers means arming five daemons, each of which
+starts its own `agent saturate` chain. They then serialise on the per-lane saturate lock — and every
+chain in that queue burns its full `EMPTY_QUEUE_GRACE_SECONDS` (F-202) before releasing, so the lane
+sits idle while the others wait their turn.
+
+Measured 2026-08-19, and it was self-inflicted: five revives armed for an overnight window left LM
+**idle with six orders queued** and four chains alive, one holding `.agent/locks/saturate-lm.lock`
+and three blocked behind it. The two fixes interact badly — the grace period assumes a single chain,
+and one-shot revives assume they are the only one.
+
+**Fixed:** `.agent/bin/lane-keeper <LANE> [--hours N]` — one long-lived daemon per lane that polls
+every five minutes and starts a chain **only when there is queued work and no chain already exists
+for that lane**. Because it checks before acting it cannot stack, running two keepers is harmless,
+and a chain that stops for any reason (reserve stop, error, drained queue) is picked back up at the
+next poll rather than at a time somebody guessed in advance. `lane-revive` stays for the case it is
+good at: a known reset far in the future, like a weekly window.
+
+**Verified:** `_queued()` returns LM's five and LP's one from real order files, skipping done tasks;
+`_chain_alive()` reports True for the lane that is running and False for an idle one; with both
+keepers armed, each lane converged to exactly one chain and started work (LM on F-243, LP on 8.11)
+with no pile-up on either lock.
+
+---
+
+**Resolved 2026-08-20 by lp.** Already fixed and already written up inside the entry — this is the move nobody ran. The entry's own
+`**Fixed:**` and `**Verified:**` paragraphs are bram1's, from 2026-08-19; it was the one finding in
+the file that `agent start` could see was settled from the prose alone, since neither state.json nor
+the doc disagreed about it (`_self_resolved_findings`).
+
+**Re-verified at HEAD 2026-08-20 by lp** rather than taken on the entry's word:
+`.agent/bin/lane-keeper` exists and is executable, and its module docstring states the property that
+matters — one daemon per lane, polling, starting a chain only when there is queued work AND no chain
+already exists for that lane, so it cannot stack and running two keepers is harmless.
+`.agent/bin/lane-revive` is still present for the case it is good at (a known reset far in the
+future), which is what the fix said it would keep.
+
+The interaction the finding actually diagnosed — F-202's `EMPTY_QUEUE_GRACE_SECONDS` assumes a single
+chain, one-shot revives assume they are the only one — is closed by the check-before-acting order,
+not by tuning either constant. Nothing arms a second chain to be graced.
+
+### F-243 · The run loop is a line, not a circle — after defeat or extraction there is no path to a next run short of relaunching the process — **fixed**
+
+**Area:** systems · **Severity:** high · **Found:** 2026-08-19 by hollow7
+
+Verified by the 2026-08-19 game-loop audit (`tools/loop_audit_check.gd`, both endings driven on the
+shipped `levels/hollowmere.tscn`): every link of DESIGN.md §5's run arc now works — spawn, harvest,
+craft, build, eat, night wave, chests, Wellspring rewards, Mire response, Cycle+modifier,
+extraction with full banking, defeat with fraction banking. The arc then stops. Nothing anywhere
+starts the next run:
+
+- `ui/hud/defeat_hud.gd` has no actions at all — it subscribes to `run_wiped`/`salvage_banked` and
+  renders; there is no "new run" control for the player staring at the summary.
+- `ExtractionShip`'s successful departure likewise ends in a HUD state, not a flow.
+- No file under `ui/`, `autoload/`, `core/`, or `systems/` calls `reload_current_scene()` /
+  `change_scene_to_*` for a run reset, and no service exposes a `reset_run()` — grep for
+  restart/new_run/reload comes back empty of any run-scoped hit.
+- The run-scoped state that would need resetting is spread across at least: CycleService (cycle,
+  spread multiplier), CycleModifierService (active draws), MireGrid (the whole grid),
+  SalvageService (`wellsprings_capped_this_run`), PowerupService stacks, InventoryService stores,
+  PlayerHealth states, EnemyWorld population, WorldDeltaLog, placed buildables, opened chests,
+  capped Wellsprings, repaired ship. Nothing owns the set.
+
+6.8 (run summary) and 6.10 (menu/lobby) are both marked done, and no D-number records "relaunch to
+restart" as a deliberate ship decision — so this is a gap, not a choice. It bites hardest in
+co-op: a six-player lobby that wipes must fully relaunch six processes and re-invite through Steam
+to play again, which turns the "one more run" moment — the exact moment DESIGN.md §5.2 is built
+around — into a lobby teardown.
+
+Suggested shape (not prescribed): a HOST-scope `run restart` through the existing command front
+door plus a DefeatHud/extraction button that submits it; host reloads the level scene and
+broadcasts, services reset on a `run_started` signal they already mostly subscribe to
+(CycleService.run_started exists). The per-service reset inventory above is the real work; the
+audit doc carries the full trace.
+
+---
+
+**Resolved 2026-08-20 by lp.** The negative existence claim this finding is built on — "no path to a next run short of relaunching
+the process" — is false at HEAD, so it is moved under **D-162**: a finding resolves when the defect
+its own text asserts is no longer true, and the gaps found while fixing it live as their own
+findings rather than as a false headline `brief` keeps offering as buildable work.
+
+**What shipped** (D-149: reset services in place, no level reload, host-only trigger, no new RPC):
+a HOST-scope `run restart` through the command front door, `EventBus.run_restarted` with twenty-one
+subscribing files, and a Start Next Run control on both terminal overlays —
+`ui/hud/defeat_hud.gd` and `ui/hud/extraction_hud.gd`, the two files this finding named as
+dead ends. The per-service reset inventory the finding said "nothing owns" is now owned: CycleService,
+CycleModifierService, MireGrid, SalvageService, PowerupService, InventoryService, PlayerHealth,
+EnemyWorld, WorldDeltaLog, Chest, Wellspring, ExtractionShip, WaveSpawner, ProceduralWorld,
+ResourceScatterField. Two follow-ups already landed and are resolved above: **F-258** (a restart
+draws a fresh world seed and re-broadcasts it to already-connected peers) and **F-259** (WaveSpawner's
+unlocked roster, night latch, and the ambient field it suppressed).
+
+**Verified 2026-08-20 by lp, both checks re-run at HEAD, not taken from the review:**
+`agent godot --script tools/run_restart_check.gd` → `RUN_RESTART_CHECK failures=1`, the single
+failure being `every placed buildable was cleared` (**F-268**, open, another lane's).
+`agent godot --script tools/run_restart_net_check.gd` → `RUN_RESTART_NET_CHECK failures=8`, and
+every one of the eight maps to an already-filed finding with nothing left over: F-275 (both focus
+paths — defeat overlay and extraction overlay), F-276 (harvested resource), F-277 (selection and
+picker), F-278 (clock), F-279 (spawn position), F-280 (`run_started`). That enumeration is the
+evidence for resolving: the residue is fully filed, not merely believed to be.
+
+**Left open, cited so the trail reads forward as well as back:** F-268, F-275, F-276, F-277, F-278,
+F-279, F-280, F-281. The review verdict at 6d7e756 was *changes required* and it stays true of that
+commit — those are its changes, each with its own number and its own failing assertion.
 
 ### F-259 · F-243's restart resets Cycle/Mire/inventory/etc but not WaveSpawner's unlocked enemy roster — **fixed**
 
