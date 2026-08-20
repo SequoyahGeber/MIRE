@@ -9070,3 +9070,96 @@ player walks through it into a space that genuinely exists, which is the opposit
 lint's corpus now covers the first class permanently.
 
 **Resolved** — see `docs/FINDINGS.md`.
+
+---
+
+## F-261 · `poi_map.gd`'s dart-throwing loop and `BiomeMap.moisture()` are the same per-sample noise-rebuild shape F-241/F-252 just fixed, with no `NoiseSet`-equivalent yet
+
+No block existed here beforehand; SPECS.md's own preamble makes writing one part of the task that
+discovers the gap. This is the third and last instalment of F-241 — F-241 fixed the chunk mesher,
+F-252 the resource scatter's height sample, and both filed this one rather than widening their claim.
+
+**Authority:** none of its own. `PoiMap` and `BiomeMap` are pure functions — no nodes, no shared
+state — under `docs/ARCHITECTURE.md` §2.2's *POI placement* row: **"None — derived, not owned. Every
+peer computes the identical site list from the shared world seed plus `content/poi/*.tres`."** That
+row is the whole reason this task's acceptance is "the island is byte-identical," not "the island is
+still plausible": a layout that quietly moved would read as a new seed, and nothing downstream can
+detect it because nothing is ever sent over the wire to disagree with.
+
+**Claim:** `world/gen/biome_map.gd`, `world/gen/island_heightmap.gd`, `world/gen/poi_map.gd`,
+`world/gen/resource_scatter.gd`, `tools/terrain_map_render.gd`,
+`tools/worldgen_noise_reuse_check.gd` (new).
+
+**The gap, in the four places it lived:**
+
+1. `poi_map.gd`'s `_place_kind_pass()` throws up to `DARTS_PER_SITE (30) × MAX_ROUNDS_PER_SITE (24)`
+   = 720 darts per `PoiDef`. Each dart called bare `IslandHeightmap.height()` (six field
+   constructions), then `_slope_at()` which called it five more times — including once for the
+   centre the caller had *just computed and thrown away* — and then `BiomeMap.biome_at()` twice at
+   the same point on an accepted dart, each of those rebuilding four continent fields plus a
+   moisture field.
+2. `BiomeMap.moisture()` built a fresh `FastNoiseLite` on every call, with no `NoiseSet`-equivalent
+   anywhere.
+3. `resource_scatter.gd`'s `_placement_at()` — F-252 threaded a `NoiseSet` for its HEIGHT sample
+   (matching that finding's title exactly) and deliberately left the `moisture()` call on the next
+   line bare, because there was nothing to thread.
+4. `tools/terrain_map_render.gd` is by far the worst of the four and was named only in passing: at
+   its default 1024 px it resolved each pixel's biome twice and sampled the surface twice, so a
+   single render constructed on the order of 22 million `FastNoiseLite` fields.
+
+**The fix.** `BiomeMap` gains a `NoiseSet` that NESTS `IslandHeightmap.NoiseSet` rather than folding
+moisture into it, plus `make_noise_set(world_seed, island_set := null)` (adopts a caller's existing
+island set), `moisture_from_set()`, `biome_at_from_set()`, `terrain_amplitudes_from_set()` and a
+public `amplitudes_for(id, biome_defs)` for a caller holding a resolved id. `IslandHeightmap` gains
+`continent_from_set()`. Every bare/set pair funnels through one shared private body
+(`_continent_with`, `_moisture_with`) so the two paths cannot drift. **D-160** records both calls and
+why folding was rejected.
+
+`PoiMap.sites_for_island()` builds one set for the whole island and threads it down through
+`_place_kind`/`_place_kind_pass`/`_slope_at`; `_slope_at()` takes the already-computed centre height
+as a parameter instead of resampling it (five samples become four); the accepted dart resolves its
+biome once instead of twice, and lazily, so a relaxed pass still pays only on the dart it keeps.
+`resource_scatter.gd` adopts its existing island set into a `BiomeMap.NoiseSet`.
+`terrain_map_render.gd` builds one set per render and resolves each pixel's biome once, feeding both
+the amplitude lookup and the tint.
+
+**Verify:** `agent godot --script tools/worldgen_noise_reuse_check.gd` → `WORLDGEN_NOISE_REUSE
+failures=0`. Four groups, and the third is the load-bearing one:
+
+- **Equivalence** — every `*_from_set` call bit-identical to its bare sibling, 361 samples × 5 seeds.
+- **Adoption** — a `BiomeMap.NoiseSet` handed an existing island set answers identically to one that
+  built its own, and adopts rather than copies it.
+- **Layout identity** — POI sites, the biome/moisture grid and the terrain-amplitude grid hash to
+  constants **captured from the pre-fix code at 17bacba, before the first edit**. `agent baseline`
+  cannot do this job: the check does not exist at that revision and neither do the APIs it drives,
+  so the hashes are captured first with a throwaway probe and pasted in as `GOLDEN_*` constants.
+  They are a tripwire — a later task that deliberately moves worldgen output re-captures them and
+  says so.
+- **Speed** — a shared set must beat per-call rebuilding by ≥1.3×, the same floor and the same
+  reasoning `tools/noise_reuse_check.gd` uses (measured 1.43× on a machine running several lanes).
+
+Plus the neighbours, all at `failures=0` and 0 undeclared `ERROR:` lines (F-021):
+`poi_check.gd`, `biome_check.gd`, `resource_scatter_check.gd`, `noise_reuse_check.gd`,
+`terrain_check.gd`, and `check_determinism.gd` reproducing `terrain_hash c20eed19b44270a1` —
+byte-identical to the value F-241 recorded. A 512 px `terrain_map_render.gd` render is MD5-identical
+to the same render at HEAD (`agent baseline --keep`, both `935d428be6c214fe4b5e9c71c35d2510`).
+
+**Swept for siblings:** grepped every `.gd` for bare `height(`/`continent(`/`moisture(`/`biome_at(`/
+`terrain_amplitudes(` call sites, and for `FastNoiseLite.new()`/`RandomNumberGenerator.new()` under
+`world/`, `autoload/` and `systems/`. **Every shipped call site is now set-backed** — the four above
+were the complete list. The bare calls that remain are all in `tools/` check scripts, and they are
+deliberate: `terrain_check`, `biome_check`, `chunk_stream_check`, `chunk_seam_shot`,
+`resource_scatter_check`, `seed_sync_check` and `check_determinism` re-derive terrain values from the
+bare API precisely so they are an INDEPENDENT witness to the shipped path, and `noise_reuse_check`
+needs the bare path as its slow-path control. Converting them would make the checks agree with the
+code by construction, which is the opposite of what they are for. The `RandomNumberGenerator.new()`
+per point in `poi_map`/`resource_scatter` is likewise the deterministic per-point seeding those
+generators are built on, not a rebuild to eliminate.
+
+**Found broken along the way, filed rather than fixed here:** `ResourceScatter._placement_at()`
+classifies a point's biome from `IslandHeightmap.height()` while `BiomeMap.biome_at()` classifies
+from `continent()`, so the same world point can resolve to two different biomes depending on which
+system asks — D-144's circularity, still live in one caller. Out of this claim because the fix moves
+scatter output on every seed, which is a content decision, not a performance one. **F-271.**
+
+**Resolved** — see `docs/FINDINGS.md`.

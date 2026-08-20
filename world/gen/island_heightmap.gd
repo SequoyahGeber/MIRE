@@ -498,17 +498,41 @@ static func _make_continent_noise(world_seed: int) -> FastNoiseLite:
 	return base_noise
 
 
-static func continent(x: float, z: float, world_seed: int) -> float:
-	var base_noise := _make_continent_noise(world_seed)
-	var coast_noise := _make_noise(
-		world_seed ^ COAST_NOISE_SALT, COAST_FREQUENCY, 3, BASE_NOISE_LACUNARITY, BASE_NOISE_GAIN)
+## The continent, sampled through already-built noise. `continent()` and `continent_from_set()` both
+## funnel through this one body rather than each carrying their own copy of the formula — the only
+## thing that differs between them is WHERE the four fields came from, and a duplicated body is how
+## the two paths would quietly drift apart under a later edit.
+static func _continent_with(x: float, z: float, world_seed: int, base_noise: FastNoiseLite,
+		coast_noise: FastNoiseLite, warp_x: FastNoiseLite, warp_z: FastNoiseLite) -> float:
 	var jitter: float = coast_noise.get_noise_2d(x, z) * COAST_JITTER
-	var bent: Vector2 = _warp_point(x, z, world_seed)
+	var bent: Vector2 = _warp_point_with(x, z, warp_x, warp_z)
 	var mask: float = _island_mask_bent(bent, world_seed, jitter)
 	var shaped: float = (base_noise.get_noise_2d(x, z) + LAND_BIAS) * HEIGHT_SCALE * mask
 	# The river carves the CONTINENT too (4.14): biomes read this surface (D-144), so the valley
 	# floor resolves as low ground — banks go shore/marsh by height, no special casing anywhere.
 	return _apply_river(bent, world_seed, shaped, mask)
+
+
+static func continent(x: float, z: float, world_seed: int) -> float:
+	var base_noise := _make_continent_noise(world_seed)
+	var coast_noise := _make_noise(
+		world_seed ^ COAST_NOISE_SALT, COAST_FREQUENCY, 3, BASE_NOISE_LACUNARITY, BASE_NOISE_GAIN)
+	var warp_x := _make_noise(world_seed ^ SHAPE_WARP_SALT_X, SHAPE_WARP_FREQUENCY, 3,
+		BASE_NOISE_LACUNARITY, BASE_NOISE_GAIN)
+	var warp_z := _make_noise(world_seed ^ SHAPE_WARP_SALT_Z, SHAPE_WARP_FREQUENCY, 3,
+		BASE_NOISE_LACUNARITY, BASE_NOISE_GAIN)
+	return _continent_with(x, z, world_seed, base_noise, coast_noise, warp_x, warp_z)
+
+
+## Same result as `continent()`, sampled through a `NoiseSet` the caller built once (F-261). The set
+## already holds all four fields `continent()` builds — it is a superset, carrying the detail and
+## ridge layers `continent()` deliberately does not read (D-144: the continent is the
+## biome-INDEPENDENT half of the terrain).
+##
+## `BiomeMap.biome_at_from_set()` is the caller this exists for: deciding a point's biome costs one
+## continent sample, and POI placement asks for tens of thousands of them per island.
+static func continent_from_set(x: float, z: float, set: NoiseSet, world_seed: int) -> float:
+	return _continent_with(x, z, world_seed, set.base_noise, set.coast_noise, set.warp_x, set.warp_z)
 
 
 ## How much of the ridged layer applies at this continental height: none in the

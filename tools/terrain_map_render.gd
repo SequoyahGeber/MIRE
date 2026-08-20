@@ -44,14 +44,25 @@ func _initialize() -> void:
 	var lowest: float = INF
 	var highest: float = -INF
 	var land: int = 0
+	# F-261: one set of noise fields for the whole render. This loop is the worst per-sample rebuild
+	# in the repo — at the default 1024 px it used to construct roughly 22 million FastNoiseLite
+	# fields, because every pixel resolved its biome twice and sampled the surface twice, each of
+	# those four calls rebuilding every field from scratch.
+	var noise_set: BiomeMap.NoiseSet = BiomeMap.make_noise_set(seed_value)
 	for py in size:
 		for px in size:
 			var x: float = (float(px) / float(size) - 0.5) * span
 			var z: float = (float(py) / float(size) - 0.5) * span
-			var h: float = IslandHeightmap.height(x, z, seed_value)
-			if not defs.is_empty():
-				var amplitudes: Vector2 = BiomeMap.terrain_amplitudes(x, z, seed_value, defs)
-				h = IslandHeightmap.height(x, z, seed_value, amplitudes.x, amplitudes.y)
+			# Resolved once and used for both the surface roughness and the tint below.
+			var id: StringName = &""
+			var h: float
+			if defs.is_empty():
+				h = IslandHeightmap.height_from_set(x, z, noise_set.island, seed_value)
+			else:
+				id = BiomeMap.biome_at_from_set(x, z, noise_set, seed_value, defs)
+				var amplitudes: Vector2 = BiomeMap.amplitudes_for(id, defs)
+				h = IslandHeightmap.height_from_set(
+					x, z, noise_set.island, seed_value, amplitudes.x, amplitudes.y)
 			lowest = minf(lowest, h)
 			highest = maxf(highest, h)
 			var colour: Color
@@ -63,7 +74,6 @@ func _initialize() -> void:
 				land += 1
 				var tint := Color(0.45, 0.52, 0.38)
 				if not defs.is_empty():
-					var id: StringName = BiomeMap.biome_at(x, z, seed_value, defs)
 					tint = BIOME_TINT.get(id, tint)
 				# Height shading on top of the biome tint: dark in the valleys,
 				# pale on the crests, so ridges are visible as ridges.

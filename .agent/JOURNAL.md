@@ -6541,3 +6541,19 @@ Two-layer fix verified through the kill path itself; both murdered reviews resur
 Files: `.agent/bin/agent`
 
 Commit at time of writing: `17bacba`
+
+---
+
+### DONE · F-261 · lm · 2026-08-20T05:20:01+00:00
+
+**poi_map.gd's dart-throwing loop and BiomeMap.moisture() are the same per-sample noise-rebuild shape F-241/F-252 just fixed, with no NoiseSet-equivalent yet**
+
+BiomeMap.NoiseSet (nests IslandHeightmap.NoiseSet, adopts a caller's existing island set) plus IslandHeightmap.continent_from_set() close the last three per-sample noise rebuilds: PoiMap's dart loop builds one set per island and _slope_at() takes the centre height instead of resampling it; resource_scatter adopts its per-chunk set for moisture; terrain_map_render builds one per render and resolves each pixel's biome once. Proof: agent godot --script tools/worldgen_noise_reuse_check.gd -> WORLDGEN_NOISE_REUSE failures=0, including GOLDEN_POI/BIOME/AMPLITUDES hashes captured from the pre-fix code at 17bacba before the first edit, so the island is proved byte-identical rather than merely self-consistent. Neighbours poi/biome/resource_scatter/noise_reuse/terrain_check all failures=0, 0 undeclared ERROR lines, check_determinism reproduces terrain_hash c20eed19b44270a1, and a 512px terrain render is MD5-identical to HEAD's. Sweep closed the class: every shipped call site is set-backed; the bare calls left in tools/ are deliberate independent witnesses. D-160 records the nest-not-fold call and the capture-hashes-first procedure; F-271 files the D-144 divergence the sweep found in resource_scatter.
+
+Notes along the way:
+- Captured pre-fix golden hashes at HEAD before editing worldgen, via a throwaway tools/_tmp_f261_baseline.gd: POI site fingerprints, biome/moisture grid hashes and terrain_amplitudes hashes for 5 seeds. They are now constants in tools/worldgen_noise_reuse_check.gd, so the refactor is proved layout-identical rather than merely self-consistent — agent baseline cannot help here because the new check script does not exist at HEAD.
+- Shipping docs/FINDINGS.md sweeps two other lanes' uncommitted entries (F-269, F-270) into this commit — F-267's recurrence, unavoidable with an append-only shared doc since agent finding appends atomically and there is no per-hunk staging in ship. Leaving them uncommitted would be worse: uncommitted work is invisible to Codex. Flagged here rather than silently.
+
+Files: `world/gen/biome_map.gd`, `world/gen/island_heightmap.gd`, `world/gen/poi_map.gd`, `world/gen/resource_scatter.gd`, `tools/terrain_map_render.gd`, `tools/worldgen_noise_reuse_check.gd`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `6a5f653`

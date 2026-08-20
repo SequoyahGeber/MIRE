@@ -508,44 +508,6 @@ touched `docs/DECISIONS.md` while another lane held it — F-072's enforcement w
 
 ---
 
-### F-261 · poi_map.gd's dart-throwing loop and BiomeMap.moisture() are the same per-sample noise-rebuild shape F-241/F-252 just fixed, with no NoiseSet-equivalent yet
-
-**Area:** worldgen · **Severity:** low · **Found:** 2026-08-19 by lp
-
-F-241 (chunk mesher) and F-252 (resource_scatter.gd) both fixed the "bare `IslandHeightmap.height()`
-rebuilds six FastNoiseLite fields per call" shape by routing hot loops through
-`IslandHeightmap.make_noise_set()`/`height_from_set()`. Two sibling call sites still have the bare
-shape and were left out of F-252's claim on purpose (different files, and one needs new
-infrastructure that doesn't exist yet):
-
-1. `world/gen/poi_map.gd`'s `_place_kind()`/`_slope_at()` — up to `DARTS_PER_SITE (30) *
-   MAX_ROUNDS_PER_SITE (24)` = 720 attempts per `PoiDef`, times however many POI defs ship, each
-   calling `ISLAND_HEIGHTMAP.height()` at least once (`_place_kind`, line 120) and `_slope_at()`
-   calls it FIVE more times per attempt (once for its own centre — redundant with the value
-   `_place_kind` already computed at line 120 and threw away — plus four probe offsets). This is
-   world-generation-time cost (once per island, not per frame), so lower severity than F-241's
-   per-frame chunk mesher case, but it is the identical bug shape and the fix is now a known
-   pattern: build one `NoiseSet` in `sites_for_island()`, thread it through `_place_kind`/
-   `_slope_at`, and have `_slope_at` take the already-computed centre height as a parameter instead
-   of resampling it.
-
-2. `world/gen/biome_map.gd`'s `moisture()` builds a fresh `FastNoiseLite` on every call — same
-   shape, different noise field (BiomeMap's own moisture layer, unrelated to IslandHeightmap's six).
-   There is no `NoiseSet`-equivalent for it yet. Callers that pay this per-sample: `resource_scatter.
-   gd`'s `_placement_at()` (this finding's own fix left this call alone — F-252's claim was
-   `_placement_at()`'s HEIGHT call specifically, matching the finding's own title), `poi_map.gd`'s
-   `_place_kind()` (via `biome_at()`), and `tools/terrain_map_render.gd`. Fixing this properly means
-   adding a moisture-noise cache to `biome_map.gd` (its own small `NoiseSet`-alike, or folding it
-   into `IslandHeightmap.NoiseSet` since both are keyed by the same `world_seed`) and threading it
-   through `biome_at()`/`terrain_amplitudes()` — a design decision for whoever picks this up, not
-   assumed here.
-
-Neither site is on a per-frame path, which is why this is filed at `low` rather than reusing F-241's
-severity — but both are the same class of bug F-241 named, so worth fixing before someone tunes POI
-counts or moisture frequency and pays for it again on every dart.
-
----
-
 ### F-262 · Claims are held for the whole task — grabbed up front and released only at close-out — so a file locks for up to 2h even when it is edited for minutes, stalling other agents
 
 **Area:** tooling · **Severity:** high · **Found:** 2026-08-19 by bram1
@@ -802,7 +764,201 @@ previous run's buildables from the spawner's own replay while the host believes 
 
 ---
 
+### F-269 · Four resolved findings still sit under '## Open' after the day's sweep chaos — F-243, F-256, F-260, F-262 are all fixed and still read as routable work
+
+**Area:** process · **Severity:** low · **Found:** 2026-08-20 by bram1
+
+Records drift, the exact class agent brief's stale-warning and the reviewer bookkeeping duty exist
+for: F-243 shipped in 6d7e756 (run restart, verified twice), F-256's lane-keeper is running in
+production, F-260's allocator exists as `agent decision` and has recorded D-157, F-262's claim-late
+is in the order template and AGENTS.md. All four sections still sit under `## Open`, so the board
+counts them as open work and a drain could route a dispatch at any of them. Verify each is genuinely
+closed (run the named checks, confirm the shipped commits), move the sections to `## Resolved` with
+fix+verification notes, and re-run findings_numbering_check.
+
+---
+
+### F-270 · _sync_findings silently marks every F-*-review task done at registration — review tasks inherit the finding's milestone, have no doc section, and the left-the-doc inference kills them
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-20 by bram1
+
+A review of a finding (`F-243-review`) inherits the reviewed task's milestone — the Findings
+milestone — so `_sync_findings`' left-the-doc rule (F-049) governs it. It has no `## Open` section
+under its own id, so the very first sync after registration infers "resolved out-of-band" and marks
+it done. Every chain then skips it forever. This silently killed F-244-review, F-246-review and both
+of tonight's fresh LC1 review orders within minutes of their creation, with no journal entry —
+exactly the false-done shape F-086 taught, produced by the harness itself.
+
+Two-layer fix, because the first layer alone was insufficient and proven so by re-testing through the
+actual kill path: `_is_finding` is now a fullmatch on `F-\d+` (routing correctness), and the sync
+loop itself skips any Findings-milestone task whose id is not a pure finding id (the actual kill
+site — the loop keys on milestone, not on `_is_finding`). Verified by resurrecting both dead reviews
+to todo, deliberately re-running `_sync_findings`, and confirming they survive. harness_check 34/34.
+
+---
+
+### F-271 · ResourceScatter classifies a point's biome from height(), BiomeMap.biome_at() classifies from continent() — the same point resolves to two different biomes depending on which system asks
+
+**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-20 by lm
+
+Found by F-261's sweep, filed rather than fixed there because the fix moves scatter output on every
+seed — a content decision, not a performance one.
+
+D-144 settled how a biome is decided: from `IslandHeightmap.continent()`, never `height()`. The
+reasoning is in `biome_map.gd`'s own header — since 4.13 a `BiomeDef` carries terrain amplitudes, so
+`height()` DEPENDS on which biome a point is in, and choosing the biome from `height()` would pick it
+from a surface the biome itself shaped. `BiomeMap.biome_at()` obeys this. It also states the
+consequence for content: "the `height_min`/`height_max` a BiomeDef authors are therefore CONTINENTAL
+heights."
+
+`world/gen/resource_scatter.gd`'s `_placement_at()` does not obey it:
+
+    var height: float = ISLAND_HEIGHTMAP.height_from_set(world_x, world_z, noise_set.island, world_seed)
+    var moisture: float = BIOME_MAP.moisture_from_set(world_x, world_z, noise_set)
+    var biome_id: StringName = BIOME_MAP.assign(height, moisture, biome_defs)
+
+It calls `assign()` directly with the FULL surface height — continent plus the detail and ridge
+layers — rather than calling `biome_at()`/`biome_at_from_set()`, which would pass the continent. The
+`height` local is genuinely needed for the placement's `position.y`, so the bug is easy to miss: the
+value is right for one use and wrong for the other, and one line serves both.
+
+**What it costs.** Anywhere the rough layers add height — which is everywhere the ridge mask is
+non-zero, i.e. all the high ground — scatter classifies the point into a HIGHER-`height_min` biome
+than `biome_at()` would. The immediate effect is the `biome_id != def.get("biome_id")` guard four
+lines down rejecting points it should keep and keeping points it should reject, so a scatter table
+authored for one biome places against a slightly different footprint than the biome actually
+occupies on the ground. `tools/resource_scatter_check.gd` cannot catch it: it re-derives the
+expected biome the same wrong way (`height()` + `moisture()` + `assign()` at lines 121-123), so the
+check and the code agree with each other and neither agrees with D-144.
+
+**The fix**, once someone accepts the content churn: replace the `assign()` call with
+`BIOME_MAP.biome_at_from_set(world_x, world_z, noise_set, world_seed, biome_defs)` — F-261 added that
+API and it takes the same set — and update `resource_scatter_check.gd:121-123` to re-derive through
+`continent()` rather than `height()`, so the check stays an independent witness rather than a mirror.
+
+**Why it is not free.** Every scattered point on high ground can change biome, so the scatter layout
+of every existing seed moves. That is not a regression, but it IS a visible change to worlds, and
+`tools/worldgen_noise_reuse_check.gd`'s `GOLDEN_*` hashes exist precisely to notice it — this task
+must re-capture them and say so in its close-out (D-160 names that as the intended use).
+
+**Worth checking at the same time:** `poi_map.gd` tests a dart's height constraints
+(`definition.call("accepts", height, slope, distance_fraction)`) against `height()` too, while its
+biome test goes through `biome_at()`. That may well be correct — a POI's `height_min`/`height_max`
+plausibly means "how high is the ground I stand on", not "how continental is this point" — but the
+two fields are documented in the same units (`poi_def.gd`: "Metres, in IslandHeightmap.height()'s
+units") and `biome_def.gd` says the same thing while meaning continental metres. At minimum the two
+doc comments disagree with each other and one of them is wrong.
+
+---
+
 ## Resolved
+
+### F-261 · poi_map.gd's dart-throwing loop and BiomeMap.moisture() are the same per-sample noise-rebuild shape F-241/F-252 just fixed, with no NoiseSet-equivalent yet — **fixed**
+
+**Area:** worldgen · **Severity:** low · **Found:** 2026-08-19 by lp
+
+F-241 (chunk mesher) and F-252 (resource_scatter.gd) both fixed the "bare `IslandHeightmap.height()`
+rebuilds six FastNoiseLite fields per call" shape by routing hot loops through
+`IslandHeightmap.make_noise_set()`/`height_from_set()`. Two sibling call sites still have the bare
+shape and were left out of F-252's claim on purpose (different files, and one needs new
+infrastructure that doesn't exist yet):
+
+1. `world/gen/poi_map.gd`'s `_place_kind()`/`_slope_at()` — up to `DARTS_PER_SITE (30) *
+   MAX_ROUNDS_PER_SITE (24)` = 720 attempts per `PoiDef`, times however many POI defs ship, each
+   calling `ISLAND_HEIGHTMAP.height()` at least once (`_place_kind`, line 120) and `_slope_at()`
+   calls it FIVE more times per attempt (once for its own centre — redundant with the value
+   `_place_kind` already computed at line 120 and threw away — plus four probe offsets). This is
+   world-generation-time cost (once per island, not per frame), so lower severity than F-241's
+   per-frame chunk mesher case, but it is the identical bug shape and the fix is now a known
+   pattern: build one `NoiseSet` in `sites_for_island()`, thread it through `_place_kind`/
+   `_slope_at`, and have `_slope_at` take the already-computed centre height as a parameter instead
+   of resampling it.
+
+2. `world/gen/biome_map.gd`'s `moisture()` builds a fresh `FastNoiseLite` on every call — same
+   shape, different noise field (BiomeMap's own moisture layer, unrelated to IslandHeightmap's six).
+   There is no `NoiseSet`-equivalent for it yet. Callers that pay this per-sample: `resource_scatter.
+   gd`'s `_placement_at()` (this finding's own fix left this call alone — F-252's claim was
+   `_placement_at()`'s HEIGHT call specifically, matching the finding's own title), `poi_map.gd`'s
+   `_place_kind()` (via `biome_at()`), and `tools/terrain_map_render.gd`. Fixing this properly means
+   adding a moisture-noise cache to `biome_map.gd` (its own small `NoiseSet`-alike, or folding it
+   into `IslandHeightmap.NoiseSet` since both are keyed by the same `world_seed`) and threading it
+   through `biome_at()`/`terrain_amplitudes()` — a design decision for whoever picks this up, not
+   assumed here.
+
+Neither site is on a per-frame path, which is why this is filed at `low` rather than reusing F-241's
+severity — but both are the same class of bug F-241 named, so worth fixing before someone tunes POI
+counts or moisture frequency and pays for it again on every dart.
+
+---
+
+**Resolved 2026-08-20 by lm.** **Fixed 2026-08-19 by lm.** Both sites, plus two more the finding named only in passing.
+
+`BiomeMap` now has its own `NoiseSet`, which NESTS `IslandHeightmap.NoiseSet` rather than folding
+moisture into it — the finding offered both and left the call open; **D-160** records why nesting
+won (the dependency runs one way, and folding would put a biome-layer field inside the terrain layer
+D-144 exists to keep ignorant of it). New API: `BiomeMap.make_noise_set(world_seed, island_set :=
+null)` (adopts a caller's existing island set rather than building a second), `moisture_from_set()`,
+`biome_at_from_set()`, `terrain_amplitudes_from_set()`, public `amplitudes_for(id, defs)`, and
+`IslandHeightmap.continent_from_set()`. Each bare/set pair funnels through one shared private body
+(`_continent_with`, `_moisture_with`) so the two paths cannot drift, and `continent()` keeps building
+only the four fields it reads rather than routing through a full set it would not use.
+
+Threaded through all four callers:
+
+1. `poi_map.gd` — `sites_for_island()` builds one set for the whole island and passes it down
+   through `_place_kind`/`_place_kind_pass`/`_slope_at`. `_slope_at()` takes the already-computed
+   centre height as a parameter instead of resampling it (five heightmap samples become four), and
+   an accepted dart resolves its biome once rather than twice, lazily, so a relaxed pass still pays
+   only on the dart it keeps.
+2. `biome_map.gd` — the moisture field is built once per set instead of once per call.
+3. `resource_scatter.gd` — F-252 left the `moisture()` call bare because there was nothing to thread;
+   it now adopts the island set it already builds per chunk into a `BiomeMap.NoiseSet`.
+4. `tools/terrain_map_render.gd` — the worst site of the four and named only in passing. At its
+   default 1024 px it resolved each pixel's biome twice and sampled the surface twice, constructing
+   on the order of 22 million `FastNoiseLite` fields per image; now one set per render, one biome
+   resolution per pixel feeding both the amplitude lookup and the tint.
+
+**Verified:** `agent godot --script tools/worldgen_noise_reuse_check.gd` (new) →
+`WORLDGEN_NOISE_REUSE failures=0`, four groups:
+
+- equivalence — every `*_from_set` bit-identical to its bare sibling, 361 samples x 5 seeds;
+- adoption — an adopted island set answers identically to a self-built one, and is adopted not copied;
+- **layout identity** — POI sites, the biome/moisture grid and the amplitude grid hash to constants
+  captured from the PRE-FIX code at 17bacba before the first edit. This is the assertion that
+  matters: a POI layout is never replicated (ARCHITECTURE.md §4), so an island that quietly moved
+  would read as a new seed rather than a bug. `agent baseline` cannot cover it — the check does not
+  exist at that revision and neither do the APIs it drives — so the hashes were captured first with
+  a throwaway probe and pasted in as `GOLDEN_*` constants. They are a tripwire, not a specification
+  of the layout: a later task that deliberately moves worldgen output re-captures them and says so
+  (D-160);
+- speed — 1.43x measured per-sample against a >=1.3x floor, the same floor `noise_reuse_check.gd` uses.
+
+Neighbours, all `failures=0` with 0 undeclared `ERROR:` lines (F-021): `poi_check`, `biome_check`,
+`resource_scatter_check`, `noise_reuse_check`, `terrain_check`, and `check_determinism` reproducing
+`terrain_hash c20eed19b44270a1` — byte-identical to the value F-241 recorded, which is what proves
+the `continent()` refactor did not shift the surface. A 512 px `terrain_map_render.gd` render is
+MD5-identical to the same render at HEAD (`agent baseline --keep`, both
+`935d428be6c214fe4b5e9c71c35d2510`).
+
+**Swept for siblings.** Grepped every `.gd` for bare `height(`/`continent(`/`moisture(`/`biome_at(`/
+`terrain_amplitudes(`, and for `FastNoiseLite.new()`/`RandomNumberGenerator.new()` under `world/`,
+`autoload/`, `systems/`. **Every shipped call site is now set-backed** — the four above were the
+complete list; this class is closed, not thinned. The bare calls left in `tools/` are deliberate:
+`terrain_check`, `biome_check`, `chunk_stream_check`, `chunk_seam_shot`, `resource_scatter_check`,
+`seed_sync_check` and `check_determinism` re-derive terrain from the bare API precisely so they are
+an INDEPENDENT witness to the shipped path, and `noise_reuse_check` needs it as its slow-path
+control — converting them would make each check agree with the code by construction. The per-point
+`RandomNumberGenerator.new()` in `poi_map`/`resource_scatter` is the deterministic per-point seeding
+those generators are built on, not a rebuild to eliminate.
+
+**Found by that sweep, filed not fixed: F-271** — `ResourceScatter._placement_at()` classifies a
+point's biome from `height()` while `BiomeMap.biome_at()` classifies from `continent()`, so the same
+world point resolves to two different biomes depending on which system asks. That is D-144's
+circularity still live in one caller, and `resource_scatter_check.gd` re-derives it the same wrong
+way, so the check cannot catch it. Out of this claim because the fix moves scatter output on every
+seed — a content decision, not a performance one.
+
+Full spec: `docs/SPECS.md` F-261.
 
 ### F-255 · A-020's `flooded cellar entrance` is the same shape F-237 just cut from A-016 — an entrance implying an interior/underground space the 2D heightfield cannot back — **fixed**
 

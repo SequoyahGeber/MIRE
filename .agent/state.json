@@ -12,33 +12,15 @@
       "task": "F-258",
       "token": null
     },
-    "docs/DECISIONS.md": {
-      "agent": "lm",
-      "at": "2026-08-20T05:09:05+00:00",
-      "task": "F-261",
-      "token": null
-    },
-    "docs/DELEGATION.md": {
-      "agent": "lm",
-      "at": "2026-08-20T05:09:05+00:00",
-      "task": "F-261",
-      "token": null
-    },
-    "docs/FINDINGS.md": {
-      "agent": "lm",
-      "at": "2026-08-20T05:09:05+00:00",
-      "task": "F-261",
-      "token": null
-    },
-    "docs/SPECS.md": {
-      "agent": "lm",
-      "at": "2026-08-20T05:09:05+00:00",
-      "task": "F-261",
-      "token": null
-    },
     "systems/cycle/cycle_service.gd": {
       "agent": "lp",
       "at": "2026-08-20T05:13:34+00:00",
+      "task": "F-258",
+      "token": null
+    },
+    "systems/health/player_health.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T05:15:50+00:00",
       "task": "F-258",
       "token": null
     },
@@ -48,34 +30,16 @@
       "task": "F-258",
       "token": null
     },
-    "tools/terrain_map_render.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T05:09:05+00:00",
-      "task": "F-261",
+    "tools/run_reseed_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T05:16:11+00:00",
+      "task": "F-258",
       "token": null
     },
-    "tools/worldgen_noise_reuse_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T05:09:05+00:00",
-      "task": "F-261",
-      "token": null
-    },
-    "world/gen/biome_map.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T05:09:05+00:00",
-      "task": "F-261",
-      "token": null
-    },
-    "world/gen/island_heightmap.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T05:09:05+00:00",
-      "task": "F-261",
-      "token": null
-    },
-    "world/gen/poi_map.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T05:09:05+00:00",
-      "task": "F-261",
+    "tools/run_restart_net_check.gd": {
+      "agent": "lc1",
+      "at": "2026-08-20T05:17:22+00:00",
+      "task": "F-243-review",
       "token": null
     },
     "world/gen/procedural_world.gd": {
@@ -84,14 +48,30 @@
       "task": "F-258",
       "token": null
     },
-    "world/gen/resource_scatter.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T05:09:05+00:00",
-      "task": "F-261",
+    "world/gen/resource_scatter_field.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T05:19:59+00:00",
+      "task": "F-258",
+      "token": null
+    },
+    "world/mire/mire_grid.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T05:16:11+00:00",
+      "task": "F-258",
       "token": null
     }
   },
   "in_flight": {
+    "F-243-review": {
+      "agent": "lc1",
+      "dispatched": true,
+      "files": [
+        "tools/run_restart_net_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-20T05:14:59+00:00",
+      "token": null
+    },
     "F-258": {
       "agent": "lp",
       "dispatched": true,
@@ -100,35 +80,14 @@
         "autoload/world_delta_log.gd",
         "systems/cycle/cycle_service.gd",
         "systems/loot/chest.gd",
-        "world/gen/procedural_world.gd"
+        "world/gen/procedural_world.gd",
+        "systems/health/player_health.gd",
+        "tools/run_reseed_check.gd",
+        "world/mire/mire_grid.gd",
+        "world/gen/resource_scatter_field.gd"
       ],
       "notes": [],
       "started": "2026-08-20T05:10:03+00:00",
-      "token": null
-    },
-    "F-261": {
-      "agent": "lm",
-      "dispatched": true,
-      "files": [
-        "world/gen/biome_map.gd",
-        "world/gen/island_heightmap.gd",
-        "world/gen/poi_map.gd",
-        "world/gen/resource_scatter.gd",
-        "tools/terrain_map_render.gd",
-        "tools/worldgen_noise_reuse_check.gd",
-        "docs/SPECS.md",
-        "docs/FINDINGS.md",
-        "docs/DECISIONS.md",
-        "docs/DELEGATION.md"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-20T05:10:19+00:00",
-          "by": "lm",
-          "text": "Captured pre-fix golden hashes at HEAD before editing worldgen, via a throwaway tools/_tmp_f261_baseline.gd: POI site fingerprints, biome/moisture grid hashes and terrain_amplitudes hashes for 5 seeds. They are now constants in tools/worldgen_noise_reuse_check.gd, so the refactor is proved layout-identical rather than merely self-consistent \u2014 agent baseline cannot help here because the new check script does not exist at HEAD."
-        }
-      ],
-      "started": "2026-08-20T05:07:49+00:00",
       "token": null
     }
   },
@@ -1353,23 +1312,23 @@
     },
     "docs/DECISIONS.md": {
       "agent": "lm",
-      "at": "2026-08-20T05:07:23+00:00",
-      "hash": "7d62b1ea758078306b85355b92871ca8601774a421609ffd727c51a75160d939",
-      "task": "F-255",
+      "at": "2026-08-20T05:20:01+00:00",
+      "hash": "1209944b7092aac8ad3070ffeab857b24355fcb70af82a0b837721748fb95d77",
+      "task": "F-261",
       "token": null
     },
     "docs/DELEGATION.md": {
       "agent": "lm",
-      "at": "2026-08-20T05:07:23+00:00",
-      "hash": "a3b6f85d93311b9f7884a7cdc9ba8c3e135284ce9600ed1d47e56443bab24e66",
-      "task": "F-255",
+      "at": "2026-08-20T05:20:01+00:00",
+      "hash": "fb6ee0ba4ef6a4ac587112ecfb7fef59c9fb4c5d388b07432374d4094121982e",
+      "task": "F-261",
       "token": null
     },
     "docs/FINDINGS.md": {
       "agent": "lm",
-      "at": "2026-08-20T05:07:23+00:00",
-      "hash": "4aabf2615976457c4eafcdb4c3c915e404096227101886d273e7a6da8a6e9125",
-      "task": "F-255",
+      "at": "2026-08-20T05:20:01+00:00",
+      "hash": "aa550855534a426df0a9b3bb764baae86430ed592e9392ec9d3436f8548300b0",
+      "task": "F-261",
       "token": null
     },
     "docs/NEXT.md": {
@@ -1388,9 +1347,9 @@
     },
     "docs/SPECS.md": {
       "agent": "lm",
-      "at": "2026-08-20T05:07:23+00:00",
-      "hash": "7ba8549cf62c0c768cdb75ced78902a974c7c2a74eea55a5bdbf4a13f471e329",
-      "task": "F-255",
+      "at": "2026-08-20T05:20:01+00:00",
+      "hash": "d94926273da419d94f6eed37ba1ab6382db5e6b58a254e59b940363b4040f5ca",
+      "task": "F-261",
       "token": null
     },
     "entities/player/player_camera.gd": {
@@ -2423,11 +2382,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
     "tools/terrain_map_render.gd": {
-      "agent": "yarrow21",
-      "at": "2026-08-19T17:58:40+00:00",
-      "hash": "c3637f25d8c818ffe1f9e15c706bd3178bb7451a4344999dcf599a8ac6661b39",
-      "task": "4.14",
-      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
+      "agent": "lm",
+      "at": "2026-08-20T05:20:01+00:00",
+      "hash": "9c84961d8ca696b04a6d7937957c4037cb7a21c584e5f223047411087301c2f2",
+      "task": "F-261",
+      "token": null
     },
     "tools/terrain_map_render.gd.uid": {
       "agent": "slate17",
@@ -2498,6 +2457,13 @@
       "hash": "4d4299254f5252858817edc349a44eb5775e3334b054aaa9de7320b622554643",
       "task": "4.16",
       "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
+    },
+    "tools/worldgen_noise_reuse_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-20T05:20:01+00:00",
+      "hash": "e61a0aaa857141e92efccc9de59a18ebd077c66705d7e8eaec3571b6f7f610d6",
+      "task": "F-261",
+      "token": null
     },
     "ui/attunement/attunement_ui.gd": {
       "agent": "lm",
@@ -2647,17 +2613,17 @@
       "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
     "world/gen/biome_map.gd": {
-      "agent": "slate17",
-      "at": "2026-08-19T17:36:48+00:00",
-      "hash": "dcc075248374bf0d5f26ff6202c1c3d9462273a09daa06d114e62d5fa1e94874",
-      "task": "4.13",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+      "agent": "lm",
+      "at": "2026-08-20T05:20:01+00:00",
+      "hash": "62db0d06a5cb7820a8ce2c9a6a3e21fe910c9ef88fe8dd5be71dcca1808bdf74",
+      "task": "F-261",
+      "token": null
     },
     "world/gen/island_heightmap.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T19:52:07+00:00",
-      "hash": "0e1dd3a27e5f504e4227782d9f00a74dbe1049cd2648a87b2ea4ddc923dc5624",
-      "task": "F-241",
+      "agent": "lm",
+      "at": "2026-08-20T05:20:01+00:00",
+      "hash": "3178d46bb037c4157a9ea8997c89198be600b26c80591cdeca9dbaf4feace392",
+      "task": "F-261",
       "token": null
     },
     "world/gen/layouts/hollowmere.json": {
@@ -2675,11 +2641,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
     "world/gen/poi_map.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-19T22:12:05+00:00",
-      "hash": "bcd85940039490c10149209ece0ea0ad9076ffadb521854cffc9d40558eafee4",
-      "task": "4.16",
-      "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
+      "agent": "lm",
+      "at": "2026-08-20T05:20:01+00:00",
+      "hash": "41d732b5a2923d5b9079a1ac1d4c5344054172d37f25bd80055d6f13a497aece",
+      "task": "F-261",
+      "token": null
     },
     "world/gen/procedural_world.gd": {
       "agent": "hollow7",
@@ -2689,10 +2655,10 @@
       "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
     "world/gen/resource_scatter.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T22:08:33+00:00",
-      "hash": "b76661fe001d8b25c64130a3af82bc9fcafaf7cd87a22ba95c07365965b6112a",
-      "task": "F-252",
+      "agent": "lm",
+      "at": "2026-08-20T05:20:01+00:00",
+      "hash": "40dd568212d26f8fdba5596f7bf4a0be59930dac50b2543c74235bdcfbbd29a1",
+      "task": "F-261",
       "token": null
     },
     "world/gen/resource_scatter_field.gd": {
@@ -6283,7 +6249,7 @@
       "est": "0.5",
       "milestone": "Findings",
       "review_of": "F-243",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T1",
       "title": "Review F-243 @ 6d7e756 \u2014 judge the commit, file findings, no edits"
     },
@@ -6460,9 +6426,11 @@
       "title": "docs/DECISIONS.md has no atomic number allocator, so two agents took D-146 within minutes of each other"
     },
     "F-261": {
+      "done_at": "2026-08-20T05:20:01+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "poi_map.gd's dart-throwing loop and BiomeMap.moisture() are the same per-sample noise-rebuild shape F-241/F-252 just fixed, with no NoiseSet-equivalent yet"
     },

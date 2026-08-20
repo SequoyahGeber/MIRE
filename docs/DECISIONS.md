@@ -4793,3 +4793,51 @@ gone. Cutting is the fallback, not the default.
 **Would change my mind:** D-142's erosion spike coming back hash-equal does NOT reopen this — it
 changes how the surface is shaped, not whether there is anything under it. Only adopting 3D density
 would, and D-142 rejects that outright rather than gating it.
+
+### D-160 · 2026-08-20 · F-261: a noise set NESTS the layer below it rather than folding into it, and every worldgen refactor proves itself against captured pre-fix hashes
+F-261 closed the third and last of the per-sample noise-rebuild sites F-241 named, and it had to
+settle two things the earlier two instalments never faced.
+
+**The set nests, it does not fold.** F-261 offered both: give `BiomeMap` its own small
+`NoiseSet`-alike, or fold the moisture field into `IslandHeightmap.NoiseSet` "since both are keyed by
+the same `world_seed`". Nesting won. `BiomeMap.NoiseSet` holds `island: IslandHeightmap.NoiseSet`
+plus `moisture_noise`, and `make_noise_set(world_seed, island_set := null)` ADOPTS a caller's
+existing island set instead of building a second one.
+
+The reason is the dependency direction. `biome_map.gd` preloads `island_heightmap.gd`; nothing goes
+the other way, and D-144 is explicitly about keeping the terrain layer ignorant of the biome layer
+above it — the continent is the biome-INDEPENDENT half of the surface, which is the only thing that
+stops biome selection being circular. A moisture field living inside the heightmap's own set would
+put a field in the terrain layer that only the layer above it reads, which is exactly the inversion
+D-144 exists to prevent, for a saving of one object. Nesting also buys something folding could not:
+`ResourceScatter.placements_for_chunk()` already built an island set for its heights, and adoption
+lets it resolve moisture through the same chunk-scoped set rather than paying twice.
+
+**A `*_from_set` path never gets its own copy of the formula.** `continent()`/`continent_from_set()`
+funnel through one private `_continent_with()`, `moisture()`/`moisture_from_set()` through
+`_moisture_with()`, exactly as `height()` already delegates to `height_from_set()`. Two bodies that
+must agree forever will not; the only durable version of "bit-identical" is one body. Where
+delegation would have COST something — `continent()` routed through a full `make_noise_set()` would
+construct the detail and ridge fields it never reads — the shared body takes the four fields as
+parameters instead, so the bare path stays exactly as cheap as it was.
+
+**A worldgen refactor proves itself against captured pre-fix hashes, not against itself.** The
+danger in this class of change is not that the new path disagrees with the old API — both live in
+the same file and a self-consistency check passes trivially. It is that the whole file now generates
+a DIFFERENT island, silently, and nothing downstream can tell: a POI layout is never replicated
+(ARCHITECTURE.md §4), so a moved Wellspring reads as a new seed, not as a bug.
+
+`agent baseline` cannot cover this, and the reason generalises: a check written as part of a fix does
+not exist at the revision you want to compare against, and neither do the APIs it drives. So the
+procedure is to capture the hashes FIRST, from a throwaway probe run against the untouched tree,
+before the first edit — and then paste them into the new check as constants.
+`tools/worldgen_noise_reuse_check.gd`'s `GOLDEN_POI`/`GOLDEN_BIOME`/`GOLDEN_AMPLITUDES` are that
+capture, taken at 17bacba across five seeds. They are a tripwire, not a specification: a later task
+that deliberately changes worldgen output re-captures them and says so in its own close-out.
+
+**Would change my mind:** a caller appearing that needs moisture WITHOUT any island sample would
+argue for splitting the moisture field back out of `BiomeMap.NoiseSet` into a set of its own — today
+every caller wants both, so one object is right. On the golden hashes: if a worldgen tuning pass
+ever has to re-capture them more than about twice, they are being used as a specification rather
+than a tripwire and should be narrowed to POI placement alone, which is the part that actually
+cannot self-detect drift.

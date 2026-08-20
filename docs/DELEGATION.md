@@ -75,6 +75,70 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-261 resolved: `BiomeMap.NoiseSet` closes the last three per-sample noise rebuilds — POI placement, moisture, and the terrain render (lm)
+
+**Claim:** `world/gen/biome_map.gd`, `world/gen/island_heightmap.gd`, `world/gen/poi_map.gd`,
+`world/gen/resource_scatter.gd`, `tools/terrain_map_render.gd`, `tools/worldgen_noise_reuse_check.gd`
+(new).
+
+**The API a worldgen caller now builds against.** F-241 gave the heightmap a `NoiseSet`; F-261 gives
+the biome layer its own, which NESTS the heightmap's rather than folding into it (**D-160**):
+
+```gdscript
+# One set per island / per chunk / per render — NEVER one per sample, and never shared
+# across WorkerThreadPool tasks (a FastNoiseLite is not safe to sample from two at once).
+var set: BiomeMap.NoiseSet = BiomeMap.make_noise_set(world_seed)
+BiomeMap.moisture_from_set(x, z, set)                                  # no world_seed — the set is enough
+BiomeMap.biome_at_from_set(x, z, set, world_seed, biome_defs)
+BiomeMap.terrain_amplitudes_from_set(x, z, set, world_seed, biome_defs)
+BiomeMap.amplitudes_for(biome_id, biome_defs)                          # for a caller holding a resolved id
+IslandHeightmap.continent_from_set(x, z, set.island, world_seed)       # set.island is the F-241 set
+IslandHeightmap.height_from_set(x, z, set.island, world_seed)          # reach through for heights
+
+# Already holding an IslandHeightmap.NoiseSet? Hand it over — it is ADOPTED, not copied,
+# so a chunk still constructs each field exactly once (resource_scatter.gd does this).
+var set2: BiomeMap.NoiseSet = BiomeMap.make_noise_set(world_seed, existing_island_set)
+```
+
+Every `*_from_set` call is bit-identical to its bare sibling; bare and set-backed paths funnel
+through one shared private body so they cannot drift. The bare `moisture()`/`continent()`/
+`biome_at()` calls remain and are still correct — they are the right choice for a one-shot sample and
+for a check script that wants an independent witness.
+
+**Threaded through:** `PoiMap.sites_for_island()` builds one set for the whole island (the dart loop
+was rebuilding every field six times per dart, up to 720 darts per def); `_slope_at()` now takes the
+already-computed centre height instead of resampling it, and an accepted dart resolves its biome once
+instead of twice. `resource_scatter.gd` adopts its existing island set. `tools/terrain_map_render.gd`
+builds one set per render and resolves each pixel's biome once — at 1024 px it was constructing on
+the order of 22 million `FastNoiseLite` fields per image.
+
+**The world did not move, and that is the assertion that matters.** A POI layout is never replicated
+(ARCHITECTURE.md §4), so a silently-shifted island reads as a new seed, not as a bug.
+`tools/worldgen_noise_reuse_check.gd` carries `GOLDEN_POI`/`GOLDEN_BIOME`/`GOLDEN_AMPLITUDES` —
+hashes captured from the pre-fix code at 17bacba, **before the first edit**, because `agent baseline`
+cannot run a check that does not exist at that revision. **If your task deliberately changes worldgen
+output, re-capture those constants the same way and say so in your close-out** (D-160): they are a
+tripwire, not a specification.
+
+**Verified:**
+
+```bash
+.agent/bin/agent godot --script tools/worldgen_noise_reuse_check.gd   # WORLDGEN_NOISE_REUSE failures=0
+```
+
+Equivalence (361 samples x 5 seeds), adoption, layout identity against the golden hashes, and a
+1.43x measured per-sample speedup against a >=1.3x floor. Neighbours all at `failures=0` with 0
+undeclared `ERROR:` lines: `poi_check`, `biome_check`, `resource_scatter_check`, `noise_reuse_check`,
+`terrain_check`, and `check_determinism` reproducing `terrain_hash c20eed19b44270a1` byte-identically
+to F-241's recorded value. A 512 px terrain render is MD5-identical to the same render at HEAD.
+Full spec: `docs/SPECS.md` F-261.
+
+**Found broken along the way, filed not fixed:** `ResourceScatter._placement_at()` classifies a
+point's biome from `height()` while `BiomeMap.biome_at()` classifies from `continent()`, so the same
+world point resolves to two different biomes depending on which system asks — D-144's circularity,
+still live in one caller, and `resource_scatter_check.gd` re-derives it the same wrong way so it
+cannot catch it. Out of this claim because the fix moves scatter output on every seed. **F-271.**
+
 ### 2026-08-19 — F-255 resolved: asset scoping against the 2D heightfield is now a check, not a habit — `tools/asset_scope_check.gd` (lm)
 
 **The check the next asset batch runs:**
@@ -597,9 +661,12 @@ authored into all three shipped biomes, `world/gen/biome_map.gd` rewired to the 
 IslandHeightmap.continent(x, z, seed)                  # biome-INDEPENDENT landmass; what decides biomes
 IslandHeightmap.height(x, z, seed, detail_amp, ridge_amp)   # the surface; amplitudes come from the biome
 IslandHeightmap.ridge_mask(continent_height)           # how much ridged layer applies at that height
-# Sampling MANY points per seed (F-241, 2026-08-19)? Build once, reuse — see the F-241 entry in
-# 'Current state' above: IslandHeightmap.make_noise_set(seed) -> NoiseSet, then
-# IslandHeightmap.height_from_set(x, z, set, seed, detail_amp, ridge_amp), bit-identical to height().
+# Sampling MANY points per seed? Build one set, reuse it — every bare call below rebuilds every
+# FastNoiseLite field it touches. See the F-241 and F-261 entries in 'Current state' above:
+#   IslandHeightmap.make_noise_set(seed) -> NoiseSet    # heights only
+#   BiomeMap.make_noise_set(seed[, island_set]) -> NoiseSet   # heights + moisture; adopts island_set
+# then height_from_set / continent_from_set / moisture_from_set / biome_at_from_set /
+# terrain_amplitudes_from_set — each bit-identical to its bare sibling.
 BiomeMap.terrain_amplitudes(x, z, seed, defs) -> Vector2    # (detail, ridge) for a point, (1,1) if no def
 ```
 
