@@ -75,6 +75,73 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-20 — F-282 resolved: a `cycle_advanced` consumer must not read the modifier stack from its own listener (lp)
+
+**Rule: D-174.** Read it before adding any subscriber that both listens to an event and reads state
+another subscriber of that same event produces. Short form: react to the **second** event, and be
+idempotent, so autoload order stops being a gameplay input.
+
+**1. The seam that was wrong, and is the template for the next one.** `EventBus` invokes listeners in
+append order and autoloads append in `project.godot` order, so `WaveSpawner` (line 44) asked
+`CycleModifierService.has_modifier(&"the_hunt")` before `CycleModifierService` (line 61) had drawn
+that Cycle's modifier. The Hunt's elite entered one Cycle late, every time. The fixed shape:
+
+```gdscript
+# _ready()
+EVENT_BUS.subscribe_cycle_advanced(_on_cycle_advanced)          # the trigger
+EVENT_BUS.subscribe_cycle_modifier_drawn(_on_cycle_modifier_drawn)  # the completed action
+
+func _on_cycle_advanced(cycle: int) -> void:
+    _current_cycle = cycle
+    _maybe_spawn_hunt_elite(cycle)
+
+func _on_cycle_modifier_drawn(_modifier_id: StringName, cycle: int) -> void:
+    _maybe_spawn_hunt_elite(cycle)     # the draw's OWN cycle, not the cache
+
+func _maybe_spawn_hunt_elite(cycle: int = -1) -> void:
+    var target_cycle: int = cycle if cycle >= 0 else _current_cycle
+    if _hunt_spawned_cycle == target_cycle:
+        return                          # whichever event got here first already acted
+    ...
+    _hunt_spawned_cycle = target_cycle   # stamped only on a spawn that SUCCEEDED
+```
+
+Three details are load-bearing and none are obvious:
+
+- **Both seams, not just the draw.** A modifier is drawn once per run; The Hunt spawns an elite every
+  Cycle for the rest of it. Moving the trigger to `cycle_modifier_drawn` alone would have traded "one
+  Cycle late" for "exactly one elite, ever".
+- **Stamp with the event's `cycle`, never `_current_cycle`.** If the autoloads are ever reordered,
+  the drawn handler runs before the cache is refreshed and a cached stamp would be off by one.
+- **Stamp only on success.** A Cycle whose spawn was refused (no `EnemyWorld`, no ambient spawn
+  point) stays unstamped, so the other seam can still satisfy it a moment later.
+
+**2. `WaveSpawner`'s API, as it now stands.** `_maybe_spawn_hunt_elite(cycle: int = -1)` — the `-1`
+sentinel reads the cached `_current_cycle` (a GDScript default cannot be a method call, same
+convention as `cycle_count_multiplier(cycle: int = -1)`). New state `_hunt_spawned_cycle: int = 0`,
+where `0` means "never this run" because a Cycle is always >= 1; `host_reset_for_new_run()` clears it
+to **0, not 1** — a restarted run is Cycle 1 again, and a stamp left at 1 would swallow its first
+spawn. `_exit_tree()` now drops `cycle_advanced` (missing since task 5.9) as well as the new
+`cycle_modifier_drawn`.
+
+**3. `cycle_modifier_drawn` has its first shipped subscriber.** Until now only
+`tools/cycle_modifier_net_check.gd` listened, so `core/events/event_bus.gd`'s header claim that this
+is "the seam for a REACTION to a draw" was untested in shipped code. It holds. On a client both this
+and `cycle_advanced` are re-derived from `WorldDeltaLog` and may land in either order — the
+idempotence above is what makes that safe, though `WaveSpawner`'s own `_owns_wave_director()` gate
+means a client never reaches the spawn anyway.
+
+**4. Proving a fan-out bug needs the real fan-out — pokes cannot see it.**
+`tools/cycle_modifier_effects_check.gd` had proved this exact feature green while it was broken,
+because `_check_the_hunt()` forced `_active_ids` and called `_maybe_spawn_hunt_elite()` by hand. Its
+new `_check_the_hunt_on_the_drawn_cycle()` phase is the pattern to copy: narrow
+`CycleModifierService._defs` to the one def under test, set `CycleService._current_cycle` to
+`min_cycle - 1`, call the real `host_advance_cycle()` once, assert on `live_count()` deltas. Note the
+`min_cycle` step — `the_hunt` is `min_cycle = 6`, so a check advancing from Cycle 1 draws nothing and
+passes vacuously. **Nine other `tools/` checks still poke handlers directly on events with two or
+three subscribers each: the list is in F-310, and `tools/run_identity_check.gd:113` shows the
+one-line conversion (`session.emit_signal(...)`).**
+
 ### 2026-08-20 — F-279/F-298/F-308 resolved: a run restart teleports each peer CLIENT-side, and the two `run_restarted` handlers that gated on authority now split (lp)
 
 **Rule: D-173.** Two things the next task in this area builds against.

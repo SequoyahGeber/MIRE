@@ -7113,3 +7113,18 @@ Notes along the way:
 Files: `systems/health/player_health.gd`, `tools/run_restart_spawn_check.gd`, `autoload/inventory_service.gd`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `tools/run_restart_spawn_check.gd.uid`
 
 Commit at time of writing: `f1969cf`
+
+---
+
+### DONE · F-282 · lp · 2026-08-20T15:52:40+00:00
+
+**The Hunt spawns one Cycle late because WaveSpawner reads the modifier stack before CycleModifierService draws**
+
+The Hunt's elite now enters on the Cycle the_hunt is DRAWN. WaveSpawner subscribes cycle_modifier_drawn alongside cycle_advanced; _maybe_spawn_hunt_elite(cycle) is idempotent per Cycle via _hunt_spawned_cycle, so whichever event first sees the_hunt in the stack spawns and the other is a no-op — order-independent in BOTH directions, which keeps the per-Cycle cadence the_hunt.tres specifies instead of cutting it to one elite ever (D-174). Proof: tools/cycle_modifier_effects_check.gd's new _check_the_hunt_on_the_drawn_cycle() drives a REAL CycleService.host_advance_cycle() to min_cycle 6 and asserts live_count deltas. Against HEAD's wave_spawner.gd (copied aside, not git stash) it FAILS 'the elite is on the ground on the SAME Cycle the_hunt was drawn' — the finding's exact symptom; restored -> CYCLE_MODIFIER_EFFECTS_CHECK failures=0 with 0 undeclared ERROR lines. Also green: cycle_modifier_check 0, wave_spawner_cycle_net_check 0 (two processes), wave_spawner_check 0. Sweep of every shipped EVENT_BUS.subscribe_* handler: WaveSpawner was the only violator, the class is now empty in shipped code; the nine tools/ checks that poke handlers instead of driving producers are filed as F-310 with the call-site list. Spec block written in docs/SPECS.md (none existed); seam in docs/DELEGATION.md Current state.
+
+Notes along the way:
+- Fix: WaveSpawner now also subscribes cycle_modifier_drawn and _maybe_spawn_hunt_elite() takes the reporting Cycle and is idempotent per Cycle via _hunt_spawned_cycle. Order-independent in BOTH directions, so it survives an autoload reorder. Pre-fix proof: effects check's new phase fails 'the elite is on the ground on the SAME Cycle' against HEAD's wave_spawner.gd (copy-aside, not git stash); post-fix failures=0.
+
+Files: `systems/waves/wave_spawner.gd`, `tools/cycle_modifier_effects_check.gd`, `docs/SPECS.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `b41c15b`

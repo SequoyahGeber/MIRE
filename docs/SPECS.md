@@ -10601,3 +10601,116 @@ to `git show HEAD:` and reproducing it there. It is F-038's recurrence, filed as
 **Resolved** — see `docs/FINDINGS.md`. Closes F-298 as well.
 
 ---
+## F-282 · The Hunt spawns one Cycle late because WaveSpawner reads the modifier stack before CycleModifierService draws
+
+**Claim set:** `systems/waves/wave_spawner.gd`, `tools/cycle_modifier_effects_check.gd`. No
+`.tscn`/`.tres`, no `project.godot`, no autoload registration, no new RPC. **Authority: HOST** —
+`wave_spawner.gd`'s existing `ARCHITECTURE.md` §2.2 row ("Day/night, wave director, Cycle state,
+active modifiers") is unchanged; nothing here crosses the wire that did not already, and both events
+involved already re-derive themselves on a client through `WorldDeltaLog` (F-250, F-254).
+
+**The shape of the bug — one event, two subscribers, and registration order deciding gameplay.**
+`EventBus` appends listeners and invokes them in append order (`core/events/event_bus.gd:159-172`),
+and autoloads `_ready()` in `project.godot` order. WaveSpawner is line 44; CycleModifierService is
+line 61. So on every `cycle_advanced` fan-out, `WaveSpawner._on_cycle_advanced()` ran *first* and
+asked `has_modifier(&"the_hunt")` before `CycleModifierService._on_cycle_advanced()` had drawn that
+Cycle's modifier at all. On the Cycle The Hunt is drawn, the answer is `false`. No elite entered
+until Cycle N+1's fan-out — one whole Cycle after the modifier's own announcement text told the
+player a roaming elite had entered the island. `content/cycle_modifiers/the_hunt.tres` is
+`min_cycle = 6`, so this is late-run, which is where a missing elite is least likely to be noticed
+and most likely to be read as "the modifier does nothing".
+
+**The fix: react to the completed draw, and be idempotent per Cycle so both seams can drive it.**
+`wave_spawner.gd` now subscribes `EventBus.subscribe_cycle_modifier_drawn()` alongside its existing
+`cycle_advanced` subscription, and `_maybe_spawn_hunt_elite(cycle: int = -1)` takes the Cycle the
+caller is reporting and stamps `_hunt_spawned_cycle` on a spawn that actually succeeded. Whichever of
+the two events first observes `the_hunt` in the stack spawns the elite; the other is a no-op.
+
+Three properties fall out of that, and all three are the reason this is not simply "move the call":
+
+- **Order-independent in both directions.** Reversing the autoload order, or drawing through the
+  `modifiers` console command outside any Cycle advance, produces the same one elite. The finding
+  asked for exactly this — "guarantee draw-before-consumer ordering *without relying on autoload
+  order*" — and a fix that only moved the trigger to `cycle_modifier_drawn` would have swapped one
+  order dependence for another.
+- **The per-Cycle cadence survives.** `the_hunt.tres`'s own text is "WaveSpawner checks ... on every
+  Cycle advance and spawns one tracking elite", i.e. one elite per Cycle for the rest of the run, not
+  one elite ever. Driving the spawn *only* off the draw would have silently cut that to a single
+  elite, since a modifier draws at most once per run.
+- **The stamp is `cycle`, not `_current_cycle`.** The draw's own argument is used, so the dedupe is
+  correct even when this listener runs before `_on_cycle_advanced()` has refreshed the cache — which
+  is precisely the reordering case above.
+
+`_hunt_spawned_cycle` is cleared to 0 (not 1) in `host_reset_for_new_run()` and is listed in that
+method's own enumeration: a restarted run starts at Cycle 1 again, so a stamp left at 1 would swallow
+the next run's Cycle-1 spawn outright — F-259/F-281's class, caught here before it shipped.
+
+While in the file, `_exit_tree()` gained the `cycle_advanced` unsubscribe it had been missing since
+task 5.9 alongside the new `cycle_modifier_drawn` one. Neither leaked (`EventBus._prune_invalid()`
+collects a freed node's Callables), but every sibling subscriber in the codebase drops what it takes.
+
+**Why the existing check could not have caught it, and what replaced that.**
+`tools/cycle_modifier_effects_check.gd`'s `_check_the_hunt()` forced `_active_ids` by hand and then
+called `_maybe_spawn_hunt_elite()` by hand. It proved the spawn *mechanism* and could never prove the
+*wiring*, because the real `cycle_advanced` fan-out — the only place the ordering exists — was never
+run. The new `_check_the_hunt_on_the_drawn_cycle()` phase pokes nothing: it narrows
+`CycleModifierService._defs` to `the_hunt` alone (the private-state injection
+`tools/cycle_modifier_seed_check.gd` already uses on that exact field), sets
+`CycleService._current_cycle` to `min_cycle - 1` so one real `host_advance_cycle()` lands on the
+first Cycle where `weight_at()` is positive, and then asserts what a player would see. Advancing from
+Cycle 1 instead would have drawn nothing and passed vacuously.
+
+**Pre-fix proof, both ways.** `systems/waves/wave_spawner.gd` restored to `git show HEAD:` (copied
+aside first — not `git stash`, which would have swept concurrent lanes' uncommitted work, F-275's
+constraint) and the new phase run against it: `FAIL: F-282: the elite is on the ground on the SAME
+Cycle the_hunt was drawn`, the finding's exact symptom, while `the_hunt was drawn by that advance`
+still PASSes. `agent baseline` cannot do this — the phase does not exist at HEAD, the same constraint
+F-261/F-275 hit. File restored, same check → `failures=0`.
+
+**The sweep — "a listener that reads state a sibling listener of the same event produces".**
+`grep -rn --include=*.gd EVENT_BUS.subscribe_` over everything outside `tools/`, then every shipped
+handler body read for a cross-read:
+
+- **`cycle_advanced`** — four shipped subscribers. `CycleModifierService` is the producer;
+  `WaveSpawner` was the only consumer and is fixed here. `Wellspring._on_cycle_advanced()` only arms
+  recorruption and reads no modifier state. `SteamStats`/`RichPresenceService` are immune by
+  construction: both **poll** `current_cycle()` on a 2 s timer rather than subscribing (their headers
+  say so — a F-250 workaround left in place deliberately).
+- **`wellspring_capped`** — `CycleModifierService._on_wellspring_capped()` sets `_drought_cleared`,
+  making it a producer here too. The only reader of `drought_active()` is `Harvestable`, on demand at
+  harvest time, not from a sibling listener. `MireGrid._on_wellspring_capped()` reads no modifier
+  state.
+- **`run_restarted`** — 22 subscribing files. `CycleModifierService` clears the stack; no other
+  handler reads it. `CycleService.host_restart_run()`'s ordering guarantees are already documented
+  and already tested (F-258, F-278, F-279).
+- **`salvage_banked` / `run_wiped` / `run_extracted`** — the same hazard, **already solved
+  correctly**: `DefeatHud`/`ExtractionHud` do not read the banked total out of their `run_wiped` /
+  `run_extracted` handler; they render a "Tallying Salvage…" placeholder and fill it from the later
+  `salvage_banked` event behind a `_salvage_known` latch. That is this fix's pattern — second event
+  plus idempotence — arrived at independently, which is why it is now **D-174** rather than a
+  per-file comment.
+
+Every other shipped modifier consumer (`Chest`, `Harvestable`, `MireGrid`, `Wellspring`, `DayNight`,
+`Enemy`) reads `has_modifier()` **on demand at the moment the effect matters**, never from an event
+handler, so none of them can be early. The class is empty in shipped code.
+
+The *verification* half of the class is not: the check that missed F-282 missed it by calling a
+consumer's handler directly instead of driving the producer, and nine other `tools/` checks do the
+same thing to events with two or three independent subscribers each. Filed as **F-310** with the
+exact list rather than fixed here — it is ten checks' worth of engine-lock time, and
+`tools/run_identity_check.gd` already shows the remedy (`session.emit_signal(&"run_player_rebound",
+…)`, real fan-out) so the next task has a worked example waiting.
+
+**Verify:**
+```
+.agent/bin/agent godot --script tools/cycle_modifier_effects_check.gd   # failures=0, 0 undeclared ERROR
+.agent/bin/agent godot --script tools/cycle_modifier_check.gd           # failures=0
+.agent/bin/agent godot --script tools/wave_spawner_cycle_net_check.gd   # failures=0, two real processes
+.agent/bin/agent godot --script tools/wave_spawner_check.gd             # failures=0, 0 ERROR lines
+```
+Graded per SPECS standing rule 4: `grep 'ERROR:' | grep -vE 'Parameter "material" is null' | wc -l`
+→ 0 on the effects check, whose verdict line declares that one pattern (a tinted `tusker`'s dummy
+renderer noise) and nothing else. `wave_spawner_check` printed **zero** ERROR lines on this run —
+F-305's intermittent six did not appear, and nothing here touches that path.
+
+---

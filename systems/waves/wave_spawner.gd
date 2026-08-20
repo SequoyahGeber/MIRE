@@ -84,6 +84,11 @@ var _current_cycle: int = 1
 ## retarget branch below the same way.
 var _hunt_elite: Node3D
 var _hunt_retarget_elapsed: float = 0.0
+## F-282: the last Cycle an elite was actually spawned on, so the two seams that now drive
+## `_maybe_spawn_hunt_elite()` (`cycle_advanced` and `cycle_modifier_drawn`) produce exactly one
+## elite per Cycle between them, in whichever order they arrive. 0 means "never this run" — a Cycle
+## is always >= 1 — so `host_reset_for_new_run()` clears it back to 0, not to 1.
+var _hunt_spawned_cycle: int = 0
 
 
 func _ready() -> void:
@@ -92,6 +97,10 @@ func _ready() -> void:
 	# Binding rules is not conditional on a day cycle existing — the wave sizes are still the sizes.
 	_bind_rules()
 	EVENT_BUS.subscribe_cycle_advanced(_on_cycle_advanced)
+	# F-282: the elite must enter on the Cycle `the_hunt` is DRAWN, not the one after. See
+	# `_maybe_spawn_hunt_elite()`'s header for why both seams drive it and why that is not a
+	# double spawn.
+	EVENT_BUS.subscribe_cycle_modifier_drawn(_on_cycle_modifier_drawn)
 	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
 	var day_night: Node = get_node_or_null(^"/root/DayNight")
 	if day_night == null:
@@ -124,7 +133,14 @@ func _on_rule_changed(id: StringName, new_value: float) -> void:
 		per_player = roundi(new_value)
 
 
+## F-282 added the `cycle_modifier_drawn` line and, while here, the `cycle_advanced` one this file
+## had subscribed since task 5.9 and never dropped. `EventBus._prune_invalid()` collects a freed
+## node's Callables either way, so neither was leaking; an autoload leaving the tree and leaving a
+## live subscription behind is still the shape F-131-class "it works, so nobody looked" bugs come
+## from, and `CycleModifierService`/`Wellspring` both already unsubscribe every event they take.
 func _exit_tree() -> void:
+	EVENT_BUS.unsubscribe_cycle_advanced(_on_cycle_advanced)
+	EVENT_BUS.unsubscribe_cycle_modifier_drawn(_on_cycle_modifier_drawn)
 	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
 
 
@@ -152,6 +168,9 @@ func _on_run_restarted() -> void:
 ##     `_refill_daytime()`, and repopulating the field is EnemyWorld's own ambient loop's job on its
 ##     own cadence — the restart's job is only to stop suppressing it. EnemyWorld's own
 ##     `run_restarted` subscriber has already cleared the bodies either way, in either order.
+##   · `_hunt_spawned_cycle` (F-282) — the per-Cycle spawn stamp. The new run starts at Cycle 1
+##     again, so a stamp left at 1 from the ended run would swallow the restarted run's own Cycle-1
+##     Hunt spawn outright.
 ##   · `_hunt_elite` — dropped rather than freed; `EnemyWorld._on_run_restarted()` frees the body
 ##     itself, and holding the ended run's ref alive here is what would make `_physics_process`
 ##     retarget a corpse.
@@ -162,6 +181,7 @@ func host_reset_for_new_run() -> void:
 	_current_cycle = 1
 	_hunt_elite = null
 	_hunt_retarget_elapsed = 0.0
+	_hunt_spawned_cycle = 0
 	if _night_active:
 		_night_active = false
 		var world: Node = get_node_or_null(^"/root/EnemyWorld")
@@ -187,14 +207,51 @@ func _seed_for_run() -> int:
 
 func _on_cycle_advanced(cycle: int) -> void:
 	_current_cycle = cycle
-	_maybe_spawn_hunt_elite()
+	_maybe_spawn_hunt_elite(cycle)
+
+
+## F-282, the other half of the spawn trigger. `CycleModifierService` draws from its OWN
+## `cycle_advanced` listener, and `project.godot` registers WaveSpawner (line 44) ahead of
+## CycleModifierService (line 61), so on the Cycle `the_hunt` is drawn this file's `cycle_advanced`
+## listener has already run and seen an empty stack — the elite did not enter until the NEXT Cycle.
+## Reacting to the completed draw as well closes that gap, and is exactly the role
+## `core/events/event_bus.gd`'s own `subscribe_cycle_modifier_drawn()` header reserves for this
+## event ("a REACTION to a draw", not a way to build up the stack).
+##
+## Deliberately NOT filtered on `modifier_id == &"the_hunt"`: `_maybe_spawn_hunt_elite()` already
+## asks `has_modifier()`, which is the question that actually matters, and routing every draw through
+## the same idempotent call means a Cycle that draws something else while the Hunt is already stacked
+## behaves identically to one that draws nothing.
+##
+## The draw's own `cycle` is used rather than `_current_cycle`, so the dedupe stamp is right even if
+## this listener runs BEFORE `_on_cycle_advanced()` has updated the cache — which is precisely what
+## happens if anyone ever reorders these two autoloads.
+func _on_cycle_modifier_drawn(_modifier_id: StringName, cycle: int) -> void:
+	_maybe_spawn_hunt_elite(cycle)
 
 
 ## Host-only, self-guarded like every other spawn path here. A Cycle where the level has no ambient
 ## spawn point to start from spawns nothing, the same silent no-op `host_start_wave()` already accepts
 ## for the identical reason.
-func _maybe_spawn_hunt_elite() -> void:
+##
+## F-282: driven by BOTH `cycle_advanced` and `cycle_modifier_drawn`, and idempotent per Cycle so
+## that is one elite, not two. `_hunt_spawned_cycle` is stamped only on a spawn that actually
+## succeeded, so a Cycle whose spawn was refused (no EnemyWorld, no ambient spawn point) can still be
+## satisfied by the other seam a moment later instead of being marked done.
+##
+## Ordering is no longer assumed in either direction, which is the whole point — whichever of the two
+## events first observes `the_hunt` in the stack spawns, and the other becomes a no-op. That holds if
+## the autoload order is reversed, if a console command drives `host_draw_modifier()` outside a Cycle
+## advance, and on a client (where both events are re-derived from `WorldDeltaLog` and can land in
+## either order) — though a client never gets past `_owns_wave_director()` here anyway.
+##
+## [param cycle] is the Cycle the caller is reporting; -1 reads the cached `_current_cycle`, the same
+## sentinel-not-a-method-call default `cycle_count_multiplier()` uses for the same GDScript reason.
+func _maybe_spawn_hunt_elite(cycle: int = -1) -> void:
 	if not _owns_wave_director():
+		return
+	var target_cycle: int = cycle if cycle >= 0 else _current_cycle
+	if _hunt_spawned_cycle == target_cycle:
 		return
 	var modifiers: Node = get_node_or_null(^"/root/CycleModifierService")
 	if modifiers == null or not bool(modifiers.call(&"has_modifier", &"the_hunt")):
@@ -209,6 +266,7 @@ func _maybe_spawn_hunt_elite() -> void:
 	var elite: Node3D = world.call(&"host_spawn", HUNT_ELITE_ENEMY_ID, origin) as Node3D
 	if elite == null:
 		return
+	_hunt_spawned_cycle = target_cycle
 	_hunt_elite = elite
 	_hunt_retarget_elapsed = HUNT_RETARGET_INTERVAL_SEC
 	_retarget_hunt_elite()

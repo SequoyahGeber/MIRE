@@ -425,6 +425,80 @@ func _check_the_hunt() -> void:
 	powerup_service.call("host_clear", 2)
 	_clear_modifiers()
 
+	await _check_the_hunt_on_the_drawn_cycle()
+
+
+# ── F-282: the_hunt on the Cycle it is DRAWN, through a real advance ─────────────────────────────
+
+
+## Everything above forces `_active_ids` and calls `_maybe_spawn_hunt_elite()` by hand, which is what
+## let F-282 ship: the elite spawned when poked, but never on the Cycle the draw actually happened,
+## because `project.godot` registers WaveSpawner (line 44) before CycleModifierService (line 61) and
+## `EventBus` invokes `cycle_advanced` listeners in registration order. This phase pokes nothing —
+## it drives `CycleService.host_advance_cycle()` and asserts what the player would see.
+##
+## The deck is narrowed to `the_hunt` alone (`_defs`, the same private-state injection
+## tools/cycle_modifier_seed_check.gd uses on this exact field) so the draw is forced rather than
+## rolled, and `CycleService._current_cycle` is set to `min_cycle - 1` so the single advance lands on
+## the first Cycle where `weight_at()` is positive — `the_hunt` is `min_cycle = 6`, so a check that
+## advanced from 1 would draw nothing at all and pass vacuously.
+func _check_the_hunt_on_the_drawn_cycle() -> void:
+	print("\n== F-282: the_hunt's elite enters on the Cycle it is drawn, not the next one ==")
+	var cycle_service: Node = root.get_node_or_null(^"CycleService")
+	check(cycle_service != null, "CycleService autoload exists")
+	if cycle_service == null:
+		return
+
+	var hunt_def: Resource = cycle_modifier_service.call("def_for", &"the_hunt")
+	check(hunt_def != null, "the_hunt def is loaded")
+	if hunt_def == null:
+		return
+
+	# `_defs` is a Dictionary — a reference — so `defs_before` keeps pointing at the real deck while
+	# `_defs` is swapped for the one-card one, and restoring it is a plain re-`set()`.
+	var defs_before: Dictionary = cycle_modifier_service.get(&"_defs")
+	cycle_modifier_service.set(&"_defs", {&"the_hunt": hunt_def})
+	_clear_modifiers()
+	wave_spawner.set(&"_hunt_elite", null)
+	wave_spawner.set(&"_hunt_spawned_cycle", 0)
+
+	var target_cycle: int = int(hunt_def.get(&"min_cycle"))
+	cycle_service.set(&"_current_cycle", target_cycle - 1)
+	var live_before: int = int(enemy_world.call("live_count"))
+	var advanced_to: int = int(cycle_service.call("host_advance_cycle"))
+	await process_frame
+
+	check(advanced_to == target_cycle,
+		"a real advance reached Cycle %d (got %d)" % [target_cycle, advanced_to])
+	check(bool(cycle_modifier_service.call("has_modifier", &"the_hunt")),
+		"the_hunt was drawn by that advance")
+	var elite: Node3D = wave_spawner.get(&"_hunt_elite")
+	check(elite != null and is_instance_valid(elite),
+		"F-282: the elite is on the ground on the SAME Cycle the_hunt was drawn")
+	check(int(wave_spawner.get(&"_hunt_spawned_cycle")) == target_cycle,
+		"the spawn is stamped against Cycle %d" % target_cycle)
+	check(int(enemy_world.call("live_count")) == live_before + 1,
+		"exactly ONE elite entered — both cycle_advanced and cycle_modifier_drawn drive the same "
+		+ ("idempotent spawn (live %d -> %d)"
+			% [live_before, int(enemy_world.call("live_count"))]))
+
+	# The same Cycle firing again (a re-announced advance, a console `host_draw_modifier`) must not
+	# add a second elite; the NEXT Cycle must. Both are the per-Cycle stamp, from opposite sides.
+	wave_spawner.call(&"_maybe_spawn_hunt_elite", target_cycle)
+	check(int(enemy_world.call("live_count")) == live_before + 1,
+		"a repeat trigger on the same Cycle spawns nothing more")
+	cycle_service.call("host_advance_cycle")
+	await process_frame
+	check(int(enemy_world.call("live_count")) == live_before + 2,
+		"the next Cycle spawns the next elite, so the per-Cycle cadence the_hunt.tres describes "
+		+ "is intact")
+
+	# Elites left parented on purpose — see the teardown note in `_check_the_hunt()` above.
+	cycle_modifier_service.set(&"_defs", defs_before)
+	_clear_modifiers()
+	wave_spawner.set(&"_hunt_elite", null)
+	wave_spawner.set(&"_hunt_spawned_cycle", 0)
+
 
 func check(condition: bool, description: String) -> void:
 	if condition:
