@@ -39,6 +39,10 @@ extends CanvasLayer
 ##   `menu_is_modal() -> bool`           true keeps the screen BELOW this one visible behind the
 ##                                       shade — confirm dialogs read as "over" the screen they
 ##                                       interrupt, not as a separate place you travelled to.
+##   `menu_dims_background() -> bool`    false suppresses the full-screen shade. The shade exists to
+##                                       separate a PANEL from whatever is behind it; a screen that
+##                                       fills the frame with its own art (the title, over the live
+##                                       island) would only be dimming its own backdrop.
 ##
 ## ## The Esc/B contract, and why it is safe to land before the screens are migrated
 ##
@@ -143,7 +147,13 @@ func push(screen: Control, free_on_pop: bool = true) -> void:
 		if screen.get_parent() != null:
 			screen.get_parent().remove_child(screen)
 		_screen_host.add_child(screen)
-	screen.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# `set_anchors_and_offsets_preset`, NOT `set_anchors_preset`. The latter sets the anchors and
+	# then rewrites the OFFSETS to preserve the control's current rect — so a screen that is still
+	# 0×0 when it enters the tree (every screen, since `_ready()` runs on `add_child` before any
+	# layout pass) comes out anchored full-rect with offsets of -1280,-720 and a computed size of
+	# exactly zero. It builds, it reports visible, it passes every behavioural test, and it draws
+	# nothing anchored to its bottom edge. This one call is the difference.
+	screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	screen.visible = true
 	# Newest child draws last, so a modal is painted over the screen it interrupts.
 	_screen_host.move_child(screen, _screen_host.get_child_count() - 1)
@@ -281,8 +291,11 @@ func toast_count() -> int:
 ## contract, the stack is just a second, better-behaved member of it.
 func _sync_open_state() -> void:
 	var open: bool = not _stack.is_empty()
-	_shade.visible = open
 	_screen_host.visible = open
+	# The shade follows the TOP screen's wish, not merely whether anything is open: the title screen
+	# is a full-bleed screen over a live 3D backdrop and dimming it would be dimming its own art,
+	# while a confirm dialog pushed on top of that same title must bring the shade back.
+	_shade.visible = open and _screen_dims_background(_stack.back())
 
 	if open:
 		if not is_in_group(BLOCKING_UI_GROUP):
@@ -330,6 +343,12 @@ func _screen_is_modal(screen: Control) -> bool:
 	if screen.has_method("menu_is_modal"):
 		return bool(screen.call("menu_is_modal"))
 	return false
+
+
+func _screen_dims_background(screen: Control) -> bool:
+	if screen != null and screen.has_method("menu_dims_background"):
+		return bool(screen.call("menu_dims_background"))
+	return true
 
 
 func _build() -> void:
