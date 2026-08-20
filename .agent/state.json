@@ -78,6 +78,24 @@
       "task": "7.4",
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
+    "tools/salvage_bench_check.gd": {
+      "agent": "reed31c598",
+      "at": "2026-08-20T21:06:54+00:00",
+      "task": "7.4",
+      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
+    },
+    "tools/settings_screen_check.gd": {
+      "agent": "reed31c598",
+      "at": "2026-08-20T21:03:46+00:00",
+      "task": "7.4",
+      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
+    },
+    "tools/spawn_ground_check.gd": {
+      "agent": "slate8b6811",
+      "at": "2026-08-20T21:05:44+00:00",
+      "task": "F-324",
+      "token": "CLAUDE_CODE_SESSION_ID:dcf988c3-f81b-4177-97bb-d3f72dcb1927"
+    },
     "tools/title_check.gd": {
       "agent": "reed31c598",
       "at": "2026-08-20T20:36:01+00:00",
@@ -114,6 +132,18 @@
       "task": "7.4",
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
+    "ui/frontend/salvage_bench_screen.gd": {
+      "agent": "reed31c598",
+      "at": "2026-08-20T21:06:54+00:00",
+      "task": "7.4",
+      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
+    },
+    "ui/frontend/settings_screen.gd": {
+      "agent": "reed31c598",
+      "at": "2026-08-20T21:03:46+00:00",
+      "task": "7.4",
+      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
+    },
     "ui/frontend/title_screen.gd": {
       "agent": "reed31c598",
       "at": "2026-08-20T20:36:01+00:00",
@@ -137,6 +167,18 @@
       "at": "2026-08-20T20:27:08+00:00",
       "task": "7.4",
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
+    },
+    "world/chunk/chunk_streamer.gd": {
+      "agent": "slate8b6811",
+      "at": "2026-08-20T21:05:44+00:00",
+      "task": "F-324",
+      "token": "CLAUDE_CODE_SESSION_ID:dcf988c3-f81b-4177-97bb-d3f72dcb1927"
+    },
+    "world/gen/procedural_world.gd": {
+      "agent": "slate8b6811",
+      "at": "2026-08-20T21:05:44+00:00",
+      "task": "F-324",
+      "token": "CLAUDE_CODE_SESSION_ID:dcf988c3-f81b-4177-97bb-d3f72dcb1927"
     }
   },
   "in_flight": {
@@ -165,11 +207,26 @@
         "assets/audit/menu/dock_1080p.png",
         "assets/audit/menu/dock_deck.png",
         "ui/menu/pause_menu.gd",
-        "tools/pause_menu_check.gd"
+        "tools/pause_menu_check.gd",
+        "ui/frontend/settings_screen.gd",
+        "tools/settings_screen_check.gd",
+        "ui/frontend/salvage_bench_screen.gd",
+        "tools/salvage_bench_check.gd"
       ],
       "notes": [],
       "started": "2026-08-20T20:27:08+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
+    },
+    "F-324": {
+      "agent": "slate8b6811",
+      "files": [
+        "world/chunk/chunk_streamer.gd",
+        "world/gen/procedural_world.gd",
+        "tools/spawn_ground_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-20T21:05:44+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:dcf988c3-f81b-4177-97bb-d3f72dcb1927"
     }
   },
   "recent": {
@@ -1301,7 +1358,7 @@
       "token": null
     }
   },
-  "rev": 110,
+  "rev": 125,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -5628,6 +5685,34 @@
       "status": "todo",
       "tier": "F",
       "title": "Every gameplay HUD autoload builds and shows itself unconditionally, so they all draw over the front end"
+    },
+    "F-321": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`AttunementUI` is the third mandatory panel and it still has F-307's soft-lock \u2014 it closes only on an accepted pick, so an orphaned client can never leave it"
+    },
+    "F-322": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`NetSession.end_session()` has no shipped caller, so every real host quit costs its clients a 19-second rejoin ladder and the wrong end-of-session message"
+    },
+    "F-323": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "SteamLobby has no member-metadata API, so the dock cannot show ready flags or per-player colours"
+    },
+    "F-324": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Players spawn before the terrain under them has a collider, and fall through the island"
     }
   },
   "version": 1

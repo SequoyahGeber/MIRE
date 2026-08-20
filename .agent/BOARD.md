@@ -8,13 +8,14 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
-| **7.4** UI/UX polish pass, consistent visual language, transitions | reed31c598 | 2026-08-20 20:27 | `ui/theme/mire_theme.gd`, `tools/menu_kit_check.gd`, `ui/menu_stack.gd`, `tools/menu_stack_check.gd`, `ui/frontend/backdrop.gd`, `ui/frontend/title_screen.gd`, `ui/frontend/frontend.gd`, `levels/frontend.tscn`, `tools/title_check.gd`, `tools/title_render.gd`, `assets/audit/menu/title_1080p_creep000.png`, `assets/audit/menu/title_1080p_creep042.png`, `assets/audit/menu/title_1080p_creep150.png`, `assets/audit/menu/title_deck_creep000.png`, `assets/audit/menu/title_deck_creep042.png`, `assets/audit/menu/title_deck_creep150.png`, `ui/frontend/island_minimap.gd`, `ui/frontend/expedition_screen.gd`, `tools/expedition_check.gd`, `assets/audit/menu/dock_1080p.png`, `assets/audit/menu/dock_deck.png`, `ui/menu/pause_menu.gd`, `tools/pause_menu_check.gd` |
+| **7.4** UI/UX polish pass, consistent visual language, transitions | reed31c598 | 2026-08-20 20:27 | `ui/theme/mire_theme.gd`, `tools/menu_kit_check.gd`, `ui/menu_stack.gd`, `tools/menu_stack_check.gd`, `ui/frontend/backdrop.gd`, `ui/frontend/title_screen.gd`, `ui/frontend/frontend.gd`, `levels/frontend.tscn`, `tools/title_check.gd`, `tools/title_render.gd`, `assets/audit/menu/title_1080p_creep000.png`, `assets/audit/menu/title_1080p_creep042.png`, `assets/audit/menu/title_1080p_creep150.png`, `assets/audit/menu/title_deck_creep000.png`, `assets/audit/menu/title_deck_creep042.png`, `assets/audit/menu/title_deck_creep150.png`, `ui/frontend/island_minimap.gd`, `ui/frontend/expedition_screen.gd`, `tools/expedition_check.gd`, `assets/audit/menu/dock_1080p.png`, `assets/audit/menu/dock_deck.png`, `ui/menu/pause_menu.gd`, `tools/pause_menu_check.gd`, `ui/frontend/settings_screen.gd`, `tools/settings_screen_check.gd`, `ui/frontend/salvage_bench_screen.gd`, `tools/salvage_bench_check.gd` |
+| **F-324** Players spawn before the terrain under them has a collider, and fall through the island | slate8b6811 | 2026-08-20 21:05 | `world/chunk/chunk_streamer.gd`, `world/gen/procedural_world.gd`, `tools/spawn_ground_check.gd` |
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `█████████░` 295/328 | 33 |
+| Findings | `█████████░` 295/332 | 37 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -81,6 +82,10 @@
 | ⬜ | **F-317** A full headless boot of the shipped procedural map prints ~10 dummy-renderer RID ERROR lines from chunk mesh upload — windowed boots are clean, but the '0 stray ERROR lines' full-boot bar needs a headless caveat | todo |
 | ⬜ | **F-319** Every multi-site POI badly under-places on the 118 m island, and the Wellspring's 180 m spacing makes a second one geometrically impossible | todo |
 | ⬜ | **F-320** Every gameplay HUD autoload builds and shows itself unconditionally, so they all draw over the front end | todo |
+| ⬜ | **F-321** `AttunementUI` is the third mandatory panel and it still has F-307's soft-lock — it closes only on an accepted pick, so an orphaned client can never leave it | todo |
+| ⬜ | **F-322** `NetSession.end_session()` has no shipped caller, so every real host quit costs its clients a 19-second rejoin ladder and the wrong end-of-session message | todo |
+| ⬜ | **F-323** SteamLobby has no member-metadata API, so the dock cannot show ready flags or per-player colours | todo |
+| 🔵 | **F-324** Players spawn before the terrain under them has a collider, and fall through the island | in_flight |
 
 ## Done
 

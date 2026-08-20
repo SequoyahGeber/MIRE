@@ -7386,3 +7386,29 @@ Notes along the way:
 Files: `tools/terminal_focus_check.gd`, `ui/hud/defeat_hud.gd`, `ui/hud/extraction_hud.gd`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `1cf1bdd`
+
+---
+
+### HANDOFF · F-236 · galef95fa6 · 2026-08-20T21:08:37+00:00
+
+**Three shipped systems have essentially no content in them: the Cycle Modifier deck holds 1 card, the unlock tree 1 unlock, the ranged rack 1 weapon**
+
+Killed mid-task, not stopped cleanly: LP was authoring this when the director shut every background process down on Sequoyah's instruction, so the lane never got to write its own handoff.
+
+WHAT IS ON DISK, UNCOMMITTED AND UNTRACKED (7 files):
+  content/ranged_weapons/{crossbow,longbow,sling}.tres   — the rack goes 1 -> 4 with short_bow
+  content/items/{bolt,crossbow,longbow,sling}.tres       — their item defs
+LP had also claimed content/recipes/{bolt,crossbow,longbow,sling}.tres but wrote nothing there, so
+the recipes do not exist yet — the three new weapons are currently uncraftable.
+
+NONE OF IT IS VERIFIED. It was killed before any check ran, so treat every one of these as a draft:
+read each .tres against the real schema before trusting it, and do not assume the four item defs
+match the three weapon defs (the counts already do not line up — four items, three weapons).
+
+NEXT: verify or rewrite what is there, author the four recipes, run the content check, and only then
+close this row. F-236's other two rows (cycle_modifiers/, unlocks/) are already fixed; ranged_weapons/
+is the last one, which is why this finding is still open.
+
+D-073's one-at-a-time rule applies — these want a design decision each, not a template fill.
+
+Commit at time of writing: `cc66c13`
