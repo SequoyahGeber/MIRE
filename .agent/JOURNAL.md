@@ -6923,3 +6923,10 @@ Notes along the way:
 Files: `systems/cycle/cycle_service.gd`, `autoload/command_service.gd`, `tools/run_started_hook_check.gd`, `tools/hook_events_check.gd`, `docs/SPECS.md`, `docs/DECISIONS.md`, `docs/COMMANDS.md`, `docs/DELEGATION.md`, `docs/FINDINGS.md`
 
 Commit at time of writing: `5b0c704`
+
+  POST-SHIP NOTE · F-280 · lp
+      `agent ship` swept another lane's uncommitted docs/FINDINGS.md hunk into 94c1a5f: F-299
+      (reserved-lane flag) was sitting unstaged in the shared doc when this task started. F-267's
+      known recurrence — `agent finding` appends atomically and ship has no per-hunk staging, so an
+      append-only shared doc cannot be committed selectively. Leaving it uncommitted would be worse
+      (uncommitted work is invisible to Codex). Flagged rather than silently shipped, same as F-261.
