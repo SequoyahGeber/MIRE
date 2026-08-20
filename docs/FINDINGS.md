@@ -1363,43 +1363,6 @@ F-293 predicts, and a third data point that the suite has drifted.
 
 ---
 
-### F-315 · A drain chain silently stops draining the moment it re-executes for a harness change
-
-**Area:** tooling · **Severity:** high · **Found:** 2026-08-20 by galef95fa6
-
-`agent saturate <LANE>` with no ids is *drain mode*: `drain = not wanted`, which is what makes the
-chain call `_wait_for_new_orders()` and pick up orders written after it started. §4 calls an idle
-lane the failure mode, and drain mode is the whole defence against it.
-
-Between tasks the chain re-executes itself if the harness changed on disk:
-
-    argv = [sys.executable, os.path.abspath(__file__), "saturate", lane] + queue
-    os.execv(sys.executable, argv)
-
-It passes the remaining queue as explicit task ids. In the new process `wanted` is therefore
-non-empty, so `drain = not wanted` is **False** — the chain that re-executed is no longer a drain
-chain. It works its list, never looks for new orders, and exits into an idle lane.
-
-Observed live 2026-08-20. A detached drain chain on LP re-executed after a harness edit, then ran
-F-281 and moved to F-283. Two p1 orders written four minutes after the re-exec — F-301 (island ships
-with crafting unreachable) and F-307 (non-host peer soft-locked when the host leaves) — were invisible
-to it, and with LP at 92% of its weekly the remaining budget was about to go to doc cleanups instead.
-The priority ranking added in F-314 could not help either, because the queue had already been fixed
-as a list.
-
-It is silent in both directions: the log line says "re-executing this chain with the new code", which
-reads as continuity, and nothing afterwards says the chain stopped watching for orders. The lane just
-goes quiet at the end of a list that no longer grows.
-
-Fix: preserve the mode across the re-exec — pass an explicit `--drain` marker when `drain` is true
-and honour it alongside the ids, so a re-executed drain chain is still a drain chain. The ids must
-still be passed; they are the un-run remainder.
-
-Verify: `python3 tools/harness_check.py`, with a case asserting that the re-exec argv a drain chain
-builds parses back into drain mode, and that a chain started with explicit ids does not.
-
----
-
 ### F-316 · docs/SPECS.md carries two different F-226 blocks under one heading, and nothing checks SPECS for duplicate headings
 
 **Area:** tooling · **Severity:** low · **Found:** 2026-08-20 by lp
@@ -1455,6 +1418,62 @@ because a merge was outside its claim.
 ---
 
 ## Resolved
+
+### F-315 · A drain chain silently stops draining the moment it re-executes for a harness change — **fixed**
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-20 by galef95fa6
+
+`agent saturate <LANE>` with no ids is *drain mode*: `drain = not wanted`, which is what makes the
+chain call `_wait_for_new_orders()` and pick up orders written after it started. §4 calls an idle
+lane the failure mode, and drain mode is the whole defence against it.
+
+Between tasks the chain re-executes itself if the harness changed on disk:
+
+    argv = [sys.executable, os.path.abspath(__file__), "saturate", lane] + queue
+    os.execv(sys.executable, argv)
+
+It passes the remaining queue as explicit task ids. In the new process `wanted` is therefore
+non-empty, so `drain = not wanted` is **False** — the chain that re-executed is no longer a drain
+chain. It works its list, never looks for new orders, and exits into an idle lane.
+
+Observed live 2026-08-20. A detached drain chain on LP re-executed after a harness edit, then ran
+F-281 and moved to F-283. Two p1 orders written four minutes after the re-exec — F-301 (island ships
+with crafting unreachable) and F-307 (non-host peer soft-locked when the host leaves) — were invisible
+to it, and with LP at 92% of its weekly the remaining budget was about to go to doc cleanups instead.
+The priority ranking added in F-314 could not help either, because the queue had already been fixed
+as a list.
+
+It is silent in both directions: the log line says "re-executing this chain with the new code", which
+reads as continuity, and nothing afterwards says the chain stopped watching for orders. The lane just
+goes quiet at the end of a list that no longer grows.
+
+Fix: preserve the mode across the re-exec — pass an explicit `--drain` marker when `drain` is true
+and honour it alongside the ids, so a re-executed drain chain is still a drain chain. The ids must
+still be passed; they are the un-run remainder.
+
+Verify: `python3 tools/harness_check.py`, with a case asserting that the re-exec argv a drain chain
+builds parses back into drain mode, and that a chain started with explicit ids does not.
+
+---
+
+**Resolved 2026-08-20 by galef95fa6.** The re-exec now carries an explicit `--drain` marker, and `drain` is `no ids at all OR --drain`. Both
+halves moved out of the loop into `_saturate_drain_mode()` and `_saturate_reexec_argv()` so the
+behaviour is testable — the defect was invisible at the call site, because a chain that has lost
+drain mode looks exactly like a chain finishing its list.
+
+Nothing else passes `--drain`, so a director naming ids by hand still gets only those ids. A chain
+with no ids drains as it always did.
+
+Verified: `python3 tools/harness_check.py` → 37/37, including the new case "a drain chain is still
+draining after it re-executes for a harness change (F-315)", which builds the argv a drain chain
+re-executes with, feeds it back through the same parse, and asserts the un-run remainder survives,
+that drain mode survives with it, that `--watch` and `--slot N` are not dropped, and that a
+hand-named list does *not* become a drain chain. `python3 tools/agent_state_lock_check.py` → 6/6.
+
+Live consequence this session, before the fix: a detached LP drain chain re-executed at 20:12, and
+the two p1 orders written at 20:20 — F-301 and F-307 — were invisible to it. Worked around by
+queueing a second chain behind the `saturate-lp` lock, which is the 8-hour serialisation point, so
+the replacement started the instant the stale chain ended and the lane never went idle.
 
 ### F-283 · Three D-numbers each head two different decisions — D-050, D-144 and D-150 are live collisions from before F-260's allocator, and no check detects them — **fixed**
 
