@@ -971,28 +971,6 @@ task rather than a one-line guard.
 
 ---
 
-### F-299 · Lanes need a reserved-for-human flag: LM's weekly must last a week of manual sessions, and 'remember not to route there' is not a mechanism
-
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-20 by bram1
-
-The use-it-or-lose-it quota rule assumes nobody else is spending a lane's window, so an idle lane is
-waste. That assumption breaks when Sequoyah spends an account himself: on 2026-08-19 he reserved LM
-(Claude Max) because its weekly has to stretch across a week of his own chat sessions, and LC1 with
-it, releasing LP and LC2 to be burned freely by delegation.
-
-Encoding that as director discipline would last exactly one session — the next director reads the
-use-it-or-lose-it rule, sees an idle lane with quota, and dispatches. So `quota_block` now refuses any
-lane carrying `manual: true`, with a message naming the reason and how to lift it, and the flag is in
-DEFAULT_LANES so a rebuilt lanes.json keeps the policy. Verified: `lane run LM --dry-run` is refused,
-LP still dispatches. LM's six queued orders were re-routed to LP (three plain, three review-and-fix
-against their own commits), leaving LM's queue empty rather than parked-with-work, which is the state
-that tempts a restart.
-
-Everything built for LM stays built — three Opus slots, automatic second-pass reviews, keepers — and
-comes back by clearing one flag.
-
----
-
 ### F-300 · autoexec's documented loadout half survives exactly one run — it is boot-only and F-243 wipes the inventory
 
 **Area:** commands/system · **Severity:** low · **Found:** 2026-08-20 by lp
@@ -1502,6 +1480,41 @@ F-293 predicts, and a third data point that the suite has drifted.
 ---
 
 ## Resolved
+
+### F-299 · Lanes need a reserved-for-human flag: LM's weekly must last a week of manual sessions, and 'remember not to route there' is not a mechanism — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-20 by bram1
+
+The use-it-or-lose-it quota rule assumes nobody else is spending a lane's window, so an idle lane is
+waste. That assumption breaks when Sequoyah spends an account himself: on 2026-08-19 he reserved LM
+(Claude Max) because its weekly has to stretch across a week of his own chat sessions, and LC1 with
+it, releasing LP and LC2 to be burned freely by delegation.
+
+Encoding that as director discipline would last exactly one session — the next director reads the
+use-it-or-lose-it rule, sees an idle lane with quota, and dispatches. So `quota_block` now refuses any
+lane carrying `manual: true`, with a message naming the reason and how to lift it, and the flag is in
+DEFAULT_LANES so a rebuilt lanes.json keeps the policy. Verified: `lane run LM --dry-run` is refused,
+LP still dispatches. LM's six queued orders were re-routed to LP (three plain, three review-and-fix
+against their own commits), leaving LM's queue empty rather than parked-with-work, which is the state
+that tempts a restart.
+
+Everything built for LM stays built — three Opus slots, automatic second-pass reviews, keepers — and
+comes back by clearing one flag.
+
+---
+
+**Resolved 2026-08-20 by galef95fa6.** Already implemented and verified when it was filed; only the section move was missing, which is why
+`board` hid it while `brief` still offered it (F-131's exact shape).
+
+Confirmed at HEAD from the director seat: `.agent/bin/lane` carries `"manual": True` in
+`DEFAULT_LANES` (line 127) so a rebuilt `lanes.json` keeps the policy, and `quota_block()` (line 993)
+refuses any lane carrying the flag before it reaches the busy check or the reserve check, naming the
+reason and the one command that lifts it (`agent lane-release <LANE>`). `.agent/lanes.json` shows
+`manual: true` live on both LM and LC1, and neither has a queued order.
+
+The policy this encodes is Sequoyah's, 2026-08-19: LM's weekly must stretch across a week of his own
+manual sessions, so an idle LM is not waste — the one case the use-it-or-lose-it rule does not cover.
+Everything built for LM (three Opus slots, second-pass reviews, keepers) is intact behind the flag.
 
 ### F-313 · agent collect crashes on any journal header whose timestamp has no timezone — **fixed**
 
