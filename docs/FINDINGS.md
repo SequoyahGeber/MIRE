@@ -600,54 +600,6 @@ it should have been.
 
 ---
 
-### F-274 · `BiomeMap.terrain_amplitudes()` has no shipped caller — every biome's authored `detail_amplitude`/`ridge_amplitude` is dead, and only the audit render applies them
-
-**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-20 by lm during F-261's review
-
-D-144 (the 4.13 terrain one at `docs/DECISIONS.md:1236` — that number is double-allocated, see
-F-260) splits `IslandHeightmap` in two precisely so a biome can shape its own ground: `continent()`
-decides where the biomes are, `height(x, z, seed, detail_amplitude, ridge_amplitude)` decides how
-rough each one is, and the decision's own closing line is "**`BiomeMap.terrain_amplitudes()` is the
-seam that hands a point's pair to the heightmap**". The seam was built. Nothing shipped crosses it.
-
-`world/chunk/chunk_mesher.gd:150` — the only thing in the repo that meshes terrain — calls
-`Heightmap.height_from_set(world_x, world_z, noise_set, world_seed)` and takes the 1.0/1.0 defaults.
-So do `world/gen/poi_map.gd:153` (a site's `position.y`) and `world/gen/resource_scatter.gd:120` (a
-placement's `position.y`). Grep the repo for `terrain_amplitudes`/`terrain_amplitudes_from_set`/
-`amplitudes_for` and every caller is under `tools/`: `terrain_map_render.gd` and
-`worldgen_noise_reuse_check.gd`. Not one shipped file passes an amplitude pair to `height()`.
-
-Three concrete consequences:
-
-1. `content/biomes/shore.tres` (`detail_amplitude = 0.35`, `ridge_amplitude = 0.0`),
-   `grassland.tres` (0.8 / 0.25) and `forest.tres` (1.15 / 0.9) affect nothing the game builds.
-   Editing those six numbers changes the audit PNG and nothing else. D-144's one-line summary — "a
-   shore is flat because its multipliers are near zero" — is not true of the shipped world; every
-   biome gets the same biome-blind surface, and a shore is flat only where the continent is flat.
-2. `tools/terrain_map_render.gd` *does* apply them, so the PNGs under `assets/audit/terrain/` are the
-   only place that terrain exists. The tool whose whole purpose is "see the island before judging
-   it" (`docs/DELEGATION.md`) renders a surface the chunk mesher will never produce — rougher in
-   forest, flatter on shore — so terrain tuning judged from those images is judged from the wrong
-   image. This is the F-212 shape: a documented mechanism nobody went back and wired.
-3. It compounds **F-271**. That finding's premise is that "since 4.13 `height()` DEPENDS on which
-   biome a point is in" — today it does not, which is why `resource_scatter.gd` classifying from
-   `height()` has not visibly diverged from `biome_at()`'s `continent()` yet. Wiring this seam is
-   exactly what turns F-271 from a doc-conformance problem into a live one, so the two want fixing
-   in the same task.
-
-**Not introduced by F-261**, which preserved the behaviour exactly — its render is MD5-identical and
-its new public `amplitudes_for(id, defs)` is the seam's own half. This was found because F-261's
-review traced every caller of the amplitude API and the shipped list came back empty.
-
-**What fixing it takes:** the chunk mesher resolving each vertex's biome and passing that pair. That
-is per-vertex biome resolution on the hot meshing path, so it wants F-261's `BiomeMap.NoiseSet` —
-one per chunk task, the same shape `chunk_mesher.gd:144` already builds — and it moves every existing
-seed's surface, so `check_determinism`'s `terrain_hash` and `worldgen_noise_reuse_check`'s `GOLDEN_*`
-constants must be re-captured alongside it and the move recorded (D-160). A terrain-content task, not
-a review edit, which is why it is filed rather than fixed here.
-
----
-
 ### F-275 · F-243's terminal restart buttons are unreachable from a bare controller
 
 **Area:** UI/input · **Severity:** high · **Found:** 2026-08-20 by lc1
@@ -655,16 +607,6 @@ a review edit, which is why it is filed rather than fixed here.
 At commit `6d7e756`, `ui/hud/defeat_hud.gd:92-105` and `ui/hud/extraction_hud.gd:123-137` reveal the terminal overlay and make the mouse visible, but neither calls `grab_focus()` on the enabled restart button built at `defeat_hud.gd:216-221` / `extraction_hud.gd:380-385`. A host using only keyboard/gamepad therefore has no focused control for `ui_accept`; the only action that can leave either terminal screen is present but unreachable without pointer input.
 
 `tools/run_restart_net_check.gd` boots the shipped Hollowmere scene, drives both endings, and inspects `gui_get_focus_owner()`: both "terminal overlay focuses Start Next Run" assertions fail at `6d7e756`. This repeats the exact mandatory-panel trap F-216 fixed for AttunementUI. Focus the enabled host button when each overlay opens (and give it a visible focus style if the default theme is insufficient); a non-host's disabled waiting label must not take focus.
-
----
-
-### F-276 · F-243 carries depleted Hollowmere resources into the next run
-
-**Area:** systems · **Severity:** medium · **Found:** 2026-08-20 by lc1
-
-`autoload/harvest_world.gd:46-50` wires authored-map Harvestables but never subscribes to `EventBus.run_restarted`, and `systems/harvesting/harvestable.gd:260-265` restores a depleted node only when its ordinary respawn timer expires (the shipped definitions use 90-300 seconds). F-243 resets inventory and the Mire but leaves every authored resource's `health`/`active`/`visual_state` and remaining respawn clock untouched.
-
-At commit `6d7e756`, `tools/run_restart_net_check.gd` depletes a real Harvestable in shipped `levels/hollowmere.tscn`, ends the run, restarts immediately, and the node still reads `active == false`. The next run therefore inherits resources harvested in the prior run for up to five minutes. F-258's `WorldDeltaLog` clear is not this fix: Hollowmere's 1,156 authored Harvestables are live nodes, not regenerated `ResourceScatterField` points. Reset them host-authoritatively through their existing `host_respawn()` seam on `run_restarted`, with normal synchronizer replication to clients.
 
 ---
 
@@ -1039,7 +981,380 @@ second time: a check that needs a service's side effect should prefer calling th
 
 ---
 
+### F-292 · tools/nav_bake_check.gd has had 4 failures at HEAD since the 4.13/4.14 terrain retune — the island has no gentle chunk-boundary strip at its 30-degree gate
+
+**Area:** world · **Severity:** high · **Found:** 2026-08-20 by lm
+
+`agent baseline --script tools/nav_bake_check.gd` at 76d8aa0 reports `NAV_BAKE_CHECK failures=4`,
+with the first one being `found a chunk boundary with walkable land on both sides: x=nan z=0,
+chunks []`. Everything after it fails as a consequence: `coords` is empty, so the bake set is empty,
+the map never becomes queryable, and both buildable-obstruction assertions read `nan`. This is
+**not** F-274's doing — F-274 only changed which surface `_gentle()` samples, and the failure
+reproduces identically at HEAD and with F-274's own biome-blind control table.
+
+`_locate_walkable_terrain()` needs four probes (`boundary ± 2 m`, `boundary ± 6 m`) that are all
+above `MIN_LAND_HEIGHT = 2.0 m` and all below `WALKABLE_SLOPE_DEG = 30`. Measured on seed 20260818
+over every chunk boundary in `x ∈ [-8, 8)` and every `z` at 1 m spacing across ±240 m: 4,046 probes
+land above water, 256 of those are also gentle, and **not one boundary gets all four**. Widening the
+z sampling from the shipped 4 m to 1 m changed nothing but the counts.
+
+The file's own header records a slope census from when it was written — "82.5% of LAND is walkable"
+— which is what makes this diagnosable: that census predates D-142/4.13-4.14, which added the
+domain-warped ridged layer and the carved river and dropped `HEIGHT_SCALE` 60 -> 26. The island got
+rougher per metre, and the check's 30-degree gate (chosen as a conservative margin under
+`NavBaker.AGENT_MAX_SLOPE = 45`) no longer finds four-in-a-row anywhere. Exactly F-251's shape, in a
+second file: a check whose hardcoded terrain assumption the retune invalidated, still passing its
+own logic and asserting nothing.
+
+**What fixing it takes.** Decide whether the gate should track `AGENT_MAX_SLOPE` (45, which is what
+the navmesh actually bakes against) rather than sit at 30, and whether four probes spanning 12 m is
+the right shape for a 26 m island — then re-measure the census and record the new number in the
+header, so the next retune has something to notice. Do NOT simply widen until it passes: the point
+of the four probes is that the bake set is real walkable ground, and a gate that accepts anything
+makes every seam assertion below it meaningless.
+
+---
+
+### F-293 · Nothing enumerates and runs the tools/ check suite, so a red check sits at HEAD indefinitely — two were red for days and a third was asserting nothing
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-20 by lm
+
+There are ~90 check scripts under `tools/`, each of which prints its own `failures=N` and exits
+non-zero. Nothing runs them as a set. A task runs the checks it believes it touched, which means a
+check goes red the moment an unrelated task moves the ground under it and stays red until somebody
+happens to run it for their own reasons.
+
+Three concrete instances, all found in one afternoon by F-274 running its neighbours:
+
+1. `tools/nav_bake_check.gd` has had 4 failures at HEAD since the 4.13/4.14 terrain retune (F-292).
+2. `tools/terrain_look_check.gd`'s `_check_chunk_mesher_surface()` — added by the 4.13 review at
+   361b692 — asserted that the production chunk mesh uses the biome-scaled surface. It did not, for
+   the whole of F-274's lifetime as a finding; the check was red from the commit that introduced it
+   until F-274 fixed the code it was watching. The tripwire existed and nobody was looking at it.
+3. `tools/noise_reuse_check.gd`'s integration section compared chunks (3,-7) and (-2,5) — 243 m and
+   172 m from origin, both outside `ISLAND_RADIUS` since it shrank 512 -> 118 m — so every vertex in
+   them was exactly 0.0 and it was comparing two zeroes. It passed continuously while asserting
+   nothing. (Fixed under F-274, which added a relief assertion so it cannot go vacuous again; the
+   same trap F-251 found in `chunk_stream_check.gd`, which is now three files.)
+
+Instance 3 is the reason this is filed as *tooling* rather than just "run them more often": a runner
+alone would not have caught it. What is missing is a runner **and** a convention that a check
+asserts its own inputs are non-degenerate.
+
+**What fixing it takes.** A `agent verify [--fast]` that discovers `tools/*_check.gd`, runs each
+under the existing Godot lock in turn, and reports the set — most take seconds, a handful
+(`chunk_stream_check`, the two-process net checks) need a framebuffer or two processes and want
+their own tier. The per-script contract already exists (`failures=N` plus a non-zero exit), and
+`nav_bake_check` already shows the shape for declaring expected noise
+(`EXPECTED_ERROR_PATTERNS="..."`), so the runner mostly needs to enumerate, sequence and summarize
+rather than to invent a protocol.
+
+---
+
+### F-294 · Every surface sample allocates two or three Arrays inside island_heightmap.gd — lobes(), islet_centres() and river_polyline() are rebuilt per point, and F-274 doubled the river walk
+
+**Area:** world · **Severity:** medium · **Found:** 2026-08-20 by lm
+
+F-241, F-252 and F-261 hunted per-sample `FastNoiseLite` reconstruction and finished the job.
+Underneath it, a second per-sample rebuild was never touched: `_island_mask_bent()` calls
+`lobes(world_seed)` (allocates an `Array[Vector3]`) and `islet_centres(world_seed)` (an
+`Array[Vector2]`), and `_apply_river()` -> `_river_channel()` calls `river_polyline(world_seed)`
+(a `PackedVector2Array`, which itself calls `lobes()` again). All four derive from integer mixing on
+`world_seed` alone — they are IDENTICAL for every point in a chunk, in an island, for the whole run.
+
+So one surface sample allocates three or four Arrays and walks the river polyline twice over
+(`_river_channel` sums the total length, then walks the segments again). A LOD0 chunk is 1,225
+apron points; the POI dart loop asks for tens of thousands per island.
+
+F-274 made it slightly worse and is saying so: `BiomeMap.surface_from_set()` calls `_apply_river()`
+twice per sample, once to carve the continent the biome is classified from and once to carve the
+final surface, so the polyline is now built and walked four times per point rather than two.
+
+**What fixing it takes.** The same shape `NoiseSet` already established, extended to the
+seed-derived geometry: fold `lobes`, `islet_centres` and `river_polyline` (plus the polyline's
+precomputed segment lengths and total, which is the other half of the waste) into the set built once
+per task, and take them from there in `_island_mask_bent()`/`_river_channel()`. `NoiseSet` is
+already threaded to every caller that matters, so this is additive rather than a new parameter
+everywhere. The equivalence half of `tools/worldgen_noise_reuse_check.gd` is the existing witness —
+this must be bit-identical, and `GOLDEN_*`/`terrain_hash` must not move.
+
+Not fixed under F-274 because that task was already moving every seed's terrain, and a
+performance refactor landing in the same commit as a deliberate output change leaves nothing able
+to tell the two apart.
+
+---
+
+### F-295 · Every batched Hollowmere harvestable had a per-process node name, so none of the map's 794 batch-drawn props ever replicated
+
+**Area:** netcode · **Severity:** high · **Found:** 2026-08-20 by lp
+
+Found by F-276 while building the two-process half of `tools/harvest_restart_check.gd`, and fixed
+under that task's claim. Filed as its own finding because it is a distinct, older and more severe
+defect than the one F-276 asserts, and nothing in the repo recorded it.
+
+`world/gen/authored_world.gd:860` named each batch-drawn harvestable holder
+`"HarvestBatch_%s_%03d" % [asset, index]`, where `index` counts within ONE (chunk, kit, asset)
+group. The moment a second chunk carried the same asset — which on Hollowmere is every asset, since
+the map has 794 batched flora props spread over dozens of chunks — the name collided with a sibling
+already under the shared `World/Harvestables` root.
+
+Godot resolves a sibling name collision in `add_child(node)` (the default `force_readable_name =
+false` path) by assigning an unreadable `@<ClassName>@<id>`, NOT by appending a number. That id comes
+from a per-PROCESS counter. So the host called the same bush `@Node3D@1234` and the client called it
+`@Node3D@1770`, and every one of those props' code-built `MultiplayerSynchronizer` failed to resolve
+on the far peer:
+
+    ERROR: Node not found: "Hollowmere/World/Harvestables/@Node3D@1770/Harvestable/HarvestSync"
+
+The consequence is not subtle. No batched harvestable's `health`, `visual_state` or `active` ever
+reached a client, for any reason — not a teammate chopping it, not the respawn clock, not F-276's
+restart restore. Every client saw all 794 bushes permanently standing and could keep swinging at
+props the host had already depleted. It also means the shipped `harvestable_net_check` /
+`harvest_world_net_check` coverage never exercised a batched prop across two processes.
+
+**Fixed** in `world/gen/authored_world.gd` by naming the holder off `batch_holder.name` — which is
+already `"<chunk_x>_<chunk_z>_<kit>_<asset>"` and unique per group — so the result is unique
+map-wide, still derived only from the layout, and therefore identical on every peer. The trailing
+`_%03d` is kept because `HarvestWorld._layout_index()` parses it.
+
+`tools/harvest_restart_check.gd` phase 1 now asserts no wired prop's node path contains `@`, which
+is the general regression guard: an engine-assigned name is always a per-process name.
+
+`world/gen/resource_scatter_field.gd:320` names its own batch holders off `point_id` and was already
+unique; `wellspring_service`, `chest_placement_service` and `extraction_service` all add their node
+as the marker's only child. A sweep of every `\.name = "…%…"` assignment under `world/`, `systems/`,
+`autoload/` and `core/` found no other collision.
+
+---
+
+### F-296 · NetInterest.configure() installs authority-only visibility processing on every peer, so each client logs ERR_BUG from _update_spawn_visibility on join
+
+**Area:** netcode · **Severity:** low · **Found:** 2026-08-20 by lp
+
+Found by F-276 while running `tools/harvest_restart_check.gd` phase 2. Not fixed there — the fix is
+a netcode-wide authority guard with bandwidth implications, outside that finding.
+
+`core/net/net_interest.gd:113-138` `configure()` is called identically on every peer (that is
+deliberate: both peers must build the same tree). For a FILTERED class (`ENEMY`, `PROP`) it installs
+a `RadiusFilter` visibility filter and sets `sync.visibility_update_mode =
+VISIBILITY_PROCESS_PHYSICS` unconditionally. Per-peer visibility is an authority-side concept — only
+the authority decides who may see a synchronizer — so on a client this arms an engine path that peer
+has no authority to run. Where the synchronizer's node sits under a `MultiplayerSpawner`, the engine
+rejects it:
+
+    ERROR: Condition "!_has_authority(spawner)" is true. Returning: ERR_BUG
+       at: _update_spawn_visibility (modules/multiplayer/scene_replication_interface.cpp:388)
+
+`tools/harvest_restart_check.gd` prints exactly 4 of these on a clean, fully passing run
+(`failures=0`, exit 0) — they are the check's only ERROR lines, they come from the client process at
+join, and no assertion depends on them. Recorded here so the next reader of that log does not spend
+a run attributing them to the harvestable fix.
+
+Likely fix: skip the filter install and leave `visibility_update_mode` at `VISIBILITY_PROCESS_NONE`
+when this peer is not the synchronizer's authority, and re-arm it if authority ever moves. Mind that
+`configure()` today runs before the transport is necessarily active, so "am I the authority" has to
+be asked at the right moment rather than at construction — which is exactly why this needs its own
+task rather than a one-line guard.
+
+---
+
 ## Resolved
+
+### F-276 · F-243 carries depleted Hollowmere resources into the next run — **fixed**
+
+**Area:** systems · **Severity:** medium · **Found:** 2026-08-20 by lc1
+
+`autoload/harvest_world.gd:46-50` wires authored-map Harvestables but never subscribes to `EventBus.run_restarted`, and `systems/harvesting/harvestable.gd:260-265` restores a depleted node only when its ordinary respawn timer expires (the shipped definitions use 90-300 seconds). F-243 resets inventory and the Mire but leaves every authored resource's `health`/`active`/`visual_state` and remaining respawn clock untouched.
+
+At commit `6d7e756`, `tools/run_restart_net_check.gd` depletes a real Harvestable in shipped `levels/hollowmere.tscn`, ends the run, restarts immediately, and the node still reads `active == false`. The next run therefore inherits resources harvested in the prior run for up to five minutes. F-258's `WorldDeltaLog` clear is not this fix: Hollowmere's 1,156 authored Harvestables are live nodes, not regenerated `ResourceScatterField` points. Reset them host-authoritatively through their existing `host_respawn()` seam on `run_restarted`, with normal synchronizer replication to clients.
+
+---
+
+**Resolved 2026-08-20 by lp.** **Fixed and verified by lp, 2026-08-20.** `tools/harvest_restart_check.gd` — a new focused check —
+reports `failures=0`, exit 0:
+
+    .agent/bin/agent godot --script tools/harvest_restart_check.gd
+
+**The fix.** `autoload/harvest_world.gd` now subscribes `EventBus.run_restarted` and calls a new
+`host_respawn_all()` over `wired_harvestables()`, which routes every depleted prop through the
+existing host-guarded `Harvestable.host_respawn()` seam the finding named — clearing `health`,
+`visual_state`, `active`, the remaining respawn clock and the per-peer request cooldown. The
+subscriber is unconditional on authority, like every other `run_restarted` handler in the codebase:
+`host_respawn()` self-guards on `_owns_world_mutation()`, so every peer's copy may call it and only
+the host's restores anything. Clients adopt it through each prop's existing
+`MultiplayerSynchronizer` (`health`/`visual_state`/`active`, on-change, spawn properties) — **no new
+RPC and no `PROTOCOL_VERSION` bump**. `host_respawn_all()` is shared with the `harvest respawn`
+console verb so both mass restores go through one seam; it deliberately covers the whole
+`&"harvestable"` group under the current scene, not just this file's authored-map wiring, because
+clearing `ResourceScatterField`'s depletion MEMORY on `run_restarted` (F-258) does not stand a live
+already-depleted node back up.
+
+**What the check proves.** Phase 1, solo, on shipped `levels/hollowmere.tscn` (1,156 wired props):
+six real props felled through the trusted host seam — half node-drawn, half batch-drawn, because the
+wired list is node-drawn first and "the first six" tested none of the 794 batched flora — then the
+REAL ending path (`DefeatService.defeated` -> `CycleService.host_restart_run()`, not an
+`EVENT_BUS.emit_run_restarted()` shortcut, per F-291). After the restart all six read `active`,
+`health == max_health`, `visual_state == 0` and `respawn_remaining() == 0`. Both no-op cases are
+asserted too — `host_respawn_all()` returns 0 on an untouched island and 0 on a second restart with
+nothing harvested in between — so a handler that respawned unconditionally would fail.
+
+Phase 2 is a real two-process proof, which is the half a single process cannot see: a joined client
+loads the same map, reports its own player position, the driver picks an active prop inside that
+player's `NetInterest.INTEREST_ENTER_RADIUS_M`, and the client reports that prop's `active` flag
+across deplete -> restart. Client sees the depletion, then sees the restore. The client also asserts
+its own `host_respawn()` returns false, so the phase cannot pass because the client restored the
+prop locally.
+
+**Cross-check.** `tools/run_restart_net_check.gd` — the review harness that filed this finding —
+now prints `PASS: restart immediately restores a harvested world resource`. Its remaining 7 failures
+are exactly F-275 (2 focus paths), F-277 (2), F-278, F-279 and F-280, all separately open; the F-243
+review recorded 8 at `6d7e756`, so this removes precisely one. Neighbours re-run green:
+`harvest_batch_check` failures=0 / 0 ERROR, `harvest_world_check` failures=0 / 0 ERROR,
+`world_contract_check` PASS / 0 ERROR.
+
+**Spin-outs (D-162), both found by this task's own check and its close-out sweep:**
+
+- **F-295 — fixed here, under this claim.** Every batch-drawn harvestable holder on Hollowmere had a
+  colliding sibling name, so Godot gave each an `@Node3D@<per-process id>`, so NONE of the map's 794
+  batched props ever replicated to any client, for any reason. This was blocking phase 2 outright
+  and is older and more severe than F-276 itself. Fixed in `world/gen/authored_world.gd`; the check
+  now asserts no wired prop's node path contains `@`.
+- **F-296 — not fixed, filed.** `NetInterest.configure()` arms authority-only visibility processing
+  on clients too; a joined client logs 4 `_update_spawn_visibility` ERR_BUG lines. They are the only
+  ERROR lines this check emits on a fully passing run and no assertion depends on them.
+
+**Sweep for the same shape.** Every autoload and system holding run-scoped state was checked against
+`grep -rn run_restarted`. The bridges that wire authored-map props into live nodes are
+`HarvestWorld` (this bug), `ChestPlacementService` and `ExtractionService` — the latter two are
+clean because `systems/loot/chest.gd` and `systems/extraction/extraction_ship.gd` each subscribe for
+themselves, as `systems/wellspring/wellspring.gd` does. The remaining unreset systems were already
+filed: F-277 (Attunement), F-278 (DayNight), F-279 (spawn position), F-280 (run_started), F-281
+(enumeration), F-286 (CraftingService), F-287 (EnvironmentVfx). The node-naming class from F-295 was
+swept separately over every formatted runtime `.name =` assignment in `world/`, `systems/`,
+`autoload/` and `core/`: no other collision exists.
+
+**Left undone, and why — for whoever picks this up.** `docs/SPECS.md`, `docs/DECISIONS.md` and
+`docs/DELEGATION.md` were all held by lane lm for F-274 for the whole of this session (claimed after
+this task started, retried twice), so three writes this close-out owed are recorded here instead of
+there, and someone should move them:
+
+1. **`docs/SPECS.md` needs the F-276 block** this task was told to write (SPECS.md preamble: a
+   missing spec is fixed by the task that finds it). Its content is this resolution.
+2. **`docs/DECISIONS.md` needs the counterpart to D-164.** D-164 settled that run-scoped world
+   OBJECTS are freed on `run_restarted` via `host_clear_all()`. This finding is the other half and
+   deserves its own D-number: a PERSISTENT authored-map prop that merely carries per-run mutable
+   state is **restored, not freed**, and the seam is named **`host_respawn_all()`** so a fourth such
+   service is findable with one grep — same host-guard-inside / call-unconditionally shape as
+   `host_clear_all()`. The distinction is load-bearing: freeing Hollowmere's 1,156 authored props on
+   a restart would delete the map.
+3. **`docs/DECISIONS.md` also needs F-295's rule**, which generalises past harvestables: **any node
+   built at runtime that carries a `MultiplayerSynchronizer` or is an RPC target must take a name
+   derived from the layout/seed, globally unique among its siblings.** Godot answers a sibling
+   collision with a per-process `@Class@<id>`, which silently makes the node unaddressable across
+   peers — it produces no warning at build time and no failure until two processes exist, which is
+   why this shipped. The cheap standing assertion is "no replicated node's path contains `@`".
+4. **`docs/DELEGATION.md` *Current state* needs the new API:** `HarvestWorld.host_respawn_all() ->
+   int` (host-guarded mass restore, returns how many props actually went from depleted to standing)
+   and `tools/harvest_restart_check.gd` (solo + two-process; the only check that covers a batched
+   prop across two processes).
+
+### F-274 · `BiomeMap.terrain_amplitudes()` has no shipped caller — every biome's authored `detail_amplitude`/`ridge_amplitude` is dead, and only the audit render applies them — **fixed**
+
+**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-20 by lm during F-261's review
+
+D-144 (the 4.13 terrain one at `docs/DECISIONS.md:1236` — that number is double-allocated, see
+F-260) splits `IslandHeightmap` in two precisely so a biome can shape its own ground: `continent()`
+decides where the biomes are, `height(x, z, seed, detail_amplitude, ridge_amplitude)` decides how
+rough each one is, and the decision's own closing line is "**`BiomeMap.terrain_amplitudes()` is the
+seam that hands a point's pair to the heightmap**". The seam was built. Nothing shipped crosses it.
+
+`world/chunk/chunk_mesher.gd:150` — the only thing in the repo that meshes terrain — calls
+`Heightmap.height_from_set(world_x, world_z, noise_set, world_seed)` and takes the 1.0/1.0 defaults.
+So do `world/gen/poi_map.gd:153` (a site's `position.y`) and `world/gen/resource_scatter.gd:120` (a
+placement's `position.y`). Grep the repo for `terrain_amplitudes`/`terrain_amplitudes_from_set`/
+`amplitudes_for` and every caller is under `tools/`: `terrain_map_render.gd` and
+`worldgen_noise_reuse_check.gd`. Not one shipped file passes an amplitude pair to `height()`.
+
+Three concrete consequences:
+
+1. `content/biomes/shore.tres` (`detail_amplitude = 0.35`, `ridge_amplitude = 0.0`),
+   `grassland.tres` (0.8 / 0.25) and `forest.tres` (1.15 / 0.9) affect nothing the game builds.
+   Editing those six numbers changes the audit PNG and nothing else. D-144's one-line summary — "a
+   shore is flat because its multipliers are near zero" — is not true of the shipped world; every
+   biome gets the same biome-blind surface, and a shore is flat only where the continent is flat.
+2. `tools/terrain_map_render.gd` *does* apply them, so the PNGs under `assets/audit/terrain/` are the
+   only place that terrain exists. The tool whose whole purpose is "see the island before judging
+   it" (`docs/DELEGATION.md`) renders a surface the chunk mesher will never produce — rougher in
+   forest, flatter on shore — so terrain tuning judged from those images is judged from the wrong
+   image. This is the F-212 shape: a documented mechanism nobody went back and wired.
+3. It compounds **F-271**. That finding's premise is that "since 4.13 `height()` DEPENDS on which
+   biome a point is in" — today it does not, which is why `resource_scatter.gd` classifying from
+   `height()` has not visibly diverged from `biome_at()`'s `continent()` yet. Wiring this seam is
+   exactly what turns F-271 from a doc-conformance problem into a live one, so the two want fixing
+   in the same task.
+
+**Not introduced by F-261**, which preserved the behaviour exactly — its render is MD5-identical and
+its new public `amplitudes_for(id, defs)` is the seam's own half. This was found because F-261's
+review traced every caller of the amplitude API and the shipped list came back empty.
+
+**What fixing it takes:** the chunk mesher resolving each vertex's biome and passing that pair. That
+is per-vertex biome resolution on the hot meshing path, so it wants F-261's `BiomeMap.NoiseSet` —
+one per chunk task, the same shape `chunk_mesher.gd:144` already builds — and it moves every existing
+seed's surface, so `check_determinism`'s `terrain_hash` and `worldgen_noise_reuse_check`'s `GOLDEN_*`
+constants must be re-captured alongside it and the move recorded (D-160). A terrain-content task, not
+a review edit, which is why it is filed rather than fixed here.
+
+---
+
+**Resolved 2026-08-20 by lm.** **Fixed 2026-08-20 by lm.** The seam D-144 named is crossed by everything that ships.
+
+**What was wired.** `BiomeMap.surface_from_set()` / `surface_at()` is now THE surface, and
+`world/chunk/chunk_mesher.gd:_sample_heights()`, `world/gen/poi_map.gd` (site heights and
+`_slope_at`'s four probes), `world/gen/resource_scatter.gd:_placement_at()` and
+`ProceduralWorld.height_at()` all go through it. `IslandHeightmap` gained a `Shape` — the
+biome-independent half of a sample (bent point, island mask, pre-river continent) — plus
+`shape_into()` / `continent_from_shape()` / `height_from_shape()`, so resolving a point's biome and
+then finishing its surface costs one continent derivation rather than two; `continent()`,
+`continent_from_set()`, `height()` and `height_from_set()` were all rewritten onto that one body.
+The table reaches its consumers from a single read: `ProceduralWorld._load_biome_defs()` sets
+`ChunkStreamer.biome_defs` (carried into the worker task by `ChunkJob`), and `NavBaker` adopts the
+streamer's in `bind()`, so mesh, collider, navmesh, POI feet, tree feet and spawn queries cannot be
+on different islands. `tools/terrain_map_render.gd` — the tool this finding named as the only thing
+applying the amplitudes — now calls the mesher's own sampler, so the audit PNG is the game's terrain.
+
+**Two calls, recorded in D-165 so they are not relitigated.** The amplitude pair is a weighted BLEND
+across biome boundaries (`blend_amplitudes()` + `TerrainTable`), not the winning biome's own: picking
+puts a ~7.7 m vertical wall along the `moisture = 0.5` contour where `forest`'s `ridge_amplitude`
+0.9 meets `grassland`'s 0.25, unclimbable under F-136 and with chunk seams through it. And
+`build_mesh()`'s `biome_defs` is REQUIRED, ahead of the optional `lod`, because this finding *was* a
+default that silently produced a real-looking wrong surface.
+
+**Verified.** `agent godot --script tools/biome_terrain_check.gd` → `BIOME_TERRAIN failures=0` — a
+biome's interior resolves to its authored pair (shore 0.35/0.00, grassland 0.80/0.25, forest
+1.15/0.90); the table moves 957-1211 of 1217 chunk vertices by up to 7.5 m across four seeds; mesh,
+`surface_from_set`, `surface_at`, `height()`-plus-`terrain_amplitudes()` and all 10 POI sites agree
+bit-for-bit; the amplitude field's largest step anywhere in its own domain is 0.0092; biome shaping
+adds at most 0.531 m to a 0.25 m step; and `build_mesh` still has no default for the table.
+
+Neighbours re-run green: `worldgen_noise_reuse_check` 0 (`GOLDEN_BIOME` **unchanged**, which is what
+proves classification still reads the continent per D-144; POI/amplitude/scatter goldens re-captured
+under D-160), `check_determinism` `terrain_hash c20eed19b44270a1` **unchanged** plus a new
+`biome_surface 1e6501a6940d5bd0` line for the crossfade, `noise_reuse_check` PASS,
+`terrain_look_check` 0 (its `_check_chunk_mesher_surface()` had been red since 361b692 — it is the
+assertion this finding was about), `terrain_check` 0, `poi_check` 0, `biome_check` 0,
+`resource_scatter_check` 0, `procedural_world_check` 0, `world_contract_check` PASS,
+`chunk_stream_check --windowed` 0 functional failures with `WORST_KNOWN_DIVERGENCE_M` re-measured
+12.805 -> 12.4405 m (it went DOWN, so the skirt needed no retune). Audit render:
+`assets/audit/terrain/island_f274_20260819.png`.
+
+**Spun out, per D-162.** F-292 (`nav_bake_check` has had 4 failures at HEAD since the 4.13/4.14
+retune — reproduced with `agent baseline`, and identically with F-274's own biome-blind control, so
+it predates this task), F-293 (nothing runs the check suite, which is why F-292 and
+`terrain_look_check` sat red), F-294 (`lobes()`/`river_polyline()` are still rebuilt per sample, and
+this task doubled the river walk). Fixed in passing under this claim: `noise_reuse_check`'s
+integration section was comparing chunks 172-243 m offshore where every vertex is exactly 0.0 — the
+same trap F-251 found in `chunk_stream_check.gd` — now moved onto land with a relief assertion so it
+cannot go vacuous again.
 
 ### F-268 · F-243's restart never clears placed buildables — BuildService has no run_restarted subscription at all, and its own check has been failing at HEAD since the feature shipped — **fixed**
 

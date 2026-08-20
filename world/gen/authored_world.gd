@@ -847,7 +847,17 @@ func _build_batch_harvestables(
 			break
 		var prop := props[index] as Dictionary
 		var holder := Node3D.new()
-		holder.name = "HarvestBatch_%s_%03d" % [asset, index]
+		# Named off the BATCH holder, not off the asset. `index` counts within this one
+		# (chunk, kit, asset) group, so `HarvestBatch_<asset>_<index>` collided the moment a second
+		# chunk carried the same asset — and Godot resolves a sibling name collision under
+		# `add_child(node)` by assigning an unreadable `@Node3D@<id>` instead of a numbered variant.
+		# That id is a per-PROCESS counter, so the host and each client ended up with DIFFERENT node
+		# paths for the same bush, and every batched prop's `MultiplayerSynchronizer` failed to
+		# resolve on the far side ("Node not found: .../HarvestSync"). `batch_holder.name` is
+		# `"<chunk_x>_<chunk_z>_<kit>_<asset>"` and already unique per group, so this is unique
+		# map-wide and still derived only from the layout — identical on every peer. Keep the
+		# trailing `_%03d`: `HarvestWorld._layout_index()` parses it.
+		holder.name = "HarvestBatch_%s_%03d" % [batch_holder.name, index]
 		holder.transform = transforms[index]
 		holder.set_meta(&"asset", asset)
 		holder.set_meta(&"kit", String(prop.get("kit", "")))

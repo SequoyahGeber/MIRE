@@ -1,5 +1,29 @@
 {
   "claims": {
+    "assets/audit/terrain/island_f274_20260819.png": {
+      "agent": "lm",
+      "at": "2026-08-20T06:19:58+00:00",
+      "task": "F-274",
+      "token": null
+    },
+    "docs/DECISIONS.md": {
+      "agent": "lm",
+      "at": "2026-08-20T06:13:01+00:00",
+      "task": "F-274",
+      "token": null
+    },
+    "docs/DELEGATION.md": {
+      "agent": "lm",
+      "at": "2026-08-20T06:13:01+00:00",
+      "task": "F-274",
+      "token": null
+    },
+    "docs/SPECS.md": {
+      "agent": "lm",
+      "at": "2026-08-20T06:13:01+00:00",
+      "task": "F-274",
+      "token": null
+    },
     "tools/bench_chunk_gpu.gd": {
       "agent": "lm",
       "at": "2026-08-20T05:55:31+00:00",
@@ -152,18 +176,20 @@
         "tools/worldgen_noise_reuse_check.gd",
         "tools/check_determinism.gd",
         "tools/poi_check.gd",
-        "tools/biome_terrain_check.gd"
+        "tools/biome_terrain_check.gd",
+        "docs/SPECS.md",
+        "docs/DECISIONS.md",
+        "docs/DELEGATION.md",
+        "assets/audit/terrain/island_f274_20260819.png"
       ],
-      "notes": [],
+      "notes": [
+        {
+          "at": "2026-08-20T06:19:58+00:00",
+          "by": "lm",
+          "text": "Cached the river channel on IslandHeightmap.Shape after bench_chunks showed a 1.80x meshing regression (5.956 -> 10.697 ms/chunk): the biome-shaped sample applies the carve twice and _river_channel() rebuilt+walked the polyline each time. Now 8.077 ms, and bit-identical \u2014 terrain_hash c20eed19b44270a1 and every GOLDEN_* held across the change."
+        }
+      ],
       "started": "2026-08-20T05:44:58+00:00",
-      "token": null
-    },
-    "F-276": {
-      "agent": "lp",
-      "dispatched": true,
-      "files": [],
-      "notes": [],
-      "started": "2026-08-20T06:07:12+00:00",
       "token": null
     }
   },
@@ -370,13 +396,6 @@
       "hash": "813b375632faa66d91f05671b9988a7d7bc83cd02b8edc3a57afbd2f3e9833a2",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "assets/construction": {
-      "agent": "lm",
-      "at": "2026-08-19T06:17:24+00:00",
-      "hash": null,
-      "task": "F-180",
-      "token": null
     },
     "assets/crafting_stations": {
       "agent": "lm",
@@ -833,13 +852,6 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
-    "assets/source/construction_set.blend": {
-      "agent": "lm",
-      "at": "2026-08-19T06:17:24+00:00",
-      "hash": "e43b6321395986438c44b683ceb1c082db9b41d4592950528163192a7b9adbdf",
-      "task": "F-180",
-      "token": null
-    },
     "assets/source/crafting_stations.blend": {
       "agent": "lm",
       "at": "2026-08-19T07:07:27+00:00",
@@ -986,6 +998,13 @@
       "hash": "8f3c0e50e27e022108d0c76777a4d91798c26b6e3a1c697d7a7beca6f8d3a419",
       "task": "F-130",
       "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
+    },
+    "autoload/harvest_world.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T06:20:00+00:00",
+      "hash": "632cd6f35d27a2c637c5e3b3bd4902b00fca6842d9782fe487d6565d99391202",
+      "task": "F-276",
+      "token": null
     },
     "autoload/haul_service.gd": {
       "agent": "lp",
@@ -1381,9 +1400,9 @@
     },
     "docs/FINDINGS.md": {
       "agent": "lp",
-      "at": "2026-08-20T05:32:48+00:00",
-      "hash": "3d0dfa26bf4d6689bf38fadbdf883069a46788813695c41c762e328d549c254c",
-      "task": "F-259",
+      "at": "2026-08-20T06:20:00+00:00",
+      "hash": "10b944a57d4c6ac7c902d87b6d17988b3e93f82f8ba0851226371cd76d7c48a1",
+      "task": "F-276",
       "token": null
     },
     "docs/NEXT.md": {
@@ -1587,13 +1606,6 @@
       "at": "2026-08-19T22:42:54+00:00",
       "hash": "18b2c3e93794ebfcd39479dbc3fcbdb6151c99a9ca474fefd18d383d8e155950",
       "task": "F-245",
-      "token": null
-    },
-    "tools/_debug_door_swing.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T06:17:24+00:00",
-      "hash": null,
-      "task": "F-180",
       "token": null
     },
     "tools/_probe_lods.gd": {
@@ -2077,6 +2089,13 @@
       "at": "2026-08-19T06:46:23+00:00",
       "hash": "ddf7a967ed573e4218136850285596aeee50d1e7ab0583cd8c6aa68a640a2f86",
       "task": "F-144",
+      "token": null
+    },
+    "tools/harvest_restart_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T06:20:00+00:00",
+      "hash": "7762da1d32e3ff530eeffa25e1876ae141b2b645fa9dc3d595df51b0ab8ede62",
+      "task": "F-276",
       "token": null
     },
     "tools/hollowmere_check.gd": {
@@ -2647,10 +2666,10 @@
       "token": null
     },
     "world/gen/authored_world.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T13:59:55+00:00",
-      "hash": "f41813a1a1d9cb3e9f981df5b271eee77252649f5d4dfa715a70db77b3a9bdc0",
-      "task": "F-208",
+      "agent": "lp",
+      "at": "2026-08-20T06:20:00+00:00",
+      "hash": "90e9dbcb868e4fefd15d3bf31655591f8f35b57ef936abb62c8dc02a4a9adbeb",
+      "task": "F-276",
       "token": null
     },
     "world/gen/biome_def.gd": {
@@ -6679,9 +6698,11 @@
       "title": "F-243's terminal restart buttons are unreachable from a bare controller"
     },
     "F-276": {
+      "done_at": "2026-08-20T06:20:00+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "F-243 carries depleted Hollowmere resources into the next run"
     },

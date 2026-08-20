@@ -14,6 +14,9 @@ extends Node
 ## range/cooldown and supplies damage/yield.
 
 const HARVESTABLE_SCRIPT := preload("res://systems/harvesting/harvestable.gd")
+## Preloaded, never named as the bare `EventBus` autoload identifier — a `--script` harness boots
+## without autoloads resolved and would take the bare name as an unresolved constant.
+const EVENT_BUS := preload("res://core/events/event_bus.gd")
 ## What each asset harvests as, keyed by the asset alone (F-114). Replaces the three-entry table
 ## this file used to carry, which is why 62 trees, 198 rocks and 794 bushes were painted scenery.
 const HarvestLib := preload("res://systems/harvesting/harvest_library.gd")
@@ -46,8 +49,32 @@ var _observed_scene_id: int = 0
 func _ready() -> void:
 	_load_definitions()
 	get_tree().node_added.connect(_on_node_added)
+	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
 	_schedule_refresh()
 	_register_commands()
+
+
+func _exit_tree() -> void:
+	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
+
+
+## F-276. A new run starts on an UNTOUCHED island. Nothing else in the restart path reaches
+## these props: an authored map's Harvestables are persistent live nodes carrying per-run mutable
+## state (`health`, `visual_state`, `active`, and a 90-300 second respawn clock), not run-scoped
+## objects a service can free (D-164) and not points re-derived from the seed the way
+## `ResourceScatterField`'s are. F-258 wipes `WorldDeltaLog` and F-268 frees the buildables; neither
+## touches Hollowmere's 1,156 authored props, so without this a tree felled in the last minutes of a
+## run is still a stump for the first minutes of the next one.
+##
+## Unconditional on authority, like every other `run_restarted` subscriber in this codebase:
+## `Harvestable.host_respawn()` self-guards on `_owns_world_mutation()`, so every peer's copy may
+## call it and only the host's actually restores anything. Clients adopt the restored state through
+## each prop's existing MultiplayerSynchronizer (`health`/`visual_state`/`active`, on-change, spawn
+## properties) — no new RPC and no `PROTOCOL_VERSION` bump.
+func _on_run_restarted() -> void:
+	var respawned: int = host_respawn_all()
+	if respawned > 0:
+		MireLog.info(&"harvest", "run restart respawned %d depleted harvestable(s)" % respawned)
 
 
 
@@ -123,6 +150,26 @@ func wired_harvestables() -> Array[Node3D]:
 		if candidate is Node3D and (scene == candidate or scene.is_ancestor_of(candidate)):
 			result.append(candidate as Node3D)
 	return result
+
+
+## Host-only refill of every wired prop, shared by `run_restarted` above and the `harvest respawn`
+## command below so both mass restores go through one seam — the counterpart to D-164's
+## `host_clear_all()` for world objects that are restored rather than freed. Returns how many props
+## actually went from depleted to standing; a run that harvested nothing answers 0 and costs one
+## group walk. Deliberately covers the whole `&"harvestable"` group under the current scene, not
+## just this file's authored-map wiring: `ResourceScatterField` builds its points' Harvestables
+## through the same group, and clearing that file's depletion MEMORY on `run_restarted` (F-258) does
+## not stand a live already-depleted node back up.
+func host_respawn_all() -> int:
+	return _respawn_nodes(wired_harvestables())
+
+
+func _respawn_nodes(nodes: Array) -> int:
+	var respawned: int = 0
+	for node: Node in nodes:
+		if node != null and node.has_method(&"host_respawn") and bool(node.call("host_respawn")):
+			respawned += 1
+	return respawned
 
 
 ## F-076: ground truth for "does this map's layout actually have harvestable props" — read
@@ -343,10 +390,7 @@ func _cmd_harvest(ctx: Dictionary, args: Dictionary) -> Dictionary:
 		return {"ok": true, "message": "%d harvestable(s), %d depleted" % [nodes.size(), depleted],
 			"data": {"total": nodes.size(), "depleted": depleted}}
 
-	var respawned: int = 0
-	for node: Node in nodes:
-		if node.has_method(&"host_respawn") and bool(node.call("host_respawn")):
-			respawned += 1
+	var respawned: int = _respawn_nodes(nodes)
 	return {"ok": true, "message": "respawned %d of %d harvestable(s)" % [respawned, nodes.size()],
 		"data": {"respawned": respawned, "total": nodes.size()}}
 

@@ -6791,3 +6791,18 @@ Notes along the way:
 - Approved at c64bc8d. Full boot exit=0 ERROR_COUNT=0; exact-commit run_restart_check failures=0 ERROR_COUNT=0; current build_check failures=0 ERROR_COUNT=0; haul_check failures=0 with its sole ERROR matching declared EXPECTED_ERROR_PATTERNS=unknown haulable id, so undeclared ERROR_COUNT=0. Reviewed full F-268 stack 0655759..c64bc8d because named tip only files F-289 docs. Host guards, node frees, piece_destroyed announcements, typed GDScript, no new RPC/randi/bare-autoload regression. No finding filed.
 
 Commit at time of writing: `0fbd637`
+
+---
+
+### DONE · F-276 · lp · 2026-08-20T06:20:00+00:00
+
+**F-243 carries depleted Hollowmere resources into the next run**
+
+HarvestWorld now subscribes EventBus.run_restarted and mass-restores every depleted prop through Harvestable.host_respawn() via a new host_respawn_all() — host-guarded inside, called unconditionally, adopted by clients over the existing per-prop MultiplayerSynchronizer. No new RPC, no PROTOCOL_VERSION bump. Proof: agent godot --script tools/harvest_restart_check.gd -> failures=0, exit 0 (phase 1 solo on shipped Hollowmere, 6 props felled across BOTH representations, real DefeatService->host_restart_run path, active/health/visual_state/respawn clock all restored, plus both no-op cases; phase 2 two-process, a joined client sees the depletion then the restore). run_restart_net_check now PASSes its 'restart immediately restores a harvested world resource' assertion; its other 7 failures are F-275/277/278/279/280, unchanged. harvest_batch_check, harvest_world_check, world_contract_check, findings_numbering_check all green with 0 ERROR. Fixed F-295 under the same claim: colliding HarvestBatch_ sibling names gave every one of Hollowmere's 794 batched props a per-process @Node3D@id, so none of them had EVER replicated to a client — this blocked the two-process phase outright. Filed F-296 (NetInterest arms authority-only visibility processing on clients; 4 engine ERR_BUG lines, the check's only ERROR output). docs/SPECS.md, DECISIONS.md and DELEGATION.md were held by lm (F-274) all session; the four writes they owed are spelled out verbatim in F-276's resolution note under 'Left undone, and why'.
+
+Notes along the way:
+- docs/SPECS.md, docs/DECISIONS.md and docs/DELEGATION.md held by lm (F-274) for the whole session — claimed after F-276 started, retried three times. Did NOT work around it (order rule 1). The four writes they owed — the F-276 spec block, the D-164 counterpart 'persistent props are RESTORED via host_respawn_all(), not freed', F-295's 'a replicated runtime node's name must come from the layout, never from a sibling collision', and the DELEGATION Current-state API entry — are written out verbatim in F-276's resolution note in docs/FINDINGS.md under 'Left undone, and why'.
+
+Files: `autoload/harvest_world.gd`, `tools/harvest_restart_check.gd`, `world/gen/authored_world.gd`, `docs/FINDINGS.md`
+
+Commit at time of writing: `76d8aa0`
