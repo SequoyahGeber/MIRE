@@ -1,12 +1,20 @@
 {
   "claims": {},
   "in_flight": {
-    "F-245-review": {
-      "agent": "lc1",
+    "F-269": {
+      "agent": "lp",
       "dispatched": true,
       "files": [],
       "notes": [],
-      "started": "2026-08-20T05:31:51+00:00",
+      "started": "2026-08-20T05:33:13+00:00",
+      "token": null
+    },
+    "F-271": {
+      "agent": "lm",
+      "dispatched": true,
+      "files": [],
+      "notes": [],
+      "started": "2026-08-20T05:35:09+00:00",
       "token": null
     }
   },
@@ -2305,13 +2313,6 @@
       "at": "2026-08-19T19:28:43+00:00",
       "hash": "29a7213f3d95fd22b9454ef7c60020e864c3d3ed44d5e1bdb47681a8f61e7ec2",
       "task": "8.3",
-      "token": null
-    },
-    "tools/stringname_sort_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T05:33:29+00:00",
-      "hash": "b0ba64f27f613af0ab13fda5802b3c16d65919dd5089827d796289475173352e",
-      "task": "F-179",
       "token": null
     },
     "tools/terrain_accents_check.gd": {
@@ -6229,10 +6230,12 @@
       "title": "The whole Cycle Modifier feature is inert: seven modifiers, a weighted deck, and not one line of game code asks whether a modifier is active"
     },
     "F-245-review": {
+      "done_at": "2026-08-20T05:35:46+00:00",
+      "done_by": "lc1",
       "est": "0.5",
       "milestone": "Findings",
       "review_of": "F-245",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T1",
       "title": "Review F-245 @ 94cf796 \u2014 judge the commit, file findings, no edits"
     },
@@ -6455,7 +6458,7 @@
     "F-269": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Four resolved findings still sit under '## Open' after the day's sweep chaos \u2014 F-243, F-256, F-260, F-262 are all fixed and still read as routable work"
     },
@@ -6471,7 +6474,7 @@
     "F-271": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "ResourceScatter classifies a point's biome from height(), BiomeMap.biome_at() classifies from continent() \u2014 the same point resolves to two different biomes depending on which system asks"
     },

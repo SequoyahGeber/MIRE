@@ -1025,6 +1025,16 @@ map with all three services live.
 
 ---
 
+### F-282 · The Hunt spawns one Cycle late because WaveSpawner reads the modifier stack before CycleModifierService draws
+
+**Area:** systems · **Severity:** medium · **Found:** 2026-08-20 by lc1
+
+`systems/waves/wave_spawner.gd:188-190` calls `_maybe_spawn_hunt_elite()` from its `cycle_advanced` listener, while `systems/cycle/cycle_modifier_service.gd` draws the current Cycle's modifier from its own listener. `project.godot:44,61` registers WaveSpawner before CycleModifierService, and `core/events/event_bus.gd:159-172` appends listeners and invokes them in that order. The WaveSpawner listener therefore checks `has_modifier(&"the_hunt")` before the current Cycle's draw is in `_active_ids`; if The Hunt is drawn on Cycle N, no elite enters until Cycle N+1 emits `cycle_advanced`.
+
+`tools/cycle_modifier_effects_check.gd` does not catch the integration failure: `_check_the_hunt()` forces `_active_ids` directly and calls `_maybe_spawn_hunt_elite()` directly rather than advancing a real Cycle. Add a real Cycle-advance assertion and trigger the Hunt spawn from the completed modifier draw (for example `cycle_modifier_drawn`) or otherwise guarantee draw-before-consumer ordering without relying on autoload order.
+
+---
+
 ## Resolved
 
 ### F-259 · F-243's restart resets Cycle/Mire/inventory/etc but not WaveSpawner's unlocked enemy roster — **fixed**

@@ -6615,3 +6615,16 @@ Notes along the way:
 Files: `tools/run_restart_check.gd`, `systems/waves/wave_spawner.gd`, `docs/SPECS.md`, `docs/DELEGATION.md`, `docs/FINDINGS.md`
 
 Commit at time of writing: `e0a6ad4`
+
+---
+
+### DONE · F-245-review · lc1 · 2026-08-20T05:35:46+00:00
+
+**Review F-245 @ 94cf796 — judge the commit, file findings, no edits**
+
+Changes required: F-282 filed — The Hunt checks the active stack before the current Cycle draw, so its elite spawns one Cycle late; cycle_modifier_effects_check misses this by direct state injection. Exact 94cf796 checks both exited 1 with 21 raw ERROR lines from swept F-243 run_restarted callers whose EventBus API was absent; later 6d7e756 repaired that integration. Current HEAD: CYCLE_MODIFIER_CHECK failures=0 with 0 ERROR lines; CYCLE_MODIFIER_EFFECTS_CHECK failures=0 with 0 undeclared ERROR lines (6 declared dummy-renderer material errors). FINDINGS_NUMBERING_CHECK failures=0.
+
+Notes along the way:
+- Changes required: filed F-282 for The Hunt's one-Cycle-late spawn caused by EventBus subscriber/autoload ordering. Exact commit 94cf796 also fails both modifier checks with 21 raw ERROR lines because swept F-243 subscribers reference run_restarted EventBus APIs absent from that snapshot; later 6d7e756 supplies them and current HEAD checks are green.
+
+Commit at time of writing: `519012e`
