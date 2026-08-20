@@ -411,50 +411,6 @@ audit doc carries the full trace.
 
 ---
 
-### F-254 · CycleModifierService._announce() has the exact host-only EventBus.emit_cycle_modifier_drawn() gate F-250 just fixed for CycleService — same shape, unfixed sibling
-
-**Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lp
-
-Found 2026-08-19 by lp during F-250's sweep (systems/cycle/cycle_modifier_service.gd:173-184).
-
-`CycleModifierService._announce()` — its own doc comment literally says "same two-channel announce
-`CycleService._announce()` uses" — calls `EVENT_BUS.emit_cycle_modifier_drawn(def_id, cycle)`
-unconditionally, but `_announce()` is only ever reached from `host_draw_modifier()`, which returns
-early on `if not _owns_modifiers(): return &""` before ever calling `_announce()`. So exactly like
-`CycleService._announce()` pre-F-250, this emit only ever runs host-side; a real connected client's
-own `EventBus.subscribe_cycle_modifier_drawn()` listener never fires, no matter how many Cycle
-Modifiers the host actually draws. `active_modifier_ids()` already has the correct per-peer fallback
-(`_replicated_active_ids()` reading `WorldDeltaLog`, the same split `CycleService.current_cycle()`
-uses) — this is the same "getter is fine, the emitted SIGNAL never reaches a client" bug F-250 fixed
-in `CycleService`, and `docs/FINDINGS.md`'s own F-226 pattern before that. No live subscriber exists
-yet (`grep -rn "subscribe_cycle_modifier_drawn"` outside the two definition files: zero hits) so
-nothing is broken today — this is a trap for whoever wires the first client-visible reaction to a
-Modifier draw (a toast, a HUD banner), same "no live consumer yet" status F-250 had.
-
-**Why this is not a trivial copy of F-250's own fix:** `CycleService`'s `WorldDeltaLog` record IS the
-whole payload (`current`, one int) — a client's `delta_applied` handler can re-emit
-`cycle_advanced(value)` directly. `CycleModifierService`'s record is split across two keys per draw
-(`str(slot) -> def_id` and `COUNT_KEY -> count`) and **never records which Cycle a slot was drawn
-on** — `host_draw_modifier(cycle)` receives `cycle` as a parameter from `CycleService`'s own
-`_on_cycle_advanced` listener, but `_announce()` never writes it into `WorldDeltaLog`. A client-side
-`delta_applied` handler reconstructing `emit_cycle_modifier_drawn(def_id, cycle)` therefore has no
-stored `cycle` to hand back — approximating it from `CycleService.current_cycle()` at the moment the
-slot delta lands is racy (two separate `host_record()` calls -> two separate `net_delta_applied` RPCs,
-no ordering guarantee both have landed by the time either fires its local `_apply()`), and widening
-the stored value to `"%s:%d" % [def_id, cycle]` changes `_replicated_active_ids()`'s own parsing
-contract for every existing reader. Both are real fixes, neither is a one-line mirror of F-250's.
-
-**What would close this:** either (a) have `_announce()` also `host_record()` a per-slot
-`str(slot) + ":cycle"` key alongside the existing `def_id` key, and re-derive the emit from that pair
-on `delta_applied` (extends the schema, additive, doesn't change `_replicated_active_ids()`'s existing
-keys), or (b) drop `cycle_modifier_drawn`'s doc-implied "any peer" framing until a real client
-consumer forces the decision — same "mark host-only until needed" alternative F-226's own finding
-offered CycleService before F-250 did the real fix instead. `tools/cycle_advanced_net_check.gd`
-(F-250) is the worked pattern for whichever fix path gets picked: real two-process ENet proof, host
-draws for real, client's own `EventBus.subscribe_cycle_modifier_drawn()` listener must actually fire.
-
----
-
 ### F-255 · A-020's `flooded cellar entrance` is the same shape F-237 just cut from A-016 — an entrance implying an interior/underground space the 2D heightfield cannot back
 
 **Area:** world-gen · **Severity:** low · **Found:** 2026-08-19 by lm during F-237's sibling sweep
@@ -811,7 +767,184 @@ file/area and would be a natural place to add real locking alongside it.
 
 ---
 
+### F-267 · ship sweeps a sibling's uncommitted hunks when its claimed file carries them — F-197's shape reached source files and carried a debug probe into HEAD
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by bram1
+
+`cmd_ship` stages the shipping task's claimed files in full. When such a file also carries another
+task's uncommitted hunks — which claim-late makes MORE likely, since a sibling can edit before the
+shipper ever claims — those hunks ride along under the wrong task and message. F-197 documented this
+for generated GLBs; on 2026-08-19 it recurred on source: F-245's ship (94cf796) swept F-243's entire
+mire_grid.gd change, including a `DEBUG_PROBE print()` that is now in HEAD, while F-243's own ship
+had been waiting politely for the claim to free.
+
+The F-117 done-time-hash guard does not catch this: it compares the SHIPPING task's snapshot, and
+these hunks belonged to a task that had never shipped. The general fix ship needs: before staging a
+claimed file, diff it against the last commit and warn when hunks reference another task's id or when
+`git blame`-style attribution is impossible — or simplest, warn whenever a staged file contains
+changes made before this task's claim timestamp. Filed for design rather than patched inline; the
+probe itself is stripped in this finding's own commit.
+
+---
+
+### F-268 · F-243's restart never clears placed buildables — BuildService has no run_restarted subscription at all, and its own check has been failing at HEAD since the feature shipped
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lp
+
+Found by lp during F-254's regression sweep. `tools/run_restart_check.gd` fails at a clean HEAD with
+`FAIL: every placed buildable was cleared` — confirmed pre-existing and unrelated to F-254 via
+`.agent/bin/agent baseline --script tools/run_restart_check.gd` (identical single failure, same
+assertion, on an untouched worktree).
+
+This is not a flaky check. `autoload/build_service.gd` contains no `run_restarted` subscription of
+any kind — `grep -n 'run_restart\|EVENT_BUS.subscribe' autoload/build_service.gd` returns nothing,
+and its last commit is F-244 (039c5da), not F-243's ship (6d7e756). So `_placed` survives a restart
+with every piece from the previous run still in it, and every piece node is still in the scene.
+
+What makes this worth its own finding rather than a footnote is that three separate places already
+assert the opposite, so nothing about the codebase reads as "buildables intentionally persist":
+
+- `systems/cycle/cycle_service.gd`'s F-243 header lists the `run_restarted` subscribers by name and
+  includes `BuildService` among them.
+- `tools/run_restart_check.gd:180` asserts `placed_count() == 0` after a restart.
+- `docs/FINDINGS.md`'s own F-243 entry and `docs/DELEGATION.md` both describe the restart as
+  resetting build state.
+
+So the docs, the check and the header all shipped; only the wiring did not. F-259 already records a
+sibling omission in the same fix (`WaveSpawner`'s unlocked roster is not reset either), which
+suggests the F-243 subscriber list was written from intent rather than from the code.
+
+**What would close this:** `BuildService` subscribes `run_restarted` in `_ready()` (unsubscribing in
+`_exit_tree()`, the convention every other subscriber in that list follows), and on the host clears
+`_placed` and frees the placed piece nodes through the same path `net_request_destroy` already uses,
+so the despawn replicates to every peer rather than only emptying the host's dictionary.
+`tools/run_restart_check.gd:180` is the existing assertion and needs no change — it is already
+correct and already failing.
+
+**Trap for whoever takes it:** the pieces are `MultiplayerSpawner` children (see
+`core/net/net_session.gd`'s note that a spawner replays every existing spawn to a newly connected
+peer). Clearing `_placed` without actually freeing the nodes would leave a joiner receiving the
+previous run's buildables from the spawner's own replay while the host believes none exist.
+
+---
+
 ## Resolved
+
+### F-254 · CycleModifierService._announce() has the exact host-only EventBus.emit_cycle_modifier_drawn() gate F-250 just fixed for CycleService — same shape, unfixed sibling — **fixed**
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lp
+
+Found 2026-08-19 by lp during F-250's sweep (systems/cycle/cycle_modifier_service.gd:173-184).
+
+`CycleModifierService._announce()` — its own doc comment literally says "same two-channel announce
+`CycleService._announce()` uses" — calls `EVENT_BUS.emit_cycle_modifier_drawn(def_id, cycle)`
+unconditionally, but `_announce()` is only ever reached from `host_draw_modifier()`, which returns
+early on `if not _owns_modifiers(): return &""` before ever calling `_announce()`. So exactly like
+`CycleService._announce()` pre-F-250, this emit only ever runs host-side; a real connected client's
+own `EventBus.subscribe_cycle_modifier_drawn()` listener never fires, no matter how many Cycle
+Modifiers the host actually draws. `active_modifier_ids()` already has the correct per-peer fallback
+(`_replicated_active_ids()` reading `WorldDeltaLog`, the same split `CycleService.current_cycle()`
+uses) — this is the same "getter is fine, the emitted SIGNAL never reaches a client" bug F-250 fixed
+in `CycleService`, and `docs/FINDINGS.md`'s own F-226 pattern before that. No live subscriber exists
+yet (`grep -rn "subscribe_cycle_modifier_drawn"` outside the two definition files: zero hits) so
+nothing is broken today — this is a trap for whoever wires the first client-visible reaction to a
+Modifier draw (a toast, a HUD banner), same "no live consumer yet" status F-250 had.
+
+**Why this is not a trivial copy of F-250's own fix:** `CycleService`'s `WorldDeltaLog` record IS the
+whole payload (`current`, one int) — a client's `delta_applied` handler can re-emit
+`cycle_advanced(value)` directly. `CycleModifierService`'s record is split across two keys per draw
+(`str(slot) -> def_id` and `COUNT_KEY -> count`) and **never records which Cycle a slot was drawn
+on** — `host_draw_modifier(cycle)` receives `cycle` as a parameter from `CycleService`'s own
+`_on_cycle_advanced` listener, but `_announce()` never writes it into `WorldDeltaLog`. A client-side
+`delta_applied` handler reconstructing `emit_cycle_modifier_drawn(def_id, cycle)` therefore has no
+stored `cycle` to hand back — approximating it from `CycleService.current_cycle()` at the moment the
+slot delta lands is racy (two separate `host_record()` calls -> two separate `net_delta_applied` RPCs,
+no ordering guarantee both have landed by the time either fires its local `_apply()`), and widening
+the stored value to `"%s:%d" % [def_id, cycle]` changes `_replicated_active_ids()`'s own parsing
+contract for every existing reader. Both are real fixes, neither is a one-line mirror of F-250's.
+
+**What would close this:** either (a) have `_announce()` also `host_record()` a per-slot
+`str(slot) + ":cycle"` key alongside the existing `def_id` key, and re-derive the emit from that pair
+on `delta_applied` (extends the schema, additive, doesn't change `_replicated_active_ids()`'s existing
+keys), or (b) drop `cycle_modifier_drawn`'s doc-implied "any peer" framing until a real client
+consumer forces the decision — same "mark host-only until needed" alternative F-226's own finding
+offered CycleService before F-250 did the real fix instead. `tools/cycle_advanced_net_check.gd`
+(F-250) is the worked pattern for whichever fix path gets picked: real two-process ENet proof, host
+draws for real, client's own `EventBus.subscribe_cycle_modifier_drawn()` listener must actually fire.
+
+---
+
+**Resolved 2026-08-20 by lp.** Fixed and verified by lp, 2026-08-19. The bug was real and still present — confirmed by reading
+`systems/cycle/cycle_modifier_service.gd` before editing, despite the brief's "may already be fixed"
+warning (the two commits since the filing touched other parts of the file).
+
+**What shipped** (full spec: `docs/SPECS.md` §F-254; the design call: **D-158**):
+
+Took option (a) of the two the finding named. `_announce()` now records the draw's Cycle under an
+additive per-slot key (`"0:cycle"`, `CYCLE_KEY_SUFFIX`) beside the existing `def_id` key, and writes
+`COUNT_KEY` last. `CycleModifierService._ready()` subscribes `WorldDeltaLog.delta_applied` (the
+generic signal F-250 added) and `_on_world_delta_applied()` re-derives
+`EventBus.emit_cycle_modifier_drawn(def_id, cycle)` on clients, guarded on `_owns_modifiers()` so the
+host never double-emits. Rejected option (b) — "mark it host-only until a consumer forces it" — for
+the reason recorded in D-158: F-245 has since wired all seven modifiers to real gameplay, so a
+client-visible reaction to a draw is now ordinary next work rather than hypothetical.
+
+**The two non-obvious parts, both load-bearing, both mutation-tested:**
+
+1. The handler does NOT react to the touched key. Any landing under this `kind` re-scans every slot
+   below the recorded `COUNT_KEY` and emits for whichever slot's `(def_id, cycle)` pair changed. That
+   answers the ordering objection this finding raised against the naive fix (three records cross the
+   wire as three RPCs; the scan is idempotent, so they produce exactly one emit in any order) AND it
+   is what makes a restart safe. `WorldDeltaLog` is latest-value-wins and never deletes, so after a
+   restart writes `COUNT_KEY = 0`, slot 0 still holds the previous run's `def_id` — a per-key handler
+   would pair the new Cycle with that stale id. Gating on `slot < count` means nothing is announced
+   until the draw's own `COUNT_KEY` write brings the slot back into range. Hence `_announce()`'s
+   write order is a contract, not formatting.
+2. The client's `_announced_draws` dedupe is cleared on `run_restarted`, above the host-ownership
+   gate. A restart keeps the run seed (F-258), so each restarted run redraws a byte-identical
+   `(id, cycle)` stamp that the dedupe would otherwise swallow forever.
+
+Also corrected `core/events/event_bus.gd`: `subscribe_cycle_modifier_drawn`'s doc comment asserted
+"Emitted by the HOST only", which this fix makes false. Rewritten to match `cycle_advanced`'s
+post-F-250 wording, and it now states the two contracts a subscriber needs — a client may see the
+draw and its Cycle advance in either order, and a late joiner gets no backlog of pre-join draws.
+
+**How it was verified:** new `tools/cycle_modifier_net_check.gd`, a real two-process ENet host+client
+(same driver/probe shape as F-250's `cycle_advanced_net_check.gd`). The client subscribes ONLY through
+`EventBus.subscribe_cycle_modifier_drawn()` and never touches `active_modifier_ids()` — that getter's
+fallback was already correct pre-fix and would mask this bug completely.
+
+  .agent/bin/agent godot --script tools/cycle_modifier_net_check.gd   ->  CYCLE_MODIFIER_NET_CHECK failures=0
+
+Not just watched to pass — mutated twice, each caught independently: disabling only the
+`delta_applied` connection gives 3 failures with the client's draw list empty (the exact pre-fix
+silence); removing only the `_announced_draws.clear()` gives 1 failure in phase 2 with phase 1 still
+green, so the restart phase is genuinely proving the dedupe reset rather than riding along.
+
+Regression, all `failures=0` with 0 undeclared `ERROR:` lines: `cycle_modifier_check`,
+`cycle_modifier_seed_check`, `cycle_check`, `cycle_advanced_net_check`, `wave_spawner_cycle_net_check`.
+`cycle_modifier_effects_check` `failures=0` with 6 `ERROR:` lines, all matching its own declared
+`EXPECTED_ERROR_PATTERNS`.
+
+**Trap for the next Cycle Modifier check:** no shipped `CycleModifierDef` has a positive
+`weight_at(1)`, so Cycle 1 — including the one a restart lands on — draws nothing by design. This
+check's first draft asserted a post-restart draw and failed on it; phase 2 advances the Cycle after
+each restart to get a real draw.
+
+**Swept for the same shape** (every `EVENT_BUS.emit_*` call site outside `tools/`): this file was the
+LAST live instance of the class — F-250's sweep list re-verified and still correct.
+`wellspring_capped`/`wellspring_recorrupted`/`ship_repaired`/`run_extracted`/`boss_engaged`/
+`boss_phase_changed`/`boss_defeated` fire from replicated property setters (D-107/D-108) and already
+reach every peer; `harvest_yielded`/`enemy_attack_landed` are documented host-only with host-owned
+consumers; `salvage_banked`/`unlock_purchased` are documented per-peer LOCAL emits; `run_wiped` fires
+from `DefeatService.defeated`'s setter with no host gate. Also checked the other `WorldDeltaLog`
+writers for the same client-re-derivation gap: `WaveSpawner` and `MireGrid` emit no signals of their
+own, so there is nothing there to re-derive.
+
+**Filed while here:** **F-268** — `tools/run_restart_check.gd` fails at clean HEAD (`every placed
+buildable was cleared`), confirmed pre-existing and unrelated via `agent baseline`. `BuildService`
+has no `run_restarted` subscription at all, even though F-243's header, its own check, and the docs
+all say it does. Out of this task's claim scope, not fixed here.
 
 ### F-245 · The whole Cycle Modifier feature is inert: seven modifiers, a weighted deck, and not one line of game code asks whether a modifier is active — **fixed**
 

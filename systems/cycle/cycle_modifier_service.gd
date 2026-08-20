@@ -31,6 +31,18 @@ extends Node
 ## mint one (D-136), since a Cycle only ever advances forward and each cycle draws at most once. The
 ## roll still happens exactly once, host-only, and no other peer ever recomputes it — this is about
 ## run-to-run reproducibility, not cross-peer agreement, same distinction `Chest`'s own header draws.
+##
+## F-254: `_announce()` below only ever runs host-side (it is reachable only through
+## `host_draw_modifier()`, which returns early on `_owns_modifiers()`), so a real connected client's
+## own `EventBus.subscribe_cycle_modifier_drawn()` listeners never fired at all — the exact shape
+## F-250 fixed for `CycleService`. `_on_world_delta_applied()` re-derives the identical emit on a
+## client from the same `WorldDeltaLog` records the host's `_announce()` writes, so every peer's bus
+## sees a real, live `cycle_modifier_drawn` without a new RPC (D-099/D-100's no-new-RPC reuse).
+## Unlike `CycleService`'s single-scalar record, a draw here is TWO records — the slot's `def_id` and
+## (new, F-254) the Cycle it was drawn on, since `emit_cycle_modifier_drawn(def_id, cycle)` needs
+## both and nothing stored `cycle` before. Those cross the wire as separate `net_delta_applied` RPCs,
+## so the handler assumes NOTHING about arrival order: any landing re-scans the whole slot range and
+## emits for whatever changed. See `_on_world_delta_applied()`.
 
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
 const CYCLE_MODIFIER_DEF := preload("res://systems/cycle/cycle_modifier_def.gd")
@@ -44,6 +56,12 @@ const CYCLE_MODIFIERS_PATH: String = "res://content/cycle_modifiers"
 const GLOBAL_CHUNK: Vector2i = Vector2i.ZERO
 const KIND: StringName = &"cycle_modifier"
 const COUNT_KEY: String = "count"
+## F-254: the Cycle a slot was drawn on, recorded under its OWN key (`"0:cycle"`, `"1:cycle"`, ...)
+## beside that slot's existing `def_id` key. Deliberately additive rather than widening the `str(slot)`
+## value to `"%s:%d" % [def_id, cycle]`: that would change the parsing contract of every existing
+## reader of `_replicated_active_ids()`, whereas a new key is invisible to a loop that only ever asks
+## for `str(index)` and `COUNT_KEY`. This is option (a) of the two the finding named; see D-158.
+const CYCLE_KEY_SUFFIX: String = ":cycle"
 
 ## id -> CycleModifierDef, stored as Resource (F-016, see header).
 var _defs: Dictionary = {}
@@ -57,12 +75,25 @@ var _active_ids: Array[StringName] = []
 ## (`host_draw_modifier()`), flipped true by the next `wellspring_capped` this file sees regardless of
 ## which Wellspring capped. `drought_active()` below is the one place that combines the two.
 var _drought_cleared: bool = false
+## F-254, client-side only: slot -> the `"def_id|cycle"` stamp last emitted for that slot, so the two
+## `delta_applied` landings a single draw produces (`str(slot)` and its `CYCLE_KEY_SUFFIX` sibling)
+## emit exactly once between them regardless of arrival order. Cleared on `run_restarted` because a
+## restart re-uses slot 0 and — the run seed being unchanged (`CycleService`'s own SCOPE CUT, F-258) —
+## legitimately redraws the SAME id on the same Cycle 1, which the stamp alone could not tell from a
+## duplicate landing.
+var _announced_draws: Dictionary = {}
 var _rng := RandomNumberGenerator.new()
 var _transport_node: Node
 
 
 func _ready() -> void:
 	_load_defs()
+	# F-254: a client's own EventBus never gets `_announce()`'s emit directly (host-only, see that
+	# method's header) — this re-derives it locally from the log records the host's `_announce()` also
+	# writes, the moment they actually land. Same seam `CycleService._ready()` uses for `cycle_advanced`.
+	var world_delta_log: Node = get_node_or_null(^"/root/WorldDeltaLog")
+	if world_delta_log != null and world_delta_log.has_signal(&"delta_applied"):
+		world_delta_log.connect(&"delta_applied", _on_world_delta_applied)
 	EVENT_BUS.subscribe_cycle_advanced(_on_cycle_advanced)
 	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
 	EVENT_BUS.subscribe_wellspring_capped(_on_wellspring_capped)
@@ -90,6 +121,10 @@ func _on_cycle_advanced(cycle: int) -> void:
 ## in-process subscriber synchronously, so this always clears before that later `cycle_advanced(1)`
 ## triggers `_on_cycle_advanced()`'s own draw check against the now-empty deck.
 func _on_run_restarted() -> void:
+	# F-254: above the host gate on purpose — a client reaches this through `CycleService.
+	# _on_world_delta_applied()`'s re-derived `run_restarted`, and its slot stamps must reset there too
+	# or the next run's slot-0 draw is silently swallowed as a duplicate. See `_announced_draws`.
+	_announced_draws.clear()
 	if not _owns_modifiers():
 		return
 	_active_ids.clear()
@@ -221,12 +256,72 @@ func _announce(def: Resource, cycle: int) -> void:
 	var world_delta_log: Node = get_node_or_null(^"/root/WorldDeltaLog")
 	if world_delta_log != null:
 		var slot: int = _active_ids.size() - 1
+		# F-254: both halves of the draw BEFORE `COUNT_KEY`, and this order is load-bearing on the
+		# client, not cosmetic. `_on_world_delta_applied()` only announces slots below the recorded
+		# count, so bumping the count last is what publishes a draw — writing it first would expose a
+		# slot whose `def_id`/`cycle` are still the previous run's (see that method's own note).
+		world_delta_log.call("host_record", GLOBAL_CHUNK, KIND, _cycle_key(slot), cycle)
 		world_delta_log.call("host_record", GLOBAL_CHUNK, KIND, str(slot), String(def_id))
 		world_delta_log.call("host_record", GLOBAL_CHUNK, KIND, COUNT_KEY, _active_ids.size())
 	EVENT_BUS.emit_cycle_modifier_drawn(def_id, cycle)
 	MireLog.info(&"world", "Cycle %d Modifier drawn: %s — %s" % [
 		cycle, String(def.get(&"display_name")), String(def.get(&"description"))
 	])
+
+
+## F-254: the client half of the two-channel announce. `_announce()` above only ever runs host-side,
+## so without this a client's own `EventBus.cycle_modifier_drawn` never fired — the identical bug
+## F-250 fixed in `CycleService`, and the reason this file's `active_modifier_ids()` getter looking
+## correct was never enough (a getter that reads right does not make a SIGNAL fire).
+##
+## Guarded on `_owns_modifiers()` so the host — whose own `host_record()` calls also run through
+## `WorldDeltaLog._apply()` and fire this same local signal — never double-emits; it already emitted
+## directly in `_announce()`.
+##
+## The ordering hazard the finding named, handled rather than assumed away. One draw writes THREE
+## records (`slot:cycle`, `slot`, then `COUNT_KEY`), which reach a client as three separate
+## `net_delta_applied` RPCs. Rather than trust an arrival order, ANY landing under this `kind`
+## re-scans every slot `COUNT_KEY` currently covers and emits for each one whose `(def_id, cycle)`
+## pair has changed since it was last announced here. That is idempotent, so the three landings of a
+## single draw produce exactly one emit between them, in any order.
+##
+## Scanning against `COUNT_KEY` rather than reacting to the touched key is what makes a RESTART safe,
+## and is the whole reason this is not the obvious per-key handler. `WorldDeltaLog` is
+## latest-value-wins and never deletes: after `_on_run_restarted()` writes `COUNT_KEY = 0`, slot 0's
+## `def_id` from the PREVIOUS run is still sitting in the log. A handler that emitted the moment the
+## new run's `slot:cycle` record landed would pair the new Cycle with last run's stale modifier id.
+## Gating on `slot < count` means nothing is announced until the new draw's own `COUNT_KEY` write —
+## which the host issues last, after both halves — brings the slot back into range.
+##
+## A late joiner never reaches here for draws that predate its join — `net_world_snapshot` replaces
+## `_state` wholesale without going through `_apply()`, so it fires no `delta_applied` at all. That is
+## deliberate and matches `CycleService`: a joiner reads the caught-up stack straight out of
+## `active_modifier_ids()` instead of replaying a burst of historical draw signals it missed.
+func _on_world_delta_applied(chunk: Vector2i, kind: StringName, _key: String, _value: Variant) -> void:
+	if _owns_modifiers() or chunk != GLOBAL_CHUNK or kind != KIND:
+		return
+	var world_delta_log: Node = get_node_or_null(^"/root/WorldDeltaLog")
+	if world_delta_log == null:
+		return
+	var count: int = int(world_delta_log.call("latest", GLOBAL_CHUNK, KIND, COUNT_KEY, 0))
+	for slot: int in range(count):
+		var def_id := StringName(String(
+			world_delta_log.call("latest", GLOBAL_CHUNK, KIND, str(slot), "")
+		))
+		var cycle_value: Variant = world_delta_log.call(
+			"latest", GLOBAL_CHUNK, KIND, _cycle_key(slot), null
+		)
+		if def_id == &"" or cycle_value == null:
+			continue
+		var stamp: String = "%s|%d" % [def_id, int(cycle_value)]
+		if String(_announced_draws.get(slot, "")) == stamp:
+			continue
+		_announced_draws[slot] = stamp
+		EVENT_BUS.emit_cycle_modifier_drawn(def_id, int(cycle_value))
+
+
+func _cycle_key(slot: int) -> String:
+	return str(slot) + CYCLE_KEY_SUFFIX
 
 
 func _replicated_active_ids() -> Array[StringName]:

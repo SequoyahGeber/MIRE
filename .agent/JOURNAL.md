@@ -6486,3 +6486,15 @@ Filed the ship-sweep recurrence for design; stripped the swept DEBUG_PROBE from 
 Files: `world/mire/mire_grid.gd`
 
 Commit at time of writing: `6d7e756`
+
+---
+
+### DONE · F-254 · lp · 2026-08-20T00:02:22+00:00
+
+**CycleModifierService._announce() has the exact host-only EventBus.emit_cycle_modifier_drawn() gate F-250 just fixed for CycleService — same shape, unfixed sibling**
+
+EventBus.cycle_modifier_drawn now fires on every peer, not just the host. _announce() records the draw's Cycle under an additive per-slot ':cycle' WorldDeltaLog key and writes COUNT_KEY last; CycleModifierService._on_world_delta_applied() re-derives the emit on clients by re-scanning every slot below the recorded count (order-independent across the three RPCs one draw produces, and restart-safe against the stale def_id latest-value-wins leaves behind). _announced_draws cleared on run_restarted above the host gate, since an unchanged run seed redraws a byte-identical pair. EventBus's 'Emitted by the HOST only' doc corrected. Design call recorded as D-158, spec written into docs/SPECS.md (none existed). Proof: 'agent godot --script tools/cycle_modifier_net_check.gd' -> CYCLE_MODIFIER_NET_CHECK failures=0 — real two-process ENet, client subscribes only through EventBus and never touches active_modifier_ids(). Mutation-tested twice, each caught independently: disabling the delta_applied connect -> 3 failures with the client's draw list empty (exact pre-fix silence); removing only the dedupe clear -> 1 failure in phase 2 with phase 1 still green. Regression failures=0: cycle_modifier_check, cycle_modifier_seed_check, cycle_check, cycle_advanced_net_check, wave_spawner_cycle_net_check, cycle_modifier_effects_check. Swept every EVENT_BUS.emit_* site outside tools/ — this file was the LAST live instance of the F-250/F-254 class; zero siblings remain. Filed F-268 (run_restart_check fails at clean HEAD per agent baseline: BuildService has no run_restarted subscription at all despite F-243's header, its own check and the docs all claiming it does).
+
+Files: `systems/cycle/cycle_modifier_service.gd`, `tools/cycle_modifier_net_check.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `core/events/event_bus.gd`, `tools/cycle_modifier_net_check.gd.uid`
+
+Commit at time of writing: `ae5c45a`

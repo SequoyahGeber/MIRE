@@ -864,12 +864,6 @@
       "task": "F-130",
       "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
-    "autoload/harvest_world.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T22:57:40+00:00",
-      "hash": "011b9cab01c0ffe637571b9c8b29771b61d0401bbb63f37c3a72815ca2feb512",
-      "task": "3.16"
-    },
     "autoload/inventory_service.gd": {
       "agent": "lm",
       "at": "2026-08-19T22:11:38+00:00",
@@ -1083,24 +1077,6 @@
       "task": "5.2",
       "token": null
     },
-    "content/functions": {
-      "agent": "lp",
-      "at": "2026-08-18T23:19:22+00:00",
-      "hash": null,
-      "task": "3.17"
-    },
-    "content/hooks": {
-      "agent": "lp",
-      "at": "2026-08-18T23:19:22+00:00",
-      "hash": null,
-      "task": "3.17"
-    },
-    "content/hooks/night_siege.tres": {
-      "agent": "lp",
-      "at": "2026-08-18T23:19:22+00:00",
-      "hash": "254f90e035eb91c65353c542a747169a68c2f173c62aa1680f9ee34b7510f850",
-      "task": "3.17"
-    },
     "content/items/berry.tres": {
       "agent": "lp",
       "at": "2026-08-19T04:47:27+00:00",
@@ -1228,12 +1204,6 @@
       "task": "F-236",
       "token": null
     },
-    "core/dev/dev_frame_cap.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T22:57:40+00:00",
-      "hash": "9f6bc8e573e107bdc1ab0844b190557b451e469480aa670fde8422df68e32596",
-      "task": "3.16"
-    },
     "core/dev/dev_launch.gd": {
       "agent": "yarrow21",
       "at": "2026-08-19T17:09:07+00:00",
@@ -1249,11 +1219,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
     "core/events/event_bus.gd": {
-      "agent": "bram1",
-      "at": "2026-08-19T22:14:05+00:00",
-      "hash": "0acd746eab2fb7c07e754385e3ad565d39e1dad28347e1b93989c2b47302a7bf",
-      "task": "F-243",
-      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
+      "agent": "lp",
+      "at": "2026-08-20T00:02:22+00:00",
+      "hash": "de793b9b4a4309d0ff4aec7cbe5da315d7e7c470b36e3af5d07a35ee5239271f",
+      "task": "F-254",
+      "token": null
     },
     "core/game_state.gd": {
       "agent": "lm",
@@ -1358,24 +1328,24 @@
       "token": null
     },
     "docs/DECISIONS.md": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:42:54+00:00",
-      "hash": "6f8fe5d8932c0199b1308a4c5d921c54d7f54ab583db585255c6c4f0fa870af8",
-      "task": "F-245",
+      "agent": "lp",
+      "at": "2026-08-20T00:02:22+00:00",
+      "hash": "7480a71338d2e81ccd8e0cb610b02a07d6467e118e29c080fea62a19350dce04",
+      "task": "F-254",
       "token": null
     },
     "docs/DELEGATION.md": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:42:54+00:00",
-      "hash": "62c8b657d598ed9b0f6ca46cb849540ce5b2d4cec3ca3bfc9a37191bc0ce886e",
-      "task": "F-245",
+      "agent": "lp",
+      "at": "2026-08-20T00:02:22+00:00",
+      "hash": "d6745d31383cdeb61ef249ee6cb18c95d2bfdcd80915e3c23eed23d401f4e4b4",
+      "task": "F-254",
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:42:54+00:00",
-      "hash": "f7e5519237cb264de970b840f8e0fd4eeef36b2dccc29765b4b13b65d659fe05",
-      "task": "F-245",
+      "agent": "lp",
+      "at": "2026-08-20T00:02:22+00:00",
+      "hash": "9b192c6afae8c249d4a77cec86b19510eaded161e286d5066a6dfcb182ade887",
+      "task": "F-254",
       "token": null
     },
     "docs/NEXT.md": {
@@ -1393,10 +1363,10 @@
       "token": "CLAUDE_CODE_SESSION_ID:7fea7368-2734-4f59-9d4a-147b2b5d903e"
     },
     "docs/SPECS.md": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:42:54+00:00",
-      "hash": "8336f88b53a4589b42dc72232c5d44e712776af8bff8919fbf63ad5a7ebcb74a",
-      "task": "F-245",
+      "agent": "lp",
+      "at": "2026-08-20T00:02:22+00:00",
+      "hash": "a2fff5d112a48cf3646c1fb3630e5be432a15f100dd4d66fb64a205131c61585",
+      "task": "F-254",
       "token": null
     },
     "entities/player/player_camera.gd": {
@@ -1514,10 +1484,10 @@
       "task": "6.2"
     },
     "systems/cycle/cycle_modifier_service.gd": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:42:54+00:00",
-      "hash": "7f2e8d70b6cb77a7e955db39d925b617fc65d7c2d62bee53d9d074ccb51a3a8a",
-      "task": "F-245",
+      "agent": "lp",
+      "at": "2026-08-20T00:02:22+00:00",
+      "hash": "6c9cb448e2290a58d2b85ea5e10f84f9cdff0136f56ff63443bc42760e3d878f",
+      "task": "F-254",
       "token": null
     },
     "systems/cycle/cycle_modifier_service.gd.uid": {
@@ -1656,12 +1626,6 @@
       "hash": "4d54499e8658381f34822efc8b5837d66ed9ddbdc4aad9d0d91d8293eea92f50",
       "task": "F-173",
       "token": null
-    },
-    "systems/rules/hook_def.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T23:19:22+00:00",
-      "hash": "ec6a078ac678830c712f857eb4e449e330825f0339d635ac57f4ff98cf4df1fa",
-      "task": "3.17"
     },
     "systems/unlocks/unlock_def.gd": {
       "agent": "lp",
@@ -2029,12 +1993,6 @@
       "task": "F-251",
       "token": null
     },
-    "tools/command_catalog_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T23:19:22+00:00",
-      "hash": "45e41f161594cd536490e72689fb7380513900b40aeab5e7e71941f4608e02df",
-      "task": "3.17"
-    },
     "tools/command_check.gd": {
       "agent": "lp",
       "at": "2026-08-19T05:09:22+00:00",
@@ -2130,6 +2088,20 @@
       "at": "2026-08-19T22:42:54+00:00",
       "hash": "7b2af3a61ab36a892e08907c0ccb74f55aa7da6e15ef87cdc1f2f133585f233e",
       "task": "F-245",
+      "token": null
+    },
+    "tools/cycle_modifier_net_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T00:02:22+00:00",
+      "hash": "6e209fa5eea1e7ec94dc2ece03c71a7fad0ca11b93201cf206fe603fc032978f",
+      "task": "F-254",
+      "token": null
+    },
+    "tools/cycle_modifier_net_check.gd.uid": {
+      "agent": "lp",
+      "at": "2026-08-20T00:02:22+00:00",
+      "hash": "3d681955861dfd364b71dd115c84dabf8ed14749e9d60392c5b7491e08a9da5b",
+      "task": "F-254",
       "token": null
     },
     "tools/cycle_modifier_seed_check.gd": {
@@ -2522,12 +2494,6 @@
       "hash": "a6eac80a28ab1e98e2745455c762a3cb3004150406aafd70a5be9662943cb998",
       "task": "F-233",
       "token": null
-    },
-    "tools/run_commands.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T23:19:22+00:00",
-      "hash": "84c7c952c94e1f2d1e42f30889b7ff0cb0aec949f1b4f03f1ee9692ab61eb559",
-      "task": "3.17"
     },
     "tools/run_restart_check.gd": {
       "agent": "bram1",
@@ -6716,9 +6682,11 @@
       "title": "tools/seed_sync_check.gd has 3 pre-existing failures \u2014 confirmed unrelated to F-250 via git baseline"
     },
     "F-254": {
+      "done_at": "2026-08-20T00:02:22+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "CycleModifierService._announce() has the exact host-only EventBus.emit_cycle_modifier_drawn() gate F-250 just fixed for CycleService \u2014 same shape, unfixed sibling"
     },

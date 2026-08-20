@@ -8905,3 +8905,88 @@ When a task ships, its block stays (it documents intent the code now embodies) b
 `✅ shipped — see DELEGATION` header. When a design decision invalidates a block, rewrite the block
 in the same commit as the decision. The specs for a milestone get their final polish when the
 previous milestone's playtest lands — never spec against a design that playtest is about to change.
+
+---
+
+## F-254 · `CycleModifierService._announce()` has the exact host-only `EventBus.emit_cycle_modifier_drawn()` gate F-250 fixed for `CycleService` — same shape, unfixed sibling
+
+**Claim:** `systems/cycle/cycle_modifier_service.gd`, `core/events/event_bus.gd` (one doc comment —
+see below), `tools/cycle_modifier_net_check.gd` (new). **Authority:** §2.2 row "Day/night, wave
+director, Cycle state, active modifiers: HOST" — unchanged. This task adds no new RPC and no new
+authority: one additive key inside an existing `WorldDeltaLog` record, and a client-side
+re-derivation of an emit that already existed.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The bug:** `_announce()` is reachable only from `host_draw_modifier()`, which returns early on
+`if not _owns_modifiers(): return &""`. So its `EVENT_BUS.emit_cycle_modifier_drawn(def_id, cycle)`
+only ever ran on the host, and a real connected client's own
+`EventBus.subscribe_cycle_modifier_drawn()` listeners never fired at all — the identical root cause
+F-250 fixed one file over, found by that task's own sweep and deferred because the `cycle` argument
+was not stored anywhere a client could read back. `active_modifier_ids()` was never the problem: its
+`_replicated_active_ids()` fallback was already correct, which is exactly what made the bug quiet.
+A getter that reads right does not make a signal fire.
+
+**The fix (D-158):** option (a) of the two the finding named.
+1. `_announce()` records the draw's Cycle under a new additive per-slot key (`CYCLE_KEY_SUFFIX`,
+   `"0:cycle"`) beside the existing `def_id` key, then writes `COUNT_KEY` **last**.
+2. `_ready()` subscribes `WorldDeltaLog.delta_applied` (the generic signal F-250 added), and
+   `_on_world_delta_applied()` re-emits `cycle_modifier_drawn` on clients only — guarded on
+   `_owns_modifiers()` so the host, whose own `host_record()` also fires that signal, never
+   double-emits.
+3. That handler does **not** react to the touched key. It re-scans every slot below the recorded
+   `COUNT_KEY` and emits for whichever slot's `(def_id, cycle)` pair changed. This is what makes it
+   both order-independent (three records, three RPCs, one emit in any order) and restart-safe —
+   see D-158 for why the obvious per-key handler pairs a new Cycle with a stale modifier id.
+4. `_announced_draws` (the client's per-slot stamp) is cleared on `run_restarted`, **above** the
+   host-ownership gate: a restart keeps the run seed, so it redraws a byte-identical pair that the
+   dedupe would otherwise swallow forever.
+5. `core/events/event_bus.gd`'s `subscribe_cycle_modifier_drawn` doc comment said "Emitted by the
+   HOST only" — now false, and rewritten to match `cycle_advanced`'s post-F-250 wording, including
+   the two contracts a subscriber actually needs: a client may see the draw and its Cycle advance in
+   either order, and a late joiner gets no backlog of pre-join draws.
+
+**Verify:** new `tools/cycle_modifier_net_check.gd` — real two-process ENet host+client, same
+driver/probe shape as `tools/cycle_advanced_net_check.gd`. The client subscribes ONLY through
+`EventBus.subscribe_cycle_modifier_drawn()` and never calls `active_modifier_ids()` (that getter
+would mask the bug entirely). Phase 1: host draws three Modifiers for real; the client's listener
+must fire with the right `(id, cycle)` pairs, in order, exactly once per draw. Phase 2: two
+restarts, each redrawing an identical pair, must each reach the client.
+`.agent/bin/agent godot --script tools/cycle_modifier_net_check.gd` → `CYCLE_MODIFIER_NET_CHECK
+failures=0`.
+
+**Mutation-tested, not just watched to pass.** Disabling the `delta_applied` connection alone →
+3 failures, client `draws` list empty — reproducing the exact pre-fix silence. Removing only the
+`_announced_draws.clear()` on restart → 1 failure, phase 1 still green, so phase 2 is genuinely
+proving the dedupe reset and not riding along.
+
+Regression, all green: `tools/cycle_modifier_check.gd`, `tools/cycle_modifier_seed_check.gd`,
+`tools/cycle_check.gd`, `tools/cycle_advanced_net_check.gd`, `tools/wave_spawner_cycle_net_check.gd`
+(`failures=0`, 0 `ERROR:` lines each); `tools/cycle_modifier_effects_check.gd` `failures=0` with 6
+`ERROR:` lines, all matching its own declared `EXPECTED_ERROR_PATTERNS` (standing rule 4).
+
+**Traps:**
+- **A restart draws nothing.** No shipped `CycleModifierDef` has a positive `weight_at(1)`, so the
+  Cycle-1 draw a restart triggers logs "no eligible Cycle Modifier to draw" — the same line the
+  boot-time `cycle_advanced(1)` produces. This is correct content tuning, not a bug; the check's
+  first draft asserted a post-restart draw and failed on it. Phase 2 advances the Cycle after each
+  restart to get a real draw.
+- **`_announce()`'s write order is a contract.** `COUNT_KEY` last is what publishes a draw to
+  clients. Reordering it first re-opens the stale-`def_id` window D-158 describes.
+- `tools/run_restart_check.gd` fails with 1 pre-existing failure (`every placed buildable was
+  cleared`), confirmed unrelated via `agent baseline` against unmodified HEAD — `BuildService` has
+  no `run_restarted` subscription at all. Filed as **F-268**, not fixed here (out of claim scope).
+
+**Swept for the same shape:** every `EVENT_BUS.emit_*` call site outside `tools/`. This file was the
+last live instance of the class — F-250's own sweep list re-verified and still correct.
+`wellspring_capped`/`wellspring_recorrupted`/`ship_repaired`/`run_extracted`/`boss_engaged`/
+`boss_phase_changed`/`boss_defeated` all fire from a replicated property's own setter (D-107/D-108),
+so they already reach every peer; `harvest_yielded`/`enemy_attack_landed` are documented host-only
+with host-owned consumers; `salvage_banked`/`unlock_purchased` are documented per-peer LOCAL emits;
+`run_wiped` fires from `DefeatService.defeated`'s setter with no host gate; `cycle_advanced` and
+`run_restarted` were fixed by F-250/F-243. Also checked the other `WorldDeltaLog` writers for the
+same client-re-derivation gap — `WaveSpawner` and `MireGrid` emit no signals of their own, so there
+is nothing there to re-derive.
+
+**Resolved** — see `docs/FINDINGS.md`.

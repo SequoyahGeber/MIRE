@@ -75,6 +75,44 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-254 resolved: `EventBus.cycle_modifier_drawn` now fires on every peer, not just the host (lp)
+
+**The API the next task builds on:**
+
+- `EventBus.subscribe_cycle_modifier_drawn(listener)` is now safe to use from a client. Before this
+  it was silently host-only — a client's listener never fired at all — so any HUD/toast/audio
+  reaction to a Modifier draw can now just subscribe instead of polling
+  `CycleModifierService.active_modifier_ids()` on a timer. This is the same correction F-250 made for
+  `cycle_advanced`; between them, every Cycle-family signal now reaches every peer.
+- **Two contracts a subscriber must respect**, both written on the signal's own doc comment in
+  `core/events/event_bus.gd`:
+  1. On a client, a draw and its Cycle advance are independent replicated records and may land in
+     **either order**. A listener that needs the pairing reads `CycleService.current_cycle()` rather
+     than assuming `cycle_modifier_drawn` fired second. (On the host they are still synchronous, so a
+     check that only runs host-side will not catch a violation of this — see the net check.)
+  2. A **late joiner gets no backlog**. `WorldDeltaLog.net_world_snapshot` replaces state wholesale
+     without going through `_apply()`, so it fires no `delta_applied` and therefore no re-derived
+     draw signals for anything drawn before the join. Subscribe for "a modifier was JUST drawn";
+     build the current stack from `active_modifier_ids()`, which is correct on every peer.
+- `CycleModifierService`'s `WorldDeltaLog` schema gained one additive key per slot:
+  `"<slot>:cycle"` (`CYCLE_KEY_SUFFIX`) holding the Cycle that slot was drawn on, beside the existing
+  `"<slot>" -> def_id` and `"count"`. `_replicated_active_ids()`'s parsing is unchanged — it only
+  ever asks for `str(index)` and `COUNT_KEY`, so the new key is invisible to it.
+  **`_announce()` writes `COUNT_KEY` LAST and that ordering is load-bearing** (D-158): the client
+  only announces slots below the recorded count, which is what stops a post-restart draw from being
+  paired with the previous run's stale `def_id`. Anything that adds a fourth record to a draw must
+  keep `COUNT_KEY` the final write.
+- `tools/cycle_modifier_net_check.gd` (new) — the two-process ENet pattern for "does this signal
+  actually reach a client". Any future Cycle-family signal should add a phase here rather than a new
+  file. Its phase 2 (restart twice, identical redrawn pair each time) is the shape to copy for
+  testing any per-peer dedupe, since a single run cannot distinguish a working reset from a broken
+  one.
+
+**Gotcha for anyone writing a Cycle Modifier check:** no shipped `CycleModifierDef` has a positive
+`weight_at(1)`, so Cycle 1 — including the one a restart lands on — draws nothing by design. Advance
+the Cycle first if your check needs a real draw.
+
+
 ### 2026-08-19 — F-245 resolved: all seven Cycle Modifiers now have a real gameplay consumer — `has_modifier()`/`drought_active()` finally get called (lm2)
 
 **The API the next task builds on:**

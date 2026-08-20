@@ -4688,3 +4688,72 @@ already exists. Tracking ("beelines for whoever holds the most powerups") comes 
 `EnemyDef` field — `tusker`'s stats are otherwise untouched. **Would change my mind:** a future task
 that wants the elite to visually read as distinct from a normal Tusker encounter (a tint, a VFX, a
 name) — that is presentation, not a reason to relitigate which `EnemyDef` backs it.
+
+### D-157 · 2026-08-19 · The delegation harness self-heals: chains re-exec on harness change, survive single task failures, register dispatch intent, and re-reviews reset
+One hardening pass over five failure classes, each observed live on 2026-08-19 (F-263). Chains check
+the harness files' mtimes between tasks and re-exec themselves when the code changed underneath them,
+so a fix reaches running fleets instead of only future ones. A single task failure no longer stops
+the queue behind it — the order stays on disk and the chain continues, stopping only on two
+consecutive failures or a lane-level stop, because F-243's timeout starved eight queued orders three
+times over. A chain registers a lightweight in_flight marker at dispatch under its slot's identity,
+closing the duplicate-grab window that claim-late (D-154) widened; the marker is inherited by the
+agent's first real claim and dropped if the run dies before one. Re-ordering a done review resets it
+to todo with the new sha, since reviewing new commits is new work. And `agent decision` now allocates
+D-numbers under a lock — this entry is its first successful output, after its claim-guard correctly
+refused the first attempt while another lane held the file.
+
+**Would change my mind:** re-exec proving unsafe mid-queue (a chain resuming with incompatible state
+would argue for restart-at-drain instead), or the dispatch marker stranding tasks in_flight after
+crashes despite the no-files cleanup — either means the self-healing is causing more incidents than
+it prevents.
+
+---
+
+### D-158 · 2026-08-19 · F-254: a Cycle Modifier draw replicates as an ADDITIVE per-slot `:cycle` key, and the client announces off `COUNT_KEY`, not off the touched key
+
+F-254 named two acceptable fixes and left the choice to whoever took it. Taking **option (a)**: the
+Cycle a modifier was drawn on is recorded under its own `WorldDeltaLog` key (`"0:cycle"`, `"1:cycle"`,
+…) beside that slot's existing `def_id` key, and `CycleModifierService._on_world_delta_applied()`
+re-derives `EventBus.emit_cycle_modifier_drawn(def_id, cycle)` on a client from the pair.
+
+**Rejected (b) — "mark `cycle_modifier_drawn` host-only until a real consumer forces the decision."**
+That option was written when the modifiers were inert. F-245 has since wired all seven to real
+gameplay consumers, so the first client-visible reaction to a draw (a toast, a HUD banner) is now
+ordinary next work rather than hypothetical, and leaving a documented-as-broken signal in front of it
+just relocates the trap. It also would have left `EventBus`'s own doc comment asserting "emitted by
+the HOST only" for a signal whose whole purpose is a cross-peer reaction.
+
+**Rejected: widening the `str(slot)` value to `"%s:%d" % [def_id, cycle]`.** F-254 called this out
+and it holds — `_replicated_active_ids()` reads that value as a bare id, so widening it changes the
+parsing contract for every existing reader to buy nothing an additive key does not. A new key is
+invisible to a loop that only asks for `str(index)` and `COUNT_KEY`.
+
+**The part that is not obvious, and that a future edit must not "simplify":** the client handler does
+NOT react to the key that was touched. Any landing under this `kind` re-scans every slot below the
+recorded `COUNT_KEY` and emits for whichever slot's `(def_id, cycle)` pair changed since it last
+announced. Two properties fall out of that, and both are load-bearing:
+
+1. **Order-independence.** One draw writes three records, which cross the wire as three separate
+   `net_delta_applied` RPCs. The scan is idempotent, so those three landings produce exactly one emit
+   between them in any arrival order — the race F-254 raised as an objection to the naive fix,
+   answered rather than assumed away.
+2. **Restart safety.** `WorldDeltaLog` is latest-value-wins and never deletes. After a restart writes
+   `COUNT_KEY = 0`, slot 0 still holds the PREVIOUS run's `def_id`. A per-key handler that emitted the
+   moment the new run's `"0:cycle"` record landed would pair the new Cycle with a stale modifier id.
+   Gating on `slot < count` means nothing is announced until the draw's own `COUNT_KEY` write — which
+   `_announce()` deliberately issues LAST, after both halves — brings the slot back into range.
+
+Consequently `_announce()`'s write order (`slot:cycle`, `slot`, then `COUNT_KEY`) is part of the
+contract, not incidental formatting. `COUNT_KEY` is what publishes a draw.
+
+**Also settled: the client's `_announced_draws` dedupe is cleared on `run_restarted`, above the
+host-ownership gate.** A restart keeps the same run seed (`CycleService`'s own scope cut, F-258), so
+each restarted run redraws the *same* modifier on the *same* Cycle — a byte-identical stamp the
+dedupe would otherwise swallow forever. The clear sits above `_owns_modifiers()` because a client
+reaches `_on_run_restarted()` only through `CycleService._on_world_delta_applied()`'s re-derived
+emit, and that is exactly the peer whose stamps need resetting.
+
+**Would change my mind:** a consumer that genuinely needs the full historical draw list replayed as
+signals on join. Today a late joiner deliberately gets no backlog (`net_world_snapshot` bypasses
+`delta_applied`) and reads the caught-up stack from `active_modifier_ids()` instead — same contract
+`CycleService` has. That would need real design, not a widening of this handler.

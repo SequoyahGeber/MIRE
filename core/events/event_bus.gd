@@ -179,13 +179,30 @@ static func cycle_advanced_subscriber_count() -> int:
 
 ## Listener signature: (modifier_id: StringName, cycle: int) -> void
 ##
-## Emitted by the HOST only, the instant `CycleModifierService` draws a Cycle Modifier from the deck
-## (task 6.2, DESIGN.md §5.1 item 2) — fired from inside the same `cycle_advanced` handler that draws
-## it, so a listener never sees a Cycle advance without also seeing that Cycle's draw (or its
-## absence, if the deck had nothing eligible left). No modifier EFFECT is wired to any gameplay
-## system here — this is the seam a future consumer (PowerupService, WaveSpawner, MireGrid) hangs an
-## actual effect off, the same "future task's hook" role D-092 gave `wellspring_capped` and D-100
-## gave `cycle_advanced` itself.
+## Fires on EVERY peer, the instant `CycleModifierService` draws a Cycle Modifier from the deck
+## (task 6.2, DESIGN.md §5.1 item 2) — the host emits directly from `_announce()`; a client
+## re-derives the identical emit from `WorldDeltaLog`'s replicated records of that same draw landing
+## locally (`CycleModifierService._on_world_delta_applied()`, F-254). Before F-254 this read "emitted
+## by the HOST only": `_announce()` is reachable only through a host-gated `host_draw_modifier()`, so
+## a client's own subscribers never fired at all — the same root cause F-250 fixed for
+## `cycle_advanced` above, found by that task's own sweep and left live one task longer because a
+## draw's `cycle` argument was not stored anywhere a client could read it back from.
+##
+## On the host it is fired from inside the same `cycle_advanced` handler that draws it, so a listener
+## never sees a Cycle advance without also seeing that Cycle's draw (or its absence, if the deck had
+## nothing eligible left). On a client the two are independent replicated records and may land in
+## either order — a client-side listener that needs the pairing must read
+## `CycleService.current_cycle()` rather than assume this fired second.
+##
+## A late joiner gets NO backlog of draws that predate its join (`net_world_snapshot` bypasses the
+## signal that drives the client-side re-derivation, by design) — it reads the caught-up stack from
+## `CycleModifierService.active_modifier_ids()` instead. Subscribe for "a modifier was JUST drawn",
+## not to build up the stack.
+##
+## F-245 wired real gameplay consumers for all seven modifiers; they read
+## `CycleModifierService.has_modifier()`/`drought_active()` on demand rather than subscribing here,
+## so this remains the seam for a REACTION to a draw (a toast, a HUD banner) rather than for the
+## effects themselves.
 static func subscribe_cycle_modifier_drawn(listener: Callable) -> void:
 	_prune_invalid(_cycle_modifier_drawn_subscribers)
 	if listener.is_valid() and not _cycle_modifier_drawn_subscribers.has(listener):
