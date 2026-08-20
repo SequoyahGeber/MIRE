@@ -1005,6 +1005,40 @@ Concrete review evidence at HEAD during F-259-review: the first `.agent/bin/agen
 
 ---
 
+### F-291 · A `--script` check that fires a real `EventBus` event as a state-setup shortcut can be broken by an unrelated later feature that subscribes to the same event — **fixed in `tools/unlock_check.gd`, same class not yet swept project-wide**
+
+**Area:** verification · **Severity:** low · **Found:** 2026-08-20 by lp during F-236 (unlocks scope)
+
+`tools/unlock_check.gd` calls `EVENT_BUS.emit_run_extracted(20, Vector3.ZERO)` twice, purely as a
+shortcut to top up `SalvageService`'s balance so the purchase-flow assertions have something to
+spend. This was correct when task 6.9/F-173 wrote it — nothing else in the project subscribed to
+`run_extracted`. F-238 (2f69f81, 2026-08-19) later gave `ui/hud/extraction_hud.gd` a real
+`subscribe_run_extracted` handler that shows a terminal summary overlay and joins
+`blocks_gameplay_input` "until the run itself resets" (`_on_run_restarted()` is the only path out).
+`unlock_check.gd` has no idea that node exists, never resets it, so from that emit onward
+`MainMenu._other_blocking_ui_open()` sees ExtractionHud still in the group and refuses every
+`set_open(true)` for the rest of the process — three `_check_menu()` assertions
+("sanity: MainMenu opens", "UnlockMenu opens", "open UnlockMenu blocks gameplay input") failed with
+`UNLOCK_CHECK failures=3` at HEAD before this fix, even though nothing about unlocks had regressed.
+
+**Fixed in `tools/unlock_check.gd`**: `EVENT_BUS.emit_run_restarted()` — the real "next run" reset
+path, not a test-only workaround — now runs once after the last `emit_run_extracted()` shortcut and
+before `_check_menu()`. Verified: `.agent/bin/agent godot --script tools/unlock_check.gd` →
+`UNLOCK_CHECK failures=0`, run twice.
+
+**Not swept project-wide.** The same shape — a check firing a real `EventBus.emit_*` as a shortcut,
+with no reset before asserting unrelated UI/group state later in the same script — could recur
+anywhere a check does this and a future feature grows a new subscriber. Audited every other
+`tools/*.gd` that calls `emit_run_extracted`/`emit_run_wiped` directly
+(`run_summary_check.gd`, `salvage_check.gd`, `steam_stats_check.gd`, `extraction_check.gd`): none of
+them assert `MainMenu`/`blocks_gameplay_input` state afterward, so none share this exact symptom
+today — but the general risk (any check that emits a real cross-system event without knowing every
+current subscriber) is not something a one-file fix closes. Worth a lint/convention if it recurs a
+second time: a check that needs a service's side effect should prefer calling the service directly
+(`SalvageService.host_add`-style) over emitting the bus event that has cross-system fan-out.
+
+---
+
 ## Resolved
 
 ### F-268 · F-243's restart never clears placed buildables — BuildService has no run_restarted subscription at all, and its own check has been failing at HEAD since the feature shipped — **fixed**
