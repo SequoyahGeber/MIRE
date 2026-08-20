@@ -10,16 +10,18 @@
 |---|---|---|---|
 | **4.19** Default cutover to procedural; Hollowmere becomes fixture/reference | quill5fa5c7 | 2026-08-20 20:20 | `levels/procedural_island.tscn`, `core/dev/dev_launch.gd`, `tools/world_contract_check.gd`, `tools/environment_vfx_hollowmere_check.gd`, `tools/chest_placement_check.gd`, `tools/ground_fog_check.gd`, `tools/harvest_batch_check.gd`, `docs/WORLDGEN.md`, `world/gen/procedural_world.gd`, `world/chunk/chunk_streamer.gd`, `tools/verify_setup.gd`, `world/environment/ground_fog.gd`, `tools/procedural_look_probe.gd`, `docs/DELEGATION.md` |
 | **7.4** UI/UX polish pass, consistent visual language, transitions | reed31c598 | 2026-08-20 20:27 | `ui/theme/mire_theme.gd`, `tools/menu_kit_check.gd`, `ui/menu_stack.gd`, `tools/menu_stack_check.gd`, `ui/frontend/backdrop.gd`, `ui/frontend/title_screen.gd`, `ui/frontend/frontend.gd`, `levels/frontend.tscn`, `tools/title_check.gd` |
-| **F-301** Some procedural seeds publish NO station marker at all, so the island ships with crafting unreachable | lp | 2026-08-20 20:31 | `tools/poi_required_station_check.gd`, `content/poi/station_camp.tres`, `tools/procedural_world_check.gd` |
+| **F-301** Some procedural seeds publish NO station marker at all, so the island ships with crafting unreachable | lp | 2026-08-20 20:31 | `tools/poi_required_station_check.gd`, `content/poi/station_camp.tres`, `tools/procedural_world_check.gd`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DECISIONS.md` |
+| **F-318** A git merge writes conflict markers into .agent/state.json, which every running lane is reading — the live coordination file becomes unparseable mid-flight | galef95fa6 | 2026-08-20 20:39 | `.gitattributes`, `.agent/bin/install-hooks` |
 
 **F-301 notes:**
 - Reproduced at the pure layer: 17 of 132 seeds place ZERO station_camp, including both seeds F-301 named (3503374054, 3803646258). Root cause is one content field, not the placement code — content/poi/station_camp.tres never set required=true, so D-152's relax ladder in poi_map.gd (which already exists and already saves the wellspring and the shipwreck on exactly these seeds) never ran for the station. wellspring and shipwreck are required and lose 0 of 132.
+- TRAP, for whoever hits it next: at 20:38 UTC the repo was mid-merge with conflict markers left inside .agent/state.json, so EVERY agent command died on a JSONDecodeError — 'agent claim' and 'agent note' both. Nothing lane-side was wrong; a concurrent orchestrator process (agent saturate --watch) was merging origin/main into a local coordination commit and had not finished. It resolved itself within ~30s and my claims and working-tree edits all survived. Do NOT hand-resolve that merge: re-run the agent command a minute later instead.
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `█████████░` 292/324 | 32 |
+| Findings | `█████████░` 292/326 | 34 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -85,6 +87,8 @@
 | ⬜ | **F-311** EnvironmentVfx can now subscribe to the new EventBus.world_rebuilt instead of covering a direct rebuild_for_seed() with a quarter-second sweep | todo |
 | ⬜ | **F-312** tools/environment_vfx_reseed_check.gd prints 15 undeclared ERROR: lines at a clean HEAD while reporting failures=0 | todo |
 | ⬜ | **F-316** docs/SPECS.md carries two different F-226 blocks under one heading, and nothing checks SPECS for duplicate headings | todo |
+| ⬜ | **F-317** A full headless boot of the shipped procedural map prints ~10 dummy-renderer RID ERROR lines from chunk mesh upload — windowed boots are clean, but the '0 stray ERROR lines' full-boot bar needs a headless caveat | todo |
+| 🔵 | **F-318** A git merge writes conflict markers into .agent/state.json, which every running lane is reading — the live coordination file becomes unparseable mid-flight | in_flight |
 
 ## Done
 

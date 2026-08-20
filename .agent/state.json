@@ -1,5 +1,17 @@
 {
   "claims": {
+    ".agent/bin/install-hooks": {
+      "agent": "galef95fa6",
+      "at": "2026-08-20T20:39:20+00:00",
+      "task": "F-318",
+      "token": "CLAUDE_CODE_SESSION_ID:d9bd1b9f-bbd0-404d-a0e5-774d72edf018"
+    },
+    ".gitattributes": {
+      "agent": "galef95fa6",
+      "at": "2026-08-20T20:39:20+00:00",
+      "task": "F-318",
+      "token": "CLAUDE_CODE_SESSION_ID:d9bd1b9f-bbd0-404d-a0e5-774d72edf018"
+    },
     "content/poi/station_camp.tres": {
       "agent": "lp",
       "at": "2026-08-20T20:34:21+00:00",
@@ -12,11 +24,29 @@
       "task": "4.19",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
+    "docs/DECISIONS.md": {
+      "agent": "lp",
+      "at": "2026-08-20T20:39:13+00:00",
+      "task": "F-301",
+      "token": null
+    },
     "docs/DELEGATION.md": {
       "agent": "quill5fa5c7",
       "at": "2026-08-20T20:36:21+00:00",
       "task": "4.19",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
+    "docs/FINDINGS.md": {
+      "agent": "lp",
+      "at": "2026-08-20T20:39:13+00:00",
+      "task": "F-301",
+      "token": null
+    },
+    "docs/SPECS.md": {
+      "agent": "lp",
+      "at": "2026-08-20T20:39:13+00:00",
+      "task": "F-301",
+      "token": null
     },
     "docs/WORLDGEN.md": {
       "agent": "quill5fa5c7",
@@ -203,17 +233,35 @@
       "files": [
         "tools/poi_required_station_check.gd",
         "content/poi/station_camp.tres",
-        "tools/procedural_world_check.gd"
+        "tools/procedural_world_check.gd",
+        "docs/SPECS.md",
+        "docs/FINDINGS.md",
+        "docs/DECISIONS.md"
       ],
       "notes": [
         {
           "at": "2026-08-20T20:34:19+00:00",
           "by": "lp",
           "text": "Reproduced at the pure layer: 17 of 132 seeds place ZERO station_camp, including both seeds F-301 named (3503374054, 3803646258). Root cause is one content field, not the placement code \u2014 content/poi/station_camp.tres never set required=true, so D-152's relax ladder in poi_map.gd (which already exists and already saves the wellspring and the shipwreck on exactly these seeds) never ran for the station. wellspring and shipwreck are required and lose 0 of 132."
+        },
+        {
+          "at": "2026-08-20T20:39:20+00:00",
+          "by": "lp",
+          "text": "TRAP, for whoever hits it next: at 20:38 UTC the repo was mid-merge with conflict markers left inside .agent/state.json, so EVERY agent command died on a JSONDecodeError \u2014 'agent claim' and 'agent note' both. Nothing lane-side was wrong; a concurrent orchestrator process (agent saturate --watch) was merging origin/main into a local coordination commit and had not finished. It resolved itself within ~30s and my claims and working-tree edits all survived. Do NOT hand-resolve that merge: re-run the agent command a minute later instead."
         }
       ],
       "started": "2026-08-20T20:31:10+00:00",
       "token": null
+    },
+    "F-318": {
+      "agent": "galef95fa6",
+      "files": [
+        ".gitattributes",
+        ".agent/bin/install-hooks"
+      ],
+      "notes": [],
+      "started": "2026-08-20T20:39:20+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:d9bd1b9f-bbd0-404d-a0e5-774d72edf018"
     }
   },
   "recent": {
@@ -1205,7 +1253,7 @@
       "token": null
     }
   },
-  "rev": 75,
+  "rev": 79,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -5494,6 +5542,20 @@
       "status": "todo",
       "tier": "F",
       "title": "docs/SPECS.md carries two different F-226 blocks under one heading, and nothing checks SPECS for duplicate headings"
+    },
+    "F-317": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "A full headless boot of the shipped procedural map prints ~10 dummy-renderer RID ERROR lines from chunk mesh upload \u2014 windowed boots are clean, but the '0 stray ERROR lines' full-boot bar needs a headless caveat"
+    },
+    "F-318": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "A git merge writes conflict markers into .agent/state.json, which every running lane is reading \u2014 the live coordination file becomes unparseable mid-flight"
     }
   },
   "version": 1
