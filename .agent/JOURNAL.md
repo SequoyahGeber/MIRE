@@ -7054,3 +7054,45 @@ This is **F-267** (ship sweeps a sibling's uncommitted hunks when its claimed fi
 still open, and it keeps happening on `docs/FINDINGS.md` specifically because **F-289** means `ship`
 cannot stage that file through the normal path. Two open findings, one recurring failure, three
 instances now — worth routing them together rather than separately.
+
+---
+
+### HANDOFF · F-275-review · lp · 2026-08-20T11:38:27+00:00
+
+**Review F-275 @ 15efeed — review and fix what you find**
+
+LP stopped on F-275-review at 2026-08-20T11:38:27+00:00 (exit 1, quota wall). Tokens this run: 462,102 in / 7,452 out.
+The working diff is UNTOUCHED — its partial edits are still on disk, so read them before redoing anything. Full log: .agent/logs/LP-F-275-review-20260820-113635.jsonl
+
+Its last words: "You've hit your session limit · resets 8:10am (America/Vancouver)"
+Its last actions:
+  - Bash grep -n "^## Open\|^## Resolved\|^### F-27[3-9]\|^### F-29[0-9]\|^### F-30[0-9]"
+  - Bash grep -n "ui_accept" project.godot | head; echo "---"; sed -n '/^ui_accept=/,/^$/
+  - Bash cat /private/tmp/claude-501/-Users-sequoyahgeber-Desktop-MIRE/f750bd93-4793-4683
+  - Bash cd /private/tmp/claude-501/-Users-sequoyahgeber-Desktop-MIRE/f750bd93-4793-4683-
+  - Bash git diff 15efeed~1..15efeed -- docs/DELEGATION.md docs/FINDINGS.md | head -180
+  - Bash grep -rn "session_ended\|subscribe_session" ui/ autoload/ --include=*.gd | head 
+
+Tail of the failure:
+hit your session limit · resets 8:10am (America/Vancouver)","type":"result","duration_ms":110859,"uuid":"683938fb-2e17-4044-a0bc-f6cfbb845bea"}
+{"type":"system","subtype":"task_summary","detail":null,"uuid":"d0334fd0-88f1-43b0-8e36-f51764a42596","session_id":"f750bd93-4793-4683-93f3-e641a53ab019"}
+
+Commit at time of writing: `123d13a`
+
+---
+
+### DONE · F-275-review · lp · 2026-08-20T15:18:08+00:00
+
+**Review F-275 @ 15efeed — review and fix what you find**
+
+SOUND — the F-275 change does what its spec contracts for, and I re-ran its own check rather than trusting the commit: .agent/bin/agent godot --script tools/terminal_focus_check.gd -> TERMINAL_FOCUS_CHECK failures=0, 24 PASS, exit 0, zero ERROR: lines (phase 1 solo taps a real InputEventJoypadButton through Input.parse_input_event() and run_restarted fires from both overlays; phase 2's second process joins and confirms the waiting label is disabled, at FOCUS_NONE, and never the focus owner). focus_mode is derived from the same is_local_host as disabled, the grab sits after visible = true in both files, both carry the focus-ring override, and the pair is identical. No bare autoload identifiers introduced; ARCHITECTURE 2.2 client-local UI row correct and unchanged. Nothing filed against the change itself. Filed F-307 (high) for the neighbouring F-243 defect the review surfaced: _refresh_restart_button() has one call site per file, so a client whose host quits keeps a disabled 'waiting on the host' button although its own _is_host_or_solo() is now true, and the overlay's blocks_gameplay_input membership makes _other_blocking_ui_open() refuse every menu's set_open(true) — a terminal screen with zero operable controls and no way out but killing the process. Proved two-process (after the host left: is_host_or_solo=TRUE, button_disabled=true, focus_mode_none=true, main_menu_opened=FALSE); probe deleted, reproduction written into the finding. Not fixed here because both remedies are larger than the change under review and one is a product decision. Record was already right except NEXT.md, whose open count (34 -> 36) and derived 'twenty-six ordinary' arithmetic I corrected. tools/findings_numbering_check.gd: open=36 resolved=273 failures=0. findings_hygiene_check.py still fails 2 (F-236, F-299) — pre-existing, F-269's recurrence, untouched by this.
+
+Notes along the way:
+- Verdict: F-275 is sound. Re-ran tools/terminal_focus_check.gd myself — TERMINAL_FOCUS_CHECK failures=0, 24 PASS, exit 0, zero ERROR: lines. The fix does what the spec's contract says: focus_mode FOCUS_ALL/FOCUS_NONE off the same is_local_host the disabled flag uses, the grab after visible = true (both files), a focus ring override, and the pair kept identical. No autoload bare identifiers introduced; both files keep the get_node_or_null(^"/root/NetTransport") form. ARCHITECTURE 2.2 'VFX, audio, camera, UI' client-local row is right and unchanged — nothing here sends or validates.
+- Filed F-307 (high), the one real defect this review surfaced — and it is F-243's, not F-275's. _refresh_restart_button() has exactly one call site per file (the overlay's open handler), so a client whose host QUITS keeps a disabled 'waiting on the host' button forever even though its own _is_host_or_solo() has flipped true; and because the overlay holds blocks_gameplay_input, _other_blocking_ui_open() refuses MainMenu/SettingsMenu/LobbyMenu/UnlockMenu set_open(true). Terminal screen, zero operable controls, no menu: kill the process. Proved two-process with a throwaway probe modelled on terminal_focus_check phase 2 — after the host left: is_host_or_solo=TRUE, button_disabled=true, focus_mode_none=true, blocks_gameplay_input=true, main_menu_opened=FALSE. Probe deleted; the reproduction is in the finding.
+- Did NOT fix F-307 under this claim, deliberately: the two candidate remedies differ in kind. Re-deriving the button on session end is small but hands the orphan a live host_restart_run() on a world PlayerNet already despawned, and F-279/F-281 show the restart path is leaky even solo — proving the next run is playable IS the work, not lighting the button. Dropping blocks_gameplay_input so a menu can open is safer but is a product decision that belongs in DECISIONS.md. Either is larger than the change under review, which is the stated bar for filing instead of fixing.
+- Record checked, and it was already right: state.json has F-275 status=done by lm; its section IS under '## Resolved' in FINDINGS (line 1918) with what was done and how it was verified; DELEGATION 'Current state' carries the 2026-08-20 F-275 entry naming terminal_focus_check as the file to extend; ARCHITECTURE 2.2's row needed no change. Only NEXT.md had drifted — its open-findings count said 34 (35 before my file, 36 after) and its 'twenty-six ordinary code work' arithmetic followed from it. Updated both, added an F-307 cluster line, and pointed the F-236/F-299 note at tools/findings_hygiene_check.py, which fails on exactly those two at HEAD and nothing else.
+
+Files: `docs/FINDINGS.md`, `docs/NEXT.md`
+
+Commit at time of writing: `123d13a`

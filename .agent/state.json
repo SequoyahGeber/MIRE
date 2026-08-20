@@ -2,13 +2,6 @@
   "claims": {},
   "in_flight": {},
   "recent": {
-    ".agent/BOARD.md": {
-      "agent": "lm",
-      "at": "2026-08-19T15:03:55+00:00",
-      "hash": "975e2e9aba600de7f390d3e0b224c3169f59c4db1a1b77da659288714f19a97e",
-      "task": "6.10-review",
-      "token": null
-    },
     ".agent/bin/agent": {
       "agent": "bram1",
       "at": "2026-08-20T05:14:45+00:00",
@@ -394,13 +387,6 @@
       "task": "F-228",
       "token": null
     },
-    "autoload/debug_console.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T14:13:26+00:00",
-      "hash": "b231d55fc31299af292fa956c2947d8d062a45f8ed4a01615895b38da5547dc8",
-      "task": "F-223",
-      "token": null
-    },
     "autoload/defeat_service.gd": {
       "agent": "bram1",
       "at": "2026-08-19T22:14:05+00:00",
@@ -450,32 +436,11 @@
       "task": "F-245",
       "token": null
     },
-    "autoload/registry.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T14:59:41+00:00",
-      "hash": "a50bc437e28042b8836c978edf56b113df32c91a354b6f0b48465ac699b56828",
-      "task": "4.7-review",
-      "token": null
-    },
-    "autoload/reward_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T12:38:25+00:00",
-      "hash": "9526cfa93a2eaddb31d32da64f79ce1262fc68fc804077771e7cb9e982b37a02",
-      "task": "F-219",
-      "token": null
-    },
     "autoload/rich_presence_service.gd": {
       "agent": "lp",
       "at": "2026-08-19T20:06:51+00:00",
       "hash": "1e36f02c9ac848649802999c9e6160d0b634ae831f1e3559090c734d5e287037",
       "task": "F-250",
-      "token": null
-    },
-    "autoload/salvage_service.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T14:48:16+00:00",
-      "hash": "b969365c82c0def6e96ae64d9f868723717e15775cf8e547eecc0fe58de0dd07",
-      "task": "F-227",
       "token": null
     },
     "autoload/steam_lobby.gd": {
@@ -716,25 +681,11 @@
       "task": "F-257",
       "token": null
     },
-    "core/net/rpc_manifest.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T12:47:53+00:00",
-      "hash": "60bf0bd3e00417e11c1f806876ed502fce0b923e503bf3a03a2f33745ed1ad7e",
-      "task": "F-213",
-      "token": null
-    },
     "core/net/rpc_rate_limiter.gd": {
       "agent": "lm",
       "at": "2026-08-19T15:47:09+00:00",
       "hash": "43ea50eafcc9f77a5df1ab8158cbf263a70e200bcfb388095303470dfdb2ba08",
       "task": "F-232",
-      "token": null
-    },
-    "core/render/mesh_merge.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T13:59:55+00:00",
-      "hash": "80fba408216da8a2fd8bed5ecfb1a7cef85e4f441fe4727039814edfa9e58588",
-      "task": "F-208",
       "token": null
     },
     "core/save/steam_stats_save.gd": {
@@ -788,16 +739,16 @@
     },
     "docs/FINDINGS.md": {
       "agent": "lp",
-      "at": "2026-08-20T10:21:34+00:00",
-      "hash": "cc9783da95b64ad81046089cbb0526be1e65146e445974d8695c045762be778a",
-      "task": "F-280",
+      "at": "2026-08-20T15:18:08+00:00",
+      "hash": "4c5fa9d438a60e532fc0e4b408d6f0d413273b4e5798c98b4303c59639afce24",
+      "task": "F-275-review",
       "token": null
     },
     "docs/NEXT.md": {
       "agent": "lp",
-      "at": "2026-08-20T11:21:16+00:00",
-      "hash": "e619b274cd1d24e612f8c8bf2270955f6b143ce5bc96786bbd55ba7d44ab676b",
-      "task": "F-271-review",
+      "at": "2026-08-20T15:18:08+00:00",
+      "hash": "3a4000ed2030d2d5f35a5c8fc08e703d1c75a49fa531e1bbd07a32c4f6e5f8c0",
+      "task": "F-275-review",
       "token": null
     },
     "docs/SPECS.md": {
@@ -805,13 +756,6 @@
       "at": "2026-08-20T11:21:16+00:00",
       "hash": "816ae09f920491ec79c48b848df2bd8d5a6f1f0e0e983ebebdb41841f409cb69",
       "task": "F-271-review",
-      "token": null
-    },
-    "project.godot": {
-      "agent": "lm",
-      "at": "2026-08-19T12:04:37+00:00",
-      "hash": "263d2b48324c1b68642367afc13dc30d776fb9dbfdb40cb370e30397ca41ad4f",
-      "task": "F-209",
       "token": null
     },
     "steam_appid.txt": {
@@ -961,13 +905,6 @@
       "task": "F-274",
       "token": null
     },
-    "tools/bind_ui_gamepad_actions.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T12:04:37+00:00",
-      "hash": "6a6288ddcd56c478ef3f0a8a5ede226d3c214fd6c0a2293f2a96450a61042182",
-      "task": "F-209",
-      "token": null
-    },
     "tools/biome_defs_lib.gd": {
       "agent": "lm",
       "at": "2026-08-20T06:20:25+00:00",
@@ -989,41 +926,6 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
-    "tools/blender/build_crafting_stations.py": {
-      "agent": "lm",
-      "at": "2026-08-19T13:37:33+00:00",
-      "hash": "2ee20c0dbd340cd8ec48ecb853df6337ad5a13a6793f02f976d64640a6c75495",
-      "task": "F-207",
-      "token": null
-    },
-    "tools/blender/build_enemy_crawler.py": {
-      "agent": "lm",
-      "at": "2026-08-19T13:37:33+00:00",
-      "hash": "22f832b3651256f8530655ae0a6d106de21ff5df00fc98e3ddc5571b829a33be",
-      "task": "F-207",
-      "token": null
-    },
-    "tools/blender/build_harvestable_resources.py": {
-      "agent": "lm",
-      "at": "2026-08-19T13:37:33+00:00",
-      "hash": "0ba4126a240fd1f302a93be3e49c24356f0dda385bb136eba25273f6a42a0caf",
-      "task": "F-207",
-      "token": null
-    },
-    "tools/blender/build_loot_set.py": {
-      "agent": "lm",
-      "at": "2026-08-19T13:37:33+00:00",
-      "hash": "e0cf0748c45a3a2f365cdae2c8b4ae6895b1ec96594d0b6a9b01ca8895a2a42d",
-      "task": "F-207",
-      "token": null
-    },
-    "tools/blender/build_mire_map_kit.py": {
-      "agent": "lm",
-      "at": "2026-08-19T13:37:33+00:00",
-      "hash": "38be93217c04c71c2504f9f962d870c4ce8458a4922dc3342bf3d025335d79fc",
-      "task": "F-207",
-      "token": null
-    },
     "tools/blender/build_path_set.py": {
       "agent": "slate17",
       "at": "2026-08-19T17:05:42+00:00",
@@ -1036,27 +938,6 @@
       "at": "2026-08-20T05:07:23+00:00",
       "hash": "2bdc341d281e1aa8534c04c09f660268945e542b66dbb397283800301fb38736",
       "task": "F-255",
-      "token": null
-    },
-    "tools/blender/build_tool_weapon_set.py": {
-      "agent": "lm",
-      "at": "2026-08-19T13:37:33+00:00",
-      "hash": "3485c44f6aee4d2ada466853ed0e429dd3c756feda0fa044765b9ef07435f1e7",
-      "task": "F-207",
-      "token": null
-    },
-    "tools/blender/build_ward_set.py": {
-      "agent": "lm",
-      "at": "2026-08-19T13:37:33+00:00",
-      "hash": "2d8382fe54b7a888e553d9f0cf479b002e6251200ea3e3bee322d2573c4f55d4",
-      "task": "F-207",
-      "token": null
-    },
-    "tools/blender/build_wellspring_set.py": {
-      "agent": "lm",
-      "at": "2026-08-19T13:37:33+00:00",
-      "hash": "745a59dcf2909bc955b1e281a39f2f3deecb89745370a21be0d9d4eda272b123",
-      "task": "F-207",
       "token": null
     },
     "tools/blender/build_wetland_nature.py": {
@@ -1115,13 +996,6 @@
       "task": "F-274",
       "token": null
     },
-    "tools/chest_seed_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T12:13:17+00:00",
-      "hash": "1a1c6b250209d41248329b46dd3d0b672e1ae69f936280187038ca3ae8c92555",
-      "task": "F-210",
-      "token": null
-    },
     "tools/chunk_seam_shot.gd": {
       "agent": "lm",
       "at": "2026-08-20T06:20:25+00:00",
@@ -1141,13 +1015,6 @@
       "at": "2026-08-20T11:03:39+00:00",
       "hash": "da3659ecccffafa9c3d6dd02db8cd2e52dff224c58c4b60586c30e37688c21ac",
       "task": "F-288",
-      "token": null
-    },
-    "tools/command_console_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T14:13:26+00:00",
-      "hash": "f79ce12519a2a5950d3452fdfb067e74aa94b7c504a54c52f0674f721b4ac6f9",
-      "task": "F-223",
       "token": null
     },
     "tools/command_craft_build_net_check.gd": {
@@ -1199,13 +1066,6 @@
       "task": "F-254",
       "token": null
     },
-    "tools/cycle_modifier_seed_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T12:42:58+00:00",
-      "hash": "315c0ab3347d4f8b9027d136fad14e96ddc8c6ea7cb312b6df4b6f4df2fdaa09",
-      "task": "F-220",
-      "token": null
-    },
     "tools/day_night_restart_check.gd": {
       "agent": "lp",
       "at": "2026-08-20T06:34:42+00:00",
@@ -1218,13 +1078,6 @@
       "at": "2026-08-19T15:31:50+00:00",
       "hash": "c4ad8c3c4062844471a18a0bd3984dd2d4b35d84f311f169c6787e7ca2d6a2ef",
       "task": "F-229",
-      "token": null
-    },
-    "tools/decision_trigger_check.py": {
-      "agent": "lm",
-      "at": "2026-08-19T12:29:28+00:00",
-      "hash": "c6206eb8d7ab2aabe67e085c0fb66a66686975cf09db3f1b7e8bd8b3d7b3eef6",
-      "task": "F-218",
       "token": null
     },
     "tools/enemy_content_check.gd": {
@@ -1248,13 +1101,6 @@
       "task": "F-290",
       "token": null
     },
-    "tools/environment_vfx_hollowmere_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T13:59:55+00:00",
-      "hash": "aa84a543892a0cd43ac570669c3ccb4170172f82c13257d0c06279b9e8810b52",
-      "task": "F-208",
-      "token": null
-    },
     "tools/environment_vfx_reseed_check.gd": {
       "agent": "lp",
       "at": "2026-08-20T10:57:18+00:00",
@@ -1274,13 +1120,6 @@
       "at": "2026-08-19T15:32:50+00:00",
       "hash": "2bf85643ea9d766e213b4084106a982166af161979eddad056372fd383f45d62",
       "task": "F-230",
-      "token": null
-    },
-    "tools/gamepad_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T13:07:12+00:00",
-      "hash": "f53f348c58c78b68377d7c6304afe64d374a9643e25914d946ef20d5a4af558a",
-      "task": "F-217",
       "token": null
     },
     "tools/harvest_restart_check.gd": {
@@ -1324,20 +1163,6 @@
       "hash": "c2bed37a40061352778880786d3eb138631da555f3d7fd72e6e3effd289bc05f",
       "task": "F-239",
       "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
-    },
-    "tools/menu_focus_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T13:00:01+00:00",
-      "hash": "24fca17d7257483d376cc6cd10d6330fc8ff8bf967f887cb098a5684f8c9483f",
-      "task": "F-216",
-      "token": null
-    },
-    "tools/mesh_merge_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T13:59:55+00:00",
-      "hash": "6e8fdf537c1ac6dfe4f4e6c3906ca9ce556bc72e4c8145adf31214c361acd13e",
-      "task": "F-208",
-      "token": null
     },
     "tools/nav_bake_check.gd": {
       "agent": "lm",
@@ -1395,32 +1220,11 @@
       "task": "F-288",
       "token": null
     },
-    "tools/prop_chunk_merge_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T13:59:55+00:00",
-      "hash": "ca6c52ef7503f1ed2ffdad750997b207d7dbbd0721c312278e7cce6e8db04edb",
-      "task": "F-208",
-      "token": null
-    },
     "tools/resource_scatter_check.gd": {
       "agent": "lm",
       "at": "2026-08-20T05:43:32+00:00",
       "hash": "f19a58347fb73c888709f6ff47630d150d21e4cd4ce05c01e12f18ed51bbcb18",
       "task": "F-271",
-      "token": null
-    },
-    "tools/reward_service_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T12:38:25+00:00",
-      "hash": "54bd567c2eb945db8e068397b4b69c72526847d1bb2429a9b30e259afbbd786a",
-      "task": "F-219",
-      "token": null
-    },
-    "tools/reward_service_seed_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T12:38:25+00:00",
-      "hash": "ded0bd0b4bb0cc9425b61da58ab56d30b2d1f8b89bb3d43bc86990705a1af1c7",
-      "task": "F-219",
       "token": null
     },
     "tools/roadmap_dependency_check.gd": {
@@ -1612,13 +1416,6 @@
       "task": "F-236",
       "token": null
     },
-    "tools/wave_director_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T14:45:15+00:00",
-      "hash": "6a95e90554fdfc285d98155a7ce93f7b4c8fec4637659b52461b0d426a1ad560",
-      "task": "F-226",
-      "token": null
-    },
     "tools/wave_spawner_cycle_net_check.gd": {
       "agent": "lp",
       "at": "2026-08-20T11:15:17+00:00",
@@ -1661,20 +1458,6 @@
       "task": "F-277",
       "token": null
     },
-    "ui/building/build_bar.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T13:07:12+00:00",
-      "hash": "4ac936be0227259feeed82d27c1ad5d92ae0acf2f1ff4e431b739d783b6e7161",
-      "task": "F-217",
-      "token": null
-    },
-    "ui/crafting/crafting_ui.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T12:04:37+00:00",
-      "hash": "9b196f9f10b5c830ec3a67260897c91a8dec8ae1cdb2f437be2d44fa9fdaae10",
-      "task": "F-209",
-      "token": null
-    },
     "ui/hud/defeat_hud.gd": {
       "agent": "lm",
       "at": "2026-08-20T06:31:22+00:00",
@@ -1703,48 +1486,6 @@
       "task": "F-238",
       "token": null
     },
-    "ui/inventory/inventory_ui.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T12:04:37+00:00",
-      "hash": "d698e561d657c5f3a498e227d1824120776180301091102878a5b551e14cce15",
-      "task": "F-209",
-      "token": null
-    },
-    "ui/lobby/lobby_menu.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T12:04:37+00:00",
-      "hash": "cb163cb19fe9122c5b22b789cb2705554e68c57d76072f291a8260f4e048de3f",
-      "task": "F-209",
-      "token": null
-    },
-    "ui/menu/focus_ring_slider.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T12:52:55+00:00",
-      "hash": "09f9a623440b0ff1661080b4e188cfce2160f64ee1eb182b51535d87943ed4f9",
-      "task": "F-215",
-      "token": null
-    },
-    "ui/menu/main_menu.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T12:04:37+00:00",
-      "hash": "40a558f14ddd77b012869d5a09eb40995860221fa9ca425f2369bee540841334",
-      "task": "F-209",
-      "token": null
-    },
-    "ui/menu/settings_menu.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T12:52:55+00:00",
-      "hash": "70de1b4a594879b2ca381f368d051f5b6de3167515db161a10c17d22e075d3e8",
-      "task": "F-215",
-      "token": null
-    },
-    "ui/menu/unlock_menu.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T12:04:37+00:00",
-      "hash": "fb9452d7b49287e473e6c1dfb8d0315434e79a3d3772c1215be878da788e0f85",
-      "task": "F-209",
-      "token": null
-    },
     "world/chunk/chunk_mesher.gd": {
       "agent": "lm",
       "at": "2026-08-20T06:20:25+00:00",
@@ -1764,13 +1505,6 @@
       "at": "2026-08-20T11:35:30+00:00",
       "hash": "d44a755ea7e625a37c33a1a9088a98171c21488374686452532117414c022233",
       "task": "F-274-review",
-      "token": null
-    },
-    "world/environment/foliage_wind.gdshader": {
-      "agent": "lm",
-      "at": "2026-08-19T13:59:55+00:00",
-      "hash": "b8352835b9fe26e16e29209c081eddf2207f1264ce50532e871ca59e2bd66623",
-      "task": "F-208",
       "token": null
     },
     "world/gen/authored_world.gd": {
@@ -5815,10 +5549,12 @@
       "title": "F-243's terminal restart buttons are unreachable from a bare controller"
     },
     "F-275-review": {
+      "done_at": "2026-08-20T15:18:08+00:00",
+      "done_by": "lp",
       "est": "0.5",
       "milestone": "Findings",
       "review_of": "F-275",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Review F-275 @ 15efeed \u2014 review and fix what you find"
     },
