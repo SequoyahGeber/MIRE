@@ -4911,3 +4911,91 @@ today's player-visible win from this is the loot/modifier/Mire streams genuinely
 run; the fresh *island* half lands on `ProceduralWorld`, still dev-only behind `DevLaunch
 --procedural` until 4.19's cutover (F-139). That is the right order — the mechanism is proven and
 exercised before the map that needs it ships, not after.
+
+### D-162 · 2026-08-20 · A finding resolves when the defect its own text asserts is false at HEAD — spin-outs found while fixing it live as their own findings, cited in the resolution note
+F-269 had to decide whether F-243 ("the run loop is a line, not a circle — after defeat or
+extraction there is no path to a next run short of relaunching the process") is resolvable while its
+review verdict reads *changes required* and nine findings spun out of it are open (F-268, F-275
+through F-281), one of which still fails `tools/run_restart_check.gd` at HEAD.
+
+**The rule: a finding is resolved when the specific defect its own text asserts is no longer true at
+HEAD.** Not when the area it touched is perfect. F-243's assertion is a negative existence claim —
+no restart path exists — and that claim is false now: `EventBus.run_restarted` has twenty-one
+subscribers, both HUDs submit the restart, and two dedicated checks drive it. Leaving it under
+`## Open` does not communicate "there is residue"; it communicates the false headline, and `brief`
+offers that headline to the next lane as buildable work. That is the expensive failure — a lane
+re-deriving a shipped feature — and it is strictly worse than a resolved entry whose note names nine
+open follow-ups by number.
+
+The residue is not lost by resolving, because the residue already has F-numbers. That is what
+spinning a gap out into its own finding is *for*: it is the record. A resolution note that lists
+them keeps the trail readable in both directions — the parent points forward at what is left, each
+child already points back.
+
+Corollaries, both of which F-269 exercised:
+
+- **A finding whose text says part of it is unfixed does not resolve.** F-236 names three content
+  rows and `content/ranged_weapons/` is still one file; it was reopened, not moved.
+- **A finding whose fix was deliberately deferred to design does not resolve either.** F-267's
+  mechanism was never built; the incident was cleaned up and the mechanism filed. `agent reopen`
+  is the correct exit for both, and it clears the drift by correcting the status rather than by
+  moving the section (F-131).
+
+**Would change my mind:** a resolved parent whose spin-outs get triaged as low-priority and rot,
+where leaving the parent open would have kept the pressure on. If that happens, the fix is a
+"blocked-by" field on a finding rather than reverting to headline-as-status — but if it happens
+twice, this rule is wrong and the parent should stay open until its children close.
+
+### D-163 · 2026-08-20 · F-271: a biome is decided from the CONTINENT everywhere, including scatter — and `PoiDef`'s height bounds deliberately mean the opposite surface
+
+D-144 already said a biome is chosen from `IslandHeightmap.continent()`, never `height()`, because a
+`BiomeDef` carries terrain amplitudes and so the full surface height depends on which biome a point
+is in. What D-144 did not say is that the rule binds every *consumer* of biome classification, not
+just `BiomeMap.biome_at()` itself. `ResourceScatter._placement_at()` called `BiomeMap.assign()`
+directly with the surface height for two years' worth of commits, and nothing noticed, because
+scatter placement is never replicated (ARCHITECTURE.md §2.2) — a peer that classified a point
+differently would have nothing to disagree with.
+
+**The rule, stated so it cannot be read narrowly:** `assign()` is a primitive with one correct
+argument, and outside `biome_map.gd` and `tools/biome_check.gd`'s unit tests nothing should be
+calling it. A caller that wants a point's biome calls `biome_at()` / `biome_at_from_set()`. Having
+the surface height already in a local is not a reason to reuse it — that reuse is precisely how the
+bug arose, and the fix leaves both samples in the function side by side to make the distinction
+visible at the call site.
+
+**`PoiDef` is the deliberate exception, and it is not one.** `PoiDef.height_min`/`height_max` are
+tested against `height()` and stay that way. The two fields answer different questions: a biome
+cannot be chosen from a surface it shaped itself, whereas a landmark's height constraint is a
+statement about the ground its feet land on — a Wellspring above the waterline, a shipwreck at it,
+both visible-surface facts. What was actually broken there was the documentation: both fields read
+"Metres, in IslandHeightmap.height()'s units" while meaning different surfaces. Both doc comments now
+name their own surface and point at the other. The mixed units inside a single `PoiDef` — biome
+resolved continentally, height tested on the surface — are intended.
+
+**What it costs, measured.** Over an 81x81 grid at 8 m spacing, on the three biomes shipped today,
+0.08%–0.14% of world points classify differently under the two rules (5–9 points in 6561, across
+five seeds). The scatter layout hash moved for all five seeds, with the placement count changing by
+at most 2 per seed — so the churn is real but small. It is small because biome content is thin
+(F-236): three defs with wide, barely-overlapping height bands, so a few metres of ridge rarely
+crosses a boundary. Every biome authored with a tighter band widens this, which is the argument for
+fixing it now rather than after the content exists.
+
+**One correction to F-274's reading of this, for whoever fixes that one.** F-274 says wiring the
+amplitude seam is "exactly what turns F-271 from a doc-conformance problem into a live one," and that
+F-271 "has not visibly diverged" while amplitudes are inert. The first half is right about severity;
+the second half is not right about the facts. The divergence is live at HEAD and always was, because
+it does not come from amplitudes at all — `height()` is `continent()` PLUS the detail and ridge
+layers, and those layers are applied with the 1.0/1.0 defaults today, so the two functions return
+different numbers on all high ground regardless of what any BiomeDef authors. That is the 0.08%-0.14%
+measured above, on the shipped content, before F-274 changes anything. What wiring amplitudes adds is
+circularity — `height()` starting to depend on the biome it is being used to select — which makes the
+old code incoherent rather than merely wrong. F-271 was therefore worth fixing on its own schedule
+and was, so F-274 no longer has to carry it.
+
+**What would change my mind:** a task that gives the chunk mesher real per-biome terrain amplitudes
+(F-274 — `terrain_amplitudes()` currently has no shipped caller, so `height()` is biome-blind in
+practice today). Once the surface genuinely varies by biome, `PoiDef`'s bounds start meaning
+something seed- and biome-dependent in a way an author cannot predict from the number alone, and the
+POI half of this decision is worth revisiting. The biome half is not: it gets *more* correct as
+amplitudes get real, since that is when `height()`-based classification becomes properly circular
+rather than merely inconsistent.

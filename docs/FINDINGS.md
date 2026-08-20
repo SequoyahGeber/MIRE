@@ -519,6 +519,29 @@ claimed file, diff it against the last commit and warn when hunks reference anot
 changes made before this task's claim timestamp. Filed for design rather than patched inline; the
 probe itself is stripped in this finding's own commit.
 
+**2026-08-20, lp (F-269) — third recurrence, observed live at close-out, and the first one where the
+swept file was under an EXACT claim.** F-269 held `docs/SPECS.md` and `docs/DELEGATION.md` from
+05:40. LM, on F-271, appended its own spec block and Current-state entry to both files anyway — it
+never claimed either — so at F-269's ship both files carried two lanes' uncommitted work. Because
+both lanes append near the same anchor (end of file for SPECS, the top of *Current state* for
+DELEGATION), the two additions are **one contiguous diff hunk**: `git diff -U0` shows a single
+`@@ -9348,0 +9349,152 @@` for SPECS and a single `@@ -77,0 +78,92 @@` for DELEGATION. There is no
+hunk-level staging that separates them, so `git add -p`-style filtering — the obvious workaround, and
+the one this finding's suggested fix implies — does not apply to the append-heavy docs where this
+actually fires. F-269 shipped rather than attempt line-level surgery on a file a live lane was
+mid-write in.
+
+Two things this adds to the diagnosis above:
+
+1. **The claim did not protect the file.** Claims are advisory except at the pre-commit hook, and the
+   hook checks the *committer's* claims, not whether some other lane wrote into a file it does not
+   hold. A lane can therefore edit a claimed file freely, and the claim holder is the one who then
+   sweeps it. Any fix that keys on "was this file claimed" will miss this case entirely.
+2. **The append pattern defeats hunk attribution.** A warning that fires on "this staged file
+   contains changes made before this task's claim timestamp" — the finding's own simplest
+   suggestion — still works here and is the one that would have caught it, since LM's block predates
+   nothing but is textually inseparable. Timestamps, not hunks.
+
 ---
 
 ### F-268 · F-243's restart never clears placed buildables — BuildService has no run_restarted subscription at all, and its own check has been failing at HEAD since the feature shipped
