@@ -7451,3 +7451,15 @@ Notes along the way:
 Files: `world/chunk/chunk_streamer.gd`, `world/gen/procedural_world.gd`, `tools/spawn_ground_check.gd`, `autoload/player_net.gd`
 
 Commit at time of writing: `97563d5`
+
+---
+
+### DONE · 4.18 · quill5fa5c7 · 2026-08-20T21:26:49+00:00
+
+**Three-seed island-feel walk vs Hollowmere (tuning input, not a gate — D-125)**
+
+Fourth look pass shipped: deterministic interior-vertex XZ jitter in ChunkMesher (0.35 x step, borders on-grid, vertices re-sample the true surface) — facets now read organic like the rvr9ca reference. Three checks updated to read vertex-own XZ; full suite green. D-184 carries the complete record of all four passes.
+
+Files: `world/chunk/chunk_mesher.gd`, `docs/DELEGATION.md`, `docs/DECISIONS.md`, `assets/audit/terrain/island_orbit.png`, `assets/audit/terrain/island_spawn_view.png`, `assets/audit/terrain/island_shore_look.png`, `tools/biome_terrain_check.gd`, `tools/noise_reuse_check.gd`
+
+Commit at time of writing: `90bc04c`
