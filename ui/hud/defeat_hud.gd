@@ -36,6 +36,15 @@ extends CanvasLayer
 ## "waiting on the host" label instead of a working control, so nothing here needs a network request
 ## of its own. `_on_run_restarted()` is this screen's un-terminal path, symmetric with `_on_run_wiped`.
 ##
+## F-307/D-185: "only the local HOST peer's press does anything" is a fact about a LIVE session, and
+## F-243 read it exactly once — when the overlay opened — so a client whose host quit was left staring
+## at a disabled waiting label on a session that no longer exists, with `blocks_gameplay_input`
+## refusing every menu's `set_open(true)` on top of it. `NetSession.session_ended` is now this
+## screen's second input: when the session this overlay opened under is over for good, the control
+## becomes an enabled "Leave to Menu" and the overlay leaves the blocking group. Deliberately NOT
+## "Start Next Run" — `_is_host_or_solo()` does go true for an orphan, but its world went with the
+## session (`PlayerNet` clears on disconnect), so a restart there is not a playable run. See D-185.
+##
 ## F-275: that button is the ONLY way off this screen — a terminal overlay has no Esc/dismiss path,
 ## exactly the mandatory-panel trap F-216 fixed for `AttunementUI`. So the enabled host button grabs
 ## keyboard focus as the overlay is shown and carries a visible focus ring, and the non-host's
@@ -47,8 +56,11 @@ extends CanvasLayer
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
 const BLOCKING_UI_GROUP: StringName = &"blocks_gameplay_input"
 const CYCLE_MODIFIER_SERVICE_PATH := ^"/root/CycleModifierService"
+const NET_SESSION_PATH := ^"/root/NetSession"
+const MAIN_MENU_PATH := ^"/root/MainMenu"
 const RESTART_LABEL: String = "Start Next Run"
 const WAITING_LABEL: String = "Waiting on the host to start the next run…"
+const LEAVE_LABEL: String = "Leave to Menu"
 
 ## Indexed by `DefeatService.cause` — a cause this file has never heard of (a future third lose
 ## condition) still gets a real line via `.get()`'s default below, not a blank one.
@@ -80,6 +92,12 @@ var _restore_mouse_captured: bool = false
 ## ever re-fired it, so the real number never appeared. Tracked independently of `_shown` instead, so
 ## whichever of the two arrives first wins and the second one never clobbers it.
 var _salvage_known: bool = false
+## F-307. Scoped to THIS overlay's lifetime, not to the process: cleared every time the screen opens
+## and every time it is un-terminalled, set only by `NetSession.session_ended`. A solo run has no
+## session at all and so never sets it, which is why the flag — rather than "is there a session right
+## now" — is what distinguishes an orphan from a solo host. Both peers answer `_is_host_or_solo()`
+## with true; only one of them still has a world.
+var _session_over: bool = false
 
 
 func _ready() -> void:
@@ -88,18 +106,29 @@ func _ready() -> void:
 	EVENT_BUS.subscribe_run_wiped(_on_run_wiped)
 	EVENT_BUS.subscribe_salvage_banked(_on_salvage_banked)
 	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
+	# Standing rule 1 (F-011/F-046): NetSession by path, never as a bare identifier — this file is an
+	# autoload every `--script` harness loads at compile time.
+	var session: Node = get_node_or_null(NET_SESSION_PATH)
+	if session != null:
+		session.connect(&"session_ended", Callable(self, "_on_session_ended"))
 
 
 func _exit_tree() -> void:
 	EVENT_BUS.unsubscribe_run_wiped(_on_run_wiped)
 	EVENT_BUS.unsubscribe_salvage_banked(_on_salvage_banked)
 	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
+	var session: Node = get_node_or_null(NET_SESSION_PATH)
+	if session != null and session.is_connected(&"session_ended", Callable(self, "_on_session_ended")):
+		session.disconnect(&"session_ended", Callable(self, "_on_session_ended"))
 
 
 func _on_run_wiped(cycle: int, _world_position: Vector3) -> void:
 	if _shown:
 		return
 	_shown = true
+	# F-307: a run only reaches this screen while its session is alive, so the flag starts false for
+	# every showing — otherwise a solo run after an orphaned one would inherit the LEAVE_LABEL.
+	_session_over = false
 	var cause: StringName = _defeat_cause()
 	_headline.text = "CYCLE %d" % cycle
 	_cause_label.text = String(CAUSE_HEADLINES.get(cause, DEFAULT_HEADLINE))
@@ -126,13 +155,40 @@ func _on_run_restarted() -> void:
 		return
 	_shown = false
 	_salvage_known = false
+	_session_over = false
 	_overlay.visible = false
 	remove_from_group(BLOCKING_UI_GROUP)
 	if _restore_mouse_captured:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
+## F-307. `session_ended` fires once per session, on every peer, and only AFTER `NetSession`'s rejoin
+## ladder is exhausted — so by the time this runs there is genuinely nothing to get back into, and a
+## peer that reconnected mid-overlay never reaches here. Not gated on `_shown`: an overlay that opens
+## later re-derives the flag from scratch in `_on_run_wiped()` anyway, and setting it unconditionally
+## keeps the two paths from disagreeing.
+func _on_session_ended(_reason: int, _detail: String) -> void:
+	_session_over = true
+	if not _shown:
+		return
+	_refresh_restart_button()
+	# The other half of the soft-lock, and the reason re-deriving the button alone is not enough: while
+	# this overlay is in `blocks_gameplay_input`, D-032's interlock makes every menu's `set_open(true)`
+	# a no-op, so the screen has no route to a menu even once its own control works. Safe to leave the
+	# group here specifically because the session is dead: there is no world left to walk around in —
+	# `PlayerNet` cleared the local player on disconnect — so nothing is being handed live input.
+	remove_from_group(BLOCKING_UI_GROUP)
+	_grab_restart_focus()
+
+
 func _refresh_restart_button() -> void:
+	# F-307/D-185: an orphaned peer is offered the way out, not a restart of a torn-down world. Checked
+	# before the host predicate because an orphan satisfies both.
+	if _session_over:
+		_restart_button.text = LEAVE_LABEL
+		_restart_button.disabled = false
+		_restart_button.focus_mode = Control.FOCUS_ALL
+		return
 	var is_local_host: bool = _is_host_or_solo()
 	_restart_button.text = RESTART_LABEL if is_local_host else WAITING_LABEL
 	_restart_button.disabled = not is_local_host
@@ -161,9 +217,22 @@ func _is_host_or_solo() -> bool:
 
 
 func _on_restart_pressed() -> void:
+	if _session_over:
+		_leave_to_menu()
+		return
 	var cycle_service: Node = get_node_or_null(^"/root/CycleService")
 	if cycle_service != null:
 		cycle_service.call("host_restart_run")
+
+
+## F-307. The overlay deliberately stays up behind the menu — it is still this run's summary, and
+## `MainMenu` is a higher CanvasLayer (57 vs 20) so it draws and takes input over it. This is a
+## `set_open(true)` like any other, which is exactly why leaving the blocking group above had to
+## happen first.
+func _leave_to_menu() -> void:
+	var main_menu: Node = get_node_or_null(MAIN_MENU_PATH)
+	if main_menu != null:
+		main_menu.call(&"set_open", true)
 
 
 ## Only the death-banking half of this signal is ours — `extracted == true` is 6.5/6.6's success

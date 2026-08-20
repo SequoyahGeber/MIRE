@@ -48,30 +48,6 @@
       "task": "7.4",
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
-    "docs/DECISIONS.md": {
-      "agent": "lp",
-      "at": "2026-08-20T21:00:18+00:00",
-      "task": "F-307",
-      "token": null
-    },
-    "docs/DELEGATION.md": {
-      "agent": "lp",
-      "at": "2026-08-20T21:00:18+00:00",
-      "task": "F-307",
-      "token": null
-    },
-    "docs/FINDINGS.md": {
-      "agent": "lp",
-      "at": "2026-08-20T20:52:58+00:00",
-      "task": "F-307",
-      "token": null
-    },
-    "docs/SPECS.md": {
-      "agent": "lp",
-      "at": "2026-08-20T20:52:58+00:00",
-      "task": "F-307",
-      "token": null
-    },
     "levels/frontend.tscn": {
       "agent": "reed31c598",
       "at": "2026-08-20T20:36:01+00:00",
@@ -96,11 +72,11 @@
       "task": "7.4",
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
-    "tools/terminal_focus_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T20:44:47+00:00",
-      "task": "F-307",
-      "token": null
+    "tools/pause_menu_check.gd": {
+      "agent": "reed31c598",
+      "at": "2026-08-20T21:00:33+00:00",
+      "task": "7.4",
+      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
     "tools/title_check.gd": {
       "agent": "reed31c598",
@@ -144,17 +120,11 @@
       "task": "7.4",
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
-    "ui/hud/defeat_hud.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T20:49:50+00:00",
-      "task": "F-307",
-      "token": null
-    },
-    "ui/hud/extraction_hud.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T20:49:50+00:00",
-      "task": "F-307",
-      "token": null
+    "ui/menu/pause_menu.gd": {
+      "agent": "reed31c598",
+      "at": "2026-08-20T21:00:33+00:00",
+      "task": "7.4",
+      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
     "ui/menu_stack.gd": {
       "agent": "reed31c598",
@@ -193,38 +163,13 @@
         "ui/frontend/expedition_screen.gd",
         "tools/expedition_check.gd",
         "assets/audit/menu/dock_1080p.png",
-        "assets/audit/menu/dock_deck.png"
+        "assets/audit/menu/dock_deck.png",
+        "ui/menu/pause_menu.gd",
+        "tools/pause_menu_check.gd"
       ],
       "notes": [],
       "started": "2026-08-20T20:27:08+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
-    },
-    "F-307": {
-      "agent": "lp",
-      "dispatched": true,
-      "files": [
-        "tools/terminal_focus_check.gd",
-        "ui/hud/defeat_hud.gd",
-        "ui/hud/extraction_hud.gd",
-        "docs/SPECS.md",
-        "docs/FINDINGS.md",
-        "docs/DECISIONS.md",
-        "docs/DELEGATION.md"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-20T20:49:50+00:00",
-          "by": "lp",
-          "text": "The shipped LEAVE button (ui/lobby/lobby_menu.gd:148 request_leave) calls NetTransport.leave() directly; NetSession.end_session() \u2014 the API whose own doc says 'prefer this over NetTransport.leave()' \u2014 has ZERO shipped callers, only tools/session_lifecycle_check.gd. So a real host quit gives clients no notice: they burn the full 4-attempt rejoin ladder (~19s) and end with CONNECTION_LOST 'lost contact with the host' instead of HOST_CLOSED. Filing separately; F-307's phase 3 drives the SHIPPED (ungraceful) path for the defeat overlay and end_session() for the extraction one, so the fix is proven against both EndReasons."
-        },
-        {
-          "at": "2026-08-20T20:52:46+00:00",
-          "by": "lp",
-          "text": "Sweep done. (a) _is_host_or_solo() exists in exactly the two files fixed \u2014 no third copy; the only other ui/ read of transport authority is net_debug_panel.gd, which re-polls every refresh and cannot latch. (b) The mandatory-panel class (no Esc, no dismiss, blocks_gameplay_input) is exactly three files: attunement_ui.gd, defeat_hud.gd, extraction_hud.gd \u2014 F-275's sweep already enumerated it. (c) THIRD MEMBER IS STILL BROKEN, same shape, filing as F-320: attunement_ui.gd closes only on an ACCEPTED selection_confirmed, which needs a live host, and subscribes to nothing session-lifecycle. An orphaned client loops forever \u2014 F-297's 8s timer re-enables the buttons, each press request_select()s into the void, re-disables, times out \u2014 and the panel never leaves blocks_gameplay_input, so no menu can open over it either. F-297 fixed the latch, not the reachability."
-        }
-      ],
-      "started": "2026-08-20T20:43:24+00:00",
-      "token": null
     }
   },
   "recent": {
@@ -537,24 +482,24 @@
       "token": null
     },
     "docs/DECISIONS.md": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T21:00:13+00:00",
-      "hash": "2aefc9a1e769617f63cf07b23d40aca57afb2b1dd31d10764ad57f78304e8db3",
-      "task": "4.18",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+      "agent": "lp",
+      "at": "2026-08-20T21:02:33+00:00",
+      "hash": "2a7111d5c759a93b9902fb137d3a28fd172b9e913ed3dbc4e7d024ba7aa2af9e",
+      "task": "F-307",
+      "token": null
     },
     "docs/DELEGATION.md": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T21:00:13+00:00",
-      "hash": "a187f682ce1ef6aa77e73062f5015b6c767405da580500f2b8229168a6a63223",
-      "task": "4.18",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+      "agent": "lp",
+      "at": "2026-08-20T21:02:33+00:00",
+      "hash": "1eed474dd16d25338fe39a7e95972982d66966aa5da906708040b94f7867fe7c",
+      "task": "F-307",
+      "token": null
     },
     "docs/FINDINGS.md": {
       "agent": "lp",
-      "at": "2026-08-20T20:42:48+00:00",
-      "hash": "0fd7d6d7a237e0a70da371149bad978748a6a36a23047937852ccc71cd90d640",
-      "task": "F-301",
+      "at": "2026-08-20T21:02:33+00:00",
+      "hash": "bb8a18a88cd387d144a21126aa8b9b9ba28a29e6e027106fd379daf4af7fabe9",
+      "task": "F-307",
       "token": null
     },
     "docs/MENU.md": {
@@ -580,9 +525,9 @@
     },
     "docs/SPECS.md": {
       "agent": "lp",
-      "at": "2026-08-20T20:42:48+00:00",
-      "hash": "3bdc5dba4b8f9e6fc0db075b26d8f27ec1d4688cc90b6ee1b72e9c9b9017aa6a",
-      "task": "F-301",
+      "at": "2026-08-20T21:02:33+00:00",
+      "hash": "104f59c94db3ff464669c6bb84ab3edc52985510b9300aa37a637c8d83a3be43",
+      "task": "F-307",
       "token": null
     },
     "docs/WORLDGEN.md": {
@@ -1132,10 +1077,10 @@
       "token": null
     },
     "tools/terminal_focus_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T06:31:22+00:00",
-      "hash": "66821e2e702530ab806a011774ff8f3b3f46aa9fbd5192a70f10caca3c1f217b",
-      "task": "F-275",
+      "agent": "lp",
+      "at": "2026-08-20T21:02:33+00:00",
+      "hash": "e5335c8a6da749930cd1cdaccec3c608ccfc7a477b729f01d915dd1006f6186e",
+      "task": "F-307",
       "token": null
     },
     "tools/terminal_focus_check.gd.uid": {
@@ -1223,17 +1168,17 @@
       "token": null
     },
     "ui/hud/defeat_hud.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T06:31:22+00:00",
-      "hash": "ead832c3f9be89a4207e6b970f5208ea8780b806e619f5a63d95fae368040414",
-      "task": "F-275",
+      "agent": "lp",
+      "at": "2026-08-20T21:02:33+00:00",
+      "hash": "9df51eb049de57722b5308b6138657a1afede7bafe978596e22b1d88a761bcbb",
+      "task": "F-307",
       "token": null
     },
     "ui/hud/extraction_hud.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T06:31:22+00:00",
-      "hash": "8bc55923e225a543c3808fd2171782ffdf6141676a88bbd2683bc520d0b5dae3",
-      "task": "F-275",
+      "agent": "lp",
+      "at": "2026-08-20T21:02:33+00:00",
+      "hash": "f7884848b90209b2ab8a06410312257f0949956311c75958f2a65eef774bce52",
+      "task": "F-307",
       "token": null
     },
     "ui/menu/main_menu.gd": {
@@ -1356,7 +1301,7 @@
       "token": null
     }
   },
-  "rev": 107,
+  "rev": 110,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -5584,9 +5529,11 @@
       "title": "docs/NEXT.md is hand-maintained but summarises a board that moves hourly, so it goes stale within hours \u2014 corrected twice in one night by two different reviewers"
     },
     "F-307": {
+      "done_at": "2026-08-20T21:02:33+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "A non-host peer whose host leaves is soft-locked on F-243's terminal overlay \u2014 the restart button never re-reads its own host check, and no menu can open over it"
     },

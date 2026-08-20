@@ -11265,3 +11265,101 @@ a mean of **1.01**, because `min_spacing_m = 180` exceeds the largest separation
 geometrically impossible. `enemy_nest` achieves 2.25 of 5, `loot_cache` 4.07 of 8. That is spacing
 content authored for the pre-4.13 island and never rescaled — a balance call, not this bug — and it
 is **F-319**.
+
+---
+
+## F-307 · A non-host peer whose host leaves is soft-locked on F-243's terminal overlay
+
+**Claim:** `ui/hud/defeat_hud.gd`, `ui/hud/extraction_hud.gd`, `tools/terminal_focus_check.gd`
+(extended, not new). Network authority: none — `ARCHITECTURE.md` §2.2 "VFX, audio, camera, UI" row,
+client-local presentation on both HUD files, unchanged by this task. Nothing here sends or validates
+anything and no RPC is added; the fix reads one existing signal (`NetSession.session_ended`) and
+routes a press to an already-shipped local API (`MainMenu.set_open()`).
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The shape of the bug.** F-243 made a terminal screen's only control host-gated and F-275 made the
+non-host half of it correctly *inert* — `FOCUS_NONE`, so a bare controller is not handed a control it
+cannot act on. Neither ever re-reads that gate. `_refresh_restart_button()` is called from exactly one
+place in each file, the moment the overlay opens, and nothing in either file subscribed to any
+session-lifecycle signal. So when the host quits — the ordinary thing for a host to do once a run has
+ended — the client's `_is_host_or_solo()` flips to `true` while the button it is looking at stays
+disabled, stays at `FOCUS_NONE`, and stays labelled "Waiting on the host to start the next run…".
+
+That alone would be a wrong label. What makes it a **soft-lock** is the second half: the overlay is
+still in `blocks_gameplay_input`, so D-032's interlock (`_other_blocking_ui_open()` in
+`main_menu.gd:200`, `settings_menu.gd`, `lobby_menu.gd`, `unlock_menu.gd`) refuses every
+`set_open(true)`. These overlays are terminal by design — no Esc, no dismiss — so the screen holds
+zero operable controls *and* no route to a menu. Killing the process is the only exit. A mouse does
+not help; this is not F-275's input-device problem.
+
+**The fix,** identical in both files so the deliberate pair cannot drift:
+
+1. Each file subscribes to `NetSession.session_ended` in `_ready()` and disconnects in `_exit_tree()`,
+   by path (`get_node_or_null(^"/root/NetSession")`) and never as a bare identifier — standing rule 1,
+   since both are autoloads every `--script` harness compiles (F-011/F-046).
+2. A new `_session_over` flag, **scoped to the overlay's lifetime, not the process**: cleared in
+   `_on_run_wiped()`/`_on_run_extracted()` and in `_on_run_restarted()`, set only by `session_ended`.
+   This is the load-bearing detail. "Is there a session right now" cannot distinguish an orphan from a
+   solo host — *both* answer `_is_host_or_solo()` with `true` — and a process-scoped flag would leave
+   a later solo run wearing the orphan's label. Only "the session **this showing** opened under has
+   ended" is the right predicate.
+3. `_refresh_restart_button()` gains `_session_over` as its first branch, ahead of the host predicate
+   because an orphan satisfies both: the control becomes an enabled, `FOCUS_ALL` **"Leave to Menu"**.
+4. `_on_session_ended()` re-runs `_refresh_restart_button()`, **leaves `BLOCKING_UI_GROUP`**, and
+   re-runs `_grab_restart_focus()` (F-275's rule, re-applied after the flip). Removing the group is
+   not optional garnish — without it the button works and still nothing can open over the screen. It
+   is safe at exactly that moment and nowhere else: the session is dead, `PlayerNet` cleared the local
+   player on disconnect, so no live world is being handed input back.
+5. `_on_restart_pressed()` dispatches on `_session_over` to a new `_leave_to_menu()`
+   (`MainMenu.set_open(true)`). The overlay stays up behind the menu — it is still the run's summary,
+   and `MainMenu` is a higher `CanvasLayer` (57 vs `DefeatHud`'s 20).
+
+**Why "Leave to Menu" and not "Start Next Run"** — the finding offered both and said the choice was a
+product decision. It is **D-185**; do not relitigate it there.
+
+**Verify:** `.agent/bin/agent godot --script tools/terminal_focus_check.gd` →
+`TERMINAL_FOCUS_CHECK failures=0`, **54 PASS**, exit 0. F-307 is **phase 3** of that file (F-275
+already built the host+client pair phases 1–2 need, so this is a third phase rather than a fourth
+restart check, exactly as the finding asked). It is two more child processes, one per overlay, because
+`session_ended` fires once per session and a single child cannot exercise both.
+
+Each child joins, opens its overlay through its real trigger, records the **before** state — disabled
+waiting label, overlay in `blocks_gameplay_input`, and `MainMenu.set_open(true)` *correctly refused*,
+which is the D-032 interlock the soft-lock rides on — then reports `ready`. Only then does the driver
+end the session. The child waits on `session_ended` itself (**not** a transport-state poll: the signal
+fires only after the rejoin ladder is exhausted, so a poll would fire mid-rejoin while getting back in
+is still possible), then asserts the button is enabled at `FOCUS_ALL`, reads `Leave to Menu`, that the
+overlay has left the blocking group, that focus moved to it, and finally taps a **real**
+`InputEventJoypadButton` through `Input.parse_input_event()` and asserts `MainMenu.is_open()`. That
+last one is the whole soft-lock in a single assertion.
+
+**The two children end the session by different paths on purpose,** because the fix must hook
+`session_ended` whatever `EndReason` produced it:
+
+- *defeat* → `NetTransport.leave()`, the path the game actually ships (`lobby_menu.request_leave()`
+  calls exactly this), which tells the client nothing and resolves as `CONNECTION_LOST` only once
+  `NetSession`'s 4-attempt rejoin ladder gives up — roughly 19 s, which is why the phase carries its
+  own `ORPHAN_TIMEOUT_SEC = 60.0` instead of the file's 20 s. The four `connect … timed out` errors
+  and one `gave up rejoining` this prints are that path working, not a failure.
+- *extraction* → `NetSession.end_session()`, the documented graceful close: `HOST_CLOSED`, no ladder.
+
+**Pre-fix proof.** Phase 3 was written and run against unmodified HUD files first: `failures=10`, five
+per overlay, and the ten are exactly the finding's symptoms — the button never re-reads its host check,
+never becomes operable, the overlay never leaves the blocking group, focus never moves, and
+`ui_accept` never reaches a menu. The four "before" rows and `session_ended fires` passed then too, so
+the phase is testing the fix rather than its own setup.
+
+**Swept for the same shape.** `_is_host_or_solo()` exists in exactly these two files; the only other
+`ui/` read of transport authority is `net_debug_panel.gd`, which re-polls on every refresh and cannot
+latch. The class that actually matters is **mandatory panels** — no Esc, no dismiss, in
+`blocks_gameplay_input` — which F-275's sweep already enumerated at exactly three files. The third,
+`ui/attunement/attunement_ui.gd`, has the *same* bug and is filed as **F-321**: it closes only on an
+accepted `selection_confirmed`, which needs a live host, and subscribes to nothing session-lifecycle,
+so an orphaned client loops forever (F-297's 8 s timer re-enables the buttons, each press
+`request_select()`s into the void, they re-disable, repeat) inside a panel no menu can open over.
+F-297 fixed that panel's latch; it did not fix its reachability. Also filed: **F-322**, the shipped
+LEAVE button never calls `NetSession.end_session()`, which is why the *defeat* child above needs 19 s.
+
+**Resolved** — see `docs/FINDINGS.md`.

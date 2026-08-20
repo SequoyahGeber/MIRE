@@ -5854,3 +5854,54 @@ shipped as `world/chunk/terrain_flat.gdshader` — per-facet normals from screen
 per-face-normal meshes deliberately: that alternative triples every resident chunk's vertex count,
 and MIRE targets the worst machines. The mesh, its smooth normals, collision and LOD are all
 untouched — the shader only changes lighting. No height-based coloring either, matching the post.
+
+---
+
+### D-185 · 2026-08-20 · F-307: a terminal run-summary overlay whose session ends offers the way OUT, not a restart — and it leaves `blocks_gameplay_input` to make that reachable
+
+F-307 named two candidate remedies and said the choice was a product call rather than a reviewer's.
+This is that call, made for both terminal overlays (`ui/hud/defeat_hud.gd`,
+`ui/hud/extraction_hud.gd`) together, because they are a deliberate pair and must not drift.
+
+**When `NetSession.session_ended` fires under a shown terminal overlay, the overlay's single control
+becomes an enabled "Leave to Menu" that opens `MainMenu`, and the overlay leaves
+`blocks_gameplay_input`. It does not become "Start Next Run".**
+
+Three parts, each of which was a real fork:
+
+**1. Leave, not restart.** The rejected option was re-deriving the button so the orphan gets a working
+`host_restart_run()`. Its own predicate invites this — `_is_host_or_solo()` genuinely flips true once
+the transport is neither active nor connecting — but the predicate is answering "may I act as host",
+not "is there a run here to restart". The peer's world went with the session: `PlayerNet` clears on
+disconnect, and D-149's restart resets services *in place* on a world that is assumed to still exist.
+Lighting the button up would be the finding's own phrasing, "the button lights up ≠ the next run is
+playable", and F-279/F-281 already show that path is leaky even solo. A restart-for-orphans is a
+feature (a peer promoting itself to host of a fresh solo run) and would need its own spec, its own
+world rebuild and its own proof. Getting the player to a menu needs none of that and is what every
+co-op game does when the host quits.
+
+**2. The blocking group is part of the fix, not garnish.** Re-deriving the button alone leaves D-032's
+interlock (`_other_blocking_ui_open()`) refusing every `set_open(true)` from `MainMenu`,
+`SettingsMenu`, `LobbyMenu` and `UnlockMenu` — a screen with a working control and still no route to
+a menu. So `_on_session_ended()` calls `remove_from_group(BLOCKING_UI_GROUP)`. **This is legal at
+exactly this moment and nowhere else.** D-032's group means "a cursor UI owns the screen, suppress
+gameplay input"; handing gameplay input back normally requires the panel to close. Here the session is
+dead and the local player has already been despawned, so there is no world to be handed input to — the
+group is protecting nothing. Any future member of this class gets the same permission on the same
+grounds and no others: **the session is over**, not merely "the panel wants a menu".
+
+**3. The flag is scoped to the showing, not to the process.** `_session_over` is cleared in
+`_on_run_wiped()` / `_on_run_extracted()` and in `_on_run_restarted()`, and set only by
+`session_ended`. This is the part that is easy to get wrong and expensive to debug: **transport state
+alone cannot tell a solo host from an orphaned client** — both answer `_is_host_or_solo()` with true,
+and a solo run never opens a session at all, so "is there a session right now" is false for both. Only
+"the session *this showing* opened under has ended" separates them. A process-scoped flag would leave
+every solo run after an orphaned one wearing the "Leave to Menu" label with no way to start a Cycle.
+
+The overlay deliberately stays visible behind the menu — it is still that run's summary, and
+`MainMenu` is a higher `CanvasLayer` (57 vs 20), so it draws and takes input over the top.
+
+Proven by phase 3 of `tools/terminal_focus_check.gd`, against both `EndReason`s (see
+`docs/SPECS.md` §F-307 for why the two children leave by different paths). The two siblings this
+turned up are F-321 (`AttunementUI`, the third mandatory panel, same bug) and F-322 (nothing shipped
+calls `end_session()`, which is why the ungraceful path costs 19 s).

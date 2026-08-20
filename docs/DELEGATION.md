@@ -75,6 +75,55 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-20 — F-307 resolved: a terminal run-summary overlay is no longer a dead end when the host quits (lp)
+
+**D-185.** F-243's two terminal overlays (`ui/hud/defeat_hud.gd`, `ui/hud/extraction_hud.gd`) read
+"am I the host" exactly once, when they opened, and never again. A client whose host quit was left on
+a disabled "Waiting on the host…" label, and because the overlay stays in `blocks_gameplay_input`,
+D-032's interlock refused every menu over the top of it — zero operable controls, no route out,
+kill the process. Both files now do this, identically:
+
+```gdscript
+# _ready(): by path, never a bare NetSession (standing rule 1 — these are autoloads a --script run compiles)
+var session: Node = get_node_or_null(^"/root/NetSession")
+if session != null:
+    session.connect(&"session_ended", Callable(self, "_on_session_ended"))
+```
+
+**The API the next task builds against**, if you are adding a third screen of this kind or taking
+F-321 (which is exactly this bug in `ui/attunement/attunement_ui.gd`):
+
+- **`_session_over: bool`** — set only by `session_ended`, cleared on every showing
+  (`_on_run_wiped()` / `_on_run_extracted()`) and on the un-terminal path (`_on_run_restarted()`).
+  **Scope it to the showing, never to the process.** Transport state cannot tell a solo host from an
+  orphaned client — both answer `_is_host_or_solo()` with `true`, and a solo run never opens a session
+  at all — so a process-scoped flag makes every later solo run wear the orphan's label. This is the
+  detail D-185 exists to stop you rediscovering.
+- **`_refresh_restart_button()`** branches on `_session_over` **first**, ahead of the host predicate,
+  because an orphan satisfies both. It yields an enabled `FOCUS_ALL` control reading `LEAVE_LABEL`
+  (`"Leave to Menu"`), not `RESTART_LABEL`.
+- **`_on_session_ended(_reason, _detail)`** refreshes the button, calls
+  `remove_from_group(BLOCKING_UI_GROUP)`, then `_grab_restart_focus()` — F-275's bare-controller rule,
+  re-applied after the flip. Dropping the group is half the fix, not garnish: without it the button
+  works and still nothing can open over the screen. It is legal *because the session is dead*
+  (`PlayerNet` has cleared the local player, so no live world gets input back) and on no other grounds
+  — see D-185 §2 before reusing the permission.
+- **`_leave_to_menu()`** → `get_node_or_null(^"/root/MainMenu").call(&"set_open", true)`. The overlay
+  stays visible behind it; `MainMenu` is `CanvasLayer` 57 against `DefeatHud`'s 20.
+
+**The harness for any of this is `tools/terminal_focus_check.gd` phase 3**, not a new file. Its driver
+already builds the host+client pair; `_check_orphaned_client(which)` and `_run_orphan_client(which)`
+are parameterised by overlay, and adding a third is a `ORPHAN_PORTS` entry plus a branch in
+`_open_terminal_overlay()`. Two things it will teach you the hard way otherwise: wait on
+`session_ended` itself rather than polling `is_active()`/`is_connecting()` — the signal fires only
+*after* the rejoin ladder is exhausted, so a poll trips while getting back in is still possible — and
+budget `ORPHAN_TIMEOUT_SEC = 60.0`, not the file's 20 s, because the **shipped** host-leave path sends
+no notice and costs the client ~19 s of rejoin attempts (that is F-322).
+
+`.agent/bin/agent godot --script tools/terminal_focus_check.gd` → `TERMINAL_FOCUS_CHECK failures=0`,
+54 PASS.
+
+
 ### 2026-08-20 — 4.18 tuning applied: the island is Muck-shaped now — mostly flat, gentle rolls, no mountains (quill5fa5c7)
 
 **D-184.** Sequoyah's verdict off the first shipped renders: "mostly flat, some gentle rolling

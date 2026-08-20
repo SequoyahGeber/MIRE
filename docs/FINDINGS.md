@@ -69,6 +69,71 @@ do is worth as much as the record of what we did.
 
 ## Open
 
+### F-321 · `AttunementUI` is the third mandatory panel and it still has F-307's soft-lock — it closes only on an accepted pick, so an orphaned client can never leave it
+
+**Area:** UI/netcode · **Severity:** high · **Found:** 2026-08-20 by lp during F-307's sweep
+
+F-275's sweep enumerated the mandatory-panel class — no Esc, no dismiss, joins
+`blocks_gameplay_input` — at exactly three files. F-307 fixed two of them. This is the third.
+
+`ui/attunement/attunement_ui.gd` leaves the blocking group in exactly one place, `_close_picker()`
+(`:189`), and `_close_picker()` is reached from exactly one place that matters:
+`_on_selection_confirmed(accepted = true)` (`:200`). That signal comes from the **host**. Nothing in
+the file subscribes to `NetSession.session_ended`, `NetTransport.disconnected`, or anything else
+session-shaped — `_poll_for_local_player`, `_on_run_restarted` and the F-297 request timer are the
+whole lifecycle.
+
+So a client whose host quits while the picker is up does not get stuck the way F-307's overlays did —
+it gets stuck in a **loop**, which is worse to diagnose. F-297's `REQUEST_TIMEOUT_SEC = 8.0` timer
+re-enables the buttons, the player presses one, `request_select()` goes to a peer that no longer
+exists, `_picking` latches and the buttons disable, eight seconds later they re-enable, forever. The
+panel never leaves `blocks_gameplay_input`, so D-032's interlock refuses `MainMenu`/`SettingsMenu`/
+`LobbyMenu`/`UnlockMenu` the entire time. **F-297 fixed that panel's latch; it did not fix its
+reachability**, and the two are separate properties — this is the same relationship F-275 had to
+F-307.
+
+The fix is F-307's, transposed: subscribe to `session_ended`, and on it either `_close_picker()`
+outright (there is no run left to pick an Attunement for, which is the simplest defensible answer and
+what D-185's reasoning points at) or at minimum leave the blocking group so a menu can open over it.
+`tools/terminal_focus_check.gd`'s phase 3 is the harness — a fourth child with `which = "attunement"`
+is a handful of lines against the driver that already exists, and `tools/attunement_*_check.gd`'s
+`force_request_timeout()` shows this file already exposes a test seam rather than sleeping 8 s.
+
+---
+
+### F-322 · `NetSession.end_session()` has no shipped caller, so every real host quit costs its clients a 19-second rejoin ladder and the wrong end-of-session message
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-20 by lp during F-307's verification
+
+`core/net/net_session.gd:208` documents itself: *"End the session deliberately. Prefer this over
+NetTransport.leave(): a host that goes through here tells its clients first, so they report 'the host
+ended the session' instead of 'connection lost' and do not spend seven seconds trying to reconnect to
+a process that has quit."* Nothing in `ui/`, `core/`, `autoload/` or `world/` calls it. The only
+caller in the repo is `tools/session_lifecycle_check.gd:302`.
+
+What ships instead is `ui/lobby/lobby_menu.gd:148` (`request_leave()`), which calls
+`NetTransport.leave()` directly — and `autoload/steam_lobby.gd:203` and `core/dev/dev_launch.gd:239`
+do the same. `net_host_closing.rpc()` therefore never goes out in a real game, so `_classify_end()`
+never reaches `EndReason.HOST_CLOSED` for an ordinary host quit: it falls through to
+`CONNECTION_LOST`, which is the branch that runs the rejoin ladder.
+
+Measured while building F-307's phase 3, which drives this exact path. A client whose host pressed
+LEAVE sits through `REJOIN_BACKOFF_SEC` (0.5 + 1 + 2 + 4) plus four 3 s connect timeouts — **~19 s of
+"Reconnecting…"** to a process that has already exited — and then reports `"lost contact with the host
+and could not reconnect after 4 attempts"`, which is a lie about what happened. The check had to raise
+its own timeout from 20 s to 60 s to accommodate it (`ORPHAN_TIMEOUT_SEC`), and the four
+`connect … timed out` errors it prints are this, not a fault.
+
+The fix is small — `request_leave()` and the Steam path call `NetSession.end_session()`, which already
+calls `NetTransport.leave()` after its flush, so no caller loses anything — but it belongs to whoever
+holds `ui/lobby/lobby_menu.gd`, and it wants a two-process assertion that the client's `session_ended`
+arrives as `HOST_CLOSED` within a second. `tools/session_lifecycle_check.gd` already draws the
+`end_session() → HOST_CLOSED, no rejoin` arm in its own header diagram; what is missing is that the
+game ever takes it.
+
+---
+
+
 ### F-020 · Steam sessions cannot use NetSession's direct-address auto-rejoin loop
 
 **Area:** netcode · **Severity:** medium · **Found:** 2026-08-16 by tine during 1.7
@@ -1082,65 +1147,6 @@ findings_numbering_check guards F-numbers.
 
 ---
 
-### F-307 · A non-host peer whose host leaves is soft-locked on F-243's terminal overlay — the restart button never re-reads its own host check, and no menu can open over it
-
-**Area:** UI/netcode · **Severity:** high · **Found:** 2026-08-20 by lp during F-275's review
-
-`ui/hud/defeat_hud.gd:135` / `ui/hud/extraction_hud.gd:164` (`_refresh_restart_button()`) is called
-from exactly one place each — `_on_run_wiped()` at `defeat_hud.gd:109` and `_on_run_extracted()` at
-`extraction_hud.gd:139`, i.e. the moment the overlay opens. It reads `_is_host_or_solo()` once and
-never again. Nothing in either file subscribes to any session-lifecycle signal; repo-wide, the only
-listener on `NetSession.session_ended` is `ui/lobby/lobby_menu.gd:63`, and its handler
-(`lobby_menu.gd:233`) only writes a status string.
-
-So on a **client** the terminal overlay opens with the disabled "Waiting on the host to start the
-next run…" label, correctly at `FOCUS_NONE` since F-275. If the host then quits — the single most
-likely thing a host does once a run has ended — that peer's `_is_host_or_solo()` flips to `true`,
-but the button it is looking at stays disabled, stays at `FOCUS_NONE`, and stays labelled as if a
-host were still coming. And because the overlay is still in `blocks_gameplay_input` (D-032),
-`_other_blocking_ui_open()` refuses every `set_open(true)`: `ui/menu/main_menu.gd:97`,
-`ui/menu/settings_menu.gd:111`, `ui/lobby/lobby_menu.gd:97`, `ui/menu/unlock_menu.gd:72`. These
-overlays are terminal by design — no Esc, no dismiss — so the screen now holds *zero* operable
-controls and no route to a menu. The player's only exit is killing the process. A mouse does not
-help; this is not F-275's input-device problem, it is a screen with nothing on it to press.
-
-**Reproduced,** two processes, a throwaway probe modelled on `tools/terminal_focus_check.gd`'s
-phase 2 (driver hosts on a spare port and spawns a child with `--script ... -- <probe-arg>`; the
-child joins, sets `DefeatService.cause = &"team_wipe"` then `defeated = true` to open the overlay
-through its real path, reports, and the driver then calls `NetTransport.leave()`). After the child
-has waited out both the disconnect and `NetSession`'s rejoin loop (`is_active()` and
-`is_connecting()` both false):
-
-```
-before:  is_host_or_solo=false  button_disabled=true  focus_mode_none=true  blocks_gameplay_input=true
-after :  is_host_or_solo=TRUE   button_disabled=true  focus_mode_none=true  blocks_gameplay_input=true
-         focus_owner=null       main_menu_opened=false   ← MainMenu.set_open(true) refused
-```
-
-`is_host_or_solo` is the peer's own predicate saying it may now restart, and the button contradicts
-it. The probe was deleted rather than committed; the eight lines above are the whole reproduction.
-
-**Not introduced by F-275, and deliberately not fixed under its review.** F-243 shipped this when it
-made a terminal screen's only control host-gated; F-275 was scoped to bare-controller reachability
-and did that correctly. Fixing it needs a call this reviewer should not make alone, because the two
-candidate remedies differ in kind:
-
-- **Re-derive the button** on session end (`get_node_or_null(^"/root/NetSession")` — never the bare
-  identifier, standing rule 1, since both files are autoloads every `--script` harness loads) and
-  re-run `_refresh_restart_button()` + `_grab_restart_focus()` while `_shown`. Small, and it matches
-  what `_is_host_or_solo()` already claims. But it hands the orphan a live `host_restart_run()` on a
-  world whose players `PlayerNet` already despawned, and F-279/F-281 show the restart path is still
-  leaky even solo — so "the button lights up" is not the same as "the next run is playable", and
-  proving the second is the actual work.
-- **Let the player out instead** — drop `blocks_gameplay_input` (or add a "Leave to Menu" control)
-  when the session ends, so `MainMenu`/`LobbyMenu` can open over a dead session. Safer, but it is a
-  product decision about what a terminal screen offers, and belongs in `docs/DECISIONS.md`.
-
-Either way it wants a third phase in `tools/terminal_focus_check.gd` — that file already builds the
-exact host+client pair this needs — rather than a fourth restart check.
-
----
-
 ### F-309 · `inventory_net_check` fails 10 with "grant timeout" roughly one run in five — F-038's exact symptom, back
 
 **Area:** tests/netcode · **Severity:** medium · **Found:** 2026-08-20 by lp during F-279
@@ -1444,7 +1450,179 @@ loop, so the assertion is a few lines, and D-183 is why the `required` flag is n
 
 ---
 
+### F-320 · Every gameplay HUD autoload builds and shows itself unconditionally, so they all draw over the front end
+
+**Area:** UI · **Severity:** medium · **Found:** 2026-08-20 by reed31c598
+
+**Found:** 2026-08-20 by reed31c598 while building MENU-3's title screen (docs/MENU.md).
+
+Every HUD in this project is an autoload `CanvasLayer` that builds its UI and makes it visible in
+`_ready()` — `ui/hud/vitals_hud.gd`, `extraction_hud.gd`, `wellspring_hud.gd`, `boss_health_hud.gd`,
+`defeat_hud.gd`, plus `autoload/debug_overlay.gd` and the hotbar. That was correct while the game
+booted straight into the world: there was no "before the run" for them to be absent from.
+
+With a front end as the boot scene there is. The first render of the title screen
+(`assets/audit/menu/`) came out with a 100/100 health bar, an empty eight-slot hotbar and the debug
+FPS counter drawn on top of the menu, over the island.
+
+**Worked around, not fixed.** `ui/frontend/frontend.gd` calls `suspend_gameplay_overlays()` on entry
+and `restore_gameplay_overlays()` before it hands off to the world scene: it hides every
+`CanvasLayer` under `/root` except `MenuStack`, remembering exactly which ones it hid so a HUD that
+was already legitimately hidden stays hidden. That is contained to one file and needs no claim on
+any HUD, which is why it was done that way inside MENU-3.
+
+**What actually closes this:** each HUD keying its own visibility off "is a run in progress" rather
+than off `_ready()`. There is no shipped signal that means exactly that today — `CycleService`'s
+`run_started` is the closest, with `EventBus.run_extracted`/`run_wiped` bounding the other end. Once
+that exists, `frontend.gd`'s two static helpers and their call sites should be deleted rather than
+kept alongside it; a blanket hide and a per-HUD rule solving the same problem is how a later HUD
+ends up invisible for reasons nobody can find.
+
+Worth doing before the `run/main_scene` flip ships to players, because the workaround only covers
+the front end — any other "no run yet" state (a future lobby-in-world, a spectator join) hits the
+same thing.
+
+---
+
+### F-323 · SteamLobby has no member-metadata API, so the dock cannot show ready flags or per-player colours
+
+**Area:** UI · **Severity:** low · **Found:** 2026-08-20 by reed31c598
+
+**Found:** 2026-08-20 by reed31c598 while building MENU-4's expedition dock (docs/MENU.md §5).
+
+`docs/MENU.md` §5 specifies two per-player things on the dock: a **ready toggle** (so a group of
+2+ can agree to leave together, with a host force-sail grace) and a **colour chip** (the one
+character customization DESIGN.md's cut list allows). Both are per-member state that has to reach
+every other member of the lobby, and the natural carrier is Steam lobby member metadata.
+
+`autoload/steam_lobby.gd` has no API for it. It exposes `members()` (name, `is_owner`, `is_local`,
+derived from `_refresh_members()`), and nothing that sets or reads per-member key/value data.
+
+**Why it was not just added as part of MENU-4.** Member metadata means `setLobbyMemberData` /
+`getLobbyMemberData` plus a `lobby_data_update` callback, and none of that can be exercised in a
+check: `SteamAPI_Init()` fails headless, which is why `tools/lobby_menu_check.gd` already prints
+three `[S_API FAIL]` lines and asserts only the non-Steam paths. Shipping a ready gate whose only
+verification is "it compiled" is worse than shipping the dock without one — a ready flag that
+silently fails to replicate would strand a whole party on the dock with no way to tell why.
+
+`docs/MENU.md` §5 already allows this: there is no ready gate below two players, and the dock is
+fully usable without one.
+
+**What closes this:** add member-metadata get/set plus the update callback to `SteamLobby`,
+verified against a real Steam client (which needs the Steam client running, so it belongs with the
+other Steam-dependent evidence work — 1.12's cross-platform join testing is the natural place).
+Then the dock's `_member_row()` gains a ready glyph and a colour chip, and `refresh()` gates SET
+SAIL on all-present-ready with the 10-second force-sail grace §5 describes. The dock rebuilds its
+rows from `_members()` on every lobby signal already, so nothing about its structure has to change.
+
+Keep the state-is-never-colour-alone rule when it lands: ready must be a glyph AND a colour, never
+a colour alone (docs/MENU.md §9).
+
+---
+
 ## Resolved
+
+### F-307 · A non-host peer whose host leaves is soft-locked on F-243's terminal overlay — the restart button never re-reads its own host check, and no menu can open over it — **fixed**
+
+**Area:** UI/netcode · **Severity:** high · **Found:** 2026-08-20 by lp during F-275's review
+
+`ui/hud/defeat_hud.gd:135` / `ui/hud/extraction_hud.gd:164` (`_refresh_restart_button()`) is called
+from exactly one place each — `_on_run_wiped()` at `defeat_hud.gd:109` and `_on_run_extracted()` at
+`extraction_hud.gd:139`, i.e. the moment the overlay opens. It reads `_is_host_or_solo()` once and
+never again. Nothing in either file subscribes to any session-lifecycle signal; repo-wide, the only
+listener on `NetSession.session_ended` is `ui/lobby/lobby_menu.gd:63`, and its handler
+(`lobby_menu.gd:233`) only writes a status string.
+
+So on a **client** the terminal overlay opens with the disabled "Waiting on the host to start the
+next run…" label, correctly at `FOCUS_NONE` since F-275. If the host then quits — the single most
+likely thing a host does once a run has ended — that peer's `_is_host_or_solo()` flips to `true`,
+but the button it is looking at stays disabled, stays at `FOCUS_NONE`, and stays labelled as if a
+host were still coming. And because the overlay is still in `blocks_gameplay_input` (D-032),
+`_other_blocking_ui_open()` refuses every `set_open(true)`: `ui/menu/main_menu.gd:97`,
+`ui/menu/settings_menu.gd:111`, `ui/lobby/lobby_menu.gd:97`, `ui/menu/unlock_menu.gd:72`. These
+overlays are terminal by design — no Esc, no dismiss — so the screen now holds *zero* operable
+controls and no route to a menu. The player's only exit is killing the process. A mouse does not
+help; this is not F-275's input-device problem, it is a screen with nothing on it to press.
+
+**Reproduced,** two processes, a throwaway probe modelled on `tools/terminal_focus_check.gd`'s
+phase 2 (driver hosts on a spare port and spawns a child with `--script ... -- <probe-arg>`; the
+child joins, sets `DefeatService.cause = &"team_wipe"` then `defeated = true` to open the overlay
+through its real path, reports, and the driver then calls `NetTransport.leave()`). After the child
+has waited out both the disconnect and `NetSession`'s rejoin loop (`is_active()` and
+`is_connecting()` both false):
+
+```
+before:  is_host_or_solo=false  button_disabled=true  focus_mode_none=true  blocks_gameplay_input=true
+after :  is_host_or_solo=TRUE   button_disabled=true  focus_mode_none=true  blocks_gameplay_input=true
+         focus_owner=null       main_menu_opened=false   ← MainMenu.set_open(true) refused
+```
+
+`is_host_or_solo` is the peer's own predicate saying it may now restart, and the button contradicts
+it. The probe was deleted rather than committed; the eight lines above are the whole reproduction.
+
+**Not introduced by F-275, and deliberately not fixed under its review.** F-243 shipped this when it
+made a terminal screen's only control host-gated; F-275 was scoped to bare-controller reachability
+and did that correctly. Fixing it needs a call this reviewer should not make alone, because the two
+candidate remedies differ in kind:
+
+- **Re-derive the button** on session end (`get_node_or_null(^"/root/NetSession")` — never the bare
+  identifier, standing rule 1, since both files are autoloads every `--script` harness loads) and
+  re-run `_refresh_restart_button()` + `_grab_restart_focus()` while `_shown`. Small, and it matches
+  what `_is_host_or_solo()` already claims. But it hands the orphan a live `host_restart_run()` on a
+  world whose players `PlayerNet` already despawned, and F-279/F-281 show the restart path is still
+  leaky even solo — so "the button lights up" is not the same as "the next run is playable", and
+  proving the second is the actual work.
+- **Let the player out instead** — drop `blocks_gameplay_input` (or add a "Leave to Menu" control)
+  when the session ends, so `MainMenu`/`LobbyMenu` can open over a dead session. Safer, but it is a
+  product decision about what a terminal screen offers, and belongs in `docs/DECISIONS.md`.
+
+Either way it wants a third phase in `tools/terminal_focus_check.gd` — that file already builds the
+exact host+client pair this needs — rather than a fourth restart check.
+
+**Fixed 2026-08-20 by lp.** Both files now subscribe to `NetSession.session_ended` and carry a
+`_session_over` flag scoped to the overlay's own showing — cleared in `_on_run_wiped()` /
+`_on_run_extracted()` and in `_on_run_restarted()`, set only by that signal. `_refresh_restart_button()`
+branches on it *ahead* of the host predicate, because an orphan satisfies both, and turns the control
+into an enabled `FOCUS_ALL` **"Leave to Menu"**; `_on_session_ended()` re-refreshes the button,
+**leaves `blocks_gameplay_input`**, and re-grabs focus; `_on_restart_pressed()` dispatches to a new
+`_leave_to_menu()` → `MainMenu.set_open(true)`.
+
+Both halves were needed. Re-deriving the button alone leaves D-032's interlock refusing every menu, so
+the screen would have had a working control and still no route out; leaving the blocking group alone
+leaves a screen whose only control is a disabled waiting label. Leaving the group is safe at exactly
+this moment and nowhere else — the session is dead and `PlayerNet` cleared the local player on
+disconnect, so no live world is handed input back.
+
+**Not the restart, deliberately** — the finding named two candidate remedies and this is the call
+between them. `_is_host_or_solo()` does flip true for an orphan, but its world went with the session,
+so lighting up `host_restart_run()` there would be the finding's own "the button lights up ≠ the next
+run is playable". Recorded as **D-185**; the flag's scoping (per-showing, never per-process) is the
+load-bearing part, because a solo host and an orphaned client are indistinguishable by transport state
+alone.
+
+**Verified:** `.agent/bin/agent godot --script tools/terminal_focus_check.gd` →
+`TERMINAL_FOCUS_CHECK failures=0`, 54 PASS, exit 0. The proof is **phase 3** of that file, as the
+finding asked — two more child processes, one per overlay, because `session_ended` fires once per
+session. Each records the before state (disabled waiting label, in the blocking group, and
+`MainMenu.set_open(true)` correctly *refused*), reports `ready`, and only then does the driver end the
+session; the child waits on `session_ended` itself rather than polling transport state, since the
+signal fires only after the rejoin ladder is exhausted. It then asserts the flip and taps a real
+`InputEventJoypadButton` through `Input.parse_input_event()`, asserting `MainMenu.is_open()` — the
+whole soft-lock in one assertion. The two children end the session by *different* paths so the fix is
+proven against both `EndReason`s: *defeat* via the shipped `NetTransport.leave()` (`CONNECTION_LOST`,
+after the ~19 s rejoin ladder — hence the phase's own 60 s budget, and the four `connect … timed out`
+errors it prints are that path working), *extraction* via `NetSession.end_session()` (`HOST_CLOSED`,
+immediate). Run against unmodified HUD files first: `failures=10`, five per overlay, exactly the
+symptoms above. Spec written at `docs/SPECS.md` §F-307 (none existed).
+
+**Swept.** `_is_host_or_solo()` exists in exactly these two files; `net_debug_panel.gd` is the only
+other `ui/` reader of transport authority and re-polls every refresh, so it cannot latch. The class is
+**mandatory panels** — no Esc, no dismiss, in `blocks_gameplay_input` — enumerated at exactly three
+files by F-275's own sweep. The third has the same bug and is filed as **F-321**. **F-322** was filed
+alongside it.
+
+---
+
 
 ### F-318 · A git merge writes conflict markers into .agent/state.json, which every running lane is reading — the live coordination file becomes unparseable mid-flight — **fixed**
 

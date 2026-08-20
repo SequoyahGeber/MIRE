@@ -29,6 +29,14 @@ extends CanvasLayer
 ## F-243: same un-terminal button `ui/hud/defeat_hud.gd` grew — see that file's own F-243 note for
 ## why only the local HOST peer's press does anything.
 ##
+## F-307/D-185: and the same second input `DefeatHud` grew — `NetSession.session_ended`. F-243 read
+## "am I the host" exactly once, when the overlay opened, so a client whose host quit sat on a
+## disabled waiting label for a session that no longer existed while `blocks_gameplay_input` refused
+## every menu over the top of it. On session end this screen's control becomes an enabled "Leave to
+## Menu" and the overlay leaves the blocking group. Not "Start Next Run": an orphan's
+## `_is_host_or_solo()` does flip true, but its world went with the session. Read `defeat_hud.gd`'s
+## copy of this note with it — the pair must not drift.
+##
 ## F-275: and the same keyboard/gamepad focus that button needs to be reachable at all — this summary
 ## is terminal, so it has no Esc/dismiss path and the restart button is the only way off it (the
 ## mandatory-panel trap F-216 fixed for `AttunementUI`). The enabled host button grabs focus as the
@@ -41,8 +49,11 @@ const BLOCKING_UI_GROUP: StringName = &"blocks_gameplay_input"
 const SHIP_GROUP: StringName = &"extraction_ship"
 const CYCLE_MODIFIER_SERVICE_PATH := ^"/root/CycleModifierService"
 const POLL_SEC: float = 0.15
+const NET_SESSION_PATH := ^"/root/NetSession"
+const MAIN_MENU_PATH := ^"/root/MainMenu"
 const RESTART_LABEL: String = "Start Next Run"
 const WAITING_LABEL: String = "Waiting on the host to start the next run…"
+const LEAVE_LABEL: String = "Leave to Menu"
 
 const COLOUR_PANEL := Color(0.055, 0.086, 0.070, 0.92)
 const COLOUR_BORDER := Color(0.345, 0.475, 0.390, 1.0)
@@ -81,6 +92,11 @@ var _summary_shown: bool = false
 var _salvage_known: bool = false
 ## F-243: same capture `DefeatHud` grew — this screen never needed one before, since it never closed.
 var _restore_mouse_captured: bool = false
+## F-307, mirroring `DefeatHud._session_over` exactly. Scoped to this overlay's lifetime, not the
+## process: cleared on every showing and on the un-terminal path, set only by `session_ended`. A solo
+## run never opens a session and so never sets it — which is the whole point, because a solo host and
+## an orphaned client both answer `_is_host_or_solo()` with true and only one of them has a world.
+var _session_over: bool = false
 
 
 func _ready() -> void:
@@ -89,12 +105,20 @@ func _ready() -> void:
 	EVENT_BUS.subscribe_run_extracted(_on_run_extracted)
 	EVENT_BUS.subscribe_salvage_banked(_on_salvage_banked)
 	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
+	# Standing rule 1 (F-011/F-046): by path, never a bare `NetSession` — this file is an autoload
+	# every `--script` harness loads at compile time.
+	var session: Node = get_node_or_null(NET_SESSION_PATH)
+	if session != null:
+		session.connect(&"session_ended", Callable(self, "_on_session_ended"))
 
 
 func _exit_tree() -> void:
 	EVENT_BUS.unsubscribe_run_extracted(_on_run_extracted)
 	EVENT_BUS.unsubscribe_salvage_banked(_on_salvage_banked)
 	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
+	var session: Node = get_node_or_null(NET_SESSION_PATH)
+	if session != null and session.is_connected(&"session_ended", Callable(self, "_on_session_ended")):
+		session.disconnect(&"session_ended", Callable(self, "_on_session_ended"))
 
 
 func _process(delta: float) -> void:
@@ -131,6 +155,9 @@ func _on_run_extracted(cycle: int, _world_position: Vector3) -> void:
 	if _summary_shown:
 		return
 	_summary_shown = true
+	# F-307: this screen only opens while its session is alive, so every showing starts the flag
+	# false — otherwise a later solo run would inherit an earlier orphaned run's LEAVE_LABEL.
+	_session_over = false
 	_summary_headline.text = "CYCLE %d" % cycle
 	_summary_subtitle.text = SUMMARY_SUBTITLE
 	_summary_modifiers_label.text = _modifiers_drawn_summary()
@@ -155,13 +182,38 @@ func _on_run_restarted() -> void:
 		return
 	_summary_shown = false
 	_salvage_known = false
+	_session_over = false
 	_summary_overlay.visible = false
 	remove_from_group(BLOCKING_UI_GROUP)
 	if _restore_mouse_captured:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
+## F-307, the same handler `DefeatHud` carries. `session_ended` fires once per session on every peer,
+## and only after `NetSession`'s rejoin ladder is exhausted, so a peer that got back in never reaches
+## here and one that does has nothing left to reconnect to.
+func _on_session_ended(_reason: int, _detail: String) -> void:
+	_session_over = true
+	if not _summary_shown:
+		return
+	_refresh_restart_button()
+	# Re-deriving the button alone would not fix the screen: while this overlay is in
+	# `blocks_gameplay_input`, D-032's interlock turns every menu's `set_open(true)` into a no-op, so
+	# there is still no route to a menu. Safe to leave the group at exactly this moment because the
+	# session is dead — `PlayerNet` cleared the local player on disconnect, so no live world is being
+	# handed input back.
+	remove_from_group(BLOCKING_UI_GROUP)
+	_grab_restart_focus()
+
+
 func _refresh_restart_button() -> void:
+	# F-307/D-185: an orphaned peer gets the way out, not a restart of a world the session tore down.
+	# Checked before the host predicate because an orphan satisfies both.
+	if _session_over:
+		_restart_button.text = LEAVE_LABEL
+		_restart_button.disabled = false
+		_restart_button.focus_mode = Control.FOCUS_ALL
+		return
 	var is_local_host: bool = _is_host_or_solo()
 	_restart_button.text = RESTART_LABEL if is_local_host else WAITING_LABEL
 	_restart_button.disabled = not is_local_host
@@ -190,9 +242,21 @@ func _is_host_or_solo() -> bool:
 
 
 func _on_restart_pressed() -> void:
+	if _session_over:
+		_leave_to_menu()
+		return
 	var cycle_service: Node = get_node_or_null(^"/root/CycleService")
 	if cycle_service != null:
 		cycle_service.call("host_restart_run")
+
+
+## F-307. The summary stays up behind the menu — it is still this run's summary, and `MainMenu` is a
+## higher CanvasLayer than either terminal overlay, so it draws and takes input over the top. An
+## ordinary `set_open(true)`, which is precisely why the blocking-group removal above had to run first.
+func _leave_to_menu() -> void:
+	var main_menu: Node = get_node_or_null(MAIN_MENU_PATH)
+	if main_menu != null:
+		main_menu.call(&"set_open", true)
 
 
 ## Only the extraction half of this signal is ours — `extracted == false` is `DefeatHud`'s own death
