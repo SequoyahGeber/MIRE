@@ -1520,7 +1520,160 @@ a colour alone (docs/MENU.md §9).
 
 ---
 
+### F-325 · No system tallies per-player run stats, so the run summary has a headline but no scoreboard
+
+**Area:** UI · **Severity:** medium · **Found:** 2026-08-20 by reed31c598
+
+**Found:** 2026-08-20 by reed31c598 while building MENU-7's run summary (docs/MENU.md §6.2).
+
+`docs/MENU.md` §6.2 lays the summary out as a headline Cycle number plus **a row per player** —
+kills, resources gathered, revives, deaths, and a "favourite" marker. The headline, the cause line,
+the modifiers drawn, the island and the Salvage banked all ship in MENU-7 (`autoload/run_record.gd`
++ `ui/frontend/run_summary_screen.gd`). The per-player rows do not, because nothing in this project
+counts any of it.
+
+Every input exists as an event already — `EventBus.subscribe_harvest_yielded`,
+`subscribe_enemy_attack_landed`, the health system's down/revive transitions — but nobody
+accumulates them per peer, and no accumulated total is replicated. What is missing is a
+**host-authoritative `RunStatsService`**: tally per `peer_id` on the host, reset on
+`EventBus.run_restarted`, and replicate the whole table ONCE at run end (the summary is the only
+consumer, so a per-kill RPC would be pure waste).
+
+That is a new networked system, which means: an `ARCHITECTURE.md` §2.2 authority row, a
+`PROTOCOL_VERSION` bump in `core/net/net_version.gd` with `tools/handshake_check.gd` extended
+(SPECS.md standing rule 5), and two-process evidence that both peers render the same numbers for
+all three endings. It is its own task, not a rider on the screen that would display it.
+
+**Where it plugs in.** `ui/frontend/run_summary_screen.gd`'s `_build()` has the slot marked with a
+comment between the facts block and the separator. The screen already takes its whole content from
+a Dictionary via `present()`, so the rows arrive as one more key with no restructuring.
+
+Two smaller gaps found alongside, worth folding into the same task:
+
+1. **The `consumed` ending is not distinguishable.** `DefeatService` knows whether a run ended by
+   team wipe or by the island being consumed (its own cause enum), but `EventBus.run_wiped` does not
+   carry the cause, so `run_record.gd` records both as `wiped`. The summary already has copy and an
+   ending line for `consumed` and simply never sees it. Adding the cause to that signal's payload is
+   the fix; `GAMELOOP.md` §1 calls the consumed ending "the rarest and most dramatic", so it is
+   worth telling apart.
+2. **The next-unlock teaser is absent.** §6.2 wants the Salvage bar to name the next affordable
+   unlock ("next on the bench: FUNGAL CHARM — 34 more") because that is what converts a loss into
+   one more run. `UnlockService` + `Registry` have everything needed; it was left out only to keep
+   MENU-7 to one screen and one recorder.
+
+---
+
 ## Resolved
+
+### F-324 · Players spawn before the terrain under them has a collider, and fall through the island — **fixed**
+
+**Area:** world · **Severity:** high · **Found:** 2026-08-20 by slate8b6811
+
+`ProceduralWorld._ready()` picks a spawn point from the pure heightmap, instances the Player 1.2 m
+above it, and hands `ChunkStreamer.set_anchors()` the position — but nothing under the player has a
+COLLIDER at that moment, and nothing waits for one.
+
+The streamer's path to a standable surface is entirely lazy and entirely timing-dependent:
+
+1. `_process()` only evaluates ring membership once `_eval_accum >= RING_EVAL_INTERVAL_SEC` (0.2 s),
+   so the very first chunk request is a fifth of a second late.
+2. Mesh generation is a `WorkerThreadPool` job — completion is whenever it is.
+3. Mesh upload AND `ConcavePolygonShape3D` cooking share one 4 ms/frame slice, and the LOD0 ring is
+   25 chunks at ~1.15-1.5 ms of cook each.
+
+Measured headless on seed 20260819 (`tools/_tmp_spawn_fall_probe.gd`): spawn surface y = 2.21, the
+player is placed at y = 3.33, and `chunk_has_collision()` is false for every chunk in the LOD0 ring
+until frame ~40. The player free-falls for those ~0.67 s. Headless it survives on luck — it falls
+1.1 m, just under the 1.2 m of clearance it was given, and lands.
+
+In the shipped boot it does not have that luck. The first second of a real world build is the worst
+frame-time in the whole session (shader compile, scatter, nav bake, POI scene instancing), gravity is
+`gravity_scale = 2.0`, and the fall is unbounded while the cook budget is fixed per FRAME, not per
+second — fewer frames means the same 25 chunks take longer in wall time, while the player keeps
+accelerating. One second of that is a ~9.8 m fall from a surface 2.2 m above sea level. The terrain
+collider is a `ConcavePolygonShape3D` with no backface collision, so once the player is under the
+mesh there is nothing to land on and nothing to push them back: they fall forever.
+
+There is also no void recovery anywhere — no system notices a body far below the terrain surface,
+so the failure is unrecoverable rather than a one-second stumble.
+
+Same hole on the rebuild path: `rebuild_for_seed()` -> `_replace_players()` moves the local player to
+the new island's shore with `set_anchors()` and no collider under it either.
+
+---
+
+**Resolved 2026-08-20 by slate8b6811.** Fixed in three places, because the hole had three separate mouths.
+
+**1. The ground is built before anyone stands on it.** `ChunkStreamer.prime(anchors, radius)` builds
+the LOD0 ring around a point SYNCHRONOUSLY — dispatches every mesh job to `WorkerThreadPool` first so
+they still run in parallel, waits on them, uploads, and cooks every collider — ignoring
+`FRAME_BUDGET_MS` entirely. `ProceduralWorld._ready()` calls it on the spawn point before the Player
+exists, and `rebuild_for_seed()` calls it before `_replace_players()` moves anyone.
+
+Unbudgeted is the point, and it is the ONLY exception: the caller is mid-world-build behind a loading
+screen, where a frame-budgeted trickle is precisely the bug. Measured cost — a whole `ProceduralWorld`
+build, priming included, is 20-44 ms across five seeds; the nine spawn chunks are a fraction of that.
+`prime()` is capped at `LOD0_RADIUS_CHUNKS`, because a primed chunk outside the collision ring would
+have its collider dropped again by the next `_evaluate_rings()`.
+
+`_eval_accum` also now starts AT `RING_EVAL_INTERVAL_SEC` rather than zero, so the first `_process()`
+after `set_anchors()` evaluates rings immediately instead of a fifth of a second later.
+
+**2. Spawn height is read off the physics world, not the heightmap.** `_pick_spawn()` still chooses
+in the pure heightmap — right domain for choosing, since it is deterministic and can answer for ground
+that is not resident. It is the wrong domain for PLACING: what a capsule rests on is the LOD0
+collision mesh, linear between 1 m samples and so a few centimetres off the smooth surface either way.
+`ProceduralWorld._standing_position()` primes, then casts a ray down `TERRAIN_LAYER` and puts the feet
+on what it actually hits, falling back to the pure surface if the ray finds nothing.
+
+That also let `SPAWN_CLEARANCE_M` drop from 1.2 m to 0.05 m. The 1.2 m was the old code's only defence
+— altitude, in the hope a collider cooked before the player used it up. With solid ground under them
+it buys nothing and costs a visible 0.35 s drop at every single spawn.
+
+**3. The co-op cluster reads its own ground.** `PlayerNet.SPAWN_OFFSETS` fans six players up to 1.6 m
+sideways off one captured transform and carried slot one's HEIGHT to all six. On the shipped island
+that is a beach with up to a 0.45 rise per metre — most of a metre of error, either direction.
+`_spawn_for()` now routes the offset origin through the world's `standing_position_at()`, host-side,
+so the corrected position travels to every client in the spawn packet and all peers still build the
+identical body in the identical place. Asked through `has_method()`: an authored map, whose collision
+is all loaded with the scene and which never had this problem, does not implement it and keeps its own
+placement untouched.
+
+**Plus a net, because priming cannot be the only defence.** A collider is a per-peer, per-frame fact,
+and any future path that gets a body over a chunk that is not yet LOD0-resident reopens this.
+`ProceduralWorld._recover_from_void()` samples twice a second (not per tick — `height_at()` rebuilds a
+noise set per call) and lifts this peer's OWN player back to the surface if it is more than
+`VOID_DEPTH_M` (8 m) under it. Own player only, the same §2.2 row-1 rule `_replace_players()` follows;
+every peer runs it, so every peer rescues its own. It records `_void_recoveries`, and the check asserts
+that number is zero on a normal boot — a rescue in a real session means something upstream is still
+placing bodies over holes.
+
+**Proof: `tools/spawn_ground_check.gd`.** Run against HEAD (f787d5d) with the fix reverted, the player
+falls to **y = -85 m, 86.5 m below the surface, and never lands** — which is the reported symptom
+exactly, and worse than the original report's measurement because the check awaits `physics_frame`
+rather than `process_frame`, so physics keeps ticking while the streamer's `_process()` does not. That
+is the real-boot shape: gravity does not care that frames are slow, but the collision cook budget is
+per FRAME. With the fix, across both seeds, the player never goes below the surface at all (deepest
+0.00 m) and is on the floor within a tenth of a second.
+
+The check asserts a TIMING-FREE invariant on purpose — "a collider is under the spawn when `_ready()`
+returns", not "the player happened to land". A landing check would have passed on the broken build in
+a fast headless harness, which is how this survived `tools/procedural_world_check.gd` and
+`tools/chunk_stream_check.gd` for a whole cutover.
+
+Regression sweep, all clean: `procedural_world_check`, `chunk_stream_check` (windowed),
+`session_lifecycle_check`, `player_health_check`, `playtest_hollow_check`, `defeat_check`,
+`handshake_check`.
+
+**New public API for the next task** — this belongs in `docs/DELEGATION.md` *Current state*, which was
+claimed live by quill5fa5c7 (4.18) throughout this work and so could not be edited:
+- `ChunkStreamer.prime(anchors: Array[Vector3], radius_chunks := PRIME_RADIUS_CHUNKS) -> int`
+  — blocking; returns colliders cooked.
+- `ChunkStreamer.has_ground_at(position: Vector3, radius_chunks := 0) -> bool`
+  — "is there a cooked collider there right now".
+- `ProceduralWorld.standing_position_at(position: Vector3) -> Vector3`
+  — primes, then rays; the call anything placing a body on this island should use. Optional by
+  design, discovered through `has_method()`.
 
 ### F-307 · A non-host peer whose host leaves is soft-locked on F-243's terminal overlay — the restart button never re-reads its own host check, and no menu can open over it — **fixed**
 

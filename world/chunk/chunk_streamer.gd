@@ -50,6 +50,13 @@ const PlacementValidator := preload("res://systems/building/placement_validator.
 
 ## Nearest ring: full detail (LOD 0) AND the only ring that gets a collider.
 const LOD0_RADIUS_CHUNKS: int = 2
+## How much of the LOD0 ring `prime()` builds SYNCHRONOUSLY when a caller has to stand something on
+## the ground this instant (F-324). One ring — the anchor's own chunk and its eight neighbours — is
+## everything a stationary body can be standing on, and nine chunks is the smallest slice that
+## still guarantees the anchor is not on a chunk seam. Never larger than [constant
+## LOD0_RADIUS_CHUNKS]: a primed chunk outside the collision ring would have its collider dropped
+## again by the next `_evaluate_rings()`, which is the hole this closes, reopened.
+const PRIME_RADIUS_CHUNKS: int = 1
 ## Mid ring: half detail (LOD 1), no collider.
 const LOD1_RADIUS_CHUNKS: int = 5
 ## Outer ring: quarter detail (LOD 2), no collider. Beyond this, a chunk is not loaded at all.
@@ -99,7 +106,12 @@ var biome_defs: Array = []
 var _anchors: Array[Vector3] = []
 var _loaded: Dictionary[Vector2i, ChunkEntry] = {}
 var _jobs: Dictionary[Vector2i, ChunkJob] = {}
-var _eval_accum: float = 0.0
+## Starts AT the interval, not at zero: the first `_process()` after `set_anchors()` evaluates
+## rings immediately instead of a fifth of a second later. That delay was the first of the three
+## lags in F-324 — nothing under a freshly-placed player even being REQUESTED yet — and it costs
+## nothing to remove, because an evaluation with no resident chunks and one anchor is a single
+## scan box.
+var _eval_accum: float = RING_EVAL_INTERVAL_SEC
 var _shared_material: ShaderMaterial
 ## Wall-clock cost of the most recent `_process()` call, covering ring evaluation plus the
 ## budgeted upload/collision-cook work — everything this node itself did that frame. Deliberately
@@ -167,6 +179,94 @@ func _exit_tree() -> void:
 ## minimap camera) does not need a second streamer.
 func set_anchors(anchors: Array[Vector3]) -> void:
 	_anchors = anchors
+
+
+## Builds the ground around [param anchors] RIGHT NOW — mesh generated, uploaded, and collision
+## cooked — before this call returns, ignoring [constant FRAME_BUDGET_MS] entirely. Returns how many
+## colliders it cooked.
+##
+## F-324: every other path into a collider here is lazy by design, and lazy is correct for streaming
+## — a chunk two rings out can take as many frames as it likes. It is wrong exactly once, at the
+## moment something is PLACED on ground that has never been resident: `set_anchors()` only says
+## where to stream, it does not say when the streaming finished, so a caller that places a body and
+## returns has placed it in mid-air over a hole. Gravity does the rest, and because the terrain
+## collider is a `ConcavePolygonShape3D` with no backface collision, a body that gets under the mesh
+## before the cook lands never comes back — it falls forever.
+##
+## So this is the seam a spawner needs: `prime()` first, place second. Deliberately BLOCKING, and
+## deliberately unbudgeted — the caller is mid-world-build behind a loading screen, where the stall
+## is invisible and a frame-budgeted trickle is the bug. Measured over five seeds, priming the nine
+## spawn chunks is a fraction of a whole `ProceduralWorld` build, which itself runs 20-44 ms end to
+## end. `_process()`'s budget still governs every ordinary chunk; this is the exception, and it is
+## the only one.
+##
+## [param radius_chunks] is clamped to [constant LOD0_RADIUS_CHUNKS] — see [constant
+## PRIME_RADIUS_CHUNKS].
+func prime(anchors: Array[Vector3], radius_chunks: int = PRIME_RADIUS_CHUNKS) -> int:
+	if anchors.is_empty():
+		return 0
+	var radius: int = clampi(radius_chunks, 0, LOD0_RADIUS_CHUNKS)
+
+	var coords: Array[Vector2i] = []
+	var seen: Dictionary[Vector2i, bool] = {}
+	for anchor: Vector3 in anchors:
+		var ac: Vector2i = _chunk_of(anchor)
+		for dz: int in range(-radius, radius + 1):
+			for dx: int in range(-radius, radius + 1):
+				var coord := Vector2i(ac.x + dx, ac.y + dz)
+				if seen.has(coord):
+					continue
+				seen[coord] = true
+				coords.append(coord)
+
+	# Dispatch every mesh job BEFORE waiting on any of them, so the nine builds still run across the
+	# pool in parallel — blocking the caller is the point, serializing the workers is not.
+	for coord: Vector2i in coords:
+		if _loaded.has(coord) and _loaded[coord].lod == 0:
+			continue                      # right mesh already resident; collision cooked below
+		_request_chunk(coord, 0)
+
+	# `_drain_ready_jobs()` re-requests any job it finds superseded (a lazy LOD1 build that was in
+	# flight when we asked for LOD0), so one pass is not always enough. The loop is bounded because
+	# a supersede chain here is at most one deep — the guard is a backstop, not the mechanism.
+	var guard: int = 0
+	while guard < LOD0_RADIUS_CHUNKS + 4:
+		guard += 1
+		var pending: Array[ChunkJob] = []
+		for coord: Vector2i in coords:
+			if _jobs.has(coord):
+				pending.append(_jobs[coord])
+		if pending.is_empty():
+			break
+		for job: ChunkJob in pending:
+			if not job.finished:
+				WorkerThreadPool.wait_for_task_completion(job.task_id)
+				job.finished = true
+		# A deadline far enough out that the budget check inside never trips — see the header.
+		_drain_ready_jobs(Time.get_ticks_usec() + (1 << 30))
+
+	var cooked: int = 0
+	for coord: Vector2i in coords:
+		if not _loaded.has(coord):
+			continue
+		var entry: ChunkEntry = _loaded[coord]
+		if entry.lod != 0 or entry.has_collision:
+			continue
+		_cook_collision(entry)
+		cooked += 1
+	return cooked
+
+
+## True when every chunk within [param radius_chunks] of [param position] is resident at LOD0 with a
+## cooked collider — "there is ground under this point, right now". The question `prime()` answers
+## and the one a spawn check asserts.
+func has_ground_at(position: Vector3, radius_chunks: int = 0) -> bool:
+	var ac: Vector2i = _chunk_of(position)
+	for dz: int in range(-radius_chunks, radius_chunks + 1):
+		for dx: int in range(-radius_chunks, radius_chunks + 1):
+			if not chunk_has_collision(Vector2i(ac.x + dx, ac.y + dz)):
+				return false
+	return true
 
 
 func is_chunk_loaded(coord: Vector2i) -> bool:

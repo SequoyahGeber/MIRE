@@ -29,6 +29,9 @@ const NavBakerScript := preload("res://world/chunk/nav_baker.gd")
 const ScatterFieldScript := preload("res://world/gen/resource_scatter_field.gd")
 const PlayerScene := preload("res://entities/player/player.tscn")
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
+## The layer `ChunkStreamer._cook_collision()` puts terrain bodies on. Taken from the same file it
+## takes it from, so a spawn probe can never be looking at a layer the ground is not on.
+const TERRAIN_LAYER: int = preload("res://systems/building/placement_validator.gd").TERRAIN_LAYER
 
 ## Same contract constants `world/gen/authored_world.gd` publishes — duplicated by value, not
 ## imported, for the same reason EntityDirectory duplicates its group names: the string IS the
@@ -53,6 +56,28 @@ const SPAWN_MAX_SLOPE: float = 0.45          # rise over 1 m run — comfortably
 const SPAWN_CANDIDATES: int = 64             # angles probed around the shore ring
 ## Extra clearance beyond a POI's own `clearance_m` so nobody spawns inside a defense wave.
 const SPAWN_POI_MARGIN_M: float = 8.0
+## How far above the ground a body is stood up. Small on purpose: it is settle clearance, not a
+## drop. It used to be 1.2 m, which was the old code's only defence against F-324 — enough height
+## that a player MIGHT still be falling when a collider finally cooked under them. With the ground
+## primed solid before anyone is placed on it, that margin buys nothing and costs a visible 0.35 s
+## drop at every spawn; what is left is just enough that the capsule never starts inside a triangle.
+const SPAWN_CLEARANCE_M: float = 0.05
+## How far above and below the intended spawn `_ground_height_at()` sweeps for the real collider
+## surface. Up covers the heightmap reading low against the meshed triangle; down covers a spawn
+## point published over a dip the mesh resolves more coarsely than the pure surface does.
+const GROUND_PROBE_UP_M: float = 4.0
+const GROUND_PROBE_DOWN_M: float = 8.0
+
+## F-324's second half — the net under everything above. A body this far BELOW the surface at its
+## own (x, z) is not swimming, not in a cave (this generator has none) and not walking a seabed: it
+## is under the terrain mesh, where a `ConcavePolygonShape3D` with no backface collision gives it
+## nothing to land on ever again. Generous enough that no legitimate slope, seam or step can reach
+## it, small enough that recovery happens within a second of the fall starting.
+const VOID_DEPTH_M: float = 8.0
+## How often that check runs. Not per-tick: `height_at()` goes through `BiomeMap.surface_at()`,
+## which rebuilds a noise set and a terrain table per call — cheap enough twice a second, wasteful
+## sixty times. Falling is a state that persists, so a coarse sampler cannot miss it.
+const VOID_CHECK_INTERVAL_SEC: float = 0.5
 
 ## True in the shipped game; the check turns it off to boot faster and to keep the harness free of
 ## a live player body (the same switch `authored_world.gd` gives its props).
@@ -67,6 +92,10 @@ var spawn_position: Vector3 = Vector3.ZERO
 
 var _markers_built: int = 0
 var _scenes_instanced: int = 0
+var _void_accum: float = 0.0
+## How many times this world has pulled a body back out from under itself. Read by the check; a
+## non-zero value in a real session means something upstream still places bodies over holes.
+var _void_recoveries: int = 0
 ## `Registry.biomes.values()`, read ONCE per world build and handed to every consumer of the
 ## surface (F-274). Read once rather than per consumer because the whole point of the seam is that
 ## the mesh, the collider, the navmesh, the POI sites, the scatter and `height_at()` all agree —
@@ -93,6 +122,12 @@ func _ready() -> void:
 	_build_poi_sites()
 	spawn_position = _pick_spawn()
 	_publish_spawn_marker()
+	# BEFORE the player, and unconditionally (F-324). Unconditional because the spawn point is a
+	# published contract, not a private argument to `_build_player()`: offline this file stands a
+	# body on it, in a session `PlayerNet` reads it off that body and stands up to six there, and a
+	# check may stand nothing on it at all. All three want the same guarantee — that the ground
+	# under the point this world just advertised is real by the time anyone acts on it.
+	_prime_ground_at(spawn_position)
 	if build_player:
 		_build_player()
 
@@ -154,6 +189,7 @@ func rebuild_for_seed(seed_value: int) -> void:
 	_build_poi_sites()
 	spawn_position = _pick_spawn()
 	_publish_spawn_marker()
+	_prime_ground_at(spawn_position)
 	_replace_players()
 
 	# LAST, and only on the rebuild path — every contract node above is published by now, so a
@@ -198,7 +234,7 @@ func _teardown_derived() -> void:
 ## own bug (respawning at a position nobody chose) arriving by a different route. The direct-move
 ## fallback covers a harness that boots this scene without the autoloads (F-011's standing shape).
 func _replace_players() -> void:
-	var standing: Vector3 = spawn_position + Vector3.UP * 1.2
+	var standing: Vector3 = _standing_position(spawn_position)
 	var player_health: Node = get_node_or_null(^"/root/PlayerHealth")
 	if player_health != null and player_health.has_method(&"rebind_local_spawn"):
 		player_health.call("rebind_local_spawn", standing, NAN)
@@ -439,15 +475,86 @@ func _build_player() -> void:
 	var player := PlayerScene.instantiate() as Node3D
 	player.name = "Player"           # the authored maps' convention: offline local authority
 	add_child(player)
-	player.position = spawn_position + Vector3.UP * 1.2
+	player.position = _standing_position(spawn_position)
 	# Anchor the streamer on the player from the first frame, exactly how D-080's API expects to
-	# be driven; without an anchor nothing streams and the player falls through the void. The
-	# literal must be TYPED — `set_anchors(Array[Vector3])` rejects a plain Array through `call()`.
+	# be driven; without an anchor nothing streams. The literal must be TYPED — `set_anchors(
+	# Array[Vector3])` rejects a plain Array through `call()`.
+	#
+	# The anchor is not what keeps this player up, and never was (F-324): `set_anchors()` schedules
+	# streaming, it does not wait for it. `_ready()` primed the spawn chunks synchronously before
+	# calling this, so the collider under `player.position` exists on the frame the body enters the
+	# tree — the anchor only carries it onward from there.
 	var anchors: Array[Vector3] = [player.position]
 	streamer.call(&"set_anchors", anchors)
 
 
-func _physics_process(_delta: float) -> void:
+## The public half of `_standing_position()`, for anything OUTSIDE this file that has to put a body
+## down on this island — `PlayerNet`, which offsets each peer horizontally from the level's spawn
+## point and so needs its own ground reading, and any future teleport/extraction that lands someone
+## somewhere. Primes first, so the answer is about ground that exists rather than ground that is
+## scheduled.
+##
+## Optional by design: `PlayerNet` calls this through `has_method()`, so an authored map — whose
+## collision is all present the moment the scene loads, and which therefore never had this problem —
+## simply does not implement it and keeps its own placement.
+func standing_position_at(position: Vector3) -> Vector3:
+	_prime_ground_at(position)
+	return _standing_position(position)
+
+
+## Where a body's feet actually belong over (x, z) — the "dynamic spawn height" half of F-324.
+##
+## `_pick_spawn()` works in the PURE heightmap, which is the right domain for choosing a spot (it is
+## deterministic, and it can answer for ground that is not resident). It is not the right domain for
+## placing a body: what a capsule rests on is the LOD0 collision mesh, whose triangles are linear
+## between 1 m samples and so sit a few centimetres off the smooth surface either way, and which may
+## also have a POI's own geometry standing on it. So the height is chosen from the heightmap and then
+## SNAPPED to whatever the physics world really has there.
+##
+## Ray, not heightmap arithmetic, for exactly that reason — and it is safe to cast here because the
+## caller primed first: the collider under [param position] is in the space before this runs. If the
+## ray finds nothing anyway, the pure surface is the honest fallback, and the void net below is what
+## catches the case where even that is wrong.
+func _standing_position(position: Vector3) -> Vector3:
+	var surface: float = maxf(height_at(position.x, position.z), SEA_LEVEL)
+	var from := Vector3(position.x, surface + GROUND_PROBE_UP_M, position.z)
+	var to := Vector3(position.x, surface - GROUND_PROBE_DOWN_M, position.z)
+
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	if space != null:
+		var query := PhysicsRayQueryParameters3D.create(from, to)
+		query.collision_mask = TERRAIN_LAYER
+		var hit: Dictionary = space.intersect_ray(query)
+		if not hit.is_empty():
+			var ground: Vector3 = hit.get("position", Vector3.ZERO)
+			return Vector3(position.x, ground.y + SPAWN_CLEARANCE_M, position.z)
+
+	return Vector3(position.x, surface + SPAWN_CLEARANCE_M, position.z)
+
+
+## Makes the ground under [param position] solid before anything is placed on it — F-324. Blocking,
+## by design; see `ChunkStreamer.prime()`'s own header for why this one call is allowed to ignore
+## the streaming budget.
+func _prime_ground_at(position: Vector3) -> void:
+	if streamer == null:
+		return
+	var anchors: Array[Vector3] = [position]
+	# `prime()` takes its anchors as an argument and does NOT set the streamer's — the anchor set is
+	# the union of every peer's position (F-132's host contract), and a rescue narrowing it to one
+	# point, even for a tick, would drop a remote peer's proxies. Every caller here sets anchors
+	# properly on its own path immediately after.
+	var cooked: int = int(streamer.call(&"prime", anchors))
+	if not bool(streamer.call(&"has_ground_at", position)):
+		# Not fatal, and deliberately not a push_error: the void recovery below still catches the
+		# body. But it means `prime()` came back without a collider under the spawn, which should
+		# be impossible, so it must be visible when it happens.
+		MireLog.warn(&"world", "ProceduralWorld: spawn %v has no collider after priming" % position)
+		return
+	MireLog.info(&"world", "ProceduralWorld: primed %d collider(s) under spawn %v" % [
+		cooked, position])
+
+
+func _physics_process(delta: float) -> void:
 	if streamer == null:
 		return
 	var anchors: Array[Vector3] = []
@@ -458,3 +565,45 @@ func _physics_process(_delta: float) -> void:
 	if anchors.is_empty():
 		anchors.append(spawn_position)
 	streamer.call(&"set_anchors", anchors)
+
+	_void_accum += delta
+	if _void_accum >= VOID_CHECK_INTERVAL_SEC:
+		_void_accum = 0.0
+		_recover_from_void()
+
+
+# ── F-324: the net ────────────────────────────────────────────────────────────────────────────────
+
+
+## Pulls this peer's own player back onto the island if it has ended up under the terrain.
+##
+## Priming closes the boot hole, but it cannot be the only defence: a collider is a per-peer,
+## per-frame fact, and any path that gets a body over a chunk that is not yet LOD0-resident — a
+## sprint outrunning the cook budget on a slow machine, a teleport a future task adds, a seed
+## rebuild landing mid-fall — reopens it. Under the mesh there is no recovery by physics, because
+## the terrain collider has no backface collision, so recovery has to be someone's explicit job.
+##
+## OWN PLAYER ONLY, the same rule `_replace_players()` follows and for the same reason: movement is
+## CLIENT-authoritative (§2.2 row 1), so a peer writing another peer's transform would be overwritten
+## by the next synchronizer tick. Every peer runs this, so every peer rescues its own.
+func _recover_from_void() -> void:
+	var body: Node3D = _local_player_body()
+	if body == null:
+		return
+	var here: Vector3 = body.global_position
+	var surface: float = height_at(here.x, here.z)
+	if here.y >= surface - VOID_DEPTH_M:
+		return
+
+	# Stand them back up where they fell, not at the spawn point: the (x, z) they reached is theirs,
+	# and dragging someone across the island because a chunk cooked late is a bigger disruption than
+	# the fall was. Prime first — whatever hole they went through is still a hole.
+	var standing := Vector3(here.x, maxf(surface, SEA_LEVEL), here.z)
+	_prime_ground_at(standing)
+	standing = _standing_position(standing)
+	body.global_position = standing
+	if body is CharacterBody3D:
+		(body as CharacterBody3D).velocity = Vector3.ZERO
+	_void_recoveries += 1
+	MireLog.warn(&"world", "ProceduralWorld: recovered a player from %.1f m under the surface at %v" % [
+		surface - here.y, standing])

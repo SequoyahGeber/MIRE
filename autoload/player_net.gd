@@ -188,7 +188,8 @@ func _spawn_for(peer_id: int) -> void:
 		return
 
 	var slot: int = _claim_slot(peer_id)
-	var origin: Vector3 = _spawn_point.origin + _spawn_point.basis * SPAWN_OFFSETS[slot]
+	var origin: Vector3 = _ground_snapped(
+		_spawn_point.origin + _spawn_point.basis * SPAWN_OFFSETS[slot])
 
 	var spawned: Node = _spawner.spawn({
 		"peer": peer_id,
@@ -200,6 +201,26 @@ func _spawn_for(peer_id: int) -> void:
 		return
 
 	MireLog.info(NetConfig.LOG_CHANNEL, "PlayerNet: spawned player %d at %v" % [peer_id, origin])
+
+
+## F-324: `SPAWN_OFFSETS` moves each player up to 1.6 m sideways from the level's spawn point, but it
+## only ever moved them SIDEWAYS — the y came from the one transform captured off the level's Player,
+## so on any map where the ground is not flat, players two through six were placed at slot one's
+## height. On the shipped procedural island that is a beach with up to a 0.45 rise per metre: most of
+## a metre of error, in either direction, which is a body dropped or a body standing inside a hill.
+##
+## Asked of the WORLD rather than computed here, and asked through `has_method()`, because only the
+## world knows what its ground is: a procedural one has to make sure the chunk is even resident
+## before it can answer (`ProceduralWorld.standing_position_at()` primes, then rays), while an
+## authored one has all of its collision loaded with the scene and is right to keep its authored
+## placement untouched. Host-side only — this runs inside `_spawn_for()`, and the result travels to
+## every client in the spawn packet, so all peers still build the identical body at the identical
+## place.
+func _ground_snapped(origin: Vector3) -> Vector3:
+	var scene: Node = get_tree().current_scene
+	if scene == null or not scene.has_method(&"standing_position_at"):
+		return origin
+	return scene.call(&"standing_position_at", origin) as Vector3
 
 
 ## Container children are named for the peer that owns them (see `_net_spawn_player`), on every peer,

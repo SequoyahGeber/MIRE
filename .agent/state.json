@@ -18,12 +18,6 @@
       "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
-    "autoload/player_net.gd": {
-      "agent": "slate8b6811",
-      "at": "2026-08-20T21:11:53+00:00",
-      "task": "F-324",
-      "token": "CLAUDE_CODE_SESSION_ID:dcf988c3-f81b-4177-97bb-d3f72dcb1927"
-    },
     "docs/DECISIONS.md": {
       "agent": "quill5fa5c7",
       "at": "2026-08-20T21:15:20+00:00",
@@ -42,29 +36,17 @@
       "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
-    "tools/spawn_ground_check.gd": {
-      "agent": "slate8b6811",
-      "at": "2026-08-20T21:05:44+00:00",
-      "task": "F-324",
-      "token": "CLAUDE_CODE_SESSION_ID:dcf988c3-f81b-4177-97bb-d3f72dcb1927"
+    "tools/noise_reuse_check.gd": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T21:19:32+00:00",
+      "task": "4.18",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "world/chunk/chunk_mesher.gd": {
       "agent": "quill5fa5c7",
       "at": "2026-08-20T21:15:20+00:00",
       "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
-    },
-    "world/chunk/chunk_streamer.gd": {
-      "agent": "slate8b6811",
-      "at": "2026-08-20T21:05:44+00:00",
-      "task": "F-324",
-      "token": "CLAUDE_CODE_SESSION_ID:dcf988c3-f81b-4177-97bb-d3f72dcb1927"
-    },
-    "world/gen/procedural_world.gd": {
-      "agent": "slate8b6811",
-      "at": "2026-08-20T21:05:44+00:00",
-      "task": "F-324",
-      "token": "CLAUDE_CODE_SESSION_ID:dcf988c3-f81b-4177-97bb-d3f72dcb1927"
     }
   },
   "in_flight": {
@@ -77,23 +59,12 @@
         "assets/audit/terrain/island_orbit.png",
         "assets/audit/terrain/island_spawn_view.png",
         "assets/audit/terrain/island_shore_look.png",
-        "tools/biome_terrain_check.gd"
+        "tools/biome_terrain_check.gd",
+        "tools/noise_reuse_check.gd"
       ],
       "notes": [],
       "started": "2026-08-20T21:15:20+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
-    },
-    "F-324": {
-      "agent": "slate8b6811",
-      "files": [
-        "world/chunk/chunk_streamer.gd",
-        "world/gen/procedural_world.gd",
-        "tools/spawn_ground_check.gd",
-        "autoload/player_net.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-20T21:05:44+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:dcf988c3-f81b-4177-97bb-d3f72dcb1927"
     }
   },
   "recent": {
@@ -292,6 +263,13 @@
       "hash": "284fee8614040357502bb8bba28ada457147e5cbeb0d397a806abd9e5ff362a3",
       "task": "F-279",
       "token": null
+    },
+    "autoload/player_net.gd": {
+      "agent": "slate8b6811",
+      "at": "2026-08-20T21:22:10+00:00",
+      "hash": "e377732ae7f5bdd7c0313186c39b81b3ad2a597272998bc0579e19856ac70cfd",
+      "task": "F-324",
+      "token": "CLAUDE_CODE_SESSION_ID:dcf988c3-f81b-4177-97bb-d3f72dcb1927"
     },
     "autoload/powerup_service.gd": {
       "agent": "lm2",
@@ -1091,6 +1069,13 @@
       "task": "7.4",
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
+    "tools/spawn_ground_check.gd": {
+      "agent": "slate8b6811",
+      "at": "2026-08-20T21:22:10+00:00",
+      "hash": "62eb5b1f87adff8c13586a3ff4aa15b3fd719558f5087b472a6122d59d48a30f",
+      "task": "F-324",
+      "token": "CLAUDE_CODE_SESSION_ID:dcf988c3-f81b-4177-97bb-d3f72dcb1927"
+    },
     "tools/steam/DEPOT_SETUP.md": {
       "agent": "lm3",
       "at": "2026-08-19T22:35:43+00:00",
@@ -1337,11 +1322,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "world/chunk/chunk_streamer.gd": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:41:46+00:00",
-      "hash": "5c6ffc20ba7ae849291d7e2b96b361a2cd2d95a16c051e8204b54451e2616d77",
-      "task": "4.19",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+      "agent": "slate8b6811",
+      "at": "2026-08-20T21:22:10+00:00",
+      "hash": "597181e5528d6fca484f45163dd242f46fcaca060db0b0b6684e25170782ac5a",
+      "task": "F-324",
+      "token": "CLAUDE_CODE_SESSION_ID:dcf988c3-f81b-4177-97bb-d3f72dcb1927"
     },
     "world/chunk/nav_baker.gd": {
       "agent": "lp",
@@ -1407,11 +1392,11 @@
       "token": null
     },
     "world/gen/procedural_world.gd": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:41:46+00:00",
-      "hash": "deee59f2c360eeae3c72937a77c3b2506ed4785b908e1e4ad31debc5bd2d1bc1",
-      "task": "4.19",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+      "agent": "slate8b6811",
+      "at": "2026-08-20T21:22:10+00:00",
+      "hash": "284bfd3fbb48cdb10c50d630429dc929f8098e7359188ddda3469c5daf1a36f0",
+      "task": "F-324",
+      "token": "CLAUDE_CODE_SESSION_ID:dcf988c3-f81b-4177-97bb-d3f72dcb1927"
     },
     "world/gen/resource_scatter.gd": {
       "agent": "lm",
@@ -1442,7 +1427,7 @@
       "token": null
     }
   },
-  "rev": 135,
+  "rev": 139,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -5790,9 +5775,11 @@
       "title": "SteamLobby has no member-metadata API, so the dock cannot show ready flags or per-player colours"
     },
     "F-324": {
+      "done_at": "2026-08-20T21:22:10+00:00",
+      "done_by": "slate8b6811",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Players spawn before the terrain under them has a collider, and fall through the island"
     },

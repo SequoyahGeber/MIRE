@@ -7436,3 +7436,18 @@ MENU-1..8 built, verified and pushed; docs/MENU.md §11 has the full status tabl
 Files: `ui/theme/mire_theme.gd`, `tools/menu_kit_check.gd`, `ui/menu_stack.gd`, `tools/menu_stack_check.gd`, `ui/frontend/backdrop.gd`, `ui/frontend/title_screen.gd`, `ui/frontend/frontend.gd`, `levels/frontend.tscn`, `tools/title_check.gd`, `tools/title_render.gd`, `assets/audit/menu/title_1080p_creep000.png`, `assets/audit/menu/title_1080p_creep042.png`, `assets/audit/menu/title_1080p_creep150.png`, `assets/audit/menu/title_deck_creep000.png`, `assets/audit/menu/title_deck_creep042.png`, `assets/audit/menu/title_deck_creep150.png`, `ui/frontend/island_minimap.gd`, `ui/frontend/expedition_screen.gd`, `tools/expedition_check.gd`, `assets/audit/menu/dock_1080p.png`, `assets/audit/menu/dock_deck.png`, `ui/menu/pause_menu.gd`, `tools/pause_menu_check.gd`, `ui/frontend/settings_screen.gd`, `tools/settings_screen_check.gd`, `ui/frontend/salvage_bench_screen.gd`, `tools/salvage_bench_check.gd`, `core/save/run_record_save.gd`, `autoload/run_record.gd`, `ui/frontend/run_summary_screen.gd`, `tools/run_summary_check.gd`, `docs/MENU.md`
 
 Commit at time of writing: `0882c89`
+
+---
+
+### DONE · F-324 · slate8b6811 · 2026-08-20T21:22:10+00:00
+
+**Players spawn before the terrain under them has a collider, and fall through the island**
+
+Players fell through the procedural island because ProceduralWorld placed them and called set_anchors(), which schedules terrain streaming rather than waiting for it — no collider existed under the spawn for ~40 frames. Fixed with ChunkStreamer.prime() (synchronous, unbudgeted, build-time only), a ray-snapped standing position off the real collider instead of the pure heightmap, the same snap applied to PlayerNet's six-slot co-op offsets, and a void-recovery net. tools/spawn_ground_check.gd pins it: at HEAD the player falls to -85 m and never lands; with the fix it never leaves the surface.
+
+Notes along the way:
+- New API for DELEGATION.md 'Current state' — could not be written there, quill5fa5c7 held the file for 4.18 the whole time: ChunkStreamer.prime(anchors, radius) blocking ground build; ChunkStreamer.has_ground_at(pos, radius); ProceduralWorld.standing_position_at(pos) primes-then-rays and is the call anything placing a body on the island should use, discovered via has_method() so authored maps opt out. Also a decision that wants a D-number and could not get one (DECISIONS.md same holder): the streaming frame budget has exactly one exception, prime(), and it is spend-at-build-time-behind-a-loading-screen — do not 'fix' it back into the budget.
+
+Files: `world/chunk/chunk_streamer.gd`, `world/gen/procedural_world.gd`, `tools/spawn_ground_check.gd`, `autoload/player_net.gd`
+
+Commit at time of writing: `97563d5`
