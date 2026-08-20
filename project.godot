@@ -78,6 +78,7 @@ DoorPrompt="*res://ui/building/door_prompt.gd"
 SteamStats="*res://autoload/steam_stats.gd"
 RichPresenceService="*res://autoload/rich_presence_service.gd"
 MenuStack="*res://ui/menu_stack.gd"
+PauseMenu="*res://ui/menu/pause_menu.gd"
 
 [display]
 

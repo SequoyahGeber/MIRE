@@ -153,10 +153,23 @@ func _run() -> void:
 	# and nobody listening, an Esc press must reach the un-migrated panels untouched.
 	stack.connect("cancel_at_root", _on_root_cancel)
 	_root_cancels = 0
+
+	# `PauseMenu` (MENU-5) is a real listener on this signal and answers it whenever a run is on
+	# screen — which, to that autoload, means "no node is in the `mire_frontend` group". A bare
+	# check process has no front end, so it looks exactly like a run in progress and the pause menu
+	# legitimately pushes itself. Stand in a front-end marker so this assertion tests what it says
+	# it tests: cancel_at_root with nobody answering.
+	var frontend_marker := Node.new()
+	frontend_marker.add_to_group(&"mire_frontend")
+	root.add_child(frontend_marker)
+	await process_frame
+
 	_send_cancel()
 	await process_frame
 	check(_root_cancels == 1, "an empty stack emits cancel_at_root")
 	check(int(stack.call("depth")) == 0, "an unanswered cancel_at_root leaves the stack empty")
+
+	frontend_marker.free()
 
 	# ── toasts ───────────────────────────────────────────────────────────────────────────────────
 	var before: int = int(stack.call("toast_count"))

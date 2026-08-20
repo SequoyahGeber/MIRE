@@ -40,6 +40,11 @@ const TitleBackdrop := preload("res://ui/frontend/backdrop.gd")
 const WORLD_SCENE_PATH: String = "res://levels/procedural_island.tscn"
 const WORLD_SCENE_FALLBACK: String = "res://levels/hollowmere.tscn"
 
+## Marks "the front end is on screen". `ui/menu/pause_menu.gd` treats the ABSENCE of this group as
+## the definition of being in a run — true from the first frame of landfall, which a Cycle-count or
+## session test would get wrong for the first several minutes of every solo run.
+const FRONTEND_GROUP: StringName = &"mire_frontend"
+
 ## Screens that land in later tasks. Bound by path at press time rather than preloaded, so this
 ## routing table is already correct for screens that do not exist yet: the moment the file appears,
 ## the button works, with no edit here. A missing screen says so out loud rather than doing nothing,
@@ -58,6 +63,11 @@ func _ready() -> void:
 		_bypassed = true
 		_enter_world()
 		return
+
+	# The marker the pause menu reads to know a run is NOT on screen (see `ui/menu/pause_menu.gd`).
+	# Membership of this group is the definition of "the front end is up", so it is joined before
+	# anything else is built and released implicitly when this scene is freed on the way to a run.
+	add_to_group(FRONTEND_GROUP)
 
 	suspend_gameplay_overlays()
 	_backdrop = TitleBackdrop.new()
