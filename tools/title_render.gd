@@ -18,6 +18,7 @@ extends SceneTree
 const TitleScreen := preload("res://ui/frontend/title_screen.gd")
 const TitleBackdrop := preload("res://ui/frontend/backdrop.gd")
 const Frontend := preload("res://ui/frontend/frontend.gd")
+const ExpeditionScreen := preload("res://ui/frontend/expedition_screen.gd")
 
 const SETTLE_FRAMES: int = 16
 
@@ -92,6 +93,36 @@ func _run() -> void:
 			title.free()
 			backdrop.free()
 			await process_frame
+
+	# The dock, over the same backdrop it is shown against in the real front end.
+	for size_entry: Dictionary in SIZES:
+		var size: Vector2i = size_entry["size"]
+		DisplayServer.window_set_size(size)
+		root.content_scale_size = size
+		await process_frame
+
+		var backdrop: Node3D = TitleBackdrop.new()
+		root.add_child(backdrop)
+		var dock: Control = ExpeditionScreen.new()
+		if stack != null:
+			stack.call("push", dock, false)
+		else:
+			root.add_child(dock)
+		for _i: int in SETTLE_FRAMES:
+			await process_frame
+
+		var dock_id: String = "dock_%s" % String(size_entry["name"])
+		var dock_path: String = "%s/%s.png" % [_out_dir, dock_id]
+		var dock_image: Image = root.get_texture().get_image() if root.get_texture() != null else null
+		if dock_image != null:
+			dock_image.save_png(dock_path)
+		print("DOCK_SHOT %s %s" % [dock_id, dock_path])
+
+		if stack != null:
+			stack.call("pop_all")
+		dock.free()
+		backdrop.free()
+		await process_frame
 
 	print("TITLE_RENDER display=%s out=%s" % [DisplayServer.get_name(), _out_dir])
 	quit(0)
