@@ -5459,8 +5459,8 @@ resets *to* the values the incoming host snapshot carries, and clearing the revi
 that snapshot apply at all.
 
 **A grep, not a memory:** `grep -rn --include='*.gd' subscribe_run_restarted .` and read each
-handler's first line. 21 subscribers outside `tools/` as of this decision; exactly the three above
-gate at the top and the other 18 are unconditional. **Anything new that gates must say in a comment
+handler's first line. 22 subscribing files outside `tools/` as of this decision; exactly the three above
+gate at the top and the other 19 are unconditional. **Anything new that gates must say in a comment
 which replicated field justifies it.**
 
 **2. Moving a player body on a run restart is CLIENT-local, never a host `rpc_id`.** Own player

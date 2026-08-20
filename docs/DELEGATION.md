@@ -96,7 +96,7 @@ is correct only for state the host pushes back down afterwards. It was not, twic
 `_local_stamina`/`_sprint_locked_out` are client-simulated (F-298) and `_local_revision` is the
 peer's private snapshot staleness guard (F-308). **If you add a `run_restarted` subscriber that gates
 on authority, say in a comment which replicated field justifies it** — `grep -rn --include='*.gd'
-subscribe_run_restarted .` and read each handler's first line; 21 subscribers outside `tools/`, and
+subscribe_run_restarted .` and read each handler's first line; 22 subscribing files outside `tools/`, and
 the only three that gate are the two above plus `CycleModifierService` (F-254), which already does.
 
 **2. Never move a remote player's body from the host on a restart.** `PlayerHealth` now has two

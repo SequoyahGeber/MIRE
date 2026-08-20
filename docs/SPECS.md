@@ -10585,9 +10585,9 @@ client still holding the ended run's 20 logs at `r20` and silently swallowing a 
 of 3.
 
 **Swept for the same shape.** One `grep -rn --include=*.gd subscribe_run_restarted`, then every
-handler body read. 21 subscribers outside `tools/`. Exactly **three** gate on authority at the top:
+handler body read. 22 subscribing files outside `tools/`. Exactly **three** gate on authority at the top:
 `cycle_modifier_service.gd` (already correctly split above the gate by F-254, with a comment saying
-why), `player_health.gd` (F-279/F-298, fixed) and `inventory_service.gd` (F-308, fixed). The other 18
+why), `player_health.gd` (F-279/F-298, fixed) and `inventory_service.gd` (F-308, fixed). The other 19
 are unconditional and correct. The class is now empty, and the rule it obeys is **D-173**.
 
 **Neighbours re-run green:** `run_restart_check` failures=0, `run_restart_net_check` failures=0 (its
