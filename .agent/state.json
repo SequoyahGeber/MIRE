@@ -5,6 +5,30 @@
       "at": "2026-08-20T05:47:10+00:00",
       "task": "F-268",
       "token": null
+    },
+    "autoload/haul_service.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T05:48:43+00:00",
+      "task": "F-268",
+      "token": null
+    },
+    "tools/run_restart_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T05:49:07+00:00",
+      "task": "F-268",
+      "token": null
+    },
+    "world/gen/biome_map.gd": {
+      "agent": "lm",
+      "at": "2026-08-20T05:50:43+00:00",
+      "task": "F-274",
+      "token": null
+    },
+    "world/gen/island_heightmap.gd": {
+      "agent": "lm",
+      "at": "2026-08-20T05:49:32+00:00",
+      "task": "F-274",
+      "token": null
     }
   },
   "in_flight": {
@@ -12,7 +36,9 @@
       "agent": "lp",
       "dispatched": true,
       "files": [
-        "autoload/build_service.gd"
+        "autoload/build_service.gd",
+        "autoload/haul_service.gd",
+        "tools/run_restart_check.gd"
       ],
       "notes": [],
       "started": "2026-08-20T05:45:33+00:00",
@@ -21,7 +47,10 @@
     "F-274": {
       "agent": "lm",
       "dispatched": true,
-      "files": [],
+      "files": [
+        "world/gen/island_heightmap.gd",
+        "world/gen/biome_map.gd"
+      ],
       "notes": [],
       "started": "2026-08-20T05:44:58+00:00",
       "token": null
@@ -3825,10 +3854,12 @@
       "title": "Wellspring re-corruption over time"
     },
     "6.4-review": {
+      "done_at": "2026-08-20T05:51:07+00:00",
+      "done_by": "lc1",
       "est": "0.5",
       "milestone": "M6",
       "review_of": "6.4",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Review 6.4 @ ac99417 \u2014 judge the commit, file findings, no edits"
     },
@@ -6606,6 +6637,13 @@
       "status": "todo",
       "tier": "F",
       "title": "Three D-numbers each head two different decisions \u2014 D-050, D-144 and D-150 are live collisions from before F-260's allocator, and no check detects them"
+    },
+    "F-284": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The both-map contract matrix never checks the authored map's spawn is standable"
     }
   },
   "version": 1

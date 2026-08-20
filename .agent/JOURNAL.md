@@ -6712,3 +6712,16 @@ Notes along the way:
 - Filed the concrete acceptance gap: world_contract_check gates its only standable-spawn assertion behind procedural=true, so authored Hollowmere has no spawn contract coverage. Target mire_grid_check, world_contract_check and poi_check all passed with zero ERROR lines.
 
 Commit at time of writing: `2f163de`
+
+---
+
+### DONE · 6.4-review · lc1 · 2026-08-20T05:51:07+00:00
+
+**Review 6.4 @ ac99417 — judge the commit, file findings, no edits**
+
+Changes required in ac99417, already resolved by F-181/a4d33fc: wellspring_recorrupted was emitted only from host_tick's host-only path, so client-local EventBus subscribers never received it. No new finding filed. ac99417 evidence: WELLSPRING_RECORRUPTION_CHECK failures=0 (24 assertions), all seven named regression checks failures=0, full boot ERROR_LINES=0.
+
+Notes along the way:
+- ac99417 meets the 6.4 functional contract and authority gates, but its new wellspring_recorrupted EventBus emit is host-process-only; this exact defect is already F-181 and fixed by a4d33fc, so no duplicate finding filed. At ac99417: focused check 24 assertions/failures=0; seven regressions failures=0; full boot ERROR lines=0.
+
+Commit at time of writing: `a28f346`
