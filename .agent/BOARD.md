@@ -8,7 +8,7 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
-| **4.19** Default cutover to procedural; Hollowmere becomes fixture/reference | quill5fa5c7 | 2026-08-20 20:20 | `levels/procedural_island.tscn`, `core/dev/dev_launch.gd`, `tools/world_contract_check.gd`, `tools/environment_vfx_hollowmere_check.gd`, `tools/chest_placement_check.gd`, `tools/ground_fog_check.gd`, `tools/harvest_batch_check.gd`, `docs/WORLDGEN.md`, `world/gen/procedural_world.gd`, `world/chunk/chunk_streamer.gd`, `tools/verify_setup.gd`, `world/environment/ground_fog.gd`, `tools/procedural_look_probe.gd` |
+| **4.19** Default cutover to procedural; Hollowmere becomes fixture/reference | quill5fa5c7 | 2026-08-20 20:20 | `levels/procedural_island.tscn`, `core/dev/dev_launch.gd`, `tools/world_contract_check.gd`, `tools/environment_vfx_hollowmere_check.gd`, `tools/chest_placement_check.gd`, `tools/ground_fog_check.gd`, `tools/harvest_batch_check.gd`, `docs/WORLDGEN.md`, `world/gen/procedural_world.gd`, `world/chunk/chunk_streamer.gd`, `tools/verify_setup.gd`, `world/environment/ground_fog.gd`, `tools/procedural_look_probe.gd`, `docs/DELEGATION.md` |
 | **7.4** UI/UX polish pass, consistent visual language, transitions | reed31c598 | 2026-08-20 20:27 | `ui/theme/mire_theme.gd`, `tools/menu_kit_check.gd`, `ui/menu_stack.gd`, `tools/menu_stack_check.gd`, `ui/frontend/backdrop.gd`, `ui/frontend/title_screen.gd`, `ui/frontend/frontend.gd`, `levels/frontend.tscn`, `tools/title_check.gd` |
 | **F-301** Some procedural seeds publish NO station marker at all, so the island ships with crafting unreachable | lp | 2026-08-20 20:31 | `tools/poi_required_station_check.gd`, `content/poi/station_camp.tres`, `tools/procedural_world_check.gd` |
 

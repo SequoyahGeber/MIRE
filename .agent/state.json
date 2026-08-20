@@ -12,6 +12,12 @@
       "task": "4.19",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
+    "docs/DELEGATION.md": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:36:21+00:00",
+      "task": "4.19",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
     "docs/WORLDGEN.md": {
       "agent": "quill5fa5c7",
       "at": "2026-08-20T20:20:19+00:00",
@@ -167,7 +173,8 @@
         "world/chunk/chunk_streamer.gd",
         "tools/verify_setup.gd",
         "world/environment/ground_fog.gd",
-        "tools/procedural_look_probe.gd"
+        "tools/procedural_look_probe.gd",
+        "docs/DELEGATION.md"
       ],
       "notes": [],
       "started": "2026-08-20T20:20:19+00:00",
@@ -1198,7 +1205,7 @@
       "token": null
     }
   },
-  "rev": 74,
+  "rev": 75,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
