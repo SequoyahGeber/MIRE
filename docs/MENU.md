@@ -446,22 +446,56 @@ never bites). The frontend 3D backdrop is likewise assembled in script.
 Anchors: 7.4 (shell/theme/transitions), 7.5 (settings), 7.6 (gamepad/Deck), 6.8 (summary), 7.2
 (music), 7.1 (SFX). Sizes in sessions. Each task rewrites the checks for what it replaces.
 
-| Id | Task | Builds on | Size | Acceptance (headless via `agent godot`) |
-|---|---|---|---|---|
-| MENU-1 | Theme + component kit: `ui/theme/mire_theme.gd` tokens (§3.1–3.3), component builders, focus recipe absorbed | — | 2 | `tools/menu_kit_check.gd`: every component instantiates, focus ring present, contrast assertions on token pairs |
-| MENU-2 | `MenuStack` autoload: push/pop, focus memory, Esc/B contract, `blocks_gameplay_input` membership, modal + toast plumbing | MENU-1 | 2 | `tools/menu_stack_check.gd`: push/pop/focus-restore, one-blocking invariant, modal capture |
-| MENU-3 | Frontend boot scene: backdrop island + camera drift + Mire creep, title screen, quit modal, boot-bypass flags | MENU-1/2 | 3 | rework `main_menu_check.gd` → `tools/title_check.gd`; **every existing check and `-- host`/`-- client` two-process test still passes unchanged**; `--windowed` render PNG at 1280×800 + 1080p |
-| MENU-4 | EXPEDITION: party dock, ready/colour via lobby metadata, seed + minimap render, join code, SET SAIL / JUMP IN, force-sail grace | MENU-3 | 4 | rework `lobby_menu_check.gd` → `tools/expedition_check.gd`; two-process host/client sail + drop-in join |
-| MENU-5 | Pause menu + abandon flow; retire the controller's mouse-release toggle | MENU-2 | 2 | `tools/pause_menu_check.gd`: sim continues while open, abandon banks the fraction, client vs host quit paths |
-| MENU-6 | Settings retab + new settings (display/game/accessibility additions to `SettingsService`) | MENU-1 | 3 | extend shipped settings check: tab focus chains, every new setting persists round-trip |
-| MENU-7 | `RunStatsService` (host-tally, replicate at run end, `PROTOCOL_VERSION` bump) + shared run summary screen replacing both HUD summary halves + last-expedition record for TITLE | MENU-2 | 4 | `tools/run_summary_check.gd`: two-process — stats match host truth on both peers for all three endings; F-275 focus-trap regression |
-| MENU-8 | Salvage Bench rework + flavour-text authoring pass + NEW badges | MENU-1 | 2 | rework unlock check: category shelves, buy flow, badge persistence |
-| MENU-9 | Menu audio hooks (§3.5) + music states (asset tasks live in 7.1/7.2) | MENU-3 | 1 | hooks fire in check with stub streams; duck/ramp values asserted |
-| MENU-10 | Deck/gamepad + accessibility audit: every screen at 1280×800 and 150% scale, full pad-only traversal, reduce-motion sweep | all | 2 | `tools/menu_a11y_check.gd`: scripted pad-only walk of every screen; render PNGs both sizes for eye review |
+**Status as of 2026-08-20 (reed31c598): MENU-1 through MENU-8 are built, verified and committed.**
+MENU-9 and MENU-10 remain, plus the three carve-outs named below. Every check listed as shipped
+runs clean via `agent godot --script tools/<name>.gd`.
 
-Sequencing: MENU-1 → 2 → 3 are strictly ordered; 4–9 parallelize after 3 (5/6/8 only need 1–2);
-10 last. Total ≈ 25 sessions, which is 7.4+7.5+7.6+6.8's combined roadmap budget spent as one
-coherent design instead of four polish passes.
+| Id | Task | Status | Acceptance (headless via `agent godot`) |
+|---|---|---|---|
+| MENU-1 | Theme + component kit: `ui/theme/mire_theme.gd` tokens (§3.1–3.3), component builders, focus recipe absorbed | **shipped** | `tools/menu_kit_check.gd` — components, focus ring incl. F-215 sliders, type/target floors, WCAG contrast per token pair, reduce-motion collapse |
+| MENU-2 | `MenuStack` autoload: push/pop, focus memory, Esc/B contract, `blocks_gameplay_input` membership, modal + toast | **shipped** | `tools/menu_stack_check.gd` — 41 assertions incl. exact focus restore, modal, pinned screens, conditional root-cancel |
+| MENU-3 | Frontend scene: backdrop island + drift + Mire creep, title screen, quit modal, credits, boot-bypass | **shipped** *(main-scene flip deferred, see below)* | `tools/title_check.gd`; `tools/title_render.gd` PNGs at 1080p + 1280×800 |
+| MENU-4 | EXPEDITION: party dock, seed + live island minimap, join code, SET SAIL / JUMP IN | **shipped** *(ready flags + colour chips carved out → F-323)* | `tools/expedition_check.gd` |
+| MENU-5 | Pause menu + abandon flow | **shipped** | `tools/pause_menu_check.gd` — sim never pauses, abandon quotes real Salvage, front-end vs in-run Esc |
+| MENU-6 | Settings, retabbed over the existing `SettingsService` surface | **shipped** *(new settings carved out, see below)* | `tools/settings_screen_check.gd` — tab focus chains, write-through, rebind capture/clash/cancel |
+| MENU-7 | Run summary for all three endings + `RunRecord` last-run persistence | **shipped** *(per-player stat rows carved out → F-325)* | `tools/run_summary_check.gd` — both event orders, disk round trip, all three endings |
+| MENU-8 | Salvage Bench: category shelves, buy flow | **shipped** *(NEW badges carved out)* | `tools/salvage_bench_check.gd` — a service refusal is never reported as a success |
+| MENU-9 | Menu audio hooks (§3.5) + music states (assets live in 7.1/7.2) | **remaining** | hooks fire with stub streams; duck/ramp values asserted |
+| MENU-10 | Deck/gamepad + accessibility audit across every screen at 1280×800 and 150% scale, pad-only traversal, reduce-motion sweep | **remaining** | `tools/menu_a11y_check.gd`: scripted pad-only walk of every screen |
+
+### The three carve-outs, and why each was cut rather than half-built
+
+Each is filed so it is picked up as work, not rediscovered as a gap:
+
+- **Ready flags and per-player colour chips on the dock (F-323).** Needs Steam lobby member
+  metadata, which `SteamLobby` does not expose. Adding it means Steam calls no headless check can
+  exercise (`SteamAPI_Init()` fails without a running client), so it would ship verified only by
+  "it compiled". §5 already allows no ready gate below two players.
+- **Per-player stat rows on the summary (F-325).** Needs a host-authoritative `RunStatsService`
+  with a `PROTOCOL_VERSION` bump and two-process evidence — its own task, not a rider on the screen
+  that displays it. F-325 also carries two smaller gaps found alongside: the `consumed` ending is
+  currently indistinguishable from a wipe (`EventBus.run_wiped` does not carry the cause), and the
+  next-unlock teaser is absent.
+- **The settings §7.1 lists that do not exist yet** — window mode, vsync, fps cap, UI scale,
+  screen-shake intensity, damage numbers, streamer mode. Each is a `SettingsService` addition plus a
+  `settings_save.gd` migration with its own persistence round-trip evidence. The tab structure has a
+  home for each, and `MireTheme.ui_scale()` already reads a `ui_scale()` method the moment one
+  exists.
+
+### The one thing standing between this and being the front door
+
+**`project.godot`'s `run/main_scene` still points at the world, not at `res://levels/frontend.tscn`.**
+Task 4.18/4.19 was mid-cutover on exactly that setting while this work landed, and two agents editing
+the boot scene at once is how you get a project that boots into nothing. The flip is one line.
+
+After flipping it, re-run: every check in `tools/`, plus a `-- host` / `-- client` two-process
+launch. `ui/frontend/frontend.gd`'s `_launch_bypasses_frontend()` already covers `--script`,
+`-- host`, `-- client`, the Steam/LAN flags and `--procedural`, and `tools/title_check.gd` asserts
+the bypass — but the flip is the moment that stops being theoretical.
+
+Also worth doing before that flip ships to players: **F-320**, gameplay HUD autoloads drawing over
+the front end. It is worked around inside `frontend.gd` (hide-and-restore), and the real fix is each
+HUD keying its visibility off "is a run in progress".
 
 **What only Sequoyah can judge** (hand-off points, per D-039 kept to genuine taste): the font
 shortlist (§3.2), the logotype, the backdrop's light/fog by eye, cause-line and flavour copy pools
