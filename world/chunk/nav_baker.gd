@@ -97,9 +97,12 @@ func bind(streamer: Node, seed_value: int, force_active: bool = false) -> bool:
 	# empty table here bakes the biome-blind 1.0/1.0 terrain and agents then path confidently across
 	# ground that is up to several metres away from where the mesh actually put it.
 	if streamer != null:
-		biome_defs = streamer.get(&"biome_defs") as Array
-		if biome_defs == null:
-			biome_defs = []
+		# `as Array` on the Nil a missing property returns is a hard "Invalid cast" that ABORTS
+		# `bind()` on the spot — it never reaches `_ensure_map()` and never returns true, so the
+		# navmesh silently stops baking altogether. `is Array` tests instead of casting, which is
+		# what the null guard below it was reaching for and could never do (F-274 review).
+		var table: Variant = streamer.get(&"biome_defs")
+		biome_defs = table if table is Array else []
 	_ensure_map()
 	if streamer != null:
 		if streamer.has_signal(&"chunk_mesh_ready"):

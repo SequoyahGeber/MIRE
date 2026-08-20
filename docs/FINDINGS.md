@@ -1374,6 +1374,31 @@ grep for `material_storage.cpp:264`; it appeared on 1 of 3 runs here. Machine lo
 
 ---
 
+### F-306 · docs/NEXT.md is hand-maintained but summarises a board that moves hourly, so it goes stale within hours — corrected twice in one night by two different reviewers
+
+**Area:** process · **Severity:** medium · **Found:** 2026-08-20 by bram1
+
+`docs/NEXT.md` is the plan a human reads first, and it restates numbers that live authoritatively
+elsewhere: task counts from `.agent/state.json`, open-finding counts and the "pick up today" list from
+`docs/FINDINGS.md`, boot content counts from the content data. In a repo where several lanes land work
+every hour, a hand-maintained restatement of fast-moving state is stale almost immediately.
+
+Measured on 2026-08-19/20: the F-261 review corrected it (120/165 tasks when it was 126, "7 open
+findings" when there were 23, boot content 3/1/1/2 when it was 6/7/7/5). Roughly nine hours later the
+F-271 review corrected it again (23 open when it was 34, and a nine-item "pick up today" list of which
+four — F-259, F-268, F-271, F-274 — were already resolved). Two different reviewers, two different
+lanes, same document, same failure. The cost is not just reviewer time: a stale "pick up today" list is
+a routing hazard, because the director and any fresh agent read it as current work.
+
+The fix is to stop restating and start generating. A `agent next` (or a check that regenerates the
+file) can derive the counts from state.json and FINDINGS' Open section, and produce the candidate list
+by filtering out done/in-flight tasks — leaving NEXT.md's prose sections (what the project is trying to
+do next, and why) hand-written, since those are judgement and do not drift. A `next_check` in the
+harness suite would then fail when the generated numbers disagree with the committed file, the same way
+findings_numbering_check guards F-numbers.
+
+---
+
 ## Resolved
 
 ### F-290 · wave_spawner_cycle_net_check can parse its result file mid-rewrite and emit an undeclared ERROR while reporting failures=0 — **fixed**

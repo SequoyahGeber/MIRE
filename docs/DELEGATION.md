@@ -487,10 +487,14 @@ now move the mesh, the collider, the navmesh, a landmark's feet, a tree's feet a
 
 ```gdscript
 # world/gen/island_heightmap.gd — the biome-INDEPENDENT half, computed once and reused.
-class Shape:                  # bent: Vector2, mask: float, raw_continent: float
+class Shape:  # bent: Vector2, mask: float, raw_continent: float, channel: float
 static func shape_into(x, z, set: NoiseSet, world_seed: int, out: Shape) -> void
-static func continent_from_shape(shape: Shape, world_seed: int) -> float
-static func height_from_shape(x, z, shape, set, world_seed, detail_amp := 1.0, ridge_amp := 1.0) -> float
+static func continent_from_shape(shape: Shape) -> float
+static func height_from_shape(x, z, shape, set, detail_amp := 1.0, ridge_amp := 1.0) -> float
+# Neither `_from_shape` takes a `world_seed` — everything seed-derived that finishing a sample
+# needs (the mask, and `channel`, the cached river ceiling) is already in the Shape. `channel` is
+# that cache; it is why the carve costs one polyline walk per sample instead of two, and it is the
+# field the cost note at the bottom of this entry tells you not to remove.
 # `continent()`, `continent_from_set()`, `height()`, `height_from_set()` all funnel through these
 # now, so there is exactly one body of the formula. `_continent_with()` is gone.
 

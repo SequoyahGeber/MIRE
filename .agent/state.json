@@ -716,13 +716,6 @@
       "task": "F-257",
       "token": null
     },
-    "core/net/net_version.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T11:25:46+00:00",
-      "hash": "7702471d1060ad6303500080e987674ce3a95830cc41bff4c286927ae50d8902",
-      "task": "F-165",
-      "token": null
-    },
     "core/net/rpc_manifest.gd": {
       "agent": "lm",
       "at": "2026-08-19T12:47:53+00:00",
@@ -788,9 +781,9 @@
     },
     "docs/DELEGATION.md": {
       "agent": "lp",
-      "at": "2026-08-20T11:15:17+00:00",
-      "hash": "9633d2c3fc2e4798046d256c146bccb6537a84709d7c2ef395cb59347512c193",
-      "task": "F-290",
+      "at": "2026-08-20T11:35:30+00:00",
+      "hash": "a9ff4b67ad4367b76e4c8ae0aac0a1834f3bcd5f505187d68b01040265cd4ede",
+      "task": "F-274-review",
       "token": null
     },
     "docs/FINDINGS.md": {
@@ -1290,13 +1283,6 @@
       "task": "F-217",
       "token": null
     },
-    "tools/handshake_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T11:25:46+00:00",
-      "hash": "e3931999451d37e3c44d70a81b1934538e5e24770da79d91c05ad95b595d7cbe",
-      "task": "F-165",
-      "token": null
-    },
     "tools/harvest_restart_check.gd": {
       "agent": "lp",
       "at": "2026-08-20T06:20:00+00:00",
@@ -1774,10 +1760,10 @@
       "token": null
     },
     "world/chunk/nav_baker.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T06:20:25+00:00",
-      "hash": "e0a2bff75e62401a00608ae4ef128e00143734aebad8ef730fe3a11625eebb0d",
-      "task": "F-274",
+      "agent": "lp",
+      "at": "2026-08-20T11:35:30+00:00",
+      "hash": "d44a755ea7e625a37c33a1a9088a98171c21488374686452532117414c022233",
+      "task": "F-274-review",
       "token": null
     },
     "world/environment/foliage_wind.gdshader": {
@@ -1813,13 +1799,6 @@
       "at": "2026-08-20T06:20:25+00:00",
       "hash": "25a7297a00c835a699c0f5a50aa0db60d4c1eeb9b0a69dd0690ba8fca8249d8a",
       "task": "F-274",
-      "token": null
-    },
-    "world/gen/layouts/hollowmere.json": {
-      "agent": "lm",
-      "at": "2026-08-19T11:33:23+00:00",
-      "hash": "5b9f9ce589105b05cc1387b6ac4b63c6b31af4322907ebf95431671d45fde869",
-      "task": "F-166",
       "token": null
     },
     "world/gen/poi_def.gd": {
@@ -5817,10 +5796,12 @@
       "title": "`BiomeMap.terrain_amplitudes()` has no shipped caller \u2014 every biome's authored `detail_amplitude`/`ridge_amplitude` is dead, and only the audit render applies them"
     },
     "F-274-review": {
+      "done_at": "2026-08-20T11:35:30+00:00",
+      "done_by": "lp",
       "est": "0.5",
       "milestone": "Findings",
       "review_of": "F-274",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Review F-274 @ 8754844 \u2014 review and fix what you find"
     },
@@ -6068,6 +6049,13 @@
       "status": "todo",
       "tier": "F",
       "title": "tools/wave_spawner_check.gd intermittently emits 6 undeclared 'Parameter \"material\" is null' ERRORs while printing failures=0 and exiting 0"
+    },
+    "F-306": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "docs/NEXT.md is hand-maintained but summarises a board that moves hourly, so it goes stale within hours \u2014 corrected twice in one night by two different reviewers"
     }
   },
   "version": 1
