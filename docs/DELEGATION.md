@@ -75,6 +75,61 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-20 — F-266 resolved: `state.json` writes are transactional and atomic; `tools/agent_state_lock_check.py` is where harness concurrency gets tested (lp)
+
+**Rule: D-176.** Read it before touching any `load()`/`save()` pair in `.agent/bin/agent`. Short
+form: **bracket the load→save window, never a subprocess.**
+
+**1. What changed for anyone editing the harness.** `load()` and `save()` are no longer bare
+`json.load`/`json.dump`. Three things now hold:
+
+```python
+with state_txn("label"):        # flock .agent/locks/state.lock; re-entrant; silent under 2s
+    st = load()                 # records the rev it read
+    ...check, mutate...
+    save(st)                    # CAS on that rev, then atomic write + render_board
+
+COMMANDS = {"claim": in_state_txn(cmd_claim), ...}   # whole-command form, for short local commands
+
+_atomic_write(path, text)       # mkstemp -> fsync -> os.replace; used for state.json and BOARD.md
+```
+
+- **Adding a command that writes state?** Either wrap it with `in_state_txn` in `COMMANDS` (if its
+  whole body is local and milliseconds long) or open `state_txn()` around just its load→save window
+  (if it shells out, dispatches a lane, or prints a git summary). `save()` self-locks when it is not
+  already inside one, so a forgotten bracket still writes atomically — but the *read-check* it
+  followed is unprotected, which is exactly where F-266 lived. Bracket the window.
+- **`save()` can now `die()`.** "refusing to write .agent/state.json — it changed under this
+  command" means some path reached `save()` with a state loaded before another process's write.
+  Nothing is written and the command is safe to re-run. Fix the path; do not loosen the check.
+- **`state.json` carries a `rev` integer.** It is bumped by every `save()`. Do not hand-edit it, and
+  do not add it to a fixture's expected output — `tools/harness_check.py`'s fixtures omit it and
+  still pass, because `_disk_rev()` treats absent as 0.
+- **Readers stay lock-free and that is intentional.** `.agent/bin/lane`, the pre-commit hook and
+  `tools/findings_hygiene_check.py` all `json.load` `state.json` without the lock; the atomic write
+  is what makes that safe. Do not add a lock to a reader — add it to whatever writes.
+
+**2. The check, and the technique it establishes.** `python3 tools/agent_state_lock_check.py` →
+`AGENT_STATE_LOCK_CHECK failures=0`, 6/6. It takes `--rev <sha>` like `tools/harness_check.py`, and
+`--rev HEAD` before this commit gives `failures=5`.
+
+**This is the file to extend for any harness concurrency question**, and the reason is the
+technique: subprocess-launched racers get smeared apart by interpreter startup, so a microsecond
+window reproduces one run in fifty and a green result proves nothing. Instead it builds a throwaway
+repo, **imports** that repo's copy of the harness as a module (`import_harness()`), and `fork()`s N
+children that block on a pipe barrier before dispatching — so every racer is warm at the gun and
+only the window itself separates them. `race(mod, jobs, command="claim")` is the reusable primitive;
+it dispatches through `mod.COMMANDS[...]`, not the bare `cmd_*`, so a harness whose transaction
+wrapper was never wired into `COMMANDS` fails rather than passes.
+
+Use `tools/harness_check.py` for *behaviour* (staging rules, claims, hooks) and this one for
+*concurrency*. Both take `--rev`; neither needs Godot.
+
+**3. `.agent/JOURNAL.md` entries are written in one `f.write()`** rather than six. Output is
+byte-identical to before — verified against entries with and without a file list — but a >8 KB
+handoff body no longer flushes mid-entry, so two writers cannot interleave inside one entry.
+
+
 ### 2026-08-20 — F-286 resolved: `EventBus.world_rebuilt` + `world_generation()`, the seam for anything cached off the world (lp)
 
 **Rule: D-175.** Read it before adding any consumer that caches something derived from the world

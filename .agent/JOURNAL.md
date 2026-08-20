@@ -7143,3 +7143,26 @@ Notes along the way:
 Files: `core/events/event_bus.gd`, `world/gen/procedural_world.gd`, `autoload/crafting_service.gd`, `tools/crafting_reseed_check.gd`, `docs/SPECS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `0d6ff27`
+
+---
+
+### DONE · F-266 · lp · 2026-08-20T16:25:39+00:00
+
+**cmd_claim's load-check-save on state.json has no file lock, so two lanes can both pass the conflict check and both believe they hold the same claim**
+
+F-266 is fixed and proven both ways. Reproduced first: tools/agent_state_lock_check.py (new) imports the harness as a module in a throwaway repo and fork()s eight racers behind a pipe barrier, so the microsecond load->save window is deterministic rather than one-in-fifty. At HEAD: AGENT_STATE_LOCK_CHECK failures=5, 1/6 — 8 of 8 racers told '\''claimed'\'' on the SAME task, 8 of 8 on the same FILE across eight tasks, 7 of 8 claims never reaching disk at all, 26 torn json.load reads of a 537 KB state.json, and a save() silently overwriting a state changed since its load. After: failures=0, 6/6, stable over five consecutive runs.
+
+The bug was load()/save()'\''s, not cmd_claim'\''s — thirteen windows sit on it (claim, note, done, handoff, drop, reopen, sync, reap, start, board, order'\''s review registration, saturate'\''s two dispatch markers), so fixing only the one the finding tripped over would have left twelve open. Fix is three parts: state_txn() — a re-entrant flock on .agent/locks/state.lock held across the whole load-check-mutate-save cycle, deliberately not file_lock() because this one is taken by every invocation for milliseconds; _atomic_write() for state.json AND BOARD.md, which locking alone would not have fixed since every reader (board, the pre-commit hook, lane'\''s _task_still_open, findings_hygiene_check) reads without the lock; and a rev compare-and-swap in save() as an alarm, so a future stale write stops loudly instead of erasing another lane'\''s claim.
+
+D-176 records the scope rule: bracket the load->save window, never a subprocess. _saturate_locked keeps its two writes in separate transactions because a whole lane run happens between them.
+
+Verified: python3 tools/agent_state_lock_check.py -> failures=0 6/6; --rev HEAD -> failures=5 1/6 (pre-fix proof); tools/harness_check.py 34/34; findings_numbering_check failures=0; decision_ref_check 0; decision_trigger_check fired=0; autoload_tracked_check 0; import_cache_guard_check 3/3. findings_hygiene_check still fails on F-236/F-299 only — pre-existing.
+
+Sweep: .agent/bin/agent is the only writer of state.json repo-wide. .agent/bin/lane ALREADY had this exact fix (lanes.lock, re-read inside the lock, atomic save_lanes) with a docstring describing the same bug from 2026-08-17 — state.json was the one shared ledger the pattern had not reached. One real sibling fixed under the claim: .agent/JOURNAL.md wrote six f.write() calls per entry, which interleaves once a handoff body passes the text-IO buffer; now one write, output verified byte-identical to HEAD. tools/ probe transports are the same class and already F-304'\''s.
+
+Notes along the way:
+- Reproduced F-266 deterministically at HEAD with a new tools/agent_state_lock_check.py: it imports the harness as a module inside a throwaway repo and fork()s 8 racers behind a pipe barrier, so the only thing between them is the load->save window. 8/8 racers got 'claimed by' on the SAME task; 7/8 claims on eight DIFFERENT tasks never reached disk; 11 torn mid-write reads of a 537 KB state.json. failures=5/6.
+
+Files: `tools/agent_state_lock_check.py`, `.agent/bin/agent`, `docs/SPECS.md`, `docs/DELEGATION.md`, `AGENTS.md`, `docs/NEXT.md`
+
+Commit at time of writing: `bf9bbc9`

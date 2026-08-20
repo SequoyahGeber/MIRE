@@ -10838,3 +10838,108 @@ the 27 transports it names. Evidence added there, not filed again.
 **Resolved** — see `docs/FINDINGS.md`.
 
 ---
+
+## F-266 · `cmd_claim`'s load-check-save on `state.json` has no file lock, so two lanes can both pass the conflict check and both believe they hold the same claim
+
+**Claim:** `.agent/bin/agent`, `tools/agent_state_lock_check.py` (new), plus the four docs.
+Network authority: **not applicable.** `ARCHITECTURE.md` §2.2 governs game systems that put bytes on
+the wire; the coordination harness is a local Python CLI several OS processes on one machine run
+against one file, and it declares no row. The analogue it *does* have is `.agent/bin/lane`'s
+`lanes.lock`, and this fix is deliberately the same shape as that one. **No RPC, no
+`PROTOCOL_VERSION` bump.**
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The shape of the bug.** Every mutating `agent` command is `load()` → check `in_flight`/`claims`
+→ mutate → `save()`, and nothing serialised that window. `load()` was a bare `json.load` and
+`save()` a bare `json.dump` into `open(STATE, "w")`. Two lanes inside the window both read a state
+where the task and its files were free, both passed the conflict check against that stale read, both
+printed `✓ claimed`, and whichever `save()` landed second erased the other's claim outright — so the
+loser never learned it had lost until some *later* command reported "already claimed by" someone it
+had never seen claim anything. F-266 caught it live on F-244: two lanes wrote the same fix into
+`autoload/build_service.gd` inside one claim window, and only the two generated fixes converging kept
+it from losing work.
+
+The finding named `cmd_claim`. The bug is not `cmd_claim`'s: it is `load()`/`save()`'s, and thirteen
+commands sit on it. `claim`, `note`, `done`, `handoff`, `drop`, `reopen`, `sync`, `reap`, `start`,
+`board`, the review registration inside `order` and the two dispatch markers inside `saturate` all
+have the identical window, so fixing only the one the finding tripped over would have left twelve
+open — the F-059 → 7.8 pattern this file's sweep rule exists for.
+
+**Second defect, found by the check rather than the report:** `save()` truncated `state.json` and
+then dribbled JSON into it, while every reader — `agent board`, the pre-commit hook,
+`.agent/bin/lane`'s `_task_still_open()` completion test, `tools/findings_hygiene_check.py` — reads
+it with no lock at all. The check measured **26 `json.load` failures** against a 537 KB `state.json`
+in three seconds with eight writers running. Same class as F-304, and locking alone would not have
+fixed it, because the readers do not take the lock.
+
+**The fix, in three parts.**
+
+1. **`state_txn(label)`** — a re-entrant context manager holding `flock` on `.agent/locks/state.lock`
+   across a whole load→check→mutate→save cycle. Deliberately **not** `file_lock()`, which
+   `godot`/`git`/`findings`/`project` use: those guard operations that run for minutes and are worth
+   narrating, this one is taken by every single `agent` invocation for milliseconds, so it must be
+   re-entrant (`save()` nests inside its command's own transaction), silent below a two-second
+   threshold, and free of `file_lock`'s per-acquire holder-file write. `in_state_txn(fn)` wraps a
+   whole command in one; `COMMANDS` applies it to the eight short, purely-local commands, and
+   `start`, `board`, `order` and `saturate` bracket their own windows instead.
+2. **Atomic writes.** `_atomic_write()` (`mkstemp` → `fsync` → `os.replace`) for `state.json` *and*
+   `BOARD.md`, so an unlocked reader sees the old file or the new one and never half of either. This
+   is the same shape `_save_sessions()` and `.agent/bin/lane`'s `save_lanes()` already use.
+3. **A `rev` counter, as an alarm rather than as the lock.** `load()` records the rev it read;
+   `save()` refuses to write if the on-disk rev has moved since, and says so instead of clobbering.
+   Under the transaction this can never fire, which is exactly what makes it worth having: if it
+   ever does, some future code path reached `save()` with a state loaded before somebody else's
+   write, and a loud stop beats erasing a claim another lane is working under.
+
+**The one rule that must not be relitigated (D-176): scope the transaction to the load→save window,
+never around a subprocess.** `_saturate_locked()` is the cautionary case — it brackets its two state
+writes *separately* precisely because an entire lane run (up to eight hours) happens between them,
+and one transaction spanning both would freeze every other lane's board for that whole run. Same
+reason `start` and `board` are wrapped inside their bodies rather than in `COMMANDS`: both print a
+`git status`/`git log` summary afterwards that has no business inside the lock. `ship` keeps its
+`git` lock and takes the state lock only through `save()`, so the lock order is always
+outer-resource → state and there is no cycle.
+
+**Verify:** `python3 tools/agent_state_lock_check.py` → `AGENT_STATE_LOCK_CHECK failures=0`, 6/6
+passed. Plus `python3 tools/harness_check.py` → 34/34, unchanged.
+
+**How the check gets teeth, which is the whole design problem.** A load→save window is microseconds
+wide, so eight `subprocess` invocations of `agent claim` would be smeared apart by interpreter
+startup and the race would be a coin flip — a check that reproduces one time in fifty is worse than
+none, because a green run proves nothing. So the check builds a throwaway repo, **imports** the repo's
+copy of the harness as a module, and `fork()`s eight children that block on a pipe barrier before
+calling `mod.COMMANDS["claim"]`. Every racer is already warm at the gun, so the only thing left
+between them is the window itself, and the failure is deterministic. It dispatches through
+`COMMANDS` and not the bare `cmd_claim` on purpose: calling the undecorated function would test a
+path no invocation takes and would pass a harness whose transaction wrapper was never wired up.
+
+**Pre-fix proof.** `python3 tools/agent_state_lock_check.py --rev HEAD` (the `--rev` form
+`harness_check.py` established for exactly this) → **`failures=5`, 1/6 passed**: 8 of 8 racers told
+`✓ claimed` on the same task; 8 of 8 believing they hold the same *file* across eight different
+tasks; 7 of 8 in-flight records and 7 of 8 file claims never reaching disk at all; 26 torn reads;
+and a `save()` silently overwriting a state changed since its load. Post-fix, 6/6. The sixth case —
+`claim`/`note`/`done`/`claim`/`board`/`drop` in sequence through the real CLI — passes both sides
+and is there to catch a deadlock or a mis-wired decorator, which is the way this fix would most
+plausibly fail.
+
+**Sweep.** The class is *an unserialised read-check-write, or a truncate-then-rewrite, on a
+coordination file several processes share*. Every writer of `state.json` in the repo is
+`.agent/bin/agent` (grepped repo-wide), and all thirteen of its windows are covered above.
+`.agent/bin/lane` already had the fix — `lanes.lock` + re-read inside the lock + atomic
+`save_lanes()`, with a docstring describing this exact bug from 2026-08-17 — which is the strongest
+evidence that `state.json` was the one shared ledger the pattern had not reached. `cmd_finding`,
+`cmd_resolve`, `cmd_decision` and `cmd_autoload` already hold `file_lock`s and already write through
+`tmp` + `os.replace`. `_touch_session()` documents its lost-update window as a deliberate,
+reasoned-about trade (a lock there serialises every command behind one file and cost 10 s per
+invocation when it was tried) and is left alone. `.agent/JOURNAL.md` was the one real sibling: six
+separate `f.write()` calls under `open(…, "a")`, which flush mid-entry once a handoff body exceeds
+the text-IO buffer and let a second writer's lines land inside the first one's. Now built as one
+string and appended in a single call — output verified byte-identical to HEAD's against both an
+entry with files and one without. `tools/` probe transports are the same class and are already
+F-304's; nothing new filed there.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---

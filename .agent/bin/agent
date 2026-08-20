@@ -108,26 +108,164 @@ def age_hours(iso):
     return (datetime.now(timezone.utc) - then).total_seconds() / 3600.0
 
 
+# ---------------------------------------------------------------- state, safely
+
+STATE_LOCK_TIMEOUT = 120        # a state transaction is milliseconds; 120s means something is wedged
+STATE_LOCK_QUIET = 2.0          # say nothing about contention until it stops looking instantaneous
+
+_state_rev = None               # rev of the last state THIS process read — save()'s compare-and-swap
+_state_depth = 0                # >0 while this process holds the state lock (state_txn re-enters)
+_state_lock_fh = None
+
+
+@contextlib.contextmanager
+def state_txn(label="state"):
+    """Hold `.agent/locks/state.lock` across a whole load -> check -> mutate -> save cycle.
+
+    F-266. `cmd_claim` is load() -> check `in_flight`/`claims` for a conflict -> mutate -> save(),
+    and nothing serialised that window. Two lanes inside it both read a state where the task and its
+    files were free, both passed the conflict check against that stale read, both printed
+    `✓ claimed`, and whichever save() landed second silently erased the other's claim — so the loser
+    only found out at some LATER command, as a baffling "already claimed by someone I never saw".
+    Observed live on F-244: two lanes independently wrote the same fix into
+    autoload/build_service.gd inside one claim window, and only converging LLM output kept it from
+    losing work.
+
+    This is deliberately NOT `file_lock()`, which the godot/git/findings/project locks use. Those
+    guard operations that take minutes and are worth narrating; this one is held for milliseconds by
+    every single `agent` command, so it must be re-entrant (save() nests inside a command's own
+    transaction), silent in the normal case, and free of the per-acquire holder-file write that
+    would double this file's I/O on every invocation.
+
+    Scope it to the load->save window, never around a subprocess. `_saturate_locked()` is the
+    cautionary case: it brackets its two state writes separately precisely because a whole lane run
+    happens between them, and holding this lock across that would freeze every other lane's board.
+    """
+    global _state_depth, _state_lock_fh
+    if _state_depth:
+        _state_depth += 1
+        try:
+            yield
+        finally:
+            _state_depth -= 1
+        return
+
+    os.makedirs(LOCKS, exist_ok=True)
+    path = os.path.join(LOCKS, "state.lock")
+    began = time.time()
+    said = False
+    fh = open(path, "w")
+    try:
+        while True:
+            try:
+                fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except OSError:
+                waited = time.time() - began
+                if waited > STATE_LOCK_TIMEOUT:
+                    die("timed out after %ds waiting for the state lock (%s). If no agent is "
+                        "running, remove %s"
+                        % (STATE_LOCK_TIMEOUT, label, os.path.relpath(path, ROOT)))
+                if waited > STATE_LOCK_QUIET and not said:
+                    # Past two seconds this is no longer "another command is mid-write" — say so,
+                    # because silence here is what F-086 read as a hang.
+                    print("%s· waiting on .agent/state.json (%s) — another agent is mid-write; "
+                          "this is normal, keep waiting%s" % (C["dim"], label, C["x"]))
+                    said = True
+                time.sleep(0.01)
+        _state_lock_fh, _state_depth = fh, 1
+        try:
+            yield
+        finally:
+            _state_depth, _state_lock_fh = 0, None
+            fcntl.flock(fh, fcntl.LOCK_UN)
+    finally:
+        fh.close()
+
+
+def in_state_txn(fn):
+    """Run a whole command inside one state transaction. For the short, purely local commands —
+    anything that shells out or dispatches a lane brackets its own writes instead (see state_txn)."""
+    def wrapped(args):
+        with state_txn(fn.__name__.replace("cmd_", "")):
+            return fn(args)
+    wrapped.__name__ = fn.__name__
+    wrapped.__doc__ = fn.__doc__
+    return wrapped
+
+
+def _disk_rev():
+    """The rev counter currently on disk, or 0 if state.json is absent or unreadable."""
+    try:
+        with open(STATE) as f:
+            return json.load(f).get("rev", 0)
+    except (IOError, OSError, ValueError):
+        return 0
+
+
+def _atomic_write(path, text):
+    """Write-and-rename, so a concurrent reader sees either the old file or the new one.
+
+    A plain `open(path, "w")` truncates first and then dribbles the content out, and everything
+    here — `agent board`, the pre-commit hook, `.agent/bin/lane`'s completion test — reads
+    state.json without a lock. The check measured 11 `json.load` failures against a 537 KB
+    state.json while eight writers ran. Same class as F-304, and the same fix `_save_sessions()`
+    already uses."""
+    d = os.path.dirname(path) or "."
+    fd, tmp = tempfile.mkstemp(dir=d, prefix=".%s." % os.path.basename(path), suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as f:
+            f.write(text)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+    except BaseException:
+        with contextlib.suppress(OSError):
+            os.remove(tmp)
+        raise
+
+
 def load():
-    if not os.path.exists(STATE):
-        return {"version": 1, "tasks": {}, "in_flight": {}, "claims": {}}
-    with open(STATE) as f:
-        return json.load(f)
+    global _state_rev
+    try:
+        with open(STATE) as f:
+            st = json.load(f)
+    except FileNotFoundError:
+        st = {"version": 1, "tasks": {}, "in_flight": {}, "claims": {}}
+    _state_rev = st.get("rev", 0)
+    return st
 
 
 RECENT_GRACE_HOURS = 6
 
 
 def save(st):
+    """Persist state, refusing to overwrite a write this process never saw (F-266).
+
+    The rev counter is belt to state_txn's braces: under the lock it can never disagree, which is
+    exactly what makes it a useful alarm. If it ever fires, some code path reached save() with a
+    state it loaded before somebody else's write — a lost update in the making — and the right
+    outcome is a loud stop, not a silent clobber of a claim another agent is relying on."""
+    global _state_rev
     os.makedirs(AGENT_DIR, exist_ok=True)
     recent = st.get("recent")
     if recent:
         st["recent"] = {f: d for f, d in recent.items()
                         if age_hours(d.get("at", now())) < 24}
-    with open(STATE, "w") as f:
-        json.dump(st, f, indent=2, sort_keys=True)
-        f.write("\n")
-    render_board(st)
+    # Nested when the command already opened a transaction (the normal path); a real acquire for the
+    # few writes that stand alone, so no save() is ever unserialised.
+    with state_txn("save"):
+        on_disk = _disk_rev()
+        if _state_rev is not None and on_disk != _state_rev:
+            die("refusing to write .agent/state.json — it changed under this command "
+                "(read rev %s, on disk rev %s).\n"
+                "  Another agent wrote between this command's read and its write, so saving now "
+                "would erase what it did (F-266).\n"
+                "  Nothing was changed. Re-run the command." % (_state_rev, on_disk))
+        st["rev"] = (on_disk or 0) + 1
+        _atomic_write(STATE, json.dumps(st, indent=2, sort_keys=True) + "\n")
+        _state_rev = st["rev"]
+        render_board(st)
 
 
 # ---------------------------------------------------------------- identity
@@ -569,11 +707,12 @@ def cmd_start(args):
             die("no session id in this environment, so a name cannot be derived.\n"
                 "  Run:  agent start <your-name>")
         name = whoami()
-    st = load()
-    # The board a session starts from must reflect FINDINGS.md as it is NOW — new findings filed
-    # since the last sync, and any resolved out-of-band, both surface here (F-049).
-    _sync_findings(st)
-    save(st)
+    with state_txn("start"):
+        st = load()
+        # The board a session starts from must reflect FINDINGS.md as it is NOW — new findings filed
+        # since the last sync, and any resolved out-of-band, both surface here (F-049).
+        _sync_findings(st)
+        save(st)
 
     print("\n%s%s session started%s\n" % (C["b"], name, C["x"]))
     if name not in ("sequoyah", "human"):
@@ -1091,13 +1230,18 @@ def _journal(kind, tid, title, agent, body, files):
         with open(JOURNAL, "w") as f:
             f.write("# Journal\n\nAppend-only. Newest at the bottom. "
                     "Written by `agent done` / `agent handoff`.\n")
+    # One write, not six. Every caller of this runs inside the state transaction (F-266), so two
+    # agents cannot be here at once today — but a handoff body runs to kilobytes, which is past the
+    # text-IO buffer, so the six-write form would flush mid-entry and let a second writer's lines
+    # land inside the first one's. Build the entry, then append it in a single call.
+    entry = ["\n---\n\n### %s · %s · %s · %s\n" % (kind, tid, agent, now()),
+             "\n**%s**\n" % title,
+             "\n%s\n" % body]
+    if files:
+        entry.append("\nFiles: %s\n" % ", ".join("`%s`" % x for x in files))
+    entry.append("\nCommit at time of writing: `%s`\n" % _head())
     with open(JOURNAL, "a") as f:
-        f.write("\n---\n\n### %s · %s · %s · %s\n\n" % (kind, tid, agent, now()))
-        f.write("**%s**\n\n" % title)
-        f.write("%s\n\n" % body)
-        if files:
-            f.write("Files: %s\n\n" % ", ".join("`%s`" % x for x in files))
-        f.write("Commit at time of writing: `%s`\n" % _head())
+        f.write("".join(entry))
 
 
 def cmd_reopen(args):
@@ -1754,11 +1898,12 @@ def _roadmap_progress(st):
 
 
 def cmd_board(args):
-    st = load()
-    # Same freshness rule as cmd_start (F-049): the board is read to pick work, so it must mirror
-    # FINDINGS.md's open section at read time, not at last-sync time.
-    _sync_findings(st)
-    save(st)
+    with state_txn("board"):
+        st = load()
+        # Same freshness rule as cmd_start (F-049): the board is read to pick work, so it must
+        # mirror FINDINGS.md's open section at read time, not at last-sync time.
+        _sync_findings(st)
+        save(st)
     done, total = _roadmap_progress(st)
     print("\n%sMIRE%s  %d/%d tasks done\n" % (C["b"], C["x"], done, total))
     _print_board(st, focus=whoami(required=False))
@@ -1839,8 +1984,9 @@ def render_board(st):
                    sorted(st["tasks"].items(), key=lambda x: task_sort_key(x[0]))
                    if t["status"] == "done") or "_Nothing yet._", ""]
 
-    with open(BOARD, "w") as f:
-        f.write("\n".join(L))
+    # Same reason state.json is written this way: BOARD.md is what a human reads to decide what to
+    # pick up, and every `save()` rewrites it whole while other agents may be reading it.
+    _atomic_write(BOARD, "\n".join(L))
 
 
 # ------------------------------------------------------- orchestration (D-036)
@@ -2515,25 +2661,28 @@ def cmd_order(args):
         # queue its retirement condition: an order whose task is done is skipped, where an
         # unregistered one is re-run on every drain for as long as the file exists.
         rid = "%s-review" % tid
-        st_reg = load()
-        if st_reg["tasks"].get(rid, {}).get("status") == "done":
-            # A done review refers to a PREVIOUS sha. Re-ordering means new commits landed since;
-            # reviewing them is new work, and leaving the stale done record makes every chain skip
-            # the fresh order forever (observed with F-244-review).
-            st_reg["tasks"][rid]["status"] = "todo"
-            st_reg["tasks"][rid]["title"] = "Review %s @ %s — review and fix what you find" % (tid, sha)
-            st_reg["tasks"][rid].pop("done_at", None)
-            st_reg["tasks"][rid].pop("done_by", None)
-            save(st_reg)
-        if rid not in st_reg["tasks"]:
-            st_reg["tasks"][rid] = {
-                "title": "Review %s @ %s — %s" % (
-                    tid, sha,
-                    "review and fix what you find" if fix else "judge the commit, file findings, no edits"),
-                "tier": "T1", "est": "0.5", "status": "todo",
-                "milestone": t.get("milestone", ""), "review_of": tid,
-            }
-            save(st_reg)
+        # One transaction over the whole read-check-write: two directors ordering reviews at once
+        # otherwise both read "rid is absent" and the second registration erases the first (F-266).
+        with state_txn("order"):
+            st_reg = load()
+            if st_reg["tasks"].get(rid, {}).get("status") == "done":
+                # A done review refers to a PREVIOUS sha. Re-ordering means new commits landed
+                # since; reviewing them is new work, and leaving the stale done record makes every
+                # chain skip the fresh order forever (observed with F-244-review).
+                st_reg["tasks"][rid]["status"] = "todo"
+                st_reg["tasks"][rid]["title"] = "Review %s @ %s — review and fix what you find" % (tid, sha)
+                st_reg["tasks"][rid].pop("done_at", None)
+                st_reg["tasks"][rid].pop("done_by", None)
+                save(st_reg)
+            if rid not in st_reg["tasks"]:
+                st_reg["tasks"][rid] = {
+                    "title": "Review %s @ %s — %s" % (
+                        tid, sha,
+                        "review and fix what you find" if fix else "judge the commit, file findings, no edits"),
+                    "tier": "T1", "est": "0.5", "status": "todo",
+                    "milestone": t.get("milestone", ""), "review_of": tid,
+                }
+                save(st_reg)
         body = REVIEW_TEMPLATE % {
             "fixmode": REVIEW_FIX_MODE if fix else REVIEW_ONLY_MODE,
             "lane": lane, "account": account, "agent": lane.lower(), "tid": tid, "sha": sha,
@@ -2802,24 +2951,30 @@ def _saturate_locked(lane, wanted, watch, drain=False, slot=1):
             # window. The marker is this slot's own identity, so the lane agent's later claim simply
             # inherits it (_is_mine matches by name for lanes); it is removed below if the run dies
             # before any real claim registered files.
-            st2 = load()
-            if tid not in st2.get("in_flight", {}):
-                st2["in_flight"][tid] = {"agent": slot_agent, "token": None, "started": now(),
-                                         "files": [], "notes": [], "dispatched": True}
-                if tid in st2["tasks"]:
-                    st2["tasks"][tid]["status"] = "in_flight"
-                save(st2)
+            # The marker's own check-then-write is the F-266 window in miniature — two slots
+            # draining one queue both read "not in flight" and both dispatch. One transaction, and
+            # NOT one wide enough to cover the run below it: that would hold every other lane's
+            # board for the whole dispatch.
+            with state_txn("saturate"):
+                st2 = load()
+                if tid not in st2.get("in_flight", {}):
+                    st2["in_flight"][tid] = {"agent": slot_agent, "token": None, "started": now(),
+                                             "files": [], "notes": [], "dispatched": True}
+                    if tid in st2["tasks"]:
+                        st2["tasks"][tid]["status"] = "in_flight"
+                    save(st2)
             code = _run_with_resume(lane, tid, watch, slot)
-            st3 = load()
-            marker = st3.get("in_flight", {}).get(tid)
-            if marker and marker.get("dispatched") and not marker.get("files"):
-                # The run ended without the agent ever claiming a file — a refusal, a pre-claim
-                # crash, or clean completion without edits. Drop the marker so the task is not
-                # stranded "in flight" under a ghost.
-                del st3["in_flight"][tid]
-                if code != 0 and st3["tasks"].get(tid, {}).get("status") == "in_flight":
-                    st3["tasks"][tid]["status"] = "todo"
-                save(st3)
+            with state_txn("saturate"):
+                st3 = load()
+                marker = st3.get("in_flight", {}).get(tid)
+                if marker and marker.get("dispatched") and not marker.get("files"):
+                    # The run ended without the agent ever claiming a file — a refusal, a pre-claim
+                    # crash, or clean completion without edits. Drop the marker so the task is not
+                    # stranded "in flight" under a ghost.
+                    del st3["in_flight"][tid]
+                    if code != 0 and st3["tasks"].get(tid, {}).get("status") == "in_flight":
+                        st3["tasks"][tid]["status"] = "todo"
+                    save(st3)
             if code == EX_LANE_BUSY:
                 busy_waits[tid] = busy_waits.get(tid, 0) + 1
                 if busy_waits[tid] <= MAX_BUSY_WAITS and _wait_for_lane_free(lane):
@@ -3934,22 +4089,31 @@ def cmd_report(args):
 
 # ---------------------------------------------------------------- main
 
+# F-266: every command whose body is a load -> check -> mutate -> save on state.json runs inside
+# one transaction. The list is deliberately only the short, purely-local ones — `order`, `dispatch`,
+# `saturate`, `godot` and `ship` run for minutes and bracket their own writes instead, because a
+# lock held across a subprocess would stall every other lane's board for the length of that run.
+# `start` and `board` are wrapped inside their own bodies rather than here: both print a git summary
+# afterwards that has no business inside the lock.
 COMMANDS = {
-    "start": cmd_start, "brief": cmd_brief, "claim": cmd_claim, "note": cmd_note,
-    "done": cmd_done, "handoff": cmd_handoff, "drop": cmd_drop, "check": cmd_check,
-    "board": cmd_board, "sync": cmd_sync,
+    "start": cmd_start, "brief": cmd_brief,
+    "claim": in_state_txn(cmd_claim), "note": in_state_txn(cmd_note),
+    "done": in_state_txn(cmd_done), "handoff": in_state_txn(cmd_handoff),
+    "drop": in_state_txn(cmd_drop), "check": cmd_check,
+    "board": cmd_board, "sync": in_state_txn(cmd_sync),
     # Three lanes running `ship` at once means three processes in one git index. Serialising it
     # costs nothing and removes a whole class of confusing failures.
     "ship": with_lock("git", cmd_ship),
     # Orchestration (D-036)
     "order": cmd_order, "dispatch": cmd_dispatch, "lanes": cmd_lanes,
-    "collect": cmd_collect, "report": cmd_report, "reap": cmd_reap, "godot": cmd_godot,
+    "collect": cmd_collect, "report": cmd_report, "reap": in_state_txn(cmd_reap),
+    "godot": cmd_godot,
     "saturate": cmd_saturate, "finding": cmd_finding, "director": cmd_director,
     "decision": cmd_decision,
     "baseline": cmd_baseline,
     "autoload": cmd_autoload,
     "editor-running": cmd_editor_running,
-    "reopen": cmd_reopen,
+    "reopen": in_state_txn(cmd_reopen),
     "resolve": cmd_resolve,
 }
 

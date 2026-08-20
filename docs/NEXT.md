@@ -14,7 +14,7 @@
 > machine is now green, including `boss_check`'s exit-leak diagnostic (F-193) and `lobby_menu_check` (F-170),
 > both since resolved.
 >
-> **Findings: 36 under `## Open` (re-counted 2026-08-20 evening, by F-275's review).** This section
+> **Findings: 35 under `## Open` (re-counted 2026-08-20 evening by F-275's review, less F-266, closed since).** This section
 > said "7 open, and not one of them is code you can sit down and write" from 2026-08-19 until
 > F-261's review re-counted it to 23; both of those numbers are now stale, in the direction that
 > matters — the day's fix lanes closed fourteen (F-259, F-268, F-269, F-271, F-274, F-275, F-276,
@@ -25,14 +25,17 @@
 > in the wrong section (F-236, F-299) — that mismatch is the recurring one filed as **F-269**, and
 > `agent board` hides them while `agent brief` still offers them, so check an entry's own text
 > before claiming it (`python3 tools/findings_hygiene_check.py` names them, and fails on nothing
-> else at HEAD). **The other twenty-eight ARE ordinary code work a lane can pick up today.**
+> else at HEAD). **The other twenty-seven ARE ordinary code work a lane can pick up today.**
 > Clusters worth knowing before you route any of them:
 >
 > - **The tooling itself is red or unwatched** — F-285/F-292 (`nav_bake_check` has had 4 failures at
 >   a clean HEAD since 4.13/4.14), F-293 (nothing enumerates and runs the `tools/` suite, so a red
 >   check sits at HEAD unnoticed — this is the one that makes the others possible), F-291, F-305.
-> - **The agent harness** — F-265, F-266, F-267, F-289, F-304: claim races, `ship` sweeping a
->   sibling's uncommitted hunks, and `ship` structurally unable to stage `docs/FINDINGS.md`.
+> - **The agent harness** — F-265, F-267, F-289, F-304: `ship` sweeping a sibling's uncommitted
+>   hunks, and `ship` structurally unable to stage `docs/FINDINGS.md`. The claim race itself is
+>   **closed** (F-266): `state.json` writes are transactional and atomic, D-176 sets the scope rule,
+>   and `python3 tools/agent_state_lock_check.py` is the concurrency check to extend — run it after
+>   any edit to `load()`/`save()` alongside `tools/harness_check.py`.
 > - **Procedural reseed leftovers**, all from F-258's fresh-seed restart — F-279, F-281, F-282,
 >   F-286, F-298.
 > - **The terminal run-summary screens still have one way to strand a player** — F-307: a client

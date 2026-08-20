@@ -225,7 +225,10 @@ git commit -m "F-0NN docs: what changed" -- docs/FINDINGS.md docs/DECISIONS.md
 editing one and those edits are not yours to commit. If your task *is* the one fixing the harness,
 claim the file — `.agent/bin/agent claim <id> .agent/bin/agent` — and claim it before `agent done`,
 or ship will leave your own fix behind. After any harness edit, run `python3 tools/harness_check.py`;
-it needs no Godot and takes about a second.
+it needs no Godot and takes about a second. **If you touched `load()`, `save()` or anything that
+mutates `state.json`, run `python3 tools/agent_state_lock_check.py` too** — that is the concurrency
+half (F-266/D-176), it races eight forked lanes through one claim window, and `harness_check` cannot
+see a locking regression at all.
 
 Because `ship` won't stage it, a harness fix is hand-committed exactly like a `docs/` edit — and it
 is the same bare-commit-sweep hazard, not a smaller one, because `.agent/bin/` is claimed rather than
