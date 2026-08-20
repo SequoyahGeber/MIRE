@@ -75,6 +75,98 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-20 — F-271 resolved: biome classification obeys D-144 in scatter too, and worldgen gained a fourth layout tripwire (lm)
+
+**Claim:** `world/gen/resource_scatter.gd`, `tools/resource_scatter_check.gd`,
+`tools/worldgen_noise_reuse_check.gd`, `world/gen/biome_def.gd`, `world/gen/poi_def.gd`.
+
+**The rule, if you are writing anything that needs a point's biome (D-163):**
+
+```gdscript
+# Yes — the ONE correct way, in both flavours.
+BiomeMap.biome_at(x, z, world_seed, biome_defs)
+BiomeMap.biome_at_from_set(x, z, set, world_seed, biome_defs)   # many points, one set
+
+# No. `assign()` is a primitive; outside biome_map.gd and biome_check.gd's unit tests
+# nothing should call it, and NEVER with height().  D-144: a biome is decided from the
+# CONTINENT, the biome-independent half of the surface.
+BiomeMap.assign(IslandHeightmap.height_from_set(...), moisture, biome_defs)
+```
+
+Having the surface height already in a local is not a reason to reuse it — that is exactly how F-271
+happened. `resource_scatter.gd` now samples both, side by side, so the distinction is visible at the
+call site: `biome_at_from_set()` decides the biome, `height_from_set()` supplies `position.y` only.
+The biome gate also moved above the height sample, so a rejected candidate no longer pays for a
+surface sample it discards; neither test touches `rng`, so the per-point stream is unchanged.
+
+**`PoiDef.height_min`/`height_max` are the deliberate exception** and stay on `height()` — a
+landmark's height constraint is about the ground its feet land on. `BiomeDef`'s bounds are
+CONTINENTAL metres. Both doc comments now say which surface they mean and point at the other; before
+F-271 both said "Metres, in IslandHeightmap.height()'s units" and one of them was wrong.
+
+**`tools/worldgen_noise_reuse_check.gd` now carries a fourth golden, `GOLDEN_SCATTER`** — the
+placement id / asset / position hash over an 8x8 chunk block, for the same five seeds as the other
+three. Scatter had no layout witness of its own, which is why this defect survived F-252 and F-261
+rewriting the file around it. Treat it exactly like `GOLDEN_POI`/`GOLDEN_BIOME`/`GOLDEN_AMPLITUDES`:
+a refactor that claims to move nothing must leave it alone, and one that deliberately moves scatter
+re-captures it and says so. It is captured POST-F-271; the pre-fix values are recorded in the
+constant's own comment.
+
+Checks: `agent godot --script tools/resource_scatter_check.gd` → `failures=0`;
+`--script tools/worldgen_noise_reuse_check.gd` → `failures=0` (the other three goldens UNCHANGED,
+which is the proof this task moved scatter and only scatter); `--script tools/check_determinism.gd`
+→ `terrain_hash c20eed19b44270a1`, unchanged.
+Spec: `docs/SPECS.md` F-271. Decision: **D-163**.
+
+### 2026-08-20 — F-269 resolved: the findings queue has a failing check now, not a warning — `tools/findings_hygiene_check.py`, plus D-162's bar for what "resolved" means (lp)
+
+- **`python3 tools/findings_hygiene_check.py`** → `FINDINGS_HYGIENE_CHECK failures=N`, exit 1 on any
+  failure. Add it to any docs-touching task's verification; it takes no lock and needs no engine, so
+  it costs nothing to run next to whatever else you were running.
+  `--self-test` proves both detectors on synthetic docs (4 cases) instead of scanning the repo.
+- **It calls the harness's own detectors, imported, not reimplemented** —
+  `.agent/bin/agent`'s `_findings_drift()` (marked done in `state.json`, still under `## Open`) and
+  `_self_resolved_findings()` (the entry's own prose says fixed and nothing moved). `agent start`
+  has always *printed* both; this fails on them. If you extend either rule, extend it in
+  `.agent/bin/agent` and both readers move together — a second copy here is the two-records-of-one-fact
+  bug (F-071) that this whole area exists to fix. The import uses an explicit `SourceFileLoader`
+  because `.agent/bin/agent` has no `.py` suffix.
+- **Duplicate F-numbers stay with `tools/findings_numbering_check.gd`**, and duplicate *D*-numbers
+  are unowned by anything — see **F-283**, three live collisions (`D-050`, `D-144`, `D-150`).
+
+**D-162 — the bar for closing a finding, and the thing to read before you argue about one:** a
+finding resolves when the defect *its own text asserts* is false at HEAD, not when the area is
+perfect. Gaps found while fixing it live as their own findings, cited by number in the resolution
+note. Corollaries: a finding whose own text says part of it is unfixed does **not** resolve
+(F-236 — `content/ranged_weapons/` is still one file), and neither does one whose fix was
+deliberately deferred to design (F-267 — `cmd_ship` still stages claimed files in full). Both were
+**reopened**, which clears the drift by correcting the status rather than by moving the section
+(F-131). `agent done` is routinely used to mean "my session ended"; that is not the same fact.
+
+**Closing a finding, mechanically** — neither `docs/FINDINGS.md` nor `docs/DECISIONS.md` should ever
+appear in your claim set:
+
+    agent resolve F-NNN <<'EOF'   # note on stdin: what you did AND how you verified it
+    agent reopen  F-NNN "why it is not actually resolved"
+    agent decision "title" <<'EOF'   # allocates the next D-NNN under a lock
+
+`docs/FINDINGS.md` is deliberately unclaimed (F-006) and all three commands take their own lock;
+`agent decision` additionally refuses while someone holds an exact claim on `docs/DECISIONS.md`.
+Claiming either file for a task's length is F-262's bug. **File before you cite:** this task's
+resolution note cited `F-282` for a finding the allocator then numbered **F-283**, because a
+concurrent lane took 282 in the same window.
+
+**After any batch of moves, run `agent godot --script tools/findings_numbering_check.gd`.** F-134's
+failure mode is a move that eats the `## Resolved` heading and silently flips every resolved finding
+to open; at HEAD the healthy numbers are `open=26 resolved=259 failures=0`.
+
+**F-243 is resolved and its residue is not** — if you are working anywhere near the run restart, the
+open follow-ups are F-268, F-275, F-276, F-277, F-278, F-279, F-280, F-281. At HEAD
+`tools/run_restart_check.gd` fails 1 (F-268, buildables) and `tools/run_restart_net_check.gd` fails
+8, all eight mapping to that list. Those two numbers are the current baseline: a check of yours that
+reports them is not regressing anything.
+
+
 ### 2026-08-20 — F-259 resolved: WaveSpawner joins F-243's restart — the roster, the night latch, and the ambient field it suppressed (lp)
 
 - **`WaveSpawner.host_reset_for_new_run() -> void`** — host-guarded, already wired to

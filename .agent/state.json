@@ -1,24 +1,5 @@
 {
-  "claims": {
-    "docs/DELEGATION.md": {
-      "agent": "lp",
-      "at": "2026-08-20T05:40:59+00:00",
-      "task": "F-269",
-      "token": null
-    },
-    "docs/SPECS.md": {
-      "agent": "lp",
-      "at": "2026-08-20T05:40:19+00:00",
-      "task": "F-269",
-      "token": null
-    },
-    "tools/findings_hygiene_check.py": {
-      "agent": "lp",
-      "at": "2026-08-20T05:36:09+00:00",
-      "task": "F-269",
-      "token": null
-    }
-  },
+  "claims": {},
   "in_flight": {
     "4.16-review": {
       "agent": "lc1",
@@ -26,29 +7,6 @@
       "files": [],
       "notes": [],
       "started": "2026-08-20T05:42:41+00:00",
-      "token": null
-    },
-    "F-269": {
-      "agent": "lp",
-      "dispatched": true,
-      "files": [
-        "tools/findings_hygiene_check.py",
-        "docs/SPECS.md",
-        "docs/DELEGATION.md"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-20T05:37:02+00:00",
-          "by": "lp",
-          "text": "Baseline before any doc move: tools/findings_hygiene_check.py reports failures=9 \u2014 8 drifted (F-236 F-243 F-256 F-260 F-262 F-263 F-267 F-270) plus F-256 self-resolved. Order named 4; the sweep is the other 4."
-        },
-        {
-          "at": "2026-08-20T05:37:02+00:00",
-          "by": "lp",
-          "text": "docs/FINDINGS.md is deliberately unclaimed (F-006) \u2014 every move here goes through 'agent resolve'/'agent reopen', which take the findings lock. Taking an exact claim on it would block every other lane from filing a finding for this task's whole length, which is F-262's own bug."
-        }
-      ],
-      "started": "2026-08-20T05:33:13+00:00",
       "token": null
     }
   },
@@ -1287,9 +1245,9 @@
     },
     "docs/DELEGATION.md": {
       "agent": "lp",
-      "at": "2026-08-20T05:32:48+00:00",
-      "hash": "d038654cf376226e04cb4824bf729791580b109d3932817792bd84d7cfedc68c",
-      "task": "F-259",
+      "at": "2026-08-20T05:43:56+00:00",
+      "hash": "3ccedacfd64ccb344cd8751b1e144170868feb5775a8f69baf6bdfd5481ee54e",
+      "task": "F-269",
       "token": null
     },
     "docs/FINDINGS.md": {
@@ -1315,9 +1273,9 @@
     },
     "docs/SPECS.md": {
       "agent": "lp",
-      "at": "2026-08-20T05:32:48+00:00",
-      "hash": "b4a3a9805d3ea077318f038a4c922e2a402445f775bdc71c64048ea7b208d4c1",
-      "task": "F-259",
+      "at": "2026-08-20T05:43:56+00:00",
+      "hash": "6b5188aa4a85e93fd92718d3b4b47ca0eed344bad87f49b6493c6d946286b194",
+      "task": "F-269",
       "token": null
     },
     "entities/player/player_camera.gd": {
@@ -1955,6 +1913,13 @@
       "at": "2026-08-19T13:59:55+00:00",
       "hash": "aa84a543892a0cd43ac570669c3ccb4170172f82c13257d0c06279b9e8810b52",
       "task": "F-208",
+      "token": null
+    },
+    "tools/findings_hygiene_check.py": {
+      "agent": "lp",
+      "at": "2026-08-20T05:43:56+00:00",
+      "hash": "887efa871a2c7fa958a232207baddcba231a21b7b022f931580f758b531c7ee6",
+      "task": "F-269",
       "token": null
     },
     "tools/food_check.gd": {
@@ -6526,9 +6491,11 @@
       "title": "F-243's restart never clears placed buildables \u2014 BuildService has no run_restarted subscription at all, and its own check has been failing at HEAD since the feature shipped"
     },
     "F-269": {
+      "done_at": "2026-08-20T05:43:56+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Four resolved findings still sit under '## Open' after the day's sweep chaos \u2014 F-243, F-256, F-260, F-262 are all fixed and still read as routable work"
     },

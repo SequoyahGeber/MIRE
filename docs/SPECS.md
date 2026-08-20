@@ -9346,3 +9346,155 @@ each.
   silently.
 
 **Resolved** — see `docs/FINDINGS.md`.
+
+---
+
+## F-269 · Four resolved findings still sit under '## Open' — F-243, F-256, F-260, F-262 read as routable work
+
+**Claim:** `tools/findings_hygiene_check.py` (new), `docs/SPECS.md`, `docs/DELEGATION.md`.
+**Not claimed: `docs/FINDINGS.md`.** It is deliberately unclaimed (F-006) so no lane ever blocks on
+filing a finding — every move goes through `agent resolve` / `agent reopen`, which take the findings
+lock themselves. Claiming it for this task's length would have been F-262's own bug, committed by
+the task that closes F-262. `docs/DECISIONS.md` likewise: `agent decision` allocates and appends
+under its own lock, and refuses while anyone holds an exact claim on it.
+**Authority:** none — no runtime system, no RPC, no `PROTOCOL_VERSION` bump. §2.2 is untouched.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The gap.** `docs/FINDINGS.md` and `.agent/state.json` are two records of one fact and they drift
+(F-071). `board` lists findings from state, so it hides a drifted entry; `brief` lists them from the
+doc, so it advertises the same entry as claimable work. The day's sweep left **eight** in that state
+at once. `agent start` printed a warning about all eight — and had been printing it for a day, above
+the board every session was reading past it to get to.
+
+**The scope is eight, not four.** The order names four; the ninth-failure baseline named the rest, and
+they do not all resolve the same way. Split by what is actually true at HEAD:
+
+| | Finding | Disposition | Why |
+|---|---|---|---|
+| ✅ | F-243 | resolved | restart path exists; residue is nine filed findings (D-162) |
+| ✅ | F-256 | resolved | `.agent/bin/lane-keeper`; also the one self-resolved entry |
+| ✅ | F-260 | resolved | `agent decision` allocates under `file_lock("decisions")` |
+| ✅ | F-262 | resolved | adopted as D-154, rejected half recorded |
+| ✅ | F-263 | resolved | all five items read back individually |
+| ✅ | F-270 | resolved | both layers of the `_sync_findings` guard |
+| ↩️ | F-236 | **reopened** | `content/ranged_weapons/` is still 1 file — its own text says it stays open |
+| ↩️ | F-267 | **reopened** | the ship-sweep mechanism was filed for design, never built |
+
+**D-162 is the rule that made the F-243 call, and it is the reusable half of this task:** a finding
+resolves when the defect *its own text asserts* is false at HEAD, not when the area is perfect;
+gaps found while fixing it live as their own findings, cited by number in the resolution note. The
+two reopens are its corollaries — a finding whose text says part of it is unfixed, and one whose fix
+was deliberately deferred, are both `agent reopen`, which clears the drift by correcting the status
+rather than by moving the section (F-131).
+
+**The check — `tools/findings_hygiene_check.py`.** Source-text, like `decision_ref_check.py`; not a
+Godot check, so it does not take the engine lock.
+
+    python3 tools/findings_hygiene_check.py             # scan the live records
+    python3 tools/findings_hygiene_check.py --self-test # prove both detectors on synthetic docs
+
+**It imports `.agent/bin/agent` and calls the harness's own `_findings_drift()` and
+`_self_resolved_findings()`** rather than re-deriving them. Two implementations of "is this finding
+rotted" would drift apart, and then the check and the board would disagree about the queue — the
+exact two-records-of-one-fact failure the whole area is about. The detectors stay in the harness;
+the check decides they are *failures* and proves they still fire. `.agent/bin/agent` has no `.py`
+suffix, so the import goes through an explicit `SourceFileLoader`.
+
+Duplicate F-numbers are deliberately **not** checked here — `tools/findings_numbering_check.gd` owns
+that shape, and two checks failing on one defect is worse than one.
+
+**Verify:**
+`python3 tools/findings_hygiene_check.py` → `FINDINGS_HYGIENE_CHECK failures=0`.
+Before any doc was touched the same command reported **`failures=9`** (8 drifted + F-256
+self-resolved) — the assertions are evidence because they were watched to fail first.
+`python3 tools/findings_hygiene_check.py --self-test` → `SELF_TEST failures=0` (4 cases).
+`python3 tools/harness_check.py` → `34/34 passed`.
+`agent godot --script tools/findings_numbering_check.gd` → `open=26 resolved=259 failures=0` — run
+**after** the six moves, because F-134's failure mode is a move eating the `## Resolved` heading
+itself and flipping every resolved finding to open in one commit.
+F-243's own two, re-run at HEAD rather than quoted from its review:
+`tools/run_restart_check.gd` → `failures=1` (F-268), `tools/run_restart_net_check.gd` →
+`failures=8`, all eight mapping to F-275/276/277/278/279/280 with nothing unfiled left over.
+
+**Traps:**
+- **A drifted finding has two legitimate exits and the warning names both** — four of these eight
+  were `agent done` meaning "my session ended", which is not the same fact as "this is resolved"
+  (F-131). Read the entry before moving it; two of eight were not fixed.
+- **Run the structure check after the moves, not before.** `agent resolve` is safe against F-134 by
+  construction, but six moves in one session is exactly the volume that produced both historical
+  incidents, and the damage (121 resolved findings silently becoming open) is invisible in a diff
+  that large.
+- **A resolution note that cites a finding you have not filed yet will cite the wrong number.**
+  This task's F-260 note cited `F-282`; the allocator returned **F-283**, because a concurrent lane
+  took 282 in the same window. File first, then cite — that is the same lock-before-write reasoning
+  F-260 is about, applied to the citation.
+- The self-test copies `.agent/bin/agent` into a temp root and points the harness's module globals
+  at it. Do not "simplify" it to scan the live file with a fake state dict — the detectors read
+  `ROOT`, `FINDINGS` and `STATE` independently, and a half-redirected harness silently scans the
+  real repo and passes.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
+## F-271 · `ResourceScatter` classifies a point's biome from `height()`, `BiomeMap.biome_at()` classifies from `continent()`
+
+No block existed here beforehand; SPECS.md's own preamble makes writing one part of the task that
+discovers the gap. Filed by F-261's sweep and deliberately not fixed there, because the fix moves
+scatter output on every seed — a content decision, not a performance one.
+
+**Authority:** none of its own, exactly like `BiomeMap` and `HarvestLibrary`.
+`ResourceScatter.placements_for_chunk()` is a pure function under `docs/ARCHITECTURE.md` §2.2's
+*chunk streaming / terrain LOD* row — **client-local, independently per peer, correct by
+construction as long as the content it reads is the same set on every peer.** Nothing about WHERE a
+tree stands crosses the network, which is precisely why a classification disagreement between two
+generators is invisible at runtime: there is no authoritative answer to contradict. The one piece of
+HOST-owned state in the area is a placement's depletion, and that lives in
+`world/gen/resource_scatter_field.gd`, untouched by this task.
+
+**Claim:** `world/gen/resource_scatter.gd`, `tools/resource_scatter_check.gd`,
+`tools/worldgen_noise_reuse_check.gd`, `world/gen/biome_def.gd`, `world/gen/poi_def.gd`.
+
+**The gap.** D-144 settled that a biome is decided from `IslandHeightmap.continent()`, never
+`height()`: since 4.13 a `BiomeDef` carries terrain amplitudes, so the full surface height depends on
+which biome a point is in, and choosing the biome from it would choose it from a surface the biome
+itself shaped. `BiomeMap.biome_at()` obeys that. `_placement_at()` did not — it called
+`BiomeMap.assign()` directly with the full surface height, because the `height` local it already had
+in hand for `position.y` was right for one use and wrong for the other. Everywhere the detail and
+ridge layers add metres, scatter classified the point into a higher-`height_min` biome than the
+biome map said it occupied, and the `biome_id != def.biome_id` gate four lines down then rejected
+points it should have kept and kept points it should have rejected.
+
+`tools/resource_scatter_check.gd` could not catch it: its `_check_biome_gate()` re-derived the
+expected biome the same wrong way, so the check and the code agreed with each other and neither
+agreed with D-144.
+
+**The fix.**
+
+1. `_placement_at()` resolves the biome through `BiomeMap.biome_at_from_set()` (the API F-261 added,
+   which takes the same chunk-scoped `NoiseSet`) and keeps `height_from_set()` for `position.y`
+   alone. The biome gate moves ABOVE the height sample, so only surviving points pay for it —
+   neither test touches `rng`, so the per-point stream is consumed in the same order and the fix is
+   a strict improvement, not a trade.
+2. `_check_biome_gate()` re-derives through `continent()` + `moisture()` + `assign()`, spelled out
+   rather than calling `biome_at()`, so it stays an independent witness to D-144 rather than a
+   mirror of the shipped path.
+3. `BiomeDef.height_min`/`height_max` and `PoiDef.height_min`/`height_max` were documented in the
+   same words ("Metres, in IslandHeightmap.height()'s units") while meaning two different surfaces.
+   D-163 settles the split and both doc comments now name their own surface and point at the other.
+
+**Acceptance.**
+
+- `agent godot --script tools/resource_scatter_check.gd` → `failures=0`, with the biome gate now
+  re-derived continentally.
+- `agent godot --script tools/worldgen_noise_reuse_check.gd` → `failures=0`. The three pre-existing
+  `GOLDEN_*` hashes (POI, biome grid, amplitudes) must be **unchanged** — this task moves scatter and
+  nothing else, and those constants are how that claim is checked rather than asserted.
+- A fourth constant, `GOLDEN_SCATTER`, is added and captured post-fix: scatter had no layout witness
+  of its own, which is the reason this defect survived a rewrite of the file around it.
+- `agent godot --script tools/check_determinism.gd` → `terrain_hash c20eed19b44270a1`, unchanged.
+
+**What it costs.** Every seed's scatter layout moves. That is the intended output of the task, not a
+regression — see D-163 for the measured size and why it is small today and will not stay small.

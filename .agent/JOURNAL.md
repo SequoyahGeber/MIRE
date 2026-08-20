@@ -6682,3 +6682,20 @@ Notes along the way:
 Files: `world/gen/resource_scatter.gd`, `tools/resource_scatter_check.gd`, `tools/worldgen_noise_reuse_check.gd`, `world/gen/biome_def.gd`, `world/gen/poi_def.gd`
 
 Commit at time of writing: `361b692`
+
+---
+
+### DONE · F-269 · lp · 2026-08-20T05:43:56+00:00
+
+**Four resolved findings still sit under '## Open' after the day's sweep chaos — F-243, F-256, F-260, F-262 are all fixed and still read as routable work**
+
+Scope was 8 drifted findings, not the 4 the order named. Six moved to '## Resolved' (F-243, F-256, F-260, F-262, F-263, F-270); two were 'agent reopen'ed because they are NOT fixed — F-236 (content/ranged_weapons/ is still 1 file, its own text says it stays open) and F-267 (the ship-sweep mechanism was filed for design, never built). New: tools/findings_hygiene_check.py imports the harness's own _findings_drift()/_self_resolved_findings() and FAILS on what 'agent start' only warned about. D-162 records the bar for closing a finding; F-283 files three live duplicate D-numbers. Proof: 'python3 tools/findings_hygiene_check.py' was failures=9 before any doc was touched and is failures=0 now; --self-test 4/4; harness_check 34/34; findings_numbering_check open=25 resolved=260 failures=0 run AFTER the moves (F-134); 'agent godot --quit-after 120' 0 ERROR lines. F-243 re-verified at HEAD, not quoted: run_restart_check failures=1 (F-268), run_restart_net_check failures=8, all 8 mapping to F-275/276/277/278/279/280.
+
+Notes along the way:
+- Baseline before any doc move: tools/findings_hygiene_check.py reports failures=9 — 8 drifted (F-236 F-243 F-256 F-260 F-262 F-263 F-267 F-270) plus F-256 self-resolved. Order named 4; the sweep is the other 4.
+- docs/FINDINGS.md is deliberately unclaimed (F-006) — every move here goes through 'agent resolve'/'agent reopen', which take the findings lock. Taking an exact claim on it would block every other lane from filing a finding for this task's whole length, which is F-262's own bug.
+- Ship hazard, live: LM (F-271) wrote into docs/SPECS.md and docs/DELEGATION.md while F-269 held exact claims on both. Both lanes append at the same anchor, so the two additions are ONE diff hunk — no hunk-level staging separates them. Shipped rather than do line-level surgery on a file a live lane is mid-write in; recurrence recorded on F-267 with the mechanism (claims are advisory to the writer, and append patterns defeat hunk attribution — timestamps, not hunks).
+
+Files: `tools/findings_hygiene_check.py`, `docs/SPECS.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `d4b71eb`
