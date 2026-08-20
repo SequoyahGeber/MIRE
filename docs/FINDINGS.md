@@ -995,6 +995,16 @@ belongs in my commit" and "nobody else may touch this file" is the whole of the 
 
 ---
 
+### F-290 · wave_spawner_cycle_net_check can parse its result file mid-rewrite and emit an undeclared ERROR while reporting failures=0
+
+**Area:** verification · **Severity:** low · **Found:** 2026-08-20 by lc1
+
+`tools/wave_spawner_cycle_net_check.gd:181` calls `JSON.parse_string(FileAccess.get_file_as_string(RESULT_PATH))` every 50 ms while the child process updates the same path with `FileAccess.WRITE` at lines 170-175. `WRITE` truncates before `store_string()` completes, so the driver can observe an empty or partial file and Godot logs `ERROR: Parse JSON failed. Error at line 0: Unknown error getting token`. The harness then retries, eventually prints `WAVE_SPAWNER_CYCLE_NET_CHECK failures=0`, and exits 0, violating SPECS standing rule 4 and making this review order's required ERROR grep fail.
+
+Concrete review evidence at HEAD during F-259-review: the first `.agent/bin/agent godot --script tools/wave_spawner_cycle_net_check.gd` run exited 0 and printed `failures=0` but contained exactly one undeclared `ERROR:` with a backtrace to `_read_result()` line 181. Two immediate reruns and `agent baseline --rev 519012e~1 --script tools/wave_spawner_cycle_net_check.gd` emitted zero ERROR lines, confirming the failure is intermittent and pre-existing rather than introduced by commit 519012e. Write through an atomic temp-file rename, or avoid invoking the error-logging parser until a complete stable payload is available; do not merely bless `Parse JSON failed` as expected because malformed transport is not an intentional test case here.
+
+---
+
 ## Resolved
 
 ### F-268 · F-243's restart never clears placed buildables — BuildService has no run_restarted subscription at all, and its own check has been failing at HEAD since the feature shipped — **fixed**

@@ -6750,3 +6750,16 @@ Notes along the way:
 - Review at ca72e14: run_reseed_check passes failures=0, exit 0, ERROR_COUNT=0. Filed F-286 (CraftingService same-census station cache), F-287 (EnvironmentVfx emitter sites survive in-place island rebuild), F-288 (phase 5 compares POI counts, not layouts). No authority, determinism, typed-GDScript, RPC-version, or bare-autoload regression found in the changed paths.
 
 Commit at time of writing: `7af2bd3`
+
+---
+
+### DONE · F-259-review · lc1 · 2026-08-20T06:03:46+00:00
+
+**Review F-259 @ 519012e — judge the commit, file findings, no edits**
+
+APPROVED at 519012e. Exact commit: wave_spawner_cycle_net_check failures=0/ERROR_COUNT=0; wave_spawner_check failures=0/ERROR_COUNT=0; every F-259 run_restart assertion PASS (overall failures=1 only from documented pre-existing F-268). Current HEAD: wave_spawner_check failures=0/ERROR_COUNT=0; run_restart_check failures=0/ERROR_COUNT=0. One current net-check run emitted failures=0 but ERROR_COUNT=1 from a pre-existing torn-result JSON race; 2 reruns and parent baseline were 0/0. Filed F-290 (verification, low). No authority, deterministic RNG, typed-GDScript, RPC, or bare-autoload defect in the reviewed change.
+
+Notes along the way:
+- Commit 519012e satisfies F-259: host-guarded run_restarted reset clears/refills roster, resets night/ambient/Cycle/Hunt state, reseeds with seeded RNG, adds no RPC or bare autoload identifier, and remains typed. Exact-commit baselines: wave_spawner_cycle_net_check failures=0 ERROR_COUNT=0; wave_spawner_check failures=0 ERROR_COUNT=0; run_restart_check's F-259 assertions all PASS, with only the documented pre-existing F-268 buildable failure (overall failures=1). Current HEAD: wave_spawner_check failures=0 ERROR_COUNT=0; run_restart_check failures=0 ERROR_COUNT=0. Current wave_spawner_cycle_net_check first run printed failures=0 but ERROR_COUNT=1 from JSON.parse_string racing the child result rewrite; 2 reruns and parent baseline were clean. Filed low-severity F-290; it is pre-existing and not introduced by 519012e.
+
+Commit at time of writing: `c64bc8d`
