@@ -7182,3 +7182,59 @@ Notes along the way:
 Files: `tools/seed_ready_contract_check.gd`, `core/game_state.gd`, `autoload/salvage_service.gd`, `autoload/reward_service.gd`, `ui/menu/main_menu.gd`, `docs/ARCHITECTURE.md`, `docs/SPECS.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `9b82f73`
+
+---
+
+### HANDOFF · F-281 · lp · 2026-08-20T16:39:17+00:00
+
+**F-243's reset enumeration is short by three more run-scoped systems: DayNight's clock, HaulService's spawned haulables, AttunementService's selections**
+
+LP stopped on F-281 at 2026-08-20T16:39:17+00:00 (exit 1, quota wall). Tokens this run: 60,107 in / 259 out.
+The working diff is UNTOUCHED — its partial edits are still on disk, so read them before redoing anything. Full log: .agent/logs/LP-F-281-20260820-163910.jsonl
+
+Its last words: "You've hit your session limit · resets 1:10pm (America/Vancouver)"
+Its last actions:
+  - Bash .agent/bin/agent start 2>&1 | head -60
+  - Bash .agent/bin/agent brief F-281 2>&1 | head -80
+
+Tail of the failure:
+ve hit your session limit · resets 1:10pm (America/Vancouver)","type":"result","duration_ms":5749,"uuid":"7c19f5f3-a09b-48d3-90fd-d006e2fe415b"}
+{"type":"system","subtype":"task_summary","detail":null,"uuid":"2cfb57d5-c19f-4ea8-b2ad-86677a615f23","session_id":"977de3aa-5c7d-4f91-97d7-db512a8efa78"}
+
+Commit at time of writing: `597ce0a`
+
+---
+
+### DONE · F-313 · galef95fa6 · 2026-08-20T20:15:13+00:00
+
+**agent collect crashes on any journal header whose timestamp has no timezone**
+
+age_hours assumes UTC for a naive stamp; collect survives a hand-written journal header. 35/35 harness_check.
+
+Files: `.agent/bin/agent`, `tools/harness_check.py`
+
+Commit at time of writing: `597ce0a`
+
+---
+
+### REOPEN · F-236 · galef95fa6 · 2026-08-20T20:18:11+00:00
+
+**Three shipped systems have essentially no content in them: the Cycle Modifier deck holds 1 card, the unlock tree 1 unlock, the ranged rack 1 weapon**
+
+Reopened (was marked done 2026-08-20 by lp).
+
+the done recorded a session, not the finding: content/ranged_weapons/ still holds exactly 1 weapon, which is the last of the three rows in this finding's own title. cycle_modifiers/ (7) and unlocks/ (7) are fixed and the entry says so; the ranged rack is not.
+
+Commit at time of writing: `a19aacd`
+
+---
+
+### HANDOFF · 7.4 · reed31c598 · 2026-08-20T20:21:13+00:00
+
+**UI/UX polish pass, consistent visual language, transitions**
+
+Planning slice done: docs/MENU.md is the whole menu spec — read it end to end before touching any menu file. Implementation is MENU-1..MENU-10 (its §11), strictly 1→2→3 then parallel. Owed by the next docs-touching agent: a DECISIONS.md entry (front end = boot scene w/ bypass flags; MenuStack supersedes the D-032 convention; MENU.md is the menu source of truth) and a DELEGATION.md Current-state pointer — both files were claimed by lp/F-281 at my close-out. Watch out: MENU-3 must keep every existing check and -- host/-- client boot working unchanged; that is its acceptance gate.
+
+Files: `docs/MENU.md`
+
+Commit at time of writing: `6519d39`
