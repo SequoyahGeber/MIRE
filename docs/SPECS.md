@@ -10485,3 +10485,119 @@ walked every `tools/*.gd`, flagging writer calls appearing inside a `while`/`for
 each swept sibling. `run_restart_net_check` fails 1 — "restart returns the local player to the run
 spawn" — at HEAD too (`agent baseline --rev HEAD` reproduces it exactly); that is the already-open
 **F-279**, not this change.
+
+## F-279 · F-243 revives players where the previous run ended instead of at the run spawn
+
+**Claim:** `systems/health/player_health.gd`, `autoload/inventory_service.gd`,
+`tools/run_restart_spawn_check.gd` (new), plus the four docs. Network authority: **CLIENT**,
+`ARCHITECTURE.md` §2.2 row 1 "own player movement" — and that row is the whole spec, not a footnote
+to it. No new RPC, no `PROTOCOL_VERSION` bump; the fix removes wire traffic rather than adding any.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The shape of the bug.** Player bodies live outside the level tree (`PlayerNet`'s own container),
+so nothing about a restart touches them. `PlayerHealth._on_run_restarted()` rebuilt every peer's
+health, hunger and downed state and stopped there: an extraction left the whole team standing on the
+shipwreck, a defeat left them lying where they fell, and the fresh snapshot merely stood them up in
+place at full hp. F-258's `ProceduralWorld._replace_players()` already solved this — for the
+procedural scene only, which is not the shipped map.
+
+**The fix is one call, and the interesting part is where it is NOT.** The obvious version is a host
+loop over `_states` calling the existing `_teleport_to_spawn(peer_id)`, which already does the
+§2.2-correct thing for a bleed-out respawn: apply locally for the host's own body, `rpc_id` a
+`net_force_respawn` to anyone else's owning client. That is right for a respawn and wrong here, for
+two independent reasons:
+
+1. **It races.** `net_force_respawn` is a plain reliable RPC; `run_restarted` reaches a client over
+   `WorldDeltaLog`'s own reliable ordered channel via `CycleService._on_world_delta_applied()`.
+   Nothing orders one against the other — the same head-of-line asymmetry F-278 measured at 5 smeared
+   frames. Whichever transform lands last wins.
+2. **On the procedural map it is the wrong coordinate.** D-161 draws a fresh seed per run, so the
+   host's `_spawn_transforms` entry for a remote peer describes the PREVIOUS island's shore. The
+   host would be pushing a peer to a beach the new seed may have put underwater — F-063's bug
+   (respawning at a position nobody chose) arriving by a different route.
+
+So the teleport is **client-local**, the same shape `_replace_players()` already settled and for the
+reason stated in its own doc comment: `run_restarted` reaches every peer, so every peer moves its
+own body, and under §2.2 row 1 every peer is the only thing that may. New private
+`_teleport_local_to_spawn()` reads this peer's own `_spawn_transforms` entry and calls the existing
+`_apply_respawn_transform()`; it warns and no-ops when there is no captured spawn, exactly as the
+respawn path does. Ordering becomes local and therefore deterministic: `PlayerHealth`'s handler runs
+first (an autoload subscribes in `_ready()`, before any level node does) and on the procedural map
+`ProceduralWorld` then overwrites both body and spawn record with the new island's shore inside the
+same synchronous emit.
+
+**F-298 is fixed here too**, because it is the same handler and its own text assigns it to F-279's
+owner. The handler is now split: `_reset_local_cache()` runs on **every peer, before** the
+`_owns_mutation()` gate, and the host's world rebuild stays behind it. `_local_stamina` and
+`_sprint_locked_out` are client-simulated by design (§2.2 row 1; the host's copy is explicitly
+advisory and rides in no snapshot), so behind the gate a client had no path back to them at all.
+
+**F-308 is the sweep's find and is fixed in the same commit** — `autoload/inventory_service.gd` is
+the only other `run_restarted` handler in the repo that gates at the top, and it hides an
+unreplicated field of its own: `_local_revision`. Same one-line split, same reasoning. See its
+FINDINGS entry for the mechanism; it is strictly worse than F-298 because nothing here republishes on
+a timer, so it never self-heals.
+
+**Verify:** `.agent/bin/agent godot --script tools/run_restart_spawn_check.gd` →
+`RUN_RESTART_SPAWN_CHECK failures=0`, 28 PASS, exit 0, no undeclared `ERROR:` lines.
+
+- **Phase 1 (solo, shipped map, in-process).** Displaces the local player 12 m, ends the run through
+  the real path (`DefeatService.defeated` then `CycleService.host_restart_run()`), asserts the return
+  — **twice**, because a reset that works once and then latches is the exact shape F-280 found
+  elsewhere in this feature. A third assertion compares the two landing points to **each other**,
+  horizontally: `_apply_respawn_transform()` zeroes velocity and the body then falls again for
+  however many ticks separate teleport from sample, so Y legitimately differs by a fraction of a tick
+  of gravity while X and Z are written from the same stored spawn and must be identical. Drift would
+  show in X, against a 12 m displacement and a 0.01 m band.
+- **Phase 2 (a real connected client, second process).** The authority claim, which no single process
+  can make: with one peer the local player IS the host and both designs look identical. The probe
+  joins, then calls `PlayerHealth.rebind_local_spawn()` to move **its own** spawn record 40 m to a
+  coordinate the host has never heard of — F-258 built that call client-local, so after it the two
+  processes disagree on purpose. A host-driven `rpc_id` fix would land the client on the host's stale
+  copy 40 m away and fail; the client-local fix lands it on its own. That is the real procedural case
+  in miniature.
+
+**Two things the probe gets right that a naive one would not, both of which silently report a clean
+HEAD as fixed:**
+
+- **Stamina must be sampled at the event, not polled after it.**
+  `PlayerController._physics_process()` ticks `local_tick_stamina(delta, false)` on that same body
+  every frame at 18/sec, so a drained probe is back above `sprint_resume_fraction` in under a second
+  and full in five. Natural regen is indistinguishable from a reset once you sample late enough. The
+  probe re-drains itself to the lockout every loop (modelling a player still sprinting as the run
+  ends) and records stamina, lockout and position **inside its own `run_restarted` handler**, which
+  is subscribed after `PlayerHealth`'s and therefore observes the state the new run actually begins
+  in. This was caught by the pre-fix run, not by inspection: the first version of the check passed
+  those two assertions with the fix removed.
+- **A GDScript lambda captures locals BY VALUE.** `await _until(func(): body = _local_player_body()
+  ...)` sets the copy and leaves the outer `body` null. Re-fetch after the wait.
+
+**Pre-fix proof.** `agent baseline` cannot help — the check does not exist at HEAD, the same
+constraint F-261, F-275 and F-278 all hit. Instead the handler was restored to its HEAD shape in the
+working copy (a copy kept aside; deliberately not `git stash`, which would touch other lanes'
+uncommitted work) and the same check run: **`failures=5`**, and they are exactly the finding's
+symptoms — solo player 12.002 m off spawn after **both** restarts, client 12.003 m off its own spawn,
+client stamina 0.60 and still sprint-locked at the first frame of the new run. Restored →
+`failures=0`. F-308 was proved separately by reverting only its one line: **`failures=2`**, the
+client still holding the ended run's 20 logs at `r20` and silently swallowing a post-restart grant
+of 3.
+
+**Swept for the same shape.** One `grep -rn --include=*.gd subscribe_run_restarted`, then every
+handler body read. 21 subscribers outside `tools/`. Exactly **three** gate on authority at the top:
+`cycle_modifier_service.gd` (already correctly split above the gate by F-254, with a comment saying
+why), `player_health.gd` (F-279/F-298, fixed) and `inventory_service.gd` (F-308, fixed). The other 18
+are unconditional and correct. The class is now empty, and the rule it obeys is **D-173**.
+
+**Neighbours re-run green:** `run_restart_check` failures=0, `run_restart_net_check` failures=0 (its
+F-279 assertion, `restart returns the local player to the run spawn`, was the finding's own reporter
+and now PASSes — that check is fully green for the first time since F-243), `player_vitals_check` 0,
+`player_vitals_net_check` 0, `crafting_net_check` 0, `terminal_focus_check` 0,
+`attunement_restart_check` 0, `day_night_restart_check` 0. `inventory_net_check` failed 10 on its
+first run and 0 on the next four — **confirmed pre-existing at HEAD** by reverting both edited files
+to `git show HEAD:` and reproducing it there. It is F-038's recurrence, filed as **F-309**.
+
+**Resolved** — see `docs/FINDINGS.md`. Closes F-298 as well.
+
+---

@@ -5426,3 +5426,67 @@ strictly worse — it reintroduces the torn read and merely stops logging it.
 
 **D-number hazard (F-283).** Taken by reading the file's tail; D-171 was the highest at the time.
 No atomic allocator, so a concurrent lane could take D-172 too.
+
+---
+
+### D-173 · 2026-08-20 · F-279/F-298/F-308: a `run_restarted` handler may gate on authority only for the parts that are replicated, and a restart teleport is CLIENT-local
+
+Two rules, one file's worth of bugs apart, both about `EventBus.run_restarted`.
+
+**1. `run_restarted` reaches every peer — so a handler that opens with an authority gate must first
+reset everything behind that gate the peer owns privately.** The event is not host-only: a client
+re-derives it from the `WorldDeltaLog` record through `CycleService._on_world_delta_applied()`. That
+makes `if _owns_mutation(): host_reset_for_new_run()` a *correct* line only when every field the
+reset touches is replicated back down to the client afterwards. Where it is not, the client is simply
+never reset, and the failure is quiet because the host and every solo player look fine.
+
+Three shipped instances, all now fixed, all the same silhouette:
+
+- **`PlayerHealth` (F-298)** — `_local_stamina` / `_sprint_locked_out` are client-simulated by design
+  (§2.2 row 1; the host's copy is explicitly advisory and rides in no snapshot). A client that
+  sprinted into the lockout as the run ended started the next run still locked out.
+- **`InventoryService` (F-308)** — `_local_revision`, the peer's private staleness guard. The restart
+  re-seeds the host's `_revisions` to 0, so every snapshot of the new run arrives *below* the value
+  the client carried and `net_inventory_snapshot()` discards all of them. The client keeps the ended
+  run's items and swallows the new run's transactions until the counter climbs back past the old
+  value. Nothing republishes on a timer here, so unlike `PlayerHealth` it never self-heals.
+- **`CycleModifierService` (F-254)** — `_announced_draws`, already split above the gate, with a
+  comment saying why. That one was found first and is the shape the other two now copy.
+
+The fix is always the same two lines: the unreplicated reset first, unconditional; the host's world
+rebuild behind the gate. Resetting the local cache first is safe rather than merely tolerable — it
+resets *to* the values the incoming host snapshot carries, and clearing the revision is what lets
+that snapshot apply at all.
+
+**A grep, not a memory:** `grep -rn --include='*.gd' subscribe_run_restarted .` and read each
+handler's first line. 21 subscribers outside `tools/` as of this decision; exactly the three above
+gate at the top and the other 18 are unconditional. **Anything new that gates must say in a comment
+which replicated field justifies it.**
+
+**2. Moving a player body on a run restart is CLIENT-local, never a host `rpc_id`.** Own player
+movement is §2.2 row 1, and a restart is the one teleport the client already knows about — the event
+reaches it. So each peer calls its own `PlayerHealth._teleport_local_to_spawn()`, exactly as
+`ProceduralWorld._replace_players()` has done since F-258.
+
+The host-driven alternative — looping `_teleport_to_spawn(peer_id)` over `_states`, which sends
+`net_force_respawn.rpc_id()` — is right for a **bleed-out respawn** and wrong for a **restart**, and
+the difference is worth stating because the two calls sit six lines apart in the same file:
+
+- A respawn is host-timed. No client can predict it, so the host must tell it. Keep that path.
+- A restart is an event the client already receives. Pushing a transform on top of it races: the RPC
+  and the `run_restarted` delta travel on different reliable streams with no ordering between them
+  (F-278 measured that head-of-line asymmetry at 5 smeared frames on the clock).
+- On the procedural map the host's `_spawn_transforms` entry for a *remote* peer describes the
+  **previous** island — D-161 draws a fresh seed per run — so the host would be teleporting somebody
+  onto a shore this seed may have put underwater. F-063's bug by another route.
+
+Client-local makes the ordering intra-process and therefore deterministic: the `PlayerHealth`
+autoload's handler runs first (it subscribes in `_ready()`, before any level node does) and
+`ProceduralWorld` then overwrites body *and* spawn record with the new island's shore inside the same
+synchronous emit.
+
+**Proving it needs two processes and one deliberate disagreement.** With a single peer the local
+player IS the host and both designs are indistinguishable. `tools/run_restart_spawn_check.gd` has its
+probe move its **own** spawn record 40 m via the client-local `rebind_local_spawn()` before the
+restart, so the host's copy is knowingly stale; a host-driven fix lands the client on the host's
+version and fails. Any future change to this path is verified the same way or it is not verified.

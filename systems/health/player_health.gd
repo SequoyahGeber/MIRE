@@ -630,6 +630,44 @@ func _teleport_to_spawn(peer_id: int) -> void:
 		net_force_respawn.rpc_id(peer_id, position, yaw)
 
 
+## F-279. The restart half of the teleport above, and deliberately NOT a `_teleport_to_spawn()` loop
+## over `_states` on the host.
+##
+## `EventBus.run_restarted` reaches every peer — the host emits it, a client re-derives it from the
+## `WorldDeltaLog` record (`CycleService._on_world_delta_applied()`) — so every peer can move its own
+## body, and under §2.2 row 1 every peer is the only thing that may. `world/gen/procedural_world.gd`'s
+## `_replace_players()` already settled this shape for the procedural map; this is the same call for
+## the shipped one, which has no equivalent and therefore left an extraction with everybody still
+## standing on the shipwreck and a defeat with everybody still lying where they fell, freshly healed.
+##
+## The host-driven `net_force_respawn.rpc_id()` form is wrong HERE specifically, even though it is
+## right for a bleed-out respawn. A respawn is a host-timed event no client can predict, so the host
+## has to tell it; a restart is an event the client already receives. Pushing a transform on top of it
+## would race: the RPC and the `run_restarted` delta travel on different reliable streams with no
+## ordering between them, and on the procedural map the host's `_spawn_transforms` entry for a remote
+## peer still describes the PREVIOUS island — a shore the new seed may have put underwater. Letting
+## each peer move itself makes the ordering local and therefore deterministic: this handler runs
+## first (autoload `_ready()` subscribes before any level node does), and `ProceduralWorld` then
+## overwrites both body and spawn transform with the new island's shore in the same synchronous emit.
+##
+## No-ops with a warning when this peer has no captured spawn, exactly as the respawn path does —
+## standing still is recoverable and loud beats teleporting to an origin nobody chose (F-063).
+func _teleport_local_to_spawn() -> void:
+	var peer_id: int = _local_peer_id()
+	if not _spawn_transforms.has(peer_id):
+		MireLog.warn(
+			LOG_CHANNEL,
+			"PlayerHealth: peer %d has no spawn transform — restarting in place" % peer_id
+		)
+		return
+	var spawn: Dictionary = _spawn_transforms[peer_id]
+	# Assignment conversion, not `as Vector3` — same form the respawn path above uses, and the one
+	# that cannot become standing rule 5's invalid-cast trap if a future writer omits the key.
+	var position: Vector3 = spawn.get("position", Vector3.ZERO)
+	var yaw: float = float(spawn.get("yaw", 0.0))
+	_apply_respawn_transform(position, yaw)
+
+
 ## F-258. Client-local, not host (§2.2 row 1 — own movement is the one thing a peer writes for
 ## itself): places THIS peer's own body and rebinds the spawn transform its future respawns use, in
 ## one call because doing either alone is a bug. `world/gen/procedural_world.gd` is the caller — a
@@ -856,11 +894,29 @@ func host_reset_for_new_run() -> void:
 	_on_session_opened()
 
 
-## `_owns_mutation()`, not `is_host()` (F-243's original bug, caught by `tools/run_restart_check.gd`):
-## solo/offline is this file's whole other mode (`_ready()`'s own else-branch), and `is_host()` reads
-## false there (`NetTransport.is_host()`'s own doc comment — it is true only while an actual session
-## is HOSTING). A solo restart never called `host_reset_for_new_run()` at all until this was fixed.
+## Two halves, and the split between them is the whole point (F-298).
+##
+## **Before the gate — every peer, unconditionally.** `_reset_local_cache()` is the only path back
+## for the two fields nothing replicates: `_local_stamina` and `_sprint_locked_out` are
+## CLIENT-simulated by design (§2.2 row 1 — see the class doc's Stamina paragraph; the host's copy is
+## explicitly advisory and appears in no snapshot), so a client that sprinted itself to a lockout in
+## the dying seconds of a run carried both into the next one while the host started full. It also
+## clears `_local_revision` to -1, which matters more than it looks: `host_reset_for_new_run()` puts
+## every peer back through `_ensure_host_state()`, which re-seeds `_revisions[peer] = 0`, so the
+## restarted run's first snapshot has a LOWER revision than the one the client last accepted and
+## `net_health_snapshot()`'s staleness guard would drop it. Resetting the cache first is safe rather
+## than merely harmless: it resets TO the full-health values that snapshot carries.
+##
+## **After the gate — the host's world rebuild.** `_owns_mutation()`, not `is_host()` (F-243's
+## original bug, caught by `tools/run_restart_check.gd`): solo/offline is this file's whole other mode
+## (`_ready()`'s own else-branch), and `is_host()` reads false there (`NetTransport.is_host()`'s own
+## doc comment — it is true only while an actual session is HOSTING). A solo restart never called
+## `host_reset_for_new_run()` at all until this was fixed.
 func _on_run_restarted() -> void:
+	_reset_local_cache()
+	# F-279: own movement is CLIENT authority, so this is NOT inside the host branch — see the
+	# function's own note for why the host must not do this on anyone else's behalf.
+	_teleport_local_to_spawn()
 	if _owns_mutation():
 		host_reset_for_new_run()
 

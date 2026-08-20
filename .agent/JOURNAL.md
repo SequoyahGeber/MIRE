@@ -7096,3 +7096,20 @@ Notes along the way:
 Files: `docs/FINDINGS.md`, `docs/NEXT.md`
 
 Commit at time of writing: `123d13a`
+
+---
+
+### DONE · F-279 · lp · 2026-08-20T15:40:30+00:00
+
+**F-243 revives players where the previous run ended instead of at the run spawn**
+
+F-279 fixed and verified, plus F-298 (same handler, its own entry assigned it here) and F-308 (found by the sweep). PlayerHealth._on_run_restarted() is split: _reset_local_cache() and a new CLIENT-LOCAL _teleport_local_to_spawn() run on every peer, ahead of the _owns_mutation() gate; the host's world rebuild stays behind it. Deliberately NOT a host rpc_id loop over _teleport_to_spawn() — that races the run_restarted delta on an unordered second reliable stream and, on the procedural map, carries the PREVIOUS island's shore to a remote peer (D-161). Same shape ProceduralWorld._replace_players() settled for F-258. InventoryService got the identical one-line split for _local_revision (F-308): the restart re-seeds the host's _revisions to 0, so every snapshot of the new run was dropped as stale on a client and it kept the ended run's items — worse than F-298 because nothing here republishes on a timer. Rule recorded as D-173. Proves it: .agent/bin/agent godot --script tools/run_restart_spawn_check.gd -> RUN_RESTART_SPAWN_CHECK failures=0, 28/28 PASS, 0 ERROR lines. Pre-fix, handler restored to HEAD shape (copy aside, not git stash): failures=5, exactly the symptoms; reverting only F-308's line: failures=2 (client holding the ended run's 20 logs at r20, post-restart grant swallowed). run_restart_net_check is now failures=0 for the first time since F-243 — its 'restart returns the local player to the run spawn' assertion reported this finding. Neighbours green: run_restart_check 0, player_vitals_check 0, player_vitals_net_check 0, crafting_net_check 0, terminal_focus_check 0, attunement_restart_check 0, day_night_restart_check 0. Filed F-309: inventory_net_check fails 10 with 'grant timeout' ~1 run in 5, confirmed pre-existing at HEAD by reverting both files to git show HEAD: — F-038's recurrence.
+
+Notes along the way:
+- Reproduced at HEAD: run_restart_net_check failures=1, exactly 'restart returns the local player to the run spawn'. Fix is CLIENT-LOCAL, not a host rpc_id loop: run_restarted reaches every peer, so each peer moves its own body (same shape ProceduralWorld._replace_players already settled for the procedural map). A host-driven net_force_respawn would race the run_restarted delta on a different reliable stream AND would carry the previous island's shore to a remote peer on procedural.
+- Pre-fix proof (handler restored to HEAD shape, copy kept aside, not git stash): run_restart_spawn_check failures=5 — solo player 12.002 m off spawn after BOTH restarts, client 12.003 m off its own spawn, client stamina 0.60 and still sprint-locked at the first frame of the new run. Restored: failures=0, 24/24 PASS.
+- Sweep found F-308: InventoryService._on_run_restarted() is the SAME _owns_mutation() gate hiding an unreplicated field — _local_revision. Restart re-seeds the host's _revisions to 0, so a client that carried r20 drops every snapshot of the new run. Proved two-process: client keeps the ended run's 20 logs at r20 and swallows a post-restart grant of 3. Fixed under this claim; worse than F-298 because nothing republishes on a timer.
+
+Files: `systems/health/player_health.gd`, `tools/run_restart_spawn_check.gd`, `autoload/inventory_service.gd`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `tools/run_restart_spawn_check.gd.uid`
+
+Commit at time of writing: `f1969cf`

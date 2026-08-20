@@ -352,11 +352,27 @@ func host_reset_for_new_run() -> void:
 	_on_session_opened()
 
 
-## `_owns_mutation()`, not `is_host()` (F-243's original bug, caught by `tools/run_restart_check.gd`):
-## solo/offline is this file's whole other mode (`_ready()`'s own else-branch), and `is_host()` reads
-## false there (`NetTransport.is_host()`'s own doc comment — it is true only while an actual session
-## is HOSTING). A solo restart never called `host_reset_for_new_run()` at all until this was fixed.
+## Two halves, split the same way `systems/health/player_health.gd`'s handler is and for the same
+## reason (F-308, the sibling of F-298 — that entry states the general rule: an `_owns_mutation()`
+## gate on a `run_restarted` handler is correct only when every field behind it is replicated).
+##
+## **Before the gate — every peer.** `_local_revision` is not replicated; it is this peer's private
+## record of the last snapshot it accepted, and `net_inventory_snapshot()` drops anything below it.
+## The restart resets the host's counters — `_on_session_opened()` clears `_revisions` and
+## `_ensure_host_store()` re-seeds each peer at 0 — so the new run's snapshots come in BELOW a
+## client's carried-over value and every one of them is discarded as stale. A client that ran 40
+## inventory transactions last run therefore keeps showing last run's items and silently swallows the
+## first 40 transactions of the new one. Unlike `PlayerHealth`, nothing here republishes on a timer,
+## so there is no drift back to correct: it stays wrong until the counter climbs past the old value.
+## `_reset_local_cache()` fixes both halves at once — the stale slots and the guard.
+##
+## **After the gate — the host's rebuild.** `_owns_mutation()`, not `is_host()` (F-243's original
+## bug, caught by `tools/run_restart_check.gd`): solo/offline is this file's whole other mode
+## (`_ready()`'s own else-branch), and `is_host()` reads false there (`NetTransport.is_host()`'s own
+## doc comment — it is true only while an actual session is HOSTING). A solo restart never called
+## `host_reset_for_new_run()` at all until this was fixed.
 func _on_run_restarted() -> void:
+	_reset_local_cache()
 	if _owns_mutation():
 		host_reset_for_new_run()
 

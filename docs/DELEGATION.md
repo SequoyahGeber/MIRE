@@ -75,6 +75,59 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-20 — F-279/F-298/F-308 resolved: a run restart teleports each peer CLIENT-side, and the two `run_restarted` handlers that gated on authority now split (lp)
+
+**Rule: D-173.** Two things the next task in this area builds against.
+
+**1. `PlayerHealth._on_run_restarted()` is split, and so is `InventoryService`'s.** The pattern, in
+both files:
+
+```gdscript
+func _on_run_restarted() -> void:
+    _reset_local_cache()          # EVERY peer — the fields nothing replicates back
+    _teleport_local_to_spawn()    # PlayerHealth only; own movement is §2.2 row 1
+    if _owns_mutation():
+        host_reset_for_new_run()  # the host's world rebuild, unchanged
+```
+
+`run_restarted` reaches every peer (a client re-derives it from `WorldDeltaLog` through
+`CycleService._on_world_delta_applied()`), so an authority gate at the top of one of these handlers
+is correct only for state the host pushes back down afterwards. It was not, twice:
+`_local_stamina`/`_sprint_locked_out` are client-simulated (F-298) and `_local_revision` is the
+peer's private snapshot staleness guard (F-308). **If you add a `run_restarted` subscriber that gates
+on authority, say in a comment which replicated field justifies it** — `grep -rn --include='*.gd'
+subscribe_run_restarted .` and read each handler's first line; 21 subscribers outside `tools/`, and
+the only three that gate are the two above plus `CycleModifierService` (F-254), which already does.
+
+**2. Never move a remote player's body from the host on a restart.** `PlayerHealth` now has two
+teleports and they are not interchangeable:
+
+| Call | Who runs it | When to use it |
+|---|---|---|
+| `_teleport_to_spawn(peer_id)` (private) | host, `rpc_id`s `net_force_respawn` to the owner | a **bleed-out respawn** — host-timed, the client cannot predict it |
+| `_teleport_local_to_spawn()` (private) | every peer, on its own `run_restarted` | a **run restart** — the client already receives the event |
+| `rebind_local_spawn(position, yaw)` (public, F-258) | every peer, for itself | a **new island** — moves the body *and* re-anchors the spawn record, both halves together |
+| `host_place_player(peer_id, pos, yaw)` (public) | host | the `tp` console verb (COMMANDS.md §3.3) |
+
+The host-driven form on a restart races the `run_restarted` delta on an unordered second reliable
+stream, and on the procedural map it carries the **previous** island's shore to a remote peer (D-161
+draws a fresh seed per run). Client-local makes the ordering intra-process: `PlayerHealth`'s handler
+runs before `ProceduralWorld._replace_players()`, which then overwrites both body and spawn record
+with the new island's, in the same synchronous emit.
+
+**`tools/run_restart_spawn_check.gd` is new, and phase 2 is the reusable part.** Proving anything
+about §2.2 row 1 needs a second process *and* a deliberate disagreement: the probe moves its **own**
+spawn record 40 m with `rebind_local_spawn()` before the restart, so a host-driven fix would land it
+on the host's stale copy and fail. Two traps it encodes, both of which make a naive check report a
+clean HEAD as fixed:
+
+- **Sample client-simulated state inside your own `run_restarted` handler, not by polling after it.**
+  `PlayerController._physics_process()` ticks `local_tick_stamina(delta, false)` at 18/sec, so a
+  drained probe is back to full in five seconds on its own. Subscribe after the autoload (any scene
+  node is) and read in the handler; and re-drain every loop so the pre-restart state is real.
+- **A GDScript lambda captures locals BY VALUE.** `await _until(func(): body = _local_player_body()
+  …)` sets the copy; the outer `body` is still null. Re-fetch after the wait.
+
 ### 2026-08-20 — F-290 resolved: a `user://` file two processes share is written by RENAME, and the race now has a deterministic check (lp)
 
 **The API to copy into any new two-process `--script` check.** Every driver/probe pair in `tools/`

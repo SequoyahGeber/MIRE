@@ -600,16 +600,6 @@ it should have been.
 
 ---
 
-### F-279 · F-243 revives players where the previous run ended instead of at the run spawn
-
-**Area:** systems/netcode · **Severity:** medium · **Found:** 2026-08-20 by lc1
-
-`systems/health/player_health.gd:829-840` rebuilds health/hunger state on `run_restarted`, but never invokes the existing spawn teleport path. Because the player bodies persist outside the level tree, an extraction leaves everybody aboard the shipwreck and a defeat leaves them wherever they fell; the fresh health snapshot merely stands them up there.
-
-At `6d7e756`, `tools/run_restart_net_check.gd` records the shipped spawn, moves the authoritative local player 12 metres, ends the run and restarts; the player remains at the moved position. F-258's new `ProceduralWorld._replace_players()` only covers that currently non-main procedural scene, not shipped `levels/hollowmere.tscn`. The reset must return each peer to Hollowmere's run spawn while respecting ARCHITECTURE §2.2: each client owns its own transform, so the host must not directly write remote-player transforms.
-
----
-
 ### F-281 · F-243's reset enumeration is short by three more run-scoped systems: DayNight's clock, HaulService's spawned haulables, AttunementService's selections
 
 **Area:** systems · **Severity:** medium · **Found:** 2026-08-20 by lp
@@ -1077,54 +1067,6 @@ task rather than a one-line guard.
 
 ---
 
-### F-298 · A client carries its own stamina and sprint lockout across a run restart — PlayerHealth's run_restarted handler is gated on _owns_mutation()
-
-**Area:** systems/netcode · **Severity:** low · **Found:** 2026-08-20 by lp
-
-Found by F-278's close-out sweep, which was looking for the shape F-278 turned out to be: a
-`run_restarted` handler that resets only the AUTHORITY's half of a two-sided piece of run state, and
-silently leaves the other peer's half running from the ended run.
-
-`systems/health/player_health.gd:865-867`:
-
-```gdscript
-func _on_run_restarted() -> void:
-	if _owns_mutation():
-		host_reset_for_new_run()
-```
-
-`host_reset_for_new_run()` toggles `_session_open` off and re-enters `_on_session_opened()`, which
-clears `_host_stamina_reports` and calls `_reset_local_cache()` (`:1031`) — and `_reset_local_cache()`
-is the only thing in the file that restores `_local_stamina = max_stamina` and
-`_sprint_locked_out = false`. On a CLIENT `_owns_mutation()` is false, so none of that runs.
-
-Health, hunger and downed state recover on a client anyway, because the host re-publishes a fresh
-snapshot per peer and the client adopts it. Stamina does not: it is client-simulated by design (see
-`_report_local_stamina()`'s header — the report to the host is explicitly ADVISORY, host gating never
-derives from it), so it appears in no snapshot and has no path back. A client whose player sprinted
-itself to `_sprint_locked_out = true` in the dying seconds of a run therefore starts the next run
-still locked out, at whatever stamina the defeat froze it at, while the host and every solo player
-start at full.
-
-Small in effect — `_regen` refills it in a couple of seconds, and `sprint_resume_fraction` releases
-the lockout on the way — but it is a real host/client divergence at the first frame of a run, in the
-same file F-279 is about, and it is the general shape worth grepping for: an `_owns_mutation()` gate
-on a `run_restarted` handler is correct only when every field that handler resets is replicated.
-
-**Fix:** split the handler — the host-only world rebuild stays behind the gate, `_reset_local_cache()`
-(or just the two client-simulated fields) moves in front of it, unconditional on authority like every
-other `run_restarted` subscriber in this codebase. Watch the ordering against the host snapshot the
-client is about to receive: `_local_revision = -1` is what makes the next snapshot apply rather than
-being dropped as stale, so resetting the cache is safe to do first, not after.
-
-**Verify:** extend `tools/run_restart_net_check.gd`'s phase 2 — the client probe already subscribes
-`run_restarted`; have it drain its own stamina to the lockout before the host restarts, and assert
-`local_stamina()` is back at max and `can_sprint()` true afterwards.
-
-Best fixed together with F-279, which is the same file and the same handler.
-
----
-
 ### F-299 · Lanes need a reserved-for-human flag: LM's weekly must last a week of manual sessions, and 'remember not to route there' is not a mechanism
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-20 by bram1
@@ -1455,6 +1397,40 @@ candidate remedies differ in kind:
 
 Either way it wants a third phase in `tools/terminal_focus_check.gd` — that file already builds the
 exact host+client pair this needs — rather than a fourth restart check.
+
+---
+
+### F-309 · `inventory_net_check` fails 10 with "grant timeout" roughly one run in five — F-038's exact symptom, back
+
+**Area:** tests/netcode · **Severity:** medium · **Found:** 2026-08-20 by lp during F-279
+
+First run of `.agent/bin/agent godot --script tools/inventory_net_check.gd` while closing F-279:
+`failures=10`, `result={"connected": true, "error": "grant timeout"}` — the client connects and then
+never sees the host's granted items inside the 15 s `TIMEOUT_SEC`, so every downstream assertion
+fails with it. **Confirmed pre-existing and unrelated to F-279's change**: both files F-279 edited
+were reverted to `git show HEAD:` and it reproduced there on the first run, then passed twice;
+restored, it passed three more times. Five clean runs out of six overall, on a machine running
+several lanes.
+
+This is F-038's symptom verbatim, string for string, and F-038 is marked **fixed** in this file
+(resolved 2026-08-18 by lp). Its fix was to stop granting on the client's own self-report and instead
+poll `(inventory.host_slots(peer_id) as Array).size() == 32` on the HOST before granting, because
+`_publish_snapshot()`'s `rpc_id` send is one-shot with nothing to resend it — a grant landing before
+the host's store exists is lost for the run. That guard is still in the file, so either it has a
+second window it does not cover, or the loss is now happening somewhere else entirely.
+
+**Where to start, in order.** (a) The guard proves the STORE exists; it does not prove
+`_peer_connected(peer_id)` is true yet, and `_publish_snapshot()` checks that separately before
+sending — a grant landing in *that* window is dropped host-side with no error at all, and would look
+exactly like this. (b) F-044: concurrent headless runs share one import cache, and this was one of
+several checks run back to back. (c) The deeper issue is not this check — a one-shot `rpc_id` for
+state a peer cannot re-request is fragile by construction, and every service in this repo that
+publishes snapshots does it the same way. A resend-on-request seam, or an ack, would retire the whole
+class.
+
+**Do not "fix" this by raising `TIMEOUT_SEC`.** 15 s is already 100x the observed happy path — the
+passing runs grant in well under a second — so a timeout that long failing means the packet is gone,
+not late.
 
 ---
 
@@ -14847,3 +14823,141 @@ was owed either.
 
 ---
 
+### F-279 · F-243 revives players where the previous run ended instead of at the run spawn — **fixed**
+
+**Area:** systems/netcode · **Severity:** medium · **Found:** 2026-08-20 by lc1
+
+`systems/health/player_health.gd:829-840` rebuilds health/hunger state on `run_restarted`, but never invokes the existing spawn teleport path. Because the player bodies persist outside the level tree, an extraction leaves everybody aboard the shipwreck and a defeat leaves them wherever they fell; the fresh health snapshot merely stands them up there.
+
+At `6d7e756`, `tools/run_restart_net_check.gd` records the shipped spawn, moves the authoritative local player 12 metres, ends the run and restarts; the player remains at the moved position. F-258's new `ProceduralWorld._replace_players()` only covers that currently non-main procedural scene, not shipped `levels/hollowmere.tscn`. The reset must return each peer to Hollowmere's run spawn while respecting ARCHITECTURE §2.2: each client owns its own transform, so the host must not directly write remote-player transforms.
+
+**Resolved 2026-08-20 by lp.** Spec: `docs/SPECS.md` `## F-279`. Rule: **D-173**.
+
+`PlayerHealth._on_run_restarted()` now calls a new client-local `_teleport_local_to_spawn()`, ahead
+of the `_owns_mutation()` gate, so **every peer moves its own body** off its own re-derived
+`run_restarted`. Deliberately NOT the host loop over `_teleport_to_spawn(peer_id)` that the existing
+respawn path uses: that would `rpc_id` a `net_force_respawn` which races the `run_restarted` delta on
+an unordered second reliable stream (F-278 measured that asymmetry at 5 frames), and on the
+procedural map it would push a remote peer to the PREVIOUS island's shore, since D-161 draws a fresh
+seed per run. It is the same shape `ProceduralWorld._replace_players()` settled for F-258, whose doc
+comment already stated the reasoning. §2.2 row 1 unchanged and, in fact, newly obeyed.
+
+**Verified** `.agent/bin/agent godot --script tools/run_restart_spawn_check.gd` (new) →
+`RUN_RESTART_SPAWN_CHECK failures=0`, 28/28 PASS, exit 0, no undeclared `ERROR:` lines. Phase 1
+restarts the solo player on the shipped map twice from 12 m out and also compares the two landing
+points to each other, horizontally, so a drifting reset cannot pass. Phase 2 is a second process and
+is the part that makes the authority claim: the probe first moves **its own** spawn record 40 m
+through the client-local `rebind_local_spawn()`, so the host's copy is knowingly stale — a
+host-driven fix would land it on the host's version and fail the assertion. Pre-fix, handler restored
+to its HEAD shape (copy kept aside, deliberately not `git stash`, which would touch other lanes'
+uncommitted work): `failures=5`, exactly this finding's symptoms plus F-298's.
+
+`tools/run_restart_net_check.gd`'s `restart returns the local player to the run spawn` — the
+assertion that reported this finding — now PASSes, and that check is at `failures=0` for the first
+time since F-243.
+
+---
+
+### F-298 · A client carries its own stamina and sprint lockout across a run restart — PlayerHealth's run_restarted handler is gated on _owns_mutation() — **fixed**
+
+**Area:** systems/netcode · **Severity:** low · **Found:** 2026-08-20 by lp
+
+Found by F-278's close-out sweep, which was looking for the shape F-278 turned out to be: a
+`run_restarted` handler that resets only the AUTHORITY's half of a two-sided piece of run state, and
+silently leaves the other peer's half running from the ended run.
+
+`systems/health/player_health.gd:865-867`:
+
+```gdscript
+func _on_run_restarted() -> void:
+	if _owns_mutation():
+		host_reset_for_new_run()
+```
+
+`host_reset_for_new_run()` toggles `_session_open` off and re-enters `_on_session_opened()`, which
+clears `_host_stamina_reports` and calls `_reset_local_cache()` (`:1031`) — and `_reset_local_cache()`
+is the only thing in the file that restores `_local_stamina = max_stamina` and
+`_sprint_locked_out = false`. On a CLIENT `_owns_mutation()` is false, so none of that runs.
+
+Health, hunger and downed state recover on a client anyway, because the host re-publishes a fresh
+snapshot per peer and the client adopts it. Stamina does not: it is client-simulated by design (see
+`_report_local_stamina()`'s header — the report to the host is explicitly ADVISORY, host gating never
+derives from it), so it appears in no snapshot and has no path back. A client whose player sprinted
+itself to `_sprint_locked_out = true` in the dying seconds of a run therefore starts the next run
+still locked out, at whatever stamina the defeat froze it at, while the host and every solo player
+start at full.
+
+Small in effect — `_regen` refills it in a couple of seconds, and `sprint_resume_fraction` releases
+the lockout on the way — but it is a real host/client divergence at the first frame of a run, in the
+same file F-279 is about, and it is the general shape worth grepping for: an `_owns_mutation()` gate
+on a `run_restarted` handler is correct only when every field that handler resets is replicated.
+
+**Fix:** split the handler — the host-only world rebuild stays behind the gate, `_reset_local_cache()`
+(or just the two client-simulated fields) moves in front of it, unconditional on authority like every
+other `run_restarted` subscriber in this codebase. Watch the ordering against the host snapshot the
+client is about to receive: `_local_revision = -1` is what makes the next snapshot apply rather than
+being dropped as stale, so resetting the cache is safe to do first, not after.
+
+**Verify:** extend `tools/run_restart_net_check.gd`'s phase 2 — the client probe already subscribes
+`run_restarted`; have it drain its own stamina to the lockout before the host restarts, and assert
+`local_stamina()` is back at max and `can_sprint()` true afterwards.
+
+Best fixed together with F-279, which is the same file and the same handler.
+
+**Resolved 2026-08-20 by lp, with F-279** — same file, same handler, exactly as this entry asked.
+Spec: `docs/SPECS.md` `## F-279`. Rule: **D-173**.
+
+The handler is split as this entry prescribed: `_reset_local_cache()` runs on every peer **in front
+of** the `_owns_mutation()` gate; the host's world rebuild stays behind it. Taking the whole cache
+rather than just the two client-simulated fields, and that is the safer choice rather than the lazier
+one — `_local_revision = -1` is part of it, and without that a client would drop the restarted run's
+first snapshots outright, because `_on_session_opened()` re-seeds `_revisions[peer] = 0` below the
+value the client last accepted. (That same mechanism, in `InventoryService`, is **F-308**.) Resetting
+first is safe rather than merely harmless: it resets TO the full-health values the incoming snapshot
+carries.
+
+**Verified** in `tools/run_restart_spawn_check.gd` phase 2, and how it is measured is the point.
+`PlayerController._physics_process()` ticks `local_tick_stamina(delta, false)` on that body every
+frame at 18/sec, so a probe that drained once and polled afterwards reads full stamina and a cleared
+lockout **at a clean HEAD** — natural regen is indistinguishable from a reset once you sample late
+enough, and the first version of this check passed those two assertions with the fix removed. The
+shipped probe re-drains itself to the lockout every loop (a player still sprinting as the run ends)
+and samples inside its own `run_restarted` handler, which is subscribed after `PlayerHealth`'s.
+Pre-fix: `stamina 0.60`, `can_sprint false` at the first frame of the new run. Post-fix: `100.00`,
+true.
+
+---
+
+### F-308 · A client silently drops the whole restarted run's inventory snapshots — `InventoryService` carries `_local_revision` across the reset — **fixed**
+
+**Area:** systems/netcode · **Severity:** high · **Found:** 2026-08-20 by lp during F-279's sweep
+
+The sibling of F-298, found by the grep that closed it, in the only other `run_restarted` handler in
+the repo that gates at the top. `InventoryService._on_run_restarted()` was
+`if _owns_mutation(): host_reset_for_new_run()`, so on a client nothing ran at all.
+
+**The mechanism.** `_local_revision` is not replicated — it is a peer's private record of the last
+snapshot it accepted, and `net_inventory_snapshot()` opens with `if peer_id != _local_peer_id() or
+revision < _local_revision: return`. A restart resets the host's counters: `_on_session_opened()`
+clears `_revisions` and `_ensure_host_store()` re-seeds each peer at `0`. So every snapshot of the
+new run arrives BELOW the value a client carried over and is discarded as stale, silently, with no
+log line. A client that ran 40 inventory transactions last run keeps displaying last run's items and
+swallows the first 40 transactions of the new one.
+
+**Worse than F-298, for one structural reason:** nothing here republishes on a timer. `PlayerHealth`
+pushes a hunger snapshot every second, so its equivalent would have drifted back to correct within a
+second; `InventoryService` publishes only on a transaction, so this stays wrong until the counter
+climbs back past the old value — which is exactly as long as the player is losing items.
+
+**Fixed in F-279's commit**, one line, the same split: `_reset_local_cache()` ahead of the gate. It
+repairs both halves at once, the stale slot array and the guard.
+
+**Verified** in `tools/run_restart_spawn_check.gd` phase 2. The host grants the client 20 logs **one
+at a time** — each `host_add()` publishes, so this walks the client's `_local_revision` to 20, which
+is the number the finding is about; a single grant of 20 moves the same item count and leaves the
+revision at 1. After the restart the probe asserts the client's count is 0 **and** that a fresh
+`host_add(..., 3)` is accepted, which a stale guard cannot fake. Pre-fix, reverting only this one
+line: `failures=2` — the client still holding the ended run's `20` logs at `r20`, the post-restart
+grant swallowed. Post-fix: `0`, then `3` at `r1`.
+
+**Resolved 2026-08-20 by lp.** Spec: `docs/SPECS.md` `## F-279`. Rule: **D-173**.
