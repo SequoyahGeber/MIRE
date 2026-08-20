@@ -1,5 +1,11 @@
 {
   "claims": {
+    "content/poi/station_camp.tres": {
+      "agent": "lp",
+      "at": "2026-08-20T20:34:21+00:00",
+      "task": "F-301",
+      "token": null
+    },
     "core/dev/dev_launch.gd": {
       "agent": "quill5fa5c7",
       "at": "2026-08-20T20:20:19+00:00",
@@ -11,6 +17,12 @@
       "at": "2026-08-20T20:20:19+00:00",
       "task": "4.19",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
+    "levels/frontend.tscn": {
+      "agent": "reed31c598",
+      "at": "2026-08-20T20:36:01+00:00",
+      "task": "7.4",
+      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
     "levels/procedural_island.tscn": {
       "agent": "quill5fa5c7",
@@ -48,6 +60,36 @@
       "task": "7.4",
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
+    "tools/menu_stack_check.gd": {
+      "agent": "reed31c598",
+      "at": "2026-08-20T20:31:14+00:00",
+      "task": "7.4",
+      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
+    },
+    "tools/poi_required_station_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T20:32:49+00:00",
+      "task": "F-301",
+      "token": null
+    },
+    "tools/procedural_look_probe.gd": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:33:11+00:00",
+      "task": "4.19",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
+    "tools/procedural_world_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T20:34:58+00:00",
+      "task": "F-301",
+      "token": null
+    },
+    "tools/title_check.gd": {
+      "agent": "reed31c598",
+      "at": "2026-08-20T20:36:01+00:00",
+      "task": "7.4",
+      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
+    },
     "tools/verify_setup.gd": {
       "agent": "quill5fa5c7",
       "at": "2026-08-20T20:30:39+00:00",
@@ -60,6 +102,30 @@
       "task": "4.19",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
+    "ui/frontend/backdrop.gd": {
+      "agent": "reed31c598",
+      "at": "2026-08-20T20:36:01+00:00",
+      "task": "7.4",
+      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
+    },
+    "ui/frontend/frontend.gd": {
+      "agent": "reed31c598",
+      "at": "2026-08-20T20:36:01+00:00",
+      "task": "7.4",
+      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
+    },
+    "ui/frontend/title_screen.gd": {
+      "agent": "reed31c598",
+      "at": "2026-08-20T20:36:01+00:00",
+      "task": "7.4",
+      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
+    },
+    "ui/menu_stack.gd": {
+      "agent": "reed31c598",
+      "at": "2026-08-20T20:31:14+00:00",
+      "task": "7.4",
+      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
+    },
     "ui/theme/mire_theme.gd": {
       "agent": "reed31c598",
       "at": "2026-08-20T20:27:08+00:00",
@@ -69,6 +135,12 @@
     "world/chunk/chunk_streamer.gd": {
       "agent": "quill5fa5c7",
       "at": "2026-08-20T20:30:39+00:00",
+      "task": "4.19",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
+    "world/environment/ground_fog.gd": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:31:34+00:00",
       "task": "4.19",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
@@ -93,7 +165,9 @@
         "docs/WORLDGEN.md",
         "world/gen/procedural_world.gd",
         "world/chunk/chunk_streamer.gd",
-        "tools/verify_setup.gd"
+        "tools/verify_setup.gd",
+        "world/environment/ground_fog.gd",
+        "tools/procedural_look_probe.gd"
       ],
       "notes": [],
       "started": "2026-08-20T20:20:19+00:00",
@@ -103,20 +177,45 @@
       "agent": "reed31c598",
       "files": [
         "ui/theme/mire_theme.gd",
-        "tools/menu_kit_check.gd"
+        "tools/menu_kit_check.gd",
+        "ui/menu_stack.gd",
+        "tools/menu_stack_check.gd",
+        "ui/frontend/backdrop.gd",
+        "ui/frontend/title_screen.gd",
+        "ui/frontend/frontend.gd",
+        "levels/frontend.tscn",
+        "tools/title_check.gd"
       ],
       "notes": [],
       "started": "2026-08-20T20:27:08+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
+    },
+    "F-301": {
+      "agent": "lp",
+      "dispatched": true,
+      "files": [
+        "tools/poi_required_station_check.gd",
+        "content/poi/station_camp.tres",
+        "tools/procedural_world_check.gd"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-20T20:34:19+00:00",
+          "by": "lp",
+          "text": "Reproduced at the pure layer: 17 of 132 seeds place ZERO station_camp, including both seeds F-301 named (3503374054, 3803646258). Root cause is one content field, not the placement code \u2014 content/poi/station_camp.tres never set required=true, so D-152's relax ladder in poi_map.gd (which already exists and already saves the wellspring and the shipwreck on exactly these seeds) never ran for the station. wellspring and shipwreck are required and lose 0 of 132."
+        }
+      ],
+      "started": "2026-08-20T20:31:10+00:00",
+      "token": null
     }
   },
   "recent": {
     ".agent/bin/agent": {
-      "agent": "lp",
-      "at": "2026-08-20T20:30:45+00:00",
-      "hash": "061cdb08f58fcef6b3466e3a001a053301000931cedd0681dc6f511b4f93cd68",
-      "task": "F-283",
-      "token": null
+      "agent": "galef95fa6",
+      "at": "2026-08-20T20:34:56+00:00",
+      "hash": "1b1d52582cfbf745fad89153f4bd7642ac90f919887d6c149721a53065df5797",
+      "task": "F-315",
+      "token": "CLAUDE_CODE_SESSION_ID:d9bd1b9f-bbd0-404d-a0e5-774d72edf018"
     },
     ".agent/bin/lane": {
       "agent": "lp",
@@ -708,9 +807,9 @@
     },
     "tools/harness_check.py": {
       "agent": "galef95fa6",
-      "at": "2026-08-20T20:22:02+00:00",
-      "hash": "896612e7e72d9fd325448977e03c32a51ac54b0fb248f92561ea9e2921106a01",
-      "task": "F-314",
+      "at": "2026-08-20T20:34:56+00:00",
+      "hash": "570e048c1a412aaf6c9eb7a287600c04ea931a9725e9bcfda8e20b9ae070ef59",
+      "task": "F-315",
       "token": "CLAUDE_CODE_SESSION_ID:d9bd1b9f-bbd0-404d-a0e5-774d72edf018"
     },
     "tools/harvest_restart_check.gd": {
@@ -1099,7 +1198,7 @@
       "token": null
     }
   },
-  "rev": 62,
+  "rev": 74,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -5281,7 +5380,7 @@
     "F-301": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Some procedural seeds publish NO station marker at all, so the island ships with crafting unreachable"
     },
@@ -5374,11 +5473,20 @@
       "title": "A lane's queue drains in task-id order, so routing priority is whatever the F-numbers happen to be"
     },
     "F-315": {
+      "done_at": "2026-08-20T20:34:56+00:00",
+      "done_by": "galef95fa6",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "A drain chain silently stops draining the moment it re-executes for a harness change"
+    },
+    "F-316": {
       "est": "\u2014",
       "milestone": "Findings",
       "status": "todo",
       "tier": "F",
-      "title": "A drain chain silently stops draining the moment it re-executes for a harness change"
+      "title": "docs/SPECS.md carries two different F-226 blocks under one heading, and nothing checks SPECS for duplicate headings"
     }
   },
   "version": 1

@@ -7278,3 +7278,15 @@ Renumbered all three live D-number collisions and added the detector that stops 
 Files: `docs/DECISIONS.md`, `docs/POWERUPS.md`, `systems/powerups/powerup_def.gd`, `docs/NEXT.md`, `.agent/bin/lane`, `.agent/bin/agent`, `docs/DELEGATION.md`, `docs/SPECS.md`, `tools/decision_ref_check.py`, `docs/FINDINGS.md`
 
 Commit at time of writing: `95dc43d`
+
+---
+
+### DONE · F-315 · galef95fa6 · 2026-08-20T20:34:56+00:00
+
+**A drain chain silently stops draining the moment it re-executes for a harness change**
+
+re-exec carries --drain; drain mode survives a harness change mid-chain. 37/37 harness_check, 6/6 state_lock_check.
+
+Files: `.agent/bin/agent`, `tools/harness_check.py`
+
+Commit at time of writing: `7cfc32a`
