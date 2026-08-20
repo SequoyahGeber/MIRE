@@ -100,7 +100,7 @@ var _anchors: Array[Vector3] = []
 var _loaded: Dictionary[Vector2i, ChunkEntry] = {}
 var _jobs: Dictionary[Vector2i, ChunkJob] = {}
 var _eval_accum: float = 0.0
-var _shared_material: StandardMaterial3D
+var _shared_material: ShaderMaterial
 ## Wall-clock cost of the most recent `_process()` call, covering ring evaluation plus the
 ## budgeted upload/collision-cook work — everything this node itself did that frame. Deliberately
 ## NOT the same thing as total real frame time, which also includes rendering, physics, and
@@ -142,10 +142,12 @@ class ChunkJob extends RefCounted:
 
 
 func _ready() -> void:
-	_shared_material = StandardMaterial3D.new()
-	# Placeholder flat colour, same convention `tools/bench_chunk_gpu.gd` used — a shared material
-	# per streamer, one bind per chunk. 4.4's per-biome material swap is a later task's job.
-	_shared_material.albedo_color = Color(0.35, 0.45, 0.3)
+	# Flat-shaded terrain (4.18/D-184): per-facet lighting from screen-space derivatives — see the
+	# shader's own header. Still one shared material, one bind per chunk; the placeholder colour
+	# and 4.4's eventual per-biome tint both live on as shader uniforms.
+	_shared_material = ShaderMaterial.new()
+	_shared_material.shader = preload("res://world/chunk/terrain_flat.gdshader")
+	_shared_material.set_shader_parameter(&"albedo_color", Color(0.35, 0.45, 0.3))
 
 
 func _exit_tree() -> void:

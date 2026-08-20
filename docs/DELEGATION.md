@@ -103,6 +103,16 @@ continent. Ridge window moved to 0.95–1.30 x HEIGHT_SCALE: cresting only on hi
 plateau stays clean. Same check suite green; fresh renders (seed 1856316070) in
 `assets/audit/terrain/`.
 
+**Third pass, same day — flat shading.** He linked the target look (r/Unity3D rvr9ca: flat-shaded
+low-poly terrain, no mountains, no height coloring). Shipped as
+`world/chunk/terrain_flat.gdshader` on `ChunkStreamer`'s shared material: per-facet normals from
+screen-space derivatives, zero mesh change — do NOT "improve" this into non-indexed per-face
+meshes, that triples resident vertex counts against the low-end target. The D-184 flattening also
+collapsed the worst LOD seam divergence 12.44 m → 3.10 m; `chunk_stream_check`'s recorded
+spot-check constant is re-measured accordingly (the island-wide sweep assertion is what carries
+the skirt guarantee; the constant only catches drift). Skirt is 18.7 m now via MAX_HEIGHT and
+clears the worst by ~6x.
+
 
 ### 2026-08-20 — 4.19 DONE: the shipped map is procedural. Press Play and you get a generated island (quill5fa5c7)
 

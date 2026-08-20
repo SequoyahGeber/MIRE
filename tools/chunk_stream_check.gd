@@ -51,15 +51,19 @@ const BENCH_SEED: int = 20260818
 ## 12 seeds sampled. `SKIRT_DEPTH_FRACTION` in `chunk_mesher.gd` was retuned alongside this.
 ##
 ## Re-measured again by F-274 (2026-08-20), which put every vertex on its own biome's terrain
-## amplitudes: the same spot now diverges 12.4405 m rather than 12.805 m, because the crest there
-## sits in biomes whose authored `ridge_amplitude` is below 1.0. The location did not move and the
-## number went DOWN, so `SKIRT_DEPTH_FRACTION` needed no retune — 44.2 m of skirt still clears it
-## with ~3.5x margin. Measured with the shipped biome table; the pre-F-274 biome-blind sweep
-## reproduces 12.8051 m at the same chunk exactly, which is what confirms the two agree about
-## everything except the amplitudes.
+## amplitudes: the same spot then diverged 12.4405 m rather than 12.805 m, because the crest there
+## sits in biomes whose authored `ridge_amplitude` is below 1.0.
+##
+## Re-measured again for D-184's flat-plateau restructure (2026-08-20, 4.18): with the fBm
+## interior damped to ~±1 m and the relief coming from 3-5 placed hills, the same spot diverges
+## 3.0999 m, and the island-wide sweep this check runs every pass found 3.1256 m as the worst on
+## its bench seed — the whole divergence spread collapsed with the amplitudes, as it should.
+## `SKIRT_DEPTH` (now 18.7 m, scaled off the smaller MAX_HEIGHT) still clears the worst by ~6x, so
+## no skirt retune. The island-wide "skirt deeper than the worst anywhere" assertion above is what
+## carries the guarantee; this recorded spot only exists to catch silent drift.
 const WORST_KNOWN_SEED: int = 4242
 const WORST_KNOWN_CHUNK := Vector2i(3, -4)
-const WORST_KNOWN_DIVERGENCE_M: float = 12.4405
+const WORST_KNOWN_DIVERGENCE_M: float = 3.0999
 ## Chunk radius the seam/harvestable sweeps scan. `IslandHeightmap.ISLAND_RADIUS` is 118 m
 ## (CHUNK_SIZE 32 m -> ~4 chunks), so 10 chunks (320 m) is a wide margin past the falloff shoulder
 ## into open water — cheap because water contributes ~0 divergence and no harvestable placements,

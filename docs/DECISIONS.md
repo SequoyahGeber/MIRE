@@ -5845,3 +5845,12 @@ the rolling-fBm interior is gone: the continent is now a near-flat plateau (`BAS
 placed by the same integer-mixing recipe as the lobes). The ridge window moved above the plateau
 (RIDGE_MASK 0.95–1.30) so cresting only touches hill tops. The reversal is still cheap: raise
 `BASE_NOISE_WEIGHT` back toward 1.0 and the rolling interior returns.
+
+**Third refinement (same day):** he linked the exact look — r/Unity3D post rvr9ca, "procedurally
+generated low poly terrain… without mountains and coloring based on height", a flat-shaded
+low-poly ground. The terrain shape above already matched; the missing half was **flat shading**,
+shipped as `world/chunk/terrain_flat.gdshader` — per-facet normals from screen-space derivatives
+(`cross(dFdy(VERTEX), dFdx(VERTEX))`) on the streamer's shared material. Chosen over non-indexed
+per-face-normal meshes deliberately: that alternative triples every resident chunk's vertex count,
+and MIRE targets the worst machines. The mesh, its smooth normals, collision and LOD are all
+untouched — the shader only changes lighting. No height-based coloring either, matching the post.
