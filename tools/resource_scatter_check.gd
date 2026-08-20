@@ -118,9 +118,15 @@ func _check_biome_gate() -> void:
 				checked_any = true
 				var def: Resource = registry.call(&"get_scatter_table", placement["def_id"])
 				var pos: Vector3 = placement["position"]
-				var height: float = IslandHeightmap.height(pos.x, pos.z, SEED_A)
+				# F-271: re-derived from `continent()` + `moisture()` + `assign()`, spelled out
+				# rather than calling `BiomeMap.biome_at()`, so this stays an INDEPENDENT witness to
+				# D-144 rather than a mirror of whatever the shipped path happens to do. Before
+				# F-271 these three lines used `height()` — the same mistake the code under test was
+				# making — so the check and the bug agreed with each other and neither agreed with
+				# D-144. If this ever has to change to keep passing, that is the finding.
+				var continent: float = IslandHeightmap.continent(pos.x, pos.z, SEED_A)
 				var moisture: float = BiomeMap.moisture(pos.x, pos.z, SEED_A)
-				var biome: StringName = BiomeMap.assign(height, moisture, biome_defs)
+				var biome: StringName = BiomeMap.assign(continent, moisture, biome_defs)
 				if biome != def.get(&"biome_id"):
 					all_in_biome = false
 	check(checked_any, "at least one placement was produced across the sampled chunks")

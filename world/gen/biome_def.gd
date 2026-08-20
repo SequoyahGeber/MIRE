@@ -18,8 +18,20 @@ extends Resource
 @export var display_name: String = ""
 
 @export_group("Height range")
-## Metres, in IslandHeightmap.height()'s own units — inclusive bounds. Overlapping another biome's
-## range is allowed on purpose (see priority below); a real island has soft transitions, not walls.
+## Metres of CONTINENTAL height — `IslandHeightmap.continent()`, not `height()`. Inclusive bounds.
+##
+## D-144: since 4.13 a BiomeDef carries terrain amplitudes, so the full surface `height()` depends on
+## which biome a point is in, and picking the biome from it would pick it from a surface the biome
+## itself shaped. The continent is the biome-INDEPENDENT half, so that is what `BiomeMap.biome_at()`
+## tests these bounds against. The practical consequence when authoring: these numbers are the bare
+## landmass, BELOW whatever metres this biome's own detail and ridge amplitudes then add on top.
+##
+## `PoiDef.height_min`/`height_max` are documented in the same word, "metres", and mean something
+## different — the full surface height of the ground the landmark stands on (D-163). Do not tune one
+## against the other's values.
+##
+## Overlapping another biome's range is allowed on purpose (see priority below); a real island has
+## soft transitions, not walls.
 @export var height_min: float = -1000.0
 @export var height_max: float = 1000.0
 

@@ -73,8 +73,16 @@ extends Resource
 @export_group("Where it may land")
 ## Empty means "any biome". Otherwise the site's biome (BiomeMap.biome_at) must be in this list.
 @export var biomes: Array[StringName] = []
-## Metres, in IslandHeightmap.height()'s units. A Wellspring wants to be above the waterline; a
-## shipwreck wants to be at it.
+## Metres of FULL SURFACE height — `IslandHeightmap.height()`, continent plus the detail and ridge
+## layers, i.e. the ground a player would actually stand on here. A Wellspring wants to be above the
+## waterline; a shipwreck wants to be at it, and both of those are statements about the visible
+## surface, not about the landmass under it. `PoiMap` tests these against `height()` accordingly.
+##
+## This is NOT the same unit as `BiomeDef.height_min`/`height_max`, which are CONTINENTAL metres
+## (D-144) — the two fields read identically and mean different surfaces. D-163 settled the split and
+## says why the answer differs per field: a POI cares where its feet land, a biome cannot be chosen
+## from a surface it shaped itself. `biomes` above still resolves through `BiomeMap.biome_at()`, so a
+## single def legitimately mixes the two units — that is intended, not an oversight.
 @export var height_min: float = 0.0
 @export var height_max: float = 1000.0
 ## Fraction of IslandHeightmap.ISLAND_RADIUS. Keeps a landmark off the very centre or the very edge

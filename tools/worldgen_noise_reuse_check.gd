@@ -22,6 +22,9 @@ extends SceneTree
 ##      stand in for it: this script does not exist at that revision, and the APIs it drives did not
 ##      either. If a later task deliberately changes worldgen output, THESE CONSTANTS MUST BE
 ##      RE-CAPTURED and the change recorded — they are a tripwire, not a specification of the layout.
+##      F-271 added a fourth hash here, the SCATTER layout, and is itself the worked example of that
+##      rule: it deliberately moved scatter (biome classification now obeys D-144) and left the other
+##      three untouched, so its close-out re-captured one constant and proved the rest still passed.
 ##   4. SPEED — sampling through a shared set is meaningfully cheaper per sample than rebuilding.
 ##      Relative, same-process, same-machine: an absolute number here would only measure the box.
 ##
@@ -32,6 +35,7 @@ extends SceneTree
 const IslandHeightmap = preload("res://world/gen/island_heightmap.gd")
 const BiomeMap = preload("res://world/gen/biome_map.gd")
 const PoiMap = preload("res://world/gen/poi_map.gd")
+const ResourceScatter = preload("res://world/gen/resource_scatter.gd")
 
 const SEEDS: Array[int] = [1, 20260819, -77, 0x5EED, 999983]
 
@@ -58,10 +62,24 @@ const GOLDEN_AMPLITUDES: Dictionary = {
 	0x5EED: "c72cdd79cb349965",
 	999983: "bf2f672a4de972a9",
 }
+## Captured AFTER F-271, and deliberately so: F-271 is the change these three siblings were watching
+## for, and scatter had no witness of its own when it landed. The pre-F-271 values, for the record,
+## were e1b81b6cdf97bb57 / 0ba6f0e311c68e58 / eadd61e208e89c9f / 357d154af9590f1a / 8ff13290e7187f75
+## — every one of them moved when scatter stopped classifying its points from `height()`. From here
+## on, scatter layout is a tripwire like the other three: a worldgen refactor that moves it must say
+## so and re-capture, and one that claims to move nothing must leave it alone.
+const GOLDEN_SCATTER: Dictionary = {
+	1: "428ea591736623cc",
+	20260819: "1fb5f19469c5fc2f",
+	-77: "559e522d6b5d2706",
+	0x5EED: "906faea3771ca932",
+	999983: "de9ffaa1d503238d",
+}
 
 var failures: int = 0
 var poi_defs: Array = []
 var biome_defs: Array = []
+var scatter_defs: Array = []
 
 
 func _initialize() -> void:
@@ -79,8 +97,10 @@ func _run() -> void:
 		return
 	poi_defs = (registry.call("poi_defs") as Dictionary).values()
 	biome_defs = (registry.get(&"biomes") as Dictionary).values()
+	scatter_defs = (registry.get(&"scatter_tables") as Dictionary).values()
 	_check(poi_defs.size() >= 3, "content/poi/ loaded %d def(s)" % poi_defs.size())
 	_check(not biome_defs.is_empty(), "content biome defs loaded (%d)" % biome_defs.size())
+	_check(not scatter_defs.is_empty(), "content scatter tables loaded (%d)" % scatter_defs.size())
 
 	_check_equivalence()
 	_check_adoption()
@@ -185,6 +205,29 @@ func _check_layout_unchanged() -> void:
 		_check(amplitude_actual == String(GOLDEN_AMPLITUDES[world_seed]),
 			"seed %d: the terrain-amplitude grid hashes to the pre-fix value" % world_seed,
 			"%s, expected %s" % [amplitude_actual, GOLDEN_AMPLITUDES[world_seed]])
+
+		var scatter_actual: String = _scatter_hash(world_seed)
+		_check(scatter_actual == String(GOLDEN_SCATTER[world_seed]),
+			"seed %d: the scatter layout hashes to its post-F-271 value" % world_seed,
+			"%s, expected %s" % [scatter_actual, GOLDEN_SCATTER[world_seed]])
+
+
+## Every placement an 8x8 block of chunks around the origin produces: which point, which asset, and
+## where it stands. `point_id` alone would not notice a point that kept its identity and moved, and
+## `position` alone would not notice two points swapping assets, so both go in.
+func _scatter_hash(world_seed: int) -> String:
+	var ctx := HashingContext.new()
+	ctx.start(HashingContext.HASH_SHA256)
+	for cx in range(-4, 4):
+		for cz in range(-4, 4):
+			var placements: Array[Dictionary] = ResourceScatter.placements_for_chunk(
+				cx, cz, world_seed, scatter_defs, biome_defs)
+			for placement: Dictionary in placements:
+				ctx.update(String(placement["point_id"]).to_utf8_buffer())
+				ctx.update(String(placement["asset"]).to_utf8_buffer())
+				var p: Vector3 = placement["position"]
+				ctx.update(PackedFloat64Array([p.x, p.y, p.z]).to_byte_array())
+	return ctx.finish().hex_encode().substr(0, 16)
 
 
 ## poi_check.gd already asserts this for its own seeds; repeated here because F-261 introduced a

@@ -117,15 +117,27 @@ static func _placement_at(
 	var world_x: float = origin_x + local_x
 	var world_z: float = origin_z + local_z
 
-	var height: float = ISLAND_HEIGHTMAP.height_from_set(
-		world_x, world_z, noise_set.island, world_seed)
-	var moisture: float = BIOME_MAP.moisture_from_set(world_x, world_z, noise_set)
-	var biome_id: StringName = BIOME_MAP.assign(height, moisture, biome_defs)
+	# F-271: the biome comes from `biome_at_from_set()`, never from the surface `height` below.
+	# D-144 is the rule — a biome is decided from the CONTINENT, the biome-independent half of the
+	# surface, because since 4.13 a BiomeDef carries terrain amplitudes and so `height()` depends on
+	# which biome a point is in. Classifying from `height()` put every point on high ground into a
+	# higher-`height_min` biome than `BiomeMap.biome_at()` says it occupies, and the gate below then
+	# rejected points it should have kept. Never re-derive the biome from the `height` local just
+	# because it is already in hand: that reuse is what produced the bug.
+	#
 	# The jitter may have carried a point out of the biome its cell nominally belongs to. Skip
 	# rather than force it — a def that pulled the point back to its own biome would place the
 	# asset at the wrong height/moisture combination it was never authored to describe.
+	var biome_id: StringName = BIOME_MAP.biome_at_from_set(
+		world_x, world_z, noise_set, world_seed, biome_defs)
 	if biome_id != def.get(&"biome_id"):
 		return {}
+
+	# Only surviving points pay for the surface sample, and it is used for `position.y` alone —
+	# where the asset's feet go. Safe to sit after the gate: neither this nor the biome test touches
+	# `rng`, so the per-point stream is consumed in the same order as before.
+	var height: float = ISLAND_HEIGHTMAP.height_from_set(
+		world_x, world_z, noise_set.island, world_seed)
 
 	var entry: Resource = def.call(&"pick_entry", rng.randf() * total_weight)
 	if entry == null:

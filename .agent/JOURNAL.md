@@ -6667,3 +6667,18 @@ Notes along the way:
 Files: `tools/terrain_look_check.gd`, `tools/terrain_look_check.gd.uid`
 
 Commit at time of writing: `3dc02e9`
+
+---
+
+### DONE · F-271 · lm · 2026-08-20T05:43:32+00:00
+
+**ResourceScatter classifies a point's biome from height(), BiomeMap.biome_at() classifies from continent() — the same point resolves to two different biomes depending on which system asks**
+
+ResourceScatter now resolves a point's biome through BiomeMap.biome_at_from_set() (continent-based, D-144) instead of assign() on the full surface height; height_from_set() stays for position.y only and the biome gate moved above it so rejected candidates no longer pay for a surface sample (rng order unchanged). resource_scatter_check re-derives via continent()+moisture()+assign() so it is an independent witness, not a mirror. BiomeDef/PoiDef height-bound doc comments now name their own surface — D-163 settles the split (biome = continental, POI = full surface, deliberately). Added GOLDEN_SCATTER to worldgen_noise_reuse_check so scatter layout has a tripwire of its own. Verified: agent godot --script tools/resource_scatter_check.gd -> failures=0; --script tools/worldgen_noise_reuse_check.gd -> failures=0 with GOLDEN_POI/BIOME/AMPLITUDES UNCHANGED (proves scatter and only scatter moved); biome_check 0; poi_check 0; check_determinism terrain_hash c20eed19b44270a1 unchanged; findings_numbering_check 0; findings_hygiene_check 0. Churn measured: 0.08-0.14%% of grid points reclassify, placement counts move by <=2 per seed.
+
+Notes along the way:
+- F-274's entry says F-271 'has not visibly diverged' while the amplitude seam is unwired. Measured otherwise: height() = continent() + detail + ridge, and those layers apply at the 1.0/1.0 defaults today, so 0.08-0.14% of world points already classify differently on shipped content. Correction recorded in D-163 so F-274's owner does not inherit a false premise.
+
+Files: `world/gen/resource_scatter.gd`, `tools/resource_scatter_check.gd`, `tools/worldgen_noise_reuse_check.gd`, `world/gen/biome_def.gd`, `world/gen/poi_def.gd`
+
+Commit at time of writing: `361b692`
