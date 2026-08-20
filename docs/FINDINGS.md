@@ -867,47 +867,6 @@ Cheap to fix now that F-280 exists: `run_started` is the per-run seam §5.3 lack
 
 ---
 
-### F-301 · Some procedural seeds publish NO station marker at all, so the island ships with crafting unreachable
-
-**Area:** worldgen · **Severity:** high · **Found:** 2026-08-20 by lp
-
-Found by F-284's sweep, and it is a live gameplay bug rather than a flaky check.
-
-`tools/world_contract_check.gd`'s procedural arm fails intermittently on a clean tree with
-`no REGISTERED station marker ... crafting is unreachable on this map`. Two of six consecutive
-runs failed. The cause is not the check: `ProceduralWorld` genuinely publishes zero markers of
-kind `station` on some seeds.
-
-Measured directly, building `ProceduralWorld` at three fixed seeds and listing every
-`authored_world_marker` whose `kind` meta is `station`:
-
-    REGISTERED_ASSETS ["station_workbench_primitive", "station_stone_furnace"]
-    SEED 3503374054 —  9 POI site(s),  9 marker(s)  station_markers=[]
-    SEED 3803646258 — 10 POI site(s),  9 marker(s)  station_markers=[]
-    SEED  987654321 — 10 POI site(s), 11 marker(s)  station_markers=["Station_station_workbench_primitive"]
-
-So a run on seed 3503374054 or 3803646258 starts a player on an island with no crafting station
-anywhere — the loop audit's own "a station marker exists proves nothing" lesson arriving from the
-other end: here not even the marker exists. Whatever POI rule emits the station is losing its site
-to placement rejection (clearance, shoreline, POI count) on those seeds, silently, and nothing
-demands the survivor.
-
-Why nothing caught it: `tools/procedural_world_check.gd` builds at the single fixed seed
-`987654321`, which happens to be a seed that gets one, and asserts the marker histogram against it.
-A per-seed fixture that only ever sees one seed is not a per-seed fixture.
-
-The fix has two halves and they are separable:
-  1. worldgen — guarantee at least one registered station survives placement on EVERY seed
-     (a mandatory-POI pass that re-places rather than drops, or a fallback stamped near the spawn).
-  2. testing — `procedural_world_check` should sweep a spread of seeds for the fixtures the loop
-     cannot run without, not one. Until half 1 lands, the both-map matrix stays a coin flip.
-
-Note for whoever takes this: F-284 left the spawn phase of `world_contract_check` passing on both
-maps at every seed observed; this failure is the station fixture only, so a FAIL naming
-`registered station` on the procedural arm today is this finding and not a regression of that one.
-
----
-
 ### F-302 · The two shipped layout JSONs write the spawn record in two different shapes, so every generic reader needs both
 
 **Area:** worldgen · **Severity:** low · **Found:** 2026-08-20 by lp
@@ -1444,7 +1403,199 @@ the direct/pooled split is deliberate.
 
 ---
 
+### F-319 · Every multi-site POI badly under-places on the 118 m island, and the Wellspring's 180 m spacing makes a second one geometrically impossible
+
+**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-20 by lp
+
+Found by F-301's sweep, which censused all six POI defs over 512 seeds while proving the station fix.
+Nothing here is intermittent — it is the same on every seed.
+
+    def                required  target  mean placed   zero on
+    station_camp       true      1       1.00          0/512   (F-301, fixed)
+    wellspring         true      4       1.01          0/512
+    shipwreck          true      1       1.00          0/512
+    enemy_nest         false     5       2.25          0/512
+    loot_cache         false     8       4.07          0/512
+    standing_stones    false     6       1.10          99/512
+
+The Wellspring is the sharp one and it is provable rather than statistical. `wellspring.tres` sets
+`min_spacing_m = 180` and `radius_max_fraction = 0.75`; `IslandHeightmap.ISLAND_RADIUS` is 118 m
+since 4.13 shrank the island. Two points inside a disc of radius 118 x 0.75 = 88.5 m can be at most
+177 m apart, so **no second Wellspring can ever be placed** — the mean of 1.01 is the ~1% of seeds
+where the relax ladder's rung 2 opens the radius band to the whole disc and buys the 3 m. The def
+asks for four objectives per island and the game has been shipping one.
+
+`enemy_nest` (110 m spacing, 5 wanted, 2.25 placed) and `loot_cache` (70 m, 8 wanted, 4.07) are the
+same cause without the hard geometric wall: spacing content authored against the pre-4.13 island and
+never rescaled when the island shrank. `standing_stones` is scenery and PoiDef's own note says a
+hostile seed dropping it is flavour, so its 99/512 is fine.
+
+Why nothing caught it: every check asserts `> 0`, never `== target_count`. `procedural_world_check`
+compares the `objective` marker count to the wellspring SITE count, so one site and one marker agree
+perfectly and the check is green — it verifies the composer, not the layout. `poi_check` asserts
+every seed gets a Wellspring, which is exactly the assertion that passes at one.
+
+This is a balance call, not a bug fix, and it is why F-301 did not take it: the numbers to change are
+authored content and the right target counts are a design question (four Wellsprings on a 118 m
+island may simply be the wrong ask now — the alternative fix is lowering `target_count`, not raising
+the radius). Whoever takes it should decide the intent first, then make `tools/poi_required_station_
+check.gd` assert achieved counts against it — that file already sweeps 132 seeds and has the census
+loop, so the assertion is a few lines, and D-183 is why the `required` flag is not the lever here.
+
+---
+
 ## Resolved
+
+### F-318 · A git merge writes conflict markers into .agent/state.json, which every running lane is reading — the live coordination file becomes unparseable mid-flight — **fixed**
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-20 by galef95fa6
+
+`.agent/state.json`, `.agent/BOARD.md` and `.agent/JOURNAL.md` are **live machine-local coordination
+files that are also tracked in git**. Every session and every dispatched lane reads and writes
+`state.json` continuously — it is where claims, in-flight tasks and the board live.
+
+A merge does not know that. On 2026-08-20, pushing from the director seat needed a merge of one
+divergent origin commit, and it conflicted on exactly those files:
+
+    CONFLICT (content): Merge conflict in .agent/BOARD.md
+    CONFLICT (content): Merge conflict in .agent/JOURNAL.md
+    CONFLICT (content): Merge conflict in .agent/state.json
+
+Git then wrote conflict markers **into the live files**: `state.json` carried 12 `<<<<<<<` markers
+and stopped being valid JSON, while LP was mid-task on F-301 and a peer session held a claim on 4.19.
+Any `agent claim` / `note` / `done` in that window hits an unparseable state file. The window lasts
+as long as the conflict is unresolved, which for a human resolving four files by hand is minutes.
+`git merge --abort` restored it — verified `state.json parses OK` immediately afterwards — but that
+is a recovery, not a defence, and nobody is watching for it.
+
+This is the same class as F-080 (`git stash` is repo-wide) and F-199 (one shared git index): an
+ordinary git operation whose blast radius is every other agent on the machine, not just the one
+running it.
+
+The conflict is also pointless. These three files are not authored, they are *generated* and
+*append-only*: the on-disk copy is the live superset by construction, because every session mutates
+the same file. There is nothing to reconcile — the working-tree side is always the answer.
+
+Fix: give them a merge attribute so git never conflicts on them.
+`.agent/state.json` and `.agent/BOARD.md` want `merge=ours` (keep the live copy; both are
+regenerated), `.agent/JOURNAL.md` wants the built-in `merge=union` (append-only, so keep both sides'
+entries). `merge=ours` needs its driver declared once per clone —
+`git config merge.ours.driver true` — which belongs in `.agent/bin/install-hooks` alongside the
+pre-commit hook, so a fresh clone gets it without anyone remembering.
+
+Do NOT extend this to `docs/FINDINGS.md`. Union there would interleave two agents' sections and could
+split a finding down the middle; that file wants a real resolution.
+
+Verify: with the attribute in place, replay a divergent history that touches all three files and
+assert the merge completes with no markers on disk and `state.json` still parsing.
+
+---
+
+**Resolved 2026-08-20 by galef95fa6.** `.gitattributes` now carries `merge=ours` for `.agent/state.json` and `.agent/BOARD.md` (generated —
+the live copy is the answer) and the built-in `merge=union` for `.agent/JOURNAL.md` (append-only, so
+both sides' entries survive). `merge=ours` is inert without its driver, and the driver is per-clone
+config rather than a tracked file, so `.agent/bin/install-hooks` now declares it —
+`git config merge.ours.driver true` — alongside the pre-commit hook, and prints that it did.
+`docs/FINDINGS.md` is deliberately left unspecified; union there could split a finding in half.
+
+Verified two ways. `git check-attr merge --` on the four files reports `ours`, `ours`, `union`,
+`unspecified`. And the real claim, reproduced in a throwaway repo: a base commit, a peer branch and a
+local branch each rewriting all three files, then `git merge peer` —
+
+    Auto-merging .agent/state.json
+    Merge made by the 'ort' strategy.
+    markers on disk: state.json:0  JOURNAL.md:0  BOARD.md:0
+    {"claims":{"live.gd":9},"rev":7}   ← the live side kept, parses OK
+    ### DONE a / ### DONE live / ### DONE peer   ← journal kept both
+
+The same shape against the real repo an hour earlier produced `CONFLICT (content)` on all three and
+12 `<<<<<<<` markers inside `state.json` while LP was mid-task on F-301, which is a live outage for
+every agent on the machine until someone notices. `git merge --abort` recovered it, and that recovery
+is what this replaces.
+
+### F-301 · Some procedural seeds publish NO station marker at all, so the island ships with crafting unreachable — **fixed**
+
+**Area:** worldgen · **Severity:** high · **Found:** 2026-08-20 by lp
+
+Found by F-284's sweep, and it is a live gameplay bug rather than a flaky check.
+
+`tools/world_contract_check.gd`'s procedural arm fails intermittently on a clean tree with
+`no REGISTERED station marker ... crafting is unreachable on this map`. Two of six consecutive
+runs failed. The cause is not the check: `ProceduralWorld` genuinely publishes zero markers of
+kind `station` on some seeds.
+
+Measured directly, building `ProceduralWorld` at three fixed seeds and listing every
+`authored_world_marker` whose `kind` meta is `station`:
+
+    REGISTERED_ASSETS ["station_workbench_primitive", "station_stone_furnace"]
+    SEED 3503374054 —  9 POI site(s),  9 marker(s)  station_markers=[]
+    SEED 3803646258 — 10 POI site(s),  9 marker(s)  station_markers=[]
+    SEED  987654321 — 10 POI site(s), 11 marker(s)  station_markers=["Station_station_workbench_primitive"]
+
+So a run on seed 3503374054 or 3803646258 starts a player on an island with no crafting station
+anywhere — the loop audit's own "a station marker exists proves nothing" lesson arriving from the
+other end: here not even the marker exists. Whatever POI rule emits the station is losing its site
+to placement rejection (clearance, shoreline, POI count) on those seeds, silently, and nothing
+demands the survivor.
+
+Why nothing caught it: `tools/procedural_world_check.gd` builds at the single fixed seed
+`987654321`, which happens to be a seed that gets one, and asserts the marker histogram against it.
+A per-seed fixture that only ever sees one seed is not a per-seed fixture.
+
+The fix has two halves and they are separable:
+  1. worldgen — guarantee at least one registered station survives placement on EVERY seed
+     (a mandatory-POI pass that re-places rather than drops, or a fallback stamped near the spawn).
+  2. testing — `procedural_world_check` should sweep a spread of seeds for the fixtures the loop
+     cannot run without, not one. Until half 1 lands, the both-map matrix stays a coin flip.
+
+Note for whoever takes this: F-284 left the spawn phase of `world_contract_check` passing on both
+maps at every seed observed; this failure is the station fixture only, so a FAIL naming
+`registered station` on the procedural arm today is this finding and not a regression of that one.
+
+---
+
+**Resolved 2026-08-20 by lp.** **Fixed 2026-08-20 by lp.** One content field: `content/poi/station_camp.tres` never set
+`required = true`, so `poi_map.gd._place_kind()` never ran D-152's relax ladder for it. The ladder
+already existed and was already rescuing the wellspring and the shipwreck on the very seeds that
+lost the station; the station was simply not asking for it. Nothing in `world/gen/` changed —
+D-183 records why a mandatory-POI pass or a spawn-adjacent fallback was the wrong fix given that
+the mechanism was already shipped, deterministic, and content-driven.
+
+**The measurement, before and after.** At the pure `PoiMap.sites_for_island()` layer over 132
+seeds: **17 placed zero `station_camp`** before the fix, including both seeds this finding named
+(3503374054 and 3803646258); **0 after**. A wider 512-seed census during the same session also
+reports 0, and confirms the ladder's rung 2 is what does the work.
+
+**Verified three ways, all headless, in this order — check first, doc second.**
+
+1. `.agent/bin/agent godot --script tools/poi_required_station_check.gd` → `seeds=132 failures=0`.
+   New file, and it is the per-seed fixture this finding asked for. It also asserts the surviving
+   marker resolves to a **registered** StationDef asset, because a `station` marker naming scenery
+   satisfies the kind and leaves crafting exactly as unreachable (`world_contract_check`'s own
+   lesson at its line 218). Its NEGATIVE arm re-runs the identical sweep against a `duplicate()` of
+   the def with `required` cleared — the pre-fix tree state, varied as a FIXTURE rather than by
+   editing shipped source or stashing (F-261/F-275) — and demands that pass lose the station on
+   both named seeds. A green sweep whose negative arm also passes would be decoration.
+2. `.agent/bin/agent godot --script tools/procedural_world_check.gd` → `failures=0`, now including
+   a fourth build pinned to `SEED_STATIONLESS = 3503374054` asserting a registered station marker
+   actually reaches `authored_world_marker`. Content guaranteeing a site is worth nothing unless
+   the composer still publishes it.
+3. `.agent/bin/agent godot --script tools/world_contract_check.gd` — this finding's own symptom,
+   which failed 2 in 6, run **nine** consecutive times: `WORLD_CONTRACT_CHECK PASS` every time,
+   with `WORLD_CONTRACT_SHIPPED ... registered_stations=1` on the procedural arm in every run.
+
+**The sweep for siblings, and what it found.** `world_contract_check` demands two more things of a
+shipped island that content does not mark `required` — a tierable chest (`loot_cache` → kind
+`loot`) and an ambient enemy spawn point (`enemy_nest`). Both survive every seed measured, so
+neither is broken today, but both are one content tweak from this exact failure; they are now
+asserted by the same seed sweep, and D-183 says why a seed sweep rather than flagging them
+`required`. The census also turned up a real, separate bug it did not fix: every multi-site def
+under-places, and the Wellspring's `min_spacing_m = 180` exceeds the 177 m maximum separation its
+own `radius_max_fraction` permits on the 118 m island, so a second Wellspring is geometrically
+impossible and the island has been shipping one where content asks for four. Filed as **F-319**;
+it is a balance call, not this bug.
+
+Spec written this session (there was none): `docs/SPECS.md` → `## F-301`.
 
 ### F-315 · A drain chain silently stops draining the moment it re-executes for a harness change — **fixed**
 

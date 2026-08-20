@@ -17,6 +17,9 @@ const IslandHeightmapScript := preload("res://world/gen/island_heightmap.gd")
 
 const SEED_A: int = 20260819
 const SEED_B: int = 987654321
+## F-301: a seed that MEASURED as shipping an island with no station marker at all before the
+## station def was made `required`. Pinned by value so a regression fails at the seed that filed it.
+const SEED_STATIONLESS: int = 3503374054
 
 var failures: int = 0
 
@@ -68,6 +71,12 @@ func _run() -> void:
 		"the extraction wreck published its `shipwreck` marker")
 	check(int(kinds.get("spawn", 0)) == 1, "exactly one spawn marker")
 	check(not kinds.has(""), "no marker was published with an empty kind")
+	# F-301. Counting `station` markers is not enough and the reason is world_contract_check's own:
+	# a marker whose name does not resolve to a StationDef is scenery, and an island whose only
+	# station is scenery has crafting exactly as unreachable as one with no marker at all.
+	check(_registered_stations_under(world_a, registry) >= 1,
+		"a REGISTERED station marker reached the tree — the composer's dumb marker loop turns a "
+		+ "surviving station_camp site into `Station_<asset>` in `authored_world_marker`")
 
 	# Scenery stays scenery: standing_stones has no marker_kind, so sites may exist with no marker.
 	var stones: int = 0
@@ -127,9 +136,39 @@ func _run() -> void:
 	check(world_b.get(&"spawn_position") != spawn,
 		"a different seed lands a different island (spawn moved)")
 
+	# ── F-301's regression pin ────────────────────────────────────────────────────────────────────
+	# One seed, measured, that used to compose an island with zero station markers. The WIDE sweep
+	# that proves the class is fixed lives in `tools/poi_required_station_check.gd` and runs at the
+	# pure PoiMap layer, which is why it can afford 132 seeds; this is the composed-world end of it,
+	# and it is here because a fix in content is only worth anything if the composer still publishes
+	# what content now guarantees.
+	var world_c: Node3D = await _build_world(game_state, SEED_STATIONLESS)
+	check(_registered_stations_under(world_c, registry) >= 1,
+		"seed %d — F-301's measured stationless island — now publishes a REGISTERED station marker"
+		% SEED_STATIONLESS)
+
 	print("\nPROCEDURAL_WORLD_CHECK sites=%d markers=%s failures=%d" % [
 		sites.size(), kinds, failures])
 	finish()
+
+
+## Station markers under `world` whose node name resolves to a real StationDef asset — the exact
+## `Station_<asset>` resolution CraftingService performs, and the same one `world_contract_check`
+## spells out at its line 218. Scoped to one world because this harness keeps several built at once.
+func _registered_stations_under(world: Node3D, registry: Node) -> int:
+	var registered: Array[StringName] = []
+	var stations: Dictionary = registry.get(&"stations") as Dictionary
+	for id: Variant in stations:
+		registered.append(StringName(String((stations[id] as Resource).get(&"world_scene"))))
+	var found: int = 0
+	for node: Node in get_nodes_in_group(&"authored_world_marker"):
+		if not world.is_ancestor_of(node):
+			continue
+		if String(node.get_meta(&"kind", "")) != "station":
+			continue
+		if registered.has(StringName(String(node.name).trim_prefix("Station_"))):
+			found += 1
+	return found
 
 
 ## Field-for-field site equality (F-288). Read explicitly rather than comparing the Dictionaries

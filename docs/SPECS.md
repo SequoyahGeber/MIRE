@@ -11189,3 +11189,79 @@ Negative-test the detector against the **pre-fix** file rather than trusting a g
 `decision_ref_check` and call `report(repo=...)` against a scratch tree holding
 `git show <pre-fix-sha>:docs/DECISIONS.md`. It must name all three pairs with their real line
 numbers. A detector proven only in the direction where it stays quiet is not proven.
+
+---
+
+## F-301 · Some procedural seeds publish no station marker at all, so the island ships with crafting unreachable
+
+**Claim:** `content/poi/station_camp.tres`, `tools/poi_required_station_check.gd` (new),
+`tools/procedural_world_check.gd`, plus the three close-out docs. **Authority:** none — §2.2 gains no
+row. POI placement is a pure function of `(world_seed, poi_defs, biome_defs)` evaluated identically
+on every peer (`world/gen/poi_map.gd`'s header, ARCHITECTURE.md §4), which is exactly why a seed that
+loses its station loses it on *every* peer at once and nothing over the wire could have repaired it.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The bug, and it is one content field.** `tools/world_contract_check.gd`'s procedural arm failed
+`no REGISTERED station marker ... crafting is unreachable on this map` on two of six consecutive
+runs. Measured at the pure layer over 132 seeds: **17 of them placed zero `station_camp` sites**,
+including both seeds the finding named (3503374054, 3803646258). D-152's relax ladder already exists
+in `poi_map.gd` for precisely this — a def that places nothing gets its terrain-fit constraints
+relaxed in documented rungs rather than being dropped — and it already saves the wellspring and the
+shipwreck on these same seeds. It never ran for the station because `_place_kind()` gates the ladder
+on `definition.required`, and `content/poi/station_camp.tres` never set it. Its authored constraints
+are the tightest of any def on the island (`max_slope_m = 1.5` over a 3 m probe, radius band
+0.15–0.70, height 3–40 m) against a single `target_count`, so it is the def most likely to find no
+ground — and it was the only loop-critical one with no fallback.
+
+**The fix.** `required = true` on `content/poi/station_camp.tres`. Nothing in `world/gen/` changes:
+the mechanism the finding asked for ("a mandatory-POI pass that re-places rather than drops") is
+D-152's ladder, already shipped, already deterministic — the relaxed passes continue the *same* RNG
+stream, so every peer still computes the identical island. D-183 records why the fix is one content
+field rather than a new fallback path in the composer.
+
+**The testing half — and why it is a second file, not more of `procedural_world_check`.** The
+finding's diagnosis was right: a per-seed fixture asserted at one fixed seed is not a per-seed
+fixture. But composing a whole `ProceduralWorld` per seed costs a chunk streamer, a nav bake and a
+scatter field each time, so a wide sweep has to run one layer down.
+
+- `tools/poi_required_station_check.gd` (new) sweeps **132 seeds** through
+  `PoiMap.sites_for_island()` with the shipped content. It asserts every `required` def lands on
+  every seed; that at least one surviving site's marker name resolves to a **registered** StationDef
+  asset (a `station` marker naming scenery satisfies the kind and leaves crafting exactly as
+  unreachable — `world_contract_check`'s own lesson, line 218); and — the sweep for siblings — that
+  `loot_cache` and `enemy_nest` also land on every seed, because `world_contract_check` demands a
+  tierable chest and an ambient enemy spawn point from those two and *neither* is marked `required`.
+  Both survive every seed measured today; the assertion is the tripwire for the next content tweak
+  that narrows them, and D-183 says why they were not simply flagged `required` instead.
+- `tools/procedural_world_check.gd` gains the composed-world end: a `station` assertion at `SEED_A`,
+  and a fourth build pinned to `SEED_STATIONLESS = 3503374054` — F-301's measured stationless island
+  — asserting a registered station marker reaches `authored_world_marker`. Content guaranteeing a
+  site is worth nothing unless the composer still publishes it.
+
+**The check proves it can fail.** The sweep re-runs itself against a `duplicate()` of the station def
+with `required` cleared — the exact tree state when F-301 was filed — and demands that pass *lose*
+the station, on the two seeds the finding named by number. The fixture is varied, never the shipped
+source and never a `git stash` (F-261/F-275's constraint). A green sweep whose negative arm also
+passes is decoration.
+
+**Acceptance.**
+
+```bash
+.agent/bin/agent godot --script tools/poi_required_station_check.gd   # seeds=132 failures=0
+.agent/bin/agent godot --script tools/procedural_world_check.gd       # failures=0
+.agent/bin/agent godot --script tools/world_contract_check.gd         # WORLD_CONTRACT_CHECK PASS
+```
+
+The third one is the finding's own symptom and a single green run does not answer it — it failed 2
+in 6. Run it **nine** times; `WORLD_CONTRACT_SHIPPED ... registered_stations=1` must appear in every
+one.
+
+**What this task deliberately did not fix, and filed instead.** The 512-seed census that found the
+station also showed every *multi*-site def under-placing badly: the wellspring targets 4 and achieves
+a mean of **1.01**, because `min_spacing_m = 180` exceeds the largest separation its own
+`radius_max_fraction = 0.75` permits on the 118 m island (2 × 118 × 0.75 = 177 m), so a second one is
+geometrically impossible. `enemy_nest` achieves 2.25 of 5, `loot_cache` 4.07 of 8. That is spacing
+content authored for the pre-4.13 island and never rescaled — a balance call, not this bug — and it
+is **F-319**.

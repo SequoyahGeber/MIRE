@@ -5788,3 +5788,37 @@ only ever needed for a heading written by hand around the allocator.
 and every queued work order means, and the earlier is a one-line stub nothing references — then the
 mechanical rule costs more than it saves and the pair should be renumbered the other way, with the
 exception recorded here rather than left as a silent precedent.
+
+### D-183 · 2026-08-20 · A loop-critical POI is guaranteed by marking its content `required`, not by a fallback in the composer
+F-301 shipped islands with no crafting station on 17 of 132 seeds. Two fixes were open and the
+finding named both: add a mandatory-POI pass to `world/gen/`, or stamp a fallback station near the
+spawn when placement drops one. Neither was needed, and the reason is worth stating because the same
+choice arrives every time a new fixture becomes load-bearing.
+
+**The mechanism already exists and it is content-driven: `PoiDef.required` plus D-152's relax
+ladder.** `poi_map.gd._place_kind()` already re-runs its dart loop at two documented relax rungs
+when a `required` def places nothing, on the same continuing RNG stream so every peer still derives
+the identical island. It was already doing this for the wellspring and the shipwreck on the exact
+seeds that lost the station. The station was missing one boolean in `content/poi/station_camp.tres`.
+So the fix is one content field, and `world/gen/` is untouched.
+
+**A spawn-adjacent fallback would have been worse, not merely redundant.** It is a second placement
+path with its own determinism surface, and it puts the station somewhere no POI rule chose — the
+failure F-063 is about, arriving by a different route. A rung of an existing ladder is a placement
+the layout still owns.
+
+**The corollary, and it is the part to reuse: the loop's fixture list and the `required` flag are
+two different questions, so they get two different enforcement mechanisms.** `required` is a
+CONTENT declaration — "this def is worth relaxing terrain fit for". Whether the island ends up with
+a chest to open or somewhere for the night wave to spawn is a CONTRACT demand, made by
+`tools/world_contract_check.gd`, and `loot_cache`/`enemy_nest` satisfy it today with several sites
+each and no relax ladder at all. Flagging those `required` to be safe would be cargo cult: it
+changes nothing while they place (the ladder only fires at zero), and it quietly asserts a design
+intent — "one of these is worth a tilted, out-of-biome placement" — that nobody made. They are
+covered by a seed sweep in `tools/poi_required_station_check.gd` instead, which fails at the content
+change that first loses one and names the seed.
+
+**Would change my mind:** a fixture whose def genuinely cannot be satisfied by any relaxation the
+ladder permits — spacing is never relaxed by design, so a def whose target count exceeds what its
+own `min_spacing_m` allows on the island cannot be rescued by `required` at any rung. That case
+needs the spacing content fixed (F-319) or a real fallback, and this decision does not cover it.

@@ -1,57 +1,21 @@
 {
   "claims": {
-    ".agent/bin/install-hooks": {
-      "agent": "galef95fa6",
-      "at": "2026-08-20T20:39:20+00:00",
-      "task": "F-318",
-      "token": "CLAUDE_CODE_SESSION_ID:d9bd1b9f-bbd0-404d-a0e5-774d72edf018"
-    },
-    ".gitattributes": {
-      "agent": "galef95fa6",
-      "at": "2026-08-20T20:39:20+00:00",
-      "task": "F-318",
-      "token": "CLAUDE_CODE_SESSION_ID:d9bd1b9f-bbd0-404d-a0e5-774d72edf018"
-    },
-    "content/poi/station_camp.tres": {
-      "agent": "lp",
-      "at": "2026-08-20T20:34:21+00:00",
-      "task": "F-301",
-      "token": null
-    },
-    "core/dev/dev_launch.gd": {
+    "assets/audit/terrain/island_orbit.png": {
       "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:20:19+00:00",
-      "task": "4.19",
+      "at": "2026-08-20T20:42:01+00:00",
+      "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
-    "docs/DECISIONS.md": {
-      "agent": "lp",
-      "at": "2026-08-20T20:39:13+00:00",
-      "task": "F-301",
-      "token": null
-    },
-    "docs/DELEGATION.md": {
+    "assets/audit/terrain/island_shore_look.png": {
       "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:36:21+00:00",
-      "task": "4.19",
+      "at": "2026-08-20T20:42:01+00:00",
+      "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
-    "docs/FINDINGS.md": {
-      "agent": "lp",
-      "at": "2026-08-20T20:39:13+00:00",
-      "task": "F-301",
-      "token": null
-    },
-    "docs/SPECS.md": {
-      "agent": "lp",
-      "at": "2026-08-20T20:39:13+00:00",
-      "task": "F-301",
-      "token": null
-    },
-    "docs/WORLDGEN.md": {
+    "assets/audit/terrain/island_spawn_view.png": {
       "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:20:19+00:00",
-      "task": "4.19",
+      "at": "2026-08-20T20:42:01+00:00",
+      "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "levels/frontend.tscn": {
@@ -59,36 +23,6 @@
       "at": "2026-08-20T20:36:01+00:00",
       "task": "7.4",
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
-    },
-    "levels/procedural_island.tscn": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:20:19+00:00",
-      "task": "4.19",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
-    },
-    "tools/chest_placement_check.gd": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:20:19+00:00",
-      "task": "4.19",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
-    },
-    "tools/environment_vfx_hollowmere_check.gd": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:20:19+00:00",
-      "task": "4.19",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
-    },
-    "tools/ground_fog_check.gd": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:20:19+00:00",
-      "task": "4.19",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
-    },
-    "tools/harvest_batch_check.gd": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:20:19+00:00",
-      "task": "4.19",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "tools/menu_kit_check.gd": {
       "agent": "reed31c598",
@@ -102,23 +36,11 @@
       "task": "7.4",
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
-    "tools/poi_required_station_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T20:32:49+00:00",
-      "task": "F-301",
-      "token": null
-    },
-    "tools/procedural_look_probe.gd": {
+    "tools/terrain_check.gd": {
       "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:33:11+00:00",
-      "task": "4.19",
+      "at": "2026-08-20T20:42:01+00:00",
+      "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
-    },
-    "tools/procedural_world_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T20:34:58+00:00",
-      "task": "F-301",
-      "token": null
     },
     "tools/title_check.gd": {
       "agent": "reed31c598",
@@ -126,17 +48,11 @@
       "task": "7.4",
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
-    "tools/verify_setup.gd": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:30:39+00:00",
-      "task": "4.19",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
-    },
-    "tools/world_contract_check.gd": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:20:19+00:00",
-      "task": "4.19",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    "tools/title_render.gd": {
+      "agent": "reed31c598",
+      "at": "2026-08-20T20:42:14+00:00",
+      "task": "7.4",
+      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
     "ui/frontend/backdrop.gd": {
       "agent": "reed31c598",
@@ -168,46 +84,31 @@
       "task": "7.4",
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
-    "world/chunk/chunk_streamer.gd": {
+    "world/gen/island_heightmap.gd": {
       "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:30:39+00:00",
-      "task": "4.19",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
-    },
-    "world/environment/ground_fog.gd": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:31:34+00:00",
-      "task": "4.19",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
-    },
-    "world/gen/procedural_world.gd": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:23:09+00:00",
-      "task": "4.19",
+      "at": "2026-08-20T20:42:01+00:00",
+      "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     }
   },
   "in_flight": {
-    "4.19": {
+    "4.18": {
       "agent": "quill5fa5c7",
       "files": [
-        "levels/procedural_island.tscn",
-        "core/dev/dev_launch.gd",
-        "tools/world_contract_check.gd",
-        "tools/environment_vfx_hollowmere_check.gd",
-        "tools/chest_placement_check.gd",
-        "tools/ground_fog_check.gd",
-        "tools/harvest_batch_check.gd",
-        "docs/WORLDGEN.md",
-        "world/gen/procedural_world.gd",
-        "world/chunk/chunk_streamer.gd",
-        "tools/verify_setup.gd",
-        "world/environment/ground_fog.gd",
-        "tools/procedural_look_probe.gd",
-        "docs/DELEGATION.md"
+        "world/gen/island_heightmap.gd",
+        "tools/terrain_check.gd",
+        "assets/audit/terrain/island_orbit.png",
+        "assets/audit/terrain/island_spawn_view.png",
+        "assets/audit/terrain/island_shore_look.png"
       ],
-      "notes": [],
-      "started": "2026-08-20T20:20:19+00:00",
+      "notes": [
+        {
+          "at": "2026-08-20T20:42:01+00:00",
+          "by": "quill5fa5c7",
+          "text": "Sequoyah's island-feel verdict from the first shipped procedural renders: mostly flat, gentle rolling hills, NO mountains \u2014 Muck is the reference. Retuning island_heightmap amplitudes/ridges to match."
+        }
+      ],
+      "started": "2026-08-20T20:42:01+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "7.4": {
@@ -221,47 +122,12 @@
         "ui/frontend/title_screen.gd",
         "ui/frontend/frontend.gd",
         "levels/frontend.tscn",
-        "tools/title_check.gd"
+        "tools/title_check.gd",
+        "tools/title_render.gd"
       ],
       "notes": [],
       "started": "2026-08-20T20:27:08+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
-    },
-    "F-301": {
-      "agent": "lp",
-      "dispatched": true,
-      "files": [
-        "tools/poi_required_station_check.gd",
-        "content/poi/station_camp.tres",
-        "tools/procedural_world_check.gd",
-        "docs/SPECS.md",
-        "docs/FINDINGS.md",
-        "docs/DECISIONS.md"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-20T20:34:19+00:00",
-          "by": "lp",
-          "text": "Reproduced at the pure layer: 17 of 132 seeds place ZERO station_camp, including both seeds F-301 named (3503374054, 3803646258). Root cause is one content field, not the placement code \u2014 content/poi/station_camp.tres never set required=true, so D-152's relax ladder in poi_map.gd (which already exists and already saves the wellspring and the shipwreck on exactly these seeds) never ran for the station. wellspring and shipwreck are required and lose 0 of 132."
-        },
-        {
-          "at": "2026-08-20T20:39:20+00:00",
-          "by": "lp",
-          "text": "TRAP, for whoever hits it next: at 20:38 UTC the repo was mid-merge with conflict markers left inside .agent/state.json, so EVERY agent command died on a JSONDecodeError \u2014 'agent claim' and 'agent note' both. Nothing lane-side was wrong; a concurrent orchestrator process (agent saturate --watch) was merging origin/main into a local coordination commit and had not finished. It resolved itself within ~30s and my claims and working-tree edits all survived. Do NOT hand-resolve that merge: re-run the agent command a minute later instead."
-        }
-      ],
-      "started": "2026-08-20T20:31:10+00:00",
-      "token": null
-    },
-    "F-318": {
-      "agent": "galef95fa6",
-      "files": [
-        ".gitattributes",
-        ".agent/bin/install-hooks"
-      ],
-      "notes": [],
-      "started": "2026-08-20T20:39:20+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:d9bd1b9f-bbd0-404d-a0e5-774d72edf018"
     }
   },
   "recent": {
@@ -272,12 +138,26 @@
       "task": "F-315",
       "token": "CLAUDE_CODE_SESSION_ID:d9bd1b9f-bbd0-404d-a0e5-774d72edf018"
     },
+    ".agent/bin/install-hooks": {
+      "agent": "galef95fa6",
+      "at": "2026-08-20T20:42:12+00:00",
+      "hash": "9f53bc3b6bdabb8bef5082677560b1f58d6b41818d9d15822f6b9b5f84e8e2b0",
+      "task": "F-318",
+      "token": "CLAUDE_CODE_SESSION_ID:d9bd1b9f-bbd0-404d-a0e5-774d72edf018"
+    },
     ".agent/bin/lane": {
       "agent": "lp",
       "at": "2026-08-20T20:30:45+00:00",
       "hash": "fe17501ede033540fe622dec499fef639dcd2c5ecb881181a7aa5c0b2c6d8fc3",
       "task": "F-283",
       "token": null
+    },
+    ".gitattributes": {
+      "agent": "galef95fa6",
+      "at": "2026-08-20T20:42:12+00:00",
+      "hash": "69d3f27d7f0a1f7c02c6773326a1bd95b2ddb0847207fa3806efd9cafa202afe",
+      "task": "F-318",
+      "token": "CLAUDE_CODE_SESSION_ID:d9bd1b9f-bbd0-404d-a0e5-774d72edf018"
     },
     "AGENTS.md": {
       "agent": "lp",
@@ -292,6 +172,27 @@
       "hash": "f9c5b0cdf5fb5ccbf127e1e86c6851b4483221f142f1f346cbd57f8b871da4f0",
       "task": "F-274",
       "token": null
+    },
+    "assets/audit/terrain/island_orbit.png": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:41:46+00:00",
+      "hash": "830743a9ea8ece33b965510d2f9f3ddc6c30baa6eba5f812e1f7e8ceb7d6949e",
+      "task": "4.19",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
+    "assets/audit/terrain/island_shore_look.png": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:41:46+00:00",
+      "hash": "706a976d913abc41450cf6688abc9b05bcc86df894209d9b0d0f7a38ae1c6cb4",
+      "task": "4.19",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
+    "assets/audit/terrain/island_spawn_view.png": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:41:46+00:00",
+      "hash": "91cb587336758cebd274a75c15381f34b508e081f7e46b6bfe6f7807e43d828c",
+      "task": "4.19",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "assets/terrain_accents/README.md": {
       "agent": "lm",
@@ -469,11 +370,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
     "content/poi/station_camp.tres": {
-      "agent": "hollow7",
-      "at": "2026-08-19T22:12:05+00:00",
-      "hash": "aaa59c9d2bbcb7d425a82e9dab8aa2b7e4b2050be3999eae458c1e68464a5b51",
-      "task": "4.16",
-      "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
+      "agent": "lp",
+      "at": "2026-08-20T20:42:48+00:00",
+      "hash": "d8422bdae19b75e294b5fbbc073a92cdfdd0bb41cd2c39aabf159d51194f5161",
+      "task": "F-301",
+      "token": null
     },
     "content/poi/wellspring.tres": {
       "agent": "hollow7",
@@ -488,6 +389,13 @@
       "hash": null,
       "task": "F-236",
       "token": null
+    },
+    "core/dev/dev_launch.gd": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:41:46+00:00",
+      "hash": "f80f3d5261880872ee319ebf1d64519077702559dac5b9dab321e23a48fc34b0",
+      "task": "4.19",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "core/events/event_bus.gd": {
       "agent": "lp",
@@ -533,23 +441,23 @@
     },
     "docs/DECISIONS.md": {
       "agent": "lp",
-      "at": "2026-08-20T20:30:45+00:00",
-      "hash": "97aa8ae168c144b6d3788d0a5dbe8235e88f20e297cf12765628c6ccf27067d0",
-      "task": "F-283",
+      "at": "2026-08-20T20:42:48+00:00",
+      "hash": "00b4334dbbabacd5d06661665f449b46ce3a053858cf76b1c7784a84b3785d9a",
+      "task": "F-301",
       "token": null
     },
     "docs/DELEGATION.md": {
-      "agent": "lp",
-      "at": "2026-08-20T20:30:45+00:00",
-      "hash": "f77e4b4a8fd3d51c29e7e20c1ecb31bb12ae5f8d2cc072ed2c496228d905ccf2",
-      "task": "F-283",
-      "token": null
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:41:46+00:00",
+      "hash": "8ef1fe6cf3e5b50a642df5ac73ea83a661230019e7075cd1b324d24b9c4625de",
+      "task": "4.19",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "docs/FINDINGS.md": {
       "agent": "lp",
-      "at": "2026-08-20T20:30:45+00:00",
-      "hash": "2160d7cea60ee38aaf7af98761e1a0dfdbefb160ea1172d7782aa84fd7a3f548",
-      "task": "F-283",
+      "at": "2026-08-20T20:42:48+00:00",
+      "hash": "0fd7d6d7a237e0a70da371149bad978748a6a36a23047937852ccc71cd90d640",
+      "task": "F-301",
       "token": null
     },
     "docs/MENU.md": {
@@ -575,10 +483,31 @@
     },
     "docs/SPECS.md": {
       "agent": "lp",
-      "at": "2026-08-20T20:30:45+00:00",
-      "hash": "46f6ba573b1966a58b360c1d788a6bf465de942d81d79b3149c19fd51c497ec6",
-      "task": "F-283",
+      "at": "2026-08-20T20:42:48+00:00",
+      "hash": "3bdc5dba4b8f9e6fc0db075b26d8f27ec1d4688cc90b6ee1b72e9c9b9017aa6a",
+      "task": "F-301",
       "token": null
+    },
+    "docs/WORLDGEN.md": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:41:46+00:00",
+      "hash": "98043b4720ad01b8901a0a89e287f6fd2108ff7d1c871d219ee819c708d8c4c7",
+      "task": "4.19",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
+    "levels/procedural_island.tscn": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:41:46+00:00",
+      "hash": "15aa6043ad758b07bbd85358d88a3b96883ab245a426017263e947578067ac34",
+      "task": "4.19",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
+    "project.godot": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:41:46+00:00",
+      "hash": "079272554c6110769a2cf5a3d1878c58aab402b38f730ee2ac4f601397ae25cc",
+      "task": "4.19",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "steam_appid.txt": {
       "agent": "lm3",
@@ -755,6 +684,13 @@
       "task": "F-274",
       "token": null
     },
+    "tools/chest_placement_check.gd": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:41:46+00:00",
+      "hash": "47685641dda62c5df4c676869acb0fbbd9b8d436f24851fd4e20bd5eb431f9cf",
+      "task": "4.19",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
     "tools/chunk_seam_shot.gd": {
       "agent": "lm",
       "at": "2026-08-20T06:20:25+00:00",
@@ -846,6 +782,13 @@
       "task": "F-290",
       "token": null
     },
+    "tools/environment_vfx_hollowmere_check.gd": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:41:46+00:00",
+      "hash": "eaca6561f965b45d9acdc60b9323c7f943170fb971e993e3179c5d95ce98225c",
+      "task": "4.19",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
     "tools/environment_vfx_reseed_check.gd": {
       "agent": "lp",
       "at": "2026-08-20T10:57:18+00:00",
@@ -860,12 +803,26 @@
       "task": "F-269",
       "token": null
     },
+    "tools/ground_fog_check.gd": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:41:46+00:00",
+      "hash": "265da7b56ba067df5d7f382d9a9bffdf33e585b831a95a2b766fe10c5fd1a91c",
+      "task": "4.19",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
     "tools/harness_check.py": {
       "agent": "galef95fa6",
       "at": "2026-08-20T20:34:56+00:00",
       "hash": "570e048c1a412aaf6c9eb7a287600c04ea931a9725e9bcfda8e20b9ae070ef59",
       "task": "F-315",
       "token": "CLAUDE_CODE_SESSION_ID:d9bd1b9f-bbd0-404d-a0e5-774d72edf018"
+    },
+    "tools/harvest_batch_check.gd": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:41:46+00:00",
+      "hash": "2ca132855a7226986ddc6b31dec99a92558f51d3d8608ca00506ab408dce5699",
+      "task": "4.19",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "tools/harvest_restart_check.gd": {
       "agent": "lp",
@@ -923,6 +880,20 @@
       "task": "F-274",
       "token": null
     },
+    "tools/poi_required_station_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T20:42:48+00:00",
+      "hash": "36b68e3cb5dbc664e824e5c895e4862265d4839ca6fcd17ba9ce086a8be8d482",
+      "task": "F-301",
+      "token": null
+    },
+    "tools/poi_required_station_check.gd.uid": {
+      "agent": "lp",
+      "at": "2026-08-20T20:42:48+00:00",
+      "hash": "287e8cb62d0b23c8c5cab5b2cf6dfd1bc7c8261ce4ac03a63f9fbb28de8e19fd",
+      "task": "F-301",
+      "token": null
+    },
     "tools/powerup_review_check.gd": {
       "agent": "lp",
       "at": "2026-08-20T11:15:17+00:00",
@@ -930,11 +901,18 @@
       "task": "F-290",
       "token": null
     },
+    "tools/procedural_look_probe.gd": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:41:46+00:00",
+      "hash": "4b1c794b5ef7df29bb38dfe8deac116e3f7cd669f5936115603e7db3a5c21e40",
+      "task": "4.19",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
     "tools/procedural_world_check.gd": {
       "agent": "lp",
-      "at": "2026-08-20T11:03:39+00:00",
-      "hash": "70daefaa4d24ba30a9d5f207037a3193ec811815fe82dcf33382789cb12d6fb4",
-      "task": "F-288",
+      "at": "2026-08-20T20:42:48+00:00",
+      "hash": "e2d76ab75d7d93b1fe50d4921eace59bf36a3cf10e441fd89e4602369e96da11",
+      "task": "F-301",
       "token": null
     },
     "tools/resource_scatter_check.gd": {
@@ -1105,6 +1083,13 @@
       "task": "F-236",
       "token": null
     },
+    "tools/verify_setup.gd": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:41:46+00:00",
+      "hash": "51ce86b3a6eef3effdeafc979d87a1c5a2f7851b4674b6f8545e1b7398ba447b",
+      "task": "4.19",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
     "tools/wave_spawner_cycle_net_check.gd": {
       "agent": "lp",
       "at": "2026-08-20T11:15:17+00:00",
@@ -1113,11 +1098,11 @@
       "token": null
     },
     "tools/world_contract_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T10:34:51+00:00",
-      "hash": "d3a061972adbb4853af6cd9f9c0f9a9285a8a0072dbd77045f81ab8d431d8a1f",
-      "task": "F-284",
-      "token": null
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:41:46+00:00",
+      "hash": "233c6cc090c140a67b36ff093d26005914938e26cba25a03d521433e4006c044",
+      "task": "4.19",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "tools/worldgen_noise_reuse_check.gd": {
       "agent": "lm",
@@ -1162,11 +1147,11 @@
       "token": null
     },
     "world/chunk/chunk_streamer.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T06:20:25+00:00",
-      "hash": "e7e4af0bcc83687cd1a5cbb50028ef6443264f3ad2fe4ce46297d3c9400fc35a",
-      "task": "F-274",
-      "token": null
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:41:46+00:00",
+      "hash": "5c6ffc20ba7ae849291d7e2b96b361a2cd2d95a16c051e8204b54451e2616d77",
+      "task": "4.19",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "world/chunk/nav_baker.gd": {
       "agent": "lp",
@@ -1174,6 +1159,13 @@
       "hash": "d44a755ea7e625a37c33a1a9088a98171c21488374686452532117414c022233",
       "task": "F-274-review",
       "token": null
+    },
+    "world/environment/ground_fog.gd": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:41:46+00:00",
+      "hash": "64a695e032083c0f47e1f02ed4ff58b2f5372c2818df4385cdf4d515409afc0c",
+      "task": "4.19",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "world/gen/authored_world.gd": {
       "agent": "lp",
@@ -1218,11 +1210,11 @@
       "token": null
     },
     "world/gen/procedural_world.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T16:07:35+00:00",
-      "hash": "5d77f34f82638cd0036f9295202d3fa9036859c592d3e2cb682e4c6f04092653",
-      "task": "F-286",
-      "token": null
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:41:46+00:00",
+      "hash": "deee59f2c360eeae3c72937a77c3b2506ed4785b908e1e4ad31debc5bd2d1bc1",
+      "task": "4.19",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "world/gen/resource_scatter.gd": {
       "agent": "lm",
@@ -1253,7 +1245,7 @@
       "token": null
     }
   },
-  "rev": 79,
+  "rev": 87,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -2083,14 +2075,16 @@
     "4.18": {
       "est": "1",
       "milestone": "M4",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T0",
       "title": "Three-seed island-feel walk vs Hollowmere (tuning input, not a gate \u2014 D-125)"
     },
     "4.19": {
+      "done_at": "2026-08-20T20:41:46+00:00",
+      "done_by": "quill5fa5c7",
       "est": "1",
       "milestone": "M4",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T1",
       "title": "Default cutover to procedural; Hollowmere becomes fixture/reference"
     },
@@ -5433,9 +5427,11 @@
       "title": "autoexec's documented loadout half survives exactly one run \u2014 it is boot-only and F-243 wipes the inventory"
     },
     "F-301": {
+      "done_at": "2026-08-20T20:42:48+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Some procedural seeds publish NO station marker at all, so the island ships with crafting unreachable"
     },
@@ -5551,9 +5547,11 @@
       "title": "A full headless boot of the shipped procedural map prints ~10 dummy-renderer RID ERROR lines from chunk mesh upload \u2014 windowed boots are clean, but the '0 stray ERROR lines' full-boot bar needs a headless caveat"
     },
     "F-318": {
+      "done_at": "2026-08-20T20:42:12+00:00",
+      "done_by": "galef95fa6",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "A git merge writes conflict markers into .agent/state.json, which every running lane is reading \u2014 the live coordination file becomes unparseable mid-flight"
     }

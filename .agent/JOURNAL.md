@@ -7290,3 +7290,43 @@ re-exec carries --drain; drain mode survives a harness change mid-chain. 37/37 h
 Files: `.agent/bin/agent`, `tools/harness_check.py`
 
 Commit at time of writing: `7cfc32a`
+
+---
+
+### DONE · 4.19 · quill5fa5c7 · 2026-08-20T20:41:46+00:00
+
+**Default cutover to procedural; Hollowmere becomes fixture/reference**
+
+Shipped map is procedural: levels/procedural_island.tscn (composer root + Hollowmere env shell) is run/main_scene; Hollowmere pinned as authored fixture in world_contract/chest_placement/harvest_batch/environment_vfx checks; ground fog datum clamped above water; windowed boot 0 ERROR; headless RID noise filed F-317. Evidence PNGs in assets/audit/terrain.
+
+Files: `levels/procedural_island.tscn`, `core/dev/dev_launch.gd`, `tools/world_contract_check.gd`, `tools/environment_vfx_hollowmere_check.gd`, `tools/chest_placement_check.gd`, `tools/ground_fog_check.gd`, `tools/harvest_batch_check.gd`, `docs/WORLDGEN.md`, `world/gen/procedural_world.gd`, `world/chunk/chunk_streamer.gd`, `tools/verify_setup.gd`, `world/environment/ground_fog.gd`, `tools/procedural_look_probe.gd`, `docs/DELEGATION.md`, `project.godot`, `assets/audit/terrain/island_orbit.png`, `assets/audit/terrain/island_shore_look.png`, `assets/audit/terrain/island_spawn_view.png`
+
+Commit at time of writing: `7e5423e`
+
+---
+
+### DONE · F-318 · galef95fa6 · 2026-08-20T20:42:12+00:00
+
+**A git merge writes conflict markers into .agent/state.json, which every running lane is reading — the live coordination file becomes unparseable mid-flight**
+
+merge=ours on state.json/BOARD.md, merge=union on JOURNAL.md; driver declared by install-hooks. Proven in a throwaway repo: 0 markers, live copy kept.
+
+Files: `.gitattributes`, `.agent/bin/install-hooks`
+
+Commit at time of writing: `69572fe`
+
+---
+
+### DONE · F-301 · lp · 2026-08-20T20:42:48+00:00
+
+**Some procedural seeds publish NO station marker at all, so the island ships with crafting unreachable**
+
+Root cause was one content field, not the placement code: content/poi/station_camp.tres never set required=true, so poi_map.gd never ran D-152's relax ladder for the station — the same ladder that was already rescuing the wellspring and the shipwreck on the exact seeds that lost it. Measured at the pure PoiMap layer over 132 seeds: 17 placed ZERO station_camp before (including both seeds the finding named, 3503374054 and 3803646258), 0 after; a 512-seed census agrees. Nothing in world/gen/ changed — D-183 records why a mandatory-POI pass or a spawn-adjacent fallback was the wrong fix when the mechanism was already shipped and deterministic. New tools/poi_required_station_check.gd is the per-seed fixture the finding asked for: it sweeps 132 seeds, demands the surviving marker resolve to a REGISTERED StationDef asset (a station marker naming scenery leaves crafting just as unreachable), and its NEGATIVE arm re-runs the identical sweep against a duplicate() of the def with required cleared, demanding it lose the station on both named seeds — the fixture is varied, never the shipped source (F-261/F-275). procedural_world_check gained a fourth build pinned to SEED_STATIONLESS=3503374054 asserting a registered station marker actually reaches authored_world_marker. Sibling sweep: world_contract_check demands two more fixtures content does not mark required (loot_cache -> tierable chest, enemy_nest -> ambient spawn point); both survive every seed measured and are now asserted by the same sweep as a tripwire, D-183 says why a sweep rather than the required flag. The census also proved a separate live bug it did not fix — wellspring min_spacing_m=180 exceeds the 177 m max separation its own radius_max_fraction permits on the 118 m island, so a second Wellspring is geometrically impossible and the island ships 1 where content asks for 4; enemy_nest 2.25 of 5, loot_cache 4.07 of 8. Filed as F-319 (balance call). Spec written this session, there was none: docs/SPECS.md '## F-301'. Proof: agent godot --script tools/poi_required_station_check.gd -> seeds=132 failures=0, 0 stray ERROR lines; agent godot --script tools/procedural_world_check.gd -> failures=0, 0 stray ERROR lines; agent godot --script tools/world_contract_check.gd run NINE consecutive times (it previously failed 2 in 6) -> WORLD_CONTRACT_CHECK PASS every run with WORLD_CONTRACT_SHIPPED registered_stations=1. Not touched: docs/DELEGATION.md was exact-claimed by quill5fa5c7 for 4.19 the whole session, so the new check's contract is recorded in SPECS and the F-301 resolution instead of colliding with their diff.
+
+Notes along the way:
+- Reproduced at the pure layer: 17 of 132 seeds place ZERO station_camp, including both seeds F-301 named (3503374054, 3803646258). Root cause is one content field, not the placement code — content/poi/station_camp.tres never set required=true, so D-152's relax ladder in poi_map.gd (which already exists and already saves the wellspring and the shipwreck on exactly these seeds) never ran for the station. wellspring and shipwreck are required and lose 0 of 132.
+- TRAP, for whoever hits it next: at 20:38 UTC the repo was mid-merge with conflict markers left inside .agent/state.json, so EVERY agent command died on a JSONDecodeError — 'agent claim' and 'agent note' both. Nothing lane-side was wrong; a concurrent orchestrator process (agent saturate --watch) was merging origin/main into a local coordination commit and had not finished. It resolved itself within ~30s and my claims and working-tree edits all survived. Do NOT hand-resolve that merge: re-run the agent command a minute later instead.
+
+Files: `tools/poi_required_station_check.gd`, `content/poi/station_camp.tres`, `tools/procedural_world_check.gd`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `tools/poi_required_station_check.gd.uid`
+
+Commit at time of writing: `69572fe`

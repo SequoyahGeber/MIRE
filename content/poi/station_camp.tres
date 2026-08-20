@@ -9,6 +9,7 @@ display_name = "Abandoned Camp"
 scene_path = "res://assets/crafting_stations/exports/station_workbench_primitive.glb"
 marker_kind = &"station"
 marker_name = "Station_station_workbench_primitive"
+required = true
 placement_priority = 10
 target_count = 1
 clearance_m = 16.0
