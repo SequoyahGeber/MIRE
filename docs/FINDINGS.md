@@ -554,54 +554,6 @@ cheapest thing that would make it visible.
 
 ---
 
-### F-268 · F-243's restart never clears placed buildables — BuildService has no run_restarted subscription at all, and its own check has been failing at HEAD since the feature shipped
-
-**Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lp
-
-Found by lp during F-254's regression sweep. `tools/run_restart_check.gd` fails at a clean HEAD with
-`FAIL: every placed buildable was cleared` — confirmed pre-existing and unrelated to F-254 via
-`.agent/bin/agent baseline --script tools/run_restart_check.gd` (identical single failure, same
-assertion, on an untouched worktree).
-
-**Raised by D-161 (added 2026-08-20 by lp, F-258).** This was "the previous run's walls are still
-standing" while a restart kept the same island. It no longer does: a restart now draws a fresh world
-seed, so on the procedural path those surviving pieces sit at coordinates chosen against terrain that
-no longer exists — floating over the new island's water, or buried inside its hills, with `NavBaker`
-regions baked around them. Same one-line fix (`BuildService` subscribing `run_restarted` and clearing
-`_placed`), larger consequence.
-
-This is not a flaky check. `autoload/build_service.gd` contains no `run_restarted` subscription of
-any kind — `grep -n 'run_restart\|EVENT_BUS.subscribe' autoload/build_service.gd` returns nothing,
-and its last commit is F-244 (039c5da), not F-243's ship (6d7e756). So `_placed` survives a restart
-with every piece from the previous run still in it, and every piece node is still in the scene.
-
-What makes this worth its own finding rather than a footnote is that three separate places already
-assert the opposite, so nothing about the codebase reads as "buildables intentionally persist":
-
-- `systems/cycle/cycle_service.gd`'s F-243 header lists the `run_restarted` subscribers by name and
-  includes `BuildService` among them.
-- `tools/run_restart_check.gd:180` asserts `placed_count() == 0` after a restart.
-- `docs/FINDINGS.md`'s own F-243 entry and `docs/DELEGATION.md` both describe the restart as
-  resetting build state.
-
-So the docs, the check and the header all shipped; only the wiring did not. F-259 already records a
-sibling omission in the same fix (`WaveSpawner`'s unlocked roster is not reset either), which
-suggests the F-243 subscriber list was written from intent rather than from the code.
-
-**What would close this:** `BuildService` subscribes `run_restarted` in `_ready()` (unsubscribing in
-`_exit_tree()`, the convention every other subscriber in that list follows), and on the host clears
-`_placed` and frees the placed piece nodes through the same path `net_request_destroy` already uses,
-so the despawn replicates to every peer rather than only emptying the host's dictionary.
-`tools/run_restart_check.gd:180` is the existing assertion and needs no change — it is already
-correct and already failing.
-
-**Trap for whoever takes it:** the pieces are `MultiplayerSpawner` children (see
-`core/net/net_session.gd`'s note that a spawner replays every existing spawn to a newly connected
-peer). Clearing `_placed` without actually freeing the nodes would leave a joiner receiving the
-previous run's buildables from the spawner's own replay while the host believes none exist.
-
----
-
 ### F-272 · The seed re-broadcast has no two-process proof — `run_reseed_check` calls the client's own receive path by hand
 
 **Area:** netcode · **Severity:** low · **Found:** 2026-08-20 by lp
@@ -787,6 +739,13 @@ run's heavy objects are still lying where they were dropped. `EnemyWorld._on_run
 one-liner over an existing self-guarded despawn is the shape to copy. Fix this together with F-268 —
 same reasoning, same test phase, one commit.
 
+> **DONE 2026-08-20 by lp — this third only.** Fixed in F-268's commit, exactly as this entry asks:
+> `HaulService` now subscribes `run_restarted` and clears its container through a host-guarded
+> `host_clear_all()`, the same method name `BuildService` grew in the same commit, and
+> `tools/run_restart_check.gd` seeds a haulable and asserts it is gone after the restart. Found
+> independently by F-268's own sweep before this entry was read, which is some evidence the shape is
+> greppable rather than lucky. **Items 1 and 3 above are untouched and this finding stays open.**
+
 **3 · `systems/environment/day_night.gd` — `time_of_day` survives.** A restarted run resumes at the
 clock of the moment the last one ended. Because a run usually ends at night, the new run typically
 starts mid-night: the wave for that night never spawns (its `night_started` crossing fired during the
@@ -878,7 +837,143 @@ against the authored ground/layout, while keeping the procedural assertion on
 
 ---
 
+### F-285 · `tools/nav_bake_check.gd` has 4 pre-existing failures at a clean HEAD — chunk-streamed terrain reports NaN heights to the check's seam search
+
+**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-20 by lp
+
+Found by lp during F-268's regression sweep — `BuildService`/`HaulService` are `NavBaker`'s
+`piece_placed`/`piece_destroyed` producers, so this check was run to prove F-268's new
+`host_clear_all()` did not regress it. It did not: the failures are **pre-existing and identical**.
+
+`.agent/bin/agent baseline --script tools/nav_bake_check.gd` at `a28f346`, in a throwaway worktree,
+produces the byte-identical four FAIL lines the working tree does — confirmed by diffing the sorted
+`FAIL:` lines of both runs, not by comparing the failure count:
+
+```
+FAIL: the map became queryable within 10s
+FAIL: found a chunk boundary with walkable land on both sides: x=nan z=0, chunks []
+FAIL: placing a piece dead centre on that spot pushes the closest walkable point measurably farther away (nanm, baseline nanm)
+FAIL: and the map became queryable within 10s
+```
+
+The whole check does not fail. `NAV_BAKE_CHECK` reports `failures=4` out of a much longer PASS list,
+and every failure is in the **chunk-streaming** half: the buildable half — "re-baking after a REAL
+host placement forces the same path to detour around it (7.525m, was 6.000m straight, 5 waypoints)"
+and "destroying it un-carves the path back to a straight line" — passes. So `NavBaker`'s reaction to
+`BuildService` is proven; what is unproven is the streamed-chunk navmesh underneath it.
+
+**The shape.** `x=nan` in the seam search is the root: the check walks chunk boundaries looking for
+one with walkable land on both sides, and the coordinate it computes is NaN, so `chunks []` comes
+back empty and the two measurements downstream of it are NaN-vs-NaN comparisons that can never
+succeed. The `map became queryable within 10s` failure is likely the same cause one step earlier — a
+NavigationServer map with no valid region never becomes queryable — rather than a genuinely separate
+timing bug, but that is an inference from the ordering, not something this task measured.
+
+**Why it is worth its own finding.** This is F-268's own class: a shipped check that has been failing
+at HEAD long enough that its failure reads as background noise. F-251 and F-253 and F-246 are three
+more of the same, all filed separately, which is the argument for a standing "which checks fail at
+HEAD" sweep rather than another one-off. Nothing here should be read as blaming a recent commit: the
+worldgen files this touches have churned heavily (F-241, F-252, F-261, F-271/D-163 changed how a
+point's biome is classified), and `git log` alone will not say which of those, if any, introduced the
+NaN — a bisect over `tools/nav_bake_check.gd`'s seam search is the cheap way to find out.
+
+**Trap for whoever takes it:** `world/chunk/nav_baker.gd`, `world/chunk/chunk_streamer.gd` and
+`world/chunk/chunk_mesher.gd` were all claimed by lane lm under F-274 while this was filed. Check the
+board before claiming; a NaN in the mesher's height sampling would be visible from that task too.
+
+**What would close this:** the seam search finds a real chunk boundary (no NaN coordinate), the map
+becomes queryable, and `NAV_BAKE_CHECK failures=0` — or, if one of the four is genuinely
+environment-dependent rather than a defect, that assertion is either made robust or removed with the
+reason written in, so the check's clean state is `failures=0` and a future regression is visible.
+
+---
+
 ## Resolved
+
+### F-268 · F-243's restart never clears placed buildables — BuildService has no run_restarted subscription at all, and its own check has been failing at HEAD since the feature shipped — **fixed**
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lp
+
+Found by lp during F-254's regression sweep. `tools/run_restart_check.gd` fails at a clean HEAD with
+`FAIL: every placed buildable was cleared` — confirmed pre-existing and unrelated to F-254 via
+`.agent/bin/agent baseline --script tools/run_restart_check.gd` (identical single failure, same
+assertion, on an untouched worktree).
+
+**Raised by D-161 (added 2026-08-20 by lp, F-258).** This was "the previous run's walls are still
+standing" while a restart kept the same island. It no longer does: a restart now draws a fresh world
+seed, so on the procedural path those surviving pieces sit at coordinates chosen against terrain that
+no longer exists — floating over the new island's water, or buried inside its hills, with `NavBaker`
+regions baked around them. Same one-line fix (`BuildService` subscribing `run_restarted` and clearing
+`_placed`), larger consequence.
+
+This is not a flaky check. `autoload/build_service.gd` contains no `run_restarted` subscription of
+any kind — `grep -n 'run_restart\|EVENT_BUS.subscribe' autoload/build_service.gd` returns nothing,
+and its last commit is F-244 (039c5da), not F-243's ship (6d7e756). So `_placed` survives a restart
+with every piece from the previous run still in it, and every piece node is still in the scene.
+
+What makes this worth its own finding rather than a footnote is that three separate places already
+assert the opposite, so nothing about the codebase reads as "buildables intentionally persist":
+
+- `systems/cycle/cycle_service.gd`'s F-243 header lists the `run_restarted` subscribers by name and
+  includes `BuildService` among them.
+- `tools/run_restart_check.gd:180` asserts `placed_count() == 0` after a restart.
+- `docs/FINDINGS.md`'s own F-243 entry and `docs/DELEGATION.md` both describe the restart as
+  resetting build state.
+
+So the docs, the check and the header all shipped; only the wiring did not. F-259 already records a
+sibling omission in the same fix (`WaveSpawner`'s unlocked roster is not reset either), which
+suggests the F-243 subscriber list was written from intent rather than from the code.
+
+**What would close this:** `BuildService` subscribes `run_restarted` in `_ready()` (unsubscribing in
+`_exit_tree()`, the convention every other subscriber in that list follows), and on the host clears
+`_placed` and frees the placed piece nodes through the same path `net_request_destroy` already uses,
+so the despawn replicates to every peer rather than only emptying the host's dictionary.
+`tools/run_restart_check.gd:180` is the existing assertion and needs no change — it is already
+correct and already failing.
+
+**Trap for whoever takes it:** the pieces are `MultiplayerSpawner` children (see
+`core/net/net_session.gd`'s note that a spawner replays every existing spawn to a newly connected
+peer). Clearing `_placed` without actually freeing the nodes would leave a joiner receiving the
+previous run's buildables from the spawner's own replay while the host believes none exist.
+
+---
+
+**Resolved 2026-08-20 by lp.** **Resolved 2026-08-20 by lp.** `BuildService` now subscribes `run_restarted` in `_ready()` and
+unsubscribes in `_exit_tree()`, and its new host-guarded `host_clear_all()` **frees every piece node**
+before clearing `_placed` — not the other way round, which is the trap this finding names. Each piece
+also emits `piece_destroyed` on the way out, because `NavBaker` tracks placed geometry off that signal
+(F-159) and has no `run_restarted` subscription of its own; without the per-piece announce the
+previous run's piece geometry stays baked into its chunks for the life of the process. One debounced
+nav rebake follows the loop. No refund, matching `host_piece_destroyed_by_damage()`: `InventoryService`
+clears every peer's inventory off the same signal, so a refund would pay into a bucket emptying in the
+same frame.
+
+**The sweep found one real sibling and it is fixed here too.** `autoload/haul_service.gd` — same
+code-built `MultiplayerSpawner`, same run-scoped nodes, its own header saying it mirrors
+`BuildService`, and the same missing subscription inherited along with the pattern. It gets the same
+`_on_run_restarted()` → `host_clear_all()` pair. Latent rather than live today: `host_spawn()` has no
+shipped gameplay caller (only `tools/haul_check.gd` and `tools/haul_net_check.gd`), so no real run has
+a crate to strand — wired anyway, since the wiring is exactly the part this finding is about.
+
+Everything else in `cycle_service.gd`'s F-243 subscriber list was audited and is genuinely wired
+(MireGrid, CycleModifierService, PowerupService, InventoryService, PlayerHealth, EnemyWorld,
+DefeatService, Wellspring, Chest, ExtractionShip), as are three the header omits: WaveSpawner (F-259),
+ProceduralWorld, ResourceScatterField. All 15 `subscribe_run_restarted` sites have their matching
+`unsubscribe_run_restarted`. `CraftingService._station_positions` and `EnvironmentVFX._sites` look like
+the same shape but self-invalidate on a scene-id/census change; `UnlockService._purchased` is
+meta-progression and persists across runs by design.
+
+**Verified:** `.agent/bin/agent godot --script tools/run_restart_check.gd` → `RUN_RESTART_CHECK
+failures=0`. At HEAD before any edit the same command reported `failures=1` — this finding's own
+`every placed buildable was cleared`. Four assertions were added to that check rather than a new tool:
+a haulable seeded before the run ends and cleared after, plus the two halves `placed_count()` cannot
+distinguish — the replicated `Buildings` container's child count is 0, and no `&"buildable_piece"` node
+survives anywhere in the tree. A cleared dictionary over living nodes passes `placed_count() == 0`.
+
+Regression: `tools/build_check.gd` → `failures=0`, `tools/haul_check.gd` → `failures=0`.
+`tools/nav_bake_check.gd` → `failures=4`, pre-existing and unrelated: `agent baseline --script
+tools/nav_bake_check.gd` at `a28f346` yields the byte-identical four FAIL lines (compared line by
+line, not by count). Filed as **F-285**. Spec block written at `docs/SPECS.md` — none existed.
 
 ### F-271 · ResourceScatter classifies a point's biome from height(), BiomeMap.biome_at() classifies from continent() — the same point resolves to two different biomes depending on which system asks — **fixed**
 
