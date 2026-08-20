@@ -7036,3 +7036,21 @@ Notes along the way:
 Files: `world/chunk/nav_baker.gd`, `docs/DELEGATION.md`
 
 Commit at time of writing: `7eb4189`
+
+---
+
+### NOTE · F-267 recurrence · lp · 2026-08-20
+
+`agent ship F-274-review` (commit `4b35fd9`) swept lane **bram1**'s uncommitted `docs/FINDINGS.md`
+hunk — the whole of **F-306** (NEXT.md goes stale within hours) — into my commit, exactly as F-280's
+ship swept F-299's (see `e995945`). Third recorded instance. My claim was
+`world/chunk/nav_baker.gd` + `docs/DELEGATION.md`; I never touched FINDINGS.md this session.
+
+Content is intact and correctly placed — F-306 sits under `## Open` ahead of `## Resolved`, nothing
+truncated. The only damage is attribution: F-306 is now authored by a commit message about F-274's
+review. bram1 does not need to re-add it and must not, or F-306 lands twice.
+
+This is **F-267** (ship sweeps a sibling's uncommitted hunks when its claimed file carries them),
+still open, and it keeps happening on `docs/FINDINGS.md` specifically because **F-289** means `ship`
+cannot stage that file through the normal path. Two open findings, one recurring failure, three
+instances now — worth routing them together rather than separately.
