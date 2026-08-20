@@ -273,9 +273,16 @@ other — Sequoyah authors scenarios for free, no code.
 host_only: bool = true}`. `CommandService` subscribes once to the named `EventBus`/autoload
 signals and runs the bound function when they fire, host-side. Event vocabulary starts with what
 exists: `run_started`, `night_started`, `day_started`, `player_downed`, `enemy_died` — all five now
-bind to a real signal (F-154 closed the last two: `CycleService.run_started` fires once per process
-the instant Cycle 1 is live, `PlayerHealth.player_downed` is the real ALIVE→DOWNED edge, distinct
-from the broadcast `downed_flag_changed` bool that also fires on revive). A worked example ships:
+bind to a real signal (F-154 closed the last two: `CycleService.run_started` fires the instant a
+run's Cycle 1 is live, `PlayerHealth.player_downed` is the real ALIVE→DOWNED edge, distinct
+from the broadcast `downed_flag_changed` bool that also fires on revive). **Every one of the five is
+a per-RUN event, not a per-process one** — `run_started` fires again for each restart in the same
+lobby (F-280/D-168; it shipped one-shot under F-154, when a run's lifetime still was the process's,
+and F-243's play-again flow made that silently wrong), so a hook wired once at boot keeps running for
+the second and tenth run the way its name promises. There is deliberately no public
+`run_restarted` word: the `EventBus` signal of that name means "throw the ENDED run's state away",
+which is a service-internal reset broadcast with no first-run counterpart, not vocabulary for
+scenario authors. A worked example ships:
 `content/hooks/night_siege.tres` + `night_siege.mcmd` (dusk → announce + spawn a themed wave) —
 then is **disabled by default** (`enabled: bool` on HookDef), because shipping gameplay-by-hook is a
 design decision for M6's Cycle Modifiers, not this track. The mechanism is what ships; M6 gets to

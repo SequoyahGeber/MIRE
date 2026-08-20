@@ -610,16 +610,6 @@ At `6d7e756`, `tools/run_restart_net_check.gd` records the shipped spawn, moves 
 
 ---
 
-### F-280 · F-243's public run_started hook stays one-shot when a second run starts
-
-**Area:** commands/systems · **Severity:** medium · **Found:** 2026-08-20 by lc1
-
-`systems/cycle/cycle_service.gd:112-118` permanently latches `_run_started_emitted`, and `host_restart_run()` at lines 173-186 never clears or re-emits it. `autoload/command_service.gd:78-80` exposes that signal as the public `run_started` HookDef event. The F-154 spec explicitly said a future play-again flow would need to revisit the once-per-process guard; F-243 is that flow, but added a private-to-services `EventBus.run_restarted` sibling without updating the public hook contract.
-
-At `6d7e756`, `tools/run_restart_net_check.gd` subscribes after boot, performs a real restart, and sees zero `run_started` emissions. Any enabled/user-authored `run_started` hook runs on process boot but silently skips every later run in the same lobby. Either make `run_started` mean every run start as its name and F-154 reversal trigger require, or expose/bind a separately documented restart hook and update the command vocabulary.
-
----
-
 ### F-281 · F-243's reset enumeration is short by three more run-scoped systems: DayNight's clock, HaulService's spawned haulables, AttunementService's selections
 
 **Area:** systems · **Severity:** medium · **Found:** 2026-08-20 by lp
@@ -1190,7 +1180,67 @@ Best fixed together with F-279, which is the same file and the same handler.
 
 ---
 
+### F-299 · Lanes need a reserved-for-human flag: LM's weekly must last a week of manual sessions, and 'remember not to route there' is not a mechanism
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-20 by bram1
+
+The use-it-or-lose-it quota rule assumes nobody else is spending a lane's window, so an idle lane is
+waste. That assumption breaks when Sequoyah spends an account himself: on 2026-08-19 he reserved LM
+(Claude Max) because its weekly has to stretch across a week of his own chat sessions, and LC1 with
+it, releasing LP and LC2 to be burned freely by delegation.
+
+Encoding that as director discipline would last exactly one session — the next director reads the
+use-it-or-lose-it rule, sees an idle lane with quota, and dispatches. So `quota_block` now refuses any
+lane carrying `manual: true`, with a message naming the reason and how to lift it, and the flag is in
+DEFAULT_LANES so a rebuilt lanes.json keeps the policy. Verified: `lane run LM --dry-run` is refused,
+LP still dispatches. LM's six queued orders were re-routed to LP (three plain, three review-and-fix
+against their own commits), leaving LM's queue empty rather than parked-with-work, which is the state
+that tempts a restart.
+
+Everything built for LM stays built — three Opus slots, automatic second-pass reviews, keepers — and
+comes back by clearing one flag.
+
+---
+
+### F-300 · autoexec's documented loadout half survives exactly one run — it is boot-only and F-243 wipes the inventory
+
+**Area:** commands/system · **Severity:** low · **Found:** 2026-08-20 by lp
+
+`docs/COMMANDS.md` §5.3 documents autoexec (`user://autoexec.mcmd`, and `content/functions/autoexec.mcmd` if present) as "dev convenience for rules and loadout preferences", and `CommandService._run_autoexec()` runs it once at boot, host/offline only. That was the whole story before F-243, when a process was one run.
+
+It is now half wrong. The RULES half still holds — `RuleService` is not a `run_restarted` subscriber, so rules an autoexec sets survive every restart. The LOADOUT half does not: `InventoryService` clears on `EventBus.run_restarted` (F-243/D-164), so an autoexec that grants a starting kit is wiped by the second run and nothing ever re-runs it. Same class as F-280 — a boot-scoped lifecycle hook in a codebase where runs now repeat — found by F-280's sweep for exactly that shape.
+
+Cheap to fix now that F-280 exists: `run_started` is the per-run seam §5.3 lacked when it was written. Either re-run autoexec from a `run_started` subscription (careful — it is host/offline-gated the same way, and re-running `rule set` lines is idempotent), or split the documented purpose so §5.3 says "session-scoped preferences, not per-run setup — use a `run_started` hook for that" and ship the one-line worked example. The second is probably right: silently re-running arbitrary boot script on every restart is a surprise, and an author who wants it can now ask for it explicitly.
+
+---
+
 ## Resolved
+
+### F-280 · F-243's public run_started hook stays one-shot when a second run starts — **fixed**
+
+**Area:** commands/systems · **Severity:** medium · **Found:** 2026-08-20 by lc1
+
+`systems/cycle/cycle_service.gd:112-118` permanently latches `_run_started_emitted`, and `host_restart_run()` at lines 173-186 never clears or re-emits it. `autoload/command_service.gd:78-80` exposes that signal as the public `run_started` HookDef event. The F-154 spec explicitly said a future play-again flow would need to revisit the once-per-process guard; F-243 is that flow, but added a private-to-services `EventBus.run_restarted` sibling without updating the public hook contract.
+
+At `6d7e756`, `tools/run_restart_net_check.gd` subscribes after boot, performs a real restart, and sees zero `run_started` emissions. Any enabled/user-authored `run_started` hook runs on process boot but silently skips every later run in the same lobby. Either make `run_started` mean every run start as its name and F-154 reversal trigger require, or expose/bind a separately documented restart hook and update the command vocabulary.
+
+---
+
+**Resolved 2026-08-20 by lp.** **Fixed by lp, 2026-08-20.** `run_started` is now a per-RUN public event. `CycleService._run_started_emitted` became run-scoped instead of process-scoped, and `host_restart_run()` clears it and re-emits after `_announce()` — so every user-authored `run_started` HookDef fires for the second and tenth run in a lobby, not just the process's first.
+
+**The call (D-168): un-latch the public event rather than add a public `run_restarted` word.** The finding offered both exits. The name is a promise a scenario author reads at face value, F-154 itself framed the process/run identity as a temporary equivalence, and a second public event would force anyone wanting "a run began" to bind two hooks while making the first run the odd one out. `EventBus.run_restarted` stays private and is NOT a substitute: it means "throw the ENDED run's state away", the one thing with no first-run counterpart. Both seams are now documented at the top of `cycle_service.gd`, in `_HOOK_EVENTS`'s own header, and in `COMMANDS.md` §5.2.
+
+Two implementation details are load-bearing. `run_started` fires LAST inside `host_restart_run()`, after every reset — a hook body is arbitrary command script and must observe the run it is named after — while `run_restarted` fires FIRST for the mirror-image reason. And the fix CLEARS the guard rather than emitting directly, so `_emit_run_started()` stays the single emit site and its `_owns_cycle()` host/solo gate keeps deciding who may fire.
+
+**Verified:** `.agent/bin/agent godot --script tools/run_started_hook_check.gd` -> `RUN_STARTED_HOOK_CHECK failures=0`, 28 PASS, exit 0. New focused check; it drives the PUBLIC path on the shipped map — a synthetic HookDef through the real `wire_hook()` front door, bound to a function that ops an otherwise-untouched sentinel peer — across TWO real defeat-and-restart cycles, `deop`ping between them so the second op can only have come from the hook running again. Emit-time snapshots of `current_cycle()`, `host_count()` and `defeated` pin the ordering as a property.
+
+**Pre-fix proof:** with the two added lines temporarily removed (copy kept aside, deliberately not `git stash`), the same check reports `failures=3` — zero `run_started` for the restarted run, zero for the third, hook body never re-ran. Restored -> `failures=0`. `agent baseline` cannot do this: the check does not exist at HEAD (same constraint F-261/F-275/F-278 hit).
+
+**Neighbours re-run green:** `hook_events_check` failures=0 (23 PASS; its "re-called after boot is a no-op" assertion is still correct — no restart happens there — and its stale "once per process" comments were corrected). `run_restart_check` failures=0. `run_restart_net_check` now reports PASS on "the public run_started lifecycle signal fires for the restarted run", the assertion that reported this finding; its remaining failures=1 is F-279's spawn defect, open and owned elsewhere.
+
+**Swept for the same shape** (three greps, `--include=*.gd`): (a) every one-shot latch bool — only this one and `Boss._defeat_emitted`, which is per-instance on a node EnemyWorld frees at restart; (b) every other `_HOOK_EVENTS` row — all four are genuinely repeatable per-run events, including `day_started`, which does not fire for a restarted run's first morning but does not fire at boot either, so both runs behave identically; (c) every "once per process" comment repo-wide — the rest are correct. One real sibling filed as **F-300**: autoexec is boot-only, so the "loadout preferences" half of its documented purpose (`COMMANDS.md` §5.3) survives exactly one run now that F-243 wipes the inventory.
+
+Spec block written at `docs/SPECS.md` (none existed). Decision at D-168. API and emit-order contract in `docs/DELEGATION.md` *Current state*.
 
 ### F-297 · AttunementUI's mandatory picker latches _picking on an unanswered request, leaving a no-dismiss panel with every button disabled — **fixed**
 

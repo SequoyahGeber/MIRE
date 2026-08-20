@@ -4,7 +4,8 @@ extends SceneTree
 ## `player_downed` alongside `night_started`/`day_started`/`enemy_died`, but the first two had no
 ## shipped signal to bind to — naming either in a HookDef failed loudly (a MireLog error) at wire
 ## time instead of silently never firing. Both now have real rows in `CommandService._HOOK_EVENTS`:
-## `CycleService.run_started` (fires once per process, the instant Cycle 1 is live) and
+## `CycleService.run_started` (fires once per RUN, the instant that run's Cycle 1 is live — F-280
+## un-latched it from once per PROCESS; `tools/run_started_hook_check.gd` owns the restart half) and
 ## `PlayerHealth.player_downed` (the real ALIVE->DOWNED edge, not the broadcast `downed_flag_changed`
 ## bool that also fires on revive). This asserts each end to end, the same proof
 ## tools/function_check.gd already gave `night_started` — wire_hook() connects without an
@@ -64,8 +65,10 @@ func _check_run_started() -> void:
 	check(bool(cycle_service.get(&"_run_started_emitted")),
 		"CycleService already fired run_started once, at boot (host/solo _ready())")
 
-	# Idempotency: a later Cycle-machine event (host_advance_cycle) must never look like a second run
-	# starting — _emit_run_started() is the only emit site and is guarded to fire exactly once.
+	# Idempotency WITHIN a run: a later Cycle-machine event (host_advance_cycle) must never look like
+	# a second run starting — `_emit_run_started()` is the only emit site and its guard is cleared by
+	# exactly one caller, `host_restart_run()` (F-280). Still the right assertion after F-280: no
+	# restart happens in this check, so the guard is still latched from boot.
 	var counter: Dictionary = {"n": 0}
 	var counter_listener := func() -> void: counter["n"] = int(counter["n"]) + 1
 	cycle_service.connect(&"run_started", counter_listener)
@@ -74,10 +77,11 @@ func _check_run_started() -> void:
 	cycle_service.disconnect(&"run_started", counter_listener)
 
 	# End-to-end: CommandService._HOOK_EVENTS actually connects to the REAL signal and runs the bound
-	# function. run_started has no repeatable real trigger within one process by design (see its own
-	# doc comment — a run's lifetime IS the process lifetime here), so this drives the signal
-	# directly, exactly what a live second emission would look like to CommandService; the guard
-	# above already proved CycleService itself can never produce one.
+	# function. Driven directly here rather than through a real second run — this file is about the
+	# BINDING resolving for all five events, and standing up the shipped map twice over to end a run
+	# belongs in the focused check that is about the lifecycle itself
+	# (`tools/run_started_hook_check.gd`, which drives real defeats and asserts this same hook path
+	# fires for the second and third run).
 	check(not command_service.is_op(NON_OP_RUN_STARTED),
 		"setup: peer %d starts un-opped" % NON_OP_RUN_STARTED)
 	command_service.register_function(

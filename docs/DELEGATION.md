@@ -75,6 +75,49 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-20 — F-280 resolved: `run_started` is a per-RUN public hook event, not a per-process one (lp)
+
+**What shipped.** `CycleService._run_started_emitted` is now RUN-scoped. `host_restart_run()` clears
+it and re-emits, so the public `run_started` HookDef event (`CommandService._HOOK_EVENTS`) fires at
+the start of EVERY run in a lobby. It shipped one-shot under F-154 — correctly for its own time, a
+run's lifetime was the process lifetime — and F-243's play-again flow made that silently wrong: an
+enabled user-authored `run_started` hook ran on boot and then never again, with no error and no log
+line.
+
+**The API, unchanged in shape and now correct in lifetime:**
+
+```gdscript
+CycleService.run_started                  # signal(); host/solo only; fires once per RUN
+CycleService._emit_run_started() -> void  # the SINGLE emit site; _owns_cycle()-gated; idempotent
+                                          # within a run. Never emit `run_started` anywhere else.
+```
+
+**Do not relitigate the two seams (D-168).** They are different events, not two names for one:
+
+- **`CycleService.run_started`** — PUBLIC vocabulary for scenario authors, in `_HOOK_EVENTS`, fires
+  at the START of every run. Bind hooks to this.
+- **`EventBus.run_restarted`** — PRIVATE service-to-service, fires only on a RESTART, means "throw
+  the ENDED run's state away". Nothing in `_HOOK_EVENTS` binds it and nothing should — it has no
+  first-run counterpart, so a hook on it would miss the first run and a service on `run_started`
+  would try to clear state that does not exist yet.
+
+**Emit order inside `host_restart_run()` is contract.** `run_restarted` FIRST (its subscribers tear
+the ended run down), then `_announce()`, then `run_started` LAST — a hook body is arbitrary user
+command script and has to observe the run it is named after: Cycle 1 recorded, modifiers cleared,
+inventories empty, the new seed live. If you add anything to that method, it goes ABOVE the
+`_run_started_emitted = false` line. `tools/run_started_hook_check.gd` asserts this as a property
+(the listener snapshots `current_cycle()`, `host_count()` and `defeated` at emit time), so reordering
+fails a check rather than quietly changing what every shipped hook sees.
+
+**New check to build on:** `tools/run_started_hook_check.gd` — 28 PASS, `failures=0`. Boots the
+shipped map, wires a synthetic `HookDef` through the real `wire_hook()` front door bound to a
+function that ops a sentinel peer, then drives TWO real defeat-and-restart cycles (`deop`ping the
+sentinel in between) and asserts the hook body ran for each new run. It is the pattern to copy for
+any future per-run public event: assert the HOOK ran, not just that the signal fired. The
+guard-still-holds cases are in there too — a Cycle advance and a refused mid-run restart must not
+fire it.
+
+
 ### 2026-08-20 — F-277 resolved: an Attunement selection is run-scoped, and every peer re-arms its own picker for the new run (lm)
 
 **What shipped.** `AttunementService` had no `run_restarted` subscription at all, while the

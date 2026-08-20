@@ -26,12 +26,21 @@ extends Node
 ## `EventBus.subscribe_cycle_advanced()` listeners never fired at all).
 ##
 ## F-154: this file is also now the run-lifecycle owner COMMANDS.md §5.2's illustrative hook
-## vocabulary was missing — see `run_started`'s own doc comment below for the exact "once per
-## process, host/solo only" contract `CommandService._HOOK_EVENTS`'s new row binds against.
+## vocabulary was missing — see `run_started`'s own doc comment below for the exact "once per RUN,
+## host/solo only" contract `CommandService._HOOK_EVENTS`'s row binds against. F-154 shipped that as
+## "once per PROCESS" because a run's lifetime WAS the process lifetime then, and said in as many
+## words that a future play-again flow would have to revisit the guard. F-243 was that flow and did
+## not; F-280 is the revisit — see `_emit_run_started()`.
 ##
-## F-243: and the run-RESTART owner — `run_started` above fires exactly once per process by design
-## (see its own doc comment) and stays that way; a second "a run began" moment needed a signal of its
-## own, `EVENT_BUS.run_restarted` (subscribed by every run-scoped system: MireGrid, CycleModifier-
+## F-243: and the run-RESTART owner. The two run-lifecycle seams here are deliberately different
+## shapes and are NOT interchangeable (D-168): `run_started` above is the PUBLIC, user-facing hook
+## event (`CommandService._HOOK_EVENTS`) and fires at the start of EVERY run, restarts included;
+## `EVENT_BUS.run_restarted` is the private service-to-service reset broadcast and fires only on a
+## RESTART — it is what tells a system to throw away the ENDED run's state, which is exactly the
+## thing that has no first-run counterpart. Neither can stand in for the other: a hook author wants
+## "a run began" and would have to subscribe both to get it, while a run-scoped service subscribing
+## `run_started` would try to clear state on the very first boot, before there is any. It is
+## subscribed by every run-scoped system (MireGrid, CycleModifier-
 ## Service, PowerupService, InventoryService, PlayerHealth, EnemyWorld, BuildService, DefeatService,
 ## and every live Wellspring/Chest/ExtractionShip instance). `host_restart_run()` is HOST-only and
 ## deliberately NOT its own RPC — see docs/DECISIONS.md's F-243 entry: only the host peer can ever
@@ -73,21 +82,27 @@ const DAYS_PER_CYCLE: int = 3
 ## `MireGrid.BASE_SPREAD_RATE` — nothing tunes this until a real playtest measures the wall (Q3).
 const SPREAD_ESCALATION_PER_CYCLE: float = 1.15
 
-## Fires exactly once per process, the instant Cycle 1's state is live — the real "run started"
-## moment F-154 asked for (COMMANDS.md §5.2's illustrative hook vocabulary names it; nothing emitted
-## it until now). Deliberately NOT "the level loaded": this file's own `_ready()` only reaches the
-## emit after `_owns_cycle()` passes, the same host/solo-only gate `_announce()` uses, so a client
-## connecting to someone else's run never fires its own copy — same split `night_started`/
-## `day_started` already use, which is why `player_downed`'s new sibling row in
-## `CommandService._HOOK_EVENTS` and this one bind the same way. A run's lifetime is the whole
-## process lifetime here (`_current_cycle` has no session-close reset anywhere in this file, task
-## 6.1's existing behavior, not something this task changes), so "once per process" is the correct
-## "once per run", not an approximation of it.
+## Fires exactly once per RUN, the instant that run's Cycle 1 state is live — the real "run started"
+## moment F-154 asked for (COMMANDS.md §5.2's illustrative hook vocabulary names it). That is twice
+## over in this file: at boot for the process's first run (`_ready()`), and again at the end of
+## every `host_restart_run()` for each later one. F-154 shipped it as once per PROCESS and flagged
+## the guard as the thing a play-again flow would have to revisit; F-243 added play-again without
+## revisiting it, so every user-authored `run_started` HookDef ran on boot and then silently skipped
+## every subsequent run in the same lobby (F-280, D-168).
+##
+## Deliberately NOT "the level loaded": both emit sites only fire after `_owns_cycle()` passes, the
+## same host/solo-only gate `_announce()` uses, so a client connecting to someone else's run never
+## fires its own copy — same split `night_started`/`day_started` already use, which is why
+## `player_downed`'s sibling row in `CommandService._HOOK_EVENTS` and this one bind the same way.
+## And deliberately NOT once per Cycle: `host_advance_cycle()` does not touch the guard, so Cycle 2
+## of a run is not a new run (`tools/run_started_hook_check.gd` asserts exactly that).
 signal run_started()
 
 var _current_cycle: int = 1
 var _spread_multiplier: float = 1.0
 var _days_elapsed: int = 0
+## Run-scoped, not process-scoped (F-280): true once `run_started` has fired for the CURRENT run,
+## cleared by `host_restart_run()` so the next run fires its own.
 var _run_started_emitted: bool = false
 var _run_generation: int = 0
 var _transport_node: Node
@@ -111,7 +126,11 @@ func _ready() -> void:
 
 
 ## Guarded separately from `_announce()` (which re-runs on every later `host_advance_cycle()`) so
-## this can never fire more than once — `run_started` names the run BEGINNING, not each Cycle bump.
+## this can never fire more than once PER RUN — `run_started` names the run BEGINNING, not each
+## Cycle bump. F-280: the guard is run-scoped, not process-scoped. `host_restart_run()` clears it,
+## and nothing else does, which is what makes "once per run" and "not once per Cycle" the same
+## sentence here. Idempotent by design: calling this twice inside one run is a no-op, so a second
+## caller can never be mistaken for a second run.
 func _emit_run_started() -> void:
 	if _run_started_emitted or not _owns_cycle():
 		return
@@ -195,6 +214,16 @@ func host_restart_run() -> int:
 	if world_delta_log != null:
 		world_delta_log.call("host_record", GLOBAL_CHUNK, RUN_KIND, RUN_KEY, _run_generation)
 	_announce()
+	# F-280/D-168: the PUBLIC hook event fires LAST, after every reset above and after `_announce()`.
+	# Order is the contract, not an accident: a `run_started` HookDef is arbitrary user-authored
+	# command script (`give`, `spawn`, `rule set`, ...), so it has to observe the run it is named
+	# after — Cycle 1 recorded, modifiers cleared, inventories empty, the new seed live — not the
+	# ended one being torn down around it. `EVENT_BUS.run_restarted` above is the opposite seam and
+	# fires FIRST for the mirror-image reason: its subscribers exist to throw the ended run away.
+	# Clearing the guard rather than emitting directly keeps `_emit_run_started()` the single emit
+	# site, so its `_owns_cycle()` gate still decides — a client can never fire its own copy.
+	_run_started_emitted = false
+	_emit_run_started()
 	MireLog.info(&"world", "Run restarted — Cycle 1 begins on world seed %d" % new_seed)
 	return _current_cycle
 

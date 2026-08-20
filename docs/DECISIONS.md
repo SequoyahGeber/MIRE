@@ -5220,3 +5220,53 @@ carve-out.
 
 **D-number provenance (F-260).** Taken by reading the highest `### D-` heading in this file and
 adding one, with no atomic allocator. D-165 was already held by F-274 at the time this was written.
+
+---
+
+### D-168 · 2026-08-20 · F-280: `run_started` is a PER-RUN public event, and `EventBus.run_restarted` is not a substitute for it — two seams, two meanings, neither interchangeable
+
+**`run_started` means every run, restarts included.** F-154 shipped it latched once per PROCESS,
+correctly for its own time — a run's lifetime *was* the process lifetime — and said in as many words
+that a play-again flow would have to revisit the guard. F-243 was that flow and did not, so every
+enabled user-authored `run_started` HookDef fired on boot and then silently skipped every later run
+in the lobby. `CycleService._run_started_emitted` is now run-scoped: `host_restart_run()` clears it
+and re-emits, and nothing else clears it.
+
+**Why un-latch the public event rather than add a public `run_restarted` word.** The finding offered
+both exits. The name is a promise a scenario author reads at face value, and F-154 itself framed the
+process/run identity as a temporary equivalence rather than a design. A second public event would
+force anyone who wants "a run began" to bind two hooks and would make the first run the odd one out
+— the opposite of what §5.2's vocabulary is for.
+
+**And why the private sibling still exists.** `EventBus.run_restarted` is NOT the same event under a
+different name. It means "throw the ENDED run's state away", which is exactly the thing with no
+first-run counterpart: a service subscribing it at boot would try to clear state that does not exist
+yet, and a hook author subscribing it would miss the first run entirely. So:
+
+- **`CycleService.run_started`** — PUBLIC, in `CommandService._HOOK_EVENTS`, host/solo only, fires at
+  the START of every run. For scenario authors. Not for services.
+- **`EventBus.run_restarted`** — PRIVATE service-to-service, fires only on a RESTART. For the ~15
+  run-scoped services that reset. Not vocabulary; nothing in `_HOOK_EVENTS` binds it and nothing
+  should.
+
+**Ordering is part of the contract, not an implementation detail.** Inside `host_restart_run()`,
+`run_restarted` fires FIRST and `run_started` fires LAST — after `_announce()` and after every reset.
+A hook body is arbitrary user command script, so it has to observe the run it is named after (Cycle 1
+recorded, modifiers cleared, inventories empty, the new seed live), while a `run_restarted`
+subscriber exists to tear the ended run down. `tools/run_started_hook_check.gd` pins this as a
+property — the listener snapshots `current_cycle()`, `host_count()` and `defeated` at emit time — so
+a later refactor that reorders those calls fails a check instead of quietly changing what hooks see.
+
+**Un-latching means clearing the guard, never emitting directly.** `_emit_run_started()` stays the
+single emit site so its `_owns_cycle()` host/solo gate keeps deciding who may fire, in one place. The
+guard also stays *within* a run: `host_advance_cycle()` does not touch it (Cycle 2 is the same run)
+and neither does the mid-run early return (a refused restart never began a run).
+
+**What would change my mind:** a real authored scenario that genuinely wants boot-once semantics.
+That is what autoexec is for (`COMMANDS.md` §5.3) — and F-300 is the note that autoexec's own
+documented purpose has the mirror-image version of this problem.
+
+**D-number provenance (F-260).** Taken by reading the highest `### D-` heading in this file and
+adding one, twice — once when drafting and once immediately before writing — with no atomic
+allocator. D-165 was already held by F-274 when this task's first draft cited it; that reference was
+corrected to D-168 in `cycle_service.gd` before anything shipped.

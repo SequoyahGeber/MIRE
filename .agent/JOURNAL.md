@@ -6907,3 +6907,19 @@ manual: true now blocks dispatch in quota_block; LM and LC1 flagged, LP and LC2 
 Files: `.agent/bin/lane`
 
 Commit at time of writing: `1e49814`
+
+---
+
+### DONE · F-280 · lp · 2026-08-20T10:21:34+00:00
+
+**F-243's public run_started hook stays one-shot when a second run starts**
+
+run_started is now a per-RUN public hook event, not per-process. CycleService._run_started_emitted became run-scoped and host_restart_run() clears it and re-emits AFTER _announce() and every reset, so a user-authored run_started HookDef fires for the second and tenth run in a lobby. D-168 records the call (un-latch the public event rather than add a public run_restarted word) and the two-seams contract: run_started is public vocabulary, EventBus.run_restarted is the private reset broadcast, neither substitutable. Emit order is contract and is asserted as a property. Proves it: agent godot --script tools/run_started_hook_check.gd -> RUN_STARTED_HOOK_CHECK failures=0, 28 PASS, exit 0 — new focused check driving a synthetic HookDef through the real wire_hook() front door across TWO real defeat-and-restart cycles on the shipped map, deopping the sentinel between them. Pre-fix proof: fix temporarily removed -> failures=3, exactly the finding's symptoms; restored -> 0. Neighbours green: hook_events_check 0 (23 PASS), run_restart_check 0, run_restart_net_check now PASSes the run_started assertion that reported this finding (its remaining failures=1 is F-279, open elsewhere). findings_numbering_check 0. Generic --quit-after 120 clean. Sweep filed F-300 (autoexec is boot-only, so its documented loadout half survives exactly one run). Spec block written at docs/SPECS.md; none existed.
+
+Notes along the way:
+- The fix is one line plus a guard clear in host_restart_run(): _run_started_emitted = false; _emit_run_started(), placed AFTER _announce(). Ordering is deliberate — run_restarted (private, subscribers tear the ended run down) fires first, run_started (public hook, arbitrary user command script) fires last so it observes the NEW run. Clearing the guard instead of emitting directly keeps _emit_run_started() the single emit site so its _owns_cycle() gate still decides.
+- Pre-fix proof: with the two-line re-emit temporarily removed from host_restart_run() (copy kept in scratchpad, not git stash — a stash would touch other lanes' uncommitted work), tools/run_started_hook_check.gd -> failures=3, exactly the finding's symptoms (0 run_started for the restarted run, 0 for the third, and the bound hook function never re-ran). Fix restored -> failures=0, 26/26 PASS. agent baseline cannot do this: the check script does not exist at HEAD, same constraint F-261 and F-275 hit.
+
+Files: `systems/cycle/cycle_service.gd`, `autoload/command_service.gd`, `tools/run_started_hook_check.gd`, `tools/hook_events_check.gd`, `docs/SPECS.md`, `docs/DECISIONS.md`, `docs/COMMANDS.md`, `docs/DELEGATION.md`, `docs/FINDINGS.md`
+
+Commit at time of writing: `5b0c704`

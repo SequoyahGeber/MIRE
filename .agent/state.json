@@ -212,216 +212,6 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
-    "assets/crafting_stations": {
-      "agent": "lm",
-      "at": "2026-08-19T07:07:27+00:00",
-      "hash": null,
-      "task": "F-057",
-      "token": null
-    },
-    "assets/enemies": {
-      "agent": "lp",
-      "at": "2026-08-19T09:57:59+00:00",
-      "hash": null,
-      "task": "F-198",
-      "token": null
-    },
-    "assets/flora/preview/flora_set_preview.png": {
-      "agent": "lp",
-      "at": "2026-08-19T10:14:11+00:00",
-      "hash": "9d305596a34c79f3034a39b77d574f669327a9fac336490bacd551a6f013a797",
-      "task": "F-204",
-      "token": null
-    },
-    "assets/flora/preview/flowers_preview.png": {
-      "agent": "lp",
-      "at": "2026-08-19T10:14:11+00:00",
-      "hash": "adb081dbcc5386e801f7d3f5e4c1f63ed5cc7903661e6942954f18c4f13971d2",
-      "task": "F-204",
-      "token": null
-    },
-    "assets/flora/preview/grasses_preview.png": {
-      "agent": "lp",
-      "at": "2026-08-19T10:14:11+00:00",
-      "hash": "53e5a8d22c7601708dddaf59ba1c045c2fdcbc5b624dcda9f4c710b446def097",
-      "task": "F-204",
-      "token": null
-    },
-    "assets/flora/preview/ground_cover_preview.png": {
-      "agent": "lp",
-      "at": "2026-08-19T10:14:11+00:00",
-      "hash": "b0bc35d5a03e182076be89ac900cdcfbf638be9dc65bac8d54e1c0de1ccaa7b9",
-      "task": "F-204",
-      "token": null
-    },
-    "assets/flora/preview/leafy_plants_preview.png": {
-      "agent": "lp",
-      "at": "2026-08-19T10:14:11+00:00",
-      "hash": "f22a3c20a8864e6527adcf2424c8a0b4df094421b65c26c47477998518ea616a",
-      "task": "F-204",
-      "token": null
-    },
-    "assets/flora/preview/shrubs_preview.png": {
-      "agent": "lp",
-      "at": "2026-08-19T10:14:11+00:00",
-      "hash": "2024e0a0f42c2ba5414deb67869d3b0099651af3a7eeabb775ae27c19e103597",
-      "task": "F-204",
-      "token": null
-    },
-    "assets/flora/preview/small_trees_preview.png": {
-      "agent": "lp",
-      "at": "2026-08-19T10:14:11+00:00",
-      "hash": "9d71e05e3febfb8bc7d1a49dd0f9625b5ef0743a20130622f770d8e1958bc0b4",
-      "task": "F-204",
-      "token": null
-    },
-    "assets/food": {
-      "agent": "slate17",
-      "at": "2026-08-19T07:59:58+00:00",
-      "hash": null,
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "assets/food/README.md": {
-      "agent": "slate17",
-      "at": "2026-08-19T07:59:58+00:00",
-      "hash": null,
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "assets/food/catalog.json": {
-      "agent": "slate17",
-      "at": "2026-08-19T08:00:11+00:00",
-      "hash": "94832223df6a7ee8670a1bab725d27fc1077819e0491e95e8ab09d36f889e590",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "assets/food/exports/bog_loaf.glb": {
-      "agent": "slate17",
-      "at": "2026-08-19T08:00:11+00:00",
-      "hash": "be1b1920297fad5fc28d108ef4f97656ca4f866c97785c0786944b9db83db7a2",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "assets/food/exports/cooked_fish.glb": {
-      "agent": "slate17",
-      "at": "2026-08-19T08:00:11+00:00",
-      "hash": "43df39ec9e41e7ae1001d48401faefaf10df20b3755512426384a452b9a937cb",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "assets/food/exports/cooked_meat.glb": {
-      "agent": "slate17",
-      "at": "2026-08-19T08:00:11+00:00",
-      "hash": "d6a9db5792a0d2de7c4e2b128bde32edd71a7baafe986fb4299c40d9f2249eaf",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "assets/food/exports/fired_flask.glb": {
-      "agent": "slate17",
-      "at": "2026-08-19T08:00:11+00:00",
-      "hash": "c6b5f1fedb6e0002f0038816b4856ff11a23d966fa9979928d4e7e14c8beb7f2",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "assets/food/exports/healing_draught.glb": {
-      "agent": "slate17",
-      "at": "2026-08-19T08:00:11+00:00",
-      "hash": "5f1a0c9043093a19dafb6a77ff806f991ecb72b3c18fae782f8dddda4693e5de",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "assets/food/exports/healing_stew.glb": {
-      "agent": "slate17",
-      "at": "2026-08-19T08:00:11+00:00",
-      "hash": "397e425c5aa9d03cdf5e87138a58e6f48332db74cc4fb9729c89f6a89a574197",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "assets/food/exports/hearty_stew.glb": {
-      "agent": "slate17",
-      "at": "2026-08-19T08:00:11+00:00",
-      "hash": "4097f3a89b568827571dc607020f5850c4079dbb9fcf91791294e14da8c399ed",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "assets/food/exports/honey_jar.glb": {
-      "agent": "slate17",
-      "at": "2026-08-19T08:00:11+00:00",
-      "hash": "644c280f023888152f02d8a21807a0236025f3edf6cd68256519df0f71f6cae9",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "assets/food/exports/meat_skewer.glb": {
-      "agent": "slate17",
-      "at": "2026-08-19T08:00:11+00:00",
-      "hash": "45992d10635d0bd15160cd6ad99f124aee6ada985ea5c5232e5d0ed2cc3a0d29",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "assets/food/exports/pale_draught.glb": {
-      "agent": "slate17",
-      "at": "2026-08-19T08:00:11+00:00",
-      "hash": "19a878c9f8a99528f209c938ee2281dc12c08c0858a8d720991aee708ed8833b",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "assets/food/exports/raw_fish.glb": {
-      "agent": "slate17",
-      "at": "2026-08-19T08:00:11+00:00",
-      "hash": "2b97be9aa48b6c3bd43ea67db8332292b611057190f012e69b5ac96824718027",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "assets/food/exports/stamina_tonic.glb": {
-      "agent": "slate17",
-      "at": "2026-08-19T08:00:11+00:00",
-      "hash": "f6514b243e3f3a07fff515f5792186cd4eff9e550a3d5c69bea908f71936c45d",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "assets/food/exports/suspicious_sludge.glb": {
-      "agent": "slate17",
-      "at": "2026-08-19T08:00:11+00:00",
-      "hash": "2f6466d45793525d5d92af6b2d47490877cc9364c0bf94bed598207bd215a47b",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "assets/food/preview/diag_one.png": {
-      "agent": "slate17",
-      "at": "2026-08-19T08:00:26+00:00",
-      "hash": null,
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "assets/food/preview/food_cooked_preview.png": {
-      "agent": "slate17",
-      "at": "2026-08-19T08:00:11+00:00",
-      "hash": "b2316b43be25de6f89cbd1c679ef9a63979e8c221102100738c08cc277b2754a",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "assets/food/preview/food_tonics_preview.png": {
-      "agent": "slate17",
-      "at": "2026-08-19T08:00:11+00:00",
-      "hash": "00e172d216ec5ccdc80c0f166d5277ff1f4d7871d9ba92082c3772af253e7b38",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "assets/food/preview/food_vessels_preview.png": {
-      "agent": "slate17",
-      "at": "2026-08-19T08:00:11+00:00",
-      "hash": "46a5f80d73d62d095d1bb99283522a8dbf819695b33a955b608379cf2b9c3aec",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "assets/gatherables": {
-      "agent": "wick20",
-      "at": "2026-08-19T07:08:14+00:00",
-      "hash": null,
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
-    },
     "assets/gatherables/catalog.json": {
       "agent": "lm",
       "at": "2026-08-19T10:22:16+00:00",
@@ -518,20 +308,6 @@
       "at": "2026-08-19T10:22:16+00:00",
       "hash": "fcddfaea60a73cb8819c5d2973736a8e04b2cd644832719da5ed9fac9bac67f6",
       "task": "F-206",
-      "token": null
-    },
-    "assets/gatherables/preview/gatherables_preview.png": {
-      "agent": "wick20",
-      "at": "2026-08-19T07:08:14+00:00",
-      "hash": null,
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
-    },
-    "assets/loot": {
-      "agent": "lp",
-      "at": "2026-08-19T09:57:59+00:00",
-      "hash": null,
-      "task": "F-198",
       "token": null
     },
     "assets/paths": {
@@ -667,46 +443,11 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
-    "assets/source/crafting_stations.blend": {
-      "agent": "lm",
-      "at": "2026-08-19T07:07:27+00:00",
-      "hash": "80fe2364b9bec1d508e790375236ab21d2097590c720c8468c770eca4bfa03ee",
-      "task": "F-057",
-      "token": null
-    },
-    "assets/source/enemy_crawler.blend": {
-      "agent": "lp",
-      "at": "2026-08-19T09:57:59+00:00",
-      "hash": "1c90720e81755d28e96883003c2752ef39c3f8775865b2749944e0b9fcd06e4c",
-      "task": "F-198",
-      "token": null
-    },
-    "assets/source/flora_set.blend": {
-      "agent": "lp",
-      "at": "2026-08-19T10:14:11+00:00",
-      "hash": "1c8e41ba7d7344198630efe011186bc640a8c17a5f79114e6bcf864549e997e7",
-      "task": "F-204",
-      "token": null
-    },
-    "assets/source/food_set.blend": {
-      "agent": "slate17",
-      "at": "2026-08-19T08:00:11+00:00",
-      "hash": "c414bbd8acab25fc4b0bb7f715f4e58e345e1cad4136b2362586b9804f6797e8",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
     "assets/source/gatherable_plants.blend": {
       "agent": "lm",
       "at": "2026-08-19T10:22:16+00:00",
       "hash": "6c4c424056ce2750305add0e43f75c8902987978e9619ed2c084d96a1d3ee6d3",
       "task": "F-206",
-      "token": null
-    },
-    "assets/source/loot_set.blend": {
-      "agent": "lp",
-      "at": "2026-08-19T09:57:59+00:00",
-      "hash": "1eddcfbd02da273cd2b7f184cd56734fb6fedf02db81930020c12e5b0b05332e",
-      "task": "F-198",
       "token": null
     },
     "assets/source/path_set.blend": {
@@ -715,13 +456,6 @@
       "hash": "91b6d844e7ab71832a16fa17c59cf02e0650ba3c19bdd83d353d5efd42ffcb5b",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "assets/source/tool_weapon_set.blend": {
-      "agent": "lp",
-      "at": "2026-08-19T09:57:59+00:00",
-      "hash": "d569d908b7a009978d1b881075ce7b689b012312fa7fe2cc87b27b733ffad529",
-      "task": "F-198",
-      "token": null
     },
     "assets/terrain_accents": {
       "agent": "wick20",
@@ -735,13 +469,6 @@
       "at": "2026-08-20T05:07:23+00:00",
       "hash": "21dc07498d81521a4137e3f76b42095f6215b1e87f813f32ba64ea69a55b6bb8",
       "task": "F-255",
-      "token": null
-    },
-    "assets/tools_weapons": {
-      "agent": "lp",
-      "at": "2026-08-19T09:57:59+00:00",
-      "hash": null,
-      "task": "F-198",
       "token": null
     },
     "assets/wetland": {
@@ -773,10 +500,10 @@
       "token": null
     },
     "autoload/command_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T15:47:09+00:00",
-      "hash": "d91ff85f18fcfc51c1dd37adf85e33124854f371be32c05f79ccf3980cb653b0",
-      "task": "F-232",
+      "agent": "lp",
+      "at": "2026-08-20T10:21:34+00:00",
+      "hash": "67aafeae3af86378f518614ec6c71d7eb28c923b8e4f55401d5a7e753104bd7b",
+      "task": "F-280",
       "token": null
     },
     "autoload/crafting_service.gd": {
@@ -813,13 +540,6 @@
       "hash": "a2a61eb814b4d38e52acd25c92ee9b05b4edaa8b8e438f3fd35f117320511fe4",
       "task": "F-208",
       "token": null
-    },
-    "autoload/graphics_quality.gd": {
-      "agent": "yarrow21",
-      "at": "2026-08-19T07:04:17+00:00",
-      "hash": "8f3c0e50e27e022108d0c76777a4d91798c26b6e3a1c697d7a7beca6f8d3a419",
-      "task": "F-130",
-      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
     "autoload/harvest_world.gd": {
       "agent": "lp",
@@ -989,13 +709,6 @@
       "task": "5.2",
       "token": null
     },
-    "content/enemies/bog_crawler.tres": {
-      "agent": "lm",
-      "at": "2026-08-19T07:17:23+00:00",
-      "hash": "edbb11d2a6b511d21ec3357e2fa4b71e0f62c60a5c056df2976c77cc999420b6",
-      "task": "F-158",
-      "token": null
-    },
     "content/enemies/broodcaller.tres": {
       "agent": "lm",
       "at": "2026-08-19T17:33:59+00:00",
@@ -1108,13 +821,6 @@
       "task": "4.15",
       "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
-    "core/dev/dev_loadout.gd": {
-      "agent": "yarrow21",
-      "at": "2026-08-19T07:04:17+00:00",
-      "hash": "67599056ef79c84905c9a5423ccc6d05162434473ed37d96ff99d450aef8bc6f",
-      "task": "F-130",
-      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
-    },
     "core/events/event_bus.gd": {
       "agent": "lp",
       "at": "2026-08-20T00:02:22+00:00",
@@ -1199,25 +905,32 @@
       "task": "F-239",
       "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
+    "docs/COMMANDS.md": {
+      "agent": "lp",
+      "at": "2026-08-20T10:21:34+00:00",
+      "hash": "5d428cec44533607a4885e46a568d2f2d7076c9880fba9487c202a6daf67cd15",
+      "task": "F-280",
+      "token": null
+    },
     "docs/DECISIONS.md": {
-      "agent": "lm",
-      "at": "2026-08-20T06:50:30+00:00",
-      "hash": "90925e3f32e7dd41f9e3a7fe52a12f6d9dee07e3c6b72dd226bdae18ad062f27",
-      "task": "F-277",
+      "agent": "lp",
+      "at": "2026-08-20T10:21:34+00:00",
+      "hash": "1b7f117cec3913e5fcbc1d46279820fd9ae961ad749dd9755fad2ed43c2402ff",
+      "task": "F-280",
       "token": null
     },
     "docs/DELEGATION.md": {
-      "agent": "lm",
-      "at": "2026-08-20T06:50:30+00:00",
-      "hash": "dd986db05e39ed373970e90b7f3c3410b2b513d4009b71316fa5e81571ffa412",
-      "task": "F-277",
+      "agent": "lp",
+      "at": "2026-08-20T10:21:34+00:00",
+      "hash": "c477e63dbbf48f147a8a44ceae720c71d2c31c3a99bfddd8de8a29f714ec6946",
+      "task": "F-280",
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "lm",
-      "at": "2026-08-20T06:50:30+00:00",
-      "hash": "640c7e7e368d1fc8806dbd8f73aa85e373ef2ab01f4e96975c1a898e93dcb9a3",
-      "task": "F-277",
+      "agent": "lp",
+      "at": "2026-08-20T10:21:34+00:00",
+      "hash": "cc9783da95b64ad81046089cbb0526be1e65146e445974d8695c045762be778a",
+      "task": "F-280",
       "token": null
     },
     "docs/NEXT.md": {
@@ -1228,10 +941,10 @@
       "token": null
     },
     "docs/SPECS.md": {
-      "agent": "lm",
-      "at": "2026-08-20T06:50:30+00:00",
-      "hash": "0aff85d2e88fdb6046651b460fc097f2a41303cc6205a8d3d01122c76a94aad4",
-      "task": "F-277",
+      "agent": "lp",
+      "at": "2026-08-20T10:21:34+00:00",
+      "hash": "45c2ab1884728e50127f8fbcaca3e8200c6ab9a8d9dc2de8f24e8c3755bfee2b",
+      "task": "F-280",
       "token": null
     },
     "entities/player/player_camera.gd": {
@@ -1254,13 +967,6 @@
       "hash": "ee8974ead450b674488ad53fa18b605497a6d0dc94a331c9dc701f481c051b3c",
       "task": "8.4",
       "token": null
-    },
-    "levels/hollowmere.tscn": {
-      "agent": "yarrow21",
-      "at": "2026-08-19T07:05:07+00:00",
-      "hash": "ae9d3b990d4a3b3a718a3b530448dfccc107b3ba2c81cec6d0b90f44afd3745a",
-      "task": "F-195",
-      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
     "project.godot": {
       "agent": "lm",
@@ -1299,8 +1005,8 @@
     },
     "systems/cycle/cycle_service.gd": {
       "agent": "lp",
-      "at": "2026-08-20T06:37:03+00:00",
-      "hash": "92cfa7c1c70c7c9abf97b19e06ff9acb7b48655b3df00a74f5b7bb73a5d4e189",
+      "at": "2026-08-20T10:21:34+00:00",
+      "hash": "12f5724d8d5ead26be1acce3cf1114d624f4918ab9a4c032c8af1c718fd3c134",
       "task": "F-280",
       "token": null
     },
@@ -1402,20 +1108,6 @@
       "task": "F-277",
       "token": null
     },
-    "tools/audio/render_music.py": {
-      "agent": "lp",
-      "at": "2026-08-19T09:20:59+00:00",
-      "hash": "a94bdcc6191a92dab3ae5cb851cdfcd072e982add3131e36f7710e16d35eb98f",
-      "task": "F-196",
-      "token": null
-    },
-    "tools/audio/render_sfx.py": {
-      "agent": "lp",
-      "at": "2026-08-19T09:20:59+00:00",
-      "hash": "b4f691b113a160c281d5390d711b468ba6d87ea169eb32dca05c86eed8decc60",
-      "task": "F-196",
-      "token": null
-    },
     "tools/autoload_tracked_check.py": {
       "agent": "lp",
       "at": "2026-08-19T10:25:06+00:00",
@@ -1458,33 +1150,12 @@
       "task": "F-274",
       "token": null
     },
-    "tools/blender/asset_repro_check.py": {
-      "agent": "lp",
-      "at": "2026-08-19T09:57:59+00:00",
-      "hash": "d5f0a3a257f1bb35d5e5dd510cbdfb75de5c43874defaa7fe39aa1e6c1db83ca",
-      "task": "F-198",
-      "token": null
-    },
-    "tools/blender/build_adapted_nature_set.py": {
-      "agent": "lp",
-      "at": "2026-08-19T09:20:59+00:00",
-      "hash": "dd79153a21d9af0646901c1e993e6f166cecdfec71b4ed2b97aac8087a5e2aaf",
-      "task": "F-196",
-      "token": null
-    },
     "tools/blender/build_camp_set.py": {
       "agent": "slate17",
       "at": "2026-08-19T16:55:30+00:00",
       "hash": "febcd653ba775b42526f2f5366ee12bafff1404776f9cca8c537974c7683a602",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "tools/blender/build_construction_set.py": {
-      "agent": "lp",
-      "at": "2026-08-19T09:20:59+00:00",
-      "hash": "e86a074cb519b2d02f9c90a4d4e9ffa50c789bba035e386a9af62e4d8c102e01",
-      "task": "F-196",
-      "token": null
     },
     "tools/blender/build_crafting_stations.py": {
       "agent": "lm",
@@ -1498,27 +1169,6 @@
       "at": "2026-08-19T13:37:33+00:00",
       "hash": "22f832b3651256f8530655ae0a6d106de21ff5df00fc98e3ddc5571b829a33be",
       "task": "F-207",
-      "token": null
-    },
-    "tools/blender/build_extraction_ship_set.py": {
-      "agent": "lp",
-      "at": "2026-08-19T09:20:59+00:00",
-      "hash": "df58172a89a683022824a507c5f4c41aee8fd44a67986596c8102c330aeff57f",
-      "task": "F-196",
-      "token": null
-    },
-    "tools/blender/build_flora_set.py": {
-      "agent": "lp",
-      "at": "2026-08-19T10:14:11+00:00",
-      "hash": "6d823cddd4c4bfee0a8f3d16310431f592ba821179dc427fca75ece499983cfb",
-      "task": "F-204",
-      "token": null
-    },
-    "tools/blender/build_food_set.py": {
-      "agent": "lp",
-      "at": "2026-08-19T09:20:59+00:00",
-      "hash": "d8bfd10c3618487df65a2d8b1f4d1f486dfb6a3ccb499bb99ec9d8b21f9db95d",
-      "task": "F-196",
       "token": null
     },
     "tools/blender/build_gatherable_plants.py": {
@@ -1555,20 +1205,6 @@
       "hash": "5e10b9aa02a649079b19296b0a23e9a7e8c111951356fa03fb73ed7145ca7244",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "tools/blender/build_pickup_kit.py": {
-      "agent": "lp",
-      "at": "2026-08-19T09:20:59+00:00",
-      "hash": "d8bd3ab2dbfc223feaee8dbdd9dcf4c9bc889e6a27e237e89be110ae693a3e40",
-      "task": "F-196",
-      "token": null
-    },
-    "tools/blender/build_playtest_hollow.py": {
-      "agent": "lp",
-      "at": "2026-08-19T09:20:59+00:00",
-      "hash": "749b7da548b26d66435055146534a4587aa21f4fd426a93b1429e6b6813537e1",
-      "task": "F-196",
-      "token": null
     },
     "tools/blender/build_terrain_accents.py": {
       "agent": "lm",
@@ -1612,20 +1248,6 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
-    "tools/blender/crafting_stations_repro_check.py": {
-      "agent": "lm",
-      "at": "2026-08-19T07:07:27+00:00",
-      "hash": "4c8450853e540dfc4a6b4626a04bff2862a5ff18255c921fcf4578d05ca94116",
-      "task": "F-057",
-      "token": null
-    },
-    "tools/blender/godot_import_lock.py": {
-      "agent": "lp",
-      "at": "2026-08-19T09:20:59+00:00",
-      "hash": "5c8e8a4a0e294381e7a7f9a9c6ada923a136cba44affa786aebaa54eda373030",
-      "task": "F-196",
-      "token": null
-    },
     "tools/blender/mire_art.py": {
       "agent": "wick20",
       "at": "2026-08-19T17:07:19+00:00",
@@ -1639,20 +1261,6 @@
       "hash": "ef88911827c776e40719c6afe313598603644cc81876f4186c6f02a46183e1e9",
       "task": "F-222",
       "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "tools/blender/render_item_icons.py": {
-      "agent": "lp",
-      "at": "2026-08-19T09:20:59+00:00",
-      "hash": "4516e3dbe7c1bc9e5c257c8a13cce67e52f391ca2f45406e63b1758d674039ad",
-      "task": "F-196",
-      "token": null
-    },
-    "tools/bog_crawler_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T07:17:23+00:00",
-      "hash": "b0e533e9549e0af45f046b7bc1010433bd6e89b72c3129957dd56c851fc032cd",
-      "task": "F-158",
-      "token": null
     },
     "tools/boss_check.gd": {
       "agent": "lm",
@@ -1794,13 +1402,6 @@
       "task": "F-246",
       "token": null
     },
-    "tools/enemy_lod_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T07:17:23+00:00",
-      "hash": "21c0e98241d1dc170022eb5239e48410326b36d6525b7c138b49347b3fbb53ca",
-      "task": "F-158",
-      "token": null
-    },
     "tools/enemy_lunge_check.gd": {
       "agent": "lm",
       "at": "2026-08-19T17:59:43+00:00",
@@ -1822,20 +1423,6 @@
       "task": "F-269",
       "token": null
     },
-    "tools/food_check.gd": {
-      "agent": "slate17",
-      "at": "2026-08-19T07:59:58+00:00",
-      "hash": "2d31880bb3e1d3dbf52c7c4a05bf853009d8a4a5814de88d4420f35fcba38d98",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "tools/food_check.gd.uid": {
-      "agent": "slate17",
-      "at": "2026-08-19T07:59:58+00:00",
-      "hash": "afa9c31e55b5a0293b826bfd965b914c5a685076167906b30e8c4f4307b2f3f2",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
     "tools/function_check.gd": {
       "agent": "lm",
       "at": "2026-08-19T15:32:50+00:00",
@@ -1849,13 +1436,6 @@
       "hash": "f53f348c58c78b68377d7c6304afe64d374a9643e25914d946ef20d5a4af558a",
       "task": "F-217",
       "token": null
-    },
-    "tools/gatherables_check.gd": {
-      "agent": "wick20",
-      "at": "2026-08-19T07:08:14+00:00",
-      "hash": "078088870f1d6b98aedb780a624dfc746ef143641ce9b689d63345e4668299e8",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
     "tools/handshake_check.gd": {
       "agent": "lm",
@@ -1887,16 +1467,9 @@
     },
     "tools/hook_events_check.gd": {
       "agent": "lp",
-      "at": "2026-08-19T09:01:10+00:00",
-      "hash": "8997340f9735ea2fec8b0b7681a352e42a8265941062c1596d89a0cd8352db3f",
-      "task": "F-154",
-      "token": null
-    },
-    "tools/hook_events_check.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T09:01:10+00:00",
-      "hash": "4eb9e50996318f283d5cef407adcbcde645dbb42c4f789fffc6c0ec0d2d60463",
-      "task": "F-154",
+      "at": "2026-08-20T10:21:34+00:00",
+      "hash": "eec6da90c5c9d109eb39282ae8f27dde7158e223ceb9ae4472046f289faaafb2",
+      "task": "F-280",
       "token": null
     },
     "tools/hostile_client_check.gd": {
@@ -1904,20 +1477,6 @@
       "at": "2026-08-19T15:47:09+00:00",
       "hash": "8e422e72e0b069d39455fc43194c25cb21c869ec3ff38fa6d3c534d7bc95b523",
       "task": "F-232",
-      "token": null
-    },
-    "tools/import_cache_guard_check.py": {
-      "agent": "lp",
-      "at": "2026-08-19T09:20:59+00:00",
-      "hash": "22d46bb95a7d4ebdd7581b6cf60652394c243c800a77ca25809d3792dd045f5f",
-      "task": "F-196",
-      "token": null
-    },
-    "tools/lobby_menu_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T07:30:27+00:00",
-      "hash": "7a61c0a75e7fc42c4d486a5afc3367e5d206c66da158d3d7597b32c801f37779",
-      "task": "F-170",
       "token": null
     },
     "tools/loop_audit_check.gd": {
@@ -1939,13 +1498,6 @@
       "at": "2026-08-19T13:59:55+00:00",
       "hash": "6e8fdf537c1ac6dfe4f4e6c3906ca9ce556bc72e4c8145adf31214c361acd13e",
       "task": "F-208",
-      "token": null
-    },
-    "tools/mire_interaction_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T07:17:23+00:00",
-      "hash": "714491d19f0ffb007341f1e5416e915b4e0c4287d8b2b454637fb150edfe6cff",
-      "task": "F-158",
       "token": null
     },
     "tools/nav_bake_check.gd": {
@@ -2060,19 +1612,19 @@
       "task": "F-243-review",
       "token": null
     },
+    "tools/run_started_hook_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T10:21:34+00:00",
+      "hash": "153c96adb41dba380f8ab1f5cc614f732cd22403788aec48c2f8a0fa6f540456",
+      "task": "F-280",
+      "token": null
+    },
     "tools/run_summary_check.gd": {
       "agent": "lp",
       "at": "2026-08-19T19:36:41+00:00",
       "hash": "964fc43c24bc24e821218d612a00797454621cfc1cf08df72b2efe89e540d6cf",
       "task": "F-238",
       "token": null
-    },
-    "tools/salvage_check.gd": {
-      "agent": "yarrow21",
-      "at": "2026-08-19T07:04:53+00:00",
-      "hash": "caca778bf82957ba089d5003148cc1a4404b776a339154c82964733aaf8f4ad5",
-      "task": "F-193",
-      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
     "tools/seed_sync_check.gd": {
       "agent": "lp",
@@ -2172,13 +1724,6 @@
       "task": "F-257",
       "token": null
     },
-    "tools/steam_lobby_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T09:31:00+00:00",
-      "hash": "522ff8963b7cb1c6db4e8a60c1a41656c1bb8ee92e479a34852e86687e97a931",
-      "task": "F-201",
-      "token": null
-    },
     "tools/steam_stats_check.gd": {
       "agent": "lp",
       "at": "2026-08-19T19:28:43+00:00",
@@ -2255,13 +1800,6 @@
       "hash": "cae29224919288c97aefe5b5b3c3879a9260079280c15eb86b0cdda495b7df6f",
       "task": "F-236",
       "token": null
-    },
-    "tools/vitals_hud_check.gd": {
-      "agent": "yarrow21",
-      "at": "2026-08-19T07:04:33+00:00",
-      "hash": "0d17301afc1b9cd47a70b6f099b7f3fea04b7ef42b79672c6dc6944d7a328b6e",
-      "task": "F-192",
-      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
     "tools/wave_director_check.gd": {
       "agent": "lm",
@@ -6518,9 +6056,11 @@
       "title": "F-243 revives players where the previous run ended instead of at the run spawn"
     },
     "F-280": {
+      "done_at": "2026-08-20T10:21:34+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "F-243's public run_started hook stays one-shot when a second run starts"
     },

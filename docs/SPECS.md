@@ -9961,3 +9961,115 @@ enumerated as F-281 and being worked by other lanes (F-278 DayNight, F-279 spawn
 `run_started`), so nothing new was filed.
 
 **Resolved** — see `docs/FINDINGS.md`. Closes item 3 of F-281 as well.
+
+---
+
+## F-280 · F-243's public `run_started` hook stays one-shot when a second run starts
+
+**Claim:** `systems/cycle/cycle_service.gd`, `autoload/command_service.gd`,
+`tools/run_started_hook_check.gd` (new), `tools/hook_events_check.gd`, plus the four docs and
+`docs/COMMANDS.md` §5.2. Network authority: **HOST**, `ARCHITECTURE.md` §2.2 "Day/night, wave
+director, Cycle state, active modifiers" row — unchanged by this task. Both `run_started` emit sites
+sit behind the same `_owns_cycle()` gate `_announce()` uses, so a client never fires its own copy;
+`CommandService._fire_hook()` re-checks `host_only` on top of that. **No new RPC, no
+`PROTOCOL_VERSION` bump** — nothing crosses the wire that did not already.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The shape of the bug.** F-154 gave `CommandService._HOOK_EVENTS`'s `run_started` row a real signal
+and latched it with `_run_started_emitted`, correctly, because a run's lifetime WAS the process
+lifetime then — and said in as many words that a future play-again flow would have to revisit that
+guard. F-243 shipped play-again and did not. It added a *private* sibling instead
+(`EventBus.run_restarted`, subscribed by ~15 run-scoped services) and never touched the public hook
+contract. So a player who enables a `run_started` HookDef gets it on the process's first run and
+then silently nothing: no error, no log line, the hook simply never fires again for the run they are
+actually playing. `tools/run_restart_net_check.gd:182` — lc1's F-243 review — is where it was caught,
+subscribing after boot, restarting for real, and counting **zero** emissions.
+
+**The call: `run_started` means every run (D-168).** The finding offered two exits — un-latch the
+public event, or expose a separately documented restart hook. Un-latching, for three reasons. The
+event's NAME is a promise a scenario author reads at face value, and F-154's own text named the
+process/run identity as a temporary equivalence, not a design. A second public `run_restarted` word
+would force every author who wants "a run began" to bind both and would make the first run the odd
+one out. And the private `run_restarted` is genuinely *not* the same event: it means "throw the
+ENDED run's state away", which is exactly the thing with no first-run counterpart — a service
+subscribing it on boot would try to clear state that does not exist yet. Two seams, two meanings,
+neither substitutable; that is now written at the top of `cycle_service.gd`.
+
+**The fix.** `_run_started_emitted` becomes run-scoped rather than process-scoped, and
+`host_restart_run()` clears it and re-emits:
+
+```gdscript
+_announce()
+_run_started_emitted = false
+_emit_run_started()
+```
+
+Two details are load-bearing and neither is arbitrary:
+
+1. **It fires LAST, after `_announce()` and after every reset above it.** A `run_started` hook body
+   is arbitrary user command script (`give`, `spawn`, `rule set`, …), so it must observe the run it
+   is named after — Cycle 1 recorded, modifiers cleared, inventories empty, the new seed live — not
+   the ended one being torn down around it. `EVENT_BUS.emit_run_restarted()` fires FIRST in the same
+   method for the mirror-image reason: its subscribers exist to do the tearing down. The check pins
+   this as a property rather than trusting the line order: the listener snapshots
+   `current_cycle()`, `InventoryService.host_count()` and `DefeatService.defeated` **at emit time**
+   and all three must already read as the new run's.
+2. **Clear the guard, do not emit directly.** `_emit_run_started()` stays the single emit site, so
+   its `_owns_cycle()` gate keeps deciding who may fire — a host-only contract enforced in one
+   place, not two.
+
+`host_advance_cycle()` deliberately does not touch the guard: Cycle 2 is the same run. Neither does
+the early return in `host_restart_run()` for a run still in progress — a refused restart never
+began a run, so it must not announce one.
+
+**Verify:** `.agent/bin/agent godot --script tools/run_started_hook_check.gd` →
+`RUN_STARTED_HOOK_CHECK failures=0`, 28 PASS, exit 0, no undeclared `ERROR:` lines. It drives the
+PUBLIC path on the shipped map, not the signal in isolation: a synthetic `HookDef` goes in through
+`CommandService.wire_hook()` — the same front door `_wire_hooks()` uses for `content/hooks/*.tres` —
+bound to a registered function whose only line ops an otherwise-untouched sentinel peer, so
+`is_op(4280)` flipping is unambiguous evidence that *that hook body* ran. Wired AFTER boot, exactly
+like a hook a player enables mid-session. Then four claims, because the finding is really about
+which of them F-243 broke: it fires at boot; it does **not** fire on `host_advance_cycle()`; it does
+**not** fire on a refused mid-run restart; and it fires again on each real restart — driven twice,
+through real lethal damage and `DefeatService`, because a fix that works once and then latches is
+the exact shape this finding is about. Between the two restarts the sentinel is `deop`ped through
+the front door, so the second op can only have come from the hook running again.
+
+The client half — a connected peer must never fire its own `run_started`, both emit sites being
+`_owns_cycle()`-gated — needs two processes and already lives in `tools/run_restart_net_check.gd`.
+
+**Pre-fix proof.** `agent baseline` cannot help: the check script does not exist at HEAD, the same
+constraint F-261, F-275 and F-278 all hit. Instead the two added lines were removed from the working
+copy (a copy kept aside — deliberately not `git stash`, which would touch other lanes' uncommitted
+work) and the same check run: **`failures=3`**, and they are exactly the finding's symptoms — zero
+`run_started` for the restarted run, zero for the third, and the bound hook function never re-ran.
+Restored, same check, `failures=0`.
+
+**Neighbours re-run green.** `tools/hook_events_check.gd` `failures=0` (23 PASS) — its
+"`_emit_run_started()` re-called after boot is a no-op" assertion is still correct after this change
+and was kept: no restart happens in that check, so the guard is still latched from boot. Its stale
+comments ("once per process", "no repeatable real trigger within one process by design") were
+corrected under this claim. `tools/run_restart_check.gd` `failures=0`.
+`tools/run_restart_net_check.gd` now reports **PASS** on "the public run_started lifecycle signal
+fires for the restarted run" — the assertion that reported this finding — leaving `failures=1`, and
+that one is F-279's player-spawn defect, open and owned elsewhere.
+
+**Swept for the same shape.** Three greps, `--include=*.gd`. (a) Every one-shot latch boolean
+(`_emitted`/`_fired`/`_announced`/`_once`) in `autoload/`, `systems/`, `ui/`, `core/`: two exist —
+this one and `Boss._defeat_emitted`, which is per-INSTANCE on a node `EnemyWorld` frees at restart,
+so it dies with the run by construction. (b) Every other `_HOOK_EVENTS` row, for the same
+boot-latched shape: all four are genuinely repeatable per-run events (`night_started`/`day_started`
+are threshold crossings, `player_downed` is an edge — `tools/hook_events_check.gd` already proves it
+re-fires after a revive — and `enemy_died` is per-kill). Worth stating explicitly because
+`DayNight._on_run_restarted()` resets the clock *silently* by design (D-166), which could have
+orphaned the restarted run's first morning: it does not, because `_ready()` does not emit
+`day_started` at boot either, so both runs behave identically. (c) Every "once per process" /
+"per-process" comment repo-wide: the rest are `EventBus`-is-a-static notes and `GameState`'s seed,
+all correct as written. One real sibling of the class was found and filed as **F-300**: autoexec
+(`COMMANDS.md` §5.3) runs at boot only, so the "loadout preferences" half of its documented purpose
+survives exactly one run — F-243 wipes `InventoryService` and nothing re-runs it. Its rules half is
+unaffected, and `run_started` is now the per-run answer that did not exist when §5.3 was written.
+
+**Resolved** — see `docs/FINDINGS.md`.

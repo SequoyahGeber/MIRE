@@ -67,14 +67,22 @@ const FUNCTIONS_DIR: String = "res://content/functions"
 
 ## docs/COMMANDS.md §5.2's event vocabulary "starts with what exists" — every entry here names a
 ## REAL signal a prior task already shipped. F-154 closed the last gap: `run_started`
-## (`CycleService.run_started`, fired once per process the instant Cycle 1 is live) and
-## `player_downed` (`PlayerHealth.player_downed`, the ALIVE->DOWNED edge, not the broadcast
-## `downed_flag_changed` bool that also fires on revive) both now have real rows below. A HookDef
-## naming an event still absent from this table fails loudly at wire time (MireLog error) instead of
-## silently never firing. `handler` is one of this file's own methods, shaped to match the named
-## signal's exact arity — Callable.bind() appends the hook's (function, host_only) pair AFTER
-## whatever the signal itself supplies, so the handler's own parameter list has to match the signal,
-## not guess at it.
+## (`CycleService.run_started`) and `player_downed` (`PlayerHealth.player_downed`, the ALIVE->DOWNED
+## edge, not the broadcast `downed_flag_changed` bool that also fires on revive) both now have real
+## rows below. A HookDef naming an event still absent from this table fails loudly at wire time
+## (MireLog error) instead of silently never firing.
+##
+## F-280/D-168: every row here is a PER-RUN event, not a per-process one — `run_started` fires at the
+## start of each run in the lobby, restarts included, so a hook wired once at boot keeps running for
+## the second and tenth run the way its name promises. It shipped one-shot under F-154 (a run's
+## lifetime was the process lifetime then) and F-243's play-again flow made that silently wrong;
+## `CycleService.host_restart_run()` now re-fires it. Nothing here binds the private
+## `EventBus.run_restarted` sibling and nothing should: that one means "throw the ended run away",
+## which is a service-internal reset broadcast, not a vocabulary word for scenario authors.
+##
+## `handler` is one of this file's own methods, shaped to match the named signal's exact arity —
+## Callable.bind() appends the hook's (function, host_only) pair AFTER whatever the signal itself
+## supplies, so the handler's own parameter list has to match the signal, not guess at it.
 const _HOOK_EVENTS: Dictionary[StringName, Dictionary] = {
 	&"run_started": {
 		"path": ^"/root/CycleService", "signal": &"run_started", "handler": &"_on_hook_signal_0"},
