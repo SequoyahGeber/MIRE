@@ -4757,3 +4757,39 @@ emit, and that is exactly the peer whose stamps need resetting.
 signals on join. Today a late joiner deliberately gets no backlog (`net_world_snapshot` bypasses
 `delta_applied`) and reads the caught-up stack from `active_modifier_ids()` instead — same contract
 `CycleService` has. That would need real design, not a widening of this handler.
+
+### D-159 · 2026-08-19 · An asset may show a void it CONTAINS, never one the terrain would have to own — and every named-but-cut interior must cite its finding on the same line
+
+D-142 put 3D density and caves on the cut list, so the shipped world is a 2D heightfield with
+nothing below grade. The consequence for art is narrower than "no caves" and keeps being
+rediscovered: **the mesh may have a hole in it; the ground may not.** `giant hollow tree` is fine —
+its void is inside its own trunk, and the asset carries it wherever it is placed. `cliff overhang`
+is fine because it is honest about being a rock ledge PLACED on a slope, never a claim the terrain
+overhangs. `corrupted crater` and the re-scoped `sinkhole` are fine because a depression IN the
+heightfield is the one below-grade shape the heightfield can express. What is not fine is a mouth
+that reads as *go in here*: a player walks up, tries to enter, and finds solid ground.
+
+This has now been caught three times, each by a human re-reading a table after the list was already
+written — F-237 (`cave entrance`, A-016), F-255 (`flooded cellar entrance`, A-020) and F-255's own
+sweep (`burrow entrance`, A-016b, which was `NEXT` and about to be built). Three for three by eye is
+not a process, so the rule is asserted by `tools/asset_scope_check.gd` instead.
+
+**The enforced form:** in any file where an asset gets NAMED before it gets a mesh —
+`docs/ASSET_TRACKER.md`, every `assets/*/README.md`, every `tools/blender/build_*.py` — a line may
+name a below-grade interior (`cave`, `cellar`, `tunnel`, `catacomb`, `crypt`, `basement`, `dungeon`,
+`undercroft`, `mine shaft`) or an `entrance` only if that same line cites an `F-NNN` or `D-NNN`. No
+exported GLB may be named for one at all.
+
+**The citation requirement is the whole mechanism, not paperwork.** Prose recording a cut and prose
+proposing an asset are textually identical — "cave entrance" appears in both — and the citation is
+the only thing that distinguishes them. A row that names a cave and says why is a record; a row that
+names a cave and says nothing is the row somebody opens Blender for.
+
+**Re-scope rather than cut, where the landmark survives it.** F-237 cut `cave entrance` because
+nothing was left once the cave went. F-255 kept `flooded cellar ruin` and `burrow mound`, because a
+ruined flooded structure and a mound of turned earth are both good props once the implied room is
+gone. Cutting is the fallback, not the default.
+
+**Would change my mind:** D-142's erosion spike coming back hash-equal does NOT reopen this — it
+changes how the surface is shaped, not whether there is anything under it. Only adopting 3D density
+would, and D-142 rejects that outright rather than gating it.

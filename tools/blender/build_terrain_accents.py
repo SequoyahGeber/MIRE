@@ -7,7 +7,14 @@ Built with Blender 5.2.0 LTS (D-038). Outputs to `assets/terrain_accents/`.
 **A-016 is split into lettered children**, as `ASSET_TRACKER.md` allows for a batch too large for
 one clean commit. This is **A-016a**: cliff face, cliff corner, cliff overhang, rocky slope, scree
 pile and natural stone steps — everything that is rock. A-016b is the earth-and-water half (mud
-bank, riverbank, streambed, sinkhole, burrow entrance).
+bank, riverbank, streambed, sinkhole, burrow mound).
+
+**A-016b's last two names were re-scoped before anyone opened Blender**, by F-237 and F-255
+respectively, for the one reason below: `sinkhole` is a shallow surface depression, not a hole with
+somewhere to go, and F-255 renamed `burrow entrance` to `burrow mound` — a mound of turned earth
+whose mouth is a shallow, visibly-bottomed hollow in the PROP's own mesh, animal-sized, never
+player-sized.
+D-159 states the rule both follow: a void may live inside an asset, never behind it in the terrain.
 
 **The gate is met, not waived.** A-016 waited on "world-gen terrain shape is settled", and D-142
 settled it on 2026-08-19: fBm + falloff base, domain warp, a masked ridged layer, steepest-descent

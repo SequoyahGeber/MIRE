@@ -75,6 +75,37 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-255 resolved: asset scoping against the 2D heightfield is now a check, not a habit — `tools/asset_scope_check.gd` (lm)
+
+**The check the next asset batch runs:**
+
+```bash
+.agent/bin/agent godot --script tools/asset_scope_check.gd
+```
+
+**What it asserts (D-159).** D-142 left the world a 2D heightfield with nothing below grade, so an
+asset may show a void it CONTAINS (`giant hollow tree`'s trunk) but never one the terrain would have
+to own (`cave entrance`). The check scans every file where an asset gets named before it gets a mesh
+— `docs/ASSET_TRACKER.md`, every `assets/*/README.md`, every `tools/blender/build_*.py` — and fails
+any line naming a below-grade interior (`cave`, `cellar`, `tunnel`, `catacomb`, `crypt`, `basement`,
+`dungeon`, `undercroft`, `mine shaft`) or an `entrance` **unless that same line cites an `F-NNN` or
+`D-NNN`**. Second rule: no exported GLB in any kit may be named for one. Currently 19,175 lines
+across 41 files, 0 failures.
+
+**If you are writing a new asset batch, this is what it means for you.** Naming a cut asset is fine
+and encouraged — cite the finding on the same line and the check passes, which is exactly how
+A-016a/A-016b record `cave entrance`. What fails is naming one with no reason attached, because that
+is indistinguishable from proposing to build it. `entry` is deliberately not matched (`catalog
+entry`, `SIZE entry`, `carpentry`); `doorway` is not matched either, since an authored opening
+through an authored wall leads somewhere that genuinely exists.
+
+**Two rows re-scoped, both before anyone opened Blender:** A-020's `flooded cellar entrance` ->
+**`flooded cellar ruin`** (a sunken half-collapsed structure at or near grade, at most a token few
+steps into ankle-deep water that visibly bottoms out), and A-016b's `burrow entrance` ->
+**`burrow mound`** (animal-sized mouth, hollow contained in the prop's own mesh). A-016b is `NEXT`,
+so that second one was the live risk. `corrupted crater` needs nothing — a depression IN the
+heightfield is the one below-grade shape it can express, and is what `sinkhole` was re-scoped to.
+
 ### 2026-08-19 — F-254 resolved: `EventBus.cycle_modifier_drawn` now fires on every peer, not just the host (lp)
 
 **The API the next task builds on:**

@@ -8990,3 +8990,83 @@ same client-re-derivation gap — `WaveSpawner` and `MireGrid` emit no signals o
 is nothing there to re-derive.
 
 **Resolved** — see `docs/FINDINGS.md`.
+
+---
+
+## F-255 · A-020's `flooded cellar entrance` is the same shape F-237 just cut from A-016 — an entrance implying an interior/underground space the 2D heightfield cannot back
+
+No block existed here beforehand; SPECS.md's own preamble makes writing one part of the task that
+discovers the gap.
+
+**Authority:** none — an asset/content-scoping finding. No runtime system, no RPC, no
+`ARCHITECTURE.md` §2.2 row. The check it ships reads text files and never touches the scene tree.
+
+**Claim:** `docs/ASSET_TRACKER.md`, `tools/blender/build_terrain_accents.py`,
+`assets/terrain_accents/README.md`, `tools/asset_scope_check.gd`, `docs/SPECS.md`,
+`docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/FINDINGS.md`.
+
+**The finding's check FAILED before any edit** — the brief's "may already be fixed" flag was wrong
+here. `docs/ASSET_TRACKER.md`'s A-020 row still read `flooded cellar entrance` verbatim; the 9
+commits since the filing were unrelated churn in other rows.
+
+**Not fixed by cutting the asset — fixed by re-scoping its name and its brief**, matching F-237's
+own `sinkhole` precedent rather than its `cave entrance` one. A-020's list is eight landmark
+assemblies and a ruined, flooded structure is a good landmark; what cannot exist is the *room below
+it*. So the row now reads **`flooded cellar ruin`** and spells out the buildable version: a sunken,
+half-collapsed structure standing at or near grade — broken foundation walls, a caved-in floor slab,
+at most a token few steps down into ankle-deep water that visibly bottoms out — never a threshold
+the eye reads as "go in here". The row also settles the neighbour a reader will ask about next:
+`corrupted crater` is fine exactly as written, because a depression IN the heightfield is what
+`sinkhole` was re-scoped to and is the one below-grade shape a 2D heightfield can express.
+
+**One live sibling, found by the sweep and fixed under the same claim: A-016b's `burrow entrance`.**
+Same trap one scale down, and more urgent than A-020 — A-016b is `NEXT`, not `QUEUED`, so it is the
+one that was actually about to be built. Renamed to **`burrow mound`** in all three places that name
+it (`ASSET_TRACKER.md` row, `build_terrain_accents.py` docstring, `assets/terrain_accents/README.md`
+§A-016b), scoped as a mound of turned earth whose mouth is a shallow, visibly-bottomed hollow in the
+prop's own mesh, animal-sized and never player-sized.
+
+**The lint is the actual deliverable.** `tools/asset_scope_check.gd` is new and generalises
+F-237/F-255 into a standing guard, because this same trap has now been caught three times by three
+different readers re-reading a table by eye, and that kind of vigilance is exactly what stops
+happening. It scans every file where an asset gets NAMED before it gets a mesh — `ASSET_TRACKER.md`,
+every `assets/*/README.md`, every `tools/blender/build_*.py` — and fails any line that names a
+below-grade interior (`cave`, `cellar`, `tunnel`, `catacomb`, `crypt`, `basement`, `dungeon`,
+`undercroft`, `mine shaft`) or an `entrance` **without an `F-NNN`/`D-NNN` citation on that same
+line**. The citation exemption is the design, not a hole in it: prose recording a cut is textually
+identical to prose proposing one, and the citation is the only thing that separates them — so a row
+that names a cave without saying why is precisely the row that gets built. Second rule: no exported
+GLB in any kit may be *named* for one either, since a re-scoped row is worth nothing if the asset
+shipped anyway. D-159 records the rule.
+
+**Verify:** `agent godot --script tools/asset_scope_check.gd` — 19,175 lines across 41 files, 0
+failures. Proven to fail, not just to pass, on both rules: restoring the old `flooded cellar
+entrance` wording in the A-020 row produces `FAIL docs/ASSET_TRACKER.md promises nothing below grade
+— line 454 names 'cellar' with no F-/D- citation`, and dropping a `cave_entrance.glb` into
+`assets/terrain_accents/exports/` produces `FAIL no exported GLB is named for a below-grade
+interior`. Both negative tests were reverted; `git status` on `assets/terrain_accents/` shows only
+the intended README edit.
+
+**Traps:**
+- **`entry` cannot be in the pattern.** The first draft matched `entrance|entry` and lit up a dozen
+  build scripts on `catalog entry`, `SIZE entry` and — via a missing leading `\b` — `carpentry`. A
+  lint with false positives is a lint everyone learns to ignore, so only `entrance` is matched.
+- **`_` is a word character in PCRE**, so `\bentrance\b` never fires inside `cave_entrance`. The GLB
+  rule replaces `_` with a space before matching; without that, the second rule silently passes on
+  exactly the filename it exists to catch.
+- **Word boundaries earn their keep twice:** `crypt` must not match `_crypto` (`core/net/
+  run_identity.gd`, outside the corpus but one directory-list change away), and `cave` must not
+  match `caved-in` — A-020's own re-scoped text calls for a caved-in floor slab, which is a surface,
+  not a hole.
+- **A lint that scans nothing passes forever.** The check asserts its own corpus: every target file
+  was readable, more than 500 lines were scanned, and the tracker was among them.
+
+**Swept for siblings:** grepped every `.md`/`.gd`/`.py`/`.tscn`/`.tres` file for
+`entrance|cellar|burrow|underground|basement|tunnel|crypt|dungeon|mineshaft|stairwell|doorway`.
+Two live hits, both fixed above. Everything else is either a record of the F-237 cut, `doorway` in
+the construction kit and `door_check.gd` (a real authored opening through an authored wall — the
+player walks through it into a space that genuinely exists, which is the opposite failure mode), or
+`53 mm underground`, the A-011 grounding-tolerance lesson repeated across nine build scripts. The
+lint's corpus now covers the first class permanently.
+
+**Resolved** — see `docs/FINDINGS.md`.

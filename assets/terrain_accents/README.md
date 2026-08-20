@@ -80,6 +80,11 @@ through the corner itself. It has had one pass, not two.
 
 ## A-016b
 
-Still to build: mud bank, riverbank, streambed, sinkhole, burrow entrance. `sinkhole` needs
+Still to build: mud bank, riverbank, streambed, sinkhole, burrow mound. `sinkhole` needs
 re-scoping to a shallow surface depression for the same F-237 reason — a 2D heightfield has nothing
 for a hole to go into.
+
+`burrow entrance` was renamed to **`burrow mound`** by F-255's sibling sweep, for that same reason
+one scale down: build the mound and let its mouth be a shallow hollow that visibly bottoms out
+inside the prop's own mesh, sized for an animal and never for a player. The rule both of these
+follow is D-159 — an asset may show a void it contains, never one the terrain would have to own.

@@ -51,18 +51,6 @@
       "task": "F-262",
       "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     },
-    "assets/audio/music/boss_stinger.ogg": {
-      "agent": "lp",
-      "at": "2026-08-19T04:35:12+00:00",
-      "hash": "831e6bbe12aebe19bb37c173a2b8547ae100d9442eea4cc846682cf88f75a3a2",
-      "task": "5.5"
-    },
-    "assets/audio/music/boss_stinger.ogg.import": {
-      "agent": "lp",
-      "at": "2026-08-19T04:35:12+00:00",
-      "hash": "e3556e7fc879a65aac3ef4181a169ec509f2ec3cb2d2268bc2686ef7413978e2",
-      "task": "5.5"
-    },
     "assets/audit/terrain/island_20260819.png": {
       "agent": "slate17",
       "at": "2026-08-19T17:36:48+00:00",
@@ -749,6 +737,13 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
+    "assets/terrain_accents/README.md": {
+      "agent": "lm",
+      "at": "2026-08-20T05:07:23+00:00",
+      "hash": "21dc07498d81521a4137e3f76b42095f6215b1e87f813f32ba64ea69a55b6bb8",
+      "task": "F-255",
+      "token": null
+    },
     "assets/tools_weapons": {
       "agent": "lp",
       "at": "2026-08-19T09:57:59+00:00",
@@ -770,18 +765,6 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
-    "autoload/boss_music_director.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T04:35:12+00:00",
-      "hash": "2a662f226c188dcf8a278d73672d13d83a089d2cae6d0dbd80f7f1615f4f776e",
-      "task": "5.5"
-    },
-    "autoload/boss_music_director.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T04:35:12+00:00",
-      "hash": "d5f735466e539eabaf61f746e2715c6c144432496f34ccffbc908bdf7feb6e2d",
-      "task": "5.5"
-    },
     "autoload/build_service.gd": {
       "agent": "lm",
       "at": "2026-08-19T22:28:29+00:00",
@@ -802,12 +785,6 @@
       "hash": "53e92da5f6c00af648b6e319dbcbf787330225fbe56aecde2d0c443c34db406a",
       "task": "F-146",
       "token": null
-    },
-    "autoload/combat_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T04:02:20+00:00",
-      "hash": "c90818c7412b644168df28e95294c09deace6a18301e384abde9ae6e81b0065c",
-      "task": "7.5"
     },
     "autoload/command_service.gd": {
       "agent": "lm",
@@ -851,12 +828,6 @@
       "task": "F-208",
       "token": null
     },
-    "autoload/extraction_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T02:33:53+00:00",
-      "hash": "9c18106ca92ae26af418ca4ebeada3b6e705dd5316e0b3c0d72dd8b1ce8d6d62",
-      "task": "6.5"
-    },
     "autoload/graphics_quality.gd": {
       "agent": "yarrow21",
       "at": "2026-08-19T07:04:17+00:00",
@@ -883,18 +854,6 @@
       "hash": "670c34417d7a9183bbae4deccaddf05b4e731586ad6e920e28db357b78907386",
       "task": "F-245",
       "token": null
-    },
-    "autoload/ranged_combat_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T04:02:20+00:00",
-      "hash": "0e150d54dd9ca9385d54644545c996d52f2852d1d9df0c6bf9b98de36dee8b62",
-      "task": "7.5"
-    },
-    "autoload/ranged_combat_service.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T01:44:21+00:00",
-      "hash": "7a0ab2f70de2df2f798a6a42a4f3a6dd83d19945d9c91065e74139bda7421607",
-      "task": "5.3"
     },
     "autoload/registry.gd": {
       "agent": "lm",
@@ -1077,36 +1036,6 @@
       "task": "5.2",
       "token": null
     },
-    "content/items/berry.tres": {
-      "agent": "lp",
-      "at": "2026-08-19T04:47:27+00:00",
-      "hash": "46be7f23384d036d44700a946e3e55a3bbec77e0aae8ea44f15eb1d183dac7de",
-      "task": "F-162"
-    },
-    "content/items/mushroom.tres": {
-      "agent": "lp",
-      "at": "2026-08-19T04:47:27+00:00",
-      "hash": "485974effff9e9e87a390d95d8316965df49c24c1d2f14ba23436962f2d1a25e",
-      "task": "F-162"
-    },
-    "content/items/raw_meat.tres": {
-      "agent": "lp",
-      "at": "2026-08-19T04:47:27+00:00",
-      "hash": "4bde096db155e5a42659780dbf92cde555d03ae178ec0f3c695d5c36a9b741b2",
-      "task": "F-162"
-    },
-    "content/items/short_bow.tres": {
-      "agent": "lp",
-      "at": "2026-08-19T01:44:21+00:00",
-      "hash": "9a8d98427311711f20c343a120b1ecafe0ed5a2019402f1c84f002cb78db0906",
-      "task": "5.3"
-    },
-    "content/poi": {
-      "agent": "hollow7",
-      "at": "2026-08-19T00:08:59+00:00",
-      "hash": null,
-      "task": "4.7"
-    },
     "content/poi/enemy_nest.tres": {
       "agent": "hollow7",
       "at": "2026-08-19T22:12:05+00:00",
@@ -1141,12 +1070,6 @@
       "hash": "361365bf27795ccc1ab0aa86ccc1a78d18c081424e8530a120d96d323914391c",
       "task": "4.16",
       "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
-    },
-    "content/ranged_weapons/short_bow.tres": {
-      "agent": "lp",
-      "at": "2026-08-19T01:44:21+00:00",
-      "hash": "eef148cf4e626c0eaa1fc93f73ad52a0982171f20d7e6fc57f12889ec0831145",
-      "task": "5.3"
     },
     "content/unlocks": {
       "agent": "lp",
@@ -1225,12 +1148,6 @@
       "task": "F-254",
       "token": null
     },
-    "core/game_state.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T05:05:14+00:00",
-      "hash": "9f50039fed622ac30fea635f6cbc63a05d4fd4a619ce59bb163e8406b441b563",
-      "task": "F-172"
-    },
     "core/net/net_config.gd": {
       "agent": "lm3",
       "at": "2026-08-19T22:35:43+00:00",
@@ -1266,12 +1183,6 @@
       "task": "F-208",
       "token": null
     },
-    "core/save/salvage_save.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T02:49:31+00:00",
-      "hash": "bdaba6cbaff423377b419b8a59e2fa2dcf3d25f7fde7947d6aad32be45da6fa5",
-      "task": "6.6"
-    },
     "core/save/settings_save.gd": {
       "agent": "lm",
       "at": "2026-08-19T10:44:59+00:00",
@@ -1285,12 +1196,6 @@
       "hash": "60082afd246675c0b052ac59c65fce37fc54143a73c7d1416136c85421cf9a7f",
       "task": "8.3",
       "token": null
-    },
-    "core/save/unlock_save.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T03:34:03+00:00",
-      "hash": "3b4cb7c9b9aeab21a4ccbf4ce33b789a887ffd59872141026d46748e3f3e2089",
-      "task": "6.9"
     },
     "core/util/mire_log.gd": {
       "agent": "lm",
@@ -1307,11 +1212,11 @@
       "token": null
     },
     "docs/ASSET_TRACKER.md": {
-      "agent": "wick20",
-      "at": "2026-08-19T17:37:53+00:00",
-      "hash": "1ea4401cbd097808bf4121b5289e3cbd8a685afa8d5b081091bc9df4581d3d49",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
+      "agent": "lm",
+      "at": "2026-08-20T05:07:23+00:00",
+      "hash": "25c32b0e4a3e45a068620376c9011d9e08df5841606dc345e387da2874117ee5",
+      "task": "F-255",
+      "token": null
     },
     "docs/AUDIT-2026-08-19-LOOP.md": {
       "agent": "hollow7",
@@ -1328,24 +1233,24 @@
       "token": null
     },
     "docs/DECISIONS.md": {
-      "agent": "lp",
-      "at": "2026-08-20T00:02:22+00:00",
-      "hash": "7480a71338d2e81ccd8e0cb610b02a07d6467e118e29c080fea62a19350dce04",
-      "task": "F-254",
+      "agent": "lm",
+      "at": "2026-08-20T05:07:23+00:00",
+      "hash": "7d62b1ea758078306b85355b92871ca8601774a421609ffd727c51a75160d939",
+      "task": "F-255",
       "token": null
     },
     "docs/DELEGATION.md": {
-      "agent": "lp",
-      "at": "2026-08-20T00:02:22+00:00",
-      "hash": "d6745d31383cdeb61ef249ee6cb18c95d2bfdcd80915e3c23eed23d401f4e4b4",
-      "task": "F-254",
+      "agent": "lm",
+      "at": "2026-08-20T05:07:23+00:00",
+      "hash": "a3b6f85d93311b9f7884a7cdc9ba8c3e135284ce9600ed1d47e56443bab24e66",
+      "task": "F-255",
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "lp",
-      "at": "2026-08-20T00:02:22+00:00",
-      "hash": "9b192c6afae8c249d4a77cec86b19510eaded161e286d5066a6dfcb182ade887",
-      "task": "F-254",
+      "agent": "lm",
+      "at": "2026-08-20T05:07:23+00:00",
+      "hash": "4aabf2615976457c4eafcdb4c3c915e404096227101886d273e7a6da8a6e9125",
+      "task": "F-255",
       "token": null
     },
     "docs/NEXT.md": {
@@ -1363,10 +1268,10 @@
       "token": "CLAUDE_CODE_SESSION_ID:7fea7368-2734-4f59-9d4a-147b2b5d903e"
     },
     "docs/SPECS.md": {
-      "agent": "lp",
-      "at": "2026-08-20T00:02:22+00:00",
-      "hash": "a2fff5d112a48cf3646c1fb3630e5be432a15f100dd4d66fb64a205131c61585",
-      "task": "F-254",
+      "agent": "lm",
+      "at": "2026-08-20T05:07:23+00:00",
+      "hash": "7ba8549cf62c0c768cdb75ced78902a974c7c2a74eea55a5bdbf4a13f471e329",
+      "task": "F-255",
       "token": null
     },
     "entities/player/player_camera.gd": {
@@ -1439,30 +1344,6 @@
       "task": "3.7",
       "token": null
     },
-    "systems/combat/aim_util.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T01:44:21+00:00",
-      "hash": "06d85f7ff82663840d6c474c2ec4690a5ad91de8a12cc395960d7ad3d6498946",
-      "task": "5.3"
-    },
-    "systems/combat/aim_util.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T01:44:21+00:00",
-      "hash": "51f57ac80545a892b6808b5f845cd6abbc4ff45cb98b850a5a2052fceec8a4a1",
-      "task": "5.3"
-    },
-    "systems/combat/ranged_weapon_def.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T01:44:21+00:00",
-      "hash": "ba6c4e33895194f3ac6fbac52380e7ecf1cf995752f500de75a850c6779c327c",
-      "task": "5.3"
-    },
-    "systems/combat/ranged_weapon_def.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T01:44:21+00:00",
-      "hash": "50f3c7864eced7f3e89cce7f84b659f32d15fc7bd51a1bdb675ac8585ff028ea",
-      "task": "5.3"
-    },
     "systems/commands/function_runner.gd": {
       "agent": "lm",
       "at": "2026-08-19T15:32:50+00:00",
@@ -1477,24 +1358,12 @@
       "task": "6.3",
       "token": null
     },
-    "systems/cycle/cycle_modifier_def.gd.uid": {
-      "agent": "lm",
-      "at": "2026-08-19T01:57:43+00:00",
-      "hash": "5d71fd3dd94254c4ef226ead11099304cd032de0bcbadd403904b0f3bb980a63",
-      "task": "6.2"
-    },
     "systems/cycle/cycle_modifier_service.gd": {
       "agent": "lp",
       "at": "2026-08-20T00:02:22+00:00",
       "hash": "6c9cb448e2290a58d2b85ea5e10f84f9cdff0136f56ff63443bc42760e3d878f",
       "task": "F-254",
       "token": null
-    },
-    "systems/cycle/cycle_modifier_service.gd.uid": {
-      "agent": "lm",
-      "at": "2026-08-19T01:57:43+00:00",
-      "hash": "72c90cd285372e4c611f7e6d67f2dbcb35e22562e6de99861377fb15bbd7d5fb",
-      "task": "6.2"
     },
     "systems/cycle/cycle_service.gd": {
       "agent": "bram1",
@@ -1503,12 +1372,6 @@
       "task": "F-243",
       "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     },
-    "systems/cycle/cycle_service.gd.uid": {
-      "agent": "lm",
-      "at": "2026-08-19T01:37:12+00:00",
-      "hash": "299201d22445a0041c5262615e0791f6d4a4f780e9b7289b16bc1ea1f2384047",
-      "task": "6.1"
-    },
     "systems/enemies/boss.gd": {
       "agent": "lm",
       "at": "2026-08-19T22:35:17+00:00",
@@ -1516,48 +1379,12 @@
       "task": "F-247",
       "token": null
     },
-    "systems/enemies/boss.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T04:35:12+00:00",
-      "hash": "1262b13c1b2fe4a2e91e77c2a9d60f55ee2a68ef87e206f36186c735141403dc",
-      "task": "5.5"
-    },
-    "systems/enemies/boss_def.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T04:35:12+00:00",
-      "hash": "2516eb100bf7f9f81e12428dd0f0dddf6b935ce266c4ac9fbd7c95e28eee7770",
-      "task": "5.5"
-    },
-    "systems/enemies/boss_def.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T04:35:12+00:00",
-      "hash": "8920422e205f330392f27911c2cf3502d8bfb96f0000da1f5dfc9d6753746553",
-      "task": "5.5"
-    },
     "systems/enemies/boss_move_def.gd": {
       "agent": "lm",
       "at": "2026-08-19T22:35:17+00:00",
       "hash": "662fcb0076647bae6b52b1e9c302a42a8237731b8df46583980e93193cd80e4a",
       "task": "F-247",
       "token": null
-    },
-    "systems/enemies/boss_move_def.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T04:35:12+00:00",
-      "hash": "9999448debf0799a2a97687ce94d7c06d7a262128256e60bd67325e436b45a5a",
-      "task": "5.5"
-    },
-    "systems/enemies/boss_phase_def.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T04:35:12+00:00",
-      "hash": "fdc14e941402ecbfea7bf4bfad0838e69e37cf83d498605f273fdddd0f3afcab",
-      "task": "5.5"
-    },
-    "systems/enemies/boss_phase_def.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T04:35:12+00:00",
-      "hash": "ead7599ee7f850bccff898526c00b85ddb18a9b2edc059ba4e7e004d244b8676",
-      "task": "5.5"
     },
     "systems/enemies/enemy.gd": {
       "agent": "lm2",
@@ -1593,12 +1420,6 @@
       "hash": "651c0d28405b52d4b9bc71a1f104e839026dcabf5ad7d2f53042f3f91a17847b",
       "task": "F-245",
       "token": null
-    },
-    "systems/health/downed_state.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T03:06:45+00:00",
-      "hash": "fd6b98630cc05f737bb74a2aaa46c8ad328cdddc853f59fdf7cb65c0129d99a2",
-      "task": "6.7"
     },
     "systems/health/player_health.gd": {
       "agent": "bram1",
@@ -1655,18 +1476,6 @@
       "task": "F-180",
       "token": null
     },
-    "tools/_probe_food_grip.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T04:47:27+00:00",
-      "hash": "cf3efbdd279a3c87ac3bcdb54c8bf1541d84d9ab23c942338b7b86fa15b460f6",
-      "task": "F-162"
-    },
-    "tools/_probe_food_grip.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T04:47:27+00:00",
-      "hash": "b2b189ec154aebfadbd54c9f0656efdd6bbe27316f83e7d1e6b3d7d29f7ceb9e",
-      "task": "F-162"
-    },
     "tools/_probe_lods.gd": {
       "agent": "nettle12",
       "at": "2026-08-19T06:46:23+00:00",
@@ -1681,11 +1490,12 @@
       "task": "F-144",
       "token": null
     },
-    "tools/_probe_typed_array_convert.gd": {
+    "tools/asset_scope_check.gd": {
       "agent": "lm",
-      "at": "2026-08-19T04:53:06+00:00",
-      "hash": "408c867b7409be5095e68665416133b806f06b5d2e554ff208ffdaccc2923fad",
-      "task": "F-163"
+      "at": "2026-08-20T05:07:23+00:00",
+      "hash": "2458596d0962169d5ad13adc07d97bb20caec9ff5896ec9301b1c14b85243d15",
+      "task": "F-255",
+      "token": null
     },
     "tools/audio/audio_check.py": {
       "agent": "lm",
@@ -1714,12 +1524,6 @@
       "hash": "5ae221bde2de4c95f276a333146a214c62947d179f1f6f32ab605c6e18709fe5",
       "task": "F-176",
       "token": null
-    },
-    "tools/audio_import_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T04:35:12+00:00",
-      "hash": "d55ef1d8a5cc426fa641f19731200203943eb2eb5d59cc4843cb68625cf6d6a4",
-      "task": "5.5"
     },
     "tools/autoload_tracked_check.py": {
       "agent": "lp",
@@ -1848,11 +1652,11 @@
       "token": null
     },
     "tools/blender/build_terrain_accents.py": {
-      "agent": "wick20",
-      "at": "2026-08-19T17:37:53+00:00",
-      "hash": "0999e852c24ab56cf27dc577fd9df5646d1f03be41813613d450a5da5e67aedf",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
+      "agent": "lm",
+      "at": "2026-08-20T05:07:23+00:00",
+      "hash": "2bdc341d281e1aa8534c04c09f660268945e542b66dbb397283800301fb38736",
+      "task": "F-255",
+      "token": null
     },
     "tools/blender/build_tool_weapon_set.py": {
       "agent": "lm",
@@ -1938,12 +1742,6 @@
       "task": "F-247",
       "token": null
     },
-    "tools/boss_check.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T04:35:12+00:00",
-      "hash": "022d96ce48d828bd2b083e359f15c8adede42be6dc616bd62fd78d104d1422cd",
-      "task": "5.5"
-    },
     "tools/camp_check.gd": {
       "agent": "slate17",
       "at": "2026-08-19T16:55:30+00:00",
@@ -2020,36 +1818,12 @@
       "task": "F-224",
       "token": null
     },
-    "tools/command_shim_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T00:44:18+00:00",
-      "hash": "e8de5beb0474e11a0b8a8f3f6a10fc02e3559516060af944498ba856db729429",
-      "task": "F-130"
-    },
-    "tools/command_shim_check.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T00:44:18+00:00",
-      "hash": "55301bf426612dc0798ea76e1cf6a1206c2b50fe2c12595a3deccd5417b1dd8b",
-      "task": "F-130"
-    },
     "tools/construction_check.gd": {
       "agent": "lm",
       "at": "2026-08-19T06:04:40+00:00",
       "hash": "8fae6b6202f45e822acf3b54beced0d82d2086eca3c2f2a9a3a930a6a5f621ad",
       "task": "F-180",
       "token": null
-    },
-    "tools/crafting_net_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T04:27:15+00:00",
-      "hash": "402e1ee2396a79d6d09643eacb08a2c443a12582a08399d756fb6292b1705498",
-      "task": "F-167"
-    },
-    "tools/crafting_ui_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T04:58:11+00:00",
-      "hash": "7b68826b8224179991f48c3430137f162253bf752664069922871e2e537cd90b",
-      "task": "F-171"
     },
     "tools/cycle_advanced_net_check.gd": {
       "agent": "lp",
@@ -2058,30 +1832,12 @@
       "task": "F-250",
       "token": null
     },
-    "tools/cycle_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T01:37:12+00:00",
-      "hash": "4f032c7334cc081459be06f053e78275466949d9e84c98523a2785c880ad989b",
-      "task": "6.1"
-    },
-    "tools/cycle_check.gd.uid": {
-      "agent": "lm",
-      "at": "2026-08-19T01:37:12+00:00",
-      "hash": "b6ebb74ed24f49081a2fa2f169690bb0e42ffff08ef2b24fa8c77c9b4966b5a9",
-      "task": "6.1"
-    },
     "tools/cycle_modifier_check.gd": {
       "agent": "lm",
       "at": "2026-08-19T17:48:28+00:00",
       "hash": "6572244e9b7a2b5d604532a07507168d4e01286b35f7a566a39c5dc6d17584ff",
       "task": "6.3",
       "token": null
-    },
-    "tools/cycle_modifier_check.gd.uid": {
-      "agent": "lm",
-      "at": "2026-08-19T01:57:43+00:00",
-      "hash": "a44d807d6bd6e43c558c47f54b2afc9256a750eba1e0e83f0190c9dcb10611b8",
-      "task": "6.2"
     },
     "tools/cycle_modifier_effects_check.gd": {
       "agent": "lm2",
@@ -2125,12 +1881,6 @@
       "task": "F-218",
       "token": null
     },
-    "tools/defeat_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T03:06:45+00:00",
-      "hash": "01848958ae92752e0972baa0d9e175ea463be9ed00b955a72474f93082432cdd",
-      "task": "6.7"
-    },
     "tools/display_name_check.gd": {
       "agent": "lp",
       "at": "2026-08-19T05:09:22+00:00",
@@ -2156,18 +1906,6 @@
       "hash": "df0d7e0e8d85d3ac6672b48f862e8ad66943be4cf4a0f520decb0197253d12c7",
       "task": "3.7",
       "token": null
-    },
-    "tools/enemy_ai_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T00:23:49+00:00",
-      "hash": "26d89e1583fbc405c242193bd07d8bb562b05b63a07c1b5dbae11aee68d6e976",
-      "task": "5.1"
-    },
-    "tools/enemy_ai_check.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T00:23:49+00:00",
-      "hash": "ccf5b94ba59f531d565f11e91f8c0bdec77142583bff75fd664e1c1a8274ddf4",
-      "task": "5.1"
     },
     "tools/enemy_content_check.gd": {
       "agent": "lm3",
@@ -2196,12 +1934,6 @@
       "hash": "aa84a543892a0cd43ac570669c3ccb4170172f82c13257d0c06279b9e8810b52",
       "task": "F-208",
       "token": null
-    },
-    "tools/extraction_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T02:33:53+00:00",
-      "hash": "c7dc42a86aa52b200dc3341e794b4b2c4571911c542f2a349c214b7601bda6a5",
-      "task": "6.5"
     },
     "tools/food_check.gd": {
       "agent": "slate17",
@@ -2315,12 +2047,6 @@
       "task": "F-239",
       "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
-    "tools/main_menu_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T03:19:09+00:00",
-      "hash": "0fd0f51784b2eff124fc006592d2a09649081912e9c779ab642974a2bb149398",
-      "task": "6.10"
-    },
     "tools/mapgen/hollowmere_layout.py": {
       "agent": "lp",
       "at": "2026-08-19T05:56:17+00:00",
@@ -2342,18 +2068,6 @@
       "task": "F-208",
       "token": null
     },
-    "tools/mesh_merge_check.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T00:50:11+00:00",
-      "hash": "7e765e84d2c6cfef6d4a00b18f7350a4c550ca649083574632c4faac7137c646",
-      "task": "F-152"
-    },
-    "tools/mire_grid_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T00:54:44+00:00",
-      "hash": "a4f37656ad7ec290cc8ee97b21d9d9a177f168ec881f22c90561935873a95f80",
-      "task": "4.9"
-    },
     "tools/mire_interaction_check.gd": {
       "agent": "lm",
       "at": "2026-08-19T07:17:23+00:00",
@@ -2373,12 +2087,6 @@
       "at": "2026-08-19T05:09:22+00:00",
       "hash": "283249830f26b5a606e7597d434c841ec10072c41e27c06b5d9c9fb83793973f",
       "task": "F-157"
-    },
-    "tools/net_robustness_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T03:46:26+00:00",
-      "hash": "e5b57b575da0bb10cf10f43698e50dacdd1083bafeb328870ffc6e9e58c3151c",
-      "task": "7.8"
     },
     "tools/noise_reuse_check.gd": {
       "agent": "lp",
@@ -2421,30 +2129,6 @@
       "hash": "ca6c52ef7503f1ed2ffdad750997b207d7dbbd0721c312278e7cce6e8db04edb",
       "task": "F-208",
       "token": null
-    },
-    "tools/ranged_combat_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T01:44:21+00:00",
-      "hash": "f02eff7b69b3c69fa823808ff17820f48ba48daf422ea246b602389df30df346",
-      "task": "5.3"
-    },
-    "tools/ranged_combat_check.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T01:44:21+00:00",
-      "hash": "e4126bfec06b0596b7e7f9a788dce5db8de9821851316923782cd71daf07538b",
-      "task": "5.3"
-    },
-    "tools/ranged_combat_net_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T01:44:21+00:00",
-      "hash": "dc59074089b30f767d28666ce920ea8d3276db102a2a5df59ac8f0be2b43a380",
-      "task": "5.3"
-    },
-    "tools/ranged_combat_net_check.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T01:44:21+00:00",
-      "hash": "cec43fec6e41130e20678eb5da7d69fca6e30e8b54f32f3bf52889312b54094c",
-      "task": "5.3"
     },
     "tools/render_census.gd": {
       "agent": "nettle12",
@@ -2515,12 +2199,6 @@
       "hash": "caca778bf82957ba089d5003148cc1a4404b776a339154c82964733aaf8f4ad5",
       "task": "F-193",
       "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
-    },
-    "tools/seed_launch_arg_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T05:05:14+00:00",
-      "hash": "2c30f86281561fbc0da64be8890f78e016cffd0d13f183c875515361a14e03f0",
-      "task": "F-172"
     },
     "tools/seed_sync_check.gd": {
       "agent": "lp",
@@ -2697,12 +2375,6 @@
       "task": "F-226",
       "token": null
     },
-    "tools/wave_director_check.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T03:59:24+00:00",
-      "hash": "69192a59ae1ca29ba1f827f7e82d88491aa16ad1f93dca3ba41fe76ef30b3e5d",
-      "task": "5.9"
-    },
     "tools/wave_spawner_cycle_net_check.gd": {
       "agent": "lp",
       "at": "2026-08-19T20:06:51+00:00",
@@ -2716,24 +2388,6 @@
       "hash": "b3557cc66bc75b89a2b0bad8291a27995b2421670cce438de9efaf1b160af4ce",
       "task": "F-181",
       "token": null
-    },
-    "tools/wellspring_hud_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T04:54:29+00:00",
-      "hash": "f19200bb76653510cc0b6287634a5332a013c63a069eeffdab4291cb759a90d6",
-      "task": "F-164"
-    },
-    "tools/wellspring_hud_check.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T04:54:29+00:00",
-      "hash": "5e17c0fb475754cfd9b8734b0cea692ac0c39ef77a00645a7b7c13b4d7ddcf8a",
-      "task": "F-164"
-    },
-    "tools/wellspring_recorruption_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T02:12:08+00:00",
-      "hash": "5c228ab76bbabd2b7f7d9e0433ff2b111e245f358626d67eb66794802ae3378b",
-      "task": "6.4"
     },
     "tools/wetland_check.gd": {
       "agent": "wick20",
@@ -2797,18 +2451,6 @@
       "hash": "073e04ce0169baa944b7458ee17961273431603017bf8e64e8c7a189fc572bdc",
       "task": "F-157"
     },
-    "ui/hud/boss_health_hud.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T04:35:12+00:00",
-      "hash": "cf586c816de84567f282d549d5cbabc8cbee905bf7a7db387d54e1c9d100e3f1",
-      "task": "5.5"
-    },
-    "ui/hud/boss_health_hud.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T04:35:12+00:00",
-      "hash": "06a0668d887f91bf1f792bb6fba8571b9414d3333d9e79c904339fc5ce1781c1",
-      "task": "5.5"
-    },
     "ui/hud/defeat_hud.gd": {
       "agent": "bram1",
       "at": "2026-08-19T22:14:05+00:00",
@@ -2843,12 +2485,6 @@
       "hash": "39655108e9366bf6d1794bc14d6c7c02135369a14c95f56f7f31949d3776a6f3",
       "task": "7.6",
       "token": null
-    },
-    "ui/hud/wellspring_hud.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T04:54:29+00:00",
-      "hash": "20a329bae93822f106c605775c9342f6e25434458a11f27228cd5aa5a8e8d2a7",
-      "task": "F-164"
     },
     "ui/inventory/inventory_ui.gd": {
       "agent": "lm",
@@ -2904,18 +2540,6 @@
       "hash": "758b60240c15d8e2cdf91d3c8fae57ef795314f93d3e343bdbf99c30c6d4370d",
       "task": "F-251",
       "token": null
-    },
-    "world/chunk/chunk_streamer.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-19T01:42:53+00:00",
-      "hash": "0c963f8c4d118d39ced14b39be83e785a7df91d98d505b27b3ce9debcb2be2e3",
-      "task": "4.5"
-    },
-    "world/chunk/nav_baker.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T04:48:28+00:00",
-      "hash": "e87a6c88d41690c7ef5235f1957d3089b73e88df7607f0dbe5f9d12d2b266e42",
-      "task": "F-159"
     },
     "world/environment/draw_policy.gd": {
       "agent": "nettle12",
@@ -3014,12 +2638,6 @@
       "hash": "30d31e2fee7f3d0e616757a1eafb487716633bc42087f1e596fd9a32c7afa63d",
       "task": "F-267",
       "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
-    },
-    "world/mire/mire_grid_sim.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T00:54:44+00:00",
-      "hash": "d9a1fae4ebdfb8b7ececbbb6b2416dc2d2cfa499cdb28aa35b6025212278c3c8",
-      "task": "4.9"
     }
   },
   "tasks": {
@@ -6691,9 +6309,11 @@
       "title": "CycleModifierService._announce() has the exact host-only EventBus.emit_cycle_modifier_drawn() gate F-250 just fixed for CycleService \u2014 same shape, unfixed sibling"
     },
     "F-255": {
+      "done_at": "2026-08-20T05:07:23+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "A-020's `flooded cellar entrance` is the same shape F-237 just cut from A-016 \u2014 an entrance implying an interior/underground space the 2D heightfield cannot back"
     },
@@ -6792,6 +6412,13 @@
       "status": "done",
       "tier": "F",
       "title": "ship sweeps a sibling's uncommitted hunks when its claimed file carries them \u2014 F-197's shape reached source files and carried a debug probe into HEAD"
+    },
+    "F-268": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "F-243's restart never clears placed buildables \u2014 BuildService has no run_restarted subscription at all, and its own check has been failing at HEAD since the feature shipped"
     }
   },
   "version": 1

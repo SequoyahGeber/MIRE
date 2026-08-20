@@ -411,32 +411,6 @@ audit doc carries the full trace.
 
 ---
 
-### F-255 · A-020's `flooded cellar entrance` is the same shape F-237 just cut from A-016 — an entrance implying an interior/underground space the 2D heightfield cannot back
-
-**Area:** world-gen · **Severity:** low · **Found:** 2026-08-19 by lm during F-237's sibling sweep
-
-`docs/ASSET_TRACKER.md`'s **A-020** row (Landmark kit II, `QUEUED`, gated on A-015/A-017 — not yet
-built) lists `flooded cellar entrance` alongside `giant hollow tree`, `corrupted crater`, `Mire nest`,
-`broken dam` and others. Unlike `giant hollow tree` (a self-contained prop mesh with a void through
-its own trunk — already shipped in A-015, needs nothing from the terrain) or `corrupted crater` (a
-depression IN the heightfield, the same shape `sinkhole` was re-scoped to in F-237), a "cellar
-entrance" reads the same way `cave entrance` did: an opening that promises a below-ground interior a
-player can walk into. D-142's 2D heightfield has nowhere for that room to exist, so building it
-literally repeats F-237's exact mistake — an asset that reads as "go in here" backed by solid ground.
-
-**Not the same severity as F-237 was** — A-020 is `QUEUED`, gated on two batches that haven't shipped,
-so nothing is close to being built yet and there is time to scope it correctly before anyone opens
-Blender. Filed rather than fixed here: re-scoping it is a content-design call for whoever picks up
-A-020 (matching F-237's own `sinkhole` precedent — e.g. a flooded, half-collapsed structure standing
-mostly at grade with a token few steps down into ankle-deep water, never a real room below the
-heightfield), not a doc-tracker edit that belongs to this task's claim.
-
-**Suggested resolution**, mirroring F-237's: re-scope the row's own text before A-020 is picked up —
-"flooded cellar entrance" -> something like "flooded cellar ruin" that is explicit about being a
-sunken/collapsed structure sitting at or near grade, not a doorway into an excavated interior.
-
----
-
 ### F-256 · Arming several one-shot revives to cover an unattended stretch stacks saturate chains, and the lane idles while they queue on its own lock
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by bram1
@@ -829,6 +803,72 @@ previous run's buildables from the spawner's own replay while the host believes 
 ---
 
 ## Resolved
+
+### F-255 · A-020's `flooded cellar entrance` is the same shape F-237 just cut from A-016 — an entrance implying an interior/underground space the 2D heightfield cannot back — **fixed**
+
+**Area:** world-gen · **Severity:** low · **Found:** 2026-08-19 by lm during F-237's sibling sweep
+
+`docs/ASSET_TRACKER.md`'s **A-020** row (Landmark kit II, `QUEUED`, gated on A-015/A-017 — not yet
+built) lists `flooded cellar entrance` alongside `giant hollow tree`, `corrupted crater`, `Mire nest`,
+`broken dam` and others. Unlike `giant hollow tree` (a self-contained prop mesh with a void through
+its own trunk — already shipped in A-015, needs nothing from the terrain) or `corrupted crater` (a
+depression IN the heightfield, the same shape `sinkhole` was re-scoped to in F-237), a "cellar
+entrance" reads the same way `cave entrance` did: an opening that promises a below-ground interior a
+player can walk into. D-142's 2D heightfield has nowhere for that room to exist, so building it
+literally repeats F-237's exact mistake — an asset that reads as "go in here" backed by solid ground.
+
+**Not the same severity as F-237 was** — A-020 is `QUEUED`, gated on two batches that haven't shipped,
+so nothing is close to being built yet and there is time to scope it correctly before anyone opens
+Blender. Filed rather than fixed here: re-scoping it is a content-design call for whoever picks up
+A-020 (matching F-237's own `sinkhole` precedent — e.g. a flooded, half-collapsed structure standing
+mostly at grade with a token few steps down into ankle-deep water, never a real room below the
+heightfield), not a doc-tracker edit that belongs to this task's claim.
+
+**Suggested resolution**, mirroring F-237's: re-scope the row's own text before A-020 is picked up —
+"flooded cellar entrance" -> something like "flooded cellar ruin" that is explicit about being a
+sunken/collapsed structure sitting at or near grade, not a doorway into an excavated interior.
+
+---
+
+**Resolved 2026-08-20 by lm.** **Resolved 2026-08-19 by lm — the finding's check FAILED first.** The brief's "may already be fixed"
+flag was wrong: `docs/ASSET_TRACKER.md`'s A-020 row still read `flooded cellar entrance` verbatim,
+and the 9 commits since the filing were unrelated churn in other rows.
+
+**Re-scoped rather than cut**, following this finding's own suggested resolution and F-237's
+`sinkhole` precedent rather than its `cave entrance` one — a ruined flooded structure is a good
+landmark once the implied room is gone. A-020 now reads **`flooded cellar ruin`**, with the
+buildable version spelled out in the row: a sunken, half-collapsed structure standing at or near
+grade — broken foundation walls, a caved-in floor slab, at most a token few steps down into
+ankle-deep water that visibly bottoms out — never a threshold the eye reads as "go in here", and any
+dark recess contained in the prop's own mesh the way `giant hollow tree`'s void is. The row also
+settles the neighbour a reader asks about next: `corrupted crater` is fine as written, because a
+depression IN the heightfield is exactly what `sinkhole` was re-scoped to.
+
+**Swept for siblings, and found one live: A-016b's `burrow entrance`** — the same trap one scale
+down, and the more urgent of the two, because A-016b is `NEXT` rather than `QUEUED` and was actually
+about to be built. Renamed to **`burrow mound`** in all three places that name it
+(`docs/ASSET_TRACKER.md`, `tools/blender/build_terrain_accents.py`'s docstring,
+`assets/terrain_accents/README.md` §A-016b), scoped as a mound of turned earth whose mouth is a
+shallow, visibly-bottomed hollow in the prop's own mesh, animal-sized and never player-sized.
+
+**The lint is the real fix.** This trap has now been caught three times (F-237, F-255, and F-255's
+own sweep) by three different readers re-reading a table by eye, which is not a process. New
+`tools/asset_scope_check.gd` scans every file where an asset gets named before it gets a mesh —
+`ASSET_TRACKER.md`, every `assets/*/README.md`, every `tools/blender/build_*.py` — and fails any
+line naming a below-grade interior (`cave`, `cellar`, `tunnel`, `catacomb`, `crypt`, `basement`,
+`dungeon`, `undercroft`, `mine shaft`) or an `entrance` without an `F-NNN`/`D-NNN` citation on that
+same line; plus a second rule that no exported GLB may be named for one. The citation exemption is
+the mechanism, not a loophole: prose recording a cut is textually identical to prose proposing one.
+Rule recorded as **D-159**.
+
+**Verified:** `.agent/bin/agent godot --script tools/asset_scope_check.gd` — 19,175 lines across 41
+files, 0 failures. Proven to fail as well as to pass: restoring the old `flooded cellar entrance`
+wording produced `FAIL docs/ASSET_TRACKER.md promises nothing below grade — line 454 names 'cellar'
+with no F-/D- citation`, and a `cave_entrance.glb` dropped into `assets/terrain_accents/exports/`
+produced `FAIL no exported GLB is named for a below-grade interior`. Both negative tests reverted.
+
+Docs: `docs/SPECS.md` new F-255 block (task 0 — none existed). `docs/DECISIONS.md` **D-159**.
+`docs/DELEGATION.md` *Current state* — the check and what it means for the next asset batch.
 
 ### F-254 · CycleModifierService._announce() has the exact host-only EventBus.emit_cycle_modifier_drawn() gate F-250 just fixed for CycleService — same shape, unfixed sibling — **fixed**
 

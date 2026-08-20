@@ -6498,3 +6498,34 @@ EventBus.cycle_modifier_drawn now fires on every peer, not just the host. _annou
 Files: `systems/cycle/cycle_modifier_service.gd`, `tools/cycle_modifier_net_check.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `core/events/event_bus.gd`, `tools/cycle_modifier_net_check.gd.uid`
 
 Commit at time of writing: `ae5c45a`
+
+---
+
+### HANDOFF · F-255 · lm · 2026-08-20T01:00:08+00:00
+
+**A-020's `flooded cellar entrance` is the same shape F-237 just cut from A-016 — an entrance implying an interior/underground space the 2D heightfield cannot back**
+
+LM stopped on F-255 at 2026-08-20T01:00:08+00:00 (exit 1, quota wall). Tokens this run: 0 in / 0 out.
+The working diff is UNTOUCHED — its partial edits are still on disk, so read them before redoing anything. Full log: .agent/logs/LM-F-255-20260820-010007.jsonl
+
+Its last words: "You've hit your weekly limit · resets 10pm (America/Vancouver)"
+
+Tail of the failure:
+erminal_reason":"api_error","fast_mode_state":"off","fast_mode_disabled_reason":"sdk_opt_in_required","subtype":"success","api_error_status":429,"result":"You've hit your weekly limit · resets 10pm (America/Vancouver)","type":"result","duration_ms":455,"uuid":"66348cc6-4c04-4439-9fc9-0ae01edf0487"}
+
+Commit at time of writing: `dca711c`
+
+---
+
+### DONE · F-255 · lm · 2026-08-20T05:07:23+00:00
+
+**A-020's `flooded cellar entrance` is the same shape F-237 just cut from A-016 — an entrance implying an interior/underground space the 2D heightfield cannot back**
+
+The finding's check FAILED first — A-020 still read 'flooded cellar entrance' verbatim, so the 'may already be fixed' flag was wrong. Re-scoped rather than cut (F-237's sinkhole precedent, and this finding's own suggested resolution): A-020 is now 'flooded cellar ruin', a sunken half-collapsed structure at or near grade with at most a token few steps into ankle-deep water that visibly bottoms out. The sibling sweep found one live sibling and it was the more urgent one — A-016b's 'burrow entrance', NEXT rather than QUEUED and actually about to be built; renamed to 'burrow mound' in all three places that name it (tracker row, build_terrain_accents.py docstring, assets/terrain_accents/README.md). The real fix is that this stops being caught by eye: new tools/asset_scope_check.gd fails any line in ASSET_TRACKER.md / assets/*/README.md / tools/blender/build_*.py that names a below-grade interior or an 'entrance' without an F-NNN/D-NNN citation on the same line, plus no exported GLB may be named for one. Verified: 'agent godot --script tools/asset_scope_check.gd' — 19,175 lines across 41 files, 0 failures; proven to FAIL too — restoring the old A-020 wording gives 'line 454 names cellar with no F-/D- citation', and a cave_entrance.glb in exports/ trips the GLB rule; both negative tests reverted. Docs: SPECS.md F-255 block (none existed), D-159 (an asset may show a void it contains, never one the terrain would have to own), DELEGATION Current state.
+
+Notes along the way:
+- Sweep found one live sibling beyond A-020: A-016b's 'burrow entrance' in docs/ASSET_TRACKER.md, tools/blender/build_terrain_accents.py and assets/terrain_accents/README.md. Re-scoped to 'burrow mound' (animal-scale, void contained in the prop's own mesh) in all three, since A-016b is NEXT and would otherwise be built literally.
+
+Files: `docs/ASSET_TRACKER.md`, `tools/blender/build_terrain_accents.py`, `assets/terrain_accents/README.md`, `tools/asset_scope_check.gd`, `docs/SPECS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/FINDINGS.md`
+
+Commit at time of writing: `dca711c`
