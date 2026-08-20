@@ -48,6 +48,14 @@ const COIN_ITEM_ID: StringName = &"coins"
 ## has begun" hook `autoload/salvage_service.gd` already uses to zero its own per-run tally — without
 ## the reset, a deliberate same-seed replay (F-172's seed entry) started from a fresh boot would still
 ## diverge if this process had granted a different NUMBER of rewards before that replay began.
+##
+## F-273 on the trigger frequency, which this comment used to get wrong: `seed_ready` is a RUN
+## boundary, not a session one — it fires at session start, at every restart (F-258/D-161) and on a
+## client adopting the host's seed, and it can fire MORE THAN ONCE for a single boundary (a restart
+## emits twice on the host). That is safe here only because the handler assigns 1 rather than
+## advancing anything; see the signal's declaration in `core/game_state.gd` for the full contract.
+## `_grant_tier_to_party()` is `_owns_mutation()`-gated, so a client's copy of this counter is never
+## read and a client-side reset cannot desync the party's rolls.
 var _next_reward_event_id: int = 1
 
 

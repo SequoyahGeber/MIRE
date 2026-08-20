@@ -21,6 +21,29 @@ extends Node
 ## entirely `WorldDeltaLog`'s job) or its authority (still host-only — a client staging a value only
 ## ever affects seeds that peer itself later hosts).
 
+## THE CONTRACT (F-273, and state it here because two subscribers spent a week describing the
+## pre-F-258 one). `seed_ready` is a **RUN boundary, on every peer** — not a session boundary, not
+## host-only, and not once per anything:
+##
+## - It fires on the host from [method host_generate_seed] (session start, `NetTransport.
+##   server_started`, and `MireGrid`'s lazy [method ensure_seed] at boot) and from
+##   [method host_redraw_seed] (`CycleService.host_restart_run()`, F-258/D-161).
+## - It fires on a client from [method set_replicated_seed] — `WorldDeltaLog.net_world_snapshot()`
+##   for a peer joining mid-run, and `_on_world_delta_applied()` for a reseed reaching a peer
+##   already here.
+## - **It can fire more than once for one boundary.** A single `host_restart_run()` emits TWICE on
+##   the host with the same value: once for the redraw, once for `WorldDeltaLog.host_reseed()`'s own
+##   `_reseed_local()` → [method set_replicated_seed]. So a handler must be IDEMPOTENT — "reset this
+##   run's tally", never "increment", "toggle" or "advance a phase". Both shipped service
+##   subscribers (`autoload/salvage_service.gd`, `autoload/reward_service.gd`) are zeroing resets for
+##   exactly this reason, and `ui/menu/main_menu.gd` re-derives a label.
+## - [method reset] (session end, `NetTransport.disconnected`) does **not** fire it. Session end and
+##   run boundary are different events, and only the second one is on this signal.
+##
+## Anything that must re-derive its WORLD from the new seed hangs off `EventBus.run_restarted`
+## instead, which arrives immediately after this on the same reliable channel — see
+## `autoload/world_delta_log.gd`'s `_reseed_local()`. `tools/seed_ready_contract_check.gd` holds
+## every sentence above to the code, including an exact census of the subscribers listed here.
 signal seed_ready(value: int)
 
 var run_seed: int = 0
@@ -49,8 +72,11 @@ func pending_seed() -> int:
 	return _pending_seed
 
 
-## Host-only. Called once per hosted session (`NetTransport.server_started`) and lazily by
-## [method ensure_seed] for offline/host-of-one play, which never fires that signal at all.
+## Host-only. Called on `NetTransport.server_started`, lazily by [method ensure_seed] for
+## offline/host-of-one play (which never fires that signal at all), and — F-273, because this
+## comment used to say "once per hosted session" and F-258/D-161 made that false — once more per
+## RESTART, since [method host_redraw_seed] delegates the draw straight to this function rather
+## than duplicating it. Emits `seed_ready` on every one of those, per that signal's contract above.
 func host_generate_seed() -> int:
 	if _has_pending_seed:
 		run_seed = _pending_seed
@@ -102,7 +128,9 @@ func ensure_seed() -> int:
 
 
 ## Mirrors `RunIdentity.clear()`'s reasoning: a run's seed does not outlive its session. The next
-## hosted session draws a fresh one rather than reusing the last run's island.
+## hosted session draws a fresh one rather than reusing the last run's island. Deliberately silent —
+## this is a session END, not a run boundary, so it does not emit `seed_ready`; a subscriber that
+## needs to know a session is over listens to `NetSession.session_ended`, not to this.
 func reset() -> void:
 	run_seed = 0
 	_seed_ready = false

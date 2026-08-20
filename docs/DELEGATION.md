@@ -75,6 +75,49 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-20 — F-273 resolved: `GameState.seed_ready`'s contract is written down at the signal, and `tools/seed_ready_contract_check.gd` enforces it (lp)
+
+**Rule: D-177.** Read it before you write a `seed_ready` handler. Short form: **it is a RUN boundary
+on every peer, and it can fire twice for one boundary — your handler must be idempotent.**
+
+**If you are adding a `seed_ready` subscriber, this is the whole briefing.**
+
+```gdscript
+# core/game_state.gd
+signal seed_ready(value: int)   # read the block comment above it — that is the contract
+```
+
+- **Who emits it.** Host: `host_generate_seed()` (session start via `NetTransport.server_started`,
+  plus `MireGrid`'s lazy `ensure_seed()` at boot) and `host_redraw_seed()`
+  (`CycleService.host_restart_run()`). Client: `set_replicated_seed()`, from
+  `WorldDeltaLog.net_world_snapshot()` (joining mid-run) and `_on_world_delta_applied()` (a reseed
+  reaching a peer already here).
+- **It fires TWICE on the host for one restart**, same value both times —
+  `_host_redraw_world_seed()`, then `WorldDeltaLog.host_reseed()` → `_reseed_local()` →
+  `set_replicated_seed()`, which runs on the sending side by design (D-161). So: zero, assign or
+  re-derive. Never increment, toggle, advance a phase, or count boundaries.
+- **`GameState.reset()` does not fire it.** That is a session end (`NetTransport.disconnected`). For
+  session end, listen to `NetSession.session_ended`. To re-derive your *world* rather than a per-run
+  tally, use `EventBus.run_restarted`, which lands immediately after the reseed on the same reliable
+  channel.
+- **Adding a subscriber turns `tools/seed_ready_contract_check.gd` red on purpose.** Its phase 1 is
+  an exact census — `["MainMenu", "RewardService", "SalvageService"]` today. Confirm your handler is
+  idempotent and run-scoped, then add yourself to `EXPECTED_SUBSCRIBERS`. That failure is the only
+  mechanism in the repo that makes an author read the contract, so do not weaken it to a
+  "contains" test.
+
+**The check is also the place to extend seed-contract coverage.** Six phases (census, every emitter,
+the run boundary through the real producers, the client-adoption half, idempotence on a repeated
+value, and `reset()` being silent), solo, one process, no scene load —
+`.agent/bin/agent godot --script tools/seed_ready_contract_check.gd` → `failures=0`, 30 PASS. The
+full restart with a real defeat, an island rebuild and the delta-log wipe stays
+`tools/run_reseed_check.gd`'s job; the two are deliberately separate contracts.
+
+**`ARCHITECTURE.md` §2.2 now has a `Run world seed` row.** `core/game_state.gd` had always declared
+"NETWORK AUTHORITY (§2.2)" against a table with no row for it. Host draws, client adopts, carried by
+`WorldDeltaLog`'s existing RPCs with no RPC of its own (D-161).
+
+
 ### 2026-08-20 — F-266 resolved: `state.json` writes are transactional and atomic; `tools/agent_state_lock_check.py` is where harness concurrency gets tested (lp)
 
 **Rule: D-176.** Read it before touching any `load()`/`save()` pair in `.agent/bin/agent`. Short

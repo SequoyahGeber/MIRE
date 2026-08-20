@@ -125,10 +125,13 @@ func _on_wellspring_capped(_wellspring_name: StringName, _world_position: Vector
 	_wellsprings_capped_this_run += 1
 
 
-## `GameState.seed_ready` fires once at the start of every hosted session and once when a client
-## adopts the host's replicated seed (`core/game_state.gd`) — the closest thing this codebase has to
-## a "a run has begun" moment on every peer, host and client alike, so it is where this run's
-## milestone tally resets.
+## F-273: `GameState.seed_ready` is a RUN boundary on every peer, host and client alike — it fires
+## at session start, at every restart (F-258/D-161 made a restart draw a fresh seed), and when a
+## client adopts the host's replicated seed. Read that signal's declaration in `core/game_state.gd`
+## for the contract in full; the half that matters here is that it can fire MORE THAN ONCE for one
+## boundary (a restart emits twice on the host), so this handler is a plain zeroing reset and must
+## stay one. It is still the closest thing this codebase has to "a run has begun" reaching every
+## peer, which is why this run's milestone tally resets on it.
 func _on_seed_ready(_value: int) -> void:
 	_wellsprings_capped_this_run = 0
 

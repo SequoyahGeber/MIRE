@@ -10943,3 +10943,109 @@ F-304's; nothing new filed there.
 **Resolved** — see `docs/FINDINGS.md`.
 
 ---
+
+## F-273 · `GameState.seed_ready` is now a run boundary, not a session boundary, and two subscribers' doc comments still say otherwise
+
+**Claim:** `core/game_state.gd`, `autoload/salvage_service.gd`, `autoload/reward_service.gd`,
+`ui/menu/main_menu.gd`, `tools/seed_ready_contract_check.gd` (new), `docs/ARCHITECTURE.md`, plus the
+docs. Network authority: **Host**, and this task is what finally gives it a §2.2 row — see below.
+**No RPC, no `PROTOCOL_VERSION` bump**: nothing here changes a wire shape, or any behaviour at all.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**What the finding is, and what it is not.** F-258/D-161 made a restart draw a fresh world seed and
+re-broadcast it, so `GameState.seed_ready` stopped being "once at the start of a session" and became
+"a run boundary". Both subscribers that existed did the RIGHT thing with the new frequency — a
+per-run Wellspring tally and a per-run reward-event counter both SHOULD reset at a run boundary — so
+nothing broke and nothing here fixes a behaviour. The defect is that the only three places a reader
+could learn what the signal promises (its own declaration and the two handlers) all described the
+signal it used to be. The risk is entirely forward-looking: the next subscriber's author reads
+"fires once at the start of every hosted session", writes a handler on that basis, and gets it
+called mid-run.
+
+**Three things the finding's own report got wrong, all found by reading before editing.**
+
+1. **There are three subscribers, not two.** `ui/menu/main_menu.gd:68` is an autoload and connects to
+   `seed_ready` as well, re-`_refresh()`ing its seed label. Harmless (a full re-derive is idempotent
+   by construction) but it belongs in any census of who listens.
+2. **The stale comment has a sibling in `core/game_state.gd` itself** — `host_generate_seed()`'s own
+   header said "Called once per hosted session", which D-161 falsified in the same stroke, because
+   `host_redraw_seed()` delegates the draw straight to it rather than duplicating it. This is the
+   F-168 → F-181 shape exactly: the same bug, in the same file, in the sibling function, missed on
+   the first pass. Fixed here.
+3. **The real contract is not "once per run" either.** A single `CycleService.host_restart_run()`
+   fires `seed_ready` **twice on the host with the same value**: once from
+   `_host_redraw_world_seed()` → `GameState.host_redraw_seed()`, and once more from
+   `WorldDeltaLog.host_reseed()` → `_reseed_local()` → `set_replicated_seed()`, which runs on the
+   sending side too by design (D-161: "one `_reseed_local()`, so send and receive cannot drift in
+   what a reseed MEANS"). This is invisible today only because every handler is a zeroing reset. It
+   is the single most likely way a future subscriber breaks, and no comment anywhere mentioned it.
+   **D-177** records it, along with why deduplicating the emit is the wrong fix.
+
+**The fix.** The contract, stated once at the source — a block comment on the `signal seed_ready`
+declaration naming every emitter, the per-peer scope, the may-fire-twice rule, and the fact that
+`reset()` is a session end that deliberately does not fire. The three handlers each get a short
+comment pointing at it rather than restating it, so there is one copy to keep true. `host_generate_
+seed()`'s stale "once per hosted session" and `reset()`'s silence are corrected in place.
+`ARCHITECTURE.md` §2.2 gains a **Run world seed** row: `game_state.gd`'s header has always opened
+with "NETWORK AUTHORITY (docs/ARCHITECTURE.md §2.2)" and pointed at a table with no row for it, and
+a finding about a contract nobody can find is the right task to close that.
+
+**The check — `tools/seed_ready_contract_check.gd`, and why it is worth having for a doc fix.**
+A doc-only finding cannot have a pre-fix red, so the check's job is not to catch this bug; it is to
+make the next one impossible to introduce quietly. Six phases, all against the real autoloads in one
+solo process:
+
+1. **A subscriber census.** `get_signal_connection_list(&"seed_ready")` must equal exactly
+   `["MainMenu", "RewardService", "SalvageService"]`. This is the whole point of the file: adding a
+   fourth subscriber turns this check red, and the failure message tells its author to read the
+   contract and confirm their handler is idempotent before updating the constant. An exact-set test,
+   not a "contains" test, deliberately.
+2. **Every emitter fires it**, carrying the value — `ensure_seed()` (and that it is *silent* on an
+   already-seeded process, because that is not a boundary), `set_replicated_seed()`,
+   `host_generate_seed()`, `host_redraw_seed()`.
+3. **The run boundary**, driven through the real producers in the real order `host_restart_run()`
+   calls them, asserting the double emit and that all three subscribers re-derived.
+4. **The client half** — `set_replicated_seed()`, byte-for-byte what `net_world_snapshot()` and
+   `_on_world_delta_applied()` call on a receiving peer, resets the same state.
+5. **Idempotence** — re-adopting the SAME value still fires and still resets, so a repeated delta
+   cannot leave a subscriber holding the ended run's tally.
+6. **`reset()` is silent** and clears `is_seed_ready()`/`run_seed`.
+
+Per-run state is accumulated by firing the **real `EventBus.wellspring_capped` producer**, never by
+calling either service's `_on_wellspring_capped()` by hand — F-310's rule, and load-bearing here
+because a three-way fan-out is precisely what this file exists to prove. `RewardService` needs a
+present player in the `&"players"` group to get past `_present_peers()`, same setup
+`tools/reward_service_seed_check.gd` uses. `SalvageService.save_path` is redirected per D-107.
+
+**Two GDScript traps, both hit writing the check.** `const X: PackedStringArray =
+PackedStringArray([...])` is "not a constant expression" — a plain `Array[String]` literal const is.
+And `emissions == [x] as Array[int]` does not parse: `as` binds looser than `==`, so the comparison
+runs first and the cast lands on the resulting bool ("Invalid cast. Cannot convert from bool to
+Array[int]"). Same family as this file's standing rule 5. A `_emitted(expected)` helper is cleaner
+than parenthesising every site.
+
+**Verify:** `.agent/bin/agent godot --script tools/seed_ready_contract_check.gd` →
+`SEED_READY_CONTRACT_CHECK failures=0`, 30 PASS, exit 0, **zero** `ERROR:` lines (no declared
+patterns — this check provokes no error paths). Neighbours re-run green after the edits:
+`run_reseed_check` 0, `reward_service_seed_check` 0, `main_menu_check` 0, `salvage_check` 0 (its two
+declared JSON patterns only), `seed_launch_arg_check` 0 (needs `-- --seed=204060517`; without it, it
+fails 2 by design and that is not a regression).
+
+**Sweep.** The class is *a doc comment stating an event's trigger frequency or scope that a later
+change to when it fires has invalidated*. `grep -rn "once per session\|once at the start of\|per
+hosted session\|once per process\|session boundary"` over `autoload/ core/ world/ ui/ systems/
+levels/` returned eight hits: the one real sibling (`host_generate_seed()`, fixed above, item 2), the
+`game_state.gd` header line D-161 had already corrected, and six that are accurate as written —
+`net_session.gd`'s `session_ready`/`session_ended` are genuinely once-per-session,
+`defeat_service.gd:78` already spells out "a restart is a new run without a new NetTransport
+session", and `net_transport.gd`/`net_interest.gd`/`extraction_ship.gd` all describe real session
+boundaries. A second sweep for the behavioural half — `grep -rn "fires once\|fired once\|emitted
+once\|exactly once"` — found nothing where a multi-fire event meets an accumulating handler;
+`cycle_service.gd:85`'s "Fires exactly once per RUN" for `run_started` is true after F-280/D-168.
+Nothing filed.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---

@@ -186,6 +186,10 @@ func status_text() -> String:
 	return _status_label.text
 
 
+## The third `GameState.seed_ready` subscriber, and the only one that is not a per-run tally —
+## F-273's finding named only the two services. Nothing to reset here: `_refresh()` re-derives the
+## whole label from scratch, which is exactly the idempotence that signal's contract requires (see
+## its declaration in `core/game_state.gd` — one run boundary can emit twice on the host).
 func _on_seed_ready(_value: int) -> void:
 	_refresh()
 

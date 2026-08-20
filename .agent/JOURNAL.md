@@ -7166,3 +7166,19 @@ Notes along the way:
 Files: `tools/agent_state_lock_check.py`, `.agent/bin/agent`, `docs/SPECS.md`, `docs/DELEGATION.md`, `AGENTS.md`, `docs/NEXT.md`
 
 Commit at time of writing: `bf9bbc9`
+
+---
+
+### DONE · F-273 · lp · 2026-08-20T16:38:19+00:00
+
+**`GameState.seed_ready` is now a run boundary, not a session boundary, and two subscribers' doc comments still say otherwise**
+
+GameState.seed_ready's contract now exists at the signal declaration (core/game_state.gd) and is enforced by a new tools/seed_ready_contract_check.gd — .agent/bin/agent godot --script tools/seed_ready_contract_check.gd -> SEED_READY_CONTRACT_CHECK failures=0, 30 PASS, exit 0, zero ERROR: lines. Six phases: an EXACT subscriber census (a fourth seed_ready subscriber turns the check red on purpose), every emitter firing once with the right value, the run boundary driven through the real producers in host_restart_run()'s real order, the client-adoption half, idempotence on a repeated value, and reset() being silent. Fixed the two stale comments the finding named, plus two it did not: host_generate_seed()'s own 'once per hosted session' in the SAME file (F-168->F-181 shape, sibling function) and the undocumented third subscriber ui/menu/main_menu.gd. The contract fact nobody had written down: one host_restart_run() fires seed_ready TWICE on the host with the same value, so every handler must be idempotent — recorded as D-177, with why deduplicating the emit is the wrong fix. ARCHITECTURE 2.2 gained the Run world seed row game_state.gd's header had always pointed at. Neighbours green: run_reseed_check 0, reward_service_seed_check 0, main_menu_check 0, salvage_check 0, seed_launch_arg_check 0. Sweep of the class (a doc comment stating a trigger frequency a later change invalidated) found the one sibling, fixed under claim; nothing filed.
+
+Notes along the way:
+- Traced the full seed_ready emitter census before touching a comment. Three shipped emitters: host_generate_seed() (NetTransport.server_started via _on_hosting, plus MireGrid's lazy ensure_seed() at boot), host_redraw_seed() (CycleService.host_restart_run -> _host_redraw_world_seed), and set_replicated_seed() (WorldDeltaLog._reseed_local on BOTH sides of a reseed, and net_world_snapshot on a mid-run join). Three shipped subscribers, not two: SalvageService, RewardService and MainMenu (autoload, ui/menu/main_menu.gd:68 -> _refresh).
+- The contract fact the finding did not predict, and the one most likely to bite the next subscriber: on the HOST a single run boundary fires seed_ready TWICE with the same value. host_restart_run() calls _host_redraw_world_seed() (host_redraw_seed -> host_generate_seed -> emit) and then WorldDeltaLog.host_reseed(new_seed) -> _reseed_local -> set_replicated_seed(new_seed) -> emit again. Harmless today only because both subscribers RESET rather than accumulate. So the contract is not 'once per session' (the stale comments) and not 'once per run' either: it is 'at least once per run boundary, possibly more, on every peer' — a handler must be idempotent.
+
+Files: `tools/seed_ready_contract_check.gd`, `core/game_state.gd`, `autoload/salvage_service.gd`, `autoload/reward_service.gd`, `ui/menu/main_menu.gd`, `docs/ARCHITECTURE.md`, `docs/SPECS.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `9b82f73`

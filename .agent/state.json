@@ -436,11 +436,25 @@
       "task": "F-245",
       "token": null
     },
+    "autoload/reward_service.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T16:38:19+00:00",
+      "hash": "950886002c4620a37c85cbbf8f384ee2de21fe1579f886545540a063f8d2f4de",
+      "task": "F-273",
+      "token": null
+    },
     "autoload/rich_presence_service.gd": {
       "agent": "lp",
       "at": "2026-08-19T20:06:51+00:00",
       "hash": "1e36f02c9ac848649802999c9e6160d0b634ae831f1e3559090c734d5e287037",
       "task": "F-250",
+      "token": null
+    },
+    "autoload/salvage_service.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T16:38:19+00:00",
+      "hash": "556cbd4b0ced32fcf4e881ad2d0a353c91a07f2f68479813661dd97ab044d450",
+      "task": "F-273",
       "token": null
     },
     "autoload/steam_lobby.gd": {
@@ -669,9 +683,9 @@
     },
     "core/game_state.gd": {
       "agent": "lp",
-      "at": "2026-08-20T05:24:46+00:00",
-      "hash": "b05c75341f24e9d07907266c80582e33e7908b17fa85c8119868a57792e4bb69",
-      "task": "F-258",
+      "at": "2026-08-20T16:38:19+00:00",
+      "hash": "cce85b3fd6eb3625d2f229775a874be833e46da05344e66c5c1e3004928de40d",
+      "task": "F-273",
       "token": null
     },
     "core/net/net_config.gd": {
@@ -690,9 +704,9 @@
     },
     "docs/ARCHITECTURE.md": {
       "agent": "lp",
-      "at": "2026-08-20T11:21:16+00:00",
-      "hash": "7120037a697afef34457f233ab45ffa0c112f203a8fce536fa818b6764d6376f",
-      "task": "F-271-review",
+      "at": "2026-08-20T16:38:19+00:00",
+      "hash": "f15e056760ff670dad9bd87d1287ead3eab2060a85402854d5e0d1a003f4468d",
+      "task": "F-273",
       "token": null
     },
     "docs/ASSET_TRACKER.md": {
@@ -725,9 +739,9 @@
     },
     "docs/DELEGATION.md": {
       "agent": "lp",
-      "at": "2026-08-20T16:25:39+00:00",
-      "hash": "579e9bfef5fa5bfb5f7746cce4ac129061576789e3069e130dbcf9ed8ea9c63f",
-      "task": "F-266",
+      "at": "2026-08-20T16:38:19+00:00",
+      "hash": "be2dc7a3f372a4311fe3ea2b80ed30ef5b1d36d54f271ef21724b22dc8028226",
+      "task": "F-273",
       "token": null
     },
     "docs/FINDINGS.md": {
@@ -746,9 +760,9 @@
     },
     "docs/SPECS.md": {
       "agent": "lp",
-      "at": "2026-08-20T16:25:39+00:00",
-      "hash": "0d129b6bde0b260d9965c8a545c6ce17e1f0ef0a7a881dfb4ec88fb0e3431b3d",
-      "task": "F-266",
+      "at": "2026-08-20T16:38:19+00:00",
+      "hash": "6472ba0f5ce2fd612eecea844a49ad0f35b16e8c5d705deaa4d9aa83ae0438ae",
+      "task": "F-273",
       "token": null
     },
     "steam_appid.txt": {
@@ -1262,6 +1276,13 @@
       "task": "F-238",
       "token": null
     },
+    "tools/seed_ready_contract_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T16:38:19+00:00",
+      "hash": "18a214e013571623c7c5de01be91de568d02b9fe4df7c5132a1b64373d2058ea",
+      "task": "F-273",
+      "token": null
+    },
     "tools/seed_sync_check.gd": {
       "agent": "lp",
       "at": "2026-08-19T22:24:02+00:00",
@@ -1465,6 +1486,13 @@
       "task": "F-238",
       "token": null
     },
+    "ui/menu/main_menu.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T16:38:19+00:00",
+      "hash": "fb1e629693860487f0a3b9d65e849f50623fd3ba37444e3fef5f536e8a3ebb64",
+      "task": "F-273",
+      "token": null
+    },
     "world/chunk/chunk_mesher.gd": {
       "agent": "lm",
       "at": "2026-08-20T06:20:25+00:00",
@@ -1564,7 +1592,7 @@
       "token": null
     }
   },
-  "rev": 5,
+  "rev": 17,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -5496,9 +5524,11 @@
       "title": "The seed re-broadcast has no two-process proof \u2014 `run_reseed_check` calls the client's own receive path by hand"
     },
     "F-273": {
+      "done_at": "2026-08-20T16:38:19+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`GameState.seed_ready` is now a run boundary, not a session boundary, and two subscribers' doc comments still say otherwise"
     },
