@@ -78,9 +78,12 @@ var _drought_cleared: bool = false
 ## F-254, client-side only: slot -> the `"def_id|cycle"` stamp last emitted for that slot, so the two
 ## `delta_applied` landings a single draw produces (`str(slot)` and its `CYCLE_KEY_SUFFIX` sibling)
 ## emit exactly once between them regardless of arrival order. Cleared on `run_restarted` because a
-## restart re-uses slot 0 and — the run seed being unchanged (`CycleService`'s own SCOPE CUT, F-258) —
-## legitimately redraws the SAME id on the same Cycle 1, which the stamp alone could not tell from a
-## duplicate landing.
+## restart re-uses slot 0 and legitimately redraws on the same Cycle 1, which the stamp alone could
+## not tell from a duplicate landing. F-254 justified that clear with "the run seed being unchanged",
+## citing D-149's scope cut; F-258/D-161 lifted the cut and a restart now draws a FRESH seed, so a
+## redraw is only *likely* to repeat rather than guaranteed to. The clear is still required either
+## way — slot 0 is reused whatever it holds — and `tools/cycle_modifier_net_check.gd`'s phase 2
+## still passes, so only the reason recorded here needed correcting.
 var _announced_draws: Dictionary = {}
 var _rng := RandomNumberGenerator.new()
 var _transport_node: Node

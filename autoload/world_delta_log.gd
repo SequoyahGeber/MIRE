@@ -39,10 +39,56 @@ signal delta_applied(chunk: Vector2i, kind: StringName, key: String, value: Vari
 var _state: Dictionary = {}
 
 
+## F-258 addressing for the run seed itself. Not a real spatial chunk — a seed has no position —
+## the same pseudo-chunk reuse `CycleService`'s `GLOBAL_CHUNK` already makes of this log, and safe
+## for the same reason: the log keys by `(chunk, kind, key)`, so a `kind` no terrain system uses can
+## never collide with a real chunk record.
+const SEED_CHUNK: Vector2i = Vector2i.ZERO
+const SEED_KIND: StringName = &"world"
+const SEED_KEY: String = "seed"
+
+
 func _ready() -> void:
 	var session: Node = get_node_or_null(^"/root/NetSession")
 	if session != null:
 		session.connect(&"peer_admitted", _on_peer_admitted)
+
+
+## F-258. Host-only. Replaces the run seed mid-session and gets the new value to every ALREADY-
+## connected peer — the gap D-149 cut out of F-243's restart and this log's own header only ever
+## solved for a NEWLY joining one (`net_world_snapshot`, fired from `NetSession.peer_admitted`).
+##
+## No new RPC and therefore no `NetVersion.PROTOCOL_VERSION` bump: the value rides the existing
+## `net_delta_applied` broadcast as one more (chunk, kind, key, value) record, the same no-new-RPC
+## reuse D-099/D-100 established and `CycleService` already leans on twice (`cycle`/`run`). The wire
+## SHAPE is untouched, which is exactly the condition `core/net/rpc_manifest.gd` scans for.
+##
+## Clearing `_state` is the half that is easy to miss and expensive to skip: every record in here is
+## keyed by a chunk of the island that just ended — harvest depletion at a point that no longer has
+## a tree on it, Mire cells for a grid about to be re-seeded. Carried into the new world they would
+## deplete resources nobody harvested, at coordinates chosen by the PREVIOUS seed. So the reseed
+## wipes the log and re-lays the seed record as its first entry; `CycleService.host_restart_run()`
+## therefore calls this BEFORE recording its own Cycle/run-generation values, so the wipe cannot
+## take them with it.
+func host_reseed(seed_value: int) -> void:
+	if not _owns_world_state():
+		return
+	_reseed_local(seed_value)
+	if _transport_is_active():
+		net_delta_applied.rpc(SEED_CHUNK.x, SEED_CHUNK.y, String(SEED_KIND), SEED_KEY, seed_value)
+
+
+## Both sides of a reseed, so the host and a receiving client cannot drift in what a reseed MEANS.
+## `set_replicated_seed()` is idempotent by its own contract and fires `GameState.seed_ready` on
+## every peer, which is what re-derives `SalvageService`/`RewardService`'s per-run counters; the
+## systems that re-derive their world from the seed hang off `EventBus.run_restarted` instead, which
+## arrives immediately after this on the same reliable channel (`CycleService`'s `RUN_KIND` record).
+func _reseed_local(seed_value: int) -> void:
+	_state.clear()
+	_apply(SEED_CHUNK, SEED_KIND, SEED_KEY, seed_value)
+	var game_state: Node = get_node_or_null(^"/root/GameState")
+	if game_state != null:
+		game_state.call("set_replicated_seed", seed_value)
 
 
 ## Host-only. Records one mutation locally and, when a real session is running, broadcasts it to
@@ -116,7 +162,15 @@ func net_world_snapshot(seed_value: int, original_size: int, compressed: PackedB
 ## project already follows.
 @rpc("authority", "call_remote", "reliable")
 func net_delta_applied(chunk_x: int, chunk_z: int, kind: String, key: String, value: Variant) -> void:
-	_apply(Vector2i(chunk_x, chunk_z), StringName(kind), key, value)
+	var chunk := Vector2i(chunk_x, chunk_z)
+	# F-258: one record on this channel is not a mutation OF the world, it is a new world. Routed to
+	# `_reseed_local()` rather than `_apply()` so a client wipes the ended run's chunk records and
+	# adopts the seed in the same step the host did, off the same value. Deliberately not a second
+	# RPC — see `host_reseed()` above for why the wire shape must not move for this.
+	if chunk == SEED_CHUNK and StringName(kind) == SEED_KIND and key == SEED_KEY:
+		_reseed_local(int(value))
+		return
+	_apply(chunk, StringName(kind), key, value)
 
 
 func _on_peer_admitted(peer_id: int) -> void:

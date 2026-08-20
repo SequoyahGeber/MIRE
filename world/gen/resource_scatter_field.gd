@@ -70,6 +70,7 @@ extends Node3D
 
 const ResourceScatterLib := preload("res://world/gen/resource_scatter.gd")
 const HarvestLib := preload("res://systems/harvesting/harvest_library.gd")
+const EVENT_BUS := preload("res://core/events/event_bus.gd")
 
 ## Same group `world/gen/authored_world.gd` puts its own harvestable holders in — this is the
 ## contract `autoload/harvest_world.gd` already wires against, not a new one.
@@ -114,6 +115,31 @@ func attach_to_streamer(streamer: Node) -> void:
 	_streamer = streamer
 	streamer.chunk_mesh_ready.connect(_on_chunk_mesh_ready)
 	streamer.chunk_unloaded.connect(_on_chunk_unloaded)
+
+
+## F-258's sweep. `_depleted` is peer-local memory that SHADOWS `WorldDeltaLog` — `is_point_depleted()`
+## above falls back to it whenever the log has no answer. A restart now draws a fresh world seed
+## (D-161) and `WorldDeltaLog.host_reseed()` wipes the log, so from that instant every lookup takes
+## the fallback branch — and a `point_id` encodes (chunk, grid cell, def), none of which is
+## seed-derived, so the SAME id exists on the new island describing a different tree. Left alone,
+## the second run would boot with a scatter of already-harvested stumps inherited from the first.
+##
+## Today `ProceduralWorld.rebuild_for_seed()` frees this whole node and builds a new one, so the
+## dictionary would go with it anyway. That is a fact about the current caller, not a property of
+## this file: anything that reuses a field across runs (an in-place rebuild, a second composer)
+## silently gets the bug back. Subscribing here makes the invariant belong to the file that owns the
+## dictionary, and costs one signal. Unconditional on authority, like every other `run_restarted`
+## handler in this codebase — `_depleted` is this peer's own memory, so every peer clears its own.
+func clear_depletion_memory() -> void:
+	_depleted.clear()
+
+
+func _ready() -> void:
+	EVENT_BUS.subscribe_run_restarted(clear_depletion_memory)
+
+
+func _exit_tree() -> void:
+	EVENT_BUS.unsubscribe_run_restarted(clear_depletion_memory)
 
 
 func chunk_count() -> int:

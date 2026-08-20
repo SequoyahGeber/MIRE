@@ -95,10 +95,11 @@ func ensure_ready() -> void:
 	_emit_changed_deltas()
 
 
-## F-243: re-seeds a clean grid for a new run from the SAME `GameState.run_seed` (docs/DECISIONS.md's
-## F-243 entry: a restart does not draw a fresh world seed), so this reproduces exactly the corruption-
-## free state `ensure_ready()` already produces on first boot — no new seeding logic, just letting it
-## run a second time. Host-only, self-guarded, so every peer's own `EVENT_BUS.run_restarted` handler
+## F-243: re-seeds a clean grid for a new run, by letting `ensure_ready()` run a second time — no new
+## seeding logic of its own. F-258/D-161 changed what that produces without changing a line here:
+## `ensure_ready()` reads the seed through `GameState.ensure_seed()` at call time, and the restart has
+## already drawn a fresh one by the time `run_restarted` reaches this handler, so the second run gets
+## the NEW island's initial corruption rather than a replay of the run that just ended. Host-only, self-guarded, so every peer's own `EVENT_BUS.run_restarted` handler
 ## can call this unconditionally; a client's own copy simply no-ops and waits for the re-broadcast
 ## deltas `ensure_ready()`'s own `_emit_changed_deltas()` sends.
 func host_reset() -> void:

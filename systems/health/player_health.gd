@@ -630,6 +630,31 @@ func _teleport_to_spawn(peer_id: int) -> void:
 		net_force_respawn.rpc_id(peer_id, position, yaw)
 
 
+## F-258. Client-local, not host (§2.2 row 1 — own movement is the one thing a peer writes for
+## itself): places THIS peer's own body and rebinds the spawn transform its future respawns use, in
+## one call because doing either alone is a bug. `world/gen/procedural_world.gd` is the caller — a
+## restart now draws a fresh world seed (D-161), so the shore this peer landed on is gone and both
+## the body's position and F-063's captured `_spawn_transforms` entry describe a coordinate the new
+## island may have put underwater.
+##
+## Not `host_place_player()` with the local peer id: that seam exists for a HOST moving somebody, and
+## routing through it would make an authority claim this call does not need — every peer runs this
+## for itself off its own `run_restarted`. Yaw follows `_apply_respawn_transform`'s own convention:
+## NAN keeps the player's current facing.
+func rebind_local_spawn(position: Vector3, yaw: float = NAN) -> void:
+	var peer_id: int = _local_peer_id()
+	var kept_yaw: float = yaw
+	if is_nan(kept_yaw):
+		var body: Node3D = _local_player_body()
+		kept_yaw = body.rotation.y if body != null else 0.0
+	_spawn_transforms[peer_id] = {"position": position, "yaw": kept_yaw}
+	# Latched on, so `_capture_local_spawn_transform()` cannot overwrite this with a walked-to
+	# position later. It is already true in the normal flow; set explicitly for the offline boot
+	# order where a restart could precede the first physics tick that would have captured one.
+	_local_spawn_captured = true
+	_apply_respawn_transform(position, yaw)
+
+
 ## The public seam task 3.15's `tp` needs, and the reason it lives HERE rather than in
 ## EntityDirectory: a player's own movement is client-authoritative (ARCHITECTURE.md §2.2 row 1), so
 ## the host must never write a player transform — the next synchronizer tick would overwrite it and

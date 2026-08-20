@@ -6557,3 +6557,15 @@ Notes along the way:
 Files: `world/gen/biome_map.gd`, `world/gen/island_heightmap.gd`, `world/gen/poi_map.gd`, `world/gen/resource_scatter.gd`, `tools/terrain_map_render.gd`, `tools/worldgen_noise_reuse_check.gd`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `6a5f653`
+
+---
+
+### DONE · F-258 · lp · 2026-08-20T05:24:46+00:00
+
+**F-243's restart keeps the same world seed — no fresh island, no re-broadcast to already-connected peers**
+
+A restart now draws a fresh GameState.run_seed and re-broadcasts it to every ALREADY-connected peer — the gap D-149 cut out of F-243. No new RPC and no PROTOCOL_VERSION bump: WorldDeltaLog.host_reseed() ships the seed as a (Vector2i.ZERO, &'world', 'seed') record on the existing net_delta_applied broadcast, wiping the ended run's chunk log as it goes; net_delta_applied routes that one triple to _reseed_local() so a receiving peer wipes and adopts identically. CycleService.host_restart_run() reseeds FIRST (before its own Cycle/run records and before emit_run_restarted) — that ordering is a contract, asserted. Consumers: Chest._rng re-seeds from (new run_seed, chest name); ProceduralWorld.rebuild_for_seed() tears down and rebuilds streamer/nav/scatter/POI/spawn and moves the local player via the new client-local PlayerHealth.rebind_local_spawn(); CycleModifierService/RewardService/MireGrid/all world/gen needed no change (they read the seed at call time or take it as a parameter). Sweep found one live sibling: ResourceScatterField._depleted shadows WorldDeltaLog and its point_ids are not seed-derived, so it now clears on run_restarted in its own file. Proof: .agent/bin/agent godot --script tools/run_reseed_check.gd -> RUN_RESEED_CHECK failures=0 (5 phases, 30 assertions, incl. the client receive path and a real defeat->restart on the shipped map). Regression green: rpc_manifest_check (v21/55 RPCs, unchanged — the point), cycle_modifier_net_check, seed_sync_check, chest_seed_check, procedural_world_check, mire_grid_check, player_health_check, resource_scatter_check. run_restart_check keeps its 1 pre-existing failure (F-268). D-161 recorded; F-272/F-273 filed; F-268 amended (D-161 raises its consequence).
+
+Files: `core/game_state.gd`, `autoload/world_delta_log.gd`, `systems/cycle/cycle_service.gd`, `systems/loot/chest.gd`, `world/gen/procedural_world.gd`, `systems/health/player_health.gd`, `tools/run_reseed_check.gd`, `world/mire/mire_grid.gd`, `world/gen/resource_scatter_field.gd`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/SPECS.md`, `docs/DELEGATION.md`, `systems/cycle/cycle_modifier_service.gd`
+
+Commit at time of writing: `c05c066`

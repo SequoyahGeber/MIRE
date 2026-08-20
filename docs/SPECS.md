@@ -9163,3 +9163,110 @@ system asks — D-144's circularity, still live in one caller. Out of this claim
 scatter output on every seed, which is a content decision, not a performance one. **F-271.**
 
 **Resolved** — see `docs/FINDINGS.md`.
+
+---
+
+## F-258 · F-243's restart keeps the same world seed — no fresh island, no re-broadcast to already-connected peers
+
+**Claim:** `core/game_state.gd`, `autoload/world_delta_log.gd`, `systems/cycle/cycle_service.gd`,
+`systems/loot/chest.gd`, `systems/health/player_health.gd`, `world/gen/procedural_world.gd`,
+`world/gen/resource_scatter_field.gd`, `world/mire/mire_grid.gd`,
+`systems/cycle/cycle_modifier_service.gd` (one stale doc comment), `tools/run_reseed_check.gd` (new).
+**Authority:** §2.2 — `GameState.run_seed` stays HOST-drawn; the broadcast rides the world-mutation
+row's existing host→everyone delta. `ProceduralWorld` keeps authority "none — derived, not owned"
+(every peer re-derives the same island from the same broadcast seed). `PlayerHealth.
+rebind_local_spawn()` is row 1, client-local. **No new RPC, no `PROTOCOL_VERSION` bump.**
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The gap:** D-149 cut a fresh world seed out of F-243's restart, on the grounds that regenerating it
+would need a live re-broadcast to every ALREADY-connected peer and "nothing in this codebase does
+that today" (`WorldDeltaLog.net_world_snapshot` only ever targets a peer that just joined, via
+`NetSession.peer_admitted`). So every restart in a process replayed the same island, the same POI
+layout, and — on the shipped authored map, where the real cost lands — the same chest loot stream,
+Modifier draws and initial Mire corruption.
+
+**The fix (D-161), four calls:**
+1. `GameState.host_redraw_seed()` — host-only mid-run draw. Delegates to `host_generate_seed()`
+   (same draw) but under its own name, because "this session has no seed yet" and "replace the one
+   everyone is connected on" are different events. A staged `--seed=` override is not re-consumed:
+   the first draw already cleared it, so a seed repro governs the run it was typed for.
+2. `WorldDeltaLog.host_reseed(value)` — the re-broadcast D-149 said did not exist. Clears `_state`
+   (see D-161 for why the ended run's chunk records must not survive), records the seed at
+   `(Vector2i.ZERO, &"world", "seed")`, and broadcasts it on the **existing** `net_delta_applied`.
+   `net_delta_applied` routes that one record to `_reseed_local()` instead of `_apply()`, so a
+   receiving peer wipes and adopts in the same step the host did, off the same value.
+3. `CycleService.host_restart_run()` — reseeds **first**, before its own `RUN_KIND`/`KIND` records
+   (written after the wipe, or they go with it) and before `emit_run_restarted()` (so every
+   subscriber re-deriving from the seed reads the new value). Ordering is a contract; see D-161.
+4. The consumers. `Chest.host_reset_for_new_run()` re-seeds `_rng` from `(new run_seed, chest name)`
+   — reversing that method's own "deliberately left running", which was only correct while D-149
+   held. `ProceduralWorld` gains `rebuild_for_seed()` on `run_restarted`: tears down and rebuilds
+   `ChunkStreamer`/`NavBaker`/`ResourceScatterField`/`PoiSites`/`SpawnMarker`, re-picks spawn, and
+   moves THIS peer's own player via the new client-local `PlayerHealth.rebind_local_spawn()` (which
+   also rebinds F-063's captured respawn transform — moving the body alone would respawn the next
+   death into the previous island's shore). `CycleModifierService`, `RewardService`, `MireGrid` and
+   every `world/gen` pure function needed **no change** — they read the seed at call time or take it
+   as a parameter.
+
+**Verify:** new `tools/run_reseed_check.gd`, five phases, 30 assertions:
+`.agent/bin/agent godot --script tools/run_reseed_check.gd` → `RUN_RESEED_CHECK failures=0`.
+1. `host_redraw_seed()` produces a different value and fires `seed_ready` exactly once.
+2. `host_reseed()` wipes a planted chunk record and leaves the seed record as the log's only entry.
+3. The RECEIVE half — `net_delta_applied` called directly with the seed tuple, byte-for-byte what a
+   client's ENet callback invokes (same reasoning `tools/cycle_advanced_net_check.gd` uses for the
+   sibling branch). Asserts **both ways**: an ordinary delta must still be an ordinary delta, or a
+   `kind`/`key` typo would silently turn every harvest delta into a world wipe.
+4. The real trigger on the SHIPPED map — boot `hollowmere.tscn`, real defeat, `host_restart_run()`:
+   new seed in `GameState`, stale chunk records gone, and the Cycle/run-generation records written
+   after the wipe still readable (this is what pins the ordering). Plus the chest's loot stream
+   moving, and a pinned `host_seed_rng()` still reproducing exactly.
+5. The fresh island — `rebuild_for_seed()` changes the height profile, the spawn and the POI layout,
+   frees the old `PoiSites`/`SpawnMarker` rather than duplicating them, and is **byte-identical to a
+   world BOOTED on that seed** in a second scene. That last one is the desync guard: two peers
+   restarting off the same broadcast must not derive different islands.
+
+Regression, all green: `tools/rpc_manifest_check.gd` (v21, 55 RPCs, unchanged — the point),
+`tools/cycle_modifier_net_check.gd`, `tools/seed_sync_check.gd`, `tools/chest_seed_check.gd`,
+`tools/procedural_world_check.gd`, `tools/mire_grid_check.gd`, `tools/player_health_check.gd`,
+`tools/resource_scatter_check.gd` — `failures=0` each.
+`tools/run_restart_check.gd` fails with its **1 pre-existing** failure (`every placed buildable was
+cleared`) — **F-268**, already filed and confirmed pre-existing at HEAD; unchanged by this task.
+
+**Traps:**
+- **Order inside `host_restart_run()` is load-bearing, in two directions.** Reseed after the
+  Cycle/run records and the wipe eats them; reseed after `emit_run_restarted()` and every subscriber
+  re-derives off the seed that just ended. Phase 4 asserts both.
+- **`Object.get()` does not read a script constant.** `cycle_service.get(&"GLOBAL_CHUNK")` returns
+  null, silently, so an assertion written that way passes against nothing. `run_reseed_check.gd`
+  goes through `get_script().get_script_constant_map()` — worth copying, since reading the real
+  constants is what makes a rename fail the check loudly instead of quietly.
+- **`queue_free()` is not enough for an in-place rebuild.** The old `ChunkStreamer` stays in the tree
+  until end of frame, so the new one collides with its name and the old one keeps meshing the
+  previous island in between. `remove_child()` first — it runs `_exit_tree()` synchronously, which is
+  where the streamer's `WorkerThreadPool` tasks are waited on.
+- **The shipped map is authored.** `levels/hollowmere.tscn` places its terrain and every marker by
+  hand, so no seed moves them. The fresh-island half only shows on `ProceduralWorld`, still dev-only
+  until 4.19's cutover (F-139) — the mechanism ships proven ahead of the map that needs it.
+
+**Swept for the same shape** — "a value derived from `run_seed` and cached at boot rather than
+re-read". `grep -rn "_seed_for_run\|\.seed = \|seed_ready\|ensure_seed\|world_seed = "` over
+`autoload/ systems/ world/ core/ entities/ ui/`. Live at call time, no change needed:
+`CycleModifierService` (per draw), `RewardService` (per roll, and its event counter resets on
+`seed_ready` — which a reseed now fires, correctly, at a real run boundary), `SalvageService` (same),
+`MireGrid.ensure_ready()`. Fixed-constant RNGs that are deliberately NOT run-scoped and stay that
+way: `CombatService`, `EnemyWorld`, `WaveSpawner`, `Boss`, `StarField`, `LowPolyClouds`,
+`Undergrowth` (authored layout seed, not the run seed). Pure `(x, z, world_seed)` functions with
+nothing to cache: `IslandHeightmap`, `BiomeMap`, `PoiMap`, `ResourceScatter`. The three real caches
+— `ChunkStreamer`, `NavBaker`, `ResourceScatterField` — are all owned and rebuilt by
+`ProceduralWorld`. **One live sibling found and fixed:** `ResourceScatterField._depleted`, a
+peer-local memory that SHADOWS `WorldDeltaLog` (`is_point_depleted()` falls back to it when the log
+has no answer — which, after a wipe, is always). A `point_id` encodes (chunk, cell, def), none of it
+seed-derived, so the same id names a different tree on the new island and run 2 would have booted
+with run 1's harvested stumps. It now clears on `run_restarted` in the file that owns the dictionary,
+rather than relying on `ProceduralWorld` happening to free the whole node. Also corrected one stale
+doc comment: `CycleModifierService._announced_draws` justified its restart clear with "the run seed
+being unchanged" — the clear is still required, the reason is not.
+
+**Resolved** — see `docs/FINDINGS.md`.

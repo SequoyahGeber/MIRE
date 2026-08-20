@@ -41,13 +41,14 @@ extends Node
 ## reuses the exact `WorldDeltaLog` no-new-RPC trick `_announce()`/`_on_world_delta_applied()` already
 ## prove below for `cycle_advanced`, under a second `kind` so the two never collide.
 ##
-## SCOPE CUT, written down so nobody "fixes" it as an oversight: a restart keeps the same
-## `GameState.run_seed` — same island, same POI/Wellspring/Chest/ExtractionShip positions, same
-## biome/terrain layout. Only RUN-scoped state resets (Cycle, Mire corruption, modifiers, inventory,
-## health, enemies, buildables, chest/wellspring/ship progress). Drawing a fresh world seed on
-## restart would need a live re-broadcast to every already-connected peer, which nothing in this
-## codebase does today (`WorldDeltaLog.net_world_snapshot` only ever reaches a NEWLY joining peer) —
-## real scope, not this finding's, and filed as F-258.
+## F-258/D-161 lifted D-149's scope cut, which used to read here as "a restart keeps the same
+## `GameState.run_seed`". It no longer does: `host_restart_run()` draws a fresh seed and hands it to
+## `WorldDeltaLog.host_reseed()`, which carries it to every ALREADY-connected peer on the same
+## reliable `net_delta_applied` channel this file's own Cycle/run records already ride — so the live
+## re-broadcast D-149 said "nothing in this codebase does today" is that one call, and it needed no
+## new RPC and no `PROTOCOL_VERSION` bump. A restart therefore resets RUN-scoped state (Cycle, Mire
+## corruption, modifiers, inventory, health, enemies, buildables, chest/wellspring/ship progress)
+## AND lands on a new island: new terrain, new POI layout, new scatter, new chest loot stream.
 
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
 
@@ -177,13 +178,36 @@ func host_restart_run() -> int:
 	_spread_multiplier = 1.0
 	_days_elapsed = 0
 	_run_generation += 1
-	EVENT_BUS.emit_run_restarted()
 	var world_delta_log: Node = get_node_or_null(^"/root/WorldDeltaLog")
+	# F-258: the new world comes FIRST, before any of this file's own records and before
+	# `run_restarted`. Two orderings depend on it, and both are load-bearing:
+	#   · `WorldDeltaLog.host_reseed()` wipes the ended run's chunk log (see its header), so the
+	#     RUN_KIND/KIND records below have to be written after the wipe or they go with it.
+	#   · every `run_restarted` subscriber that re-derives itself from the seed (MireGrid's
+	#     `host_reset()`, `Chest.host_reset_for_new_run()`, `ProceduralWorld`) must read the NEW
+	#     value, not the ended run's. On a client the same order arrives over the wire for free:
+	#     both records ride the one reliable ordered `net_delta_applied` channel, seed then run,
+	#     so `_on_world_delta_applied()`'s re-derived `run_restarted` cannot outrun the reseed.
+	var new_seed: int = _host_redraw_world_seed()
+	if world_delta_log != null and new_seed != 0:
+		world_delta_log.call("host_reseed", new_seed)
+	EVENT_BUS.emit_run_restarted()
 	if world_delta_log != null:
 		world_delta_log.call("host_record", GLOBAL_CHUNK, RUN_KIND, RUN_KEY, _run_generation)
 	_announce()
-	MireLog.info(&"world", "Run restarted — Cycle 1 begins")
+	MireLog.info(&"world", "Run restarted — Cycle 1 begins on world seed %d" % new_seed)
 	return _current_cycle
+
+
+## F-258. Host-only (this is only ever reached from `host_restart_run()`, itself `_owns_cycle()`-
+## gated). Returns 0 when there is no GameState to draw from — a `--script` harness that never
+## registered the autoloads — which the caller reads as "no reseed happened" rather than as a seed
+## of 0, so a check tool booting a bare SceneTree still exercises the rest of the restart.
+func _host_redraw_world_seed() -> int:
+	var game_state: Node = get_node_or_null(^"/root/GameState")
+	if game_state == null:
+		return 0
+	return int(game_state.call("host_redraw_seed"))
 
 
 func _run_has_ended() -> bool:

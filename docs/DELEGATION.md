@@ -75,6 +75,46 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-20 — F-258 resolved: a run restart draws a FRESH world seed and re-broadcasts it to already-connected peers, over the delta channel that was already there (lp)
+
+**The APIs the next task builds on** (all host-only unless noted):
+
+- **`GameState.host_redraw_seed() -> int`** — mid-run draw of the next run's seed. Fires `seed_ready`.
+  Does not re-consume a staged `--seed=`/menu override. **Whoever calls it owns the broadcast** —
+  in practice, always call `WorldDeltaLog.host_reseed()` with the result.
+- **`WorldDeltaLog.host_reseed(seed_value: int) -> void`** — clears the whole delta log (every record
+  in it is keyed to the ended island's chunks) and broadcasts the new seed to every ALREADY-connected
+  peer on the existing `net_delta_applied`. **No new RPC, no `PROTOCOL_VERSION` bump** — the record is
+  `(SEED_CHUNK = Vector2i.ZERO, SEED_KIND = &"world", SEED_KEY = "seed")`, and `net_delta_applied`
+  routes exactly that triple to `_reseed_local()` instead of `_apply()`. `rpc_manifest_check` stays
+  green at v21/55 RPCs. **If you add a `kind` to this log, do not use `&"world"`.**
+- **`PlayerHealth.rebind_local_spawn(position: Vector3, yaw: float = NAN) -> void`** — CLIENT-LOCAL
+  (§2.2 row 1), not host. Places this peer's own body AND rebinds the respawn transform F-063
+  captures, in one call because either alone is a bug. `NAN` keeps current facing.
+- **`ProceduralWorld.rebuild_for_seed(seed_value: int) -> void`** — re-derives streamer, nav, scatter,
+  POI and spawn in place; already wired to `run_restarted`. Public so a future "reroll" console verb
+  can drive it without faking a restart. A rebuilt island is byte-identical to one BOOTED on that
+  seed (asserted).
+- **`ResourceScatterField.clear_depletion_memory() -> void`** — already wired to `run_restarted`.
+
+**The ordering contract inside `CycleService.host_restart_run()`, do not reorder:** reseed →
+`emit_run_restarted()` → `RUN_KIND`/`KIND` records → `_announce()`. The wipe must precede this file's
+own records or it eats them; the reseed must precede `run_restarted` or every subscriber that
+re-derives from the seed reads the run that just ended. On a client the same order arrives free —
+one reliable ordered channel, seed then run.
+
+**What did NOT need changing, and why that matters if you touch worldgen:** anything reading the seed
+through `GameState.ensure_seed()` at CALL time (`CycleModifierService`, `RewardService`, `MireGrid`)
+or taking it as a parameter (every `world/gen` pure function) re-derives for free. Cache the seed in a
+member at `_ready()` and you have re-created the bug — the three that do (`ChunkStreamer`, `NavBaker`,
+`ResourceScatterField`) are only safe because `ProceduralWorld` rebuilds all three.
+
+**Still true:** the shipped map is authored (`levels/hollowmere.tscn`), so no seed moves its terrain
+or markers. The fresh-island half is live only on `ProceduralWorld` until 4.19's cutover (F-139).
+
+Check: `.agent/bin/agent godot --script tools/run_reseed_check.gd` → `RUN_RESEED_CHECK failures=0`.
+Spec: `docs/SPECS.md` F-258. Decision: **D-161**.
+
 ### 2026-08-19 — F-261 resolved: `BiomeMap.NoiseSet` closes the last three per-sample noise rebuilds — POI placement, moisture, and the terrain render (lm)
 
 **Claim:** `world/gen/biome_map.gd`, `world/gen/island_heightmap.gd`, `world/gen/poi_map.gd`,

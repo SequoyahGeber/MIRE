@@ -86,15 +86,22 @@ func _exit_tree() -> void:
 	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
 
 
-## F-243: re-closes this chest for a new run — same island, same Chest node (docs/DECISIONS.md's
-## F-243 entry). Host-only; a client's own copy no-ops and picks up the reset through the normal
-## replicated-property sync `opened` already uses. `_rng`'s sequence is deliberately left running
-## rather than reseeded — a restart's reproducibility is out of scope (see CycleService's F-243 note);
-## simplicity wins over a second reason to touch the seed.
+## F-243: re-closes this chest for a new run. Host-only; a client's own copy no-ops and picks up the
+## reset through the normal replicated-property sync `opened` already uses.
+##
+## F-258 reverses this method's original "`_rng`'s sequence is deliberately left running rather than
+## reseeded" — that was correct only while D-149 kept the same world seed across a restart, and D-161
+## draws a fresh one. Re-seeding from `(the NEW run_seed, this chest's name)` is what makes the
+## second run's loot genuinely a different run rather than the tail of the first one's stream, and it
+## restores F-210's actual contract: a chest's roll is a pure function of (run seed, chest id), so
+## two processes replaying the same seed still open the same chest onto the same loot. Order is safe
+## by construction — `CycleService.host_restart_run()` reseeds `GameState` before it emits
+## `run_restarted`, so `_run_seed()` here already reads the new value.
 func host_reset_for_new_run() -> void:
 	if not _owns_world_mutation():
 		return
 	opened = false
+	_rng.seed = _seed_for_run(_run_seed(), String(name))
 
 
 func _on_run_restarted() -> void:

@@ -25,6 +25,7 @@ const ChunkMesherScript := preload("res://world/chunk/chunk_mesher.gd")
 const NavBakerScript := preload("res://world/chunk/nav_baker.gd")
 const ScatterFieldScript := preload("res://world/gen/resource_scatter_field.gd")
 const PlayerScene := preload("res://entities/player/player.tscn")
+const EVENT_BUS := preload("res://core/events/event_bus.gd")
 
 ## Same contract constants `world/gen/authored_world.gd` publishes — duplicated by value, not
 ## imported, for the same reason EntityDirectory duplicates its group names: the string IS the
@@ -82,8 +83,123 @@ func _ready() -> void:
 	if build_player:
 		_build_player()
 
+	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
+
 	MireLog.info(&"world", "ProceduralWorld: seed %d — %d POI site(s), %d marker(s), spawn %s" % [
 		world_seed, poi_sites.size(), _markers_built, spawn_position])
+
+
+func _exit_tree() -> void:
+	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
+
+
+# ── F-258: the fresh island ───────────────────────────────────────────────────────────────────────
+
+
+## Fires on every peer (`EventBus.run_restarted` is re-derived client-side from the WorldDeltaLog
+## record — `CycleService._on_world_delta_applied()`), which is exactly right for this node: it has
+## no network authority of its own (see the header), every placement below is a pure function of the
+## seed, and every peer therefore has to re-derive the SAME new island independently. Reads
+## `GameState.run_seed` directly rather than `ensure_seed()` — by the time `run_restarted` lands, the
+## host has already drawn the new value and a client has already adopted it off the same reliable
+## channel, so there is nothing left to lazily draw and a peer that somehow has none should not
+## invent one that disagrees with everyone else's.
+func _on_run_restarted() -> void:
+	var game_state: Node = get_node_or_null(^"/root/GameState")
+	if game_state == null or not bool(game_state.call(&"is_seed_ready")):
+		return
+	var next_seed: int = int(game_state.get(&"run_seed"))
+	if next_seed == world_seed:
+		return
+	rebuild_for_seed(next_seed)
+
+
+## Re-derives the whole world from a new seed, in place. Public so a check (and a future "reroll"
+## console verb) can drive it without faking a restart.
+##
+## Everything derived is torn down and rebuilt rather than mutated: `ChunkStreamer`/`NavBaker`/
+## `ResourceScatterField` each cache per-chunk work keyed to the OLD seed (meshes, nav regions,
+## scatter proxies) and none of them has, or should grow, a "forget everything" path — one exists
+## already and it is `_exit_tree()`, which `remove_child()` runs synchronously. Synchronous matters:
+## `queue_free()` alone would leave the old streamer in the tree until the end of the frame, so the
+## new one would collide with its name and keep meshing the old island for a frame in between.
+##
+## The PLAYER is not rebuilt — it is repositioned. A player body is not derived from the seed (it
+## carries inventory, health and, in a session, a peer's own authority), so freeing and re-instancing
+## it would throw away live run state to move a body three hundred metres.
+func rebuild_for_seed(seed_value: int) -> void:
+	world_seed = seed_value
+	_teardown_derived()
+	_markers_built = 0
+	_scenes_instanced = 0
+	poi_sites.clear()
+
+	_build_streamer()
+	_build_nav()
+	_build_scatter()
+	_build_poi_sites()
+	spawn_position = _pick_spawn()
+	_publish_spawn_marker()
+	_replace_players()
+
+	MireLog.info(&"world", "ProceduralWorld: rebuilt on seed %d — %d POI site(s), %d marker(s), spawn %s" % [
+		world_seed, poi_sites.size(), _markers_built, spawn_position])
+
+
+## Frees every node this file derived from the previous seed, and nothing else. Named children, not
+## "all children": `_build_player()`'s Player and anything a future task parents here are not this
+## function's to remove.
+func _teardown_derived() -> void:
+	var derived: Array[Node] = []
+	for candidate: Node in [streamer, nav_baker, scatter_field]:
+		if candidate != null and is_instance_valid(candidate):
+			derived.append(candidate)
+	for child_name: String in ["PoiSites", "SpawnMarker"]:
+		var node: Node = get_node_or_null(NodePath(child_name))
+		if node != null:
+			derived.append(node)
+	for node: Node in derived:
+		remove_child(node)          # synchronous _exit_tree — see rebuild_for_seed()'s note
+		node.queue_free()
+	streamer = null
+	nav_baker = null
+	scatter_field = null
+
+
+## Stands THIS peer's own player back up on the new island's shore, and re-anchors the respawn point
+## that goes with it.
+##
+## Own-player only, deliberately: a player body's movement is CLIENT-authoritative (§2.2 row 1), so a
+## peer writing another peer's transform would be overwritten by the next synchronizer tick anyway —
+## and it does not need to, because `run_restarted` reaches every peer, so every peer moves its own.
+## `PlayerHealth.rebind_local_spawn()` is the one call because both halves have to happen together:
+## moving the body alone leaves that file's captured spawn transform pointing at a shore the previous
+## seed had and this one may not, so the next death would respawn the player into open ocean — F-063's
+## own bug (respawning at a position nobody chose) arriving by a different route. The direct-move
+## fallback covers a harness that boots this scene without the autoloads (F-011's standing shape).
+func _replace_players() -> void:
+	var standing: Vector3 = spawn_position + Vector3.UP * 1.2
+	var player_health: Node = get_node_or_null(^"/root/PlayerHealth")
+	if player_health != null and player_health.has_method(&"rebind_local_spawn"):
+		player_health.call("rebind_local_spawn", standing, NAN)
+	else:
+		var body: Node3D = _local_player_body()
+		if body != null:
+			body.position = standing
+	if streamer != null:
+		var anchors: Array[Vector3] = [standing]
+		streamer.call(&"set_anchors", anchors)
+
+
+## Same rule `PlayerHealth._local_player_body()` uses — the body this peer has authority over. Only
+## reached by the fallback above; duplicated rather than exposed because it is two lines and the
+## alternative is a public accessor on PlayerHealth that nothing else wants.
+func _local_player_body() -> Node3D:
+	for node: Node in get_tree().get_nodes_in_group(&"players"):
+		var player := node as Node3D
+		if player != null and player.is_multiplayer_authority():
+			return player
+	return null
 
 
 ## The same passthrough `authored_world.gd` exposes, so anything asking "the world" for ground

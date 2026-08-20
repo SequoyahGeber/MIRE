@@ -6,11 +6,15 @@ extends Node
 ## This task (4.6) only needs the seed half, so it claims the reserved name/location now rather than
 ## inventing a second `core/net/run_seed.gd` that 6.1 would later have to merge with this one.
 ##
-## NETWORK AUTHORITY (docs/ARCHITECTURE.md §2.2): HOST picks `run_seed`, once, from real entropy —
-## the same reasoning D-041 gives for `Chest.host_seed_rng()`: nothing today needs this run to be
-## reproducible across restarts, only that every peer IN the run agrees, which replication (not a
-## fixed constant) already provides. `autoload/world_delta_log.gd` is what actually gets the value
-## to a client — this file only holds it and decides when a fresh one is drawn.
+## NETWORK AUTHORITY (docs/ARCHITECTURE.md §2.2): HOST picks `run_seed` from real entropy — the same
+## reasoning D-041 gives for `Chest.host_seed_rng()`: nothing today needs this run to be reproducible
+## across restarts, only that every peer IN the run agrees, which replication (not a fixed constant)
+## already provides. `autoload/world_delta_log.gd` is what actually gets the value to a client — this
+## file only holds it and decides when a fresh one is drawn.
+##
+## F-258/D-161 lifted the "once" that used to be in that sentence: a seed is drawn once per RUN, not
+## once per process. [method host_redraw_seed] draws the next run's, and `WorldDeltaLog.host_reseed()`
+## carries it to every already-connected peer over the delta channel that was already there.
 ##
 ## Task 6.10 adds a UI-facing override: [method set_pending_seed] stages a specific value so a typed
 ## seed beats real entropy on the very next draw, without touching HOW a seed reaches a client (still
@@ -58,6 +62,23 @@ func host_generate_seed() -> int:
 	_seed_ready = true
 	seed_ready.emit(run_seed)
 	return run_seed
+
+
+## F-258. Host-only, MID-RUN: draws a brand-new seed for the next run, so a restart lands on a fresh
+## island/POI layout/loot stream instead of replaying the one that just ended. Delegates rather than
+## duplicating [method host_generate_seed] — the draw is the same draw — but exists under its own
+## name because the two callers mean genuinely different things: `host_generate_seed()` is "this
+## session has no seed yet" (`NetTransport.server_started`, `ensure_seed()`'s lazy boot path), and
+## this is "the session has one, replace it while everyone is connected". Whoever calls this owns
+## getting the new value to the other peers; `autoload/world_delta_log.gd`'s `host_reseed()` is the
+## only caller that does, and `CycleService.host_restart_run()` goes through it.
+##
+## A staged `--seed=`/menu override is NOT re-consumed here: `host_generate_seed()` clears
+## `_has_pending_seed` on the first draw, so a deliberate seed repro governs the run it was typed
+## for and a restart moves on to real entropy — the same "a seed does not outlive its run" stance
+## [method reset] already takes for a session.
+func host_redraw_seed() -> int:
+	return host_generate_seed()
 
 
 ## Client-side: adopt the value the host sent. Also safe to call host-side with its own value —

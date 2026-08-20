@@ -440,27 +440,6 @@ with no pile-up on either lock.
 
 ---
 
-### F-258 · F-243's restart keeps the same world seed — no fresh island, no re-broadcast to already-connected peers
-
-**Area:** netcode · **Severity:** low · **Found:** 2026-08-19 by lm
-
-F-243 (run restart) deliberately does not draw a fresh `GameState.run_seed` on restart — see
-docs/DECISIONS.md D-149's own entry for the full reasoning. The short version: regenerating the seed
-mid-session would need a live re-broadcast reaching every ALREADY-connected peer, and nothing in this
-codebase does that today (`WorldDeltaLog.net_world_snapshot` only ever targets a peer that just
-joined, via `NetSession.peer_admitted` — never a running session). A restart therefore reuses the
-same island, POI layout, and Wellspring/Chest/ExtractionShip positions every subsequent run this
-process plays.
-
-**Would take:** a new host -> everyone reliable RPC (protocol bump, `core/net/net_version.gd` +
-`tools/handshake_check.gd` + `core/net/rpc_manifest.gd`'s scanned signature) carrying a freshly drawn
-seed, PLUS every terrain/POI/streaming system (`ChunkStreamer`, `BiomeMap`, `PoiMap`,
-`ChestPlacementService`, `WellspringService`, `ExtractionService`) proving it behaves correctly when
-re-derived from a NEW seed mid-process rather than only at boot — none of which exists or has been
-exercised today. Real scope for its own task, not a quick add to F-243's.
-
----
-
 ### F-259 · F-243's restart resets Cycle/Mire/inventory/etc but not WaveSpawner's unlocked enemy roster
 
 **Area:** systems · **Severity:** low · **Found:** 2026-08-19 by lm
@@ -732,6 +711,13 @@ Found by lp during F-254's regression sweep. `tools/run_restart_check.gd` fails 
 `.agent/bin/agent baseline --script tools/run_restart_check.gd` (identical single failure, same
 assertion, on an untouched worktree).
 
+**Raised by D-161 (added 2026-08-20 by lp, F-258).** This was "the previous run's walls are still
+standing" while a restart kept the same island. It no longer does: a restart now draws a fresh world
+seed, so on the procedural path those surviving pieces sit at coordinates chosen against terrain that
+no longer exists — floating over the new island's water, or buried inside its hills, with `NavBaker`
+regions baked around them. Same one-line fix (`BuildService` subscribing `run_restarted` and clearing
+`_placed`), larger consequence.
+
 This is not a flaky check. `autoload/build_service.gd` contains no `run_restarted` subscription of
 any kind — `grep -n 'run_restart\|EVENT_BUS.subscribe' autoload/build_service.gd` returns nothing,
 and its last commit is F-244 (039c5da), not F-243's ship (6d7e756). So `_placed` survives a restart
@@ -851,7 +837,101 @@ doc comments disagree with each other and one of them is wrong.
 
 ---
 
+### F-272 · The seed re-broadcast has no two-process proof — `run_reseed_check` calls the client's own receive path by hand
+
+**Area:** netcode · **Severity:** low · **Found:** 2026-08-20 by lp
+
+`tools/run_reseed_check.gd` phase 3 exercises F-258's receive half by calling
+`WorldDeltaLog.net_delta_applied(0, 0, "world", "seed", v)` directly — byte-for-byte the arguments a
+client's ENet callback passes, and enough to prove the discrimination (an ordinary delta must not be
+treated as a reseed, and vice versa) plus `_reseed_local()`'s wipe-and-adopt. It is NOT proof that
+the record actually crosses a real socket, nor that it arrives BEFORE `CycleService`'s `RUN_KIND`
+record — and that ordering is load-bearing: `host_restart_run()` depends on a client adopting the new
+seed before its re-derived `run_restarted` reaches the subscribers that re-derive from the seed. The
+ordering is guaranteed by the channel being reliable-ordered, which is a property of ENet this repo
+has never asserted for itself.
+
+This is the same gap **F-260** records for `run_restarted` itself, arriving one record later on the
+same channel, and the fix is the same shape: a real two-process check in the mould of
+`tools/cycle_advanced_net_check.gd` / `tools/cycle_modifier_net_check.gd`, whose client asserts (a)
+`GameState.run_seed` changed, (b) its `WorldDeltaLog` was wiped, and (c) it saw the seed land before
+`run_restarted` fired. Worth folding into whatever task takes F-260 rather than standing alone —
+they would be two phases of one check.
+
+---
+
+### F-273 · `GameState.seed_ready` is now a run boundary, not a session boundary, and two subscribers' doc comments still say otherwise
+
+**Area:** architecture · **Severity:** low · **Found:** 2026-08-20 by lp
+
+F-258/D-161 made `seed_ready` fire on every restart, not only at session start. Both current
+subscribers do the RIGHT thing with that — `SalvageService`'s per-run Wellspring tally and
+`RewardService`'s per-run event counter both SHOULD reset at a run boundary, which is why nothing
+broke and why this is a finding rather than a bug — but neither file's comment describes the signal
+correctly any more:
+
+- `autoload/salvage_service.gd:128`: "`GameState.seed_ready` fires once at the start of every hosted
+  session and once when a client…" — now also once per restart.
+- `autoload/reward_service.gd:47`: "Reset on `GameState.seed_ready`, the same 'a run…'" — the
+  reasoning is right, the stated trigger frequency is not.
+
+Left alone because both files were outside F-258's claim set and neither behaves wrongly. The risk is
+the next subscriber: someone reading those comments will write a `seed_ready` handler assuming
+once-per-session and get it called mid-run. Fix is two comment edits, plus a line in
+`core/game_state.gd`'s `seed_ready` declaration stating the contract at the source — which is where
+it should have been.
+
+---
+
+---
+
 ## Resolved
+
+### F-258 · F-243's restart keeps the same world seed — no fresh island, no re-broadcast to already-connected peers
+
+**Area:** netcode · **Severity:** low · **Found:** 2026-08-19 by lm · **Fixed:** 2026-08-20 by lp
+
+**fixed** — a restart now draws a fresh `GameState.run_seed` and broadcasts it to every
+ALREADY-connected peer. Full spec in `docs/SPECS.md` under F-258; the scope call and its reversal of
+D-149's middle third are **D-161**.
+
+Both of the finding's own "would take" costs came in far under estimate, which is the part worth
+carrying forward:
+
+- **The protocol bump was not needed at all.** The finding budgeted `core/net/net_version.gd` +
+  `tools/handshake_check.gd` + re-recording `core/net/rpc_manifest.gd`'s scanned signature.
+  `WorldDeltaLog.net_delta_applied` is already a host → everyone reliable broadcast of a
+  `(chunk, kind, key, value)` tuple, and a seed is a value — it ships under `kind = &"world"`,
+  `key = "seed"`, at the same `Vector2i.ZERO` pseudo-chunk `CycleService`'s Cycle/run records already
+  use. The wire shape never moves: `tools/rpc_manifest_check.gd` stays green at PROTOCOL_VERSION 21,
+  55 RPCs.
+- **"Every terrain/POI/streaming system proving it re-derives mid-process"** was mostly already true.
+  `IslandHeightmap`/`BiomeMap`/`PoiMap`/`ResourceScatter` are pure functions taking the seed as a
+  parameter; `CycleModifierService`/`RewardService`/`MireGrid` read it through `ensure_seed()` at
+  call time and needed no edit. Only `ProceduralWorld` (now `rebuild_for_seed()`, asserted
+  byte-identical to a world BOOTED on that seed) and `Chest`'s `_rng` actually cached it.
+
+The reseed also **wipes `WorldDeltaLog`** — every record in it is keyed to a chunk of the island that
+just ended — which makes ordering inside `CycleService.host_restart_run()` a contract: reseed first,
+then this file's own records, then `emit_run_restarted()`. See D-161.
+
+**Verified:** new `tools/run_reseed_check.gd`, 5 phases / 30 assertions, including the client's own
+receive path and a real defeat → restart on the shipped map.
+`.agent/bin/agent godot --script tools/run_reseed_check.gd` → `RUN_RESEED_CHECK failures=0`.
+Regression green: `rpc_manifest_check`, `cycle_modifier_net_check`, `seed_sync_check`,
+`chest_seed_check`, `procedural_world_check`, `mire_grid_check`, `player_health_check`,
+`resource_scatter_check`. `run_restart_check` keeps its 1 pre-existing failure (F-268).
+
+**Sweep** (see SPECS.md for the full list): one live sibling of the class — `ResourceScatterField.
+_depleted`, peer-local depletion memory that shadows `WorldDeltaLog` and survives a wipe under
+`point_id`s that are not seed-derived. It now clears on `run_restarted` in its own file.
+
+**What this does NOT change yet:** the shipped map (`levels/hollowmere.tscn`) is authored — its
+terrain and every marker are hand-placed, so no seed moves them. Today's visible win is the loot,
+Modifier and Mire streams genuinely differing run to run; the fresh *island* lands with
+`ProceduralWorld` at 4.19's cutover (F-139).
+
+---
 
 ### F-261 · poi_map.gd's dart-throwing loop and BiomeMap.moisture() are the same per-sample noise-rebuild shape F-241/F-252 just fixed, with no NoiseSet-equivalent yet — **fixed**
 

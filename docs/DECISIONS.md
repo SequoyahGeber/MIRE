@@ -4841,3 +4841,73 @@ every caller wants both, so one object is right. On the golden hashes: if a worl
 ever has to re-capture them more than about twice, they are being used as a specification rather
 than a tripwire and should be narrowed to POI placement alone, which is the part that actually
 cannot self-detect drift.
+
+### D-161 · 2026-08-20 · F-258: a restart draws a FRESH world seed, re-broadcast over the existing delta channel — no new RPC, no protocol bump, and the ended run's chunk log is wiped with it
+
+Reverses the middle third of D-149. That entry cut a fresh seed out of F-243's restart on two
+grounds: it "would need a live re-broadcast reaching every ALREADY-connected peer, and nothing in
+this codebase does that today", plus "every terrain/POI/streaming system proving it behaves
+correctly when re-derived from a NEW seed mid-process". Both were true statements about the code at
+the time. Neither turned out to cost what the scope cut assumed, and the finding it was filed as
+(F-258) is closed by the four calls below.
+
+**Why no new RPC — the re-broadcast is one already on the wire.** D-149 (and F-258's own "would
+take" list) budgeted a protocol bump: `core/net/net_version.gd` + `tools/handshake_check.gd` +
+re-recording `core/net/rpc_manifest.gd`'s scanned signature. None of it was needed. `WorldDeltaLog`'s
+`net_delta_applied` is *already* a host → everyone reliable broadcast of a `(chunk, kind, key,
+value)` tuple, and a seed is a value. `host_reseed()` sends it under a `kind` of `&"world"`, key
+`"seed"`, at the same `Vector2i.ZERO` pseudo-chunk `CycleService` already keys its Cycle and
+run-generation records to — the third use of D-099/D-100's no-new-RPC reuse of this log, and the
+same reason it is safe each time: the log keys by `(chunk, kind, key)`, so a kind nothing spatial
+uses cannot collide. The wire SHAPE never moves, which is precisely the condition
+`tools/rpc_manifest_check.gd` scans for; it stays green at PROTOCOL_VERSION 21, 55 RPCs, unchanged.
+What D-149 called "the thing nothing in this codebase does" was one method on a file whose own
+header already said getting the seed to a client was its job — it had simply only ever done it for a
+peer that was *joining* (`net_world_snapshot`, `NetSession.peer_admitted`), never one already here.
+**Would change my mind:** a future reseed that has to carry more than an int (a whole world
+descriptor, a content-set id) — at that point it is a real payload and deserves a real RPC rather
+than a pseudo-chunk record.
+
+**Why the reseed WIPES `WorldDeltaLog`, and why that forces an ordering.** Every record in the log
+is keyed by a chunk of the island that just ended: harvest depletion at a point, a Mire cell.
+Carried into a world derived from a different seed they describe coordinates that mean something
+else — a depleted tree where the new island has open ground. So `host_reseed()` clears `_state` and
+lays the seed record down as the log's first entry, on the host and identically on every receiving
+peer (one `_reseed_local()`, so send and receive cannot drift in what a reseed MEANS).
+
+That makes ORDER load-bearing inside `CycleService.host_restart_run()`, which is why it is now
+commented there rather than left to be rediscovered: the reseed runs FIRST, before that file's own
+`RUN_KIND`/`KIND` records (written after the wipe, or they go with it) and before
+`EVENT_BUS.emit_run_restarted()` (so every subscriber that re-derives from the seed reads the new
+value, not the ended run's). On a client the same order arrives for free — both records ride the one
+reliable ordered `net_delta_applied` channel, seed then run, so `_on_world_delta_applied()`'s
+re-derived `run_restarted` cannot outrun the reseed that must precede it.
+
+**Why "every system proves it re-derives" was cheaper than D-149 estimated.** Because almost all of
+them already did, by construction. `IslandHeightmap`/`BiomeMap`/`PoiMap`/`ResourceScatter` are pure
+static functions taking `world_seed` as a parameter — nothing to re-derive, only a new argument.
+`CycleModifierService`, `RewardService` and `MireGrid` read the seed through `GameState.ensure_seed()`
+at *call* time, so they picked up the new value with no edit at all. Only two things actually cached
+it: `ProceduralWorld` (which owns the `ChunkStreamer`/`NavBaker`/`ResourceScatterField` trio and now
+tears them down and rebuilds on `run_restarted` — a rebuilt island is asserted byte-identical to one
+BOOTED on that seed, since two peers restarting must not derive different worlds), and `Chest`,
+whose `_rng` was deliberately "left running rather than reseeded" *because* D-149 kept the seed —
+now re-seeded from `(new run_seed, chest name)`, restoring F-210's real contract.
+
+**Why `ProceduralWorld` repositions only the local player, and rebinds the respawn point with it.**
+Own-player movement is client-authoritative (`ARCHITECTURE.md` §2.2 row 1), so a peer writing another
+peer's transform would be overwritten on the next synchronizer tick — and does not need to, since
+`run_restarted` reaches every peer and each moves its own. Moving the body alone was the trap: F-063's
+captured `PlayerHealth._spawn_transforms` entry still described the PREVIOUS island's shore, so the
+next death would have respawned the player into open ocean — F-063's own bug arriving by a different
+route. `PlayerHealth.rebind_local_spawn()` does both halves in one call for that reason, and is
+client-local rather than routed through `host_place_player()`, which would make an authority claim
+this path does not need. **Would change my mind:** a restart that keeps players where they stood
+(a "same island, new run" mode) — then the rebind is wrong and the spawn capture should be left alone.
+
+**Scope kept out, deliberately.** The shipped map is `levels/hollowmere.tscn`, which is AUTHORED —
+its terrain, POI, Wellspring, Chest and ship markers are hand-placed and no seed moves them. So
+today's player-visible win from this is the loot/modifier/Mire streams genuinely differing run to
+run; the fresh *island* half lands on `ProceduralWorld`, still dev-only behind `DevLaunch
+--procedural` until 4.19's cutover (F-139). That is the right order — the mechanism is proven and
+exercised before the map that needs it ships, not after.
