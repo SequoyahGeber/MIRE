@@ -6979,3 +6979,27 @@ Notes along the way:
 Files: `tools/run_reseed_check.gd`, `tools/procedural_world_check.gd`, `tools/command_check.gd`, `docs/SPECS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `be41628`
+
+---
+
+### DONE · F-290 · lp · 2026-08-20T11:15:17+00:00
+
+**wave_spawner_cycle_net_check can parse its result file mid-rewrite and emit an undeclared ERROR while reporting failures=0**
+
+Torn-read race fixed and PROVEN, not rerun-until-green. tools/json_result_race_check.gd (new) spawns a child that hammers one user:// path for 2s with a 256KB payload while the parent samples every 1ms and counts torn reads, once per write strategy: plain FileAccess.WRITE truncate = 25 torn/284 samples (run 1) and 16/284 (run 2); .part + DirAccess.rename_absolute = 0/284 and 0/284. JSON_RESULT_RACE_CHECK failures=0 ERROR_COUNT=0 both runs. Each torn read is one undeclared 'Parse JSON failed' ERROR a real check would emit while printing failures=0.
+
+Order's two commands: agent godot --script tools/wave_spawner_cycle_net_check.gd -> failures=0, exit 0, ERROR_COUNT=0 on 3 of 3 runs. agent godot --script tools/wave_spawner_check.gd -> failures=0, exit 0, but ERROR_COUNT=6 on run 1 and 0 on run 2 — intermittent 'Parameter "material" is null' from the dummy renderer, clean at agent baseline --rev HEAD, no transport involved, filed F-305.
+
+Sweep: six siblings whose writer runs inside a loop body are F-290 verbatim and are fixed under this claim, each re-run — cycle_advanced_net_check, cycle_modifier_net_check, enemy_net_check, command_resolved_requests_check, powerup_review_check all failures=0 ERROR_COUNT=0; run_restart_net_check failures=1 on 'restart returns the local player to the run spawn', reproduced identically by agent baseline --rev HEAD, which is the already-open F-279. powerup_review_check races both directions (driver rewrites CONTROL_PATH while the probe polls it) so its staging derives from the path argument. F-304 filed with the exact 27-file list of narrower-window transports left unshipped: mechanical identical fix, but 27 two-process net checks is hours of contended engine lock and unverified harness edits are the worse trade.
+
+Rule recorded as D-172, including its second half: a check that COUNTS malformed reads parses with JSON.new().parse() (instance, silent), never static JSON.parse_string() (ERR_PRINTs) — otherwise it fails its own standing-rule-4 grep exactly when its measurement succeeds. Spec block written at docs/SPECS.md '## F-290'; copyable _write_result/_read_result pair in docs/DELEGATION.md Current state.
+
+findings_numbering_check open=34 resolved=273 failures=0. findings_hygiene_check failures=2 — F-236 and F-299 done-but-under-Open, both pre-existing and already flagged by agent start at session open, untouched here.
+
+Notes along the way:
+- Deterministic repro built, not luck: tools/json_result_race_check.gd spawns a child that hammers one user:// path for 2s with a 256KB payload while the parent samples every 1ms. Plain truncate-then-write = 25 torn reads / 284 samples; write-to-.part-then-rename_absolute = 0 / 284. Each torn read is one undeclared 'Parse JSON failed' ERROR in a check that still prints failures=0. The race check itself reads through JSON.new().parse() (instance, silent) not JSON.parse_string() (static, ERR_PRINTs) — a check that COUNTS torn reads must not emit an engine ERROR per one it finds, or it fails its own standing-rule-4 grep while succeeding at its measurement.
+- Separate intermittent ERROR found while verifying, NOT mine and NOT the transport: tools/wave_spawner_check.gd run 1 in the working tree emitted 6x 'ERROR: Parameter "material" is null.' at servers/rendering/dummy/storage/material_storage.cpp:264 (material_get_instance_shader_parameters), all six between '== ambient-disabled preservation ==' and its PASS line, while still printing WAVE_SPAWNER_CHECK failures=0 and exiting 0. Run 2 in the same tree: ERROR_COUNT=0. agent baseline --rev HEAD: ERROR_COUNT=0. So it is intermittent, not a working-tree delta — the two uncommitted project.godot autoloads (SteamStats, RichPresenceService) are both tracked scripts and neither mentions Mesh or Material. Filing as its own finding; it is standing-rule-4's exact failure mode in a second check.
+
+Files: `tools/wave_spawner_cycle_net_check.gd`, `tools/json_result_race_check.gd`, `tools/command_resolved_requests_check.gd`, `tools/cycle_advanced_net_check.gd`, `tools/cycle_modifier_net_check.gd`, `tools/enemy_net_check.gd`, `tools/powerup_review_check.gd`, `tools/run_restart_net_check.gd`, `docs/SPECS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `9dad970`

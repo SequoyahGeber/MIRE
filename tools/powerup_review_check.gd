@@ -125,24 +125,39 @@ func _until(condition: Callable, timeout_sec: float = TIMEOUT_SEC) -> bool:
 	return bool(condition.call())
 
 
+## F-290: written to a sibling `.part` path and RENAMED into place. Both directions race here — the
+## probe rewrites RESULT_PATH in a loop while the driver polls it, and the driver rewrites
+## CONTROL_PATH while the probe polls that. A plain `FileAccess.WRITE` truncates before
+## `store_string()` refills, so either reader can catch an empty or half document and
+## `JSON.parse_string` logs `Parse JSON failed` as an undeclared ERROR line (SPECS standing rule 4)
+## in a run that still prints `failures=0`. A rename is atomic.
+## `tools/json_result_race_check.gd` measures both forms.
 func _write_json(path: String, value: Dictionary) -> void:
-	var file := FileAccess.open(path, FileAccess.WRITE)
+	var staging: String = path + ".part"
+	var file := FileAccess.open(staging, FileAccess.WRITE)
 	if file == null:
 		return
 	file.store_string(JSON.stringify(value))
 	file.close()
+	DirAccess.rename_absolute(
+		ProjectSettings.globalize_path(staging), ProjectSettings.globalize_path(path))
 
 
 func _read_json(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):
 		return {}
-	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	var raw: String = FileAccess.get_file_as_string(path)
+	if raw.is_empty():
+		return {}
+	var parsed: Variant = JSON.parse_string(raw)
 	return parsed if parsed is Dictionary else {}
 
 
+## Takes the staging sibling with it — a run killed mid-write can leave a `.part` behind.
 func _remove_file(path: String) -> void:
-	if FileAccess.file_exists(path):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	for stale: String in [path, path + ".part"]:
+		if FileAccess.file_exists(stale):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(stale))
 
 
 func check(condition: bool, description: String) -> void:

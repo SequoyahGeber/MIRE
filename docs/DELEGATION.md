@@ -75,6 +75,74 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-20 — F-290 resolved: a `user://` file two processes share is written by RENAME, and the race now has a deterministic check (lp)
+
+**The API to copy into any new two-process `--script` check.** Every driver/probe pair in `tools/`
+shares one `user://` JSON file: child rewrites it in a loop, parent polls every 50 ms. The old
+`FileAccess.open(RESULT_PATH, FileAccess.WRITE)` is truncate-then-refill, so a poll landing in that
+window read an empty or half document, `JSON.parse_string()` `ERR_PRINT`ed `Parse JSON failed`, and
+the run still printed `failures=0` and exited 0 — an undeclared `ERROR:` line, SPECS standing rule
+4, invisible because the check passed. D-172. Write it this way instead:
+
+```gdscript
+func _write_result(result: Dictionary) -> void:
+    var staging: String = RESULT_PATH + ".part"          # a SIBLING path, then rename over
+    var file := FileAccess.open(staging, FileAccess.WRITE)
+    if file == null:
+        return
+    file.store_string(JSON.stringify(result))
+    file.close()
+    DirAccess.rename_absolute(                            # rename(2) — one step, never torn
+        ProjectSettings.globalize_path(staging), ProjectSettings.globalize_path(RESULT_PATH))
+
+
+func _read_result() -> Dictionary:
+    if not FileAccess.file_exists(RESULT_PATH):
+        return {}
+    var raw: String = FileAccess.get_file_as_string(RESULT_PATH)
+    if raw.is_empty():                                    # belt to the rename's braces
+        return {}
+    var parsed: Variant = JSON.parse_string(raw)
+    return parsed if parsed is Dictionary else {}
+```
+
+And the driver's startup cleanup removes `RESULT_PATH + ".part"` alongside `RESULT_PATH` — a run
+killed mid-write leaves one behind. Where the same helper backs two paths (a probe result AND a
+driver control file, as in `powerup_review_check`), derive `staging` from the `path` argument, not a
+constant; both directions race.
+
+**`tools/json_result_race_check.gd` is new, and it is the reusable artefact.** It spawns a child that
+hammers one path for 2 s with a 256 KB payload — wide enough to make the truncate window
+milliseconds instead of microseconds — while the parent samples every 1 ms and counts torn reads,
+once per write strategy. Measured: plain truncate 25 and 16 torn per 284 samples across two runs;
+`.part` + rename 0 and 0. The `atomic_torn == 0` assertion is the gate; the plain count prints as
+evidence and is deliberately not a gate, because the window is load-dependent and a check that fails
+on an idle machine is worse than the bug. **Authority: none** — it starts no `NetTransport` and
+declares no §2.2 row.
+
+**The one trap inside it, which is D-172's second half:** it reads with `JSON.new().parse()`, the
+instance method, never the static `JSON.parse_string()`. The instance method returns an `Error`
+silently; the static one prints. A check that counts malformed reads must not log an engine ERROR
+per one it finds, or it fails its own standing-rule-4 grep exactly when its measurement succeeds.
+This applies to any check exercising a corrupt-save or bad-payload path where the count is the
+assertion.
+
+**Swept and fixed under this claim** — `cycle_advanced_net_check`, `cycle_modifier_net_check`,
+`enemy_net_check`, `run_restart_net_check`, `command_resolved_requests_check`,
+`powerup_review_check`: every `tools/*.gd` whose writer runs inside a loop body. Already atomic and
+left alone: `harvest_restart_check`, `attunement_restart_check`, `terminal_focus_check`. **Still
+outstanding: F-304** carries the exact 27-file list of transports that write a handful of times
+rather than in a loop — same defect, narrower window, mechanical fix, left unshipped because 27
+two-process net checks is hours of engine-lock time and unverified transport edits are the worse
+trade.
+
+**Two pre-existing failures you will meet re-running these, neither introduced here.**
+`run_restart_net_check` fails 1 on "restart returns the local player to the run spawn" — reproduced
+identically by `agent baseline --rev HEAD`, and that is the already-open **F-279**.
+`wave_spawner_check` emitted 6x `ERROR: Parameter "material" is null.` on one run and 0 on the next
+in the same tree, with `agent baseline --rev HEAD` clean — intermittent, filed as **F-305**, and it
+is F-290's own shape in a second check: an undeclared engine ERROR inside `failures=0`, exit 0.
+
 ### 2026-08-20 — F-288 resolved: `run_reseed_check` phase 5 asserts the FULL ordered POI layout, and the comparator proves itself before the parity is trusted (lp)
 
 **What was wrong.** F-258's spec said phase 5 proved a rebuild is indistinguishable from a boot on

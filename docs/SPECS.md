@@ -10379,3 +10379,91 @@ assertion in `tools/*.gd` whose text claims identity, parity or determinism, che
 `PASS: ...and an IDENTICAL POI layout, field for field — no field differs`. Plus
 `--script tools/procedural_world_check.gd` and `--script tools/command_check.gd` for the two swept
 siblings.
+
+---
+
+## F-290 · `wave_spawner_cycle_net_check` can parse its result file mid-rewrite and emit an undeclared ERROR while reporting `failures=0`
+
+**Claim set:** `tools/wave_spawner_cycle_net_check.gd`, `tools/json_result_race_check.gd` (new), plus
+the swept siblings `tools/cycle_advanced_net_check.gd`, `tools/cycle_modifier_net_check.gd`,
+`tools/enemy_net_check.gd`, `tools/run_restart_net_check.gd`,
+`tools/command_resolved_requests_check.gd`, `tools/powerup_review_check.gd`. No `.tscn`/`.tres`, no
+`project.godot`, no autoload, no RPC — nothing here ships in the game. **Authority: none.** This is
+harness plumbing; `tools/json_result_race_check.gd` starts no `NetTransport` and declares no
+`ARCHITECTURE.md` §2.2 row, and says so in its header.
+
+**The shape of the bug.** Every two-process `--script` check talks to its spawned probe through one
+`user://` JSON file. The child rewrites it in a loop; the parent polls it every 50 ms through
+`_until()`. The write was `FileAccess.open(RESULT_PATH, FileAccess.WRITE)`, which is
+truncate-then-refill — for the width of one `store_string()` the file on disk is empty or half a
+document. A poll landing inside that window hands `JSON.parse_string()` a torn payload, and the
+STATIC `JSON.parse_string()` `ERR_PRINT`s on malformed input: `Parse JSON failed. Error at line 0:
+Unknown error getting token`. `_read_result()` then returns `{}`, `_until()` retries, the next poll
+succeeds, and the run prints `WAVE_SPAWNER_CYCLE_NET_CHECK failures=0` and exits 0 — carrying an
+undeclared `ERROR:` line, which is SPECS standing rule 4's exact failure mode. F-259-review caught it
+once at HEAD and could not reproduce it on two reruns, because at a ~100-byte payload the window is
+a few hundred microseconds wide.
+
+**Why it was not enough to widen the guard.** The finding says explicitly: do not bless `Parse JSON
+failed` as an expected pattern, because malformed transport is not an intentional test case here.
+Declaring the pattern would also blind every check in this family to a probe that really did write
+garbage. The transport has to stop producing torn documents.
+
+**The fix: write to a `.part` sibling and `DirAccess.rename_absolute()` it into place.**
+POSIX `rename(2)` swaps the directory entry in one step, so a reader opening the path sees the
+previous whole document or the next whole document and never a partial one. `_read_result()` also
+gains an `if raw.is_empty(): return {}` guard, and the driver's startup cleanup now removes the
+`.part` sibling too — a run killed mid-write can leave one behind. This is not a new invention:
+`tools/harvest_restart_check.gd` and `tools/attunement_restart_check.gd` already carried this exact
+shape citing F-290 by number, and `tools/terminal_focus_check.gd` already renamed. F-290 is what was
+left of the class.
+
+**The proof is deterministic, not three green reruns.** A race you cannot reproduce is a race you
+cannot prove you fixed, so this task built `tools/json_result_race_check.gd` rather than relying on
+luck. It spawns a child that hammers one `user://` path for 2 seconds with a **256 KB** payload —
+wide enough that truncate-then-refill is a millisecond-scale window instead of a microsecond one —
+while the parent samples every 1 ms and counts TORN reads. It runs the round twice, once per write
+strategy:
+
+| write strategy | torn reads / samples (run 1) | (run 2) |
+|---|---|---|
+| plain `FileAccess.WRITE` truncate | 25 / 284 | 16 / 284 |
+| `.part` + `rename_absolute` | **0 / 284** | **0 / 284** |
+
+The `atomic_torn == 0` assertion is the gate. The plain count is printed as evidence but is
+deliberately **not** a gate — the window is load-dependent, and a check that fails on an idle machine
+would be worse than the bug. Each of those 25 torn reads is one undeclared `Parse JSON failed` ERROR
+line that a real check would have emitted while printing `failures=0`.
+
+**The one non-obvious constraint in the race check.** It reads through `JSON.new().parse()`, the
+INSTANCE method, not the static `JSON.parse_string()`. The instance method returns an `Error`
+silently; the static one `ERR_PRINT`s. A check whose entire job is to *count* malformed reads must
+not emit an engine ERROR for each one it finds, or it fails its own standing-rule-4 grep at the exact
+moment it succeeds at its measurement. Recorded as D-172 because it generalises past this file.
+
+**The sweep (AGENTS.md step 3) — the class is "a truncating writer polled by another process".**
+The hazard is proportional to how often the writer rewrites, so the sweep sorted by that. A script
+walked every `tools/*.gd`, flagging writer calls appearing inside a `while`/`for` body:
+
+- **Fixed here, all six** — `cycle_advanced_net_check`, `cycle_modifier_net_check`, `enemy_net_check`,
+  `run_restart_net_check`, `command_resolved_requests_check`, `powerup_review_check`. Every one is a
+  probe re-writing its snapshot inside a loop while the driver polls, i.e. F-290 verbatim.
+  `powerup_review_check` races in *both* directions — its `_write_json(path, …)` also backs a
+  `CONTROL_PATH` the driver rewrites while the probe polls it — so the staging path is derived from
+  the `path` argument rather than a constant.
+- **Already atomic, left alone** — `harvest_restart_check`, `attunement_restart_check`,
+  `terminal_focus_check`.
+- **Not this class** — `setup_harvest_content.gd`'s looped write is a content generator writing each
+  file once, with no concurrent reader.
+- **Same class, narrower window, NOT fixed here → F-304** with the exact 27-file list. These write a
+  handful of times rather than in a loop, so the truncation window is far narrower, but it is the
+  same defect and the same fix. They are deliberately left out of this claim: the edit is mechanical
+  and identical, but 27 two-process net checks is hours of engine-lock time, and shipping 27
+  unverified transport edits is a worse trade than filing them with the list already computed.
+
+**Verify:** `.agent/bin/agent godot --script tools/json_result_race_check.gd` →
+`JSON_RESULT_RACE_CHECK failures=0` with `write-to-.part-then-rename: 0 torn read(s)`; then
+`--script tools/wave_spawner_cycle_net_check.gd` and `--script tools/wave_spawner_check.gd`, plus
+each swept sibling. `run_restart_net_check` fails 1 — "restart returns the local player to the run
+spawn" — at HEAD too (`agent baseline --rev HEAD` reproduces it exactly); that is the already-open
+**F-279**, not this change.

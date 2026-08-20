@@ -47,8 +47,9 @@ func _start() -> void:
 
 func _run_driver() -> void:
 	print("\n== command _resolved_requests check (F-224) ==")
-	if FileAccess.file_exists(RESULT_PATH):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(RESULT_PATH))
+	for stale: String in [RESULT_PATH, RESULT_PATH + ".part"]:
+		if FileAccess.file_exists(stale):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(stale))
 
 	var error: Error = transport.call("host", NetConfig.Mode.LOCAL, PORT)
 	check(error == OK, "host starts on port %d" % PORT)
@@ -150,18 +151,30 @@ func _until(condition: Callable, timeout_seconds: float) -> bool:
 	return bool(condition.call())
 
 
+## F-290: written to a sibling `.part` path and RENAMED into place. The probe rewrites this file in
+## a loop while the driver polls it, and a plain `FileAccess.WRITE` truncates the target before
+## `store_string()` refills it — a poll landing in that window reads an empty or half document and
+## `JSON.parse_string` logs `Parse JSON failed` as an undeclared ERROR line (SPECS standing rule 4)
+## in a run that still prints `failures=0`. A rename is atomic: the reader sees the previous whole
+## document or the next one, never a torn one. `tools/json_result_race_check.gd` measures both forms.
 func _write_result(result: Dictionary) -> void:
-	var file := FileAccess.open(RESULT_PATH, FileAccess.WRITE)
+	var staging: String = RESULT_PATH + ".part"
+	var file := FileAccess.open(staging, FileAccess.WRITE)
 	if file == null:
 		return
 	file.store_string(JSON.stringify(result))
 	file.close()
+	DirAccess.rename_absolute(
+		ProjectSettings.globalize_path(staging), ProjectSettings.globalize_path(RESULT_PATH))
 
 
 func _read_result() -> Dictionary:
 	if not FileAccess.file_exists(RESULT_PATH):
 		return {}
-	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(RESULT_PATH))
+	var raw: String = FileAccess.get_file_as_string(RESULT_PATH)
+	if raw.is_empty():
+		return {}
+	var parsed: Variant = JSON.parse_string(raw)
 	return parsed if parsed is Dictionary else {}
 
 

@@ -5382,3 +5382,47 @@ a commit nobody keeps; the self-test proves it on every run forever.
 value we genuinely do not control bit-for-bit (a physics-settled transform, say). The answer there is
 a documented `is_equal_approx` walk with a stated tolerance and the same self-test — not a return to
 counting.
+
+### D-172 · 2026-08-20 · F-290: a `user://` file two processes share is written by RENAME, and a check that counts malformed input parses SILENTLY
+
+Two rules, both about the check harness rather than the game.
+
+**1. Any file one process writes while another polls it is written to a `.part` sibling and
+`DirAccess.rename_absolute()`d into place.** `FileAccess.open(path, FileAccess.WRITE)` is
+truncate-then-refill: for the width of one `store_string()` the file on disk is empty or half a
+document, and a reader that lands there gets a torn payload. In this repo that reader is always
+`JSON.parse_string()`, which `ERR_PRINT`s — so the cost is an undeclared `ERROR:` line inside a run
+that retries, recovers, prints `failures=0` and exits 0. Standing rule 4's exact failure mode, and
+invisible precisely because the check still passes. `rename(2)` swaps a directory entry in one step,
+so the reader sees the previous whole document or the next one, never a partial one. Pair it with an
+`if raw.is_empty(): return {}` guard on the read and a startup cleanup that removes the `.part`
+sibling alongside the target. `tools/json_result_race_check.gd` measures both forms head to head and
+gates on the renamed one being torn zero times.
+
+**Do not instead declare `Parse JSON failed` as an `EXPECTED_ERROR_PATTERNS` entry.** Malformed
+transport is not an intentional test case in any of these files, and declaring the pattern blinds
+the whole family to a probe that really did write garbage. Fix the writer.
+
+**2. A check that deliberately reads possibly-malformed input uses `JSON.new().parse()`, never the
+static `JSON.parse_string()`.** The instance method returns an `Error` and sets `error_line`
+silently; the static one prints. A check whose job is to *count* torn or corrupt reads must not emit
+an engine ERROR per one it finds — it would fail its own standing-rule-4 grep at the moment it
+succeeds at its measurement. Same applies to any check exercising a corrupt-save or bad-payload path
+where the count, not the log line, is the assertion.
+
+**Scope note.** Rule 1 is a property of the *pair* — writer and concurrent reader — not of the write
+call alone. A one-shot generator writing files nothing is polling (`setup_harvest_content.gd`) is
+fine as it stands; adding staging there is noise.
+
+**Windows caveat, recorded not fixed.** Godot's `DirAccessWindows::rename` removes an existing target
+before moving, so the swap is not atomic there the way it is on macOS/Linux. Every file governed by
+this rule is a dev-machine `tools/` check that never ships, so the caveat costs nothing today. It
+would matter the moment this pattern is used for a real save path — and `core/save/*` uses
+`FileAccess` directly, so it is not.
+
+**What would change my mind:** a platform where `rename` over an open file fails rather than
+succeeding. Then the reader needs a retry-on-parse-failure loop with a silent parser, which is
+strictly worse — it reintroduces the torn read and merely stops logging it.
+
+**D-number hazard (F-283).** Taken by reading the file's tail; D-171 was the highest at the time.
+No atomic allocator, so a concurrent lane could take D-172 too.

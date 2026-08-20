@@ -64,8 +64,9 @@ func _start() -> void:
 
 func _run_driver() -> void:
 	print("\n== F-226: WaveSpawner.current_cycle() on a real client (task 5.9/6.1) ==")
-	if FileAccess.file_exists(RESULT_PATH):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(RESULT_PATH))
+	for stale: String in [RESULT_PATH, RESULT_PATH + ".part"]:
+		if FileAccess.file_exists(stale):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(stale))
 
 	var error: Error = transport.call("host", NetConfig.Mode.LOCAL, PORT)
 	check(error == OK, "host starts on port %d" % PORT)
@@ -167,18 +168,31 @@ func _until(condition: Callable, timeout_seconds: float) -> bool:
 	return bool(condition.call())
 
 
+## F-290: written to a sibling `.part` path and RENAMED into place. `_client_drive()` rewrites this
+## file every 100 ms while the driver polls it every 50 ms, and a plain `FileAccess.WRITE` truncates
+## the target before `store_string()` refills it — so the driver could read an empty or half document
+## and `JSON.parse_string` would log `Parse JSON failed` as an undeclared ERROR line while the run
+## still reported `failures=0` and exited 0. A rename is atomic: a reader always sees one whole
+## document, the previous one or the next one, never a torn one. Same shape as
+## `tools/harvest_restart_check.gd` and `tools/attunement_restart_check.gd`.
 func _write_result(result: Dictionary) -> void:
-	var file := FileAccess.open(RESULT_PATH, FileAccess.WRITE)
+	var staging: String = RESULT_PATH + ".part"
+	var file := FileAccess.open(staging, FileAccess.WRITE)
 	if file == null:
 		return
 	file.store_string(JSON.stringify(result))
 	file.close()
+	DirAccess.rename_absolute(
+		ProjectSettings.globalize_path(staging), ProjectSettings.globalize_path(RESULT_PATH))
 
 
 func _read_result() -> Dictionary:
 	if not FileAccess.file_exists(RESULT_PATH):
 		return {}
-	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(RESULT_PATH))
+	var raw: String = FileAccess.get_file_as_string(RESULT_PATH)
+	if raw.is_empty():
+		return {}
+	var parsed: Variant = JSON.parse_string(raw)
 	return parsed if parsed is Dictionary else {}
 
 
