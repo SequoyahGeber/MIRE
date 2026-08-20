@@ -1399,6 +1399,65 @@ findings_numbering_check guards F-numbers.
 
 ---
 
+### F-307 · A non-host peer whose host leaves is soft-locked on F-243's terminal overlay — the restart button never re-reads its own host check, and no menu can open over it
+
+**Area:** UI/netcode · **Severity:** high · **Found:** 2026-08-20 by lp during F-275's review
+
+`ui/hud/defeat_hud.gd:135` / `ui/hud/extraction_hud.gd:164` (`_refresh_restart_button()`) is called
+from exactly one place each — `_on_run_wiped()` at `defeat_hud.gd:109` and `_on_run_extracted()` at
+`extraction_hud.gd:139`, i.e. the moment the overlay opens. It reads `_is_host_or_solo()` once and
+never again. Nothing in either file subscribes to any session-lifecycle signal; repo-wide, the only
+listener on `NetSession.session_ended` is `ui/lobby/lobby_menu.gd:63`, and its handler
+(`lobby_menu.gd:233`) only writes a status string.
+
+So on a **client** the terminal overlay opens with the disabled "Waiting on the host to start the
+next run…" label, correctly at `FOCUS_NONE` since F-275. If the host then quits — the single most
+likely thing a host does once a run has ended — that peer's `_is_host_or_solo()` flips to `true`,
+but the button it is looking at stays disabled, stays at `FOCUS_NONE`, and stays labelled as if a
+host were still coming. And because the overlay is still in `blocks_gameplay_input` (D-032),
+`_other_blocking_ui_open()` refuses every `set_open(true)`: `ui/menu/main_menu.gd:97`,
+`ui/menu/settings_menu.gd:111`, `ui/lobby/lobby_menu.gd:97`, `ui/menu/unlock_menu.gd:72`. These
+overlays are terminal by design — no Esc, no dismiss — so the screen now holds *zero* operable
+controls and no route to a menu. The player's only exit is killing the process. A mouse does not
+help; this is not F-275's input-device problem, it is a screen with nothing on it to press.
+
+**Reproduced,** two processes, a throwaway probe modelled on `tools/terminal_focus_check.gd`'s
+phase 2 (driver hosts on a spare port and spawns a child with `--script ... -- <probe-arg>`; the
+child joins, sets `DefeatService.cause = &"team_wipe"` then `defeated = true` to open the overlay
+through its real path, reports, and the driver then calls `NetTransport.leave()`). After the child
+has waited out both the disconnect and `NetSession`'s rejoin loop (`is_active()` and
+`is_connecting()` both false):
+
+```
+before:  is_host_or_solo=false  button_disabled=true  focus_mode_none=true  blocks_gameplay_input=true
+after :  is_host_or_solo=TRUE   button_disabled=true  focus_mode_none=true  blocks_gameplay_input=true
+         focus_owner=null       main_menu_opened=false   ← MainMenu.set_open(true) refused
+```
+
+`is_host_or_solo` is the peer's own predicate saying it may now restart, and the button contradicts
+it. The probe was deleted rather than committed; the eight lines above are the whole reproduction.
+
+**Not introduced by F-275, and deliberately not fixed under its review.** F-243 shipped this when it
+made a terminal screen's only control host-gated; F-275 was scoped to bare-controller reachability
+and did that correctly. Fixing it needs a call this reviewer should not make alone, because the two
+candidate remedies differ in kind:
+
+- **Re-derive the button** on session end (`get_node_or_null(^"/root/NetSession")` — never the bare
+  identifier, standing rule 1, since both files are autoloads every `--script` harness loads) and
+  re-run `_refresh_restart_button()` + `_grab_restart_focus()` while `_shown`. Small, and it matches
+  what `_is_host_or_solo()` already claims. But it hands the orphan a live `host_restart_run()` on a
+  world whose players `PlayerNet` already despawned, and F-279/F-281 show the restart path is still
+  leaky even solo — so "the button lights up" is not the same as "the next run is playable", and
+  proving the second is the actual work.
+- **Let the player out instead** — drop `blocks_gameplay_input` (or add a "Leave to Menu" control)
+  when the session ends, so `MainMenu`/`LobbyMenu` can open over a dead session. Safer, but it is a
+  product decision about what a terminal screen offers, and belongs in `docs/DECISIONS.md`.
+
+Either way it wants a third phase in `tools/terminal_focus_check.gd` — that file already builds the
+exact host+client pair this needs — rather than a fourth restart check.
+
+---
+
 ## Resolved
 
 ### F-290 · wave_spawner_cycle_net_check can parse its result file mid-rewrite and emit an undeclared ERROR while reporting failures=0 — **fixed**

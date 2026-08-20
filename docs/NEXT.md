@@ -14,7 +14,7 @@
 > machine is now green, including `boss_check`'s exit-leak diagnostic (F-193) and `lobby_menu_check` (F-170),
 > both since resolved.
 >
-> **Findings: 34 under `## Open` (re-counted 2026-08-20 evening, by F-271's review).** This section
+> **Findings: 36 under `## Open` (re-counted 2026-08-20 evening, by F-275's review).** This section
 > said "7 open, and not one of them is code you can sit down and write" from 2026-08-19 until
 > F-261's review re-counted it to 23; both of those numbers are now stale, in the direction that
 > matters — the day's fix lanes closed fourteen (F-259, F-268, F-269, F-271, F-274, F-275, F-276,
@@ -24,7 +24,8 @@
 > import cache), F-174 (no dev machine here stands in for mid-range). Two are fixed and merely sit
 > in the wrong section (F-236, F-299) — that mismatch is the recurring one filed as **F-269**, and
 > `agent board` hides them while `agent brief` still offers them, so check an entry's own text
-> before claiming it. **The other twenty-six ARE ordinary code work a lane can pick up today.**
+> before claiming it (`python3 tools/findings_hygiene_check.py` names them, and fails on nothing
+> else at HEAD). **The other twenty-eight ARE ordinary code work a lane can pick up today.**
 > Clusters worth knowing before you route any of them:
 >
 > - **The tooling itself is red or unwatched** — F-285/F-292 (`nav_bake_check` has had 4 failures at
@@ -34,6 +35,12 @@
 >   sibling's uncommitted hunks, and `ship` structurally unable to stage `docs/FINDINGS.md`.
 > - **Procedural reseed leftovers**, all from F-258's fresh-seed restart — F-279, F-281, F-282,
 >   F-286, F-298.
+> - **The terminal run-summary screens still have one way to strand a player** — F-307: a client
+>   whose host quits while the defeat/extraction overlay is up keeps a disabled "waiting on the
+>   host" button and cannot open any menu over it, because the overlay holds
+>   `blocks_gameplay_input`. Reproduced two-process. Severity high; the fix needs a decision
+>   about what a terminal screen offers a peer with no host, which is why F-275's review filed
+>   it rather than picking one.
 > - **Worldgen performance and correctness** — F-294 (per-sample Array rebuilds under every surface
 >   sample, doubled by F-274), F-295, F-296, F-300..F-303.
 > - **Seed replication and the record** — F-272 and F-273 (`seed_ready` is a run boundary now, and
