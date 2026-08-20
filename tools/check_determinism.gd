@@ -4,6 +4,8 @@ extends SceneTree
 ## .godot/global_script_class_cache.cfg, so a --script run that names it bare fails "Identifier not
 ## declared" (F-016, same fix tools/handshake_check.gd uses for NetVersion).
 const IslandHeightmap = preload("res://world/gen/island_heightmap.gd")
+const BiomeMap = preload("res://world/gen/biome_map.gd")
+const BiomeDefsLib = preload("res://tools/biome_defs_lib.gd")
 
 ## Cross-platform determinism probe (risk R6).
 ##
@@ -44,8 +46,9 @@ func _initialize() -> void:
 	print("ridge_mask     %s" % _hash_ridge_mask())
 	print("float_math     %s" % _hash_float_math())
 	print("terrain_hash   %s" % _hash_terrain())
+	print("biome_surface  %s" % _hash_biome_surface())
 
-	print("\nAll five must match on macOS and Windows. Record in DECISIONS.md.")
+	print("\nEvery line above must match on macOS and Windows. Record in DECISIONS.md.")
 	quit()
 
 
@@ -159,6 +162,32 @@ func _hash_ridge_mask() -> String:
 	ctx.start(HashingContext.HASH_SHA256)
 	for step in range(0, 41):
 		_feed(ctx, IslandHeightmap.ridge_mask(float(step) * 1.5))
+	return _digest(ctx)
+
+
+## The SHIPPED surface (F-274) — `BiomeMap.surface_from_set()`, the sampler the chunk mesher, the
+## POI dart loop, the resource scatter and `ProceduralWorld.height_at()` all go through.
+##
+## Separate from `terrain_hash` rather than replacing it, on purpose. `terrain_hash` is the
+## biome-blind heightmap layer and stays exactly what it was before F-274, which is what proves the
+## Shape refactor moved nothing underneath; this line covers what F-274 added on top — the moisture
+## sample and `blend_amplitudes()`'s `smoothstep` crossfade, both new operations in seeded world
+## generation and therefore both owed a probe (D-142).
+func _hash_biome_surface() -> String:
+	var defs: Array = BiomeDefsLib.load_defs(self)
+	var set: BiomeMap.NoiseSet = BiomeMap.make_noise_set(SEED)
+	var table: BiomeMap.TerrainTable = BiomeMap.make_terrain_table(defs)
+	var ctx := HashingContext.new()
+	ctx.start(HashingContext.HASH_SHA256)
+	# The number of defs goes in first: a machine that failed to load content would otherwise hash
+	# a plausible-looking biome-blind surface and read as agreeing with one that did.
+	_feed(ctx, float(table.count))
+	for gz in GRID:
+		for gx in GRID:
+			var x: float = (float(gx) - float(GRID) * 0.5) * 24.0
+			var z: float = (float(gz) - float(GRID) * 0.5) * 24.0
+			_feed(ctx, BiomeMap.surface_from_set(x, z, set, SEED, table))
+			_feed(ctx, BiomeMap.moisture_from_set(x, z, set))
 	return _digest(ctx)
 
 

@@ -84,6 +84,17 @@ signal chunk_unloaded(coord: Vector2i)
 ## (§4). Left at 0 rather than defaulted from anywhere here: no `GameState.run_seed` exists yet
 ## (D-041 already noted this gap), so the caller supplies it explicitly.
 var world_seed: int = 0
+## The authored biome table — `Registry.biomes.values()` — set by the owner alongside `world_seed`,
+## for the same reason it is: this node has no business reaching into an autoload from a
+## `WorkerThreadPool` task, and `ProceduralWorld` already reads the registry for the scatter field
+## and the POI map.
+##
+## F-274: the mesher takes this and shapes each vertex by its own biome's terrain amplitudes. Left
+## empty, every chunk comes out on the biome-blind 1.0/1.0 surface — which is the terrain the game
+## actually built until F-274, and which would then disagree with the POI/scatter/spawn queries that
+## do resolve their biome. Never a partial wiring: either this is the registry's table or nothing
+## in the world is standing on the ground the mesh draws.
+var biome_defs: Array = []
 
 var _anchors: Array[Vector3] = []
 var _loaded: Dictionary[Vector2i, ChunkEntry] = {}
@@ -113,6 +124,9 @@ class ChunkJob extends RefCounted:
 	var coord: Vector2i
 	var lod: int
 	var world_seed: int
+	## Read-only content, so unlike a `NoiseSet` this one Array IS shared across every in-flight
+	## job — nothing sampling it mutates it (`BiomeMap.make_terrain_table()` copies before sorting).
+	var biome_defs: Array = []
 	var task_id: int = -1
 	var finished: bool = false
 	var result_mesh: ArrayMesh
@@ -123,7 +137,8 @@ class ChunkJob extends RefCounted:
 	var superseded_lod: int = ChunkStreamer.NOT_SUPERSEDED
 
 	func run() -> void:
-		result_mesh = ChunkStreamer.Mesher.build_mesh(coord.x, coord.y, world_seed, lod)
+		result_mesh = ChunkStreamer.Mesher.build_mesh(
+			coord.x, coord.y, world_seed, biome_defs, lod)
 
 
 func _ready() -> void:
@@ -291,6 +306,7 @@ func _request_chunk(coord: Vector2i, lod: int) -> void:
 	job.coord = coord
 	job.lod = lod
 	job.world_seed = world_seed
+	job.biome_defs = biome_defs
 	job.task_id = WorkerThreadPool.add_task(job.run)
 	_jobs[coord] = job
 

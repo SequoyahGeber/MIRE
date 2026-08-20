@@ -60,6 +60,11 @@ var spawn_position: Vector3 = Vector3.ZERO
 
 var _markers_built: int = 0
 var _scenes_instanced: int = 0
+## `Registry.biomes.values()`, read ONCE per world build and handed to every consumer of the
+## surface (F-274). Read once rather than per consumer because the whole point of the seam is that
+## the mesh, the collider, the navmesh, the POI sites, the scatter and `height_at()` all agree —
+## and three separate reads of the same autoload is three chances for one of them to be empty.
+var _biome_defs: Array = []
 
 
 func _ready() -> void:
@@ -74,6 +79,7 @@ func _ready() -> void:
 		return
 	world_seed = int(game_state.call(&"ensure_seed"))
 
+	_load_biome_defs()
 	_build_streamer()
 	_build_nav()
 	_build_scatter()
@@ -134,6 +140,7 @@ func rebuild_for_seed(seed_value: int) -> void:
 	_scenes_instanced = 0
 	poi_sites.clear()
 
+	_load_biome_defs()
 	_build_streamer()
 	_build_nav()
 	_build_scatter()
@@ -205,16 +212,27 @@ func _local_player_body() -> Node3D:
 ## The same passthrough `authored_world.gd` exposes, so anything asking "the world" for ground
 ## height keeps one call shape across both map kinds.
 func height_at(x: float, z: float) -> float:
-	return IslandHeightmapScript.height(x, z, world_seed)
+	return BiomeMapScript.surface_at(x, z, world_seed, _biome_defs)
 
 
 # ── the pipeline, composed ────────────────────────────────────────────────────────────────────────
+
+
+## get_node_or_null, not a bare autoload name — this scene is booted by a --script harness whose
+## compile pass runs before autoloads exist (F-011's standing rule), and a harness with no Registry
+## is a legitimate configuration. It gets the biome-blind surface, which is honest: it has no biomes.
+func _load_biome_defs() -> void:
+	var registry: Node = get_node_or_null(^"/root/Registry")
+	_biome_defs = (registry.get(&"biomes") as Dictionary).values() if registry != null else []
 
 
 func _build_streamer() -> void:
 	streamer = ChunkStreamerScript.new()
 	streamer.name = "ChunkStreamer"
 	streamer.set(&"world_seed", world_seed)
+	# F-274: the mesh, the collider, the navmesh (via NavBaker.bind), the POI sites, the scatter and
+	# `height_at()` all read the SAME table, so every one of them describes the same ground.
+	streamer.set(&"biome_defs", _biome_defs)
 	add_child(streamer)
 
 
@@ -232,7 +250,7 @@ func _build_scatter() -> void:
 	scatter_field.set(&"world_seed", world_seed)
 	if registry != null:
 		scatter_field.set(&"scatter_defs", (registry.get(&"scatter_tables") as Dictionary).values())
-		scatter_field.set(&"biome_defs", (registry.get(&"biomes") as Dictionary).values())
+		scatter_field.set(&"biome_defs", _biome_defs)
 	add_child(scatter_field)
 	scatter_field.call(&"attach_to_streamer", streamer)
 
@@ -244,8 +262,7 @@ func _build_poi_sites() -> void:
 	if registry == null:
 		return
 	var poi_defs: Array = (registry.get(&"poi") as Dictionary).values()
-	var biome_defs: Array = (registry.get(&"biomes") as Dictionary).values()
-	poi_sites = PoiMapScript.sites_for_island(world_seed, poi_defs, biome_defs)
+	poi_sites = PoiMapScript.sites_for_island(world_seed, poi_defs, _biome_defs)
 
 	var defs_by_id: Dictionary = {}
 	for def: Resource in poi_defs:

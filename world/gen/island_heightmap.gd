@@ -397,8 +397,10 @@ static func _river_channel(bent: Vector2, world_seed: int) -> float:
 ## and the bed popped BACK UP over the notch: water flowing uphill, caught by terrain_check's
 ## monotonic walk on the first run. Full carve strength from mask 0.35 up means the channel only
 ## hands over to the sea in the true coastal fringe, where handing over is the point.
-static func _apply_river(bent: Vector2, world_seed: int, surface: float, mask: float) -> float:
-	var channel: float = _river_channel(bent, world_seed)
+## `_river_channel()` is the expensive half and is cached on `Shape` (F-274), so the carve itself
+## takes the channel rather than the point: two carves of the same point — the continent's and the
+## finished surface's — share one polyline walk instead of paying for two.
+static func _carve(channel: float, surface: float, mask: float) -> float:
 	if channel >= surface:
 		return surface
 	var carve_strength: float = smoothstep(0.0, 0.35, mask)
@@ -439,6 +441,8 @@ static func _island_mask_bent(point: Vector2, world_seed: int, jitter: float = 0
 	return mask
 
 
+
+
 ## Bundles the six `FastNoiseLite` fields one `height()` call builds, so a caller sampling many
 ## points for the same `world_seed` — `world/chunk/chunk_mesher.gd`'s ~1,089 vertices per chunk is
 ## the case that motivated this (F-241) — builds them ONCE via `make_noise_set()` and reuses them
@@ -454,11 +458,42 @@ class NoiseSet:
 	var ridge_noise: FastNoiseLite
 
 
-## Builds one `NoiseSet` for `world_seed`. Every field is constructed exactly as `height()` built
-## it inline before F-241 — same seed, frequency and fractal settings — so sampling through a
-## `NoiseSet` and sampling through a bare `height()` call are bit-identical for the same
-## (x, z, world_seed); `tools/noise_reuse_check.gd` is the proof.
-static func make_noise_set(world_seed: int) -> NoiseSet:
+## Everything about a point that does NOT depend on which biome it is in, computed once: the
+## shape-warped point, the island mask, and the continental height before the river carve.
+##
+## This is the split D-144 asks for made concrete (F-274). A caller that wants the biome-shaped
+## surface needs the continent twice over — once to decide the point's biome, once as the base the
+## biome's own rough layers ride on — and computing it twice costs four noise samples, two `lobes()`
+## walks and a river-corridor walk it has already paid for. `shape_into()` computes it once into a
+## caller-owned `Shape`, and `continent_from_shape()`/`height_from_shape()` each finish the job from
+## there.
+##
+## Caller-owned and REUSED, exactly like `NoiseSet`: `world/chunk/chunk_mesher.gd` fills one Shape
+## per vertex out of a single instance built per chunk, so per-vertex biome resolution costs no
+## allocation at all. Same threading rule for the same reason — one Shape per `WorkerThreadPool`
+## task, never shared, because two tasks filling one would read each other's point.
+class Shape:
+	## The point after `_warp_point_with()`. Every distance in this file is measured here.
+	var bent: Vector2 = Vector2.ZERO
+	## The island/lobe/islet mask at `bent`, 0..1.
+	var mask: float = 0.0
+	## The continent BEFORE the river carve. The rough layers ride on this and `ridge_mask()` reads
+	## it, so ridge placement stays stable on either side of the valley (4.14).
+	var raw_continent: float = 0.0
+	## The river channel's ceiling at `bent` (or `_river_channel()`'s no-corridor sentinel).
+	##
+	## Cached here because the carve is applied TWICE per biome-shaped sample — once to the continent
+	## the biome is classified from, once to the finished surface — and the channel is a function of
+	## `bent` and `world_seed` alone, so the two applications cannot disagree. Walking the polyline
+	## twice was measured at roughly a third of a sample's cost: `_river_channel()` rebuilds the
+	## polyline (which rebuilds `lobes()`), sums its length and then walks its segments again.
+	var channel: float = 0.0
+
+
+## Builds the four fields that decide the island's SHAPE — the ones `continent()` reads. Split out
+## of `make_noise_set()` so `continent()` can go through the same one body `continent_from_set()`
+## does without paying for the two texture layers it deliberately never samples (D-144).
+static func _make_shape_noise_set(world_seed: int) -> NoiseSet:
 	var set := NoiseSet.new()
 	set.base_noise = _make_continent_noise(world_seed)
 	set.coast_noise = _make_noise(
@@ -467,6 +502,15 @@ static func make_noise_set(world_seed: int) -> NoiseSet:
 		BASE_NOISE_LACUNARITY, BASE_NOISE_GAIN)
 	set.warp_z = _make_noise(world_seed ^ SHAPE_WARP_SALT_Z, SHAPE_WARP_FREQUENCY, 3,
 		BASE_NOISE_LACUNARITY, BASE_NOISE_GAIN)
+	return set
+
+
+## Builds one `NoiseSet` for `world_seed`. Every field is constructed exactly as `height()` built
+## it inline before F-241 — same seed, frequency and fractal settings — so sampling through a
+## `NoiseSet` and sampling through a bare `height()` call are bit-identical for the same
+## (x, z, world_seed); `tools/noise_reuse_check.gd` is the proof.
+static func make_noise_set(world_seed: int) -> NoiseSet:
+	var set: NoiseSet = _make_shape_noise_set(world_seed)
 	set.detail_noise = _make_noise(world_seed ^ DETAIL_NOISE_SALT, DETAIL_NOISE_FREQUENCY,
 		DETAIL_NOISE_OCTAVES, BASE_NOISE_LACUNARITY, BASE_NOISE_GAIN)
 	set.ridge_noise = _make_noise(world_seed ^ RIDGE_NOISE_SALT, RIDGE_FREQUENCY, RIDGE_OCTAVES,
@@ -475,11 +519,6 @@ static func make_noise_set(world_seed: int) -> NoiseSet:
 	return set
 
 
-## The pure heightmap function. Deterministic for a given (x, z, world_seed): rebuilding all six
-## noise sources per call costs a small allocation but guarantees no shared mutable state, which is
-## what makes this safe to call from any thread and what makes "same inputs, same output" hold
-## without qualification. A caller sampling many points per seed wants `height_from_set()` instead
-## (F-241) — same output, the construction cost paid once rather than per sample.
 ## The CONTINENT: warped fBm through the island mask, and nothing else. This is
 ## the half of the terrain that decides where land is, and it is deliberately
 ## biome-independent — `BiomeMap` reads it to decide which biome a point is in, so
@@ -498,30 +537,35 @@ static func _make_continent_noise(world_seed: int) -> FastNoiseLite:
 	return base_noise
 
 
-## The continent, sampled through already-built noise. `continent()` and `continent_from_set()` both
-## funnel through this one body rather than each carrying their own copy of the formula — the only
-## thing that differs between them is WHERE the four fields came from, and a duplicated body is how
-## the two paths would quietly drift apart under a later edit.
-static func _continent_with(x: float, z: float, world_seed: int, base_noise: FastNoiseLite,
-		coast_noise: FastNoiseLite, warp_x: FastNoiseLite, warp_z: FastNoiseLite) -> float:
-	var jitter: float = coast_noise.get_noise_2d(x, z) * COAST_JITTER
-	var bent: Vector2 = _warp_point_with(x, z, warp_x, warp_z)
-	var mask: float = _island_mask_bent(bent, world_seed, jitter)
-	var shaped: float = (base_noise.get_noise_2d(x, z) + LAND_BIAS) * HEIGHT_SCALE * mask
-	# The river carves the CONTINENT too (4.14): biomes read this surface (D-144), so the valley
-	# floor resolves as low ground — banks go shore/marsh by height, no special casing anywhere.
-	return _apply_river(bent, world_seed, shaped, mask)
+## Fills `out` with the biome-independent half of a sample at (x, z). Reads only `base_noise`,
+## `coast_noise`, `warp_x` and `warp_z`, so a set built by `_make_shape_noise_set()` is enough.
+##
+## Every path in this file funnels through this body — `continent()`, `continent_from_set()`,
+## `height()`, `height_from_set()` and `BiomeMap.surface_from_set()` alike — rather than each
+## carrying its own copy of the formula. A duplicated body is how two of those would quietly drift
+## apart under a later edit, which is the same reason `_continent_with()` existed before F-274
+## folded it in here.
+static func shape_into(x: float, z: float, set: NoiseSet, world_seed: int, out: Shape) -> void:
+	var jitter: float = set.coast_noise.get_noise_2d(x, z) * COAST_JITTER
+	out.bent = _warp_point_with(x, z, set.warp_x, set.warp_z)
+	out.mask = _island_mask_bent(out.bent, world_seed, jitter)
+	out.raw_continent = (set.base_noise.get_noise_2d(x, z) + LAND_BIAS) * HEIGHT_SCALE * out.mask
+	out.channel = _river_channel(out.bent, world_seed)
+
+
+## The carved continent from an already-filled `Shape` — what `continent()` returns.
+##
+## The river carves the CONTINENT too (4.14): biomes read this surface (D-144), so the valley floor
+## resolves as low ground — banks go shore/marsh by height, no special casing anywhere.
+##
+## Takes no `world_seed`: the only seed-derived thing the carve needs is the channel, and `shape`
+## already carries it.
+static func continent_from_shape(shape: Shape) -> float:
+	return _carve(shape.channel, shape.raw_continent, shape.mask)
 
 
 static func continent(x: float, z: float, world_seed: int) -> float:
-	var base_noise := _make_continent_noise(world_seed)
-	var coast_noise := _make_noise(
-		world_seed ^ COAST_NOISE_SALT, COAST_FREQUENCY, 3, BASE_NOISE_LACUNARITY, BASE_NOISE_GAIN)
-	var warp_x := _make_noise(world_seed ^ SHAPE_WARP_SALT_X, SHAPE_WARP_FREQUENCY, 3,
-		BASE_NOISE_LACUNARITY, BASE_NOISE_GAIN)
-	var warp_z := _make_noise(world_seed ^ SHAPE_WARP_SALT_Z, SHAPE_WARP_FREQUENCY, 3,
-		BASE_NOISE_LACUNARITY, BASE_NOISE_GAIN)
-	return _continent_with(x, z, world_seed, base_noise, coast_noise, warp_x, warp_z)
+	return continent_from_set(x, z, _make_shape_noise_set(world_seed), world_seed)
 
 
 ## Same result as `continent()`, sampled through a `NoiseSet` the caller built once (F-261). The set
@@ -532,7 +576,9 @@ static func continent(x: float, z: float, world_seed: int) -> float:
 ## `BiomeMap.biome_at_from_set()` is the caller this exists for: deciding a point's biome costs one
 ## continent sample, and POI placement asks for tens of thousands of them per island.
 static func continent_from_set(x: float, z: float, set: NoiseSet, world_seed: int) -> float:
-	return _continent_with(x, z, world_seed, set.base_noise, set.coast_noise, set.warp_x, set.warp_z)
+	var shape := Shape.new()
+	shape_into(x, z, set, world_seed, shape)
+	return continent_from_shape(shape)
 
 
 ## How much of the ridged layer applies at this continental height: none in the
@@ -547,8 +593,11 @@ static func ridge_mask(continent_height: float) -> float:
 
 ## The full surface: continent + the rough layers, scaled by the amplitudes the
 ## point's own biome authors. `detail_amplitude` and `ridge_amplitude` come from
-## the BiomeDef; passing 1.0/1.0 gives the biome-blind terrain, which is what a
-## caller with no biome table (and `BiomeMap` itself) gets.
+## the BiomeDef; passing 1.0/1.0 gives the biome-blind terrain.
+##
+## Nothing shipped passes 1.0/1.0 any more (F-274): every surface the game builds goes through
+## `BiomeMap.surface_from_set()`, which resolves the pair from the point's own biome. The defaults
+## are for a caller with no biome table at all — a bench, or a check isolating one layer.
 static func height(x: float, z: float, world_seed: int,
 		detail_amplitude: float = 1.0, ridge_amplitude: float = 1.0) -> float:
 	return height_from_set(x, z, make_noise_set(world_seed), world_seed,
@@ -558,15 +607,22 @@ static func height(x: float, z: float, world_seed: int,
 ## Same result as `height()`, sampled through a `NoiseSet` the caller built once via
 ## `make_noise_set()` instead of six fresh `FastNoiseLite` constructions per call (F-241).
 ## `world_seed` is still required alongside `set`: the island mask (`lobes`/`islet_centres`) and
-## the river carve (`_apply_river` -> `river_polyline`) derive their geometry from it directly via
+## the river carve (`_river_channel` -> `river_polyline`) derive their geometry from it directly via
 ## integer mixing, not from any noise field, so it is not something the noise set alone determines.
 static func height_from_set(x: float, z: float, set: NoiseSet, world_seed: int,
 		detail_amplitude: float = 1.0, ridge_amplitude: float = 1.0) -> float:
-	var jitter: float = set.coast_noise.get_noise_2d(x, z) * COAST_JITTER
-	var bent: Vector2 = _warp_point_with(x, z, set.warp_x, set.warp_z)
-	var mask: float = _island_mask_bent(bent, world_seed, jitter)
-	var continent_height: float = (set.base_noise.get_noise_2d(x, z) + LAND_BIAS) * HEIGHT_SCALE * mask
+	var shape := Shape.new()
+	shape_into(x, z, set, world_seed, shape)
+	return height_from_shape(x, z, shape, set, detail_amplitude, ridge_amplitude)
 
+
+## The rough layers on top of an already-filled `Shape`, at the amplitudes this point's biome
+## authors. Split out of `height_from_set()` by F-274 so `BiomeMap.surface_from_set()` can resolve
+## the biome off the same Shape and then finish the surface without re-deriving the continent.
+## Takes no `world_seed` for the same reason `continent_from_shape()` does not: everything the
+## finish needs that derives from the seed — the mask and the river channel — is already in `shape`.
+static func height_from_shape(x: float, z: float, shape: Shape, set: NoiseSet,
+		detail_amplitude: float = 1.0, ridge_amplitude: float = 1.0) -> float:
 	var detail: float = set.detail_noise.get_noise_2d(x, z) * DETAIL_NOISE_WEIGHT * detail_amplitude
 
 	# A ridge only ever ADDS. Re-centring the ridged fractal to -1..1 and scaling
@@ -576,12 +632,12 @@ static func height_from_set(x: float, z: float, set: NoiseSet, world_seed: int,
 	# which is what "ridges on the high ground" is supposed to mean.
 	var raw: float = set.ridge_noise.get_noise_2d(x, z)
 	var ridged: float = maxf(0.0, (raw - RIDGE_THRESHOLD) * RIDGE_GATHER)
-	var ridge: float = ridged * ridge_mask(continent_height) * ridge_amplitude * RIDGE_WEIGHT
+	var ridge: float = ridged * ridge_mask(shape.raw_continent) * ridge_amplitude * RIDGE_WEIGHT
 
 	# Both rough layers ride the island mask too, so the coastline stays where the
 	# continent put it and an island does not grow a rocky halo out to sea.
-	var surface: float = continent_height + (detail * HEIGHT_SCALE + ridge) * mask
+	var surface: float = shape.raw_continent + (detail * HEIGHT_SCALE + ridge) * shape.mask
 	# Carved LAST (4.14): a ridge that wandered across the corridor loses to the channel, which is
 	# what a gorge is. The ridge_mask above deliberately reads the UNCARVED continent, so ridge
 	# placement stays stable on either side of the valley.
-	return _apply_river(bent, world_seed, surface, mask)
+	return _carve(shape.channel, surface, shape.mask)

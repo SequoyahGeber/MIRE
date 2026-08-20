@@ -30,6 +30,14 @@ const ChunkMesher := preload("res://world/chunk/chunk_mesher.gd")
 const ResourceScatterFieldScript := preload("res://world/gen/resource_scatter_field.gd")
 const ResourceScatterLib := preload("res://world/gen/resource_scatter.gd")
 const HarvestLib := preload("res://systems/harvesting/harvest_library.gd")
+const BiomeMapScript := preload("res://world/gen/biome_map.gd")
+const BiomeDefsLib := preload("res://tools/biome_defs_lib.gd")
+
+## The shipped biome table (F-274). Every mesh built here and every reference surface sampled here
+## goes through it: the skirt is sized against the SHIPPED terrain's LOD divergence, and the
+## biome-blind 1.0/1.0 surface is a smoother one, so measuring the skirt against it would certify a
+## margin the game never actually gets.
+var biome_defs: Array = []
 
 const BENCH_SEED: int = 20260818
 ## The worst LOD-boundary divergence found when F-128 was fixed, and where it was found — swept
@@ -41,9 +49,17 @@ const BENCH_SEED: int = 20260818
 ## from F-128's original spot. A 12-seed island-wide sweep found the new worst at seed 4242, chunk
 ## (3,-4), edge 0 (south), LOD1/LOD2 boundary — 12.805 m, against a spread of 7.5-12.8 m across all
 ## 12 seeds sampled. `SKIRT_DEPTH_FRACTION` in `chunk_mesher.gd` was retuned alongside this.
+##
+## Re-measured again by F-274 (2026-08-20), which put every vertex on its own biome's terrain
+## amplitudes: the same spot now diverges 12.4405 m rather than 12.805 m, because the crest there
+## sits in biomes whose authored `ridge_amplitude` is below 1.0. The location did not move and the
+## number went DOWN, so `SKIRT_DEPTH_FRACTION` needed no retune — 44.2 m of skirt still clears it
+## with ~3.5x margin. Measured with the shipped biome table; the pre-F-274 biome-blind sweep
+## reproduces 12.8051 m at the same chunk exactly, which is what confirms the two agree about
+## everything except the amplitudes.
 const WORST_KNOWN_SEED: int = 4242
 const WORST_KNOWN_CHUNK := Vector2i(3, -4)
-const WORST_KNOWN_DIVERGENCE_M: float = 12.805
+const WORST_KNOWN_DIVERGENCE_M: float = 12.4405
 ## Chunk radius the seam/harvestable sweeps scan. `IslandHeightmap.ISLAND_RADIUS` is 118 m
 ## (CHUNK_SIZE 32 m -> ~4 chunks), so 10 chunks (320 m) is a wide margin past the falloff shoulder
 ## into open water — cheap because water contributes ~0 divergence and no harvestable placements,
@@ -81,6 +97,10 @@ func _run() -> void:
 		quit(1)
 		return
 
+	biome_defs = BiomeDefsLib.load_defs(self)
+	_check("the shipped biome table loaded (%d def(s))" % biome_defs.size(),
+		not biome_defs.is_empty())
+
 	print("=== MIRE Task 4.3 — chunk streaming + LOD ===")
 	print("Godot %s | %s | renderer=%s" % [
 		Engine.get_version_info()["string"], OS.get_name(), RenderingServer.get_video_adapter_name(),
@@ -112,9 +132,9 @@ func _run() -> void:
 	# `IslandHeightmap.ISLAND_RADIUS` (118 m, shrunk from 512 m since this check was written) and
 	# therefore flat open water at every seed, so "a different seed changes the mesh" failed for a
 	# reason that had nothing to do with determinism.
-	var m1: ArrayMesh = ChunkMesher.build_mesh(0, 0, BENCH_SEED, 1)
-	var m2: ArrayMesh = ChunkMesher.build_mesh(0, 0, BENCH_SEED, 1)
-	var m3: ArrayMesh = ChunkMesher.build_mesh(0, 0, BENCH_SEED + 1, 1)
+	var m1: ArrayMesh = ChunkMesher.build_mesh(0, 0, BENCH_SEED, biome_defs, 1)
+	var m2: ArrayMesh = ChunkMesher.build_mesh(0, 0, BENCH_SEED, biome_defs, 1)
+	var m3: ArrayMesh = ChunkMesher.build_mesh(0, 0, BENCH_SEED + 1, biome_defs, 1)
 	var v1: PackedVector3Array = m1.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
 	var v2: PackedVector3Array = m2.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
 	var v3: PackedVector3Array = m3.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
@@ -151,7 +171,7 @@ func _check_skirt_geometry() -> void:
 	var detail: String = ""
 
 	for lod: int in ChunkMesher.LOD_COUNT:
-		var mesh: ArrayMesh = ChunkMesher.build_mesh(2, -3, BENCH_SEED, lod)
+		var mesh: ArrayMesh = ChunkMesher.build_mesh(2, -3, BENCH_SEED, biome_defs, lod)
 		var arrays: Array = mesh.surface_get_arrays(0)
 		var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 		var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
@@ -291,7 +311,7 @@ func _check_seam_coverage() -> void:
 	_check("skirt still clears F-128's recorded worst case with >= 2x margin",
 		ChunkMesher.SKIRT_DEPTH >= known * 2.0,
 		"skirt %.3f m vs %.4f m" % [ChunkMesher.SKIRT_DEPTH, known])
-	_check("F-128's recorded worst-case divergence (%.3f m) has not drifted" % WORST_KNOWN_DIVERGENCE_M,
+	_check("the recorded worst-case divergence (%.4f m) has not drifted" % WORST_KNOWN_DIVERGENCE_M,
 		absf(known - WORST_KNOWN_DIVERGENCE_M) < 0.01,
 		"now %.4f m — terrain changed; re-sweep and update the constant" % known)
 
@@ -303,6 +323,10 @@ func _max_edge_divergence(cx: int, cz: int, edge: int, fine_step: int, world_see
 	var coarse_step: int = fine_step * 2
 	var ox: float = float(cx * ChunkMesher.CHUNK_SIZE)
 	var oz: float = float(cz * ChunkMesher.CHUNK_SIZE)
+	# The SHIPPED surface (F-274), sampled through one set for the whole edge. Bare
+	# `IslandHeightmap.height()` is the biome-blind surface the mesher stopped building.
+	var set: BiomeMapScript.NoiseSet = BiomeMapScript.make_noise_set(world_seed)
+	var table: BiomeMapScript.TerrainTable = BiomeMapScript.make_terrain_table(biome_defs)
 	var worst: float = 0.0
 	var t: int = fine_step
 	while t < ChunkMesher.CHUNK_SIZE:
@@ -314,13 +338,13 @@ func _max_edge_divergence(cx: int, cz: int, edge: int, fine_step: int, world_see
 			var h_lo: float
 			var h_hi: float
 			if edge == 0:
-				h_t = IslandHeightmap.height(ox + float(t), oz, world_seed)
-				h_lo = IslandHeightmap.height(ox + float(lo), oz, world_seed)
-				h_hi = IslandHeightmap.height(ox + float(hi), oz, world_seed)
+				h_t = BiomeMapScript.surface_from_set(ox + float(t), oz, set, world_seed, table)
+				h_lo = BiomeMapScript.surface_from_set(ox + float(lo), oz, set, world_seed, table)
+				h_hi = BiomeMapScript.surface_from_set(ox + float(hi), oz, set, world_seed, table)
 			else:
-				h_t = IslandHeightmap.height(ox, oz + float(t), world_seed)
-				h_lo = IslandHeightmap.height(ox, oz + float(lo), world_seed)
-				h_hi = IslandHeightmap.height(ox, oz + float(hi), world_seed)
+				h_t = BiomeMapScript.surface_from_set(ox, oz + float(t), set, world_seed, table)
+				h_lo = BiomeMapScript.surface_from_set(ox, oz + float(lo), set, world_seed, table)
+				h_hi = BiomeMapScript.surface_from_set(ox, oz + float(hi), set, world_seed, table)
 			worst = maxf(worst, absf(h_t - (h_lo + h_hi) * 0.5))
 		t += fine_step
 	return worst
@@ -384,6 +408,7 @@ func _settle(streamer: ChunkStreamer) -> void:
 func _check_ring_behavior(root_node: Node3D) -> void:
 	var streamer := ChunkStreamer.new()
 	streamer.world_seed = BENCH_SEED
+	streamer.biome_defs = biome_defs
 	root_node.add_child(streamer)
 	streamer.set_anchors([Vector3.ZERO])
 	await _settle(streamer)
@@ -447,6 +472,7 @@ func _check_ring_behavior(root_node: Node3D) -> void:
 func _check_sprint_walk(root_node: Node3D) -> void:
 	var streamer := ChunkStreamer.new()
 	streamer.world_seed = BENCH_SEED
+	streamer.biome_defs = biome_defs
 	root_node.add_child(streamer)
 
 	var pos := Vector3.ZERO
@@ -581,6 +607,7 @@ func _check_union_of_interest() -> void:
 
 	var streamer := ChunkStreamer.new()
 	streamer.world_seed = BENCH_SEED
+	streamer.biome_defs = biome_defs
 	scene.add_child(streamer)
 
 	# `attach_to_streamer()` only reacts to FUTURE `chunk_mesh_ready`/`chunk_unloaded` signals — it

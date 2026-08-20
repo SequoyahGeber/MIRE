@@ -1,20 +1,23 @@
 class_name ChunkMesher
 extends RefCounted
 
-## Task 4.3 — the real terrain chunk mesher. Heights come from `IslandHeightmap.height()` (task
-## 4.1, D-075), the deterministic cross-platform-safe field: no more R2's own placeholder
-## FastNoiseLite. Footprint and LOD0 vertex/tri counts are unchanged from the R2/R2b spikes
+## Task 4.3 — the real terrain chunk mesher. Heights come from `BiomeMap.surface_from_set()`
+## (F-274) — `IslandHeightmap`'s deterministic cross-platform-safe field (task 4.1, D-075) sampled
+## at the terrain amplitudes each vertex's OWN biome authors (D-144) — no more R2's own placeholder
+## FastNoiseLite, and no more the biome-blind 1.0/1.0 surface this file took until F-274. Footprint and LOD0 vertex/tri counts are unchanged from the R2/R2b spikes
 ## (D-015/D-074), so `tools/bench_chunks.gd` and `tools/bench_chunk_gpu.gd` still run unmodified —
 ## they now build real terrain instead of placeholder noise, which does not affect either spike's
 ## already-recorded timing verdict (both measured shape/cost, never a specific height value).
 ##
 ## Network authority (docs/ARCHITECTURE.md §2.2): none of its own — a pure function, safe to call
 ## from any thread (WorkerThreadPool included) or any peer. Every peer that calls it with the same
-## (chunk_x, chunk_z, world_seed, lod) gets the identical mesh, because `IslandHeightmap.height()`
-## is itself pure and cross-platform-safe (D-017/D-075) and this file adds no RNG, no `sin`/`cos`/
-## `pow`/`exp`/`log`, and no shared mutable state.
+## (chunk_x, chunk_z, world_seed, biome_defs, lod) gets the identical mesh, because the surface
+## beneath it is itself pure and cross-platform-safe (D-017/D-075) and this file adds no RNG, no
+## `sin`/`cos`/`pow`/`exp`/`log`, and no shared mutable state. `biome_defs` is content — authored
+## `.tres`, identical on every peer, never generated — so it changes nothing about that.
 
 const Heightmap := preload("res://world/gen/island_heightmap.gd")
+const BiomeMapScript := preload("res://world/gen/biome_map.gd")
 
 ## Chunk footprint in metres. Fixed across every LOD — only vertex density changes.
 const CHUNK_SIZE: int = 32
@@ -123,16 +126,23 @@ static func collision_faces(mesh: ArrayMesh, lod: int) -> PackedVector3Array:
 ## Height field with a 1-sample border on every side, at [param lod]'s step spacing, sampled at
 ## WORLD coordinates. Sampling in world space (not chunk-local) is what makes two neighbouring
 ## chunks — or two neighbouring LOD tiers — agree exactly wherever they sample the same point,
-## because `IslandHeightmap.height()` is a pure function of world x/z (D-075).
+## because the surface is a pure function of world x/z (D-075).
 ##
-## Samples through ONE `IslandHeightmap.NoiseSet`, built once per call rather than once per sample
-## (F-241): a LOD0 apron is 33x33 = 1,089 points, and `height()`'s six `FastNoiseLite` fields are
-## identical across all of them for a fixed `world_seed` — only the sample point changes. Still
-## safe from any WorkerThreadPool task: `noise_set` is a local built fresh on every call into this
-## function, never shared or cached across calls, the same one-set-per-task rule
+## Every sample goes through `BiomeMap.surface_from_set()` (F-274), so each vertex stands on the
+## roughness ITS OWN biome authors — the seam D-144 named and nothing shipped crossed until this
+## task. `biome_defs` is REQUIRED and not defaulted on purpose: an empty table silently produces the
+## biome-blind 1.0/1.0 surface, which is exactly the terrain F-274 found the whole game building,
+## and a default is how that gets shipped again.
+##
+## Samples through ONE `BiomeMap.NoiseSet`, one `TerrainTable` and one reused
+## `IslandHeightmap.Shape`, all built once per call rather than once per sample (F-241, F-274): a
+## LOD0 apron is 35x35 = 1,225 points and every one of them would otherwise rebuild seven
+## `FastNoiseLite` fields and re-read six exported values off three `BiomeDef` resources. Still safe
+## from any WorkerThreadPool task — all three are locals built fresh on every call into this
+## function, never shared or cached across calls, the same one-per-task rule
 ## `IslandHeightmap.NoiseSet` documents.
 static func _sample_heights(
-	chunk_x: int, chunk_z: int, world_seed: int, lod: int
+	chunk_x: int, chunk_z: int, world_seed: int, lod: int, biome_defs: Array
 ) -> PackedFloat32Array:
 	var step: int = LOD_STEPS[lod]
 	var side: int = verts_per_side(lod)
@@ -141,13 +151,16 @@ static func _sample_heights(
 	heights.resize(apron_side * apron_side)
 	var origin_x: float = float(chunk_x * CHUNK_SIZE)
 	var origin_z: float = float(chunk_z * CHUNK_SIZE)
-	var noise_set: Heightmap.NoiseSet = Heightmap.make_noise_set(world_seed)
+	var noise_set: BiomeMapScript.NoiseSet = BiomeMapScript.make_noise_set(world_seed)
+	var table: BiomeMapScript.TerrainTable = BiomeMapScript.make_terrain_table(biome_defs)
+	var shape := Heightmap.Shape.new()
 	for az: int in apron_side:
 		var world_z: float = origin_z + float((az - 1) * step)
 		var row: int = az * apron_side
 		for ax: int in apron_side:
 			var world_x: float = origin_x + float((ax - 1) * step)
-			heights[row + ax] = Heightmap.height_from_set(world_x, world_z, noise_set, world_seed)
+			heights[row + ax] = BiomeMapScript.surface_from_set(
+				world_x, world_z, noise_set, world_seed, table, shape)
 	return heights
 
 
@@ -192,11 +205,17 @@ static func _build_indices(lod: int) -> PackedInt32Array:
 ## (chunk_x, chunk_z, world_seed, lod): real stitching would take the neighbours' tiers as a fifth
 ## input and force a re-mesh of the finer chunk every time a neighbour changed tier, cascading work
 ## through exactly the frame budget task 4.3 exists to protect.
-static func build_mesh(chunk_x: int, chunk_z: int, world_seed: int, lod: int = 0) -> ArrayMesh:
+## `biome_defs` — `Registry.biomes.values()` on every shipped caller — sits BEFORE the optional
+## `lod` rather than after it (F-274). GDScript cannot put a required parameter after an optional
+## one, and making the biome table optional is what let the biome-blind surface ship unnoticed in
+## the first place, so the argument order gave way instead of the requirement.
+static func build_mesh(
+	chunk_x: int, chunk_z: int, world_seed: int, biome_defs: Array, lod: int = 0
+) -> ArrayMesh:
 	var step: int = LOD_STEPS[lod]
 	var side: int = verts_per_side(lod)
 	var apron_side: int = side + 2
-	var heights: PackedFloat32Array = _sample_heights(chunk_x, chunk_z, world_seed, lod)
+	var heights: PackedFloat32Array = _sample_heights(chunk_x, chunk_z, world_seed, lod, biome_defs)
 
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
@@ -284,8 +303,10 @@ static func build_mesh(chunk_x: int, chunk_z: int, world_seed: int, lod: int = 0
 ## Same chunk via SurfaceTool, LOD0 only — kept only so `tools/bench_chunks.gd` (D-015) still runs
 ## unmodified; not called by build_mesh or by the real streamer. No skirt: it exists to time
 ## SurfaceTool against the array path on identical work, and nothing renders what it returns.
-static func build_mesh_surface_tool(chunk_x: int, chunk_z: int, world_seed: int) -> ArrayMesh:
-	var heights: PackedFloat32Array = _sample_heights(chunk_x, chunk_z, world_seed, 0)
+static func build_mesh_surface_tool(
+	chunk_x: int, chunk_z: int, world_seed: int, biome_defs: Array
+) -> ArrayMesh:
+	var heights: PackedFloat32Array = _sample_heights(chunk_x, chunk_z, world_seed, 0, biome_defs)
 
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)

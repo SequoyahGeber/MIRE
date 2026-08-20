@@ -20,6 +20,10 @@ extends SceneTree
 ## never budgeted against. Recorded as DECISIONS.md D-072.
 
 const Mesher = preload("res://world/chunk/chunk_mesher.gd")
+const BiomeDefsLib := preload("res://tools/biome_defs_lib.gd")
+
+## The real content table — see `tools/bench_chunks.gd` (F-274).
+var _biome_defs: Array = []
 
 const CHUNK_COUNT: int = 60
 const WARMUP_CHUNKS: int = 4
@@ -41,6 +45,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	_biome_defs = BiomeDefsLib.load_defs(self)
 	if DisplayServer.get_name() == "headless":
 		push_error("bench_chunk_gpu needs a real renderer — run it with --windowed (F-005)")
 		quit(1)
@@ -81,7 +86,7 @@ func _run() -> void:
 	# An untimed warmup chunk goes through every step once so the FIRST timed chunk isn't paying
 	# for one-time costs (first ConcavePolygonShape3D ever created, first material ever bound).
 	for i: int in WARMUP_CHUNKS:
-		var wmesh: ArrayMesh = Mesher.build_mesh(-1 - i, -1, BENCH_SEED)
+		var wmesh: ArrayMesh = Mesher.build_mesh(-1 - i, -1, BENCH_SEED, _biome_defs)
 		var wshape := ConcavePolygonShape3D.new()
 		wshape.set_faces(Mesher.collision_faces(wmesh, 0))
 		var wmi := MeshInstance3D.new()
@@ -107,7 +112,7 @@ func _run() -> void:
 		var cz: int = i / GRID_SIDE
 		# Mesh build itself is R2's own number (D-015, 0.330 ms/chunk single-threaded) — not
 		# re-timed here, only used as the input every downstream step needs.
-		var mesh: ArrayMesh = Mesher.build_mesh(cx, cz, BENCH_SEED)
+		var mesh: ArrayMesh = Mesher.build_mesh(cx, cz, BENCH_SEED, _biome_defs)
 
 		# 1. Collision cook — ConcavePolygonShape3D.set_faces() hands the trimesh to the physics
 		# server (Jolt), which builds its acceleration structure synchronously on this call.

@@ -65,8 +65,13 @@ static func sites_for_island(
 	# inside _slope_at, plus two more for the biome), so a six-def island paid tens of thousands of
 	# noise constructions to place a dozen POIs.
 	var noise_set: BIOME_MAP.NoiseSet = BIOME_MAP.make_noise_set(world_seed)
+	# F-274: the flattened biome table, built once here and threaded down beside the noise set for
+	# the same reason. Every surface sample below goes through `BiomeMap.surface_from_set()`, so a
+	# site's `position.y` is the ground the chunk mesher will actually build — not the biome-blind
+	# 1.0/1.0 surface, which on a forest ridge sits metres below it.
+	var table: BIOME_MAP.TerrainTable = BIOME_MAP.make_terrain_table(biome_defs)
 	for definition: Resource in _sorted_defs(poi_defs):
-		_place_kind(definition, world_seed, biome_defs, sites, noise_set)
+		_place_kind(definition, world_seed, biome_defs, sites, noise_set, table)
 	return sites
 
 
@@ -97,7 +102,7 @@ static func _sorted_defs(poi_defs: Array) -> Array:
 
 static func _place_kind(
 	definition: Resource, world_seed: int, biome_defs: Array, sites: Array[Dictionary],
-	noise_set: BIOME_MAP.NoiseSet
+	noise_set: BIOME_MAP.NoiseSet, table: BIOME_MAP.TerrainTable
 ) -> void:
 	var def_id := StringName(String(definition.get(&"id")))
 	var target: int = int(definition.get(&"target_count"))
@@ -107,7 +112,7 @@ static func _place_kind(
 	var rng := RandomNumberGenerator.new()
 	rng.seed = _kind_seed(world_seed, def_id)
 	var placed_before: int = sites.size()
-	_place_kind_pass(definition, world_seed, biome_defs, sites, rng, 0, noise_set)
+	_place_kind_pass(definition, world_seed, biome_defs, sites, rng, 0, noise_set, table)
 
 	# D-152: a REQUIRED kind that placed nothing gets the ladder, not a shrug. Each rung relaxes
 	# one constraint family and reruns the same deterministic dart loop (the rng stream simply
@@ -116,9 +121,9 @@ static func _place_kind(
 	# the whole disc. Spacing/clearance are never relaxed — two objectives fused together is the
 	# one thing worse than a slightly-tilted one.
 	if sites.size() == placed_before and bool(definition.get(&"required")):
-		_place_kind_pass(definition, world_seed, biome_defs, sites, rng, 1, noise_set)
+		_place_kind_pass(definition, world_seed, biome_defs, sites, rng, 1, noise_set, table)
 		if sites.size() == placed_before:
-			_place_kind_pass(definition, world_seed, biome_defs, sites, rng, 2, noise_set)
+			_place_kind_pass(definition, world_seed, biome_defs, sites, rng, 2, noise_set, table)
 
 	return
 
@@ -128,7 +133,8 @@ static func _place_kind(
 ## waterline, anywhere on the disc. Spacing holds at every level.
 static func _place_kind_pass(
 	definition: Resource, world_seed: int, biome_defs: Array, sites: Array[Dictionary],
-	rng: RandomNumberGenerator, relax: int, noise_set: BIOME_MAP.NoiseSet
+	rng: RandomNumberGenerator, relax: int, noise_set: BIOME_MAP.NoiseSet,
+	table: BIOME_MAP.TerrainTable
 ) -> void:
 	var def_id := StringName(String(definition.get(&"id")))
 	var target: int = int(definition.get(&"target_count"))
@@ -150,7 +156,7 @@ static func _place_kind_pass(
 
 			if _too_close(x, z, definition, sites):
 				continue
-			var height: float = ISLAND_HEIGHTMAP.height_from_set(x, z, noise_set.island, world_seed)
+			var height: float = BIOME_MAP.surface_from_set(x, z, noise_set, world_seed, table)
 			# Resolved at most once per dart and reused by the append below, which used to ask for it
 			# a second time at the same coordinates (F-261).
 			var biome: StringName = &""
@@ -159,8 +165,8 @@ static func _place_kind_pass(
 				if height < 0.5:
 					continue
 			else:
-				var slope: float = _slope_at(
-					x, z, height, world_seed, noise_set, float(definition.get(&"flatness_probe_m")))
+				var slope: float = _slope_at(x, z, height, world_seed, noise_set, table,
+					float(definition.get(&"flatness_probe_m")))
 				if relax >= 1:
 					# Height and radius still authored; slope/biome waived.
 					if height < float(definition.get(&"height_min")) \
@@ -226,14 +232,14 @@ static func _too_close(x: float, z: float, definition: Resource, sites: Array[Di
 ## `centre` is passed in rather than resampled (F-261): the caller has just computed the height at
 ## exactly this point, and asking the heightmap for it again was the fifth sample this used to take.
 static func _slope_at(x: float, z: float, centre: float, world_seed: int,
-		noise_set: BIOME_MAP.NoiseSet, probe_m: float) -> float:
+		noise_set: BIOME_MAP.NoiseSet, table: BIOME_MAP.TerrainTable, probe_m: float) -> float:
 	var worst: float = 0.0
 	for offset: Vector2 in [
 		Vector2(probe_m, 0.0), Vector2(-probe_m, 0.0),
 		Vector2(0.0, probe_m), Vector2(0.0, -probe_m),
 	]:
-		var sample: float = ISLAND_HEIGHTMAP.height_from_set(
-			x + offset.x, z + offset.y, noise_set.island, world_seed)
+		var sample: float = BIOME_MAP.surface_from_set(
+			x + offset.x, z + offset.y, noise_set, world_seed, table)
 		worst = maxf(worst, absf(sample - centre))
 	return worst
 

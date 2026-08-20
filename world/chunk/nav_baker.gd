@@ -63,6 +63,10 @@ signal region_retired(coord: Vector2i)
 
 var world_seed: int = 0
 
+## Adopted from the streamer in `bind()` — see the note there. Never set independently: two tables
+## are two different islands, and this one has to describe the same ground the collider does.
+var biome_defs: Array = []
+
 ## piece_name -> {coord: Vector2i, position: Vector3, yaw: float, size: Vector3}. F-159.
 var _pieces: Dictionary[StringName, Dictionary] = {}
 
@@ -88,6 +92,14 @@ func bind(streamer: Node, seed_value: int, force_active: bool = false) -> bool:
 		return false
 	_streamer = streamer
 	world_seed = seed_value
+	# F-274: the navmesh is baked from `ChunkMesher`'s own faces, so it has to be baked from the
+	# SAME surface the collider is cooked from — the streamer's biome table, not an empty one. An
+	# empty table here bakes the biome-blind 1.0/1.0 terrain and agents then path confidently across
+	# ground that is up to several metres away from where the mesh actually put it.
+	if streamer != null:
+		biome_defs = streamer.get(&"biome_defs") as Array
+		if biome_defs == null:
+			biome_defs = []
 	_ensure_map()
 	if streamer != null:
 		if streamer.has_signal(&"chunk_mesh_ready"):
@@ -295,7 +307,7 @@ func _retire(coord: Vector2i) -> void:
 ## the navmesh around it in the one pass — compositing two independently-baked regions cannot produce
 ## the same result, because a region does not know what another region's geometry looked like.
 func _source_geometry(coord: Vector2i) -> NavigationMeshSourceGeometryData3D:
-	var mesh: ArrayMesh = Mesher.build_mesh(coord.x, coord.y, world_seed, NAV_LOD)
+	var mesh: ArrayMesh = Mesher.build_mesh(coord.x, coord.y, world_seed, biome_defs, NAV_LOD)
 	var terrain_faces: PackedVector3Array = PackedVector3Array()
 	if mesh != null and mesh.get_surface_count() > 0:
 		terrain_faces = Mesher.collision_faces(mesh, NAV_LOD)

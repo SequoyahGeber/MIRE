@@ -9,6 +9,13 @@ extends SceneTree
 # Preloaded rather than referenced by class_name: a --script run does not depend on the
 # editor having refreshed the global class cache.
 const Mesher = preload("res://world/chunk/chunk_mesher.gd")
+const BiomeDefsLib := preload("res://tools/biome_defs_lib.gd")
+
+## The real content table (F-274). A bench that meshed the biome-blind surface would be timing
+## terrain the game does not build — cheaper terrain, since it skips the moisture sample, the
+## table lookup and the second river walk per vertex, which is exactly the cost this file exists
+## to measure.
+var _biome_defs: Array = []
 
 const CHUNK_COUNT: int = 100
 const WARMUP_CHUNKS: int = 8
@@ -20,6 +27,7 @@ var _threaded_results: Array = []
 
 
 func _initialize() -> void:
+	_biome_defs = BiomeDefsLib.load_defs(self)
 	print("=== MIRE Spike R2 — chunked terrain meshing ===")
 	print("Godot %s | %s | %d logical cores" % [
 		Engine.get_version_info()["string"],
@@ -57,9 +65,13 @@ func _initialize() -> void:
 ## Determinism gate. If this fails the numbers below are irrelevant — clients would
 ## generate different islands from the same seed.
 func _check_determinism() -> void:
-	var a: ArrayMesh = Mesher.build_mesh(3, -7, BENCH_SEED)
-	var b: ArrayMesh = Mesher.build_mesh(3, -7, BENCH_SEED)
-	var c: ArrayMesh = Mesher.build_mesh(3, -7, BENCH_SEED + 1)
+	# Chunk (1, 0), not (3, -7). F-274: (3, -7) centres 243 m from origin, well outside
+	# `ISLAND_RADIUS` (118 m since the 4.13 retune), so every vertex in it was exactly 0.0 at every
+	# seed and "different seed differs" reported false while nothing was wrong. Same trap F-251
+	# found in `chunk_stream_check.gd` and F-274 found in `noise_reuse_check.gd`.
+	var a: ArrayMesh = Mesher.build_mesh(1, 0, BENCH_SEED, _biome_defs)
+	var b: ArrayMesh = Mesher.build_mesh(1, 0, BENCH_SEED, _biome_defs)
+	var c: ArrayMesh = Mesher.build_mesh(1, 0, BENCH_SEED + 1, _biome_defs)
 	var va: PackedVector3Array = a.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
 	var vb: PackedVector3Array = b.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
 	var vc: PackedVector3Array = c.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
@@ -70,7 +82,7 @@ func _check_determinism() -> void:
 
 func _warmup() -> void:
 	for i: int in WARMUP_CHUNKS:
-		var _m: ArrayMesh = Mesher.build_mesh(i, 0, BENCH_SEED)
+		var _m: ArrayMesh = Mesher.build_mesh(i, 0, BENCH_SEED, _biome_defs)
 
 
 ## Returns mean ms per chunk. Also prints min/max, which is what a streaming hitch looks like.
@@ -82,9 +94,9 @@ func _bench_single(use_surface_tool: bool) -> float:
 	for i: int in CHUNK_COUNT:
 		var t0: int = Time.get_ticks_usec()
 		var _m: ArrayMesh = (
-			Mesher.build_mesh_surface_tool(i % GRID_SIDE, i / GRID_SIDE, BENCH_SEED)
+			Mesher.build_mesh_surface_tool(i % GRID_SIDE, i / GRID_SIDE, BENCH_SEED, _biome_defs)
 			if use_surface_tool
-			else Mesher.build_mesh(i % GRID_SIDE, i / GRID_SIDE, BENCH_SEED)
+			else Mesher.build_mesh(i % GRID_SIDE, i / GRID_SIDE, BENCH_SEED, _biome_defs)
 		)
 		var dt: float = float(Time.get_ticks_usec() - t0) / 1000.0
 		worst = maxf(worst, dt)
@@ -98,7 +110,8 @@ func _bench_single(use_surface_tool: bool) -> float:
 
 
 func _build_one_threaded(index: int) -> void:
-	_threaded_results[index] = Mesher.build_mesh(index % GRID_SIDE, index / GRID_SIDE, BENCH_SEED)
+	_threaded_results[index] = Mesher.build_mesh(
+		index % GRID_SIDE, index / GRID_SIDE, BENCH_SEED, _biome_defs)
 
 
 ## Amortized ms per chunk across all cores: wall time for CHUNK_COUNT chunks / CHUNK_COUNT.
@@ -134,7 +147,7 @@ func _bench_memory() -> void:
 	var held: Array[ArrayMesh] = []
 	var before: int = OS.get_static_memory_usage()
 	for i: int in CHUNK_COUNT:
-		held.append(Mesher.build_mesh(i % GRID_SIDE, i / GRID_SIDE, BENCH_SEED))
+		held.append(Mesher.build_mesh(i % GRID_SIDE, i / GRID_SIDE, BENCH_SEED, _biome_defs))
 	var after: int = OS.get_static_memory_usage()
 	var delta: int = after - before
 

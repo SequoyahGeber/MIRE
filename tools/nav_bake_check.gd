@@ -13,9 +13,15 @@ const NavBakerScript = preload("res://world/chunk/nav_baker.gd")
 const MesherScript = preload("res://world/chunk/chunk_mesher.gd")
 const VALIDATOR = preload("res://systems/building/placement_validator.gd")
 
-const HeightmapScript = preload("res://world/gen/island_heightmap.gd")
+const BiomeMapScript = preload("res://world/gen/biome_map.gd")
+const BiomeDefsLib := preload("res://tools/biome_defs_lib.gd")
 
 const WORLD_SEED: int = 20260818
+
+## The shipped biome table and the fields `_ground()` samples through — built once in `_run()`.
+var _biome_defs: Array = []
+var _noise_set: BiomeMapScript.NoiseSet
+var _table: BiomeMapScript.TerrainTable
 const SYNC_TIMEOUT_SEC: float = 10.0
 
 ## The agent this whole system is baked for. Terrain steeper than this is not walkable, so a test
@@ -45,6 +51,12 @@ func _initialize() -> void:
 
 func _run() -> void:
 	await process_frame
+
+	_biome_defs = BiomeDefsLib.load_defs(self)
+	_noise_set = BiomeMapScript.make_noise_set(WORLD_SEED)
+	_table = BiomeMapScript.make_terrain_table(_biome_defs)
+	check(not _biome_defs.is_empty(), "the shipped biome table loaded (%d def(s))"
+		% _biome_defs.size())
 
 	_locate_walkable_terrain()
 	_check_winding_trap()
@@ -92,12 +104,20 @@ func _locate_walkable_terrain() -> void:
 			% [seam_x, seam_z, coords])
 
 
+## The SHIPPED ground at (x, z) — `BiomeMap.surface_from_set()`, the same surface the mesher builds
+## the faces this navmesh is baked from (F-274). Bare `IslandHeightmap.height()` would be the
+## biome-blind 1.0/1.0 surface, which on a forest ridge is metres away from the baked mesh, and
+## every "is this point on the navmesh" assertion below would then be measuring the wrong point.
+func _ground(x: float, z: float) -> float:
+	return BiomeMapScript.surface_from_set(x, z, _noise_set, WORLD_SEED, _table)
+
+
 func _gentle(x: float, z: float) -> bool:
-	var height: float = HeightmapScript.height(x, z, WORLD_SEED)
+	var height: float = _ground(x, z)
 	if height < MIN_LAND_HEIGHT:
 		return false
-	var dx: float = HeightmapScript.height(x + 1.0, z, WORLD_SEED) - height
-	var dz: float = HeightmapScript.height(x, z + 1.0, WORLD_SEED) - height
+	var dx: float = _ground(x + 1.0, z) - height
+	var dz: float = _ground(x, z + 1.0) - height
 	return rad_to_deg(atan(sqrt(dx * dx + dz * dz))) < WALKABLE_SLOPE_DEG
 
 
@@ -106,7 +126,8 @@ func _gentle(x: float, z: float) -> bool:
 ## what proves the trap is real and that the flip in `_wound_for_recast` is doing something.
 func _check_winding_trap() -> void:
 	print("\n== trap 1: winding is inverted, and getting it wrong bakes silence ==")
-	var mesh: ArrayMesh = MesherScript.build_mesh(coords[0].x, coords[0].y, WORLD_SEED, 0)
+	var mesh: ArrayMesh = MesherScript.build_mesh(
+		coords[0].x, coords[0].y, WORLD_SEED, _biome_defs, 0)
 	var faces: PackedVector3Array = MesherScript.collision_faces(mesh, 0)
 	check(not faces.is_empty(), "the mesher produced collision faces to bake (%d)" % faces.size())
 
@@ -148,6 +169,10 @@ func _bake_blocking(faces: PackedVector3Array, recast_winding: bool) -> Navigati
 func _check_bakes_and_attaches() -> void:
 	print("\n== chunks bake asynchronously, one at a time, and attach ==")
 	baker = NavBakerScript.new()
+	# Set BEFORE bind: `bind()` adopts the streamer's table (F-274) and this harness has no
+	# streamer, so a baker left at the default would bake the biome-blind surface while every
+	# assertion below probes the real one.
+	baker.set(&"biome_defs", _biome_defs)
 	root.add_child(baker)
 	# force_active: this harness has no session, and `bind()` is a no-op on a non-host by design.
 	check(bool(baker.call("bind", null, WORLD_SEED, true)), "baker binds")
@@ -180,7 +205,7 @@ func _check_map_queryable() -> void:
 
 	var map: RID = baker.call("map_rid")
 	var centre: Vector3 = Vector3(seam_x - 6.0,
-		HeightmapScript.height(seam_x - 6.0, seam_z, WORLD_SEED), seam_z)
+		_ground(seam_x - 6.0, seam_z), seam_z)
 	var closest: Vector3 = NavigationServer3D.map_get_closest_point(map, centre)
 	check(closest != Vector3.ZERO, "a point on located land resolves onto the mesh (%s)" % closest)
 
@@ -190,9 +215,9 @@ func _check_map_queryable() -> void:
 	# on-mesh first and then asserted to be on OPPOSITE sides of the boundary — without that check
 	# the pair can silently snap to the same side and the test proves nothing.
 	var left: Vector3 = NavigationServer3D.map_get_closest_point(map,
-		Vector3(seam_x - 6.0, HeightmapScript.height(seam_x - 6.0, seam_z, WORLD_SEED), seam_z))
+		Vector3(seam_x - 6.0, _ground(seam_x - 6.0, seam_z), seam_z))
 	var right: Vector3 = NavigationServer3D.map_get_closest_point(map,
-		Vector3(seam_x + 6.0, HeightmapScript.height(seam_x + 6.0, seam_z, WORLD_SEED), seam_z))
+		Vector3(seam_x + 6.0, _ground(seam_x + 6.0, seam_z), seam_z))
 	var crosses: bool = signf(left.x - seam_x) != signf(right.x - seam_x)
 	check(crosses, "the two endpoints really are on opposite sides of x=%.0f (%.1f | %.1f)"
 		% [seam_x, left.x, right.x])
@@ -246,7 +271,7 @@ func _check_buildable_obstruction() -> void:
 	print("\n== F-159: a placed piece carves the navmesh, a destroyed one un-carves it ==")
 	var map: RID = baker.call("map_rid")
 	var spot: Vector3 = Vector3(seam_x - 6.0,
-		HeightmapScript.height(seam_x - 6.0, seam_z, WORLD_SEED), seam_z)
+		_ground(seam_x - 6.0, seam_z), seam_z)
 	var baseline: float = NavigationServer3D.map_get_closest_point(map, spot).distance_to(spot)
 	print("   baseline snap distance at %s: %.3fm" % [spot, baseline])
 

@@ -39,14 +39,28 @@ const ResourceScatter = preload("res://world/gen/resource_scatter.gd")
 
 const SEEDS: Array[int] = [1, 20260819, -77, 0x5EED, 999983]
 
-## Captured at 17bacba, before F-261's first edit, with the bare `sites_for_island()` /
-## `biome_at()` / `moisture()` / `terrain_amplitudes()` API. See point 3 in the header.
+## Provenance, per hash:
+##
+## - `GOLDEN_BIOME` is the ORIGINAL capture, at 17bacba, before F-261's first edit and with the bare
+##   `biome_at()`/`moisture()` API. It has survived F-261, F-271 and F-274 untouched, which is the
+##   single most useful fact in this file: biome CLASSIFICATION reads the continent and the moisture
+##   field and nothing else (D-144), so a worldgen change that moves it has broken that rule.
+## - `GOLDEN_POI`, `GOLDEN_AMPLITUDES` and `GOLDEN_SCATTER` were re-captured by F-274, which wired
+##   `BiomeMap.surface_from_set()` into every shipped consumer of the surface. All three moved for
+##   the same one reason: a site's and a placement's `position.y`, and the amplitude pair itself,
+##   are now the point's own biome's rather than the biome-blind 1.0/1.0 default. Their pre-F-274
+##   values, for the record — POI ec0e4e28abd1fcfb / fa265c12b7ff0318 / 6fa64b61bbac0256 /
+##   0d5110a470a06993 / 8036675b339ac2c8, amplitudes c75d6cacc238bc59 / b1979946182f8ba5 /
+##   7a5196113765b5cb / c72cdd79cb349965 / bf2f672a4de972a9, scatter 428ea591736623cc /
+##   1fb5f19469c5fc2f / 559e522d6b5d2706 / 906faea3771ca932 / de9ffaa1d503238d.
+##
+## See point 3 in the header: these are a tripwire, not a specification of the layout.
 const GOLDEN_POI: Dictionary = {
-	1: "ec0e4e28abd1fcfb",
-	20260819: "fa265c12b7ff0318",
-	-77: "6fa64b61bbac0256",
-	0x5EED: "0d5110a470a06993",
-	999983: "8036675b339ac2c8",
+	1: "9ac297d056a197d6",
+	20260819: "58ee2f52c21c9d53",
+	-77: "96002f169e73689b",
+	0x5EED: "ef311362aabaffd9",
+	999983: "600f7440406eb48d",
 }
 const GOLDEN_BIOME: Dictionary = {
 	1: "1c3ed123238a5fc0",
@@ -56,24 +70,23 @@ const GOLDEN_BIOME: Dictionary = {
 	999983: "0f57083774aa3f1b",
 }
 const GOLDEN_AMPLITUDES: Dictionary = {
-	1: "c75d6cacc238bc59",
-	20260819: "b1979946182f8ba5",
-	-77: "7a5196113765b5cb",
-	0x5EED: "c72cdd79cb349965",
-	999983: "bf2f672a4de972a9",
+	1: "1724ffe59450b379",
+	20260819: "6a61a6eae9f39f45",
+	-77: "4daacddc09ac7d00",
+	0x5EED: "a5bf82fd86277a3d",
+	999983: "add7ba4c8474e7c1",
 }
-## Captured AFTER F-271, and deliberately so: F-271 is the change these three siblings were watching
-## for, and scatter had no witness of its own when it landed. The pre-F-271 values, for the record,
-## were e1b81b6cdf97bb57 / 0ba6f0e311c68e58 / eadd61e208e89c9f / 357d154af9590f1a / 8ff13290e7187f75
-## — every one of them moved when scatter stopped classifying its points from `height()`. From here
-## on, scatter layout is a tripwire like the other three: a worldgen refactor that moves it must say
-## so and re-capture, and one that claims to move nothing must leave it alone.
+## Scatter got its own witness at F-271, which is when it first moved (from e1b81b6cdf97bb57 /
+## 0ba6f0e311c68e58 / eadd61e208e89c9f / 357d154af9590f1a / 8ff13290e7187f75, when scatter stopped
+## classifying its points from `height()`), and moved again at F-274 when a placement's `position.y`
+## became the biome-shaped surface. A worldgen change that moves it must say so and re-capture; one
+## that claims to move nothing must leave it alone.
 const GOLDEN_SCATTER: Dictionary = {
-	1: "428ea591736623cc",
-	20260819: "1fb5f19469c5fc2f",
-	-77: "559e522d6b5d2706",
-	0x5EED: "906faea3771ca932",
-	999983: "de9ffaa1d503238d",
+	1: "53d85dfad1e2e104",
+	20260819: "cf43553290fcc014",
+	-77: "0bd9550b9fe329c4",
+	0x5EED: "38699fc7937a2d5b",
+	999983: "dc4523d37681fbd7",
 }
 
 var failures: int = 0
@@ -186,14 +199,15 @@ func _check_adoption() -> void:
 			"%d mismatched" % mismatches)
 
 
-## The tripwire. Same hashes as the pre-F-261 code produced, or the refactor moved the world.
+## The tripwire. Same hashes as the recorded ones, or something moved the world — see the
+## provenance note on the constants for which capture each one traces back to.
 func _check_layout_unchanged() -> void:
-	print("\n== the island is byte-for-byte the one the pre-F-261 code generated ==")
+	print("\n== the island is byte-for-byte the one the recorded hashes describe ==")
 	for world_seed: int in SEEDS:
 		var sites: Array = PoiMap.sites_for_island(world_seed, poi_defs, biome_defs)
 		var actual: String = _poi_hash(sites)
 		_check(actual == String(GOLDEN_POI[world_seed]),
-			"seed %d: %d POI site(s) hash to the pre-fix value" % [world_seed, sites.size()],
+			"seed %d: %d POI site(s) hash to their recorded value" % [world_seed, sites.size()],
 			"%s, expected %s" % [actual, GOLDEN_POI[world_seed]])
 
 		var biome_actual: String = _biome_hash(world_seed)
@@ -203,12 +217,12 @@ func _check_layout_unchanged() -> void:
 
 		var amplitude_actual: String = _amplitude_hash(world_seed)
 		_check(amplitude_actual == String(GOLDEN_AMPLITUDES[world_seed]),
-			"seed %d: the terrain-amplitude grid hashes to the pre-fix value" % world_seed,
+			"seed %d: the terrain-amplitude grid hashes to its recorded value" % world_seed,
 			"%s, expected %s" % [amplitude_actual, GOLDEN_AMPLITUDES[world_seed]])
 
 		var scatter_actual: String = _scatter_hash(world_seed)
 		_check(scatter_actual == String(GOLDEN_SCATTER[world_seed]),
-			"seed %d: the scatter layout hashes to its post-F-271 value" % world_seed,
+			"seed %d: the scatter layout hashes to its recorded value" % world_seed,
 			"%s, expected %s" % [scatter_actual, GOLDEN_SCATTER[world_seed]])
 
 

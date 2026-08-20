@@ -75,6 +75,70 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-20 — F-274 resolved: a biome now shapes its own ground everywhere the game builds it, and the amplitude pair crossfades instead of stepping (lm)
+
+**What shipped.** D-144's seam had been built and never crossed: `BiomeMap.terrain_amplitudes()` had
+no shipped caller, so `chunk_mesher.gd`, `poi_map.gd`, `resource_scatter.gd` and
+`ProceduralWorld.height_at()` all took `height()`'s 1.0/1.0 defaults and every biome got the same
+biome-blind ground. `shore.tres`'s six authored numbers moved the audit PNG and nothing else. They
+now move the mesh, the collider, the navmesh, a landmark's feet, a tree's feet and a spawn query.
+
+**The API the next task builds against.**
+
+```gdscript
+# world/gen/island_heightmap.gd — the biome-INDEPENDENT half, computed once and reused.
+class Shape:                  # bent: Vector2, mask: float, raw_continent: float
+static func shape_into(x, z, set: NoiseSet, world_seed: int, out: Shape) -> void
+static func continent_from_shape(shape: Shape, world_seed: int) -> float
+static func height_from_shape(x, z, shape, set, world_seed, detail_amp := 1.0, ridge_amp := 1.0) -> float
+# `continent()`, `continent_from_set()`, `height()`, `height_from_set()` all funnel through these
+# now, so there is exactly one body of the formula. `_continent_with()` is gone.
+
+# world/gen/biome_map.gd — THE surface. Every shipped "how high is the ground" call goes here.
+class TerrainTable            # the authored defs flattened to plain floats, sorted by id
+static func make_terrain_table(biome_defs: Array) -> TerrainTable
+static func blend_amplitudes(continent_height, moisture_value, table) -> Vector2
+static func surface_from_set(x, z, set: NoiseSet, world_seed, table, shape := null) -> float
+static func surface_at(x, z, world_seed, biome_defs) -> float        # one-shot, builds both
+
+# world/chunk/chunk_mesher.gd — biome_defs is REQUIRED, and sits BEFORE the optional lod.
+static func build_mesh(chunk_x, chunk_z, world_seed, biome_defs: Array, lod := 0) -> ArrayMesh
+static func build_mesh_surface_tool(chunk_x, chunk_z, world_seed, biome_defs: Array) -> ArrayMesh
+```
+
+**Where the table comes from.** `ProceduralWorld._load_biome_defs()` reads `Registry.biomes` ONCE
+per world build into `_biome_defs`, and hands the same Array to `ChunkStreamer.biome_defs` (which
+`ChunkJob` carries into the worker task), `PoiMap`, `ResourceScatter` and `height_at()`. `NavBaker`
+adopts the streamer's in `bind()` rather than being given one, so it cannot be baking a different
+island from the one the collider describes. If you add a consumer of ground height, take the table
+from `ProceduralWorld`; never read the Registry again for it.
+
+**For a tool or check:** `tools/biome_defs_lib.gd` → `load_defs(self)`. Registry first, a scan of
+`content/biomes/*.tres` as the fallback for a harness with no autoloads (F-011). A tool that
+deliberately wants the biome-blind surface passes `[]` and says why.
+
+**Two rules D-165 settles, so they do not get relitigated.** The pair is a weighted BLEND across
+biome boundaries, not the winning biome's own — picking puts a ~7.7 m vertical wall along the
+`moisture = 0.5` contour where forest meets grassland. And `build_mesh()`'s `biome_defs` has no
+default, because a default that silently yields a real-looking wrong surface is precisely what
+F-274 was; `tools/biome_terrain_check.gd` asserts on the signature itself.
+
+**What it costs.** `tools/bench_chunks.gd` single-threaded mean: 5.956 ms/chunk before, 8.077 ms
+after (1.36x) — one moisture sample and a table scan per vertex. If you are about to "optimise" this
+by not caching the river channel on `Shape`, do not: without it the carve walks the polyline twice
+per sample and the number is 10.697 ms. The remaining per-sample allocation (`lobes()`,
+`islet_centres()`, `river_polyline()` rebuilt per point) is F-294. Streaming is unaffected — this is
+`WorkerThreadPool` work and the streamer's own per-frame cost is still 0.2007 ms mean.
+
+**Proof.** `agent godot --script tools/biome_terrain_check.gd` → `BIOME_TERRAIN failures=0`.
+Neighbours green: `worldgen_noise_reuse_check` 0 (with `GOLDEN_BIOME` and `terrain_hash
+c20eed19b44270a1` deliberately UNCHANGED, and POI/amplitude/scatter goldens re-captured),
+`noise_reuse_check` PASS, `terrain_look_check` 0, `terrain_check` 0, `poi_check` 0, `biome_check` 0,
+`resource_scatter_check` 0, `procedural_world_check` 0, `world_contract_check` PASS,
+`chunk_stream_check --windowed` 0 functional failures. Audit render:
+`assets/audit/terrain/island_f274_20260819.png`.
+
+
 ### 2026-08-20 — F-268 resolved: the restart actually clears placed buildables, and HaulService gets the same wiring it had been missing alongside it (lp)
 
 **Claim:** `autoload/build_service.gd`, `autoload/haul_service.gd`, `tools/run_restart_check.gd`,

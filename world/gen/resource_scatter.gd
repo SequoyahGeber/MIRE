@@ -74,6 +74,11 @@ static func placements_for_chunk(
 	# island set above rather than building a second one, so a chunk still constructs each field once.
 	var island_set: ISLAND_HEIGHTMAP.NoiseSet = ISLAND_HEIGHTMAP.make_noise_set(world_seed)
 	var noise_set: BIOME_MAP.NoiseSet = BIOME_MAP.make_noise_set(world_seed, island_set)
+	# F-274: the flattened biome table, built once per chunk for the same reason as the noise set.
+	# A placement's `position.y` now comes from `BiomeMap.surface_from_set()`, so a tree's feet are
+	# on the surface the chunk mesher builds rather than on the biome-blind 1.0/1.0 one — which in
+	# forest, the biome most of the scatter lives in, sits up to several metres below it.
+	var table: BIOME_MAP.TerrainTable = BIOME_MAP.make_terrain_table(biome_defs)
 
 	for def: Resource in defs:
 		var total_weight: float = float(def.call(&"total_weight"))
@@ -86,7 +91,7 @@ static func placements_for_chunk(
 			for gz: int in cells_per_side:
 				var placement: Dictionary = _placement_at(
 					chunk_x, chunk_z, gx, gz, cell, origin_x, origin_z, world_seed, def, total_weight,
-					biome_defs, noise_set
+					biome_defs, noise_set, table
 				)
 				if not placement.is_empty():
 					out.append(placement)
@@ -96,7 +101,7 @@ static func placements_for_chunk(
 static func _placement_at(
 	chunk_x: int, chunk_z: int, gx: int, gz: int, cell: float, origin_x: float, origin_z: float,
 	world_seed: int, def: Resource, total_weight: float, biome_defs: Array,
-	noise_set: BIOME_MAP.NoiseSet
+	noise_set: BIOME_MAP.NoiseSet, table: BIOME_MAP.TerrainTable
 ) -> Dictionary:
 	var def_id: StringName = def.get(&"id")
 	var rng := RandomNumberGenerator.new()
@@ -136,8 +141,8 @@ static func _placement_at(
 	# Only surviving points pay for the surface sample, and it is used for `position.y` alone —
 	# where the asset's feet go. Safe to sit after the gate: neither this nor the biome test touches
 	# `rng`, so the per-point stream is consumed in the same order as before.
-	var height: float = ISLAND_HEIGHTMAP.height_from_set(
-		world_x, world_z, noise_set.island, world_seed)
+	var height: float = BIOME_MAP.surface_from_set(
+		world_x, world_z, noise_set, world_seed, table)
 
 	var entry: Resource = def.call(&"pick_entry", rng.randf() * total_weight)
 	if entry == null:

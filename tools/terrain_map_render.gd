@@ -11,6 +11,10 @@ extends SceneTree
 ## each point resolves to — which also makes it a visual check of D-144: if biome
 ## bands follow the ridged crests rather than the continent, the circularity is
 ## back. It writes pixels, so it is evidence rather than an impression.
+##
+## Every pixel is sampled through `BiomeMap.surface_from_set()`, the same function the chunk mesher
+## calls, so what this renders is what the game builds (F-274). That was NOT true until F-274: this
+## tool applied each biome's authored amplitudes and nothing else in the repo did.
 
 const IslandHeightmap := preload("res://world/gen/island_heightmap.gd")
 const BiomeMap := preload("res://world/gen/biome_map.gd")
@@ -49,20 +53,27 @@ func _initialize() -> void:
 	# those four calls rebuilt every field from scratch: 22 constructions per pixel, so roughly
 	# 7.9 million for a default 600 px image and 23 million at `--size 1024`.
 	var noise_set: BiomeMap.NoiseSet = BiomeMap.make_noise_set(seed_value)
+	# F-274: the flattened table and one reusable Shape, so a 600x600 render pays neither a
+	# per-pixel `Resource.get()` sweep nor a per-pixel allocation.
+	var table: BiomeMap.TerrainTable = BiomeMap.make_terrain_table(defs)
+	var shape := IslandHeightmap.Shape.new()
 	for py in size:
 		for px in size:
 			var x: float = (float(px) / float(size) - 0.5) * span
 			var z: float = (float(py) / float(size) - 0.5) * span
-			# Resolved once and used for both the surface roughness and the tint below.
+			# The tint's biome id and the pixel's surface, from the SAME two functions the game
+			# calls (F-274). This tool used to be the only thing in the repo applying a biome's
+			# authored amplitudes — it rendered a surface the chunk mesher would never produce, so
+			# terrain tuned from these PNGs was tuned from the wrong image. It now goes through
+			# `BiomeMap.surface_from_set()`, the mesher's own sampler, and the amplitude crossfade
+			# comes with it.
 			var id: StringName = &""
 			var h: float
 			if defs.is_empty():
 				h = IslandHeightmap.height_from_set(x, z, noise_set.island, seed_value)
 			else:
 				id = BiomeMap.biome_at_from_set(x, z, noise_set, seed_value, defs)
-				var amplitudes: Vector2 = BiomeMap.amplitudes_for(id, defs)
-				h = IslandHeightmap.height_from_set(
-					x, z, noise_set.island, seed_value, amplitudes.x, amplitudes.y)
+				h = BiomeMap.surface_from_set(x, z, noise_set, seed_value, table, shape)
 			lowest = minf(lowest, h)
 			highest = maxf(highest, h)
 			var colour: Color

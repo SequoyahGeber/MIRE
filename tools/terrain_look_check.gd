@@ -127,7 +127,8 @@ func _check_chunk_mesher_surface() -> void:
 	if not found:
 		return
 
-	var mesh: ArrayMesh = ChunkMesher.build_mesh(candidate_chunk.x, candidate_chunk.y, SEED, 0)
+	var mesh: ArrayMesh = ChunkMesher.build_mesh(
+		candidate_chunk.x, candidate_chunk.y, SEED, biome_defs, 0)
 	var arrays: Array = mesh.surface_get_arrays(0)
 	var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	var side: int = ChunkMesher.verts_per_side(0)

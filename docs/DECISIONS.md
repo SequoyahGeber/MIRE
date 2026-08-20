@@ -5043,3 +5043,82 @@ signal, so materials paid back would land in a bucket emptying in the same frame
 meta-progression structure a player keeps between runs, say. That is a different lifetime, not an
 exception to this: it should not be in a run-scoped container in the first place, the way
 `UnlockService._purchased` is not.
+
+
+### D-165 · 2026-08-20 · F-274: a point's terrain amplitudes are BLENDED across biome boundaries, not picked — and `build_mesh()` requires the biome table rather than defaulting it
+
+**The seam.** D-144 named `BiomeMap.terrain_amplitudes()` as the seam that hands a point's
+`(detail_amplitude, ridge_amplitude)` pair to `IslandHeightmap.height()`. F-274 found the seam built
+and uncrossed: everything that shipped took the 1.0/1.0 defaults, so every biome got the same
+biome-blind ground and the authored numbers in `content/biomes/*.tres` moved only the audit PNG.
+This decision settles the two calls the wiring forced, both of which someone will otherwise
+relitigate as "surely the simpler thing".
+
+**1. The pair is a weighted BLEND of every nearby biome, not the winning biome's own.**
+
+The obvious implementation — resolve the point's biome, look up its pair, sample — ships cliffs. The
+amplitudes are a step function of the biome id, and the biome id is a step function of two
+continuous fields, so the surface inherits a discontinuity along every biome boundary.
+`forest.tres` authors `ridge_amplitude = 0.9` and `grassland.tres` authors 0.25; they meet along
+the `moisture = 0.5` contour, which crosses the island's high ground where the ridge mask is at full
+strength. The step there is `(0.9 - 0.25) x ridged_crest x RIDGE_WEIGHT` — about **7.7 metres of
+vertical wall**, unclimbable under F-136's 46 degree floor limit, running across the interior along a
+noise contour, with chunk seams straight through it.
+
+So `BiomeMap.blend_amplitudes()` weights every def by how far inside its own (height, moisture) band
+the point sits — 1.0 in the interior, falling to 0 over `AMPLITUDE_BLEND_HEIGHT_M` (1.5 m of
+continental height) and `AMPLITUDE_BLEND_MOISTURE` (0.06) outside it — and returns the weighted mean.
+The field is continuous, converges to the authored pair well inside a band, and costs one extra
+polynomial per def. Measured: biome shaping adds at most **0.53 m** to the surface's own local step
+over a 0.25 m walk across four seeds, against the terrain's own pre-existing 3.6 m steps at the river
+corridor edge.
+
+Three consequences worth stating so nobody rediscovers them:
+
+- **The blend is priority-BLIND**, unlike `assign()`. Priority resolves a point's *identity* — which
+  scatter table, which ground material, which biome the HUD names — and identity has to be a single
+  answer. Roughness does not. Where two authored bands overlap, the ground is genuinely between the
+  two, and averaging is truer than winner-takes-all. Authoring consequence: laying a flat biome over
+  a rough one flattens the overlap even where the rough one wins the id.
+- **A GAP in authored coverage puts the cliff back.** With no def within a margin, the blend falls
+  back to (1.0, 1.0), and that fallback is the one discontinuity in an otherwise continuous field.
+  The shipped content has no gap (`shore` covers every moisture below 4 m, `grassland`/`forest`
+  every moisture above it). A new biome must not open one.
+- **`amplitudes_for(id, defs)` still returns the AUTHORED pair** and is not what the ground uses.
+  It is the reader for "what did this biome author", which is what a check compares the blend
+  against in a biome's interior.
+
+**2. `ChunkMesher.build_mesh()` REQUIRES `biome_defs`, ahead of the optional `lod`.**
+
+An optional `biome_defs: Array = []` would have kept every call site compiling and every bench
+running unchanged. It is also exactly the mechanism that produced F-274: a default that silently
+yields a real-looking but wrong surface, which then ships because nothing about the call looks
+incomplete. GDScript cannot place a required parameter after an optional one, so the argument ORDER
+gave way instead of the requirement — `build_mesh(chunk_x, chunk_z, world_seed, biome_defs, lod = 0)`.
+`tools/biome_terrain_check.gd` asserts on the method's own signature that the argument stayed
+mandatory, because that is the property, not a behaviour.
+
+The table itself is read ONCE per world build, in `ProceduralWorld._load_biome_defs()`, and handed
+down: `ChunkStreamer.biome_defs` (which the worker task carries into the mesher), `NavBaker` adopting
+the streamer's in `bind()`, `PoiMap`, `ResourceScatter`, and `height_at()`. Three separate reads of
+the same autoload would be three chances for one consumer to be on an empty table, and a consumer on
+an empty table is a landmark floating over a ridge — which is the failure this whole seam exists to
+prevent.
+
+**What it costs, measured.** `tools/bench_chunks.gd` single-threaded mean, seed 20260818, 100 chunks
+on this machine: **5.956 ms/chunk before, 8.077 ms after** — 1.36x. A vertex now also pays one
+moisture sample, a scan of the flattened table and six `smoothstep`s, which is the irreducible price
+of resolving a biome per vertex. It was 10.697 ms (1.80x) in the first cut, before the river
+channel was cached on `Shape`: the carve is applied twice per biome-shaped sample and
+`_river_channel()` rebuilds and walks the polyline each time, so caching it collapsed two walks into
+one and gave back more than half the regression, bit-identically. What is left of the per-sample
+allocation underneath — `lobes()`, `islet_centres()` and `river_polyline()` are still rebuilt per
+point — is F-294. This is a `WorkerThreadPool` cost, not a frame cost: `chunk_stream_check
+--windowed` still reports the streamer's own per-frame cost at 0.2007 ms mean / 3.8 ms worst over a
+500 m sprint, 0 hitches attributable to this node.
+
+**What moved.** Every seed's terrain, POI site heights and scatter placement heights. `GOLDEN_POI`,
+`GOLDEN_AMPLITUDES` and `GOLDEN_SCATTER` in `tools/worldgen_noise_reuse_check.gd` were re-captured
+under D-160's rule; `GOLDEN_BIOME` and `check_determinism`'s `terrain_hash` (`c20eed19b44270a1`) were
+deliberately left alone and still pass, which is what proves classification and the underlying
+heightmap layer were not touched.

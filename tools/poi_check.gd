@@ -132,9 +132,14 @@ func _check_constraints() -> void:
 		for site: Dictionary in PoiMapScript.sites_for_island(world_seed, poi_defs, biome_defs):
 			var definition: Resource = by_id[StringName(String(site["def_id"]))]
 			var position: Vector3 = site["position"]
-			var height: float = HeightmapScript.height(position.x, position.z, world_seed)
+			# The SHIPPED surface (F-274): a site's feet go on the ground the chunk mesher builds,
+			# which since F-274 is the biome-shaped one. Bare `IslandHeightmap.height()` is the
+			# biome-blind 1.0/1.0 surface nothing builds, and re-deriving from it would fail every
+			# site on rough ground by exactly the amount the biome adds.
+			var height: float = BiomeMapScript.surface_at(
+				position.x, position.z, world_seed, biome_defs)
 			if not is_equal_approx(height, position.y):
-				bad.append("%s: y is %.2f but the heightmap says %.2f" % [site["site_id"], position.y, height])
+				bad.append("%s: y is %.2f but the surface says %.2f" % [site["site_id"], position.y, height])
 				continue
 			if height < float(definition.get(&"height_min")) \
 					or height > float(definition.get(&"height_max")):

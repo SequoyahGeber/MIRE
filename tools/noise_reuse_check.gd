@@ -9,8 +9,10 @@ extends SceneTree
 ## Three things have to hold for this to be a real fix and not a fast-but-wrong one:
 ##   1. height_from_set(x, z, make_noise_set(seed), seed) is BIT-IDENTICAL to height(x, z, seed)
 ##      for every sample — same construction, same result, only when it happens moves.
-##   2. ChunkMesher.build_mesh()'s vertex heights match IslandHeightmap.height() sampled directly
-##      at the same world coordinates — the actual integration, not just the two APIs in isolation.
+##   2. ChunkMesher.build_mesh()'s vertex heights match BiomeMap.surface_from_set() sampled
+##      directly at the same world coordinates — the actual integration, not just the two APIs in
+##      isolation. (That was IslandHeightmap.height() until F-274 wired the mesher to the biome
+##      seam; the mesher no longer takes the biome-blind 1.0/1.0 surface, so neither does this.)
 ##   3. The reuse is actually faster: sampling a LOD0 apron (1,089 points, F-241's own number)
 ##      through one shared NoiseSet must beat rebuilding fresh noise per sample by a wide margin.
 ##
@@ -23,6 +25,14 @@ extends SceneTree
 ## .godot/global_script_class_cache.cfg (F-016, same fix tools/handshake_check.gd uses).
 const IslandHeightmap = preload("res://world/gen/island_heightmap.gd")
 const ChunkMesher = preload("res://world/chunk/chunk_mesher.gd")
+const BiomeMap = preload("res://world/gen/biome_map.gd")
+const BiomeDefsLib := preload("res://tools/biome_defs_lib.gd")
+
+## The real content table. F-274 moved the mesher off bare `height()` onto
+## `BiomeMap.surface_from_set()`, so point 2 below compares the mesh against the surface the game
+## builds — an empty table here would compare it against a surface nothing builds, which is the
+## whole shape of the bug F-274 fixed.
+var _biome_defs: Array = []
 
 var _failures: int = 0
 
@@ -36,6 +46,7 @@ func _check(label: String, condition: bool, detail: String = "") -> void:
 
 
 func _initialize() -> void:
+	_biome_defs = BiomeDefsLib.load_defs(self)
 	const SEED_A: int = 20260819
 	const SEED_B: int = 71406
 
@@ -44,8 +55,13 @@ func _initialize() -> void:
 	_check_equivalence(SEED_B)
 
 	print("\n-- ChunkMesher.build_mesh() vertex heights match IslandHeightmap.height() directly --")
-	_check_mesh_matches_direct(3, -7, SEED_A, 0)
-	_check_mesh_matches_direct(-2, 5, SEED_B, 1)
+	# Chunks over LAND. F-274 found these were (3,-7) and (-2,5) — 243 m and 172 m from origin,
+	# both well outside `ISLAND_RADIUS` (118 m) since the 4.13 retuning, so every vertex in them was
+	# exactly 0.0 and the comparison below was two zeroes agreeing. The same trap F-251 found in
+	# `chunk_stream_check.gd`, in a second file. `_check_mesh_matches_direct` now also asserts the
+	# chunk has real relief in it, so it cannot go quietly vacuous again.
+	_check_mesh_matches_direct(1, 0, SEED_A, 0)
+	_check_mesh_matches_direct(0, -1, SEED_B, 1)
 
 	print("\n-- reuse is actually faster (F-241's whole point) --")
 	_check_speedup(SEED_A)
@@ -87,7 +103,10 @@ func _check_equivalence(world_seed: int) -> void:
 ## NoiseSet plumbing ever drifted from height()'s own definition, this is what would catch it —
 ## the two check functions above only prove the two APIs agree with EACH OTHER.
 func _check_mesh_matches_direct(chunk_x: int, chunk_z: int, world_seed: int, lod: int) -> void:
-	var mesh: ArrayMesh = ChunkMesher.build_mesh(chunk_x, chunk_z, world_seed, lod)
+	var mesh: ArrayMesh = ChunkMesher.build_mesh(
+		chunk_x, chunk_z, world_seed, _biome_defs, lod)
+	var noise_set: BiomeMap.NoiseSet = BiomeMap.make_noise_set(world_seed)
+	var table: BiomeMap.TerrainTable = BiomeMap.make_terrain_table(_biome_defs)
 	var arrays: Array = mesh.surface_get_arrays(0)
 	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	var step: int = ChunkMesher.LOD_STEPS[lod]
@@ -96,6 +115,8 @@ func _check_mesh_matches_direct(chunk_x: int, chunk_z: int, world_seed: int, lod
 	var origin_z: float = float(chunk_z * ChunkMesher.CHUNK_SIZE)
 	var mismatches: int = 0
 	var checked: int = 0
+	var lowest: float = 1.0e30
+	var highest: float = -1.0e30
 	# Every terrain vertex, not just a corner or two — the border rows are exactly where an apron
 	# off-by-one would show up.
 	for z in side:
@@ -103,13 +124,22 @@ func _check_mesh_matches_direct(chunk_x: int, chunk_z: int, world_seed: int, lod
 			var v: int = z * side + x
 			var world_x: float = origin_x + float(x * step)
 			var world_z: float = origin_z + float(z * step)
-			var expected: float = IslandHeightmap.height(world_x, world_z, world_seed)
+			var expected: float = BiomeMap.surface_from_set(
+				world_x, world_z, noise_set, world_seed, table)
 			checked += 1
-			if verts[v].y != expected:
+			lowest = minf(lowest, expected)
+			highest = maxf(highest, expected)
+			# Through a float32 round-trip: the mesher's apron is a `PackedFloat32Array` and its
+			# vertices are `Vector3`s, so the reference double has to be narrowed the same way or
+			# the comparison fails on storage precision rather than on a real divergence.
+			if verts[v].y != PackedFloat32Array([expected])[0]:
 				mismatches += 1
-	_check("chunk (%d,%d) lod%d: %d/%d vertices match height() directly" % [
+	_check("chunk (%d,%d) lod%d: %d/%d vertices match surface_from_set() directly" % [
 		chunk_x, chunk_z, lod, checked - mismatches, checked,
 	], mismatches == 0, "%d mismatched" % mismatches)
+	_check("chunk (%d,%d) lod%d has real relief in it (%.1f m .. %.1f m)" % [
+		chunk_x, chunk_z, lod, lowest, highest,
+	], highest - lowest > 1.0, "a flat chunk agrees with anything")
 
 
 ## Times sampling a LOD0-sized apron (33x33 = 1,089 points, the exact number F-241 cites) two ways:

@@ -14,6 +14,15 @@ extends SceneTree
 ## `build_mesh` produced before this finding was fixed.
 
 const Mesher := preload("res://world/chunk/chunk_mesher.gd")
+const BiomeMapScript := preload("res://world/gen/biome_map.gd")
+const BiomeDefsLib := preload("res://tools/biome_defs_lib.gd")
+
+## The shipped biome table, and the fields `_ground()` samples through (F-274). The seam this tool
+## photographs is a seam in the SHIPPED surface; measuring it against the biome-blind one would
+## pick a different chunk and put the camera at the wrong height.
+var _biome_defs: Array = []
+var _noise_set: BiomeMapScript.NoiseSet
+var _table: BiomeMapScript.TerrainTable
 
 const OUT_DIR: String = "user://chunk_seam"
 const WIDTH: int = 1280
@@ -40,6 +49,10 @@ func _run() -> void:
 		push_error("chunk_seam_shot needs a real renderer — run with --windowed")
 		quit(1)
 		return
+
+	_biome_defs = BiomeDefsLib.load_defs(self)
+	_noise_set = BiomeMapScript.make_noise_set(BENCH_SEED)
+	_table = BiomeMapScript.make_terrain_table(_biome_defs)
 
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
 
@@ -82,7 +95,8 @@ func _run() -> void:
 		for dx: int in range(-SPAN, SPAN + 1):
 			var coord := Vector2i(seam_chunk.x + dx, seam_chunk.y + dz)
 			var lod: int = 1 if dx < 0 else 0
-			var mesh: ArrayMesh = Mesher.build_mesh(coord.x, coord.y, BENCH_SEED, lod)
+			var mesh: ArrayMesh = Mesher.build_mesh(
+				coord.x, coord.y, BENCH_SEED, _biome_defs, lod)
 			var origin := Vector3(
 				float(coord.x * Mesher.CHUNK_SIZE), 0.0, float(coord.y * Mesher.CHUNK_SIZE))
 			_add_instance(skirted, mesh, origin, material)
@@ -93,7 +107,7 @@ func _run() -> void:
 	# clearance over the single point underfoot is not enough either when that point sits in a
 	# hollow. The peak over the whole neighbourhood is what guarantees a clear line to the seam.
 	var seam_z: float = float(seam_chunk.y * Mesher.CHUNK_SIZE) + 16.0
-	var seam_ground: float = IslandHeightmap.height(seam_world_x, seam_z, BENCH_SEED)
+	var seam_ground: float = _ground(seam_world_x, seam_z)
 	var peak: float = _neighbourhood_peak(seam_world_x, seam_z)
 	print("seam ground %.1f m | neighbourhood peak %.1f m" % [seam_ground, peak])
 	var shots: Array[Dictionary] = [
@@ -193,11 +207,11 @@ func _pick_seam_chunk() -> Vector2i:
 			var worst: float = 0.0
 			var lowest: float = 1.0e30
 			for t: int in range(0, Mesher.CHUNK_SIZE + 1):
-				var h: float = IslandHeightmap.height(ox, oz + float(t), BENCH_SEED)
+				var h: float = _ground(ox, oz + float(t))
 				lowest = minf(lowest, h)
 				if t > 0 and t < Mesher.CHUNK_SIZE and t % 2 != 0:
-					var lo: float = IslandHeightmap.height(ox, oz + float(t - 1), BENCH_SEED)
-					var hi: float = IslandHeightmap.height(ox, oz + float(t + 1), BENCH_SEED)
+					var lo: float = _ground(ox, oz + float(t - 1))
+					var hi: float = _ground(ox, oz + float(t + 1))
 					worst = maxf(worst, absf(h - (lo + hi) * 0.5))
 			if lowest < MIN_SEAM_GROUND_M:
 				continue
@@ -209,6 +223,12 @@ func _pick_seam_chunk() -> Vector2i:
 	return best
 
 
+## The SHIPPED ground at (x, z) — the surface `Mesher.build_mesh()` builds (F-274), not the
+## biome-blind one bare `IslandHeightmap.height()` returns.
+func _ground(x: float, z: float) -> float:
+	return BiomeMapScript.surface_from_set(x, z, _noise_set, BENCH_SEED, _table)
+
+
 ## Highest terrain within the built grid, so a camera clears every ridge between it and the seam.
 func _neighbourhood_peak(cx: float, cz: float) -> float:
 	var reach: float = float((SPAN + 1) * Mesher.CHUNK_SIZE)
@@ -217,7 +237,7 @@ func _neighbourhood_peak(cx: float, cz: float) -> float:
 	while z <= cz + reach:
 		var x: float = cx - reach
 		while x <= cx + reach:
-			peak = maxf(peak, IslandHeightmap.height(x, z, BENCH_SEED))
+			peak = maxf(peak, _ground(x, z))
 			x += 4.0
 		z += 4.0
 	return peak

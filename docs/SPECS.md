@@ -9586,3 +9586,89 @@ F-285).
   be findable by that name, not by reading three files for three spellings of the same idea.
 
 **Resolved** — see `docs/FINDINGS.md`.
+
+---
+
+## F-274 · `BiomeMap.terrain_amplitudes()` has no shipped caller — every biome's authored `detail_amplitude`/`ridge_amplitude` is dead
+
+No block existed here beforehand; SPECS.md's own preamble makes writing one part of the task that
+discovers the gap. Filed by F-261's review, which traced every caller of the amplitude API and found
+the shipped list empty.
+
+**Authority:** none of its own. `BiomeMap`, `IslandHeightmap` and `ChunkMesher` are pure functions
+under `docs/ARCHITECTURE.md` §2.2's *chunk streaming / terrain LOD* row — **client-local, run
+independently per peer, correct by construction as long as the content they read is the same set on
+every peer.** `biome_defs` is authored `.tres`, never generated, so threading it through the mesher
+changes nothing about that row: every peer still derives the identical surface from the identical
+`(x, z, world_seed)` and no height ever crosses the wire. No RPC, no `PROTOCOL_VERSION` bump.
+
+**Claim:** `world/gen/island_heightmap.gd`, `world/gen/biome_map.gd`, `world/chunk/chunk_mesher.gd`,
+`world/chunk/chunk_streamer.gd`, `world/chunk/nav_baker.gd`, `world/gen/poi_map.gd`,
+`world/gen/resource_scatter.gd`, `world/gen/procedural_world.gd`, `tools/biome_terrain_check.gd`
+(new), `tools/biome_defs_lib.gd` (new), `tools/terrain_map_render.gd`,
+`tools/worldgen_noise_reuse_check.gd`, `tools/noise_reuse_check.gd`, `tools/chunk_stream_check.gd`,
+`tools/terrain_look_check.gd`, `tools/chunk_seam_shot.gd`, `tools/nav_bake_check.gd`,
+`tools/bench_chunks.gd`, `tools/bench_chunk_gpu.gd`, `tools/check_determinism.gd`,
+`tools/poi_check.gd`.
+
+**The gap.** D-144 split `IslandHeightmap` in two precisely so a biome could shape its own ground:
+`continent()` decides where the biomes are, `height(x, z, seed, detail_amplitude, ridge_amplitude)`
+decides how rough each one is, and the decision's closing line names
+`BiomeMap.terrain_amplitudes()` as the seam that hands a point's pair to the heightmap. The seam was
+built. Nothing shipped crossed it — `chunk_mesher.gd`, `poi_map.gd`, `resource_scatter.gd` and
+`ProceduralWorld.height_at()` all took the 1.0/1.0 defaults, and the only callers of the amplitude
+API in the whole repo were `tools/terrain_map_render.gd` and `tools/worldgen_noise_reuse_check.gd`.
+So `shore.tres`'s `detail_amplitude = 0.35` changed the audit PNG and nothing the game builds, and
+the tool whose entire purpose is "see the island before judging it" rendered a surface the chunk
+mesher would never produce.
+
+**The fix, in four moves.**
+
+1. **A biome-independent half, computed once.** `IslandHeightmap.Shape` (bent point, island mask,
+   pre-river continental height) plus `shape_into()` / `continent_from_shape()` /
+   `height_from_shape()`. Every path in the file — `continent()`, `continent_from_set()`,
+   `height()`, `height_from_set()` — now funnels through that one body, so the biome-shaped sampler
+   can classify a point and then finish its surface without deriving the continent twice. The Shape
+   is caller-owned and reused, the same one-per-`WorkerThreadPool`-task rule as `NoiseSet`, so
+   per-vertex resolution allocates nothing.
+2. **`BiomeMap.surface_from_set()`** — the one function every shipped consumer of "how high is the
+   ground" calls, plus `surface_at()` for one-shot queries. It resolves the point's biome from the
+   carved continent and the moisture field (D-144, unchanged), asks `blend_amplitudes()` for the
+   pair, and finishes the surface off the same Shape.
+3. **The pair is BLENDED, not picked** — D-165. A step function of the biome id puts a ~7.7 m
+   vertical wall along the `moisture = 0.5` contour where `forest`'s `ridge_amplitude = 0.9` meets
+   `grassland`'s 0.25. `blend_amplitudes()` weights every def by how far inside its own
+   (height, moisture) band the point sits, over a margin of 1.5 m of continental height and 0.06 of
+   moisture, and returns the weighted mean. `TerrainTable` flattens the authored defs to plain
+   floats once per chunk so the per-vertex cost is arithmetic, not `Resource.get()`.
+4. **`biome_defs` is a REQUIRED argument of `build_mesh()`**, ahead of the optional `lod` rather
+   than after it. F-274 *was* a default that silently produced the wrong surface; a default here is
+   how it ships again. `ChunkStreamer.biome_defs` is set by `ProceduralWorld` alongside
+   `world_seed`, `NavBaker` adopts the streamer's table in `bind()`, and `_load_biome_defs()` reads
+   the Registry once per world build so the mesh, the collider, the navmesh, the POI sites, the
+   scatter and `height_at()` cannot disagree about which table they are on.
+
+**Acceptance.**
+
+- `agent godot --script tools/biome_terrain_check.gd` → `BIOME_TERRAIN failures=0`. Five sections:
+  a biome's interior resolves to its *authored* pair; the table visibly moves the chunk mesh; the
+  mesh, both samplers and `PoiMap` agree bit-for-bit; the amplitude field has no step in its own
+  domain and biome shaping adds no cliff to the surface; `build_mesh()` still requires a table.
+- `agent godot --script tools/worldgen_noise_reuse_check.gd` → `failures=0`. **`GOLDEN_BIOME` must
+  be unchanged** — biome classification reads the continent and moisture and nothing else, so a
+  change there means D-144 has been broken. `GOLDEN_POI`, `GOLDEN_AMPLITUDES` and `GOLDEN_SCATTER`
+  are re-captured: site and placement `position.y` are now the biome-shaped surface.
+- `agent godot --script tools/check_determinism.gd` → `terrain_hash c20eed19b44270a1`, **unchanged**
+  (that constant is what proves the Shape refactor moved nothing underneath), plus a new
+  `biome_surface` line covering the moisture sample and the crossfade's `smoothstep`.
+- `agent godot --windowed --script tools/chunk_stream_check.gd` → `0 functional failure(s)`.
+  `WORST_KNOWN_DIVERGENCE_M` is re-measured 12.805 → 12.4405 m; the skirt did not need retuning.
+- `agent godot --script tools/{noise_reuse,terrain_look,terrain_check,poi_check,biome_check,resource_scatter_check,procedural_world_check,world_contract_check}.gd`
+  → all green.
+
+**What it costs.** Every seed's terrain moves — that is the point of the task. Meshing cost,
+`tools/bench_chunks.gd` single-threaded mean: 5.956 ms/chunk before, **8.077 ms after** (1.36x). The
+first cut was 10.697 ms; caching the river channel on `Shape` — the carve is applied twice per
+biome-shaped sample and `_river_channel()` rebuilt and walked the polyline each time — gave back
+more than half of that, bit-identically. The rest is one moisture sample and the table scan per
+vertex. `chunk_stream_check --windowed` still reports 0.2007 ms mean streamer cost per frame.

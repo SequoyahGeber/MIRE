@@ -6806,3 +6806,18 @@ Notes along the way:
 Files: `autoload/harvest_world.gd`, `tools/harvest_restart_check.gd`, `world/gen/authored_world.gd`, `docs/FINDINGS.md`
 
 Commit at time of writing: `76d8aa0`
+
+---
+
+### DONE · F-274 · lm · 2026-08-20T06:20:25+00:00
+
+**`BiomeMap.terrain_amplitudes()` has no shipped caller — every biome's authored `detail_amplitude`/`ridge_amplitude` is dead, and only the audit render applies them**
+
+A biome now shapes its own ground everywhere the game builds it. BiomeMap.surface_from_set()/surface_at() is THE surface; chunk_mesher, poi_map, resource_scatter and ProceduralWorld.height_at() all go through it, and biome_defs is a REQUIRED argument of build_mesh() (ahead of the optional lod) because a default is exactly what let the biome-blind surface ship. IslandHeightmap gained a caller-owned Shape so classifying a point and finishing its surface costs one continent derivation, not two, and the river channel is cached on it so the double carve walks the polyline once. The pair is CROSSFADED across biome boundaries (D-165): picking the winner puts a ~7.7 m vertical wall along the moisture=0.5 contour where forest meets grassland. Proof: agent godot --script tools/biome_terrain_check.gd -> BIOME_TERRAIN failures=0. Neighbours green, with GOLDEN_BIOME and terrain_hash c20eed19b44270a1 deliberately UNCHANGED and POI/amplitude/scatter goldens re-captured; chunk_stream_check --windowed 0 functional failures. Spun out F-292, F-293, F-294.
+
+Notes along the way:
+- Cached the river channel on IslandHeightmap.Shape after bench_chunks showed a 1.80x meshing regression (5.956 -> 10.697 ms/chunk): the biome-shaped sample applies the carve twice and _river_channel() rebuilt+walked the polyline each time. Now 8.077 ms, and bit-identical — terrain_hash c20eed19b44270a1 and every GOLDEN_* held across the change.
+
+Files: `world/gen/island_heightmap.gd`, `world/gen/biome_map.gd`, `world/chunk/chunk_mesher.gd`, `world/chunk/chunk_streamer.gd`, `world/chunk/nav_baker.gd`, `world/gen/procedural_world.gd`, `world/gen/poi_map.gd`, `world/gen/resource_scatter.gd`, `tools/biome_defs_lib.gd`, `tools/bench_chunks.gd`, `tools/bench_chunk_gpu.gd`, `tools/chunk_seam_shot.gd`, `tools/nav_bake_check.gd`, `tools/noise_reuse_check.gd`, `tools/terrain_look_check.gd`, `tools/chunk_stream_check.gd`, `tools/terrain_map_render.gd`, `tools/worldgen_noise_reuse_check.gd`, `tools/check_determinism.gd`, `tools/poi_check.gd`, `tools/biome_terrain_check.gd`, `docs/SPECS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `assets/audit/terrain/island_f274_20260819.png`
+
+Commit at time of writing: `e51b491`
