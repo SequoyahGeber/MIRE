@@ -2311,6 +2311,30 @@ def _order_priority(raw):
         return ORDER_PRIORITY_DEFAULT
 
 
+def _saturate_drain_mode(args, wanted):
+    """Is this chain a drain chain — one that keeps picking up orders written after it started?
+
+    Two things say yes: no ids at all, and the explicit `--drain` marker a re-exec carries. The
+    marker exists because a re-exec hands its un-run remainder over as arguments, which without it
+    reads identically to a director naming four tasks by hand (F-315)."""
+    return not wanted or "--drain" in args
+
+
+def _saturate_reexec_argv(script, lane, queue, drain, watch, slot):
+    """The argv a running chain re-executes itself with when the harness changes underneath it.
+
+    Kept out of the loop so it can be tested: the bug it exists to prevent is invisible at the call
+    site, because losing drain mode looks exactly like a chain finishing its list."""
+    argv = [sys.executable, script, "saturate", lane] + list(queue)
+    if drain:
+        argv.append("--drain")
+    if watch:
+        argv.append("--watch")
+    if slot > 1:
+        argv += ["--slot", str(slot)]
+    return argv
+
+
 def _drain_order(orders, lane):
     """The ids a drain-mode chain should run, best first (F-314).
 
@@ -2809,7 +2833,7 @@ def cmd_saturate(args):
     require_director("saturate")
     if not args:
         die("usage: agent saturate <LANE> [task-id ...]\n"
-            "  with no ids, runs every open order assigned to that lane")
+            "  with no ids, runs every open order assigned to that lane, newly written ones included")
     lane = args[0].upper()
     if lane not in LANE_NAMES:
         die("unknown lane '%s' — known: %s" % (lane, ", ".join(LANE_NAMES)))
@@ -2821,7 +2845,13 @@ def cmd_saturate(args):
     skip = {str(slot)} if "--slot" in args else set()
     wanted = [a for a in args[1:] if not a.startswith("--") and a not in skip]
     orders = _open_orders()
-    drain = not wanted                    # no ids means "drain this lane", including later arrivals
+    # No ids means "drain this lane", including orders that arrive later. `--drain` says the same
+    # thing about a queue that DOES carry ids, which is what a re-exec builds: it hands the un-run
+    # remainder over as arguments, and without this marker the new process read that as a fixed list
+    # and quietly stopped watching for new orders (F-315). The chain then ends at the bottom of a
+    # list that no longer grows, and the lane idles — the failure this whole command exists to
+    # prevent. Nothing else passes `--drain`; a director naming ids by hand still means only those.
+    drain = _saturate_drain_mode(args, wanted)
     if not wanted:
         wanted = _drain_order(orders, lane)
     if not wanted:
@@ -2955,11 +2985,7 @@ def _saturate_locked(lane, wanted, watch, drain=False, slot=1):
         if _harness_mtimes() != _HARNESS_LOADED:
             print("  %s· harness changed on disk — re-executing this chain with the new code%s"
                   % (C["y"], C["x"]))
-            argv = [sys.executable, os.path.abspath(__file__), "saturate", lane] + queue
-            if watch:
-                argv.append("--watch")
-            if slot > 1:
-                argv += ["--slot", str(slot)]
+            argv = _saturate_reexec_argv(os.path.abspath(__file__), lane, queue, drain, watch, slot)
             sys.stdout.flush()
             os.execv(sys.executable, argv)
         # An empty queue means "nothing to do RIGHT NOW", not "the work is finished". Exiting on the

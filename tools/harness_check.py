@@ -967,6 +967,38 @@ def _(harness):
     return "priority leads, id breaks ties, unreadable ranks default"
 
 
+@case("a drain chain is still draining after it re-executes for a harness change (F-315)")
+def _(harness):
+    mod = _load_harness(harness)
+    # Between tasks a chain re-executes itself when the harness changes on disk, handing its un-run
+    # remainder over as arguments. Those ids used to read as "a director named these four tasks", so
+    # the new process stopped watching for new orders and ended at the bottom of a list that no
+    # longer grows — the idle lane this command exists to prevent, and silent, because the log line
+    # says "re-executing with the new code".
+    remainder = ["F-285", "F-289", "F-306"]
+    argv = mod._saturate_reexec_argv("/x/agent", "LP", remainder, True, True, 1)
+    assert argv[2:4] == ["saturate", "LP"], "re-exec argv lost its command or lane: %r" % (argv,)
+    args = argv[4:]                       # what cmd_saturate itself receives, minus the lane
+    ids = [a for a in args if not a.startswith("--")]
+    assert ids == remainder, "the un-run remainder must survive the re-exec, got %r" % (ids,)
+    assert mod._saturate_drain_mode(args, ids), (
+        "a re-executed DRAIN chain came back as a fixed list — it will run %r and then idle, "
+        "ignoring every order written after it started" % (ids,))
+    assert "--watch" in args, "the re-exec dropped --watch, so it will no longer sleep out a park"
+
+    # A chain the director started with explicit ids means exactly those, and must not silently
+    # inherit drain mode from this fix.
+    assert not mod._saturate_drain_mode(["F-301", "F-307", "--watch"], ["F-301", "F-307"]), (
+        "naming ids by hand turned into a drain chain")
+    # And a chain with no ids drains, with or without the marker.
+    assert mod._saturate_drain_mode(["--watch"], []), "a chain with no ids must drain"
+
+    # A second slot keeps its identity across the re-exec, or two slots collapse onto one lock.
+    slotted = mod._saturate_reexec_argv("/x/agent", "LM", ["F-1"], True, False, 3)
+    assert slotted[-2:] == ["--slot", "3"], "the re-exec dropped --slot: %r" % (slotted,)
+    return "remainder %r survives, drain preserved" % (remainder,)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--rev", help="test the harness as of this git revision instead of the working tree")
