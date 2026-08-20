@@ -6529,3 +6529,15 @@ Notes along the way:
 Files: `docs/ASSET_TRACKER.md`, `tools/blender/build_terrain_accents.py`, `assets/terrain_accents/README.md`, `tools/asset_scope_check.gd`, `docs/SPECS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/FINDINGS.md`
 
 Commit at time of writing: `dca711c`
+
+---
+
+### DONE · F-270 · bram1 · 2026-08-20T05:14:45+00:00
+
+**_sync_findings silently marks every F-*-review task done at registration — review tasks inherit the finding's milestone, have no doc section, and the left-the-doc inference kills them**
+
+Two-layer fix verified through the kill path itself; both murdered reviews resurrected and surviving sync as todo.
+
+Files: `.agent/bin/agent`
+
+Commit at time of writing: `17bacba`

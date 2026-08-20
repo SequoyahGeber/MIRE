@@ -421,7 +421,12 @@ FINDINGS_MILESTONE = "Findings"
 
 
 def _is_finding(tid):
-    return tid.upper().startswith("F-")
+    # Fullmatch, not prefix: "F-243-review" is a REVIEW task that happens to start like a finding id.
+    # The prefix match let _sync_findings treat every F-*-review as a finding, find no FINDINGS.md
+    # section under that exact id, conclude "resolved out-of-band" (F-049's rule), and silently mark
+    # it done — which made chains skip every freshly-ordered review of an F-task. Killed three review
+    # orders on 2026-08-19/20 before it was caught (F-244/F-246/F-243-review).
+    return bool(re.fullmatch(r"F-\d+", tid.upper()))
 
 
 def _norm_id(tid):
@@ -450,6 +455,13 @@ def _sync_findings(st):
             added += 1
     for fid, t in st["tasks"].items():
         if t.get("milestone") != FINDINGS_MILESTONE:
+            continue
+        if not re.fullmatch(r"F-\d+", fid.upper()):
+            # A review of a finding (F-243-review) inherits the finding's MILESTONE but is not a
+            # finding: it has no '## Open' section under its own id, so the left-the-doc inference
+            # below would mark it done the moment it is registered — which silently killed three
+            # freshly-ordered reviews (F-243/F-244/F-246-review) before anything could run them.
+            # Only ids that ARE finding ids answer to FINDINGS.md.
             continue
         if t.get("status") == "todo" and fid not in open_ids:
             t["status"] = "done"
