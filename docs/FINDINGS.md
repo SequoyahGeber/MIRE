@@ -801,20 +801,6 @@ Invalidate the cache on `run_restarted`/procedural generation change (or key it 
 
 ---
 
-### F-288 · run_reseed_check claims POI-layout parity but compares only POI counts
-
-**Area:** ? · **Severity:** medium · **Found:** 2026-08-20 by lc1
-
-**Area:** testing/worldgen · **Severity:** low · **Found:** 2026-08-20 by lc1 reviewing F-258 at `ca72e14`
-
-The F-258 spec says phase 5 proves that a new seed changes the POI layout and that an in-place rebuild is identical to a boot on the same seed. `tools/run_reseed_check.gd:243-282` stores only `before_sites: int`, checks only that the rebuilt list is non-empty, and compares only the rebuilt/fresh list sizes. It never compares any site's id, position, rotation, marker kind, or scene path before-versus-after or rebuilt-versus-fresh. The assertion labelled "byte-identical" compares four terrain height samples, and the following POI assertion explicitly proves only count.
-
-A rebuild that retained every old POI transform, assigned the wrong transforms to the right number of ids, or disagreed with a fresh boot while preserving count would report `RUN_RESEED_CHECK failures=0`. That blind spot also explains why downstream marker consumers such as F-286 are outside the green result.
-
-Fingerprint the full ordered `poi_sites` contract (at least site id/def id/position/rotation/scene path) before rebuild and on the fresh boot: require a new seed's fingerprint to differ and the rebuilt/fresh fingerprints to match exactly. Consumer-cache checks remain separate; a correct internal list does not prove subscribers adopted it.
-
----
-
 ### F-289 · `agent ship` structurally cannot commit docs/FINDINGS.md — resolve/finding write it, but only claimed files get staged, so every resolve move is left uncommitted unless the agent notices by hand
 
 **Area:** tooling · **Severity:** high · **Found:** 2026-08-20 by lp
@@ -1295,6 +1281,28 @@ existing zeroing of it on a scene change is consistent with whichever meaning wi
 ---
 
 ## Resolved
+
+### F-288 · run_reseed_check claims POI-layout parity but compares only POI counts — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-20 by lc1
+
+**Area:** testing/worldgen · **Severity:** low · **Found:** 2026-08-20 by lc1 reviewing F-258 at `ca72e14`
+
+The F-258 spec says phase 5 proves that a new seed changes the POI layout and that an in-place rebuild is identical to a boot on the same seed. `tools/run_reseed_check.gd:243-282` stores only `before_sites: int`, checks only that the rebuilt list is non-empty, and compares only the rebuilt/fresh list sizes. It never compares any site's id, position, rotation, marker kind, or scene path before-versus-after or rebuilt-versus-fresh. The assertion labelled "byte-identical" compares four terrain height samples, and the following POI assertion explicitly proves only count.
+
+A rebuild that retained every old POI transform, assigned the wrong transforms to the right number of ids, or disagreed with a fresh boot while preserving count would report `RUN_RESEED_CHECK failures=0`. That blind spot also explains why downstream marker consumers such as F-286 are outside the green result.
+
+Fingerprint the full ordered `poi_sites` contract (at least site id/def id/position/rotation/scene path) before rebuild and on the fresh boot: require a new seed's fingerprint to differ and the rebuilt/fresh fingerprints to match exactly. Consumer-cache checks remain separate; a correct internal list does not prove subscribers adopted it.
+
+---
+
+**Resolved 2026-08-20 by lp.** Phase 5 now compares the FULL ordered poi_sites contract with deep Array equality — site_id, def_id, position, rotation_y, biome, scene_path, spacing, clearance, in placement order, read by explicit key. Three assertions replace the size compare: the rebuilt layout must DIFFER from the boot seed's, and must match a fresh boot on REBUILD_SEED field for field (exact float compare, not a fingerprint string — poi_check's rounds to 3dp/4dp, which would hide exactly the sub-millimetre drift this guards). The mislabelled "byte-identical" assertion is renamed to what it actually samples: four height probes.
+
+The load-bearing addition is `_layout_detects_perturbation()`: before any parity is trusted, the check duplicates the boot layout, adds 0.001 to one site's rotation_y and asserts the comparator reports a difference. The bug class here is an assertion that proves nothing while printing PASS, so a replacement that also proves nothing would close this and change no facts. It is also the permanent substitute for pre-fix sabotage, which was impossible here: the only way to make a rebuild keep the ended run's transforms is to edit world/gen/procedural_world.gd, held by lm under F-274 for this task's whole length.
+
+Sweep (the class is "sameness asserted by count"): tools/procedural_world_check.gd:113 compared position+def_id only, so a spun landmark or a swapped scene path read as identical — fixed via `_same_site()` over id/def/position/rotation/biome/scene_path. tools/command_check.gd:108 asserted "the printed message is the same dump" by entry count — fixed with a JSON round-trip on both sides, then a deep compare. tools/atmosphere_night_check.gd:214 and tools/resource_scatter_check.gd:317 already walk every element field by field — left alone. poi_check.gd's rounding `_fingerprint()` is correct for the same-process determinism question it asks — left alone, and it is the thing NOT to copy for a cross-peer derivation guard.
+
+Verified: `agent godot --script tools/run_reseed_check.gd` -> RUN_RESEED_CHECK failures=0, with "PASS: the layout comparator sees a single nudged rotation", "PASS: the POI LAYOUT re-derived, not just its count" and "PASS: ...and an IDENTICAL POI layout, field for field — no field differs". `tools/procedural_world_check.gd` -> failures=0 ("same seed reproduces every POI site — id, def, position, rotation, biome, scene and order"). `tools/command_check.gd` -> failures=0 ("...and it is the SAME dump, entry for entry and field for field"). A spec block is written in docs/SPECS.md (none existed); D-171 records the two rules; DELEGATION 'Current state' carries the pattern to copy.
 
 ### F-287 · Procedural reseed accumulates EnvironmentVfx emitter sites from every previous island — **fixed**
 
