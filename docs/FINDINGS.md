@@ -1503,6 +1503,48 @@ F-293 predicts, and a third data point that the suite has drifted.
 
 ## Resolved
 
+### F-313 · agent collect crashes on any journal header whose timestamp has no timezone — **fixed**
+
+**Area:** harness · **Severity:** high · **Found:** 2026-08-20 by galef95fa6
+
+`agent collect` is the director's only reliable record of what the lanes finished
+(ORCHESTRATION.md §7: "run it before reporting, every time"). It currently dies outright:
+
+```
+File ".agent/bin/agent", line 108, in age_hours
+    return (datetime.now(timezone.utc) - then).total_seconds() / 3600.0
+TypeError: can't subtract offset-naive and offset-aware datetimes
+```
+
+`age_hours()` does `datetime.fromisoformat(iso)` and subtracts it from an aware `now()`. Every
+timestamp the harness writes is aware, so this never fired — until one hand-written journal header
+landed with a date only:
+
+    ### NOTE · F-267 recurrence · lp · 2026-08-20
+
+`fromisoformat("2026-08-20")` succeeds and returns a NAIVE midnight, so the `except ValueError`
+guard misses it and the subtraction raises. One malformed line anywhere in a 518-entry journal takes
+out `collect` entirely, and `collect` is the command a director is told to lead with — so the
+failure mode is a director reporting nothing landed when six tasks did.
+
+Fix: `age_hours` should treat a naive timestamp as UTC rather than trusting every writer to be
+aware, and should also survive a non-string `at`. The malformed journal line stays as it is; the
+point is that no single bad line may disable the reader.
+
+Verify: `python3 tools/harness_check.py`, then `.agent/bin/agent collect` prints the last 24h.
+
+**Resolved 2026-08-20 by galef95fa6.** `age_hours()` now assumes UTC when a timestamp carries no zone, and tolerates a non-string `at`
+instead of raising out of the subtraction. The malformed journal header
+(`### NOTE · F-267 recurrence · lp · 2026-08-20`) is left exactly as it is — the point of the fix is
+that no single hand-written line may disable a reader every director run depends on.
+
+Verified: `python3 tools/harness_check.py` → 35/35 passed, including the new case "a journal header
+with no timezone does not take down every time-windowed reader (F-313)", which exercises six stamp
+shapes (bare date, naive datetime, aware datetime, empty, None, int) and asserts a naive stamp reads
+as the same age as the identical instant written with +00:00. `.agent/bin/agent collect` now prints
+the last 24h — six DONE entries and five quota-wall handoffs — where before it died with
+`TypeError: can't subtract offset-naive and offset-aware datetimes`.
+
 ### F-273 · `GameState.seed_ready` is now a run boundary, not a session boundary, and two subscribers' doc comments still say otherwise — **fixed**
 
 **Area:** architecture · **Severity:** low · **Found:** 2026-08-20 by lp
