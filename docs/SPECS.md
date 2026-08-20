@@ -9103,9 +9103,10 @@ detect it because nothing is ever sent over the wire to disagree with.
 3. `resource_scatter.gd`'s `_placement_at()` — F-252 threaded a `NoiseSet` for its HEIGHT sample
    (matching that finding's title exactly) and deliberately left the `moisture()` call on the next
    line bare, because there was nothing to thread.
-4. `tools/terrain_map_render.gd` is by far the worst of the four and was named only in passing: at
-   its default 1024 px it resolved each pixel's biome twice and sampled the surface twice, so a
-   single render constructed on the order of 22 million `FastNoiseLite` fields.
+4. `tools/terrain_map_render.gd` is by far the worst of the four and was named only in passing: it
+   resolved each pixel's biome twice and sampled the surface twice, so every pixel cost 22
+   `FastNoiseLite` constructions — roughly 7.9 million for a default 600 px render, 23 million at
+   `--size 1024`.
 
 **The fix.** `BiomeMap` gains a `NoiseSet` that NESTS `IslandHeightmap.NoiseSet` rather than folding
 moisture into it, plus `make_noise_set(world_seed, island_set := null)` (adopts a caller's existing

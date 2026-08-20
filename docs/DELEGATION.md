@@ -140,6 +140,13 @@ IslandHeightmap.height_from_set(x, z, set.island, world_seed)          # reach t
 var set2: BiomeMap.NoiseSet = BiomeMap.make_noise_set(world_seed, existing_island_set)
 ```
 
+**One caveat on `terrain_amplitudes*` / `amplitudes_for` before you build on them: they have no
+shipped caller.** `chunk_mesher.gd`, `poi_map.gd` and `resource_scatter.gd` all take `height()`'s
+1.0/1.0 defaults, so every biome's authored `detail_amplitude`/`ridge_amplitude` is currently inert
+and only `tools/terrain_map_render.gd` applies them. The functions are correct — they are just a seam
+nothing crosses yet. Filed as **F-274**; wiring it moves every seed's surface and wants F-271 fixed
+in the same task.
+
 Every `*_from_set` call is bit-identical to its bare sibling; bare and set-backed paths funnel
 through one shared private body so they cannot drift. The bare `moisture()`/`continent()`/
 `biome_at()` calls remain and are still correct — they are the right choice for a one-shot sample and
@@ -149,8 +156,9 @@ for a check script that wants an independent witness.
 was rebuilding every field six times per dart, up to 720 darts per def); `_slope_at()` now takes the
 already-computed centre height instead of resampling it, and an accepted dart resolves its biome once
 instead of twice. `resource_scatter.gd` adopts its existing island set. `tools/terrain_map_render.gd`
-builds one set per render and resolves each pixel's biome once — at 1024 px it was constructing on
-the order of 22 million `FastNoiseLite` fields per image.
+builds one set per render and resolves each pixel's biome once — at 22 constructions per pixel it
+was building roughly 7.9 million `FastNoiseLite` fields for a default 600 px image, 23 million at
+`--size 1024`.
 
 **The world did not move, and that is the assertion that matters.** A POI layout is never replicated
 (ARCHITECTURE.md §4), so a silently-shifted island reads as a new seed, not as a bug.

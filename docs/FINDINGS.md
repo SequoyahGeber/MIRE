@@ -883,6 +883,52 @@ it should have been.
 
 ---
 
+### F-274 · `BiomeMap.terrain_amplitudes()` has no shipped caller — every biome's authored `detail_amplitude`/`ridge_amplitude` is dead, and only the audit render applies them
+
+**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-20 by lm during F-261's review
+
+D-144 (the 4.13 terrain one at `docs/DECISIONS.md:1236` — that number is double-allocated, see
+F-260) splits `IslandHeightmap` in two precisely so a biome can shape its own ground: `continent()`
+decides where the biomes are, `height(x, z, seed, detail_amplitude, ridge_amplitude)` decides how
+rough each one is, and the decision's own closing line is "**`BiomeMap.terrain_amplitudes()` is the
+seam that hands a point's pair to the heightmap**". The seam was built. Nothing shipped crosses it.
+
+`world/chunk/chunk_mesher.gd:150` — the only thing in the repo that meshes terrain — calls
+`Heightmap.height_from_set(world_x, world_z, noise_set, world_seed)` and takes the 1.0/1.0 defaults.
+So do `world/gen/poi_map.gd:153` (a site's `position.y`) and `world/gen/resource_scatter.gd:120` (a
+placement's `position.y`). Grep the repo for `terrain_amplitudes`/`terrain_amplitudes_from_set`/
+`amplitudes_for` and every caller is under `tools/`: `terrain_map_render.gd` and
+`worldgen_noise_reuse_check.gd`. Not one shipped file passes an amplitude pair to `height()`.
+
+Three concrete consequences:
+
+1. `content/biomes/shore.tres` (`detail_amplitude = 0.35`, `ridge_amplitude = 0.0`),
+   `grassland.tres` (0.8 / 0.25) and `forest.tres` (1.15 / 0.9) affect nothing the game builds.
+   Editing those six numbers changes the audit PNG and nothing else. D-144's one-line summary — "a
+   shore is flat because its multipliers are near zero" — is not true of the shipped world; every
+   biome gets the same biome-blind surface, and a shore is flat only where the continent is flat.
+2. `tools/terrain_map_render.gd` *does* apply them, so the PNGs under `assets/audit/terrain/` are the
+   only place that terrain exists. The tool whose whole purpose is "see the island before judging
+   it" (`docs/DELEGATION.md`) renders a surface the chunk mesher will never produce — rougher in
+   forest, flatter on shore — so terrain tuning judged from those images is judged from the wrong
+   image. This is the F-212 shape: a documented mechanism nobody went back and wired.
+3. It compounds **F-271**. That finding's premise is that "since 4.13 `height()` DEPENDS on which
+   biome a point is in" — today it does not, which is why `resource_scatter.gd` classifying from
+   `height()` has not visibly diverged from `biome_at()`'s `continent()` yet. Wiring this seam is
+   exactly what turns F-271 from a doc-conformance problem into a live one, so the two want fixing
+   in the same task.
+
+**Not introduced by F-261**, which preserved the behaviour exactly — its render is MD5-identical and
+its new public `amplitudes_for(id, defs)` is the seam's own half. This was found because F-261's
+review traced every caller of the amplitude API and the shipped list came back empty.
+
+**What fixing it takes:** the chunk mesher resolving each vertex's biome and passing that pair. That
+is per-vertex biome resolution on the hot meshing path, so it wants F-261's `BiomeMap.NoiseSet` —
+one per chunk task, the same shape `chunk_mesher.gd:144` already builds — and it moves every existing
+seed's surface, so `check_determinism`'s `terrain_hash` and `worldgen_noise_reuse_check`'s `GOLDEN_*`
+constants must be re-captured alongside it and the move recorded (D-160). A terrain-content task, not
+a review edit, which is why it is filed rather than fixed here.
+
 ---
 
 ## Resolved
@@ -993,10 +1039,11 @@ Threaded through all four callers:
 2. `biome_map.gd` — the moisture field is built once per set instead of once per call.
 3. `resource_scatter.gd` — F-252 left the `moisture()` call bare because there was nothing to thread;
    it now adopts the island set it already builds per chunk into a `BiomeMap.NoiseSet`.
-4. `tools/terrain_map_render.gd` — the worst site of the four and named only in passing. At its
-   default 1024 px it resolved each pixel's biome twice and sampled the surface twice, constructing
-   on the order of 22 million `FastNoiseLite` fields per image; now one set per render, one biome
-   resolution per pixel feeding both the amplitude lookup and the tint.
+4. `tools/terrain_map_render.gd` — the worst site of the four and named only in passing. It
+   resolved each pixel's biome twice and sampled the surface twice, so every pixel cost 22
+   `FastNoiseLite` constructions: roughly 7.9 million for a default 600 px image, 23 million at
+   `--size 1024`. Now one set per render, one biome resolution per pixel feeding both the amplitude
+   lookup and the tint.
 
 **Verified:** `agent godot --script tools/worldgen_noise_reuse_check.gd` (new) →
 `WORLDGEN_NOISE_REUSE failures=0`, four groups:

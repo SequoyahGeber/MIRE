@@ -8,27 +8,34 @@
 ## Status
 
 > **2026-08-19 — the engineering spine is close to done; what's left is mostly play, content, and
-> polish.** 120/165 tasks. M0 ✅ · M1 13/14 (only 1.12's three-machine evidence run) · M2 21/25 ·
-> M3 23/27 · M4 22/30 · M5 8/14 · M6 15/18 · M7 5/13 · M8 1/12. The full check battery was swept
-> on 2026-08-19 — `docs/AUDIT-2026-08-19.md` is the report; everything runnable on this machine is
-> now green, including `boss_check`'s exit-leak diagnostic (F-193) and `lobby_menu_check` (F-170),
+> polish.** 126/165 tasks (2026-08-20). M0 ✅ · M1 13/14 (only 1.12's three-machine evidence run) ·
+> M2 21/25 · M3 23/27 · M4 24/30 · M5 9/14 · M6 17/18 · M7 5/13 · M8 2/12. The full check battery
+> was swept on 2026-08-19 — `docs/AUDIT-2026-08-19.md` is the report; everything runnable on this
+> machine is now green, including `boss_check`'s exit-leak diagnostic (F-193) and `lobby_menu_check` (F-170),
 > both since resolved.
 >
-> **Findings: 7 open, and not one of them is code you can sit down and write.** Four are Steam/LAN
-> join behaviour needing a second machine and a real network (F-020, F-023, F-024, F-025); F-044 is
-> the shared Godot import cache; F-174 says no dev machine here can stand in for mid-range hardware;
-> F-222 is a Blender preview-generator dependency. Every open finding is now waiting on hardware,
-> another machine, or an external tool — which is a real milestone, and also means the findings
-> backlog is no longer a source of work for a lane.
+> **Findings: 23 under `## Open` (2026-08-20), and that sentence needs two corrections.** This
+> section said "7 open, and not one of them is code you can sit down and write" from 2026-08-19
+> until F-261's review re-counted it; both halves had stopped being true. Six are still the
+> hardware/external set — F-020, F-023, F-024, F-025 (Steam/LAN join, needs a second machine and a
+> real network), F-044 (the shared Godot import cache), F-174 (no dev machine here stands in for
+> mid-range). Eight more are already fixed and merely sit in the wrong section — that mismatch is
+> itself filed as **F-269**, and `agent board` hides them while `agent brief` still offers them, so
+> check an entry's own text before claiming it. The remaining nine ARE ordinary code work a lane can
+> pick up today: F-259, F-264, F-265, F-266, F-268, F-271, F-272, F-273, F-274. **The findings
+> backlog is a source of work again.**
 >
 > Count these from `docs/FINDINGS.md`'s `## Open` section, not from `state.json` or `agent report`:
-> those still list F-189, which was resolved as **D-144** (claims stay; fix claim staleness instead
-> of moving to per-agent worktrees). D-144 is worth reading before anyone proposes worktrees again.
+> the two disagree, which is what F-269 and F-270 are about. Note also that **D-144 is
+> double-allocated** (F-260): the one that resolved F-189 is "keep file claims, fix claim staleness
+> instead of moving to per-agent worktrees", and it is worth reading before anyone proposes
+> worktrees again; the other D-144 is task 4.13's terrain split.
 >
-> **The content, not the engine, is now the thin part.** The boot line counts 2 enemy definitions,
-> 1 cycle modifier and 1 unlock against 72 powerups and 13 buildables. 5.2 (enemy types) and 6.3
-> (cycle modifiers) are where the game gets deeper, and both are authoring tasks — one asset at a
-> time, with attention, never a batch of stat blocks generated in one pass. **5.2 went out to LM on
+> **The content, not the engine, is now the thin part — but less thin than this line used to say.**
+> The boot line counts 5 enemy definitions, 7 cycle modifiers and 7 unlocks against 72 powerups and
+> 13 buildables (2026-08-20; it was 2 / 1 / 1 on 2026-08-19, before 5.2 and F-245 landed). 5.2
+> (enemy types) and 6.3 (cycle modifiers) are where the game gets deeper, and both are authoring
+> tasks — one asset at a time, with attention, never a batch of stat blocks generated in one pass. **5.2 went out to LM on
 > 2026-08-19 scoped to three enemies, not the roadmap line's eight to twelve,** for exactly that
 > reason; expect it to close with a handoff naming what is left rather than a full directory.
 
@@ -50,8 +57,8 @@ id / Steam invite) · `--seed=` launch arg for a chosen island.
 
 - **44 autoloads** (`verify_setup` asserts a floor, not a list). Boot content line:
   23 items · 13 recipes · 2 stations · 9 melee + 1 ranged weapons · 7 loot tables · 72 powerups ·
-  13 buildables · 4 attunements · 3 biomes · 2 scatter tables · 8 rules · 3 POIs · 1 cycle
-  modifier · 1 unlock · 2 enemy definitions.
+  13 buildables · 1 haulable · 4 attunements · 3 biomes · 2 scatter tables · 8 rules · 1 hook ·
+  6 POIs · 7 cycle modifiers · 7 unlocks · 5 enemy definitions (re-read off a 2026-08-20 boot).
 - **Protocol version 21** (`core/net/net_version.gd`). Any new RPC bumps it and extends
   `tools/rpc_manifest_check.gd` — the manifest check (F-161) is how a forgotten bump gets caught
   now, not code review.

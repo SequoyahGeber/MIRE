@@ -45,9 +45,9 @@ func _initialize() -> void:
 	var highest: float = -INF
 	var land: int = 0
 	# F-261: one set of noise fields for the whole render. This loop is the worst per-sample rebuild
-	# in the repo — at the default 1024 px it used to construct roughly 22 million FastNoiseLite
-	# fields, because every pixel resolved its biome twice and sampled the surface twice, each of
-	# those four calls rebuilding every field from scratch.
+	# in the repo — every pixel resolved its biome twice and sampled the surface twice, and each of
+	# those four calls rebuilt every field from scratch: 22 constructions per pixel, so roughly
+	# 7.9 million for a default 600 px image and 23 million at `--size 1024`.
 	var noise_set: BiomeMap.NoiseSet = BiomeMap.make_noise_set(seed_value)
 	for py in size:
 		for px in size:
