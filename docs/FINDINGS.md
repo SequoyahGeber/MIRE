@@ -767,20 +767,6 @@ reason written in, so the check's clean state is `failures=0` and a future regre
 
 ---
 
-### F-286 · Procedural reseed can leave CraftingService validating against the previous island's station coordinates
-
-**Area:** ? · **Severity:** medium · **Found:** 2026-08-20 by lc1
-
-**Area:** crafting/worldgen · **Severity:** medium · **Found:** 2026-08-20 by lc1 reviewing F-258 at `ca72e14`
-
-`world/gen/procedural_world.gd:132-143` rebuilds the fresh island in place: it removes `PoiSites`, then publishes a new seed-derived set under the same current scene. `autoload/crafting_service.gd:299-331` caches station positions and invalidates only when the current-scene instance id or the TOTAL count of `playtest_hollow_asset` + `authored_world_marker` nodes changes. Neither is a generation identity. If two seeds produce the same marker count, the cache survives even though `Station_station_workbench_primitive` moved.
-
-This is not a theoretical count shape: repeated `tools/run_reseed_check.gd` runs produced seed `908245843` with 11 POI/marker sites, and the harness' fixed rebuild seed `424242` also has 11; their worlds/spawns differ. If any station-range query populated `_station_positions` before that restart, `_station_positions_for()` sees the same scene id and census and returns the old island's station coordinates. The new station can reject crafting while standing beside it, while the vacated coordinate can authorize a craft with no station there. The host repeats this stale lookup, so this is an authoritative gameplay failure, not presentation only.
-
-Invalidate the cache on `run_restarted`/procedural generation change (or key it by a generation value that changes even when counts match), and extend the reseed check to populate the cache before rebuilding and assert only the new station position validates afterward.
-
----
-
 ### F-289 · `agent ship` structurally cannot commit docs/FINDINGS.md — resolve/finding write it, but only claimed files get staged, so every resolve move is left uncommitted unless the agent notices by hand
 
 **Area:** tooling · **Severity:** high · **Found:** 2026-08-20 by lp
@@ -1256,6 +1242,22 @@ in groups and record each group's `failures=` and `ERROR_COUNT`. Note two known-
 grading: `run_restart_net_check` fails 1 at HEAD (F-279) and `wave_spawner_check` intermittently
 emits 6 `Parameter "material" is null` (F-305).
 
+**Measured instance, added by F-286's sibling re-runs (lp, 2026-08-20): `tools/crafting_net_check.gd`.**
+One run in four on an otherwise clean working tree printed `Parse JSON failed. Error at line 0:
+Unknown error getting token` and reported **`failures=6`** — `client receives its authoritative iron
+ore`, `client's timed furnace craft resolves`, `remote timed craft is accepted`, `remote client
+observes craft_progress rising before its confirmation arrives`, `client snapshot contains one iron
+ingot`, `host owns the crafted iron ingot`. Three consecutive re-runs then reported `failures=0`, and
+`agent baseline --script tools/crafting_net_check.gd` at HEAD reported `failures=0`. The tell that it
+is this race and not a real defect: the driver's own printed `result={...}` in the failing run was
+fully populated and correct (`craft_accepted: true`, `axe_count: 1.0`, `complete: true`) — the
+process wrote a good file, and the reader parsed it mid-rewrite and got nothing.
+
+Worth recording because of who it costs: this is not a check whose own subject is the transport, it
+is the crafting net check every crafting task grades itself with, and a lane that hits the one-in-
+four and has no baseline to compare against will spend its quota hunting a bug in its own diff. Add
+`crafting_net_check` to the batch when this is taken.
+
 ---
 
 ### F-305 · tools/wave_spawner_check.gd intermittently emits 6 undeclared 'Parameter "material" is null' ERRORs while printing failures=0 and exiting 0
@@ -1494,7 +1496,166 @@ that has never been seen to fail has not been shown to test the fan-out either.
 
 ---
 
+### F-311 · EnvironmentVfx can now subscribe to the new EventBus.world_rebuilt instead of covering a direct rebuild_for_seed() with a quarter-second sweep
+
+**Area:** vfx · **Severity:** low · **Found:** 2026-08-20 by lp
+
+Found by F-286's sweep. Not a defect in F-287's fix — a seam that did not exist when D-170 was
+taken and now does.
+
+D-170 records the constraint honestly: `_on_run_restarted()` defers `_rediscover_world()`, and the
+existing quarter-second budget-tick prune exists **because** `ProceduralWorld.rebuild_for_seed()` is
+public and "announces nothing", so a console reroll or a `--script` check driving it directly is
+invisible to any subscriber. `tools/environment_vfx_reseed_check.gd` phase 4 is built around exactly
+that hole, and reports `REROLL prune_frames=30` — thirty frames of the new island lit by the ended
+island's fires, at coordinates with no prop under them.
+
+F-286 added `EventBus.world_rebuilt`, emitted at the END of `rebuild_for_seed()` once every contract
+node is published. That is the announcement D-170 said did not exist, and its timing is the half
+that matters: F-287 had to `call_deferred` its `run_restarted` handler because an autoload's handler
+runs *before* `ProceduralWorld`'s, while the ended island is still standing and a synchronous prune
+would find every source alive and drop nothing. A `world_rebuilt` handler has the opposite problem
+to solve, which is to say none: the island is already gone when it lands, so the prune can be
+synchronous and immediate.
+
+**What would close this:** `EnvironmentVfx` subscribes `world_rebuilt -> _rediscover_world()`
+(synchronously, no deferral) in addition to what it has, and `environment_vfx_reseed_check` phase 4
+asserts the reroll ghost is retired within one frame rather than within its 4,000-frame budget.
+
+**Do NOT remove the periodic prune while doing it.** D-170 is explicit that the tick is what makes
+the invariant true rather than merely usually true, and it is cheaper than the nearest-first sort
+that tick already pays. This narrows what the tick has to catch; it does not replace it. Same for
+`_dressed_meshes`, which prunes on the tick for a reason that is about Godot's deletion timing and
+is unaffected by any of this.
+
+Severity low deliberately: the current behaviour is correct, just up to a quarter-second late, and
+only on a path (`rebuild_for_seed()` with no restart) that no shipped input reaches today.
+
+---
+
+### F-312 · tools/environment_vfx_reseed_check.gd prints 15 undeclared ERROR: lines at a clean HEAD while reporting failures=0
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-20 by lp
+
+Found by F-286's sibling re-runs, and confirmed pre-existing with
+`.agent/bin/agent baseline --script tools/environment_vfx_reseed_check.gd` — the error set is
+identical at HEAD and on the working tree, so this is not a regression of anything.
+
+SPECS.md standing rule 4: "grep every check run for engine errors and treat any UNDECLARED error
+line as failure even when the exit code is 0 (F-021)". This check declares no `EXPECTED_ERROR_PATTERNS`
+and gets zero allowance, so by that rule it is red at HEAD while printing `failures=0` and exiting 0.
+
+The exact list, from the baseline run:
+
+    8 x  Can't use get_node() with absolute paths from outside the active scene tree.
+    3 x  Parameter "m" is null.
+    1 x  Attempting to initialize the wrong RID
+    1 x  Parameter "mem" is null.
+    1 x  unimplemented base type encountered in renderer scene cull
+    1 x  1 RID allocations of type 'N13RendererDummy9DummyMeshE' were leaked at exit.
+
+Two different causes, and they want different answers.
+
+The **eight `get_node()` absolute-path** lines are the check's own doing and are fixable, not
+declarable: the check builds and frees nodes outside the active scene tree, and something in the
+teardown path resolves an absolute `^"/root/..."` while detached. That is the shape F-011's standing
+rule exists for, arriving at teardown rather than at compile time.
+
+The **dummy-renderer RID noise** (`Parameter "m" is null`, `wrong RID`, `renderer scene cull`, the
+leak line) is the headless renderer's, provoked by real mesh work the check does. That is exactly
+what `EXPECTED_ERROR_PATTERNS` is for, and F-305 already tracks the same family for
+`tools/wave_spawner_check.gd`. Whoever takes F-305 should take this with it — the declaration
+belongs in both verdict lines and the pattern is the same.
+
+Related but distinct: F-292/F-285 (`nav_bake_check` red at HEAD) and F-293 (nothing enumerates and
+runs the tools/ suite, so a red check sits at HEAD unnoticed). This is another instance of what
+F-293 predicts, and a third data point that the suite has drifted.
+
+---
+
 ## Resolved
+
+### F-286 · Procedural reseed can leave CraftingService validating against the previous island's station coordinates — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-20 by lc1
+
+**Area:** crafting/worldgen · **Severity:** medium · **Found:** 2026-08-20 by lc1 reviewing F-258 at `ca72e14`
+
+`world/gen/procedural_world.gd:132-143` rebuilds the fresh island in place: it removes `PoiSites`, then publishes a new seed-derived set under the same current scene. `autoload/crafting_service.gd:299-331` caches station positions and invalidates only when the current-scene instance id or the TOTAL count of `playtest_hollow_asset` + `authored_world_marker` nodes changes. Neither is a generation identity. If two seeds produce the same marker count, the cache survives even though `Station_station_workbench_primitive` moved.
+
+This is not a theoretical count shape: repeated `tools/run_reseed_check.gd` runs produced seed `908245843` with 11 POI/marker sites, and the harness' fixed rebuild seed `424242` also has 11; their worlds/spawns differ. If any station-range query populated `_station_positions` before that restart, `_station_positions_for()` sees the same scene id and census and returns the old island's station coordinates. The new station can reject crafting while standing beside it, while the vacated coordinate can authorize a craft with no station there. The host repeats this stale lookup, so this is an authoritative gameplay failure, not presentation only.
+
+Invalidate the cache on `run_restarted`/procedural generation change (or key it by a generation value that changes even when counts match), and extend the reseed check to populate the cache before rebuilding and assert only the new station position validates afterward.
+
+---
+
+**Resolved 2026-08-20 by lp.** **Fixed** — `EventBus.world_rebuilt` + `EventBus.world_generation()` (`core/events/event_bus.gd`),
+emitted at the END of `ProceduralWorld.rebuild_for_seed()` once every contract node is published
+(`world/gen/procedural_world.gd`), and folded into `CraftingService`'s station-cache key as a third
+component alongside the scene id and the census (`autoload/crafting_service.gd`). The counter is a
+generation identity, which neither of the other two is: the scene id cannot move because F-258
+rebuilds in place on purpose, and the census does not move whenever two seeds publish the same
+number of markers — which is the normal case, not a contrived one (seed 908245843: 11 sites, 11
+markers; seed 424242: 11 and 11).
+
+Pulled rather than subscribed, and that is the load-bearing part (**D-175**). A
+`run_restarted`/`world_rebuilt` handler would have been racing dispatch order for the right to clear
+the cache: `ProceduralWorld` subscribes to `run_restarted` from `_ready()` too and every autoload
+subscribed earlier, so an autoload's handler runs *while the ended island is still standing* — clear
+there and the next query, same frame, re-caches the dead coordinates and the bug survives its own
+fix. D-170 hit that ordering from the other side and had to `call_deferred` around it. A counter
+read at the query itself has no ordering to lose. It also covers `rebuild_for_seed()` called
+directly (console reroll, a check), which fires no `run_restarted` at all — the gap D-170 had to
+paper over with a quarter-second sweep. And F-099's fast path stays one integer compare.
+
+D-170's "prune, do not clear" does **not** transfer here and the spec block says why: that rule is
+about a re-walk defeated by `VFX_META` early-returns, whereas `_station_positions_for()` re-derives
+unconditionally from the live groups, so dropping it is always recoverable.
+
+**Verified:** `.agent/bin/agent godot --script tools/crafting_reseed_check.gd` →
+`CRAFTING_RESEED_CHECK failures=0`, 22 PASS, exit 0, **zero** `ERROR:` lines.
+
+**Pre-fix proof** (the clause `or generation != _station_generation` removed and nothing else
+changed; copy in scratchpad, not `git stash` — a stash would touch other lanes' uncommitted work):
+`failures=6`, and they are this finding's two symptoms verbatim. The new island's station does not
+read as in range and the host rejects a craft there; the cache still holds `(120, 500, -40)` rather
+than `(-260, 500, 310)`; the vacated coordinate still reads as a station; and the craft requested at
+that vacated coordinate comes back **`'crafted Stone Axe'`** instead of
+`'craft rejected: station out of range'` — the host authorising a craft where nothing stands, which
+is the authoritative half of the finding demonstrated rather than argued. Clause restored,
+`failures=0`.
+
+**The check is a new focused file, not a sixth phase of `run_reseed_check`** — the same call F-287
+made for the sibling defect, for the reasons in the spec block (that file is 428 lines with three
+open findings live in it). `run_reseed_check` was re-run unchanged instead: `failures=0`.
+
+The check's teeth do not depend on luck. The census collision is **constructed** — a fixed pad of 64
+kind-less markers planted inside `PoiSites` on island A, and exactly `census_before - census_now` of
+them replanted on island B after the rebuild frees them — so the finding's state reproduces on any
+seed rather than on the seed pair it was found with. And nothing in it assumes the island has a
+station, because **F-301 is open and some seeds publish none**: the probe stations are planted on
+the real marker contract at y = 500, hundreds of metres above every terrain-level marker, so they
+cannot collide with whatever the seed did or did not produce.
+
+**Sweep.** `_station_positions` was the last live member position cache outside `EnvironmentVfx`
+(fixed under F-287) — re-derived independently this pass rather than trusted, by grepping every
+`Array[Vector3]`/`PackedVector3Array`/`Dictionary[StringName, Array]` member across `autoload`,
+`systems`, `world`, `ui`, `core`, `entities`. `EnemyWorld.ambient_spawn_points()` re-walks its
+groups per call and caches nothing; `DebugOverlay` reads live counts; `graphics_quality` and
+`harvest_world` are unaffected for F-287's recorded reasons. `rebuild_for_seed()` is the only
+in-place world rebuild in the repo, so `world_rebuilt` has one producer and that is correct.
+
+Two things the sweep turned up, filed rather than folded in: **F-311** (`EnvironmentVfx` can now
+subscribe to `world_rebuilt` instead of catching a direct reroll up to a quarter-second late — but
+the periodic prune D-170 mandates stays) and **F-312** (`environment_vfx_reseed_check` prints 15
+undeclared `ERROR:` lines at a clean HEAD while reporting `failures=0`; confirmed pre-existing with
+`agent baseline`).
+
+**Siblings re-run:** `CRAFTING_CHECK confirmations=7 failures=0`, `RUN_RESEED_CHECK failures=0`,
+`ENVIRONMENT_VFX_RESEED_CHECK failures=0`. `CRAFTING_NET_CHECK` went red once on the working tree
+(`Parse JSON failed`, six client-side failures) then green on three consecutive re-runs and green on
+`agent baseline` at HEAD — F-304's truncate-write race on one of the 27 transports it already names,
+not this change.
 
 ### F-282 · The Hunt spawns one Cycle late because WaveSpawner reads the modifier stack before CycleModifierService draws — **fixed**
 
