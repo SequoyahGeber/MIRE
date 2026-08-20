@@ -1,0 +1,63 @@
+[gd_resource type="Resource" script_class="ScatterDef" format=3]
+
+[ext_resource type="Script" path="res://world/gen/scatter_entry.gd" id="1_entry"]
+[ext_resource type="Script" path="res://world/gen/scatter_def.gd" id="2_def"]
+
+[sub_resource type="Resource" id="Resource_bush_round_b"]
+script = ExtResource("1_entry")
+asset = &"bush_round_b"
+kit = "flora"
+weight = 1.0
+min_scale = 0.8
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_bush_round_c"]
+script = ExtResource("1_entry")
+asset = &"bush_round_c"
+kit = "flora"
+weight = 1.0
+min_scale = 0.8
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_bush_broadleaf_a"]
+script = ExtResource("1_entry")
+asset = &"bush_broadleaf_a"
+kit = "flora"
+weight = 0.8
+min_scale = 0.8
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_bush_thorn_a"]
+script = ExtResource("1_entry")
+asset = &"bush_thorn_a"
+kit = "flora"
+weight = 0.4
+min_scale = 0.8
+max_scale = 1.15
+
+[sub_resource type="Resource" id="Resource_sapling_a"]
+script = ExtResource("1_entry")
+asset = &"sapling_a"
+kit = "flora"
+weight = 0.5
+min_scale = 0.85
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_sapling_c"]
+script = ExtResource("1_entry")
+asset = &"sapling_c"
+kit = "flora"
+weight = 0.5
+min_scale = 0.85
+max_scale = 1.25
+
+[resource]
+script = ExtResource("2_def")
+id = &"grassland_shrubs"
+biome_id = &"grassland"
+cell_size_m = 11.0
+jitter_fraction = 0.7
+coverage = 0.3
+min_height = 0.8
+max_height = 1000.0
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_bush_round_b"), SubResource("Resource_bush_round_c"), SubResource("Resource_bush_broadleaf_a"), SubResource("Resource_bush_thorn_a"), SubResource("Resource_sapling_a"), SubResource("Resource_sapling_c")])

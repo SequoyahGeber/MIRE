@@ -11,11 +11,37 @@ weight = 1.0
 min_scale = 0.85
 max_scale = 1.2
 
+[sub_resource type="Resource" id="Resource_willow_b"]
+script = ExtResource("1_entry")
+asset = &"tree_willow_b"
+kit = "flora"
+weight = 1.0
+min_scale = 0.85
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_willow_c"]
+script = ExtResource("1_entry")
+asset = &"tree_willow_c"
+kit = "flora"
+weight = 0.8
+min_scale = 0.85
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_snag_a"]
+script = ExtResource("1_entry")
+asset = &"tree_snag_a"
+kit = "flora"
+weight = 0.2
+min_scale = 0.85
+max_scale = 1.15
+
 [resource]
 script = ExtResource("2_def")
 id = &"forest_canopy"
 biome_id = &"forest"
 cell_size_m = 10.0
 jitter_fraction = 0.7
-coverage = 0.18
-entries = Array[ExtResource("1_entry")]([SubResource("Resource_willow")])
+coverage = 0.26
+min_height = 0.8
+max_height = 1000.0
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_willow"), SubResource("Resource_willow_b"), SubResource("Resource_willow_c"), SubResource("Resource_snag_a")])

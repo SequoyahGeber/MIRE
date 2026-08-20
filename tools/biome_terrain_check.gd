@@ -189,20 +189,18 @@ func _check_every_consumer_agrees() -> void:
 	var mesh_bad: int = 0
 	var oneshot_bad: int = 0
 	var manual_bad: int = 0
-	var border_off_grid: int = 0
 	for z: int in side:
 		for x: int in side:
-			# The vertex's OWN stored position, not the grid point: interior vertices carry the
+			# The vertex's OWN stored position, not the grid point: every vertex carries the
 			# 4.18/D-184 XZ jitter, and the contract is "every vertex sits on the analytic
 			# ground AT ITS OWN XZ" — which is exactly as strong, since a vertex parked anywhere
-			# off the surface still fails. Border vertices additionally must sit ON the grid, or
-			# neighbouring chunks stop tiling; asserted below.
+			# off the surface still fails. Borders are pinned by the cross-chunk agreement
+			# assertion below instead of by grid position: what tiling needs is that both
+			# neighbours put the shared vertex in the same world place, not that the place is
+			# the grid point.
 			var vert: Vector3 = verts[z * side + x]
 			var world_x: float = origin_x + vert.x
 			var world_z: float = origin_z + vert.z
-			var on_border: bool = x == 0 or x == side - 1 or z == 0 or z == side - 1
-			if on_border and (vert.x != float(x) or vert.z != float(z)):
-				border_off_grid += 1
 			var expected: float = BiomeMap.surface_from_set(world_x, world_z, set, SEED, table)
 			# Compared through a float32 round-trip, not against the raw double. The mesher stores
 			# its apron in a `PackedFloat32Array` and its vertices in `Vector3`s, both of which are
@@ -221,8 +219,24 @@ func _check_every_consumer_agrees() -> void:
 			var pair: Vector2 = BiomeMap.terrain_amplitudes(world_x, world_z, SEED, biome_defs)
 			if IslandHeightmap.height(world_x, world_z, SEED, pair.x, pair.y) != expected:
 				manual_bad += 1
-	_check(border_off_grid == 0, "every border vertex sits exactly on the chunk grid",
-		"%d off-grid" % border_off_grid)
+	# The tiling contract, asserted directly: the chunk east of this one must place every shared
+	# west-border vertex at the same world position and height. Jitter is a pure function of world
+	# position + seed, so the only disagreement left is float32 chunk-LOCAL storage — the shared
+	# point is `32 + j` in one chunk and `j` in the other, and narrowing those two sums rounds
+	# differently by up to ~2e-6 m. The tolerance is 0.1 mm: a millionfold margin over rounding,
+	# a millionfold too small to ever be a visible crack.
+	var east_verts: PackedVector3Array = _chunk_vertices(2, 0, SEED, biome_defs)
+	var east_origin_x: float = float(2 * ChunkMesher.CHUNK_SIZE)
+	var seam_mismatches: int = 0
+	for z: int in side:
+		var mine: Vector3 = verts[z * side + (side - 1)]
+		var theirs: Vector3 = east_verts[z * side]
+		if absf((origin_x + mine.x) - (east_origin_x + theirs.x)) > 0.0001 \
+				or absf(mine.y - theirs.y) > 0.0001 or absf(mine.z - theirs.z) > 0.0001:
+			seam_mismatches += 1
+	_check(seam_mismatches == 0,
+		"both neighbours place every shared border vertex identically (world x, y, z)",
+		"%d seam vertex(es) disagree" % seam_mismatches)
 	_check(mesh_bad == 0, "every chunk vertex equals surface_from_set() to the float32 it stores",
 		"%d differ" % mesh_bad)
 	_check(oneshot_bad == 0, "surface_at() equals surface_from_set() bit-for-bit",

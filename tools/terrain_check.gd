@@ -67,13 +67,17 @@ func _initialize() -> void:
 			Vector2(0, -1), Vector2(0.7071, -0.7071)]:
 		var point: Vector2 = direction * (radius + 40.0)
 		var sample: float = IslandHeightmap.height(point.x, point.y, SEED_A)
-		if sample != 0.0:
+		# Open water is the OCEAN FLOOR since the sea-level rebase — a flat seabed a fixed depth
+		# under the waterline, not ground at exactly 0.0 (which was the old encoding, and which
+		# rendered as an endless green plain instead of a sea).
+		if sample != -IslandHeightmap.OCEAN_FLOOR_DEPTH:
 			beyond_ok = false
 			beyond_detail = "%.3f at %v" % [sample, point]
 	_check("beyond WORLD_RADIUS is open water in every direction", beyond_ok, beyond_detail)
 
 	var at_edge: float = IslandHeightmap.height(radius, 0.0, SEED_A)
-	_check("exactly at the world radius is 0.0", at_edge == 0.0, str(at_edge))
+	_check("exactly at the world radius is the ocean floor",
+		at_edge == -IslandHeightmap.OCEAN_FLOOR_DEPTH, str(at_edge))
 
 	var scale: float = IslandHeightmap.MAX_HEIGHT
 	var interior_bound_ok: bool = true
@@ -117,13 +121,18 @@ func _initialize() -> void:
 			var stride: float = float(tick) * 2.2
 			bed = minf(bed, IslandHeightmap.height(point.x + stride, point.y, SEED_A))
 			bed = minf(bed, IslandHeightmap.height(point.x, point.y + stride, SEED_A))
-		if bed > previous_bed + 0.75:
+		# The contract is a WATERCOURSE contract and it ends at the waterline: once the probe has
+		# been in open water (below sea level), the river has debouched, and the walk crossing a
+		# bay's seabed (the ocean floor sits at -OCEAN_FLOOR_DEPTH since the sea-level rebase) and
+		# then reading the far shore is not "the bed climbing". Uphill within one dry reach —
+		# previous sample dry, this one higher — is still the failure it always was.
+		if bed > previous_bed + 0.75 and previous_bed >= 0.0:
 			monotonic = false
 			monotonic_detail = "bed rose %.2f -> %.2f at t=%.2f" % [previous_bed, bed, t]
-		previous_bed = minf(previous_bed, bed)
+		previous_bed = minf(previous_bed, bed) if previous_bed >= 0.0 else previous_bed
 		if t > 0.55 and bed < 0.0:
 			reaches_sea = true
-	_check("the bed never climbs back uphill on its way down", monotonic, monotonic_detail)
+	_check("the bed never climbs back uphill within its dry course", monotonic, monotonic_detail)
 	_check("the river reaches the sea (bed below sea level in its lower reach)", reaches_sea, "")
 
 	# min() property: the carve only ever LOWERS terrain. Compare against a no-river surface by
@@ -133,8 +142,10 @@ func _initialize() -> void:
 	var centre_point: Vector2 = _polyline_point(line_a, 0.4)
 	var centre_h: float = IslandHeightmap.height(centre_point.x, centre_point.y, SEED_A)
 	var bank_h: float = IslandHeightmap.height(centre_point.x + 40.0, centre_point.y + 26.0, SEED_A)
+	# A "bank" at or under sea level is open water, not a bank — the old escape compared against
+	# exactly 0.0 because that WAS the sea before the ocean-floor rebase dropped it negative.
 	_check("the corridor is a valley: centreline sits below ground 48 m off to the side",
-		centre_h < bank_h or bank_h == 0.0, "centre %.2f vs bank %.2f" % [centre_h, bank_h])
+		centre_h < bank_h or bank_h <= 0.0, "centre %.2f vs bank %.2f" % [centre_h, bank_h])
 
 	print("\n%d failure(s)\n" % _failures)
 	quit(1 if _failures > 0 else 0)

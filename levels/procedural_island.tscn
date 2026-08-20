@@ -1,8 +1,19 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://world/gen/procedural_world.gd" id="1_world"]
 [ext_resource type="Script" path="res://world/environment/playtest_atmosphere.gd" id="2_atmosphere"]
 [ext_resource type="Script" path="res://world/environment/low_poly_clouds.gd" id="3_clouds"]
+[ext_resource type="Shader" path="res://world/environment/water_low_poly.gdshader" id="4_water"]
+
+[sub_resource type="ShaderMaterial" id="WaterMaterial"]
+render_priority = 0
+shader = ExtResource("4_water")
+
+[sub_resource type="PlaneMesh" id="OceanMesh"]
+material = SubResource("WaterMaterial")
+size = Vector2(1400, 1400)
+subdivide_width = 180
+subdivide_depth = 180
 
 [sub_resource type="PhysicalSkyMaterial" id="SkyMaterial"]
 rayleigh_coefficient = 3.4
@@ -78,8 +89,8 @@ light_energy = 1.45
 light_volumetric_fog_energy = 2.6
 light_angular_distance = 1.1
 shadow_enabled = true
-shadow_bias = 0.045
-shadow_normal_bias = 1.3
+shadow_bias = 0.06
+shadow_normal_bias = 2.4
 shadow_blur = 1.1
 directional_shadow_mode = 2
 directional_shadow_blend_splits = true
@@ -94,3 +105,7 @@ script = ExtResource("3_clouds")
 wrap_extent = 200.0
 altitude_offset = 54.0
 spread_scale = 1.9
+
+[node name="Ocean" type="MeshInstance3D" parent="."]
+mesh = SubResource("OceanMesh")
+cast_shadow = 0

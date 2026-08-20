@@ -143,6 +143,11 @@ static func _placement_at(
 	# `rng`, so the per-point stream is consumed in the same order as before.
 	var height: float = BIOME_MAP.surface_from_set(
 		world_x, world_z, noise_set, world_seed, table)
+	# The def's height band (see its own comment: shore biome includes the seabed). Gating here is
+	# stream-safe — every point draws from its own seeded rng, so a rejection cannot shift any
+	# other point's rolls.
+	if height < float(def.get(&"min_height")) or height > float(def.get(&"max_height")):
+		return {}
 
 	var entry: Resource = def.call(&"pick_entry", rng.randf() * total_weight)
 	if entry == null:

@@ -41,12 +41,11 @@ const FREQUENCY_SCALE: float = _FREQUENCY_REFERENCE_RADIUS / ISLAND_RADIUS
 
 ## Peak terrain amplitude in metres, before the island mask is applied.
 ##
-## 11 m, down from 26 (which was down from 60): Sequoyah's island-feel direction after seeing the
-## first shipped procedural island (2026-08-20, 4.18's tuning input) — "mostly flat, some gentle
-## rolling hills is nice but no mountains, look at Muck for reference." At 26 the island rendered
-## as a massif; at 11, with the raised LAND_BIAS below, the interior settles around 5-12 m of
-## gentle roll a player can sprint straight across.
-const HEIGHT_SCALE: float = 11.0
+## 6 m, down from 11 (down from 26, down from 60) — the playtest verdict (2026-08-20): "we need to
+## make the map closer to sea level with very very gentle rolling hills." With LAND_BIAS below,
+## the walkable interior now sits ~1.8-4.8 m above the water instead of ~8, so the shore is a
+## beach you step off, not a bank you fall down.
+const HEIGHT_SCALE: float = 6.0
 
 ## How much of the continental noise actually reaches the surface. His second verdict (2026-08-20,
 ## same day, off the first retune's renders): "still wayyy too steep on the hills, im thinking like
@@ -68,10 +67,12 @@ const HILL_COUNT_MAX: int = 5
 ## Centre offset from the island's middle, as a fraction of ISLAND_RADIUS. Capped at 0.62 so a
 ## hill's toe stays on the plateau rather than sliding into the coastal falloff.
 const HILL_OFFSET_MAX: float = 0.62
-const HILL_RADIUS_MIN: float = 26.0     # metres
-const HILL_RADIUS_MAX: float = 52.0
-const HILL_HEIGHT_MIN: float = 5.0      # metres of lift at the crown
-const HILL_HEIGHT_MAX: float = 8.0
+## Radii up, heights down at the playtest verdict ("very very gentle"): ~3.5 m over 30+ m of run
+## is a rise you jog over, visibly a hill only because the ground around it is nearly flat.
+const HILL_RADIUS_MIN: float = 30.0     # metres
+const HILL_RADIUS_MAX: float = 60.0
+const HILL_HEIGHT_MIN: float = 2.5      # metres of lift at the crown
+const HILL_HEIGHT_MAX: float = 4.5
 const HILL_SALT: int = 0x48C3D1
 ## Fraction of ISLAND_RADIUS where the falloff begins. Inside this, height is unmasked; outside,
 ## it tapers cubically to 0 at ISLAND_RADIUS.
@@ -81,7 +82,10 @@ const HILL_SALT: int = 0x48C3D1
 ## ring around the whole island and gives `shore` most of the coast to itself. A
 ## shore should be tens of metres of sand, and the drop into water should be
 ## something a player can see happening.
-const FALLOFF_START_FRACTION: float = 0.78
+##
+## Eased back to 0.70 with the sea-level rebase: land is only ~3.3 m up now, and the 0.78 band
+## made the last metres to the water a bank. A slightly wider taper is a beach again.
+const FALLOFF_START_FRACTION: float = 0.70
 ## Continental layer: low frequency, several octaves, decides the island's overall landmass shape.
 const BASE_NOISE_FREQUENCY: float = 0.006 * FREQUENCY_SCALE
 const BASE_NOISE_OCTAVES: int = 5
@@ -98,7 +102,7 @@ const DETAIL_NOISE_WEIGHT: float = 0.08
 ## still read as a mountain range — the exact thing the Muck-reference direction rules out. 2 m,
 ## multiplied by the biome amplitudes (forest 0.9, grassland 0.25), is rolling texture on the high
 ## ground, not a skyline.
-const RIDGE_WEIGHT: float = 2.0
+const RIDGE_WEIGHT: float = 1.2
 
 ## Domain warp: the coastline's own coordinates are pushed around by a second
 ## noise field before the continental noise is sampled, which is what turns fBm's
@@ -151,11 +155,19 @@ const RIDGE_NOISE_SALT: int = 0x2FA5E1
 ## happens to cross zero. The mask then brings the edge down through sea level on
 ## its own, which is what makes a beach a beach instead of a ring.
 ##
-## 0.75 (was 0.54), raised together with the HEIGHT_SCALE drop to 11: the bias sets where the
-## interior SITS and the scale sets how much it rolls, and the two must move together or the
-## flatter island sinks — at 0.54 x 11 the interior centred on 5.9 m and every ordinary noise dip
-## fell under the 4 m shore/grassland biome boundary, scattering sand through the meadows.
-const LAND_BIAS: float = 0.75
+## The bias sets where the interior SITS and the scale sets how much it rolls, and the two move
+## together (the 0.54 x 11 lesson: dips fell under the shore biome boundary and scattered sand
+## through the meadows — the boundary in `content/biomes/*.tres` moves with this pair). At
+## 0.55 x 6 the meadow centres ~3.3 m over the water — "closer to sea level", the playtest ask —
+## with ordinary dips staying above the 1.6 m shore line.
+const LAND_BIAS: float = 0.55
+
+## How far below sea level the ground settles where the island mask runs out. Before the ocean
+## pass this was implicitly ZERO — mask 0 meant height 0, so "the sea" rendered as an endless
+## green plain at the waterline and the shipped map had no visible water at all (the playtest's
+## "no ocean" report). The floor sits deep enough that the water reads as water next to the
+## shore, and shallow enough that the beach-to-floor ramp stays a wade, not a wall.
+const OCEAN_FLOOR_DEPTH: float = 5.0
 
 ## How far the coastline wanders in and out, in metres, and how quickly it does
 ## so. Without this the falloff is a circle and the island renders as a coin with
@@ -252,11 +264,15 @@ const RIVER_BEND_FRACTIONS: Array[float] = [0.35, 0.68]   # where along the line
 const RIVER_BEND_OFFSET_MIN: float = 0.08   # bend offset, as a fraction of river length
 const RIVER_BEND_OFFSET_MAX: float = 0.20
 const RIVER_OVERSHOOT: float = 1.18         # mouth extends to this x ISLAND_RADIUS past the source
-const RIVER_WIDTH_SOURCE: float = 3.5       # half-width in metres at the source...
-const RIVER_WIDTH_MOUTH: float = 9.0        # ...and at the mouth
-const RIVER_BED_SOURCE: float = 3.0         # bed height at the source (m)
-const RIVER_BED_MOUTH: float = -2.2         # below sea level: the mouth is open water
-const RIVER_BANK_RISE: float = 7.0          # how fast the channel ceiling rises off the bed
+## Retuned at the playtest verdict ("weird pits and aggressive valleys"): on the old ~8 m plateau
+## this carved a 10 m gorge with walls; on a ~3 m plateau the same numbers dug a pit you fell into
+## and could not read from inside. It is a STREAM now — a metre or two below the meadow, banks you
+## walk down, still ending under the sea so the mouth is open water.
+const RIVER_WIDTH_SOURCE: float = 2.5       # half-width in metres at the source...
+const RIVER_WIDTH_MOUTH: float = 6.0        # ...and at the mouth
+const RIVER_BED_SOURCE: float = 1.2         # bed height at the source (m)
+const RIVER_BED_MOUTH: float = -1.2         # below sea level: the mouth is open water
+const RIVER_BANK_RISE: float = 2.2          # how fast the channel ceiling rises off the bed
 const RIVER_CORRIDOR: float = 2.6           # carve influence ends at width x this
 const RIVER_SALT: int = 0x71E5B
 
@@ -627,9 +643,12 @@ static func shape_into(x: float, z: float, set: NoiseSet, world_seed: int, out: 
 	out.mask = _island_mask_bent(out.bent, world_seed, jitter)
 	# Plateau + placed hills (D-184 second pass): the noise is damped to an undulation on a
 	# near-flat interior, and the hills are seeded landforms — both ride the island mask so the
-	# coast still tapers into the sea wherever this seed put it.
+	# coast still tapers into the sea wherever this seed put it. Where the mask runs out the
+	# ground settles onto the OCEAN FLOOR below the waterline instead of a plain at exactly 0 —
+	# one continuous surface, land above the sea and seabed under it.
 	out.raw_continent = ((set.base_noise.get_noise_2d(x, z) * BASE_NOISE_WEIGHT + LAND_BIAS)
-		* HEIGHT_SCALE + _hill_lift(out.bent, world_seed)) * out.mask
+		* HEIGHT_SCALE + _hill_lift(out.bent, world_seed)) * out.mask \
+		- OCEAN_FLOOR_DEPTH * (1.0 - out.mask)
 	out.channel = _river_channel(out.bent, world_seed)
 
 

@@ -31,6 +31,13 @@ const SCATTER_ENTRY := preload("res://world/gen/scatter_entry.gd")
 ## Chance any single grid cell spawns something at all — the empty majority is what keeps a forest
 ## from reading as a hedge maze of uniform density.
 @export_range(0.0, 1.0, 0.01) var coverage: float = 0.35
+## Surface-height band (m, inclusive) this table may dress. The defaults accept everything. Bands
+## exist because a biome is not a dry-land promise: since the sea-level rebase the `shore` biome
+## classifies the SEABED too (its `height_min` is -100), and a beach-grass table without a floor
+## would carpet the bottom of the ocean. Streams likewise dip low ground below the meadow line —
+## a meadow table sets `min_height` above the bed so grass does not grow out of the water.
+@export var min_height: float = -1000.0
+@export var max_height: float = 1000.0
 @export var entries: Array[SCATTER_ENTRY] = []
 
 

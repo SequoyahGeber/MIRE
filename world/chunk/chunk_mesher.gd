@@ -50,15 +50,18 @@ const INDEX_COUNT: int = TRI_COUNT * 3
 const SKIRT_DEPTH_FRACTION: float = 1.70
 const SKIRT_DEPTH: float = Heightmap.HEIGHT_SCALE * SKIRT_DEPTH_FRACTION
 
-## Interior-vertex XZ jitter, as a fraction of the LOD's vertex spacing (4.18/D-184's flat-shaded
+## Vertex XZ jitter, as a fraction of the LOD's vertex spacing (4.18/D-184's flat-shaded
 ## low-poly look). A regular grid flat-shades into uniform right triangles; the rvr9ca reference —
 ## and the Delaunay approach its comment thread suggests — gets its organic read from IRREGULAR
-## facets. Deterministic hash jitter on the grid's interior gives the same read without
-## retriangulating: strictly under 0.5 so no quad can fold, borders exempt so chunks and LOD tiers
-## still tile exactly (seam divergence, skirt and `_perimeter_indices` are all keyed to the
-## border). Each jittered vertex RE-SAMPLES the true surface at its actual position, so every
-## vertex still sits exactly on the analytic ground — `tools/noise_reuse_check.gd`'s and
-## `tools/biome_terrain_check.gd`'s mesh/surface agreement contracts hold by construction.
+## facets. Deterministic hash jitter gives the same read without retriangulating: strictly under
+## 0.5 so no quad can fold. BORDER vertices jitter too — at this fixed LOD0 amplitude rather than
+## their own tier's, so any two chunks sharing a world point compute the identical offset and the
+## seam still tiles exactly (the first cut exempted borders and the un-jittered rows read as
+## straight lines across the terrain). Each vertex RE-SAMPLES the true surface at its actual
+## position, so every vertex still sits exactly on the analytic ground —
+## `tools/noise_reuse_check.gd`'s and `tools/biome_terrain_check.gd`'s mesh/surface agreement
+## contracts hold by construction, and `biome_terrain_check` asserts the cross-chunk border
+## agreement directly.
 const VERTEX_JITTER_FRACTION: float = 0.35
 
 
@@ -267,23 +270,28 @@ static func build_mesh(
 			var h: float = heights[ai]
 			var local_x: float = float(x * step)
 			var local_z: float = float(z * step)
-			# Interior vertices only — the border must stay on-grid so neighbouring chunks and LOD
-			# tiers keep sampling identical seam points (see VERTEX_JITTER_FRACTION's note). The
-			# jittered vertex re-samples the real surface, so it still sits ON the ground.
-			if x > 0 and x < side - 1 and z > 0 and z < side - 1:
-				var jitter: Vector2 = _vertex_jitter(
-					chunk_x * CHUNK_SIZE + x * step, chunk_z * CHUNK_SIZE + z * step, world_seed)
-				# Through a Vector2 FIRST: components are float32, the same narrowing Vector3
-				# applies when the vertex is stored. Sampling at the narrowed position is what
-				# keeps `biome_terrain_check`'s exact vertex==surface comparison exact — sampling
-				# at the double and narrowing afterwards can drift the stored y a ULP off the
-				# surface at the stored x.
-				var snapped := Vector2(local_x + jitter.x * jitter_amp,
-					local_z + jitter.y * jitter_amp)
-				local_x = snapped.x
-				local_z = snapped.y
-				h = BiomeMapScript.surface_from_set(
-					origin_x + local_x, origin_z + local_z, noise_set, world_seed, table, shape)
+			# Every vertex jitters — the first cut exempted the border entirely, and the playtest
+			# read the un-jittered rows as visible straight lines every CHUNK_SIZE metres ("some
+			# edges don't line up"). What the border actually needs is not stillness but AGREEMENT:
+			# the offset is a pure function of the vertex's world position and the seed, so any two
+			# chunks — either LOD — that place a vertex at the same world point compute the same
+			# offset, provided the amplitude does not scale with THEIR step. Hence border vertices
+			# use the fixed LOD0 amplitude and interior vertices their own tier's; cross-tier
+			# chords between shared points diverge exactly as before and stay the skirt's job.
+			var on_border: bool = x == 0 or x == side - 1 or z == 0 or z == side - 1
+			var amp: float = VERTEX_JITTER_FRACTION if on_border else jitter_amp
+			var jitter: Vector2 = _vertex_jitter(
+				chunk_x * CHUNK_SIZE + x * step, chunk_z * CHUNK_SIZE + z * step, world_seed)
+			# Through a Vector2 FIRST: components are float32, the same narrowing Vector3
+			# applies when the vertex is stored. Sampling at the narrowed position is what
+			# keeps `biome_terrain_check`'s exact vertex==surface comparison exact — sampling
+			# at the double and narrowing afterwards can drift the stored y a ULP off the
+			# surface at the stored x.
+			var snapped := Vector2(local_x + jitter.x * amp, local_z + jitter.y * amp)
+			local_x = snapped.x
+			local_z = snapped.y
+			h = BiomeMapScript.surface_from_set(
+				origin_x + local_x, origin_z + local_z, noise_set, world_seed, table, shape)
 			vertices[v] = Vector3(local_x, h, local_z)
 			var dx: float = (heights[ai + 1] - heights[ai - 1]) * slope_scale
 			var dz: float = (heights[ai + apron_side] - heights[ai - apron_side]) * slope_scale

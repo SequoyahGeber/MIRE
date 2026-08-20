@@ -124,6 +124,52 @@ no notice and costs the client ~19 s of rejoin attempts (that is F-322).
 54 PASS.
 
 
+### 2026-08-20 — 4.18 playtest round: sea-level island, a real ocean, streams not gorges, dressed biomes (quill5fa5c7)
+
+Sequoyah's first real playtest verdicts, all landed in one pass. If you touch terrain or scatter,
+this is the current shape of the world:
+
+**The land sits just over the water now.** `HEIGHT_SCALE` 6, `LAND_BIAS` 0.55 (meadow ~3.3 m),
+hills 2.5–4.5 m over 30–60 m radii, ridge texture 1.2 m on hilltops only. The river is a STREAM —
+bed 1.2 → -1.2 m, banks you walk down (`RIVER_BANK_RISE` 2.2) — his "weird pits and aggressive
+valleys" was the old gorge carving a flat island.
+
+**There is an ocean.** `IslandHeightmap.OCEAN_FLOOR_DEPTH` (5 m): the mask's outside settles onto
+a seabed BELOW the waterline instead of a plain at exactly y=0 — before this the shipped map had
+no visible water at all. The surface is `levels/procedural_island.tscn`'s `Ocean` node — a
+subdivided plane on `world/environment/water_low_poly.gdshader` (sine-bobbed, facet-lit,
+client-local paint; gameplay water level is still `water_surface_at()`'s flat 0). Checks that
+encoded "open water == height 0.0" were updated (`terrain_check`'s island-shape and river phases:
+the monotonic-bed contract now ENDS at the waterline, because a polyline crossing a bay's seabed
+is not the bed climbing).
+
+**Biome boundary moved with the land**: `content/biomes/*` shore/grass/forest boundary 4.0 → 1.6
+continental metres. POI bands retuned to the low island (`standing_stones` 4.2+ so they crown the
+hills, `wellspring` 2.5+, nests/stations 2.2+) — several were dead or starved at the old 8 m+
+bands, which is where poi_check's "0 sites across 5 seeds" failure came from.
+
+**All three biomes are dressed now** ("wheres all the plants?"): six scatter tables in
+`content/scatter/` — grassland_meadow (grass/tussock/flowers/clover, cell 3 m),
+grassland_shrubs, forest_floor (bracken/litter/moss/nettle), forest_canopy (3 willows + snag),
+forest_undergrowth, shore_beach (marsh grass/sedge/bog flowers). `ScatterDef` grew an optional
+`min_height`/`max_height` band and `resource_scatter.gd` gates on it AFTER the surface sample
+(per-point rng, so the gate shifts nothing) — needed because the `shore` biome classifies the
+SEABED too, and a beach table without a floor would carpet the ocean bottom. Keep authoring
+tables against the band.
+
+**Seam lines and striations** (his other two reports): border vertices now jitter too, at a FIXED
+LOD0 amplitude so any two chunks sharing a world point compute the identical offset — the
+straight un-jittered rows every 32 m are gone (`biome_terrain_check` asserts the cross-chunk
+border agreement directly, to 0.1 mm; the old border-on-grid assertion is retired). The
+striations were shadow acne on flat-shaded facets: the scene's Sun bias went 0.045/1.3 →
+0.06/2.4.
+
+**Verified:** terrain/biome/poi/resource_scatter/noise_reuse/biome_terrain/procedural_world 0
+failures, world_contract PASS both arms, chunk_stream 0 (seam worst re-measured: 2.58 m
+island-wide, skirt 10.2 m clears ~4x), windowed boot 0 ERROR. Renders in
+`assets/audit/terrain/` (seed 3493587347) show ocean, beach, stream and dressed meadows.
+
+
 ### 2026-08-20 — 4.18 tuning applied: the island is Muck-shaped now — mostly flat, gentle rolls, no mountains (quill5fa5c7)
 
 **D-184.** Sequoyah's verdict off the first shipped renders: "mostly flat, some gentle rolling

@@ -54,16 +54,17 @@ const BENCH_SEED: int = 20260818
 ## amplitudes: the same spot then diverged 12.4405 m rather than 12.805 m, because the crest there
 ## sits in biomes whose authored `ridge_amplitude` is below 1.0.
 ##
-## Re-measured again for D-184's flat-plateau restructure (2026-08-20, 4.18): with the fBm
-## interior damped to ~±1 m and the relief coming from 3-5 placed hills, the same spot diverges
-## 3.0999 m, and the island-wide sweep this check runs every pass found 3.1256 m as the worst on
-## its bench seed — the whole divergence spread collapsed with the amplitudes, as it should.
-## `SKIRT_DEPTH` (now 18.7 m, scaled off the smaller MAX_HEIGHT) still clears the worst by ~6x, so
-## no skirt retune. The island-wide "skirt deeper than the worst anywhere" assertion above is what
-## carries the guarantee; this recorded spot only exists to catch silent drift.
+## Re-measured again for D-184's flat-plateau restructure (2026-08-20, 4.18): 3.0999 m at this
+## spot, 3.1256 m island-wide — the divergence spread collapsed with the amplitudes.
+##
+## Re-measured once more for the sea-level rebase later the same day (HEIGHT_SCALE 6, gentler
+## hills, stream-depth river, ocean floor): 1.2134 m here, 2.5775 m island-wide worst on the bench
+## seed. `SKIRT_DEPTH` (10.2 m via the smaller MAX_HEIGHT) clears the worst by ~4x, so no skirt
+## retune. The island-wide "skirt deeper than the worst anywhere" assertion above is what carries
+## the guarantee; this recorded spot only exists to catch silent drift.
 const WORST_KNOWN_SEED: int = 4242
 const WORST_KNOWN_CHUNK := Vector2i(3, -4)
-const WORST_KNOWN_DIVERGENCE_M: float = 3.0999
+const WORST_KNOWN_DIVERGENCE_M: float = 1.2134
 ## Chunk radius the seam/harvestable sweeps scan. `IslandHeightmap.ISLAND_RADIUS` is 118 m
 ## (CHUNK_SIZE 32 m -> ~4 chunks), so 10 chunks (320 m) is a wide margin past the falloff shoulder
 ## into open water — cheap because water contributes ~0 divergence and no harvestable placements,
@@ -199,17 +200,17 @@ func _check_skirt_geometry() -> void:
 		# vertices stay EXACT: that is the tiling contract the seam measurement below rests on.
 		var side: int = ChunkMesher.verts_per_side(lod)
 		var step: int = ChunkMesher.LOD_STEPS[lod]
+		# Border vertices jitter at the FIXED LOD0 amplitude (so both neighbours agree — see
+		# VERTEX_JITTER_FRACTION), interior at their own tier's; both bounds far under the
+		# SKIRT_DEPTH a leaked skirt vertex would show up at.
 		var jitter_bound: float = ChunkMesher.VERTEX_JITTER_FRACTION * float(step) + 0.001
+		var border_bound: float = ChunkMesher.VERTEX_JITTER_FRACTION + 0.001
 		for z: int in side:
 			for x: int in side:
 				var p: Vector3 = verts[z * side + x]
 				var on_border: bool = x == 0 or x == side - 1 or z == 0 or z == side - 1
-				if on_border:
-					if not is_equal_approx(p.x, float(x * step)) \
-							or not is_equal_approx(p.z, float(z * step)):
-						all_layout_ok = false
-				elif absf(p.x - float(x * step)) > jitter_bound \
-						or absf(p.z - float(z * step)) > jitter_bound:
+				var bound: float = border_bound if on_border else jitter_bound
+				if absf(p.x - float(x * step)) > bound or absf(p.z - float(z * step)) > bound:
 					all_layout_ok = false
 
 		# Collision must be terrain only: same triangle count, its lowest point matches the
