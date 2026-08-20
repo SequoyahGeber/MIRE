@@ -9672,3 +9672,88 @@ first cut was 10.697 ms; caching the river channel on `Shape` — the carve is a
 biome-shaped sample and `_river_channel()` rebuilt and walked the polyline each time — gave back
 more than half of that, bit-identically. The rest is one moisture sample and the table scan per
 vertex. `chunk_stream_check --windowed` still reports 0.2007 ms mean streamer cost per frame.
+
+---
+
+## F-275 · F-243's terminal restart buttons are unreachable from a bare controller
+
+**Claim:** `ui/hud/defeat_hud.gd`, `ui/hud/extraction_hud.gd`, `tools/terminal_focus_check.gd` (new).
+Network authority: none — `ARCHITECTURE.md` §2.2 "VFX, audio, camera, UI" row, client-local
+presentation on both files, unchanged by this task. Nothing here sends or validates anything; the
+host-only decision it surfaces (`CycleService.host_restart_run()`) already exists.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The shape of the bug.** F-243 gave both terminal run-summary overlays a "Start Next Run" button and
+made the mouse visible, but neither grabbed keyboard focus for it. Both screens are *mandatory panels*
+in the F-216 sense — no Esc, no dismiss, that one button is the only way off — so with no pointer
+input the run loop simply ends there. That is the same trap F-216 fixed for `AttunementUI`, and the
+finding's own text says so.
+
+**The fix,** identical in both files so the pair cannot drift:
+
+1. `_refresh_restart_button()` now also sets `focus_mode` — `Control.FOCUS_ALL` for the enabled host
+   button, `Control.FOCUS_NONE` for a non-host's disabled "waiting on the host" label. **`disabled`
+   alone does not take a Button out of the focus graph**: it still answers `grab_focus()`, still
+   draws a focus ring, and still lands in a `focus_neighbor_*` walk. Without `FOCUS_NONE` a naive
+   "just grab focus on open" fix hands a non-host peer a focused control whose `ui_accept` does
+   nothing, which reads as a broken screen rather than a waiting one — the finding calls this out
+   explicitly, and `unlock_menu.gd:325` already documents the same engine behaviour from F-209.
+2. A new `_grab_restart_focus()`, called from `_on_run_wiped()` / `_on_run_extracted()` **after**
+   `visible = true`, never before. Godot force-releases focus from a Control that is not visible in
+   the tree (`NOTIFICATION_VISIBILITY_CHANGED`), so a grab taken while the overlay is still hidden is
+   silently thrown away. It no-ops at `FOCUS_NONE` rather than calling `grab_focus()` and eating the
+   engine warning. Every other panel in `ui/` already orders these two the same way — this is the
+   house pattern, not a new one.
+3. `add_theme_stylebox_override("focus", _focus_style())` on each button, the same transparent-fill
+   outline `StyleBoxFlat` helper `lobby_menu.gd`/`attunement_ui.gd`/`main_menu.gd` each carry, in each
+   screen's own accent (defeat red, extraction green). On a full-screen overlay holding exactly one
+   control, "which control has focus" is otherwise invisible.
+
+`ui_accept` needed no wiring: it has carried a gamepad binding project-wide since F-209/D-134
+(`project.godot`'s `ui_accept` includes `InputEventJoypadButton` 0), and `Button`'s native `pressed`
+fires from it for free once focus is on the button.
+
+**Verify:** `.agent/bin/agent godot --script tools/terminal_focus_check.gd` →
+`TERMINAL_FOCUS_CHECK failures=0`, 24 PASS, exit 0, no undeclared `ERROR:` lines. The check is in two
+phases and phase 2 is a second process on purpose:
+
+- **Phase 1 (solo/host, in-process).** Drives the real defeat path (`DefeatService.defeated`'s own
+  setter is what fires `run_wiped`) and the real extraction path (`emit_run_extracted` plus a
+  stand-in `&"extraction_ship"` group node with `departed = true`, the smallest thing that satisfies
+  `CycleService._run_has_ended()` without loading a level). For each overlay it asserts the focus
+  owner is the enabled `Start Next Run` button at `FOCUS_ALL` with a focus-ring override, then taps a
+  **real** `InputEventJoypadButton` through `Input.parse_input_event()` and asserts `run_restarted`
+  actually fired — the one assertion that proves a bare controller can get off the screen at all.
+  Events go through the real input pipeline rather than a direct `_gui_input()` call for the reason
+  `menu_focus_check.gd` states at length: focus handling is Godot's own Viewport code, not anything
+  these scripts implement.
+- **Phase 2 (a real connected client, second process).** `_is_host_or_solo()` reads live
+  `NetTransport` state, so the only honest way to exercise the non-host branch is to be one. The
+  probe joins, drives both overlays locally (both are client-local presentation, so no host traffic
+  is involved in showing them — the session exists purely to make `is_host()` false) and asserts the
+  waiting label is present, disabled, at `FOCUS_NONE`, and never the focus owner. Its result file is
+  written to a temp path and renamed into place, so the driver polling it cannot read a half-written
+  document (F-290's failure mode in `run_restart_net_check.gd`, not repeated here).
+
+**Pre-fix proof.** `agent baseline` cannot help — the check script does not exist at HEAD, the same
+constraint F-261 hit. Instead both HUD files were temporarily restored to their HEAD contents (copies
+kept aside; deliberately *not* `git stash`, which would have touched other lanes' uncommitted work)
+and the new check run against them: `failures=6`, and the six are exactly the finding's symptoms —
+neither overlay focuses its button, neither `ui_accept` starts the next run, and both leave the
+non-host waiting label in the focus graph. Files restored, same check, `failures=0`.
+
+**Swept for the same shape.** Two greps. (a) Every `ui/` file that builds an interactive control
+(`Button.new()`/`LineEdit.new()`/`OptionButton.new()`/`HSlider.new()`/`CheckBox.new()`) against
+`grab_focus` and `stylebox_override("focus")`: all eight now carry both, and every one of them
+already orders `grab_focus()` after `visible = true`, so the ordering trap above has no other
+instance. (b) Every `.disabled` assignment repo-wide, plus `.tscn`-authored `disabled`/`focus_mode`
+(none exist), against whether the panel has a dismiss path: `unlock_menu.gd` grabs a possibly-disabled
+BUY button but documents it and has CLOSE; `crafting_ui.gd` and `lobby_menu.gd` both have Esc. Only
+the two files fixed here were mandatory panels. The sweep did turn up one real sibling of the *class*
+— filed as **F-297**: `attunement_ui.gd` latches `_picking` and disables every CHOOSE button on a
+request the host never answers, leaving that no-dismiss panel with no operable control at all. Left
+to F-277's owner, who already holds that file's other restart defect.
+
+**Resolved** — see `docs/FINDINGS.md`.

@@ -6821,3 +6821,18 @@ Notes along the way:
 Files: `world/gen/island_heightmap.gd`, `world/gen/biome_map.gd`, `world/chunk/chunk_mesher.gd`, `world/chunk/chunk_streamer.gd`, `world/chunk/nav_baker.gd`, `world/gen/procedural_world.gd`, `world/gen/poi_map.gd`, `world/gen/resource_scatter.gd`, `tools/biome_defs_lib.gd`, `tools/bench_chunks.gd`, `tools/bench_chunk_gpu.gd`, `tools/chunk_seam_shot.gd`, `tools/nav_bake_check.gd`, `tools/noise_reuse_check.gd`, `tools/terrain_look_check.gd`, `tools/chunk_stream_check.gd`, `tools/terrain_map_render.gd`, `tools/worldgen_noise_reuse_check.gd`, `tools/check_determinism.gd`, `tools/poi_check.gd`, `tools/biome_terrain_check.gd`, `docs/SPECS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `assets/audit/terrain/island_f274_20260819.png`
 
 Commit at time of writing: `e51b491`
+
+---
+
+### DONE · F-275 · lm · 2026-08-20T06:31:22+00:00
+
+**F-243's terminal restart buttons are unreachable from a bare controller**
+
+Both terminal run-summary overlays are now operable from a bare controller: defeat_hud.gd and extraction_hud.gd focus their own enabled 'Start Next Run' button after the overlay becomes visible, carry a visible focus ring, and set focus_mode=FOCUS_NONE on a non-host's disabled waiting label so it can never take focus that ui_accept cannot act on (disabled alone does NOT remove a Button from Godot's focus graph — that is the half of the finding that is easy to miss). Proof: .agent/bin/agent godot --script tools/terminal_focus_check.gd -> TERMINAL_FOCUS_CHECK failures=0, 24 PASS, exit 0, 0 ERROR lines; phase 1 taps a real InputEventJoypadButton through Input.parse_input_event() and asserts run_restarted actually fires, phase 2 spawns a second process that joins this one so the non-host branch is tested by an actual client. Pre-fix proof: same check against the two HUD files restored to HEAD -> failures=6, exactly the finding's symptoms. Neighbours green: menu_focus_check 0, run_restart_check 0, findings_numbering_check 0, generic --quit-after 120 exit 0 / 0 ERROR. Spec block written (none existed) at SPECS.md F-275; convention + check recorded in DELEGATION.md Current state; sweep filed F-297 (attunement_ui.gd latches _picking on an unanswered request, same class, left to F-277's owner).
+
+Notes along the way:
+- Pre-fix proof: the two HUD files temporarily restored to HEAD (copies kept aside, not git stash — a stash would have touched other lanes' uncommitted work), tools/terminal_focus_check.gd run against them -> failures=6, exactly the finding's symptoms (neither overlay focuses its button, neither ui_accept starts the next run, and both leave the non-host waiting label in the focus graph). Files restored, same check -> failures=0, 24/24 PASS, exit 0. agent baseline cannot do this: the check script does not exist at HEAD (same constraint F-261 hit).
+
+Files: `ui/hud/defeat_hud.gd`, `ui/hud/extraction_hud.gd`, `tools/terminal_focus_check.gd`, `docs/SPECS.md`, `docs/DELEGATION.md`, `docs/FINDINGS.md`, `tools/terminal_focus_check.gd.uid`
+
+Commit at time of writing: `8754844`

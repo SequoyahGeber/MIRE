@@ -28,6 +28,13 @@ extends CanvasLayer
 ##
 ## F-243: same un-terminal button `ui/hud/defeat_hud.gd` grew — see that file's own F-243 note for
 ## why only the local HOST peer's press does anything.
+##
+## F-275: and the same keyboard/gamepad focus that button needs to be reachable at all — this summary
+## is terminal, so it has no Esc/dismiss path and the restart button is the only way off it (the
+## mandatory-panel trap F-216 fixed for `AttunementUI`). The enabled host button grabs focus as the
+## overlay is shown and carries a visible focus ring; a non-host's disabled waiting label goes to
+## `FOCUS_NONE` so it can never take focus a bare controller cannot act on. See `defeat_hud.gd`'s own
+## F-275 note — the two screens are a deliberate pair and this half must not drift from it.
 
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
 const BLOCKING_UI_GROUP: StringName = &"blocks_gameplay_input"
@@ -135,6 +142,9 @@ func _on_run_extracted(cycle: int, _world_position: Vector3) -> void:
 	add_to_group(BLOCKING_UI_GROUP)
 	_restore_mouse_captured = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	# F-275: after `visible = true`, never before — Godot force-releases focus from a Control that is
+	# not visible in the tree, so a grab taken while the overlay is still hidden is thrown away.
+	_grab_restart_focus()
 
 
 ## F-243: every peer's own `EVENT_BUS.run_restarted` (see `CycleService`'s own F-243 note for the
@@ -155,6 +165,19 @@ func _refresh_restart_button() -> void:
 	var is_local_host: bool = _is_host_or_solo()
 	_restart_button.text = RESTART_LABEL if is_local_host else WAITING_LABEL
 	_restart_button.disabled = not is_local_host
+	# F-275: `disabled` does not take a Button out of the focus graph — it still answers grab_focus()
+	# and still draws a focus ring, so without this a non-host peer gets a focused control whose
+	# ui_accept does nothing. FOCUS_NONE is what makes the waiting label inert.
+	_restart_button.focus_mode = Control.FOCUS_ALL if is_local_host else Control.FOCUS_NONE
+
+
+## F-275: only ever grabs the enabled host button — `_refresh_restart_button()` has already put a
+## non-host's waiting label at FOCUS_NONE, and grab_focus() on such a control is a no-op that only
+## prints an engine warning.
+func _grab_restart_focus() -> void:
+	if _restart_button.focus_mode == Control.FOCUS_NONE:
+		return
+	_restart_button.grab_focus()
 
 
 func _is_host_or_solo() -> bool:
@@ -381,5 +404,21 @@ func _build_summary_ui() -> void:
 	_restart_button.text = RESTART_LABEL
 	_restart_button.custom_minimum_size = Vector2(240.0, 44.0)
 	_restart_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	# F-275: the visible focus ring every other panel in this codebase carries (F-209/F-216) — on a
+	# full-screen overlay with one control, "which control has focus" is otherwise invisible.
+	_restart_button.add_theme_stylebox_override("focus", _focus_style())
 	_restart_button.pressed.connect(_on_restart_pressed)
 	column.add_child(_restart_button)
+
+
+## Visible focus ring (F-209/F-216/F-275) — same transparent-fill outline shape as
+## `ui/hud/defeat_hud.gd`/`ui/lobby/lobby_menu.gd`'s own copies of this helper, in this screen's own
+## success-green accent rather than the defeat screen's red.
+func _focus_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.0, 0.0, 0.0, 0.0)
+	style.draw_center = false
+	style.border_color = COLOUR_SUMMARY_HEADLINE
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(5)
+	return style

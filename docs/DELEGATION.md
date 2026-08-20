@@ -75,6 +75,36 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-20 — F-275 resolved: both terminal run-summary overlays are operable from a bare controller, and the non-host's waiting label is inert rather than dead-focused (lm)
+
+**What shipped.** F-243's "Start Next Run" button existed on both terminal screens
+(`ui/hud/defeat_hud.gd`, `ui/hud/extraction_hud.gd`) and neither screen focused it. Both are
+mandatory panels — no Esc, no dismiss, that button is the only way off — so with no mouse the run
+loop ended there. The same trap F-216 fixed for `AttunementUI`, now closed for the pair.
+
+**The convention the next UI task builds against — `disabled` is not `FOCUS_NONE`.** A disabled
+`Button` in Godot still answers `grab_focus()`, still draws a focus ring, and still lands in a
+`focus_neighbor_*` walk. Any panel that shows a control only *some* peers may act on needs both:
+
+```gdscript
+_restart_button.disabled = not is_local_host
+_restart_button.focus_mode = Control.FOCUS_ALL if is_local_host else Control.FOCUS_NONE
+```
+
+and the grab itself goes **after** `visible = true`, never before — Godot force-releases focus from a
+Control that is not visible in the tree, so an earlier grab is silently thrown away. Every panel in
+`ui/` already orders it that way; this is the house pattern, not a new one.
+
+**The check to extend, not to re-derive:** `tools/terminal_focus_check.gd` →
+`TERMINAL_FOCUS_CHECK failures=0` (24 PASS). Phase 1 drives both overlays solo through their real
+triggers and taps a real `InputEventJoypadButton` through `Input.parse_input_event()`, asserting
+`run_restarted` actually fires — the assertion that proves a controller can leave the screen. Phase 2
+spawns a second process that joins this one, because `_is_host_or_solo()` reads live `NetTransport`
+state and the only honest way to test the non-host branch is to be a non-host. Its result file is
+written to a temp path and renamed into place, so a polling driver cannot read a torn document
+(F-290's failure mode, not repeated). Any later task touching either overlay's button, or adding a
+third terminal screen, extends this file rather than writing a fourth restart check.
+
 ### 2026-08-20 — F-274 resolved: a biome now shapes its own ground everywhere the game builds it, and the amplitude pair crossfades instead of stepping (lm)
 
 **What shipped.** D-144's seam had been built and never crossed: `BiomeMap.terrain_amplitudes()` had

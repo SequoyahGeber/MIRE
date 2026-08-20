@@ -600,16 +600,6 @@ it should have been.
 
 ---
 
-### F-275 · F-243's terminal restart buttons are unreachable from a bare controller
-
-**Area:** UI/input · **Severity:** high · **Found:** 2026-08-20 by lc1
-
-At commit `6d7e756`, `ui/hud/defeat_hud.gd:92-105` and `ui/hud/extraction_hud.gd:123-137` reveal the terminal overlay and make the mouse visible, but neither calls `grab_focus()` on the enabled restart button built at `defeat_hud.gd:216-221` / `extraction_hud.gd:380-385`. A host using only keyboard/gamepad therefore has no focused control for `ui_accept`; the only action that can leave either terminal screen is present but unreachable without pointer input.
-
-`tools/run_restart_net_check.gd` boots the shipped Hollowmere scene, drives both endings, and inspects `gui_get_focus_owner()`: both "terminal overlay focuses Start Next Run" assertions fail at `6d7e756`. This repeats the exact mandatory-panel trap F-216 fixed for AttunementUI. Focus the enabled host button when each overlay opens (and give it a visible focus style if the default theme is insufficient); a non-host's disabled waiting label must not take focus.
-
----
-
 ### F-277 · F-243 clears Attunement effects but keeps the selection locked across runs
 
 **Area:** systems · **Severity:** medium · **Found:** 2026-08-20 by lc1
@@ -1158,7 +1148,97 @@ task rather than a one-line guard.
 
 ---
 
+### F-297 · AttunementUI's mandatory picker latches _picking on an unanswered request, leaving a no-dismiss panel with every button disabled
+
+**Area:** UI/input · **Severity:** medium · **Found:** 2026-08-20 by lm
+
+Found by F-275's sweep for its own shape: a mandatory panel (no Esc, no dismiss path) left with no
+operable control, the class F-216 named and F-275 repeated for both terminal run-summary overlays.
+
+`ui/attunement/attunement_ui.gd:77-81` sets `_picking = true` and calls `_set_buttons_disabled(true)`
+the moment a CHOOSE button is pressed, and `_picking` is cleared in exactly one place —
+`_on_selection_confirmed()` at line 146. `_open_picker()`'s own `_picking = false` (line 117) cannot
+help, because it early-returns while `_open` is already true.
+
+So if the host's `selection_confirmed` never arrives — the host peer drops between the
+`AttunementService.request_select()` send and the answer, or the reply is lost — every CHOOSE button
+stays disabled forever on a panel that has no dismiss path and joins `blocks_gameplay_input`. The
+player is left staring at "Requesting forager…" with no control that responds to a mouse OR a
+controller, and no way to reach gameplay again. This is strictly worse than F-275's original symptom:
+there the button worked and merely could not be focused.
+
+The fix wants a bounded wait, not a new signal: re-enable the buttons and put the failure in
+`_show_status()` after a timeout (the file already has a Timer and an error-status path from the
+`accepted == false` branch), and/or clear `_picking` on `NetTransport`'s disconnect. Not fixed under
+F-275 because `ui/attunement/attunement_ui.gd` is outside that task's claim set and F-277 is already
+open against this same file's restart path — whoever takes F-277 is the natural owner of both.
+
+---
+
 ## Resolved
+
+### F-275 · F-243's terminal restart buttons are unreachable from a bare controller — **fixed**
+
+**Area:** UI/input · **Severity:** high · **Found:** 2026-08-20 by lc1
+
+At commit `6d7e756`, `ui/hud/defeat_hud.gd:92-105` and `ui/hud/extraction_hud.gd:123-137` reveal the terminal overlay and make the mouse visible, but neither calls `grab_focus()` on the enabled restart button built at `defeat_hud.gd:216-221` / `extraction_hud.gd:380-385`. A host using only keyboard/gamepad therefore has no focused control for `ui_accept`; the only action that can leave either terminal screen is present but unreachable without pointer input.
+
+`tools/run_restart_net_check.gd` boots the shipped Hollowmere scene, drives both endings, and inspects `gui_get_focus_owner()`: both "terminal overlay focuses Start Next Run" assertions fail at `6d7e756`. This repeats the exact mandatory-panel trap F-216 fixed for AttunementUI. Focus the enabled host button when each overlay opens (and give it a visible focus style if the default theme is insufficient); a non-host's disabled waiting label must not take focus.
+
+---
+
+**Resolved 2026-08-20 by lm.** **Fixed** by `lm`, 2026-08-20. Both terminal overlays now focus their own enabled "Start Next Run"
+button the moment they open, and a non-host's disabled waiting label is taken out of the focus graph
+instead of being left focusable-but-dead.
+
+Three changes, identical in `ui/hud/defeat_hud.gd` and `ui/hud/extraction_hud.gd` so the pair cannot
+drift:
+
+1. `_refresh_restart_button()` also sets `focus_mode` — `Control.FOCUS_ALL` for the enabled host
+   button, `Control.FOCUS_NONE` for the non-host waiting label. **`disabled` alone does not take a
+   Button out of Godot's focus graph**: it still answers `grab_focus()`, still draws a focus ring and
+   still lands in a `focus_neighbor_*` walk (`unlock_menu.gd:325` already documents this from F-209).
+   Without `FOCUS_NONE`, a naive "grab focus on open" fix would hand a non-host peer a focused
+   control whose `ui_accept` does nothing — the half of this finding that is easy to miss.
+2. A new `_grab_restart_focus()`, called from `_on_run_wiped()`/`_on_run_extracted()` **after**
+   `visible = true`. Godot force-releases focus from a Control that is not visible in the tree, so a
+   grab taken while the overlay is still hidden is silently thrown away. It no-ops at `FOCUS_NONE`.
+3. `add_theme_stylebox_override("focus", _focus_style())` on each button — the same transparent-fill
+   outline helper `lobby_menu.gd`/`attunement_ui.gd`/`main_menu.gd` carry, in each screen's own accent.
+
+`ui_accept` needed no wiring: it has carried a gamepad binding project-wide since F-209/D-134.
+
+**Verified:** `.agent/bin/agent godot --script tools/terminal_focus_check.gd` (new, written by this
+task) → `TERMINAL_FOCUS_CHECK failures=0`, 24 PASS, exit 0, 0 `ERROR:` lines. Phase 1 drives both
+overlays solo through their real triggers and taps a real `InputEventJoypadButton` through
+`Input.parse_input_event()`, asserting `run_restarted` actually fires — the assertion that proves a
+bare controller can leave the screen at all. Phase 2 spawns a second process that joins this one,
+because `_is_host_or_solo()` reads live `NetTransport` state and the only honest way to test the
+non-host branch is to be a non-host; it asserts the waiting label is present, disabled, at
+`FOCUS_NONE`, and never the focus owner. Its result file is renamed into place rather than truncated
+in-place, so a polling driver cannot read a torn document (F-290's failure mode, not repeated).
+
+**Pre-fix proof** (`agent baseline` cannot help — the check does not exist at HEAD, the same
+constraint F-261 hit): both HUD files temporarily restored to their HEAD contents (copies kept aside,
+deliberately not `git stash`, which would have touched other lanes' uncommitted work) and the new
+check run against them → `failures=6`, exactly this finding's symptoms. Restored → `failures=0`.
+
+**Neighbours re-run green:** `menu_focus_check` failures=0, `run_restart_check` failures=0, generic
+`--quit-after 120` exit 0 with 0 `ERROR:` lines.
+
+**Swept for the same shape.** Every `ui/` file that builds an interactive control now carries both
+`grab_focus` and a focus-ring override, and every one already grabs after `visible = true`. Every
+`.disabled` assignment repo-wide (plus `.tscn`-authored `disabled`/`focus_mode`, of which there are
+none) checked against whether its panel has a dismiss path — only the two files fixed here were
+mandatory panels. One real sibling of the class filed as **F-297**: `attunement_ui.gd` latches
+`_picking` and disables every CHOOSE button on a request the host never answers, leaving that
+no-dismiss panel with no operable control at all; left to F-277's owner, who already holds that
+file's other restart defect.
+
+Spec block written at `docs/SPECS.md` §F-275 (none existed); convention and check recorded in
+`docs/DELEGATION.md` *Current state*. No `docs/DECISIONS.md` entry: "`disabled` is not `FOCUS_NONE`"
+is an engine fact and a house convention, not a contested call, and F-260's missing D-number
+allocator makes a gratuitous D-number a real collision risk.
 
 ### F-276 · F-243 carries depleted Hollowmere resources into the next run — **fixed**
 

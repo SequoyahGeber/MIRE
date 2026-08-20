@@ -1,6 +1,61 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "docs/DECISIONS.md": {
+      "agent": "lp",
+      "at": "2026-08-20T06:31:18+00:00",
+      "task": "F-278",
+      "token": null
+    },
+    "systems/environment/day_night.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T06:23:24+00:00",
+      "task": "F-278",
+      "token": null
+    },
+    "tools/day_night_restart_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T06:26:10+00:00",
+      "task": "F-278",
+      "token": null
+    },
+    "tools/run_restart_net_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T06:30:06+00:00",
+      "task": "F-278",
+      "token": null
+    }
+  },
+  "in_flight": {
+    "F-278": {
+      "agent": "lp",
+      "dispatched": true,
+      "files": [
+        "systems/environment/day_night.gd",
+        "tools/day_night_restart_check.gd",
+        "tools/run_restart_net_check.gd",
+        "docs/DECISIONS.md"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-20T06:30:58+00:00",
+          "by": "lp",
+          "text": "The reset must NOT go through host_set_time(): that seam crosses thresholds on purpose, and day_started_at (0.25) sits between a night-time run end and the 0.348 morning, so CycleService._on_day_started() would bank a phantom elapsed day against the counter host_restart_run() just zeroed. Reset writes time_of_day directly and fires nothing."
+        },
+        {
+          "at": "2026-08-20T06:30:58+00:00",
+          "by": "lp",
+          "text": "Two-process check caught the real half: net_push_time is UNRELIABLE and run_restarted reaches a client over WorldDeltaLog's RELIABLE ORDERED channel, so the reset push routinely OVERTAKES the event that explains it. A client-side snap on run_restarted alone is not enough \u2014 the interpolator itself needs a discontinuity threshold (CLIENT_SNAP_THRESHOLD 0.1). Measured 5 smeared frames before that was added."
+        },
+        {
+          "at": "2026-08-20T06:30:58+00:00",
+          "by": "lp",
+          "text": "tools/run_restart_net_check.gd's F-278 assertion was is_equal_approx on a RUNNING clock two awaited frames after the restart \u2014 it could never have passed even with a correct fix (900s day advances 1.9e-5/tick, twice CMP_EPSILON). Loosened to a 0.001 band."
+        }
+      ],
+      "started": "2026-08-20T06:20:37+00:00",
+      "token": null
+    }
+  },
   "recent": {
     ".": {
       "agent": "lp",
@@ -1208,16 +1263,16 @@
     },
     "docs/DELEGATION.md": {
       "agent": "lm",
-      "at": "2026-08-20T06:20:25+00:00",
-      "hash": "5dc292d4989115e4644b021ce208c10a73122ff48f76f55b57ba2926f789faca",
-      "task": "F-274",
+      "at": "2026-08-20T06:31:22+00:00",
+      "hash": "c7d3ce64df7bfe46c6b1cf0c81ddd9419fc968ef02a060843d35bf946aeddb17",
+      "task": "F-275",
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "lp",
-      "at": "2026-08-20T06:20:00+00:00",
-      "hash": "10b944a57d4c6ac7c902d87b6d17988b3e93f82f8ba0851226371cd76d7c48a1",
-      "task": "F-276",
+      "agent": "lm",
+      "at": "2026-08-20T06:31:22+00:00",
+      "hash": "c5f44d6ac7e21e8c2b8694cc98c8cf36215aaaa3bffd515777f8777be6899a2b",
+      "task": "F-275",
       "token": null
     },
     "docs/NEXT.md": {
@@ -1236,9 +1291,9 @@
     },
     "docs/SPECS.md": {
       "agent": "lm",
-      "at": "2026-08-20T06:20:25+00:00",
-      "hash": "d3a8f1ce40697f66ccab28ad8f233700fe534f95c4b69fd2a542d1067dbfd238",
-      "task": "F-274",
+      "at": "2026-08-20T06:31:22+00:00",
+      "hash": "8152a32e9ffc586aaf83fdc52d0e79169f7badcc9eadc218f4742a8643033ca7",
+      "task": "F-275",
       "token": null
     },
     "entities/player/player_camera.gd": {
@@ -2270,6 +2325,20 @@
       "task": "8.3",
       "token": null
     },
+    "tools/terminal_focus_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-20T06:31:22+00:00",
+      "hash": "66821e2e702530ab806a011774ff8f3b3f46aa9fbd5192a70f10caca3c1f217b",
+      "task": "F-275",
+      "token": null
+    },
+    "tools/terminal_focus_check.gd.uid": {
+      "agent": "lm",
+      "at": "2026-08-20T06:31:22+00:00",
+      "hash": "cea92bb9c622cf1c672ddceb15268df17af2b565555f943ce2d27f5ff4ed96c7",
+      "task": "F-275",
+      "token": null
+    },
     "tools/terrain_accents_check.gd": {
       "agent": "wick20",
       "at": "2026-08-19T17:37:53+00:00",
@@ -2347,13 +2416,6 @@
       "task": "F-250",
       "token": null
     },
-    "tools/wellspring_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T06:22:41+00:00",
-      "hash": "b3557cc66bc75b89a2b0bad8291a27995b2421670cce438de9efaf1b160af4ce",
-      "task": "F-181",
-      "token": null
-    },
     "tools/wetland_check.gd": {
       "agent": "wick20",
       "at": "2026-08-19T17:07:19+00:00",
@@ -2418,11 +2480,11 @@
       "token": null
     },
     "ui/hud/defeat_hud.gd": {
-      "agent": "bram1",
-      "at": "2026-08-19T22:14:05+00:00",
-      "hash": "c8f39e6ef50918896238b04f3e4180b9e3150020563c7a0dfa0a84917227dfdf",
-      "task": "F-243",
-      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
+      "agent": "lm",
+      "at": "2026-08-20T06:31:22+00:00",
+      "hash": "ead832c3f9be89a4207e6b970f5208ea8780b806e619f5a63d95fae368040414",
+      "task": "F-275",
+      "token": null
     },
     "ui/hud/defeat_hud.gd.uid": {
       "agent": "lp",
@@ -2432,11 +2494,11 @@
       "token": null
     },
     "ui/hud/extraction_hud.gd": {
-      "agent": "bram1",
-      "at": "2026-08-19T22:14:05+00:00",
-      "hash": "fb2e25ed2f00e96f7385a0e782217008f63c6c1454c6f46375f123147bed488b",
-      "task": "F-243",
-      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
+      "agent": "lm",
+      "at": "2026-08-20T06:31:22+00:00",
+      "hash": "8bc55923e225a543c3808fd2171782ffdf6141676a88bbd2683bc520d0b5dae3",
+      "task": "F-275",
+      "token": null
     },
     "ui/hud/extraction_hud.gd.uid": {
       "agent": "lp",
@@ -6556,10 +6618,20 @@
       "tier": "F",
       "title": "`BiomeMap.terrain_amplitudes()` has no shipped caller \u2014 every biome's authored `detail_amplitude`/`ridge_amplitude` is dead, and only the audit render applies them"
     },
+    "F-274-review": {
+      "est": "0.5",
+      "milestone": "Findings",
+      "review_of": "F-274",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Review F-274 @ 8754844 \u2014 review and fix what you find"
+    },
     "F-275": {
+      "done_at": "2026-08-20T06:31:22+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "F-243's terminal restart buttons are unreachable from a bare controller"
     },
@@ -6582,7 +6654,7 @@
     "F-278": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "F-243 starts the next run at the previous run's time of day"
     },
@@ -6676,6 +6748,41 @@
       "status": "todo",
       "tier": "F",
       "title": "A `--script` check that fires a real `EventBus` event as a state-setup shortcut can be broken by an unrelated later feature that subscribes to the same event \u2014 **fixed in `tools/unlock_check.gd`, same class not yet swept project-wide**"
+    },
+    "F-292": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "tools/nav_bake_check.gd has had 4 failures at HEAD since the 4.13/4.14 terrain retune \u2014 the island has no gentle chunk-boundary strip at its 30-degree gate"
+    },
+    "F-293": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Nothing enumerates and runs the tools/ check suite, so a red check sits at HEAD indefinitely \u2014 two were red for days and a third was asserting nothing"
+    },
+    "F-294": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Every surface sample allocates two or three Arrays inside island_heightmap.gd \u2014 lobes(), islet_centres() and river_polyline() are rebuilt per point, and F-274 doubled the river walk"
+    },
+    "F-295": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Every batched Hollowmere harvestable had a per-process node name, so none of the map's 794 batch-drawn props ever replicated"
+    },
+    "F-296": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "NetInterest.configure() installs authority-only visibility processing on every peer, so each client logs ERR_BUG from _update_spawn_visibility on join"
     }
   },
   "version": 1
