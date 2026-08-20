@@ -121,6 +121,14 @@ DEFAULT_LANES = {
         # already passed its own tests — but each finding then cost a separate dispatch to repair.
         # A reviewer that may edit closes the loop in one pass instead of three.
         "second_pass": True,
+        # Reserved: Sequoyah spends this account's weekly himself and needs it to last the week.
+        # Delegation is pointed at LP instead. Everything above (slots, second_pass) stays built and
+        # comes back the moment he lifts this.
+        "manual": True,
+        # Up to three concurrent runs on this lane (slots lm / lm2 / lm3), each a DISTINCT agent
+        # identity — the claim system falls back to name-matching for lanes, so two runs both named
+        # "lm" would treat each other's claims as their own and walk into one file together.
+        "max_concurrent": 3,
     },
     "LP": {
         "account": "Claude Pro", "cli": "claude",
@@ -161,6 +169,7 @@ def load_lanes():
         lane = dict(LEDGER_DEFAULTS)
         lane.update(spec)
         lane.update(data.get(name, {}))
+        lane["name"] = name
         data[name] = lane
     return data
 
@@ -501,11 +510,13 @@ def until_passed(iso):
 
 # ---------------------------------------------------------------- command
 
-def build(lane, name, last_msg):
+def build(lane, name, last_msg, slot=1):
     """Return (argv, env). The prompt is passed on stdin, not argv — work orders run to several KB
     and argv limits are a silly way to lose a dispatch."""
     env = os.environ.copy()
-    env["MIRE_AGENT"] = name.lower()          # stable identity in the claim system
+    # Slot 1 keeps the historical bare name; higher slots get their own identity (lm2, lm3) so the
+    # claim system treats concurrent runs as the strangers they are.
+    env["MIRE_AGENT"] = name.lower() if slot <= 1 else "%s%d" % (name.lower(), slot)
     env.pop("CLAUDE_CODE_SESSION_ID", None)   # do not inherit the director's chat identity
     env.pop("CODEX_SESSION_ID", None)
     env.pop("MIRE_SESSION", None)
@@ -558,6 +569,7 @@ def cmd_run(args):
     timeout = DEFAULT_TIMEOUT
     if "--timeout" in args:
         timeout = int(args[args.index("--timeout") + 1])
+    slot = int(args[args.index("--slot") + 1]) if "--slot" in args else 1
 
     lanes = load_lanes()
     if name not in lanes:
@@ -622,7 +634,7 @@ def cmd_run(args):
             continue
         lane[key] = m.group(1)
 
-    argv, env = build(lane, name, last_msg)
+    argv, env = build(lane, name, last_msg, slot)
 
     if dry:
         print("%s%s → %s%s" % (C["b"], name, task, C["x"]))
@@ -780,7 +792,7 @@ def _apply_finish(lane, name, task, code, tin, tout, cost, acc, tail, logpath, e
         lane["consecutive_failures"] += 1
         lane["last_error"] = "exited 0 without closing out %s" % task
     elif code == 0:
-        lane["status"] = "idle"
+        lane["status"] = "idle" if live_runs(name, exclude_pid=os.getpid()) == 0 else "running"
         lane["consecutive_failures"] = 0
         lane["last_error"] = None
         cached = int(acc.get("cached", 0))
@@ -932,25 +944,55 @@ def roll_window(lane):
         lane.update({"window_started": now(), "tokens_in": 0, "tokens_out": 0, "cost_usd": 0.0})
 
 
-def busy_block(lane):
-    """One account cannot run two agents at once.
+def live_runs(name, exclude_pid=None):
+    """How many `lane run <NAME>` processes are alive right now, counted from ps.
 
-    Nothing stopped a second dispatch onto a lane that was already working: two processes on one
-    subscription, burning the window twice as fast and racing each other for the same file claims.
-    Trust the pid over the status field — a status left 'running' by a killed process must not
-    strand the lane forever."""
-    pid = lane.get("pid")
-    if not pid:
-        return None
+    Counted, not read from the ledger: the ledger has one pid slot, and with `max_concurrent` above
+    one it can only ever name one of the runs. ps is the ground truth the old code already preferred
+    ("trust the pid over the status field") — this is the same idea for N pids. The caller's own
+    process is excluded because cmd_run's own command line is `lane run <NAME> <tid>`, the exact
+    string being counted — the pgrep-self-match trap ORCHESTRATION.md documents."""
     try:
-        os.kill(pid, 0)
-    except (OSError, TypeError):
-        return None
-    return "already running %s (pid %s) — one account, one agent" % (lane.get("task", "?"), pid)
+        out = subprocess.run(["ps", "-eo", "pid,command"], capture_output=True,
+                             text=True, timeout=10).stdout
+    except (OSError, subprocess.SubprocessError):
+        return 0
+    n = 0
+    for line in out.splitlines():
+        parts = line.strip().split(None, 1)
+        if len(parts) < 2 or "grep" in parts[1]:
+            continue
+        if exclude_pid is not None and parts[0] == str(exclude_pid):
+            continue
+        if re.search(r"lane\S* run %s( |$)" % re.escape(name), parts[1]):
+            n += 1
+    return n
+
+
+def busy_block(lane):
+    """A lane refuses new work at its concurrency cap (default 1 — one account, one agent).
+
+    The cap exists because two processes on one subscription burn the window twice as fast and race
+    each other for claims. Lanes that raise `max_concurrent` (LM: 3, D-152) accept the burn rate on
+    purpose — a weekly that expires unspent is the greater waste — and each slot runs under its own
+    agent identity so the claim system keeps them out of each other's files."""
+    cap = int(lane.get("max_concurrent") or 1)
+    alive = live_runs(lane.get("name", "?"), exclude_pid=os.getpid())
+    if alive >= cap:
+        return "already running %d task(s) — at its cap of %d" % (alive, cap)
+    return None
 
 
 def quota_block(lane):
     """Why this lane must not be dispatched right now, or None."""
+    # A lane can be RESERVED for the human: its quota is being spent by his own chat sessions and has
+    # to stretch across a period (LM's weekly must last a week, 2026-08-19). That is the one case
+    # where an idle lane is not waste — the use-it-or-lose-it rule assumes nobody else is spending it.
+    # Enforced here rather than by the director's discipline, because "remember not to route there"
+    # is exactly the kind of rule that survives one session and no more.
+    if lane.get("manual"):
+        return ("reserved for Sequoyah's own sessions — its quota is budgeted by hand, not "
+                "dispatched (clear it with: agent lane-release %s)" % (lane.get("name") or "<lane>"))
     busy = busy_block(lane)
     if busy:
         return busy

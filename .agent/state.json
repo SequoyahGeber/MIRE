@@ -25,9 +25,9 @@
     },
     ".agent/bin/lane": {
       "agent": "bram1",
-      "at": "2026-08-19T22:25:36+00:00",
-      "hash": "3c4e46b1b1f2f1a0076b905172e3f475dcf3fcbc18ed0c39677174184f331168",
-      "task": "F-260",
+      "at": "2026-08-20T06:55:12+00:00",
+      "hash": "8d350b7a3a9396e9d7094245db0679195c7183b58475b0289fd5e0495f26c7db",
+      "task": "F-299",
       "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     },
     ".agent/bin/lane-keeper": {
@@ -6639,7 +6639,7 @@
     "F-297": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "AttunementUI's mandatory picker latches _picking on an unanswered request, leaving a no-dismiss panel with every button disabled"
     },
@@ -6649,6 +6649,15 @@
       "status": "todo",
       "tier": "F",
       "title": "A client carries its own stamina and sprint lockout across a run restart \u2014 PlayerHealth's run_restarted handler is gated on _owns_mutation()"
+    },
+    "F-299": {
+      "done_at": "2026-08-20T06:55:12+00:00",
+      "done_by": "bram1",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Lanes need a reserved-for-human flag: LM's weekly must last a week of manual sessions, and 'remember not to route there' is not a mechanism"
     }
   },
   "version": 1

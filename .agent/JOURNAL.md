@@ -6895,3 +6895,15 @@ Notes along the way:
 Files: `autoload/attunement_service.gd`, `ui/attunement/attunement_ui.gd`, `tools/attunement_restart_check.gd`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `98bd87f`
+
+---
+
+### DONE · F-299 · bram1 · 2026-08-20T06:55:12+00:00
+
+**Lanes need a reserved-for-human flag: LM's weekly must last a week of manual sessions, and 'remember not to route there' is not a mechanism**
+
+manual: true now blocks dispatch in quota_block; LM and LC1 flagged, LP and LC2 free. LM queue drained to LP (11 orders there now). LC2 revive armed for its Sunday return. Verified LM refuses and LP dispatches.
+
+Files: `.agent/bin/lane`
+
+Commit at time of writing: `1e49814`
