@@ -5353,3 +5353,32 @@ record would need a generation counter rather than a liveness test.
 
 **D-number hazard (F-283).** Taken by reading the file's tail; D-169 was the highest at the time.
 Still no atomic allocator, so a concurrent lane could take D-170 too.
+
+### D-171 · 2026-08-20 · F-288: a parity assertion compares the FULL ordered contract with exact deep equality, and proves its own comparator before the parity is trusted
+Two rules for every check that asserts "these two derivations agree" — same seed twice, a rebuild
+versus a boot, host versus client:
+
+**1. Compare the whole ordered record, exactly.** A `size()` compare is not a parity assertion, and
+neither is a spot-check of two convenient fields. `run_reseed_check` phase 5 claimed a rebuilt island
+was "byte-identical" to a booted one on the strength of four terrain samples and an equal POI *count*
+— a rebuild that kept the ended run's transforms passed it (F-288). `procedural_world_check` compared
+position and `def_id` and let rotation and scene path through. Flatten the record to an `Array` of
+per-item `Array`s, read fields by explicit key, and compare with `==`: deep `Array` equality walks it
+element by element with exact float comparison. Prefer that to a formatted fingerprint string —
+`poi_check.gd`'s rounds position to 3dp, which is right for the question it asks and wrong for
+anything guarding cross-peer derivation, where the drift you are hunting is smaller than the
+rounding.
+
+**2. The comparator asserts itself first.** The failure mode here is not a wrong answer, it is an
+assertion that proves nothing while printing PASS — so a replacement that also proves nothing closes
+the finding and changes no facts. Before trusting a match, perturb a duplicate of one side by the
+smallest change that must matter (F-288 adds `0.001` to one site's `rotation_y`) and assert the
+comparator sees it. A comparator that flattened everything away then fails at the top of the phase
+instead of passing quietly at the bottom. This is also the standing substitute for pre-fix sabotage
+when the file you would have to break is held by another lane: sabotage proves the assertion once, in
+a commit nobody keeps; the self-test proves it on every run forever.
+
+**Would change my mind:** an exact deep compare that turns out to be flaky across platforms for a
+value we genuinely do not control bit-for-bit (a physics-settled transform, say). The answer there is
+a documented `is_equal_approx` walk with a stated tolerance and the same self-test — not a return to
+counting.

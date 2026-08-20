@@ -30,13 +30,6 @@
       "task": "F-256",
       "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     },
-    ".gitignore": {
-      "agent": "lm",
-      "at": "2026-08-19T10:57:39+00:00",
-      "hash": "0d72d5badf5ecd49c53ea81f2b6979c76e04792f746071f895a2d9a4c9c29575",
-      "task": "8.4",
-      "token": null
-    },
     "AGENTS.md": {
       "agent": "bram1",
       "at": "2026-08-19T22:21:28+00:00",
@@ -788,16 +781,16 @@
     },
     "docs/DECISIONS.md": {
       "agent": "lp",
-      "at": "2026-08-20T10:57:18+00:00",
-      "hash": "3b8da138949061e8f4d343de09eac7e8e14b3f64ac2c33bd47273b9ade5f7c0b",
-      "task": "F-287",
+      "at": "2026-08-20T11:03:39+00:00",
+      "hash": "fc76f40f5c27dffdeb7eb13f25adec7d0948171b41b752605a243aadf25fa01c",
+      "task": "F-288",
       "token": null
     },
     "docs/DELEGATION.md": {
       "agent": "lp",
-      "at": "2026-08-20T10:57:18+00:00",
-      "hash": "5c10f999b5e26dac69b485367f0794581ae290e27b52fba004249b285c78a89d",
-      "task": "F-287",
+      "at": "2026-08-20T11:03:39+00:00",
+      "hash": "74e09628f1d011be56888111879c34f4d55d14ca19f007d2f2d60381f92e316b",
+      "task": "F-288",
       "token": null
     },
     "docs/FINDINGS.md": {
@@ -816,16 +809,9 @@
     },
     "docs/SPECS.md": {
       "agent": "lp",
-      "at": "2026-08-20T10:57:18+00:00",
-      "hash": "3db46f98e4f6bc33b92e618194bc1001b6735d6c4cd0af6f74156fdf9e10a0cb",
-      "task": "F-287",
-      "token": null
-    },
-    "export_presets.cfg": {
-      "agent": "lm",
-      "at": "2026-08-19T10:57:39+00:00",
-      "hash": "ee8974ead450b674488ad53fa18b605497a6d0dc94a331c9dc701f481c051b3c",
-      "task": "8.4",
+      "at": "2026-08-20T11:03:39+00:00",
+      "hash": "ab9a65e69a2889971786b2dbef0a02259d0ddf7cb5dcccfe386f7c1a1c99e62b",
+      "task": "F-288",
       "token": null
     },
     "project.godot": {
@@ -1157,6 +1143,13 @@
       "task": "F-274",
       "token": null
     },
+    "tools/command_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T11:03:39+00:00",
+      "hash": "da3659ecccffafa9c3d6dd02db8cd2e52dff224c58c4b60586c30e37688c21ac",
+      "task": "F-288",
+      "token": null
+    },
     "tools/command_console_check.gd": {
       "agent": "lm",
       "at": "2026-08-19T14:13:26+00:00",
@@ -1389,11 +1382,11 @@
       "token": null
     },
     "tools/procedural_world_check.gd": {
-      "agent": "yarrow21",
-      "at": "2026-08-19T17:09:07+00:00",
-      "hash": "2fa487e59c04b7164b3e616b90cfdffffa6c92d51aea5dd69acd315d8e049609",
-      "task": "4.15",
-      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
+      "agent": "lp",
+      "at": "2026-08-20T11:03:39+00:00",
+      "hash": "70daefaa4d24ba30a9d5f207037a3193ec811815fe82dcf33382789cb12d6fb4",
+      "task": "F-288",
+      "token": null
     },
     "tools/prop_chunk_merge_check.gd": {
       "agent": "lm",
@@ -1439,9 +1432,9 @@
     },
     "tools/run_reseed_check.gd": {
       "agent": "lp",
-      "at": "2026-08-20T05:24:46+00:00",
-      "hash": "21d47d434c3ba8f76356477778de310e2b38477461c6e71388a2758aaa31abd7",
-      "task": "F-258",
+      "at": "2026-08-20T11:03:39+00:00",
+      "hash": "2d9cb2cf1631edc49b363ab8aef427c95432f0f739e25f697f3ad329e31dbf7b",
+      "task": "F-288",
       "token": null
     },
     "tools/run_restart_check.gd": {
@@ -1514,13 +1507,6 @@
       "task": "F-257",
       "token": null
     },
-    "tools/steam/export_release.sh": {
-      "agent": "lm",
-      "at": "2026-08-19T10:57:39+00:00",
-      "hash": "fe5a9b8d9f8175b29d0d8448d603c7c5002f90ed50db49a8521ec38748067eb5",
-      "task": "8.4",
-      "token": null
-    },
     "tools/steam/steam_build_config.sh": {
       "agent": "lp",
       "at": "2026-08-19T19:05:14+00:00",
@@ -1533,34 +1519,6 @@
       "at": "2026-08-19T22:35:43+00:00",
       "hash": "03862b4d1b7fb88917cce04bff75156f98bead13b936637b722df1b9a70accd8",
       "task": "F-257",
-      "token": null
-    },
-    "tools/steam/templates/app_build.vdf.template": {
-      "agent": "lm",
-      "at": "2026-08-19T10:57:39+00:00",
-      "hash": "bb38f5f43b76704deb58e6fd885d3e564f7e29be418e1e4a8b2ffdb46410e9f3",
-      "task": "8.4",
-      "token": null
-    },
-    "tools/steam/templates/depot_linux.vdf.template": {
-      "agent": "lm",
-      "at": "2026-08-19T10:57:39+00:00",
-      "hash": "402bd73c0c9d2b69716906ef72661aa767c7cc5ecf45c08ad5255c0474658215",
-      "task": "8.4",
-      "token": null
-    },
-    "tools/steam/templates/depot_macos.vdf.template": {
-      "agent": "lm",
-      "at": "2026-08-19T10:57:39+00:00",
-      "hash": "584537cb313d2381433e7526499394bf6a160d5eb994049c1a0185fe06e2d03f",
-      "task": "8.4",
-      "token": null
-    },
-    "tools/steam/templates/depot_windows.vdf.template": {
-      "agent": "lm",
-      "at": "2026-08-19T10:57:39+00:00",
-      "hash": "79e4666121fe3833111303aee489bae7710c40f7d65a94423f28a43fddc59dcc",
-      "task": "8.4",
       "token": null
     },
     "tools/steam_check.gd": {
@@ -5957,9 +5915,11 @@
       "title": "Procedural reseed accumulates EnvironmentVfx emitter sites from every previous island"
     },
     "F-288": {
+      "done_at": "2026-08-20T11:03:39+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "run_reseed_check claims POI-layout parity but compares only POI counts"
     },
@@ -6062,6 +6022,13 @@
       "status": "todo",
       "tier": "F",
       "title": "The two shipped layout JSONs write the spawn record in two different shapes, so every generic reader needs both"
+    },
+    "F-303": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "EnvironmentVfx.foliage_mesh_count is a cumulative dressing tally, so it climbs by a whole island on every procedural reseed"
     }
   },
   "version": 1

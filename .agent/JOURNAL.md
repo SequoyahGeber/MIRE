@@ -6964,3 +6964,18 @@ Notes along the way:
 Files: `autoload/environment_vfx.gd`, `tools/environment_vfx_reseed_check.gd`, `docs/SPECS.md`, `docs/DELEGATION.md`, `docs/DECISIONS.md`
 
 Commit at time of writing: `2c77890`
+
+---
+
+### DONE · F-288 · lp · 2026-08-20T11:03:39+00:00
+
+**run_reseed_check claims POI-layout parity but compares only POI counts**
+
+run_reseed_check phase 5 now asserts the full ordered poi_sites contract — site_id/def_id/position/rotation_y/biome/scene_path/spacing/clearance, in placement order, compared with deep Array equality (exact floats, no rounding fingerprint). The rebuilt layout must differ from the boot seed's and must match a fresh boot on the same seed field for field; the old 'identical POI count' size compare and the mislabelled 'byte-identical' four-probe height claim are both replaced by what they actually test. _layout_detects_perturbation() proves the comparator sees a 0.001 rotation nudge BEFORE any parity is trusted — the substitute for pre-fix sabotage, which needed world/gen/procedural_world.gd (held by lm under F-274). Sweep fixed two siblings in the same class: procedural_world_check.gd compared position+def_id only, command_check.gd compared JSON dump entry COUNT. Proof: agent godot --script tools/run_reseed_check.gd -> RUN_RESEED_CHECK failures=0 ending 'PASS: ...and an IDENTICAL POI layout, field for field — no field differs'; tools/procedural_world_check.gd -> failures=0; tools/command_check.gd -> failures=0. Spec block written in docs/SPECS.md (none existed), D-171 in DECISIONS, pattern in DELEGATION 'Current state'.
+
+Notes along the way:
+- Fix landed and verified: agent godot --script tools/run_reseed_check.gd -> RUN_RESEED_CHECK failures=0, with the new field-for-field layout parity assertion reporting 'no field differs'. Pre-fix sabotage proof was NOT possible: the only way to make a rebuild retain the ended run's POI transforms is to edit world/gen/procedural_world.gd, which lm holds under F-274. Replaced it with a permanent in-check teeth proof — _layout_detects_perturbation() nudges one site's rotation_y by 0.001 on a duplicate and asserts the comparator reports a difference, so a comparator that flattened everything away fails BEFORE the parity match is trusted.
+
+Files: `tools/run_reseed_check.gd`, `tools/procedural_world_check.gd`, `tools/command_check.gd`, `docs/SPECS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `be41628`

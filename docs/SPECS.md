@@ -10295,3 +10295,87 @@ the name-fallback map), `ENVIRONMENT_VFX_HOLLOWMERE_CHECK failures=0` (2 campfir
 — the F-258 check whose own restart path now runs this subscription.
 
 **Resolved** — see `docs/FINDINGS.md`.
+
+---
+
+## F-288 · `run_reseed_check` claims POI-layout parity but compares only POI counts
+
+**Claim:** `tools/run_reseed_check.gd`, and — from the sweep — `tools/procedural_world_check.gd`,
+`tools/command_check.gd`, plus the four docs. Network authority: **none changed**. This task edits
+`--script` harnesses only; no shipped system, no RPC, **no `PROTOCOL_VERSION` bump**. The property
+under test is still `ARCHITECTURE.md` §4's: a POI layout is never sent over the wire, every peer
+re-derives it from the shared seed, so layout divergence is a silent desync with no detector but
+these checks.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The shape of the bug.** F-258's spec promised phase 5 would prove that a rebuild on a seed is
+indistinguishable from a boot on that seed. What phase 5 actually asserted was
+`(world.poi_sites as Array).size() == (fresh.poi_sites as Array).size()`, labelled "...and the
+identical POI count", under a preceding assertion labelled "byte-identical" that sampled the terrain
+function at four points. Nothing compared any site's id, def, position, rotation, biome or scene
+path, before-versus-after or rebuilt-versus-fresh. A `rebuild_for_seed()` that retained every POI
+transform from the ended run, or handed the right number of ids the wrong positions, or simply
+disagreed with a fresh boot while preserving count, reported `RUN_RESEED_CHECK failures=0`. That is
+the blind spot that put F-286's marker consumers inside a green result.
+
+**The fix: compare the ordered contract with deep `Array` equality, not a fingerprint string.**
+`_poi_layout(world)` flattens `poi_sites` into an `Array` of per-site `Array`s —
+`[site_id, def_id, position, rotation_y, biome, scene_path, spacing, clearance]`, in placement
+order — and the assertions are plain `==` / `!=` on that. Deliberately *not* a formatted string:
+`poi_check.gd`'s `_fingerprint()` rounds position to 3dp and rotation to 4dp, which is fine for the
+determinism question it asks but would let sub-millimetre float drift pass as parity here, and this
+is the check standing behind two peers deriving the same island from one broadcast. Deep `Array`
+equality compares the floats exactly. Fields are read by explicit key rather than comparing the
+site `Dictionary` wholesale, so a key added to a site by `PoiMap` widens this list deliberately
+instead of silently joining — or silently leaving — the assertion.
+
+**The comparator asserts itself first, and this is the load-bearing part.** The failure F-288
+describes is not a wrong comparison, it is a comparison that proves nothing while reading green, so
+a *replacement* comparison that also proves nothing would close the finding and change no facts.
+Before any parity is trusted, `_layout_detects_perturbation()` duplicates the boot layout, adds
+`0.001` to one site's `rotation_y`, and asserts the comparator reports a difference. A layout compare
+that flattened everything away now fails loudly at the top of the phase instead of passing quietly at
+the bottom.
+
+**Why there is no pre-fix sabotage proof.** The usual demonstration — break the code, watch the new
+assertion catch it — is unavailable: the only way to make a rebuild keep the ended run's POI
+transforms is to edit `world/gen/procedural_world.gd`, held by another lane under F-274 for this
+task's whole length, and D-153/F-262 make waiting on that claim worse than not having the proof. The
+self-test above is the permanent substitute, and it is the better artefact: sabotage proves the
+assertion once, in a scratch commit nobody keeps; the self-test proves it on every run forever.
+
+**The mislabelled assertion is renamed, not deleted.** "a rebuilt island is byte-identical to one
+BOOTED on the same seed" now reads "...matches one BOOTED on the same seed at all %d height probes".
+Four samples of a continuous height function is a real signal and worth keeping; calling it
+byte-identity is what let the POI compare stay a size check underneath it without looking thin.
+
+**The sweep (AGENTS.md step 3) — the class is "sameness asserted by count".** Every `size()`-based
+assertion in `tools/*.gd` whose text claims identity, parity or determinism, checked by hand:
+
+- `tools/procedural_world_check.gd:113` — **fixed here.** "same seed reproduces every POI site,
+  position and order" compared `position` and `def_id` per site and nothing else, so a seed that
+  reproduced every site in the right place but spun one, or pointed it at a different scene, read as
+  identical. Now goes through `_same_site()` over id/def/position/rotation/biome/scene path.
+- `tools/command_check.gd:108` — **fixed here.** "the printed message is the same dump as valid
+  JSON" was `parsed.size() == dump.size()`; a message printing the right number of wrong commands
+  passed. Both sides now take one `JSON.stringify`/`parse_string` round-trip — which normalises
+  `StringName` and int-vs-float on the `data` side to whatever the parser produces — and then compare
+  deeply.
+- `tools/atmosphere_night_check.gd:214`, `tools/resource_scatter_check.gd:317` — **already correct.**
+  Both start from a size compare and then walk every element field by field (`_same_placements()`
+  covers point id, asset, position, rotation and scale). Left alone.
+- `tools/poi_check.gd:280` — **correct for its own question, left alone** (and held by F-274). Its
+  `_fingerprint()` rounds, but it asks "does one seed place identically twice in one process", where
+  bitwise drift is not the hazard being hunted.
+- Every other `size() ==` in `tools/` asserts a count that *is* the whole claim — "fires exactly
+  once", "all 8 shipped `Cache_` markers got a Chest", "exactly 3 worked-example biomes load". Not
+  this class.
+
+**Verify:** `.agent/bin/agent godot --script tools/run_reseed_check.gd` →
+`RUN_RESEED_CHECK failures=0`, with `PASS: the layout comparator sees a single nudged rotation`,
+`PASS: the POI LAYOUT re-derived, not just its count` and
+`PASS: ...and an IDENTICAL POI layout, field for field — no field differs`. Plus
+`--script tools/procedural_world_check.gd` and `--script tools/command_check.gd` for the two swept
+siblings.

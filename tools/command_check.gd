@@ -104,9 +104,16 @@ func _check_commands_introspection() -> void:
 	check(String(by_name.get("items", {}).get("scope", "")) == "local", "items is LOCAL scope")
 	check(String(by_name.get("op", {}).get("scope", "")) == "host", "op is HOST scope")
 
+	# F-288's sweep: "the same dump" used to be asserted by entry COUNT alone, so a message that
+	# printed the right number of wrong commands passed. Both sides go through one JSON round-trip
+	# first — that normalises StringName/int-vs-float on the `data` side to whatever the parser
+	# produces — and then compare deeply, which is what "the same dump" actually means.
 	var parsed: Variant = JSON.parse_string(String(json_result.get("message", "")))
+	var normalised: Variant = JSON.parse_string(JSON.stringify(dump))
 	check(parsed is Array and (parsed as Array).size() == dump.size(),
-		"the printed message is the same dump as valid JSON")
+		"the printed message parses as JSON with every entry (%d)" % dump.size())
+	check(parsed == normalised,
+		"...and it is the SAME dump, entry for entry and field for field")
 
 
 # ── parse/validate/usage errors ─────────────────────────────────────────────────────────────────────

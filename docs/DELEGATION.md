@@ -75,6 +75,50 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-20 — F-288 resolved: `run_reseed_check` phase 5 asserts the FULL ordered POI layout, and the comparator proves itself before the parity is trusted (lp)
+
+**What was wrong.** F-258's spec said phase 5 proved a rebuild is indistinguishable from a boot on
+the same seed. What it asserted was `poi_sites.size() == poi_sites.size()`, labelled "...and the
+identical POI count", under a preceding assertion labelled "byte-identical" that sampled the terrain
+function at four points. No site's id, def, position, rotation, biome or scene path was compared in
+either direction. A `rebuild_for_seed()` that kept every POI transform from the ended run reported
+`RUN_RESEED_CHECK failures=0` — which is how F-286's marker consumers ended up inside a green result.
+
+**The pattern to copy, in any check comparing two derivations** (D-171, and see F-287's entry below
+for the same blind spot in `EnvironmentVfx`):
+
+```gdscript
+# 1. flatten the ordered record; read fields by explicit key, never compare Dictionaries wholesale
+func _poi_layout(world: Node3D) -> Array:      # tools/run_reseed_check.gd
+    # -> [[site_id, def_id, position, rotation_y, biome, scene_path, spacing, clearance], ...]
+
+# 2. compare with deep Array `==` — exact floats, no fingerprint string to round drift away
+check(rebuilt_layout == fresh_layout, "...field for field — %s" % _layout_diff(a, b))
+
+# 3. and FIRST, prove the comparator can see a 0.001 rotation change on a duplicate
+check(_layout_detects_perturbation(before_layout), "...a match below means something")
+```
+
+Step 3 is not ceremony. The bug class here is an assertion that proves nothing while printing PASS,
+so a replacement that also proves nothing closes the finding and changes no facts. It is also the
+standing substitute for pre-fix sabotage when the file you would need to break is held by another
+lane — as `world/gen/procedural_world.gd` was for all of this task.
+
+**Swept siblings, both fixed under this claim.** `tools/procedural_world_check.gd`'s "same seed
+reproduces every POI site, position and order" compared `position` and `def_id` only, so a spun
+landmark or a swapped scene path read as identical — now `_same_site()` over
+id/def/position/rotation/biome/scene path. `tools/command_check.gd`'s "the printed message is the
+same dump" was an entry-count compare — now one `JSON.stringify`/`parse_string` round-trip on both
+sides (which normalises `StringName` and int-vs-float on the `data` side) and then a deep compare.
+`atmosphere_night_check.gd` and `resource_scatter_check.gd` already walk every element and were left
+alone; `poi_check.gd`'s rounding `_fingerprint()` is correct for the same-process determinism
+question it asks, and is the thing NOT to copy for a cross-peer derivation guard.
+
+**Verify:** `agent godot --script tools/run_reseed_check.gd` → `failures=0`, ending
+`PASS: ...and an IDENTICAL POI layout, field for field — no field differs`. Siblings:
+`tools/procedural_world_check.gd` → `failures=0`, `tools/command_check.gd` → `failures=0`.
+
+
 ### 2026-08-20 — F-287 resolved: `EnvironmentVfx` retires emitter sites with the props they came from, so an in-place reseed REPLACES its site set (lp)
 
 **What was wrong.** F-258 rebuilds the island inside the existing current scene. `EnvironmentVfx`

@@ -20,7 +20,9 @@ extends SceneTree
 ##      depends on). Plus `Chest`'s per-run loot stream re-seeding off the new value.
 ##   5. The fresh island: ProceduralWorld.rebuild_for_seed() re-derives terrain, POI layout and
 ##      spawn, and the result matches a world BUILT on that seed from scratch — a rebuild must be
-##      indistinguishable from a boot, or two peers restarting would disagree.
+##      indistinguishable from a boot, or two peers restarting would disagree. Layout parity is the
+##      FULL ordered `poi_sites` contract, field for field (F-288): the count-only compare this
+##      phase shipped with would have passed a rebuild that kept the ended run's transforms.
 ##
 ## Solo/offline, one process — the same "host-of-one is host authority with no peer to disagree"
 ## configuration `tools/run_restart_check.gd` runs in, and the reason phase 3 exercises the receive
@@ -241,9 +243,14 @@ func _phase_fresh_island(game_state: Node) -> void:
 	await process_frame
 
 	var before_heights: PackedFloat32Array = _height_profile(world)
-	var before_sites: int = (world.get(&"poi_sites") as Array).size()
+	var before_layout: Array = _poi_layout(world)
 	var before_spawn: Vector3 = world.get(&"spawn_position")
-	check(before_sites > 0, "the world booted with POI sites (%d)" % before_sites)
+	check(before_layout.size() > 0, "the world booted with POI sites (%d)" % before_layout.size())
+	# F-288: the comparator is the assertion here, so prove it has teeth before trusting a match.
+	# A layout compare that cannot see a one-field change would report parity for any rebuild at
+	# all — which is exactly the blind spot this phase shipped with (count-only equality).
+	check(_layout_detects_perturbation(before_layout),
+		"the layout comparator sees a single nudged rotation — a match below means something")
 
 	world.call("rebuild_for_seed", REBUILD_SEED)
 	await process_frame
@@ -256,9 +263,14 @@ func _phase_fresh_island(game_state: Node) -> void:
 		"the island itself changed — the height profile differs from seed %d's" % boot_seed)
 	check(world.get(&"spawn_position") != before_spawn,
 		"landfall moved with it (%s -> %s)" % [before_spawn, world.get(&"spawn_position")])
-	check((world.get(&"poi_sites") as Array).size() > 0,
-		"the new island still gets POI sites (%d)"
-			% (world.get(&"poi_sites") as Array).size())
+	var rebuilt_layout: Array = _poi_layout(world)
+	check(rebuilt_layout.size() > 0,
+		"the new island still gets POI sites (%d)" % rebuilt_layout.size())
+	# Count is not layout. A rebuild that kept the ended run's transforms, or handed the right
+	# number of ids the wrong positions, would pass a size compare and put every marker consumer
+	# on the previous island (F-288, and the mechanism behind F-286).
+	check(rebuilt_layout != before_layout,
+		"the POI LAYOUT re-derived, not just its count — %s" % _layout_diff(before_layout, rebuilt_layout))
 	check(_named_child_count(world, "PoiSites") == 1 and _named_child_count(world, "SpawnMarker") == 1,
 		"the previous island's PoiSites/SpawnMarker were torn down, not duplicated")
 
@@ -274,15 +286,74 @@ func _phase_fresh_island(game_state: Node) -> void:
 	fresh_scene.add_child(fresh)
 	await process_frame
 
+	# The label used to say "byte-identical" over a four-point height sample (F-288). It samples
+	# the terrain function at PROBE_POINTS and nothing more — say so, and let the POI compare below
+	# carry the real weight.
 	check(_height_profile(world) == _height_profile(fresh),
-		"a rebuilt island is byte-identical to one BOOTED on the same seed")
+		"a rebuilt island matches one BOOTED on the same seed at all %d height probes"
+			% PROBE_POINTS.size())
 	check(world.get(&"spawn_position") == fresh.get(&"spawn_position"),
 		"...and picks the identical spawn")
-	check((world.get(&"poi_sites") as Array).size() == (fresh.get(&"poi_sites") as Array).size(),
-		"...and the identical POI count")
+	# The full ordered contract — every site's id, def, position, rotation, biome, scene path and
+	# spacing, in placement order. Deep Array equality, so floats compare exactly; no rounding to
+	# hide a metre of drift. This is what F-258's spec claimed and what the old size compare did
+	# not check.
+	var fresh_layout: Array = _poi_layout(fresh)
+	check(rebuilt_layout.size() == fresh_layout.size(),
+		"...and the identical POI count (%d)" % fresh_layout.size())
+	check(rebuilt_layout == fresh_layout,
+		"...and an IDENTICAL POI layout, field for field — %s"
+			% _layout_diff(rebuilt_layout, fresh_layout))
 
 
 # ── helpers ─────────────────────────────────────────────────────────────────────────────────────
+
+
+## The ordered `poi_sites` contract, flattened to plain values so two worlds compare with deep
+## Array `==` — exact float equality, no stringification rounding a difference away. Keys are read
+## explicitly rather than comparing the Dictionaries wholesale: a new key added to a site by
+## `PoiMap` should widen this list deliberately, not silently start or stop being asserted.
+func _poi_layout(world: Node3D) -> Array:
+	var out: Array = []
+	for site: Dictionary in (world.get(&"poi_sites") as Array):
+		out.append([
+			String(site.get("site_id", "")),
+			StringName(site.get("def_id", &"")),
+			site.get("position", Vector3.ZERO) as Vector3,
+			float(site.get("rotation_y", 0.0)),
+			StringName(site.get("biome", &"")),
+			String(site.get("scene_path", "")),
+			float(site.get("spacing", 0.0)),
+			float(site.get("clearance", 0.0)),
+		])
+	return out
+
+
+## First point of difference, for the failure line. A bare "layouts differ" sends the next agent
+## back into the engine to find out which field moved.
+func _layout_diff(a: Array, b: Array) -> String:
+	if a.size() != b.size():
+		return "site counts %d vs %d" % [a.size(), b.size()]
+	for index: int in a.size():
+		var left: Array = a[index] as Array
+		var right: Array = b[index] as Array
+		if left != right:
+			for field: int in left.size():
+				if left[field] != right[field]:
+					return "site %d field %d: %s vs %s" % [index, field, left[field], right[field]]
+			return "site %d differs" % index
+	return "no field differs"
+
+
+## Proves `_poi_layout` + `==` can actually see a change, by nudging one rotation on a copy. Without
+## this the pass below would be indistinguishable from a comparator that flattened everything away.
+func _layout_detects_perturbation(layout: Array) -> bool:
+	if layout.is_empty():
+		return false
+	var perturbed: Array = layout.duplicate(true)
+	var site: Array = perturbed[0] as Array
+	site[3] = float(site[3]) + 0.001
+	return perturbed != layout
 
 
 func _height_profile(world: Node3D) -> PackedFloat32Array:

@@ -110,14 +110,18 @@ func _run() -> void:
 	check(world_a2.get(&"spawn_position") == spawn,
 		"same seed reproduces the same spawn point exactly")
 	var sites_a2: Array = world_a2.get(&"poi_sites")
+	# F-288's sweep: this used to compare position and def_id only, so a seed that reproduced every
+	# site in the right place but spun one of them, or pointed it at a different scene, read as
+	# "identical". Rotation and scene path are as much a peer-visible part of the layout as the
+	# position is — a landmark facing two ways on two peers is the same desync.
 	var identical: bool = sites_a2.size() == sites.size()
 	if identical:
 		for index: int in range(sites.size()):
-			if sites[index].get("position") != sites_a2[index].get("position") \
-					or sites[index].get("def_id") != sites_a2[index].get("def_id"):
+			if not _same_site(sites[index] as Dictionary, sites_a2[index] as Dictionary):
 				identical = false
 				break
-	check(identical, "same seed reproduces every POI site, position and order")
+	check(identical,
+		"same seed reproduces every POI site — id, def, position, rotation, biome, scene and order")
 
 	var world_b: Node3D = await _build_world(game_state, SEED_B)
 	check(world_b.get(&"spawn_position") != spawn,
@@ -126,6 +130,16 @@ func _run() -> void:
 	print("\nPROCEDURAL_WORLD_CHECK sites=%d markers=%s failures=%d" % [
 		sites.size(), kinds, failures])
 	finish()
+
+
+## Field-for-field site equality (F-288). Read explicitly rather than comparing the Dictionaries
+## wholesale, so a new key on a site widens this deliberately instead of silently joining or
+## leaving the assertion.
+func _same_site(a: Dictionary, b: Dictionary) -> bool:
+	for key: String in ["site_id", "def_id", "position", "rotation_y", "biome", "scene_path"]:
+		if a.get(key) != b.get(key):
+			return false
+	return true
 
 
 ## Builds a ProceduralWorld under a throwaway current_scene with GameState pinned to `seed_value`,
