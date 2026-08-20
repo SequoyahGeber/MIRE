@@ -75,6 +75,59 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-20 — 4.19 DONE: the shipped map is procedural. Press Play and you get a generated island (quill5fa5c7)
+
+**What ships.** `run/main_scene` is **`levels/procedural_island.tscn`**: `world/gen/
+procedural_world.gd` on the scene ROOT (so `PlayerNet._claim_spawn_point()` finds `current_scene/
+Player` exactly as before), under Hollowmere's environment shell copied node for node —
+`WorldEnvironment`/`Sun`/`Atmosphere`/`CloudDeck`, the sibling names `playtest_atmosphere.gd`
+requires. No `Undergrowth`, no authored `Player`, no `World` child: the composer builds its own.
+Hollowmere (`levels/hollowmere.tscn`) stays as the authored fixture/reference, exactly as the
+roadmap said it would.
+
+**`--procedural` is now a no-op on a default boot** — `DevLaunch._swap_to_procedural()` returns
+early when the current scene root already runs the composer script. It still swaps when the main
+scene is authored (a Hollowmere comparison run).
+
+**Where checks moved.**
+* `tools/world_contract_check.gd` — the matrix is now *authored fixture (pinned, FIRST)* then
+  *shipped map (kind-detected by root script)*. The fixture arm runs first on purpose: the
+  live-spawn phase watches EnemyWorld's first ambient top-up, which happens once per process right
+  after the first navmesh bake — reorder it and you get "no crawler ever actually spawned" (this
+  session measured exactly that). The code-built composer arm only runs when the shipped map is
+  authored, since otherwise the shipped arm just booted the identical script.
+* Pinned to the Hollowmere fixture (they grade Hollowmere's *authored content*):
+  `chest_placement_check`, `harvest_batch_check`, `environment_vfx_hollowmere_check`.
+* Still following `main_scene` (they grade *the shipped map*): `ground_fog_check`,
+  `dev_loadout_check`, `verify_setup` (its player-body check now accepts the composer's
+  `build_player == true` as "provides a player"), `atmosphere_look_shot`.
+* NEW `tools/procedural_look_probe.gd` (`--windowed`) — three framed PNGs of the shipped island
+  into `assets/audit/terrain/` (spawn view, orbit, shore look). The camera positions in
+  `atmosphere_look_shot` are Hollowmere-authored coordinates; on a generated island they face
+  cliffs, so use the probe for island-look evidence.
+
+**Two real fixes that rode along.**
+* `ChunkStreamer._upload_chunk()` adds each chunk `MeshInstance3D` to `authored_world_terrain` —
+  the same group `authored_world.gd` puts its terrain visuals in — so AABB-measuring presentation
+  (ground fog) sees streamed terrain at all.
+* `ground_fog.gd._measure_base_height()` clamps the measured datum to `water_surface_at() +
+  WATER_CLEARANCE_M` when a TERRAIN_GROUP member can answer (F-284's pair): streamed islands carry
+  seabed geometry, and the quarter-height datum landed at y≈-25 — mist rendered underwater where
+  nobody sees it. Authored maps with no water at the terrain centre answer -INF and are unchanged.
+  `ground_fog_check`'s "low half of the terrain" band got the same dry-floor correction.
+
+**Verified:** `world_contract_check` PASS both arms (authored: 1156/1156 harvestables, live=4
+crawlers, stations=2; shipped: wellspring+ship+chests+station, standable dry spawn, mire seeded
+and receding); `procedural_world_check` 0; `ground_fog_check` 0 (base_height 0.75, was NaN);
+`dev_loadout_check` 0; `verify_setup` all pass; **windowed full boot 0 ERROR lines**. Headless
+full boot prints ~10 known dummy-renderer RID lines from threaded chunk meshes — that is **F-317**,
+windowed is clean, do not chase it as a streamer bug.
+
+**Open and now more important than it was: F-301** — some seeds publish no station marker, and the
+station is the shipped map's crafting access. It was an intermittent check failure when procedural
+was a side arm; it is a playtest-facing gap now that procedural ships.
+
+
 ### 2026-08-20 — F-283 resolved: three duplicated D-numbers renumbered, and `decision_ref_check.py` now fails on a repeated heading (lp)
 
 **The numbers moved. If you cite one of these, cite the new one.** `docs/DECISIONS.md` had three

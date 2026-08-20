@@ -225,9 +225,16 @@ func _verify_main_scene() -> void:
 	_check("main_scene root is a Node3D", main_root is Node3D, main_root.get_class())
 	_check("main_scene has a WorldEnvironment", _has_child_of_type(main_root, "WorldEnvironment"))
 	_check("main_scene has a directional light", _has_child_of_type(main_root, "DirectionalLight3D"))
-	# A playable level must contain a player body; PlayerNet replaces it per peer in a session, but
-	# pressing Play with no session has to spawn you somewhere.
-	_check("main_scene contains a player body", _has_child_of_type(main_root, "CharacterBody3D"))
+	# A playable level must provide a player body; PlayerNet replaces it per peer in a session, but
+	# pressing Play with no session has to spawn you somewhere. An authored map carries one in the
+	# scene; the procedural map (4.19: the shipped scene root runs procedural_world.gd) builds one
+	# in _ready when build_player is true — its default, asserted here so a flipped export in the
+	# .tscn cannot ship a playerless boot.
+	var procedural_root: bool = \
+		main_root.get_script() == load("res://world/gen/procedural_world.gd")
+	_check("main_scene provides a player body",
+		bool(main_root.get(&"build_player")) if procedural_root
+		else _has_child_of_type(main_root, "CharacterBody3D"))
 	main_root.free()
 
 

@@ -80,12 +80,26 @@ func _run() -> void:
 	var base_height := float(fog.get("base_height"))
 	check(not is_nan(base_height), "the mist measured a base height instead of guessing one")
 	if found and not is_nan(base_height):
-		check(base_height > terrain.position.y,
-			"the mist sits above the lowest point of the terrain (%.2f > %.2f)"
-			% [base_height, terrain.position.y])
-		check(base_height < terrain.position.y + terrain.size.y * 0.5,
-			"the mist sits in the LOW half of the terrain, so high ground stands clear of it "
-			+ "(%.2f < %.2f)" % [base_height, terrain.position.y + terrain.size.y * 0.5])
+		# The low band is measured from the terrain's DRY floor. Streamed islands carry seabed
+		# geometry tens of metres under the waterline, so "the low half of the terrain" would be
+		# underwater — the same blind spot ground_fog.gd's own water clamp exists for. A map that
+		# cannot answer where its water is keeps the raw AABB floor, same as before.
+		var floor_y: float = terrain.position.y
+		var centre: Vector3 = terrain.get_center()
+		for node: Node in get_nodes_in_group(TERRAIN_GROUP):
+			if not node.has_method(&"water_surface_at"):
+				continue
+			var water := float(node.call(&"water_surface_at", centre.x, centre.z))
+			if is_finite(water):
+				floor_y = maxf(floor_y, water)
+			break
+		var ceiling_y: float = terrain.position.y + terrain.size.y
+		check(base_height > floor_y - 0.001,
+			"the mist sits at or above the terrain's dry floor (%.2f >= %.2f)"
+			% [base_height, floor_y])
+		check(base_height < floor_y + (ceiling_y - floor_y) * 0.5,
+			"the mist sits in the LOW half of the dry terrain, so high ground stands clear of it "
+			+ "(%.2f < %.2f)" % [base_height, floor_y + (ceiling_y - floor_y) * 0.5])
 		check(shader_material.get_shader_parameter(&"base_height") != null,
 			"the measured height reached the shader")
 

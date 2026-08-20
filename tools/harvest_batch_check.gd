@@ -10,7 +10,8 @@ extends SceneTree
 ## zeroing that one instance's transform. If that hook is wrong, the failure is silent and cosmetic:
 ## you harvest a bush, collect the sticks, and the bush is still standing there.
 ##
-## Runs against whatever `application/run/main_scene` is, so it follows the shipped map.
+## Pinned to `levels/hollowmere.tscn` since 4.19's cutover: the 794 batched bushes it grades are
+## that map's authored content, and the shipped map is procedural now.
 ##
 ## **Run it windowed.** `MultiMesh` instance transforms live on the RenderingServer, and under the
 ## dummy renderer every `--headless` run gets, the buffer is empty and every read answers identity
@@ -38,9 +39,11 @@ func _run() -> void:
 	can_read_instances = DisplayServer.get_name() != "headless"
 	if not can_read_instances:
 		print("NOTE: dummy renderer — MultiMesh readback assertions will be skipped")
-	var scene_path := String(ProjectSettings.get_setting("application/run/main_scene", ""))
+	# 4.19: pinned to the authored fixture — the batched bushes this grades are Hollowmere's
+	# authored props; the procedural map's harvest proxies are world_contract_check's job.
+	var scene_path := "res://levels/hollowmere.tscn"
 	var packed := load(scene_path) as PackedScene
-	check(packed != null, "main scene %s loads" % scene_path)
+	check(packed != null, "fixture scene %s loads" % scene_path)
 	if packed == null:
 		_finish()
 		return

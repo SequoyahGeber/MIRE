@@ -69,14 +69,21 @@ var _ever_connected: bool = false
 const ProceduralWorldScript := preload("res://world/gen/procedural_world.gd")
 
 ## Task 4.15 (D-143): `--procedural` swaps the main scene for a code-built ProceduralWorld before
-## any session opens. Debug-only like every other DevLaunch behaviour — the retail build boots the
-## shipped map and nothing else, until 4.19's default cutover retires this flag.
+## any session opens. Since 4.19's cutover the shipped main scene IS procedural
+## (`levels/procedural_island.tscn`), so on a default boot this flag is a no-op; it still swaps
+## when the main scene is an authored map (e.g. the Hollowmere fixture set as main scene for a
+## comparison run). Debug-only like every other DevLaunch behaviour.
 var _procedural: bool = false
 
 
 func _swap_to_procedural() -> void:
 	var tree: SceneTree = get_tree()
 	var old_scene: Node = tree.current_scene
+	# 4.19: the shipped scene root already runs procedural_world.gd — swapping would rebuild the
+	# same island minus the scene's environment shell (sky, sun, atmosphere). Nothing to do.
+	if old_scene != null and old_scene.get_script() == ProceduralWorldScript:
+		MireLog.info(NetConfig.LOG_CHANNEL, "[DevLaunch] --procedural: main scene is already procedural — no swap")
+		return
 	var world: Node3D = ProceduralWorldScript.new()
 	world.name = "ProceduralWorld"
 	tree.root.add_child(world)

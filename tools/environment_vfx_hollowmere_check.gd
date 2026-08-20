@@ -3,9 +3,9 @@ extends SceneTree
 ## F-097: does environmental VFX reach the map people actually play?
 ##
 ## The check this replaces booted `playtest_hollow`, which 2.1k deprecated, and passed for a day
-## while the shipped map had no wind and no firelight at all. This one reads `main_scene` out of
-## `project.godot`, so it cannot drift away from the map again, and it exercises the real
-## `EnvironmentVfx` autoload rather than a private copy of the script.
+## while the shipped map had no wind and no firelight at all. This one boots the authored map the
+## VFX content was authored against — Hollowmere, the fixture/reference since 4.19's cutover — and
+## it exercises the real `EnvironmentVfx` autoload rather than a private copy of the script.
 ##
 ## It asserts three things a name-keyed system could never satisfy:
 ##   1. wind materials land on **MultiMesh** geometry, which is all the world's foliage;
@@ -25,8 +25,11 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	var scene_path := String(ProjectSettings.get_setting("application/run/main_scene", ""))
-	print("main_scene = %s" % scene_path)
+	# 4.19: pinned to the authored fixture. This check grades Hollowmere's authored props (its
+	# layout constant above is hollowmere.json); the shipped map is procedural now and its VFX
+	# coverage lives in tools/environment_vfx_reseed_check.gd.
+	var scene_path := "res://levels/hollowmere.tscn"
+	print("fixture scene = %s" % scene_path)
 	var packed := load(scene_path) as PackedScene
 	check(packed != null, "main scene loads")
 	if packed == null:

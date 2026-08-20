@@ -31,12 +31,13 @@ extends SceneTree
 ## `--headless` with no error (F-103) — so this runs and asserts under a plain headless run same
 ## as everything else in this file.
 ##
-## 4.16 turned this into the BOTH-MAP MATRIX: every contract phase now runs against the shipped
-## authored map AND a code-built ProceduralWorld (same composer `--procedural` boots), in one
-## process, and the loop-facing contract — the fixtures `tools/loop_audit_check.gd` proved the run
-## arc needs — is asserted per map: nests that spawn, harvestables that wire, at least one
-## REGISTERED station, chests with a resolvable tier, a Wellspring, exactly one extraction ship,
-## a standable spawn, and a MireGrid that seeded inside the island and recedes from a cap.
+## 4.16 turned this into the BOTH-MAP MATRIX, and 4.19's cutover re-aimed it: every contract phase
+## runs against the map `project.godot` ships (the procedural island since 4.19) AND the pinned
+## authored fixture (`levels/hollowmere.tscn`), in one process, and the loop-facing contract — the
+## fixtures `tools/loop_audit_check.gd` proved the run arc needs — is asserted per map: nests that
+## spawn, harvestables that wire, at least one REGISTERED station, chests with a resolvable tier,
+## a Wellspring, exactly one extraction ship, a standable spawn, and a MireGrid that seeded inside
+## the island and recedes from a cap.
 ##
 ## F-284 finished that sentence: "a standable spawn" was asserted only on the procedural half until
 ## then. It is now one shared phase (`_check_spawn_standable`) reading each map's own real spawn
@@ -61,6 +62,15 @@ const SPAWN_DRY_CLEARANCE_M: float = 0.5
 const SPAWN_BURIED_TOLERANCE_M: float = 0.35
 const SPAWN_FLOATING_TOLERANCE_M: float = 2.5
 
+## 4.19: the map project.godot ships is the procedural island, and Hollowmere is the authored
+## fixture/reference. The matrix keeps asking both kinds their own contract: the shipped arm gets
+## whichever contract its scene root actually is, and the fixture arm pins the authored one so
+## authored-map coverage cannot silently vanish with the cutover.
+const AUTHORED_FIXTURE_PATH: String = "res://levels/hollowmere.tscn"
+## Preloaded at class level (F-016's standing rule): a --script run must not depend on the
+## gitignored global-class cache to know what a ProceduralWorld is.
+const ProceduralWorldScript := preload("res://world/gen/procedural_world.gd")
+
 var failures: Array[String] = []
 var _map_label: String = ""
 ## The authored map's spawn, read off the instantiated scene BEFORE a physics frame runs — see
@@ -73,16 +83,71 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	# ── map 1: whatever project.godot actually ships ──────────────────────────────────────────────
+	# Load the shipped map first so its kind decides the matrix; boot order is fixture-first below.
 	var scene_path := String(ProjectSettings.get_setting("application/run/main_scene", ""))
-	print("WORLD_CONTRACT map=authored main_scene=%s" % scene_path)
-	_map_label = "authored"
 	var packed: PackedScene = load(scene_path) as PackedScene
 	if packed == null:
-		failures.append("[authored] main scene %s does not load" % scene_path)
+		failures.append("[shipped] main scene %s does not load" % scene_path)
 		_finish()
 		return
 	var level: Node = packed.instantiate()
+	# Which contract the shipped map owes depends on which kind it is: a scene root carrying
+	# procedural_world.gd IS the composer; anything else is an authored-convention map.
+	var shipped_procedural: bool = level.get_script() == ProceduralWorldScript
+	print("WORLD_CONTRACT map=shipped main_scene=%s kind=%s" % [
+		scene_path, "procedural" if shipped_procedural else "authored"])
+
+	# ── the authored fixture, pinned, and FIRST (4.19: Hollowmere is reference, not shipped). It
+	# runs before the shipped arm because its live-spawn phase watches EnemyWorld's first ambient
+	# top-up, which happens once per process right after the first navmesh bake — the position the
+	# authored arm has always held in this check. Skipped when the shipped map IS the fixture.
+	if scene_path != AUTHORED_FIXTURE_PATH:
+		print("WORLD_CONTRACT map=authored fixture=%s" % AUTHORED_FIXTURE_PATH)
+		_map_label = "authored"
+		var fixture_packed: PackedScene = load(AUTHORED_FIXTURE_PATH) as PackedScene
+		if fixture_packed == null:
+			failures.append("[authored] fixture %s does not load" % AUTHORED_FIXTURE_PATH)
+			_finish()
+			return
+		var fixture: Node = fixture_packed.instantiate()
+		await _run_authored_arm(fixture)
+		fixture.queue_free()
+		await process_frame
+		await process_frame
+
+	# ── the map that actually ships ───────────────────────────────────────────────────────────────
+	print("\nWORLD_CONTRACT map=shipped")
+	_map_label = "shipped"
+	if shipped_procedural:
+		await _run_procedural_arm(level)
+	else:
+		await _run_authored_arm(level)
+	level.queue_free()
+	await process_frame
+	await process_frame
+
+	# ── the composer exactly as --procedural builds it — only when the shipped arm was authored;
+	# otherwise the shipped arm already booted this exact script as the scene root ────────────────
+	if not shipped_procedural:
+		print("\nWORLD_CONTRACT map=procedural (ProceduralWorld, build_player=false)")
+		_map_label = "procedural"
+		var world: Node3D = ProceduralWorldScript.new()
+		world.name = "ProceduralWorld"
+		world.set(&"build_player", false)
+		root.add_child(world)
+		current_scene = world
+		for frame in 16:
+			await process_frame
+			await physics_frame
+		_check_no_undergrowth(world)
+		await _check_loop_fixtures(world, true)
+		world.queue_free()
+
+	_finish()
+
+
+## The authored-convention contract. [param level] is instantiated but not yet in the tree.
+func _run_authored_arm(level: Node) -> void:
 	# The spawn, read off the instantiated scene before a single frame runs. The level's `Player` is
 	# a real CharacterBody3D, so sixteen frames of physics later its position is wherever it SETTLED
 	# — which grades the terrain's ability to catch a falling body, not where the map put the spawn.
@@ -109,28 +174,17 @@ func _run() -> void:
 	_check_undergrowth_required(level)
 	await _check_loop_fixtures(level, false)
 
-	level.queue_free()
-	await process_frame
-	await process_frame
 
-	# ── map 2: the composer, exactly as --procedural builds it ────────────────────────────────────
-	print("\nWORLD_CONTRACT map=procedural (ProceduralWorld, build_player=false)")
-	_map_label = "procedural"
-	var ProceduralWorldScript := preload("res://world/gen/procedural_world.gd")
-	var world: Node3D = ProceduralWorldScript.new()
-	world.name = "ProceduralWorld"
-	world.set(&"build_player", false)
-	root.add_child(world)
-	current_scene = world
+## The procedural contract, asked of the shipped scene itself: no Undergrowth (flora there is
+## ResourceScatterField's job), and the loop fixtures read through the composer's published sites.
+func _run_procedural_arm(level: Node) -> void:
+	root.add_child(level)
+	current_scene = level
 	for frame in 16:
 		await process_frame
 		await physics_frame
-
-	_check_no_undergrowth(world)
-	await _check_loop_fixtures(world, true)
-
-	world.queue_free()
-	_finish()
+	_check_no_undergrowth(level)
+	await _check_loop_fixtures(level, true)
 
 
 ## The loop-facing contract, identical question on both maps: does every fixture the run arc needs

@@ -23,9 +23,10 @@ never replicated** (`ARCHITECTURE.md` §4, proven cross-platform by D-017/D-028)
 | POI placement (Poisson-disc, priority) | `world/gen/poi_map.gd` + `PoiDef` (4.7) | ✅ 38 assertions |
 | Mire grid simulation | `world/mire/mire_grid.gd` (4.9) | ✅ host-only, delta-broadcast |
 
-**What is missing is one composer** (F-139): nothing instantiates these into a playable level. The
-shipped game boots authored Hollowmere. §3 is the composer's design; the marker contract makes it
-smaller than it looks.
+**The composer shipped (4.15) and is the default map (4.19):** `world/gen/procedural_world.gd` on
+the root of `levels/procedural_island.tscn`, which `project.godot` boots as `run/main_scene`.
+Hollowmere stays in the repo as the authored fixture/reference. §3 was the composer's design and
+now describes what runs.
 
 ---
 
@@ -138,8 +139,11 @@ mutations; `MireGrid` binds to the island bound the same way it does today.
    check retires on that map). Parity = every service check green with `--procedural`.
 3. **4.18** is Sequoyah walking three seeds against Hollowmere and judging *island feel* — the one
    thing no check asserts. Per D-125 this gates nothing; it schedules tuning.
-4. **4.19** swaps the default main scene; Hollowmere stays in the repo as the test fixture and the
-   reference island (same retirement Playtest Hollow already went through).
+4. **4.19** swaps the default main scene — **done 2026-08-20**: `levels/procedural_island.tscn`
+   (composer root under Hollowmere's environment shell) is `run/main_scene`; Hollowmere stays in
+   the repo as the test fixture and the reference island (same retirement Playtest Hollow already
+   went through), pinned into `world_contract_check`'s authored arm and the authored-content
+   checks (`chest_placement`, `harvest_batch`, `environment_vfx_hollowmere`).
 
 ---
 

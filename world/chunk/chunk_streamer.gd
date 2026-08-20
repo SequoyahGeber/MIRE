@@ -374,6 +374,10 @@ func _upload_chunk(job: ChunkJob) -> void:
 	mi.mesh = job.result_mesh
 	mi.material_override = _shared_material
 	mi.position = _chunk_origin(job.coord)
+	# The same group authored_world.gd puts its terrain visuals in: presentation systems that
+	# measure "where the ground is" off VisualInstance3D AABBs (ground_fog.gd's mist height) see
+	# streamed terrain the way they see authored terrain. Before add_child, F-012's ordering rule.
+	mi.add_to_group(&"authored_world_terrain")
 	add_child(mi)
 
 	var entry := ChunkEntry.new()

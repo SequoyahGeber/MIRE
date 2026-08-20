@@ -39,6 +39,9 @@ const EXTENT_M: float = 260.0
 ## Head-room above the mist layer, as a multiple of it. The layer fades out well before the top of
 ## the box; this is only so the fade is not clipped by the box's own lid.
 const HEADROOM_FACTOR: float = 1.9
+## How far above the water surface a measured mist datum is lifted when the terrain's own quarter-
+## height lands underwater — see `_measure_base_height()`.
+const WATER_CLEARANCE_M: float = 0.75
 
 ## Where the mist sits, in world Y. NAN means "measure it from the level's terrain the first frame
 ## that terrain exists" — see `_measure_base_height()`.
@@ -148,4 +151,18 @@ func _measure_base_height() -> float:
 	# different answers, and only the first one should be retried next frame.
 	if not found or bounds.size.y <= 0.0:
 		return NAN
-	return bounds.position.y + bounds.size.y * 0.25
+	var measured: float = bounds.position.y + bounds.size.y * 0.25
+	# Streamed terrain includes the seabed — the island falloff runs tens of metres below the
+	# waterline — so a quarter-height datum measured off it sits underwater, where mist renders for
+	# no one. The mist's datum is DRY low ground: when the world can say where its water is
+	# (F-284's `water_surface_at` pair, on both map kinds), clamp to just above the surface at the
+	# terrain's centre. An authored map with no water there answers -INF and is unchanged.
+	var centre: Vector3 = bounds.get_center()
+	for node: Node in get_tree().get_nodes_in_group(TERRAIN_GROUP):
+		if not node.has_method(&"water_surface_at"):
+			continue
+		var water: float = float(node.call(&"water_surface_at", centre.x, centre.z))
+		if is_finite(water):
+			measured = maxf(measured, water + WATER_CLEARANCE_M)
+		break
+	return measured

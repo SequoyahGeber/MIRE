@@ -29,8 +29,11 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	var scene_path := String(ProjectSettings.get_setting("application/run/main_scene", ""))
-	print("main_scene = %s" % scene_path)
+	# 4.19: pinned to the authored fixture — the Cache_<n> waymarks and gilded budget this grades
+	# are Hollowmere's authored layout; the procedural map's chest contract is asserted per-map by
+	# tools/world_contract_check.gd.
+	var scene_path := "res://levels/hollowmere.tscn"
+	print("fixture scene = %s" % scene_path)
 	var packed := load(scene_path) as PackedScene
 	check(packed != null, "main scene loads")
 	if packed == null:

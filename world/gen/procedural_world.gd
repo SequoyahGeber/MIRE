@@ -13,9 +13,12 @@ extends Node3D
 ## the systems that already own them (Harvestable/HOST, WorldDeltaLog, MireGrid). This node never
 ## sends or receives anything.
 ##
-## Reachable only through `DevLaunch --procedural` until 4.19's default cutover — Hollowmere remains
-## the shipped map (F-139's own record of that decision). `tools/procedural_world_check.gd` boots
-## this headless and is the harness the parity work (4.16) extends.
+## THE SHIPPED MAP since 4.19's cutover: `levels/procedural_island.tscn` puts this script on the
+## scene root under the same environment shell (WorldEnvironment/Sun/Atmosphere/CloudDeck node
+## names) the authored maps use, and `project.godot` boots it as `run/main_scene`. Hollowmere
+## (`levels/hollowmere.tscn`) stays in the repo as the authored fixture/reference its pinned checks
+## boot. `tools/procedural_world_check.gd` boots this headless and is the harness the parity work
+## (4.16) extends.
 
 const IslandHeightmapScript := preload("res://world/gen/island_heightmap.gd")
 const BiomeMapScript := preload("res://world/gen/biome_map.gd")
