@@ -5490,3 +5490,67 @@ player IS the host and both designs are indistinguishable. `tools/run_restart_sp
 probe move its **own** spawn record 40 m via the client-local `rebind_local_spawn()` before the
 restart, so the host's copy is knowingly stale; a host-driven fix lands the client on the host's
 version and fails. Any future change to this path is verified the same way or it is not verified.
+
+### D-174 · 2026-08-20 · A consumer of state another subscriber produces reacts to the SECOND event and is idempotent — it never relies on autoload/subscribe order
+**Context.** `EventBus` invokes listeners in append order, and autoloads append in `project.godot`
+order. That makes autoload registration order a load-bearing gameplay input the moment two
+subscribers of the same event stand in a producer/consumer relationship — and nothing about
+`project.godot` says so, so any later reorder silently changes behaviour. F-282 is the incident:
+WaveSpawner (line 44) asked `CycleModifierService.has_modifier(&"the_hunt")` from its own
+`cycle_advanced` listener, and CycleModifierService (line 61) had not drawn yet. The Hunt's elite
+entered one whole Cycle late for the life of the feature.
+
+**The decision.** When one subscriber of event E produces state a second subscriber of E consumes,
+the consumer does **not** read that state from its own E handler. It reacts to the **second event**
+the producer emits when the state is actually ready, and its reaction is made **idempotent** so both
+seams may drive it. Concretely, in this repo:
+
+- Subscribe to the completed-action event (`cycle_modifier_drawn`, `salvage_banked`), not only to the
+  trigger event (`cycle_advanced`, `run_wiped`).
+- Keep a per-occurrence stamp or latch so the action happens exactly once regardless of which event
+  arrives first — `WaveSpawner._hunt_spawned_cycle` (per Cycle),
+  `DefeatHud`/`ExtractionHud._salvage_known` (per run).
+- Use the id the event **carries** for that stamp, never a cached copy of it, so the stamp is right
+  even when the two handlers run in the unexpected order.
+
+The test of a correct implementation is that **reversing the two autoloads in `project.godot` changes
+nothing**. If it would, the consumer is still order-dependent and the decision is not satisfied.
+
+**Why not the two obvious alternatives.**
+
+*Reorder the autoloads.* It fixes one pair and encodes the dependency somewhere nobody reads. The
+next autoload inserted between them re-breaks it with no failing check, and `project.godot` is
+explicitly never claimed (F-051), so the constraint has no owner.
+
+*Move the trigger to the second event only.* This is where F-282 nearly went wrong. The Hunt spawns
+one elite **per Cycle** for the rest of the run (`content/cycle_modifiers/the_hunt.tres`), but a
+modifier is drawn **once**. Driving purely off the draw would have replaced "one Cycle late" with
+"exactly one elite, ever" — a quieter bug in a feature nobody had been able to see working. Both
+seams, plus idempotence, is what keeps the cadence and fixes the ordering at once.
+
+**Precedent, arrived at twice independently.** `DefeatHud`/`ExtractionHud` already do exactly this
+for the run summary: neither reads the banked total from its `run_wiped`/`run_extracted` handler
+(`SalvageService` subscribes the same events and may not have banked yet). They render a "Tallying
+Salvage…" placeholder and fill it from `salvage_banked` behind `_salvage_known`. F-282 reached the
+same shape from the other end. Two independent arrivals is what makes this a rule rather than a
+comment in one file.
+
+**Scope.** Shipped code only, and it is currently satisfied everywhere: F-282's sweep read every
+`EVENT_BUS.subscribe_*` handler outside `tools/` and found `WaveSpawner` the only violator. The other
+six modifier consumers (`Chest`, `Harvestable`, `MireGrid`, `Wellspring`, `DayNight`, `Enemy`) are
+immune by a different route this decision also blesses: they read `has_modifier()` **on demand, at
+the moment the effect matters**, never from an event handler at all. That remains the preferred shape
+where the effect is a query rather than a one-shot action — it cannot be early, and it needs no
+stamp. This decision governs the cases where the consumer must *act* rather than *answer*.
+
+Verification of the class belongs to the checks, and those cannot currently see it: see **F-310**.
+
+**Would change my mind:** an explicit, enforced listener-priority mechanism on `EventBus` —
+`subscribe_*(listener, priority)` with a check that fails when two subscribers of one event declare
+the same priority and one reads the other's state. That would make ordering a *declared* contract
+instead of an emergent one, at which point a consumer could legitimately read from its own handler
+and the second-event dance becomes ceremony. It is not worth building for the one pair that exists
+today; a third independent occurrence of this shape is the signal that it is. Equally: if an event
+ever needs a consumer to act on the trigger *itself* — where reacting to the completed action is
+observably too late for the player — this rule loses to that, and the ordering must instead be made
+explicit at the producer (a direct call, not a subscription).

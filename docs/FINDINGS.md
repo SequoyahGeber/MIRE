@@ -676,16 +676,6 @@ map with all three services live.
 
 ---
 
-### F-282 · The Hunt spawns one Cycle late because WaveSpawner reads the modifier stack before CycleModifierService draws
-
-**Area:** systems · **Severity:** medium · **Found:** 2026-08-20 by lc1
-
-`systems/waves/wave_spawner.gd:188-190` calls `_maybe_spawn_hunt_elite()` from its `cycle_advanced` listener, while `systems/cycle/cycle_modifier_service.gd` draws the current Cycle's modifier from its own listener. `project.godot:44,61` registers WaveSpawner before CycleModifierService, and `core/events/event_bus.gd:159-172` appends listeners and invokes them in that order. The WaveSpawner listener therefore checks `has_modifier(&"the_hunt")` before the current Cycle's draw is in `_active_ids`; if The Hunt is drawn on Cycle N, no elite enters until Cycle N+1 emits `cycle_advanced`.
-
-`tools/cycle_modifier_effects_check.gd` does not catch the integration failure: `_check_the_hunt()` forces `_active_ids` directly and calls `_maybe_spawn_hunt_elite()` directly rather than advancing a real Cycle. Add a real Cycle-advance assertion and trigger the Hunt spawn from the completed modifier draw (for example `cycle_modifier_drawn`) or otherwise guarantee draw-before-consumer ordering without relying on autoload order.
-
----
-
 ### F-283 · Three D-numbers each head two different decisions — D-050, D-144 and D-150 are live collisions from before F-260's allocator, and no check detects them
 
 **Area:** ? · **Severity:** medium · **Found:** 2026-08-20 by lp
@@ -1434,7 +1424,149 @@ not late.
 
 ---
 
+### F-310 · Ten tools/ checks call a consumer's event handler directly instead of driving the producer, so the fan-out ordering between two or three independent subscribers is never exercised — the exact blind spot that let F-282 ship
+
+**Area:** verification · **Severity:** medium · **Found:** 2026-08-20 by lp
+
+Found by lp during F-282, which is the worked example: `tools/cycle_modifier_effects_check.gd`'s
+`_check_the_hunt()` forced `CycleModifierService._active_ids` by hand and then called
+`WaveSpawner._maybe_spawn_hunt_elite()` by hand. Both halves passed. The feature was broken anyway,
+because the bug lived in neither half — it lived in the *order* `EventBus` invoked two different
+subscribers of `cycle_advanced`, and the check never fired that event at all. F-282 replaced it with
+a phase that drives `CycleService.host_advance_cycle()` and asserts what a player would see; that
+phase fails at HEAD and passes after the fix.
+
+**The class, stated precisely.** Not "a check touches a private method" — that is usually fine and
+this repo does it everywhere for good reasons (`_physics_process(delta)` with a controlled delta,
+synthetic `InputEvent`s, pure helpers like `_price_for`/`_eligible_defs`). The hazard is narrower:
+
+> a check that invokes a **subscriber's own `_on_*` handler** as a stand-in for the event, when that
+> event has **more than one** independent subscriber in shipped code.
+
+Every such check proves its one subscriber in isolation and proves nothing about the fan-out. Any bug
+that lives in the interaction between subscribers — ordering, one clobbering another's state, one
+leaving a group joined that another reads (F-291's mirror-image case) — is invisible to it by
+construction, and stays invisible no matter how many assertions get added.
+
+**The list — ten call sites, grouped by the event whose fan-out goes unexercised.**
+
+- `NetSession.run_player_rebound` / `run_player_expired` — **three** shipped subscribers
+  (`AttunementService`, `HaulService`, `PowerupService`), and four checks each poke only their own:
+  `tools/attunement_check.gd:137,143`, `tools/haul_check.gd:247,253`,
+  `tools/powerup_check.gd:267,275`, `tools/powerup_review_check.gd:70,78`. Nothing anywhere proves
+  that one real rebound moves a player's selection, crates and powerup stacks together, which is the
+  only thing the feature is for.
+- `EventBus.salvage_banked` — `DefeatHud`, `ExtractionHud` and `SteamStats`.
+  `tools/run_summary_check.gd:168,170,226,228` calls `_on_salvage_banked()` on each HUD directly.
+- `NetSession.peer_left` — `PowerupService`, `InventoryService`.
+  `tools/powerup_check.gd:262` and `tools/run_identity_check.gd:109` each poke one.
+- `NetSession.peer_admitted` — `tools/net_robustness_check.gd:106` (`WorldDeltaLog._on_peer_admitted`).
+- `PlayerNet.player_spawned` — `PlayerHealth` and others; `tools/player_health_check.gd:82` and
+  `tools/dodge_check.gd:146` both call `_on_player_spawned()` directly.
+- `ChunkStreamer` / `BuildService` signals — `tools/nav_bake_check.gd:288,302,318,325` calls
+  `NavBaker._on_piece_placed`, `_on_piece_destroyed`, `_on_chunk_unloaded`, `_on_chunk_mesh_ready`
+  directly. Worth noting this file already has 4 unrelated failures at HEAD (F-285/F-292), so it is
+  the one member that should be fixed *after* those, not before.
+
+**The remedy already exists in-repo, which is why this is filed rather than argued.**
+`tools/run_identity_check.gd:113,119` does it right for the same two signals its own line 109 does
+wrong: `session.emit_signal(&"run_player_rebound", 1, 77)` — the real signal, the real fan-out, every
+subscriber. That is the one-line shape every member of this list converts to. Where the producer is a
+service method rather than a bare signal, drive the method (`CycleService.host_advance_cycle()`,
+`SalvageService.host_bank(...)`) exactly as F-282's new phase does.
+
+**Not fixed here, deliberately.** Ten checks across ten files is hours of shared-engine-lock time,
+and several will need real state set up that the direct poke let them skip — `run_summary_check`
+needs a real bank, `nav_bake_check` needs a real streamed chunk. Shipping ten unverified check
+rewrites is a worse trade than filing them with the list already computed. Convert them one file at a
+time, and expect at least one to turn up a real bug the way F-282 did.
+
+**Companion, not duplicate: F-291.** That finding is this one's mirror image — a check that emits a
+*real* `EventBus` event and gets bitten by a subscriber it did not know existed. Both are the same
+underlying fact (checks do not model the fan-out), approached from opposite sides, and the fix for
+one is the failure mode of the other: converting a member of this list to a real emit is exactly what
+can trip F-291. Read both before converting anything.
+
+**Verify:** each converted check green, and — the actual point — at least one converted check should
+first be run against a deliberately-reordered or -broken producer to confirm it now *fails*, the way
+F-282's phase was proven against `git show HEAD:systems/waves/wave_spawner.gd`. A converted check
+that has never been seen to fail has not been shown to test the fan-out either.
+
+---
+
 ## Resolved
+
+### F-282 · The Hunt spawns one Cycle late because WaveSpawner reads the modifier stack before CycleModifierService draws — **fixed**
+
+**Area:** systems · **Severity:** medium · **Found:** 2026-08-20 by lc1
+
+`systems/waves/wave_spawner.gd:188-190` calls `_maybe_spawn_hunt_elite()` from its `cycle_advanced` listener, while `systems/cycle/cycle_modifier_service.gd` draws the current Cycle's modifier from its own listener. `project.godot:44,61` registers WaveSpawner before CycleModifierService, and `core/events/event_bus.gd:159-172` appends listeners and invokes them in that order. The WaveSpawner listener therefore checks `has_modifier(&"the_hunt")` before the current Cycle's draw is in `_active_ids`; if The Hunt is drawn on Cycle N, no elite enters until Cycle N+1 emits `cycle_advanced`.
+
+`tools/cycle_modifier_effects_check.gd` does not catch the integration failure: `_check_the_hunt()` forces `_active_ids` directly and calls `_maybe_spawn_hunt_elite()` directly rather than advancing a real Cycle. Add a real Cycle-advance assertion and trigger the Hunt spawn from the completed modifier draw (for example `cycle_modifier_drawn`) or otherwise guarantee draw-before-consumer ordering without relying on autoload order.
+
+---
+
+**Resolved 2026-08-20 by lp.** **Fixed in `systems/waves/wave_spawner.gd`.** It now subscribes
+`EventBus.subscribe_cycle_modifier_drawn()` alongside its existing `cycle_advanced` subscription, and
+`_maybe_spawn_hunt_elite(cycle: int = -1)` takes the Cycle the caller is reporting and stamps
+`_hunt_spawned_cycle` on a spawn that actually succeeded. Whichever of the two events first observes
+`the_hunt` in the stack spawns the elite; the other is a no-op. That is order-independent in **both**
+directions — reversing the autoloads, or drawing through the `modifiers` console command outside any
+Cycle advance, produces the same single elite — which is what the finding asked for ("without relying
+on autoload order"), and is more than moving the trigger would have given.
+
+**Why not just move it to `cycle_modifier_drawn`.** A modifier draws once per run;
+`content/cycle_modifiers/the_hunt.tres` specifies one elite **per Cycle advance** for the rest of the
+run. Driving purely off the draw would have replaced "one Cycle late" with "exactly one elite, ever"
+— a quieter bug in a feature nobody had yet seen work. Both seams plus idempotence keeps the cadence
+and fixes the ordering together. Recorded as **D-174**, because `DefeatHud`/`ExtractionHud` had
+already arrived at the identical second-event-plus-latch shape for the salvage total, independently.
+
+Two things caught while in the file: `_hunt_spawned_cycle` clears to **0, not 1**, in
+`host_reset_for_new_run()` (a restarted run is Cycle 1 again, and a stamp of 1 would swallow its
+first spawn — F-259/F-281's class, caught before it shipped), and `_exit_tree()` gained the
+`cycle_advanced` unsubscribe it had been missing since task 5.9.
+
+**Verified — pre-fix proof first, then the fix.** `tools/cycle_modifier_effects_check.gd` gained
+`_check_the_hunt_on_the_drawn_cycle()`, which pokes nothing: it narrows `CycleModifierService._defs`
+to `the_hunt` alone, sets `CycleService._current_cycle` to `min_cycle - 1` (6-1; advancing from Cycle
+1 would draw nothing and pass vacuously), calls the real `host_advance_cycle()` once, and asserts on
+`EnemyWorld.live_count()` deltas.
+
+- `systems/waves/wave_spawner.gd` restored to `git show HEAD:` — copied aside first, **not**
+  `git stash`, which would have swept concurrent lanes' uncommitted work (F-275's constraint) — and
+  the new phase run against it: `FAIL: F-282: the elite is on the ground on the SAME Cycle the_hunt
+  was drawn`, the finding's exact symptom, while `the_hunt was drawn by that advance` still PASSes.
+  `agent baseline` cannot do this; the phase does not exist at HEAD (F-261/F-275's constraint).
+- File restored, same check → `CYCLE_MODIFIER_EFFECTS_CHECK failures=0`, all six new assertions PASS
+  including `exactly ONE elite entered ... (live 1 -> 2)`, `a repeat trigger on the same Cycle spawns
+  nothing more`, and `the next Cycle spawns the next elite`. Standing rule 4 graded:
+  `grep 'ERROR:' | grep -vE 'Parameter "material" is null' | wc -l` → **0** against the verdict
+  line's one declared pattern.
+- `tools/cycle_modifier_check.gd` failures=0 · `tools/wave_spawner_cycle_net_check.gd` failures=0
+  (two real processes) · `tools/wave_spawner_check.gd` failures=0 with **zero** ERROR lines (F-305's
+  intermittent six did not appear).
+
+**Sweep — "a listener that reads state a sibling listener of the same event produces".** Every
+`EVENT_BUS.subscribe_*` handler outside `tools/` read. `cycle_advanced` has four shipped subscribers:
+`CycleModifierService` produces, `WaveSpawner` was the only consumer, `Wellspring` reads no modifier
+state, and `SteamStats`/`RichPresenceService` are immune by construction — both **poll**
+`current_cycle()` on a 2 s timer rather than subscribing. `wellspring_capped`: `CycleModifierService`
+produces `_drought_cleared`, and its only reader is `Harvestable`, on demand at harvest time.
+`run_restarted`: 22 subscribers, none reads the stack. `salvage_banked`/`run_wiped`/`run_extracted`:
+the same hazard, **already solved correctly** by the two HUDs' `_salvage_known` latch. Every other
+shipped modifier consumer (`Chest`, `Harvestable`, `MireGrid`, `Wellspring`, `DayNight`, `Enemy`)
+reads `has_modifier()` on demand at the moment the effect matters, never from an event handler, so
+none can be early. **The class is empty in shipped code.**
+
+The *verification* half of it is not, and that is the more valuable half: the check that missed this
+missed it by calling a consumer's handler directly instead of driving the producer, and nine other
+`tools/` checks do the same to events with two or three independent subscribers each. Filed as
+**F-310** with the exact call-site list rather than fixed here — ten checks is hours of engine-lock
+time, and `tools/run_identity_check.gd:113` already shows the one-line conversion.
+
+Spec block written in `docs/SPECS.md` (none existed). Seam recorded in `docs/DELEGATION.md`
+*Current state*.
 
 ### F-290 · wave_spawner_cycle_net_check can parse its result file mid-rewrite and emit an undeclared ERROR while reporting failures=0 — **fixed**
 
