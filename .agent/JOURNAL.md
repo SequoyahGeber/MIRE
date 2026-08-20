@@ -7330,3 +7330,18 @@ Notes along the way:
 Files: `tools/poi_required_station_check.gd`, `content/poi/station_camp.tres`, `tools/procedural_world_check.gd`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `tools/poi_required_station_check.gd.uid`
 
 Commit at time of writing: `69572fe`
+
+---
+
+### DONE · 4.18 · quill5fa5c7 · 2026-08-20T20:46:13+00:00
+
+**Three-seed island-feel walk vs Hollowmere (tuning input, not a gate — D-125)**
+
+Sequoyah's walk verdict (from renders): Muck-shaped — mostly flat, gentle rolls, no mountains. Applied as D-184: HEIGHT_SCALE 11, LAND_BIAS 0.75, RIDGE_WEIGHT 2.0. All terrain/contract checks green, evidence renders committed. Further walk verdicts are new tuning passes — D-184 names the cheap reversal.
+
+Notes along the way:
+- Sequoyah's island-feel verdict from the first shipped procedural renders: mostly flat, gentle rolling hills, NO mountains — Muck is the reference. Retuning island_heightmap amplitudes/ridges to match.
+
+Files: `world/gen/island_heightmap.gd`, `tools/terrain_check.gd`, `assets/audit/terrain/island_orbit.png`, `assets/audit/terrain/island_spawn_view.png`, `assets/audit/terrain/island_shore_look.png`, `docs/WORLDGEN.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `179bb52`

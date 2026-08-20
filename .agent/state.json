@@ -1,23 +1,5 @@
 {
   "claims": {
-    "assets/audit/terrain/island_orbit.png": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:42:01+00:00",
-      "task": "4.18",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
-    },
-    "assets/audit/terrain/island_shore_look.png": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:42:01+00:00",
-      "task": "4.18",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
-    },
-    "assets/audit/terrain/island_spawn_view.png": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:42:01+00:00",
-      "task": "4.18",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
-    },
     "levels/frontend.tscn": {
       "agent": "reed31c598",
       "at": "2026-08-20T20:36:01+00:00",
@@ -36,11 +18,11 @@
       "task": "7.4",
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
-    "tools/terrain_check.gd": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:42:01+00:00",
-      "task": "4.18",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    "tools/terminal_focus_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T20:44:47+00:00",
+      "task": "F-307",
+      "token": null
     },
     "tools/title_check.gd": {
       "agent": "reed31c598",
@@ -83,34 +65,9 @@
       "at": "2026-08-20T20:27:08+00:00",
       "task": "7.4",
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
-    },
-    "world/gen/island_heightmap.gd": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:42:01+00:00",
-      "task": "4.18",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     }
   },
   "in_flight": {
-    "4.18": {
-      "agent": "quill5fa5c7",
-      "files": [
-        "world/gen/island_heightmap.gd",
-        "tools/terrain_check.gd",
-        "assets/audit/terrain/island_orbit.png",
-        "assets/audit/terrain/island_spawn_view.png",
-        "assets/audit/terrain/island_shore_look.png"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-20T20:42:01+00:00",
-          "by": "quill5fa5c7",
-          "text": "Sequoyah's island-feel verdict from the first shipped procedural renders: mostly flat, gentle rolling hills, NO mountains \u2014 Muck is the reference. Retuning island_heightmap amplitudes/ridges to match."
-        }
-      ],
-      "started": "2026-08-20T20:42:01+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
-    },
     "7.4": {
       "agent": "reed31c598",
       "files": [
@@ -128,6 +85,16 @@
       "notes": [],
       "started": "2026-08-20T20:27:08+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
+    },
+    "F-307": {
+      "agent": "lp",
+      "dispatched": true,
+      "files": [
+        "tools/terminal_focus_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-20T20:43:24+00:00",
+      "token": null
     }
   },
   "recent": {
@@ -175,23 +142,23 @@
     },
     "assets/audit/terrain/island_orbit.png": {
       "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:41:46+00:00",
-      "hash": "830743a9ea8ece33b965510d2f9f3ddc6c30baa6eba5f812e1f7e8ceb7d6949e",
-      "task": "4.19",
+      "at": "2026-08-20T20:46:13+00:00",
+      "hash": "b4acbe3c1fe152a9bdc3702824480878647dabc07d1d392ca1f684c0ed3b906e",
+      "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "assets/audit/terrain/island_shore_look.png": {
       "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:41:46+00:00",
-      "hash": "706a976d913abc41450cf6688abc9b05bcc86df894209d9b0d0f7a38ae1c6cb4",
-      "task": "4.19",
+      "at": "2026-08-20T20:46:13+00:00",
+      "hash": "b6bfdca58a699673ac041500a08daa8ff35a432b367624a4c76ef50a6999cfbc",
+      "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "assets/audit/terrain/island_spawn_view.png": {
       "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:41:46+00:00",
-      "hash": "91cb587336758cebd274a75c15381f34b508e081f7e46b6bfe6f7807e43d828c",
-      "task": "4.19",
+      "at": "2026-08-20T20:46:13+00:00",
+      "hash": "7a6b1b6d1b79c8adb8dc143fdc047a95939b5f7ce9fea58326f4ffb0aa813bca",
+      "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "assets/terrain_accents/README.md": {
@@ -448,9 +415,9 @@
     },
     "docs/DELEGATION.md": {
       "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:41:46+00:00",
-      "hash": "8ef1fe6cf3e5b50a642df5ac73ea83a661230019e7075cd1b324d24b9c4625de",
-      "task": "4.19",
+      "at": "2026-08-20T20:46:13+00:00",
+      "hash": "09331e3c0f2c5279492aac0055a82f788cdd88193b4fbf34613ee265b2158207",
+      "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "docs/FINDINGS.md": {
@@ -490,9 +457,9 @@
     },
     "docs/WORLDGEN.md": {
       "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:41:46+00:00",
-      "hash": "98043b4720ad01b8901a0a89e287f6fd2108ff7d1c871d219ee819c708d8c4c7",
-      "task": "4.19",
+      "at": "2026-08-20T20:46:13+00:00",
+      "hash": "dac5decd81c2e78e1d52370882ec31a6c0c1a2c1ee16d0d30e67cb98caf3bf2a",
+      "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "levels/procedural_island.tscn": {
@@ -1048,6 +1015,13 @@
       "task": "F-275",
       "token": null
     },
+    "tools/terrain_check.gd": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:46:13+00:00",
+      "hash": "1138b7ed752b06421a3a7dac590396550f8c5ef8af4ce08b955fe6a0e782c2f3",
+      "task": "4.18",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
     "tools/terrain_look_check.gd": {
       "agent": "lm",
       "at": "2026-08-20T06:20:25+00:00",
@@ -1189,11 +1163,11 @@
       "token": null
     },
     "world/gen/island_heightmap.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T06:20:25+00:00",
-      "hash": "25a7297a00c835a699c0f5a50aa0db60d4c1eeb9b0a69dd0690ba8fca8249d8a",
-      "task": "F-274",
-      "token": null
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:46:13+00:00",
+      "hash": "c226bcf3b15a13242d51752383c40e831428fa0d7891fd9a9667d8961c80b7fa",
+      "task": "4.18",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "world/gen/poi_def.gd": {
       "agent": "lm",
@@ -1245,7 +1219,7 @@
       "token": null
     }
   },
-  "rev": 87,
+  "rev": 92,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -2073,9 +2047,11 @@
       "title": "Spike: one-time seeded erosion; cross-platform hash on the D-028 machine; adopt/reject with numbers"
     },
     "4.18": {
+      "done_at": "2026-08-20T20:46:13+00:00",
+      "done_by": "quill5fa5c7",
       "est": "1",
       "milestone": "M4",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T0",
       "title": "Three-seed island-feel walk vs Hollowmere (tuning input, not a gate \u2014 D-125)"
     },
@@ -5473,7 +5449,7 @@
     "F-307": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "A non-host peer whose host leaves is soft-locked on F-243's terminal overlay \u2014 the restart button never re-reads its own host check, and no menu can open over it"
     },
@@ -5554,6 +5530,13 @@
       "status": "done",
       "tier": "F",
       "title": "A git merge writes conflict markers into .agent/state.json, which every running lane is reading \u2014 the live coordination file becomes unparseable mid-flight"
+    },
+    "F-319": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Every multi-site POI badly under-places on the 118 m island, and the Wellspring's 180 m spacing makes a second one geometrically impossible"
     }
   },
   "version": 1
