@@ -13,3 +13,10 @@ EOF
 
 chmod +x "$HOOK"
 echo "✓ pre-commit hook installed at .git/hooks/pre-commit"
+
+# `merge=ours` in .gitattributes is inert unless the driver is declared, and the declaration is
+# per-clone config rather than a tracked file (F-318). Without it a merge still conflicts on
+# .agent/state.json and writes conflict markers into the file every running lane is reading.
+# `true` is the whole driver: exit 0 having left the working-tree copy alone.
+git -C "$ROOT" config merge.ours.driver true
+echo "✓ merge.ours driver declared — a merge keeps the live .agent/state.json and BOARD.md"

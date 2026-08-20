@@ -1,2 +1,15 @@
 # Normalize EOL for all files that Git considers text files.
 * text=auto eol=lf
+
+# Live coordination state (F-318). These three are generated and append-only, and every session and
+# dispatched lane on this machine reads and writes them continuously — `state.json` holds the claims
+# and the in-flight board. A merge that conflicts on them writes `<<<<<<<` markers INTO the live
+# files, so `state.json` stops being valid JSON while lanes are mid-task; that happened, with 12
+# markers on disk and LP running. There is nothing to reconcile either: the working-tree copy is the
+# superset by construction, because every agent mutates the same file.
+.agent/state.json  merge=ours
+.agent/BOARD.md    merge=ours
+.agent/JOURNAL.md  merge=union
+
+# docs/FINDINGS.md is deliberately NOT here — union would interleave two agents' sections and could
+# split a finding in half. That file wants a real resolution.
