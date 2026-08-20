@@ -33,6 +33,10 @@ const EVENT_BUS := preload("res://core/events/event_bus.gd")
 const MARKER_GROUP: StringName = &"authored_world_marker"
 const TERRAIN_GROUP: StringName = &"authored_world_terrain"
 
+## Where the ocean's surface sits. `IslandHeightmap` measures every height against this, so it is
+## the datum "below this is water" already meant everywhere it was written as a bare 0.0.
+const SEA_LEVEL: float = 0.0
+
 ## How far (m) the spawn probe walks in from the island edge looking for standable shore, and the
 ## band of heights that read as "beach, above the waterline". WORLDGEN.md §3.1: shore start is a
 ## pacing choice — the first minutes walk inland.
@@ -213,6 +217,16 @@ func _local_player_body() -> Node3D:
 ## height keeps one call shape across both map kinds.
 func height_at(x: float, z: float) -> float:
 	return BiomeMapScript.surface_at(x, z, world_seed, _biome_defs)
+
+
+## The other half of that pair (F-284): the water surface over (x, z).
+##
+## Constant, because this generator has exactly one body of water — the ocean the island stands out
+## of — and `IslandHeightmap` measures every height it produces against y = 0. It is a function of
+## (x, z) anyway so that a caller cannot tell this map from an authored one, whose surface genuinely
+## varies per point. A generator that later grows inland lakes changes this, not its callers.
+func water_surface_at(_x: float, _z: float) -> float:
+	return SEA_LEVEL
 
 
 # ── the pipeline, composed ────────────────────────────────────────────────────────────────────────

@@ -5270,3 +5270,38 @@ documented purpose has the mirror-image version of this problem.
 adding one, twice — once when drafting and once immediately before writing — with no atomic
 allocator. D-165 was already held by F-274 when this task's first draft cited it; that reference was
 corrected to D-168 in `cycle_service.gd` before anything shipped.
+
+---
+
+### D-169 · A map's spawn is graded against the layout's authored record, read before physics runs — never off the settled body
+
+*2026-08-20, F-284.*
+
+Every check that asks "is this map's spawn standable" reads the spawn from the level's `Player`
+node **captured off `packed.instantiate()`, before `add_child()` and before a single frame**, and
+cross-checks it against the layout JSON's own `spawn` record. It never reads `player.position`
+after the warm-up frames.
+
+**Why:** the level's `Player` is a real `CharacterBody3D`. It falls. Hollowmere's authored spawn is
+y = 2.423 and the ground under it is y = 2.023; sixteen warm-up frames later the node reports
+2.023, because it landed. A vertical assertion written against that number grades *the terrain's
+ability to catch a falling body* and passes for a spawn authored ten metres in the air or a metre
+inside the terrain alike — which is exactly the class of bug F-284 exists to catch, surviving the
+check meant to catch it. The three checks that read this node all did so post-warm-up; two escaped
+only because their assertion happened to be horizontal-only, which is luck, not design.
+
+**The pairing that makes it map-agnostic:** both world scripts answer two public calls,
+`height_at(x, z)` and `water_surface_at(x, z)`, and "standable" is defined from that pair alone —
+ground above water by a clearance, spawn on the ground within a band. `AuthoredWorld` derives the
+surface from the layout's water bodies (the same `_water_level` geometry `_build_water` meshes),
+`ProceduralWorld` answers `SEA_LEVEL`. So the shared phase cannot tell which map it is holding, and
+a future map gets the assertion for free — F-076's founding rule, honoured rather than restated.
+
+**Do not "simplify" this** by letting the check reach into `AuthoredWorld._water_level` directly, or
+by asserting the water test only where a layout exists. A map that cannot answer where its water is
+must FAIL rather than skip: a silent skip is indistinguishable from a dry map, which is F-076's
+blind spot arriving through the door marked "generic".
+
+**What would change my mind:** a spawn source that is no longer a node in the scene — if PlayerNet
+ever takes the spawn from the layout record directly, the record becomes the only truth and the
+node cross-check retires with it.

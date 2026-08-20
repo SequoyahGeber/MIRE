@@ -38,6 +38,10 @@ extends SceneTree
 ## REGISTERED station, chests with a resolvable tier, a Wellspring, exactly one extraction ship,
 ## a standable spawn, and a MireGrid that seeded inside the island and recedes from a cap.
 ##
+## F-284 finished that sentence: "a standable spawn" was asserted only on the procedural half until
+## then. It is now one shared phase (`_check_spawn_standable`) reading each map's own real spawn
+## source against each map's own ground and water.
+##
 ## Layout-shaped phases (F-076's originals) still run only where a layout JSON exists — the
 ## procedural map has no layout by design, and its ground truths are asserted directly instead.
 ## The Undergrowth phase (F-112) is REQUIRED on the authored map and asserted ABSENT on the
@@ -46,8 +50,22 @@ extends SceneTree
 ##
 ## Run with: .agent/bin/agent godot --script tools/world_contract_check.gd
 
+## How much dry ground a spawn has to have over the water standing on it. Set so that a map whose
+## water surface is sea level (every procedural island) demands the same `ground > 0.5` this check
+## has always demanded of the composer.
+const SPAWN_DRY_CLEARANCE_M: float = 0.5
+## How far a spawn may sit off the ground under it before it is a bug rather than a nudge. Below is
+## nearly zero — a spawn under the terrain is the failure F-284 exists for, and the shipped map's
+## own record clears its ground by centimetres. Above is generous: a spawn is authored a step over
+## the surface on purpose, and PlayerNet adds its own 1.2 m stand-up offset on top.
+const SPAWN_BURIED_TOLERANCE_M: float = 0.35
+const SPAWN_FLOATING_TOLERANCE_M: float = 2.5
+
 var failures: Array[String] = []
 var _map_label: String = ""
+## The authored map's spawn, read off the instantiated scene BEFORE a physics frame runs — see
+## `_run`. `null` when the level has no `Player` node at all, which is itself a failure (F-284).
+var _authored_spawn: Variant = null
 
 
 func _initialize() -> void:
@@ -65,6 +83,14 @@ func _run() -> void:
 		_finish()
 		return
 	var level: Node = packed.instantiate()
+	# The spawn, read off the instantiated scene before a single frame runs. The level's `Player` is
+	# a real CharacterBody3D, so sixteen frames of physics later its position is wherever it SETTLED
+	# — which grades the terrain's ability to catch a falling body, not where the map put the spawn.
+	# The first run of this check measured the authored 2.423 as 2.023 for exactly that reason, and a
+	# spawn authored ten metres in the air, or one metre under the terrain, would have read as ground
+	# level too (F-284).
+	var placeholder := level.get_node_or_null(^"Player") as Node3D
+	_authored_spawn = placeholder.position if placeholder != null else null
 	root.add_child(level)
 	# EnemyWorld/HarvestWorld find the level through current_scene, which nothing sets when a
 	# scene is added by hand (same trap tools/hollowmere_check.gd documents).
@@ -162,6 +188,10 @@ func _check_loop_fixtures(level: Node, procedural: bool) -> void:
 	if spawn_points < 1:
 		_fail("EnemyWorld.ambient_spawn_points() is empty — night waves have nowhere to spawn")
 
+	# A standable spawn, asserted per map (F-284). The demand is identical on both sides; only where
+	# the spawn is READ from differs, because the two map kinds publish one differently.
+	_check_spawn_standable(level, procedural)
+
 	if procedural:
 		await _check_procedural_specifics(level)
 
@@ -191,16 +221,15 @@ func _check_loop_fixtures(level: Node, procedural: bool) -> void:
 		+ "spawn_points=%d mire_peak=%.2f" % [spawn_points, hottest])
 
 
-## What only the procedural map has to prove: the composer's spawn is standable ground (its own
-## check owns the full spawn rule; this is the contract-level restatement), and the scatter field
-## actually wires harvest proxies once the streamer has chunks around an anchor — the harvest link
-## of the loop, which has no layout JSON to compare against.
+## What only the procedural map has to prove: the scatter field actually wires harvest proxies once
+## the streamer has chunks around an anchor — the harvest link of the loop, which has no layout JSON
+## to compare against, so `_check_harvest_world` cannot ask it.
+##
+## The spawn assertion that used to live here moved to `_check_spawn_standable` and now runs on both
+## maps (F-284): it was never procedural-specific, and keeping it here meant the map that actually
+## ships asserted no spawn position at all.
 func _check_procedural_specifics(world: Node) -> void:
 	var spawn: Vector3 = world.get(&"spawn_position")
-	var ground: float = float(world.call(&"height_at", spawn.x, spawn.z))
-	if ground < 0.5:
-		_fail("the spawn stands in the sea (ground %.2f at %s)" % [ground, spawn])
-
 	var streamer: Node = world.get(&"streamer")
 	if streamer == null:
 		_fail("composer built no ChunkStreamer")
@@ -221,6 +250,105 @@ func _check_procedural_specifics(world: Node) -> void:
 	if wired < 1:
 		_fail("ResourceScatterField wired no harvestable proxy around the spawn — the harvest "
 			+ "link of the loop is broken on the procedural map")
+
+
+## The spawn fixture, asked identically of both maps: is the point a player is actually put down on
+## dry, solid, standable ground?
+##
+## F-284: this assertion used to sit inside `_check_procedural_specifics`, so the authored map — the
+## one `project.godot` ships — checked no spawn position at all, and Hollowmere's could drift into
+## the Mere or under the terrain with `WORLD_CONTRACT_CHECK PASS` still green.
+##
+## The SOURCE is per map, and on both sides it is the real runtime source rather than a restatement
+## of one:
+##   procedural — `ProceduralWorld.spawn_position`, what `_build_player()` and `_replace_players()`
+##                stand bodies on.
+##   authored   — the level's own `Player` node, which `PlayerNet._claim_spawn_point()` reads the
+##                transform off and then frees at session open (`autoload/player_net.gd`), captured
+##                in `_run` before physics can move it. A level with no `Player` node spawns every
+##                player at the world origin, so its absence is a failure here and not a skip — that
+##                is the F-076 blind spot exactly. It is cross-checked against the layout's own
+##                spawn record, which is the truth the scene node is a copy of.
+## The GROUND is per map through one pair of public calls both world scripts answer, `height_at()`
+## and `water_surface_at()`, so nothing below this line knows which map it is holding.
+func _check_spawn_standable(level: Node, procedural: bool) -> void:
+	var ground_source: Node = level if procedural else level.get_node_or_null(^"World")
+	if ground_source == null or not ground_source.has_method(&"height_at"):
+		_fail("no node answers height_at() — this map publishes no ground to stand a spawn on")
+		return
+
+	var spawn: Vector3 = Vector3.ZERO
+	if procedural:
+		spawn = ground_source.get(&"spawn_position")
+	elif _authored_spawn is Vector3:
+		spawn = _authored_spawn as Vector3
+		_check_spawn_matches_layout(level, spawn)
+	else:
+		_fail("the level has no Player node — PlayerNet._claim_spawn_point() would put every "
+			+ "player at the world origin")
+		return
+
+	var ground: float = float(ground_source.call(&"height_at", spawn.x, spawn.z))
+	if not is_finite(ground):
+		_fail("the ground under the spawn %s is not a number (%s)" % [spawn, ground])
+		return
+
+	# Not standing in water. A map that cannot answer where its water is cannot prove its spawn is
+	# dry, and "no answer" must read as a failure rather than as "no water" (F-076 again).
+	var water: float = -INF
+	if ground_source.has_method(&"water_surface_at"):
+		water = float(ground_source.call(&"water_surface_at", spawn.x, spawn.z))
+	else:
+		_fail("the map answers height_at() but not water_surface_at() — nothing can prove its "
+			+ "spawn is out of the water")
+	if is_finite(water) and ground < water + SPAWN_DRY_CLEARANCE_M:
+		_fail("the spawn is in the water (ground %.2f, water surface %.2f at %s)"
+			% [ground, water, spawn])
+
+	# And standing ON that ground rather than inside it or over it.
+	if spawn.y < ground - SPAWN_BURIED_TOLERANCE_M:
+		_fail("the spawn is %.2f m BELOW the ground at %s — a player starts inside the terrain"
+			% [ground - spawn.y, spawn])
+	if spawn.y > ground + SPAWN_FLOATING_TOLERANCE_M:
+		_fail("the spawn floats %.2f m above the ground at %s" % [spawn.y - ground, spawn])
+	print("WORLD_CONTRACT_%s spawn=%s ground=%.2f water=%s" % [
+		_map_label.to_upper(), spawn, ground,
+		"none" if not is_finite(water) else "%.2f" % water])
+
+
+## The layout is the source of truth and the scene's `Player` node is a copy of it; the first time
+## those two disagreed, the player started inside a cabin under a floor with no collision
+## (`tools/hollowmere_check.gd`'s lesson, generalized off that one map). Horizontal only — the
+## authored Y is a stand-on-the-surface nudge that the ground band above already grades.
+func _check_spawn_matches_layout(level: Node, spawn: Vector3) -> void:
+	var layout: Dictionary = _layout_for(level)
+	if layout.is_empty():
+		return          # not a layout-convention map; nothing to compare against, same as elsewhere
+	var record: Variant = _layout_spawn(layout)
+	if not (record is Vector3):
+		_fail("the layout declares no spawn record — nothing pins the scene's Player node to the "
+			+ "map the generator built")
+		return
+	var authored: Vector3 = record as Vector3
+	var drift: float = Vector2(spawn.x - authored.x, spawn.z - authored.z).length()
+	if drift > 0.5:
+		_fail("the Player node is %.2f m from the layout's spawn record %s — scene and layout have "
+			% [drift, authored] + "drifted apart")
+
+
+## The layout's own spawn record, in BOTH shapes the shipped layouts use: `hollowmere.json` writes a
+## bare `[x, y, z]`, `playtest_hollow.json` writes `{"pos": [x, y, z]}` (F-302). Returns `null` when
+## the layout has no usable record, which is a failure for the caller to report rather than a skip.
+func _layout_spawn(layout: Dictionary) -> Variant:
+	var record: Variant = layout.get("spawn")
+	if record is Dictionary:
+		record = (record as Dictionary).get("pos")
+	if not (record is Array):
+		return null
+	var values: Array = record as Array
+	if values.size() < 3:
+		return null
+	return Vector3(float(values[0]), float(values[1]), float(values[2]))
 
 
 ## F-112, both halves. On the authored map the Undergrowth node is REQUIRED — silently skipping

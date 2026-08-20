@@ -212,104 +212,6 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
-    "assets/gatherables/catalog.json": {
-      "agent": "lm",
-      "at": "2026-08-19T10:22:16+00:00",
-      "hash": "94c288003f9b27639c3bdf633f39976ba644b3ab53c63a41bb41a8f33906e008",
-      "task": "F-206",
-      "token": null
-    },
-    "assets/gatherables/exports/berry_bush_full.glb": {
-      "agent": "lm",
-      "at": "2026-08-19T10:22:16+00:00",
-      "hash": "3b45094abb72076f7db1d84cd0332264d2e38192f16a1b8f157916ebca59c96f",
-      "task": "F-206",
-      "token": null
-    },
-    "assets/gatherables/exports/berry_bush_harvested.glb": {
-      "agent": "lm",
-      "at": "2026-08-19T10:22:16+00:00",
-      "hash": "f31f2f87c1be8ecb1c65a40cac277b48e43c0b8f5a778cbd5d986c18b0de3bfb",
-      "task": "F-206",
-      "token": null
-    },
-    "assets/gatherables/exports/clay_deposit.glb": {
-      "agent": "lm",
-      "at": "2026-08-19T10:22:16+00:00",
-      "hash": "27d656b18f0ca9e6122d92f7b6095c1e75b5cbf250bb3d643217f3a678ae1afb",
-      "task": "F-206",
-      "token": null
-    },
-    "assets/gatherables/exports/fibre_plant.glb": {
-      "agent": "lm",
-      "at": "2026-08-19T10:22:16+00:00",
-      "hash": "153e304b0519145f04702ff7ebdce92312f38a946b5f1224c8a6a6d7e81fb762",
-      "task": "F-206",
-      "token": null
-    },
-    "assets/gatherables/exports/honeycomb.glb": {
-      "agent": "lm",
-      "at": "2026-08-19T10:22:16+00:00",
-      "hash": "af3fa565489331402e66c410c4f100ee720511e8c875b13be2a5307a92459da8",
-      "task": "F-206",
-      "token": null
-    },
-    "assets/gatherables/exports/medicinal_herb.glb": {
-      "agent": "lm",
-      "at": "2026-08-19T10:22:16+00:00",
-      "hash": "bf4d4c801b462bebb00488617c296cc138df4fc475061b293799a67c2e4d6140",
-      "task": "F-206",
-      "token": null
-    },
-    "assets/gatherables/exports/peat_deposit.glb": {
-      "agent": "lm",
-      "at": "2026-08-19T10:22:16+00:00",
-      "hash": "814d59d1e5d0e7981b718fe95dc967f9282fc35a407d0b54d1ba392a0ec90cc5",
-      "task": "F-206",
-      "token": null
-    },
-    "assets/gatherables/exports/poison_berry_bush.glb": {
-      "agent": "lm",
-      "at": "2026-08-19T10:22:16+00:00",
-      "hash": "ab6212f415ed9fce19ab54f3b28667554a5b4f5f7eeb295978bca726316cd5d5",
-      "task": "F-206",
-      "token": null
-    },
-    "assets/gatherables/exports/resin_node.glb": {
-      "agent": "lm",
-      "at": "2026-08-19T10:22:16+00:00",
-      "hash": "111ee14ff2ed06de04742a88ffdd1458cf136f99844ab89a7ec8b1d29ba2fc28",
-      "task": "F-206",
-      "token": null
-    },
-    "assets/gatherables/exports/wild_onion.glb": {
-      "agent": "lm",
-      "at": "2026-08-19T10:22:16+00:00",
-      "hash": "15fc677f7341e4224fac1cb5e42dff758ac6bdf74201b6f993f59f3e69bfdb79",
-      "task": "F-206",
-      "token": null
-    },
-    "assets/gatherables/preview/berry_decision_preview.png": {
-      "agent": "lm",
-      "at": "2026-08-19T10:22:16+00:00",
-      "hash": "0ff7f585e7392e4f11ed1d424d934478f96ce7bfab075a1a4ec42e668311796c",
-      "task": "F-206",
-      "token": null
-    },
-    "assets/gatherables/preview/gatherable_deposits_preview.png": {
-      "agent": "lm",
-      "at": "2026-08-19T10:22:16+00:00",
-      "hash": "ce209e092ef264b378452e6d72c8a94f8ff8b9b5233ea11c3fa3436a13443b01",
-      "task": "F-206",
-      "token": null
-    },
-    "assets/gatherables/preview/gatherable_plants_preview.png": {
-      "agent": "lm",
-      "at": "2026-08-19T10:22:16+00:00",
-      "hash": "fcddfaea60a73cb8819c5d2973736a8e04b2cd644832719da5ed9fac9bac67f6",
-      "task": "F-206",
-      "token": null
-    },
     "assets/paths": {
       "agent": "slate17",
       "at": "2026-08-19T17:05:42+00:00",
@@ -442,13 +344,6 @@
       "hash": "770540cbf68f846b647aecfbfa912e8dc876e1cf7d8db6d290e78ae54a8be514",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "assets/source/gatherable_plants.blend": {
-      "agent": "lm",
-      "at": "2026-08-19T10:22:16+00:00",
-      "hash": "6c4c424056ce2750305add0e43f75c8902987978e9619ed2c084d96a1d3ee6d3",
-      "task": "F-206",
-      "token": null
     },
     "assets/source/path_set.blend": {
       "agent": "slate17",
@@ -914,16 +809,16 @@
     },
     "docs/DECISIONS.md": {
       "agent": "lp",
-      "at": "2026-08-20T10:21:34+00:00",
-      "hash": "1b7f117cec3913e5fcbc1d46279820fd9ae961ad749dd9755fad2ed43c2402ff",
-      "task": "F-280",
+      "at": "2026-08-20T10:34:51+00:00",
+      "hash": "fa54dbf48af13a213f3fb2494088c3087a9fcb9b758e45526908663e52f8f925",
+      "task": "F-284",
       "token": null
     },
     "docs/DELEGATION.md": {
       "agent": "lp",
-      "at": "2026-08-20T10:21:34+00:00",
-      "hash": "c477e63dbbf48f147a8a44ceae720c71d2c31c3a99bfddd8de8a29f714ec6946",
-      "task": "F-280",
+      "at": "2026-08-20T10:34:51+00:00",
+      "hash": "c942924afd163ca3eeb47a8baec167f2b65291c78532412c643fbd475133898e",
+      "task": "F-284",
       "token": null
     },
     "docs/FINDINGS.md": {
@@ -942,9 +837,9 @@
     },
     "docs/SPECS.md": {
       "agent": "lp",
-      "at": "2026-08-20T10:21:34+00:00",
-      "hash": "45c2ab1884728e50127f8fbcaca3e8200c6ab9a8d9dc2de8f24e8c3755bfee2b",
-      "task": "F-280",
+      "at": "2026-08-20T10:34:51+00:00",
+      "hash": "4ccfefedf6d4963ccd137018bd11da9b611007517eb3a5015df788a9ee1f504c",
+      "task": "F-284",
       "token": null
     },
     "entities/player/player_camera.gd": {
@@ -1108,13 +1003,6 @@
       "task": "F-277",
       "token": null
     },
-    "tools/autoload_tracked_check.py": {
-      "agent": "lp",
-      "at": "2026-08-19T10:25:06+00:00",
-      "hash": "e9953928e2bfe10f9b854646fd8b826c5e5c93e32311fe550ef870ff16460de9",
-      "task": "F-205",
-      "token": null
-    },
     "tools/bench_chunk_gpu.gd": {
       "agent": "lm",
       "at": "2026-08-20T06:20:25+00:00",
@@ -1169,13 +1057,6 @@
       "at": "2026-08-19T13:37:33+00:00",
       "hash": "22f832b3651256f8530655ae0a6d106de21ff5df00fc98e3ddc5571b829a33be",
       "task": "F-207",
-      "token": null
-    },
-    "tools/blender/build_gatherable_plants.py": {
-      "agent": "lm",
-      "at": "2026-08-19T10:22:16+00:00",
-      "hash": "53674a47465427cc003a4c448e547916a97610472d28cfc28dcaaa3c583781e1",
-      "task": "F-206",
       "token": null
     },
     "tools/blender/build_harvestable_resources.py": {
@@ -1444,13 +1325,6 @@
       "task": "F-165",
       "token": null
     },
-    "tools/harness_check.py": {
-      "agent": "lp",
-      "at": "2026-08-19T10:25:06+00:00",
-      "hash": "dfcf6d64f6f472b5fbc4c58b432ed05063d7060e7fd81adf6c8aafba09463020",
-      "task": "F-205",
-      "token": null
-    },
     "tools/harvest_restart_check.gd": {
       "agent": "lp",
       "at": "2026-08-20T06:20:00+00:00",
@@ -1459,10 +1333,10 @@
       "token": null
     },
     "tools/hollowmere_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T13:44:07+00:00",
-      "hash": "7d964c435e4d080f2b0a1b4e1d2726fce821f234b3a1bdfedc1e0aee4a09e2dc",
-      "task": "F-214",
+      "agent": "lp",
+      "at": "2026-08-20T10:34:51+00:00",
+      "hash": "55395f59761bbab5dd7018dce60058e098316a201dff2cced858b7fe5b2ebcb2",
+      "task": "F-284",
       "token": null
     },
     "tools/hook_events_check.gd": {
@@ -1527,6 +1401,13 @@
       "hash": "4376cdc2bb677bca62bb59abdc3b1cd518746fe36ecc0ecf947a881222342c25",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "tools/playtest_hollow_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T10:34:51+00:00",
+      "hash": "a8ee6815ba71c7fd3725d0d627633a7ae48aee762b31ed4ba9375e08aa62ee86",
+      "task": "F-284",
+      "token": null
     },
     "tools/poi_check.gd": {
       "agent": "lm",
@@ -1830,11 +1711,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
     "tools/world_contract_check.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-19T22:12:05+00:00",
-      "hash": "4d4299254f5252858817edc349a44eb5775e3334b054aaa9de7320b622554643",
-      "task": "4.16",
-      "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
+      "agent": "lp",
+      "at": "2026-08-20T10:34:51+00:00",
+      "hash": "d3a061972adbb4853af6cd9f9c0f9a9285a8a0072dbd77045f81ab8d431d8a1f",
+      "task": "F-284",
+      "token": null
     },
     "tools/worldgen_noise_reuse_check.gd": {
       "agent": "lm",
@@ -1971,9 +1852,9 @@
     },
     "world/gen/authored_world.gd": {
       "agent": "lp",
-      "at": "2026-08-20T06:20:00+00:00",
-      "hash": "90e9dbcb868e4fefd15d3bf31655591f8f35b57ef936abb62c8dc02a4a9adbeb",
-      "task": "F-276",
+      "at": "2026-08-20T10:34:51+00:00",
+      "hash": "a8f973f2f73cb658370311eea072e18d4e64dc4348a371e01b1ebf7b274173dd",
+      "task": "F-284",
       "token": null
     },
     "world/gen/biome_def.gd": {
@@ -2019,10 +1900,10 @@
       "token": null
     },
     "world/gen/procedural_world.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T06:20:25+00:00",
-      "hash": "ddb086788c4d0d4c9c7cb4e94ea506c83f3743ccbdb3c354027c189ee4862f3a",
-      "task": "F-274",
+      "agent": "lp",
+      "at": "2026-08-20T10:34:51+00:00",
+      "hash": "d91bdd450887b4b95e790266d817740f7ef4a6aaf75bd131fc002ce42a1dd179",
+      "task": "F-284",
       "token": null
     },
     "world/gen/resource_scatter.gd": {
@@ -6086,9 +5967,11 @@
       "title": "Three D-numbers each head two different decisions \u2014 D-050, D-144 and D-150 are live collisions from before F-260's allocator, and no check detects them"
     },
     "F-284": {
+      "done_at": "2026-08-20T10:34:51+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "The both-map contract matrix never checks the authored map's spawn is standable"
     },
@@ -6198,6 +6081,13 @@
       "status": "done",
       "tier": "F",
       "title": "Lanes need a reserved-for-human flag: LM's weekly must last a week of manual sessions, and 'remember not to route there' is not a mechanism"
+    },
+    "F-300": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "autoexec's documented loadout half survives exactly one run \u2014 it is boot-only and F-243 wipes the inventory"
     }
   },
   "version": 1

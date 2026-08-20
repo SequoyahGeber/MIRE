@@ -145,6 +145,27 @@ func height_at(x: float, z: float) -> float:
 	return h00 + (h11 - h01) * tx + (h01 - h00) * tz
 
 
+## The water surface standing over (x, z), or `-INF` where this map declares no water there.
+##
+## The public half of `_water_level`: every body the layout declares is tested and the highest
+## covering surface wins, which is exactly the rule `_build_water` meshes the surfaces with, so this
+## answers about the water a player would actually be standing in rather than about a second copy of
+## it. `height_at()` above says where the ground is; this says where the water over it is, and the
+## pair of them is what "dry land" means on this map.
+##
+## F-284: `ProceduralWorld` answers the same call with sea level, so `tools/world_contract_check.gd`
+## can put a spawn on either map to one identical standable test without knowing which map it holds.
+func water_surface_at(x: float, z: float) -> float:
+	var surface: float = -INF
+	var point := Vector2(x, z)
+	for body_value: Variant in _layout.get("water", []):
+		var level: float = _water_level(body_value as Dictionary, point)
+		if is_nan(level):
+			continue
+		surface = maxf(surface, level)
+	return surface
+
+
 ## F-095 briefly built a conservative terrain-under-shell occluder here for the engine's raster
 ## occlusion culling. Measured and reverted: Hollowmere is a bowl, so from inside it the ridge
 ## occludes only the world's outside — ~2 draws culled, while the per-frame occlusion raster

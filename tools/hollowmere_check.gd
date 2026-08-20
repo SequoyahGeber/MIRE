@@ -23,6 +23,14 @@ func _init() -> void:
 		_finish()
 		return
 	var level := packed.instantiate()
+	# The Player node's authored transform, read before a frame runs. It is a real CharacterBody3D:
+	# sixteen physics frames from now its position is wherever it settled, not where the map put it
+	# (F-284, measured as 0.40 m of fall on this very map). `_check_spawn` only ever compared
+	# horizontally so this was latent rather than live, but a vertical assertion added to it would
+	# have graded gravity.
+	var authored_player := level.get_node_or_null(^"Player") as Node3D
+	var authored_player_position: Vector3 = \
+		authored_player.position if authored_player != null else Vector3.ZERO
 	root.add_child(level)
 	# HarvestWorld and every other autoload that watches the level find it through
 	# `current_scene`, which nothing sets when a scene is added by hand. Without
@@ -62,7 +70,7 @@ func _init() -> void:
 		if int(undergrowth.get("placed_count")) < 4000:
 			failures.append("undergrowth placed only %d plants" % int(undergrowth.get("placed_count")))
 
-	_check_spawn(level, layout)
+	_check_spawn(level, layout, authored_player, authored_player_position)
 	_probe_ground(level, world, layout)
 	_check_markers(level, layout)
 	_check_shipwreck_becomes_ship(level)
@@ -134,17 +142,17 @@ func _probe_ground(level: Node, world: Node, layout: Dictionary) -> void:
 ## the first time they disagreed the player started **inside a cabin, under a floor
 ## that had no collision**, with no way out. The layout is the source of truth; this
 ## makes the scene prove it still agrees.
-func _check_spawn(level: Node, layout: Dictionary) -> void:
+func _check_spawn(level: Node, layout: Dictionary, player: Node3D,
+		player_position: Vector3) -> void:
 	var spawn: Array = layout.get("spawn", []) as Array
 	if spawn.size() < 3:
 		failures.append("layout has no spawn")
 		return
 	var authored := Vector3(float(spawn[0]), float(spawn[1]), float(spawn[2]))
-	var player := level.get_node_or_null("Player") as Node3D
 	if player == null:
 		failures.append("scene has no Player node")
 		return
-	var flat := Vector2(player.position.x - authored.x, player.position.z - authored.z).length()
+	var flat := Vector2(player_position.x - authored.x, player_position.z - authored.z).length()
 	if flat > 0.5:
 		failures.append(
 			"Player node is %.2f m from the layout spawn — the scene has drifted" % flat

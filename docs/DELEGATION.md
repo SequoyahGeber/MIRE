@@ -75,6 +75,47 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-20 — F-284 resolved: both world builders answer `water_surface_at()`, and the contract matrix asserts a standable spawn on BOTH maps (lp)
+
+**The new API you build against.** Both world scripts now answer the same *pair* of pure, read-only
+questions, so anything asking "is this point dry, solid land" works on either map kind without
+knowing which one it holds:
+
+```gdscript
+world.height_at(x, z)         # already existed on both — where the ground is
+world.water_surface_at(x, z)  # NEW on both — where the water over it is
+```
+
+* `world/gen/authored_world.gd` — the public half of `_water_level`: every body in the layout's
+  `water` array is tested and the highest covering surface wins, which is exactly the rule
+  `_build_water()` meshes the surfaces with. Returns **`-INF`** where the map declares no water at
+  that point, so guard with `is_finite()` rather than comparing against a sentinel.
+* `world/gen/procedural_world.gd` — returns the new `SEA_LEVEL` const (`0.0`), the datum
+  `IslandHeightmap` already measured every height against and which was written as a bare literal
+  everywhere before. A generator that later grows inland lakes changes this one function, not its
+  callers.
+
+Use the pair, not `height_at()` alone, for any "above the waterline" question. A caller that treats
+"no answer" as "no water" has rebuilt F-076's blind spot.
+
+**What else shipped.** `tools/world_contract_check.gd`'s spawn assertion moved out of
+`_check_procedural_specifics()` — where `if procedural:` meant the SHIPPED map asserted no spawn at
+all — into a shared `_check_spawn_standable()` that runs on both arms. The authored map's spawn
+source is the level's `Player` node (what `PlayerNet._claim_spawn_point()` reads), cross-checked
+against the layout's own `spawn` record.
+
+**The trap, if you write any check that reads a level's `Player` node (D-169).** It is a real
+`CharacterBody3D` and it FALLS. Read after the usual 16 warm-up frames it reports where it *settled*
+— Hollowmere's authored 2.423 measures as 2.023 — so a vertical assertion against it grades gravity,
+not the map. Capture the transform off `packed.instantiate()` **before `add_child()`**.
+`tools/hollowmere_check.gd` and `tools/playtest_hollow_check.gd` were both one vertical assertion
+away from this and now capture pre-`add_child` too.
+
+**Live and NOT yours to inherit as a regression:** the procedural arm of that matrix fails
+intermittently at a clean HEAD with *"no REGISTERED station marker"* — seeds 3503374054 and
+3803646258 genuinely publish zero station markers. That is **F-301**, filed with the measurement.
+
+
 ### 2026-08-20 — F-280 resolved: `run_started` is a per-RUN public hook event, not a per-process one (lp)
 
 **What shipped.** `CycleService._run_started_emitted` is now RUN-scoped. `host_restart_run()` clears

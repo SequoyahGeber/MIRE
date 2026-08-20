@@ -31,6 +31,12 @@ func _run() -> void:
 	if scene == null:
 		quit(1)
 		return
+	# The Player's authored transform, read before a frame runs: it is a real body and the position
+	# read after the warm-up is where it settled, which is a 0.01 m tolerance graded against gravity
+	# rather than against the layout (F-284, the same shape as tools/world_contract_check.gd's).
+	var authored_player := scene.get_node_or_null(^"Player") as Node3D
+	var authored_player_position: Vector3 = \
+		authored_player.position if authored_player != null else Vector3.ZERO
 	root.add_child(scene)
 	current_scene = scene
 	for _frame: int in 8:
@@ -66,7 +72,7 @@ func _run() -> void:
 	if player != null:
 		var expected_spawn := _vector3((layout.get("spawn", {}) as Dictionary).get("pos", []))
 		check(
-			Vector2(player.position.x, player.position.z).distance_to(Vector2(expected_spawn.x, expected_spawn.z)) < 0.01,
+			Vector2(authored_player_position.x, authored_player_position.z).distance_to(Vector2(expected_spawn.x, expected_spawn.z)) < 0.01,
 			"scene player matches the shared horizontal spawn record"
 		)
 		_check_gate_egress(scene, player)

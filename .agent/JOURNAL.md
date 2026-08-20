@@ -6930,3 +6930,19 @@ Commit at time of writing: `5b0c704`
       known recurrence — `agent finding` appends atomically and ship has no per-hunk staging, so an
       append-only shared doc cannot be committed selectively. Leaving it uncommitted would be worse
       (uncommitted work is invisible to Codex). Flagged rather than silently shipped, same as F-261.
+
+---
+
+### DONE · F-284 · lp · 2026-08-20T10:34:51+00:00
+
+**The both-map contract matrix never checks the authored map's spawn is standable**
+
+The both-map matrix now asserts a standable spawn on BOTH arms: the spawn phase moved out of _check_procedural_specifics() into a shared _check_spawn_standable(), reading each map's real runtime spawn source (ProceduralWorld.spawn_position / the level's Player node, cross-checked against the layout's spawn record) against a new symmetric ground API — both world builders answer height_at() AND water_surface_at(). Trap paid and recorded as D-169: the level's Player is a CharacterBody3D and FALLS, so the authored 2.423 read as 2.023 after the warm-up frames; the transform is now captured off packed.instantiate() before add_child(). Same latent shape fixed in tools/hollowmere_check.gd and tools/playtest_hollow_check.gd. Proves: 'agent godot --script tools/world_contract_check.gd' -> exit 0, WORLD_CONTRACT_CHECK PASS, zero ERROR: lines, WORLD_CONTRACT_AUTHORED spawn=(-6.614, 2.423, 1.622) ground=2.02 water=none. All five new failure modes proved to FIRE by mutating the spawn in-check and reverting (buried/water/float/drift/noplayer). Siblings: HOLLOWMERE_CHECK PASS, PLAYTEST_HOLLOW_CHECK failures=0, PROCEDURAL_WORLD_CHECK failures=0. Filed F-301 (seeds 3503374054 and 3803646258 publish ZERO station markers - real content bug, and the intermittent procedural-arm FAIL at clean HEAD) and F-302 (the two layout JSONs write the spawn record in two different shapes).
+
+Notes along the way:
+- The authored map's Player node is a real CharacterBody3D: read after the check's 16 warm-up frames its position is where it SETTLED (2.023), not the authored 2.423. Any vertical spawn assertion has to capture the transform off packed.instantiate() before add_child. Same latent shape found and fixed in hollowmere_check and playtest_hollow_check.
+- Made 'is this point dry land' a symmetric public API instead of reaching into AuthoredWorld._water_level: both world scripts now answer height_at() AND water_surface_at(), so the shared spawn phase cannot tell which map it holds.
+
+Files: `world/gen/authored_world.gd`, `world/gen/procedural_world.gd`, `tools/world_contract_check.gd`, `tools/hollowmere_check.gd`, `tools/playtest_hollow_check.gd`, `docs/DECISIONS.md`, `docs/SPECS.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `e995945`
