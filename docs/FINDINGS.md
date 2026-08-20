@@ -866,16 +866,6 @@ belongs in my commit" and "nobody else may touch this file" is the whole of the 
 
 ---
 
-### F-290 · wave_spawner_cycle_net_check can parse its result file mid-rewrite and emit an undeclared ERROR while reporting failures=0
-
-**Area:** verification · **Severity:** low · **Found:** 2026-08-20 by lc1
-
-`tools/wave_spawner_cycle_net_check.gd:181` calls `JSON.parse_string(FileAccess.get_file_as_string(RESULT_PATH))` every 50 ms while the child process updates the same path with `FileAccess.WRITE` at lines 170-175. `WRITE` truncates before `store_string()` completes, so the driver can observe an empty or partial file and Godot logs `ERROR: Parse JSON failed. Error at line 0: Unknown error getting token`. The harness then retries, eventually prints `WAVE_SPAWNER_CYCLE_NET_CHECK failures=0`, and exits 0, violating SPECS standing rule 4 and making this review order's required ERROR grep fail.
-
-Concrete review evidence at HEAD during F-259-review: the first `.agent/bin/agent godot --script tools/wave_spawner_cycle_net_check.gd` run exited 0 and printed `failures=0` but contained exactly one undeclared `ERROR:` with a backtrace to `_read_result()` line 181. Two immediate reruns and `agent baseline --rev 519012e~1 --script tools/wave_spawner_cycle_net_check.gd` emitted zero ERROR lines, confirming the failure is intermittent and pre-existing rather than introduced by commit 519012e. Write through an atomic temp-file rename, or avoid invoking the error-logging parser until a complete stable payload is available; do not merely bless `Parse JSON failed` as expected because malformed transport is not an intentional test case here.
-
----
-
 ### F-291 · A `--script` check that fires a real `EventBus` event as a state-setup shortcut can be broken by an unrelated later feature that subscribes to the same event — **fixed in `tools/unlock_check.gd`, same class not yet swept project-wide**
 
 **Area:** verification · **Severity:** low · **Found:** 2026-08-20 by lp during F-236 (unlocks scope)
@@ -1280,7 +1270,192 @@ existing zeroing of it on a scene change is consistent with whichever meaning wi
 
 ---
 
+### F-304 · 27 tools/ probe transports still truncate-write a user:// file another process is polling — F-290's defect, narrower window
+
+**Area:** verification · **Severity:** low · **Found:** 2026-08-20 by lp
+
+F-290 fixed the torn-read race in `tools/wave_spawner_cycle_net_check.gd` and swept every sibling
+whose writer runs inside a **loop** body. The class is wider than that: any
+`FileAccess.open(PATH, FileAccess.WRITE)` on a path a *different process* polls is a
+truncate-then-refill, and a reader landing in the window gets an empty or half document —
+`JSON.parse_string()` `ERR_PRINT`s `Parse JSON failed. Error at line 0: Unknown error getting token`,
+`_read_result()` returns `{}`, `_until()` retries, and the run prints `failures=0` and exits 0 with
+an undeclared `ERROR:` line in it (SPECS standing rule 4).
+
+These 27 write a handful of times rather than in a poll loop, so the window is far narrower — but
+`tools/json_result_race_check.gd` measures the plain form torn 16–25 times per 284 samples at a
+256 KB payload, and F-259-review caught the loop version at a ~100-byte payload once in three runs.
+Narrower is not zero, and the failure is invisible when it happens because the check still passes.
+
+**The exact list** — every `tools/*.gd` still holding
+`FileAccess.open(RESULT_PATH, FileAccess.WRITE)` or `…(DRIVER_SIGNAL_PATH, …)`, with the count of
+plain writers in each:
+
+    attunement_net_check.gd (2)          haul_net_check.gd (2)
+    build_net_check.gd (2)               hostile_client_check.gd (2)
+    chest_net_check.gd (1)               inventory_net_check.gd (1)
+    combat_net_check.gd (1)              mire_grid_check.gd (2)
+    command_craft_build_net_check.gd (2) net_debug_panel_check.gd (1)
+    command_net_check.gd (1)             player_health_net_check.gd (2)
+    crafting_net_check.gd (1)            player_vitals_net_check.gd (2)
+    day_night_net_check.gd (2)           powerup_net_check.gd (2)
+    day_night_restart_check.gd (2)       ranged_combat_net_check.gd (1)
+    display_name_check.gd (1)            rule_net_check.gd (1)
+    dodge_net_check.gd (2)               seed_launch_arg_check.gd (1)
+    entity_net_check.gd (1)              seed_sync_check.gd (2)
+    harvest_world_net_check.gd (1)       wellspring_net_check.gd (1)
+    harvestable_net_check.gd (1)
+
+`tools/json_result_race_check.gd` also matches that grep and is **not** in scope: its plain writer is
+one arm of a deliberate A/B measurement.
+
+**The fix is mechanical and already written** — D-172 and the DELEGATION *Current state* entry for
+F-290 carry the exact `_write_result`/`_read_result` pair to paste: write to `PATH + ".part"`,
+`DirAccess.rename_absolute()` it over the target, guard the read with `if raw.is_empty(): return {}`,
+and remove the `.part` sibling in the driver's startup cleanup alongside the target. Where one helper
+backs both a probe result and a driver control file, derive `staging` from the `path` argument.
+
+**Why F-290 did not just do all 27.** The edit is identical in every file, but each one is a
+two-process net check that must be re-run to be trusted, and 27 of those is hours of shared
+engine-lock time — with five or six agents on the machine, that lock is the scarce resource (D-153,
+F-262). Shipping 27 unverified transport edits into the harness every other lane grades its work
+with is the worse trade. Whoever takes this should batch it: apply the transform, then run the checks
+in groups and record each group's `failures=` and `ERROR_COUNT`. Note two known-red baselines when
+grading: `run_restart_net_check` fails 1 at HEAD (F-279) and `wave_spawner_check` intermittently
+emits 6 `Parameter "material" is null` (F-305).
+
+---
+
+### F-305 · tools/wave_spawner_check.gd intermittently emits 6 undeclared 'Parameter "material" is null' ERRORs while printing failures=0 and exiting 0
+
+**Area:** verification · **Severity:** low · **Found:** 2026-08-20 by lp
+
+Found while verifying F-290. Same shape as F-290 itself — an undeclared engine `ERROR:` line inside
+a run that reports success — but a different cause, in a different check, and not fixed by F-290's
+transport change (`wave_spawner_check.gd` has no `user://` probe transport at all; it is
+single-process).
+
+**Evidence, all on 2026-08-20 at commit 9dad970 plus the working tree's uncommitted deltas:**
+
+- Working-tree run 1: `WAVE_SPAWNER_CHECK failures=0`, exit 0, **ERROR_COUNT=6**. All six identical:
+
+      ERROR: Parameter "material" is null.
+         at: material_get_instance_shader_parameters (servers/rendering/dummy/storage/material_storage.cpp:264)
+
+  All six land in one contiguous block between the `== ambient-disabled preservation ==` banner /
+  `Cycle 2 begins` line and that phase's `PASS: dawn still clears the wave when ambient was already
+  disabled`.
+- Working-tree run 2, same tree, no edits between: `failures=0`, exit 0, **ERROR_COUNT=0**.
+- `.agent/bin/agent baseline --rev HEAD --script tools/wave_spawner_check.gd`: `failures=0`, exit 0,
+  **ERROR_COUNT=0**.
+
+So it is **intermittent, not a working-tree delta.** The tree's only relevant uncommitted change is
+two autoload registrations in `project.godot` (`SteamStats`, `RichPresenceService`); both scripts are
+tracked and committed, and neither mentions `Mesh` or `Material`. It was not reproduced a second time
+in this session, so it may or may not depend on them.
+
+**Why it matters.** `material_get_instance_shader_parameters` in the **dummy** rendering storage is
+the headless backend being asked for a material RID that is null — most likely a `GeometryInstance3D`
+queried for instance shader parameters after its material is gone, e.g. during a spawn/despawn in the
+ambient-disabled phase, which would explain both the timing dependence and the count matching a
+batch of enemies. That is a guess; it has not been isolated.
+
+Whatever the cause, the standing-rule-4 consequence is concrete: `wave_spawner_check` is a check
+other tasks grade against, and it can hand a reviewer a clean `failures=0` / exit 0 alongside 6
+undeclared ERROR lines. A reviewer following the rule correctly must call that run a failure, and
+today has no way to tell it from a real regression. Either the null-material query gets fixed, or
+— only if it is proven inert — the pattern gets declared via `EXPECTED_ERROR_PATTERNS` with the
+reason written down. Do not declare it before isolating it; F-290's own finding is explicit that
+blessing an error pattern to quiet a check is the wrong end of the problem.
+
+**Reproducing:** run `.agent/bin/agent godot --script tools/wave_spawner_check.gd` repeatedly and
+grep for `material_storage.cpp:264`; it appeared on 1 of 3 runs here. Machine load plausibly matters
+— the working-tree run that produced it was the first of a batch behind a contended engine lock.
+
+---
+
 ## Resolved
+
+### F-290 · wave_spawner_cycle_net_check can parse its result file mid-rewrite and emit an undeclared ERROR while reporting failures=0 — **fixed**
+
+**Area:** verification · **Severity:** low · **Found:** 2026-08-20 by lc1
+
+`tools/wave_spawner_cycle_net_check.gd:181` calls `JSON.parse_string(FileAccess.get_file_as_string(RESULT_PATH))` every 50 ms while the child process updates the same path with `FileAccess.WRITE` at lines 170-175. `WRITE` truncates before `store_string()` completes, so the driver can observe an empty or partial file and Godot logs `ERROR: Parse JSON failed. Error at line 0: Unknown error getting token`. The harness then retries, eventually prints `WAVE_SPAWNER_CYCLE_NET_CHECK failures=0`, and exits 0, violating SPECS standing rule 4 and making this review order's required ERROR grep fail.
+
+Concrete review evidence at HEAD during F-259-review: the first `.agent/bin/agent godot --script tools/wave_spawner_cycle_net_check.gd` run exited 0 and printed `failures=0` but contained exactly one undeclared `ERROR:` with a backtrace to `_read_result()` line 181. Two immediate reruns and `agent baseline --rev 519012e~1 --script tools/wave_spawner_cycle_net_check.gd` emitted zero ERROR lines, confirming the failure is intermittent and pre-existing rather than introduced by commit 519012e. Write through an atomic temp-file rename, or avoid invoking the error-logging parser until a complete stable payload is available; do not merely bless `Parse JSON failed` as expected because malformed transport is not an intentional test case here.
+
+---
+
+**Resolved 2026-08-20 by lp.** Fixed 2026-08-20 by lp. Spec: docs/SPECS.md `## F-290`. Rule: D-172. Copyable API:
+docs/DELEGATION.md *Current state*, 2026-08-20 F-290 entry.
+
+**The fix.** `tools/wave_spawner_cycle_net_check.gd`'s `_write_result()` now writes to
+`RESULT_PATH + ".part"` and `DirAccess.rename_absolute()`s it over the target instead of opening the
+target with `FileAccess.WRITE`. `rename(2)` swaps the directory entry in one step, so a driver poll
+sees the previous whole document or the next whole document and never a torn one. `_read_result()`
+gained an `if raw.is_empty(): return {}` guard, and the driver's startup cleanup now removes the
+`.part` sibling alongside the target (a run killed mid-write leaves one behind). The finding's other
+option — declaring `Parse JSON failed` as an expected pattern — was deliberately rejected, per the
+finding's own instruction: it would blind this whole family of checks to a probe that really did
+write garbage.
+
+**How it was verified — deterministically, not by three green reruns.** A race nobody can reproduce
+is a race nobody can prove fixed, so this task built `tools/json_result_race_check.gd`. It spawns a
+child that hammers one `user://` path for 2 s with a 256 KB payload (wide enough that the truncate
+window is milliseconds, not microseconds) while the parent samples every 1 ms and counts torn reads,
+once per write strategy:
+
+    plain FileAccess.WRITE truncate:  25 torn / 284 samples (run 1), 16 / 284 (run 2)
+    .part + rename_absolute:           0 torn / 284 samples (run 1),  0 / 284 (run 2)
+
+`JSON_RESULT_RACE_CHECK failures=0`, exit 0, ERROR_COUNT=0 on both runs. The `atomic_torn == 0`
+assertion is the gate; the plain count prints as evidence and is deliberately not a gate, since the
+window is load-dependent and a check that fails on an idle machine would be worse than the bug. Each
+of those 25 torn reads is one undeclared `Parse JSON failed` ERROR a real check would have emitted
+while printing `failures=0`.
+
+The race check reads with `JSON.new().parse()` (instance, returns Error silently), never the static
+`JSON.parse_string()` (which `ERR_PRINT`s). A check that COUNTS malformed reads must not log an
+engine ERROR per one it finds, or it fails its own standing-rule-4 grep at the moment its
+measurement succeeds. Generalised as D-172's second half.
+
+**Order-required commands, both green:**
+
+    agent godot --script tools/wave_spawner_cycle_net_check.gd
+      -> WAVE_SPAWNER_CYCLE_NET_CHECK failures=0, exit 0, ERROR_COUNT=0  (3 runs, all clean)
+    agent godot --script tools/wave_spawner_check.gd
+      -> WAVE_SPAWNER_CHECK failures=0, exit 0; ERROR_COUNT=6 on run 1, 0 on run 2 — the 6 are
+         intermittent `Parameter "material" is null` from the dummy renderer, clean at
+         `agent baseline --rev HEAD`, unrelated to this transport, filed as F-305.
+
+**Sweep (AGENTS.md step 3) — the class is "a truncating writer polled by another process".** Hazard
+scales with rewrite frequency, so a script flagged every `tools/*.gd` writer call inside a
+`while`/`for` body. Six siblings were F-290 verbatim and are **fixed under this claim**, each
+re-run:
+
+    cycle_advanced_net_check          failures=0  ERROR_COUNT=0
+    cycle_modifier_net_check          failures=0  ERROR_COUNT=0
+    enemy_net_check                   failures=0  ERROR_COUNT=0
+    command_resolved_requests_check   failures=0  ERROR_COUNT=0
+    powerup_review_check              failures=0  ERROR_COUNT=0
+    run_restart_net_check             failures=1  — pre-existing F-279, see below
+
+`powerup_review_check` races in both directions (its `_write_json(path, …)` also backs a
+`CONTROL_PATH` the driver rewrites while the probe polls it), so its staging path derives from the
+`path` argument rather than a constant. Already atomic and left alone: `harvest_restart_check`,
+`attunement_restart_check`, `terminal_focus_check` — the first two already cited F-290 by number.
+Not this class: `setup_harvest_content.gd`, a one-shot generator with no concurrent reader.
+
+**Deliberately left unshipped, with the list computed: F-304** — 27 more transports that write a
+handful of times rather than in a loop. Same defect, much narrower window, mechanical and identical
+fix; not batched in here because 27 two-process net checks is hours of contended engine-lock time and
+27 unverified edits to the harness every lane grades against is the worse trade.
+
+**Two pre-existing reds to expect when re-running any of this, neither caused by F-290:**
+`run_restart_net_check` fails 1 on "restart returns the local player to the run spawn" — reproduced
+exactly by `agent baseline --rev HEAD`, and that is the already-open **F-279**. And **F-305**, the
+intermittent `wave_spawner_check` material ERROR described above, which is F-290's own shape
+(undeclared ERROR inside `failures=0`, exit 0) with an unrelated cause.
 
 ### F-288 · run_reseed_check claims POI-layout parity but compares only POI counts — **fixed**
 
