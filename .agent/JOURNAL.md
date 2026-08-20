@@ -7254,3 +7254,27 @@ Notes along the way:
 Files: `tools/run_scope_audit_check.gd`, `docs/DECISIONS.md`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DELEGATION.md`, `tools/run_scope_audit_check.gd.uid`
 
 Commit at time of writing: `8017b58`
+
+---
+
+### DONE · F-314 · galef95fa6 · 2026-08-20T20:22:02+00:00
+
+**A lane's queue drains in task-id order, so routing priority is whatever the F-numbers happen to be**
+
+orders carry priority:N; both drain sites sort by (priority, id). 36/36 harness_check.
+
+Files: `.agent/bin/agent`, `tools/harness_check.py`
+
+Commit at time of writing: `31b2df1`
+
+---
+
+### DONE · F-283 · lp · 2026-08-20T20:30:45+00:00
+
+**Three D-numbers each head two different decisions — D-050, D-144 and D-150 are live collisions from before F-260's allocator, and no check detects them**
+
+Renumbered all three live D-number collisions and added the detector that stops the next one. D-050(2nd)->D-179 (powerup stat vocabulary), D-144(2nd)->D-180 (keep file claims / claim staleness, the F-189 resolution), D-150(2nd)->D-181 (LM lane Opus + second-pass). Rule for the next one recorded as D-182: the LATER member yields, and every citation is classified by READING it, never by sed. All 34 in-repo citations read and moved with their meaning; three D-050 sites that look like the powerup entry are the attack-style entry and were deliberately left (tools/build_check.gd:548, docs/DELEGATION.md:6075/:6107, FINDINGS' attack_style block). Each renumbered entry carries a breadcrumb naming its old number; .agent/JOURNAL.md and git history deliberately NOT rewritten. tools/decision_ref_check.py gained duplicate_decisions() as a hard failure naming both heading lines. docs/SPECS.md had no F-283 block — written. Proves it: python3 tools/decision_ref_check.py -> defined=182 dangling=0 duplicate=0 failures=0; --self-test 7/7; NEGATIVE-tested against the pre-fix file (report(repo=) over a scratch tree of 'git show HEAD:docs/DECISIONS.md') -> duplicate=3 naming D-050(805,959) D-144(1236,4241) D-150(4446,4473), the exact three with real line numbers; grep -o '^### D-[0-9]*' docs/DECISIONS.md | sort | uniq -d prints nothing; harness_check 36/36; agent godot --script tools/powerup_check.gd failures=0; findings_numbering_check open=33 resolved=285 failures=0; findings_hygiene_check failures=0. Filed F-316 from the sweep: same shape in docs/SPECS.md (## F-226 heads two disagreeing blocks) — not fixed here because merging them is a judgement about whether that region is live spec or history. FINDINGS' F-012/F-055/F-056 duplicates checked and are deliberate.
+
+Files: `docs/DECISIONS.md`, `docs/POWERUPS.md`, `systems/powerups/powerup_def.gd`, `docs/NEXT.md`, `.agent/bin/lane`, `.agent/bin/agent`, `docs/DELEGATION.md`, `docs/SPECS.md`, `tools/decision_ref_check.py`, `docs/FINDINGS.md`
+
+Commit at time of writing: `95dc43d`

@@ -14,7 +14,7 @@
 > machine is now green, including `boss_check`'s exit-leak diagnostic (F-193) and `lobby_menu_check` (F-170),
 > both since resolved.
 >
-> **Findings: 35 under `## Open` (re-counted 2026-08-20 evening by F-275's review, less F-266, closed since).** This section
+> **Findings: 33 under `## Open` (counted 2026-08-20 by `agent godot --script tools/findings_numbering_check.gd`, which prints the number — do not hand-count this line again).** This section
 > said "7 open, and not one of them is code you can sit down and write" from 2026-08-19 until
 > F-261's review re-counted it to 23; both of those numbers are now stale, in the direction that
 > matters — the day's fix lanes closed fourteen (F-259, F-268, F-269, F-271, F-274, F-275, F-276,
@@ -25,12 +25,14 @@
 > in the wrong section (F-236, F-299) — that mismatch is the recurring one filed as **F-269**, and
 > `agent board` hides them while `agent brief` still offers them, so check an entry's own text
 > before claiming it (`python3 tools/findings_hygiene_check.py` names them, and fails on nothing
-> else at HEAD). **The other twenty-seven ARE ordinary code work a lane can pick up today.**
+> else at HEAD). **The other twenty-five ARE ordinary code work a lane can pick up today.**
 > Clusters worth knowing before you route any of them:
 >
 > - **The tooling itself is red or unwatched** — F-285/F-292 (`nav_bake_check` has had 4 failures at
 >   a clean HEAD since 4.13/4.14), F-293 (nothing enumerates and runs the `tools/` suite, so a red
->   check sits at HEAD unnoticed — this is the one that makes the others possible), F-291, F-305.
+>   check sits at HEAD unnoticed — this is the one that makes the others possible), F-291, F-305,
+>   F-316 (`## F-226` heads two disagreeing blocks in `docs/SPECS.md`, and `agent brief` slices
+>   that file by heading — the D-number half of this shape is closed as F-283).
 > - **The agent harness** — F-265, F-267, F-289, F-304: `ship` sweeping a sibling's uncommitted
 >   hunks, and `ship` structurally unable to stage `docs/FINDINGS.md`. The claim race itself is
 >   **closed** (F-266): `state.json` writes are transactional and atomic, D-176 sets the scope rule,
@@ -47,14 +49,16 @@
 > - **Worldgen performance and correctness** — F-294 (per-sample Array rebuilds under every surface
 >   sample, doubled by F-274), F-295, F-296, F-300..F-303.
 > - **Seed replication and the record** — F-272 and F-273 (`seed_ready` is a run boundary now, and
->   the re-broadcast still has no two-process proof), F-283 (three D-numbers each head two different
->   decisions), F-264 (`Boss` duplicates `Enemy`'s lunge instead of reusing it).
+>   the re-broadcast still has no two-process proof), F-264 (`Boss` duplicates `Enemy`'s lunge
+>   instead of reusing it).
 >
 > Count these from `docs/FINDINGS.md`'s `## Open` section, not from `state.json` or `agent report`:
-> the two disagree, which is what F-269 and F-270 are about. Note also that **D-144 is
-> double-allocated** (F-260): the one that resolved F-189 is "keep file claims, fix claim staleness
-> instead of moving to per-agent worktrees", and it is worth reading before anyone proposes
-> worktrees again; the other D-144 is task 4.13's terrain split.
+> the two disagree, which is what F-269 and F-270 are about. The three double-allocated D-numbers
+> this note used to warn about are gone (F-283): the entry that resolved F-189 — "keep file claims,
+> fix claim staleness instead of moving to per-agent worktrees", worth reading before anyone
+> proposes worktrees again — is now **D-180**, and `D-144` means task 4.13's terrain split and
+> nothing else. `python3 tools/decision_ref_check.py` now fails on a duplicate heading, so this
+> cannot come back.
 >
 > **The content, not the engine, is now the thin part — but less thin than this line used to say.**
 > The boot line counts 5 enemy definitions, 7 cycle modifiers and 7 unlocks against 72 powerups and

@@ -103,7 +103,7 @@ if health_fraction < LOW_HP_FRACTION:
     damage = PowerupService.stat(peer, &"melee_damage_low_hp", damage)
 ```
 
-The service stays condition-blind (D-050: pushing condition state INTO PowerupService would invert
+The service stays condition-blind (D-179: pushing condition state INTO PowerupService would invert
 the one seam and put every peer's hp/position on the wire). Three conditions exist; each is one
 `if` in the system that already owns the fact:
 
@@ -249,7 +249,7 @@ proc/status, 1 capability, 2 tradeoffs (negative components), 5 tag-only feeders
 always-on carrying dual tags). 12 dual-tag bridges spread so every family pair that shares a theme
 has one. **Fields required beyond the shipped schema: 0.** Stats requiring a shared consuming hook
 that doesn't exist yet: the `pending` table — every one arrives inside a task that is already on
-the roadmap, and D-050 records why hooks-at-the-consumer beats fields-on-the-def.
+the roadmap, and D-179 records why hooks-at-the-consumer beats fields-on-the-def.
 
 ## 5. What would reopen the schema question
 

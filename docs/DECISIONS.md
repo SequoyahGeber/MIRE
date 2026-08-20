@@ -956,7 +956,8 @@ gameplay system can drive — then the swap happens in the buffer and the holder
 
 ---
 
-### D-050 · 2026-08-18 · The powerup stat vocabulary is a governed catalog, and conditions, triggers and capabilities are stat names consumed at the owning system — not schema fields
+### D-179 · 2026-08-18 · The powerup stat vocabulary is a governed catalog, and conditions, triggers and capabilities are stat names consumed at the owning system — not schema fields
+*Renumbered from a duplicated `D-050` by F-283 — this entry and the `D-050` above were allocated the same number before the `agent decision` allocator existed (D-182). A pre-2026-08-20 citation of `D-050` that is about the subject below means this entry.*
 
 The pre-3.4 design check (docs/POWERUPS.md) sketched 60 powerups across the whole §4.4 design space
 against the shipped `PowerupDef`. Result: **zero need a field the schema doesn't have**, so the
@@ -4238,7 +4239,8 @@ with Hollowmere retiring to fixture/reference — the same retirement Playtest H
 marker kind (none known — even stations fit); that would argue for a real WorldContract interface,
 a much bigger change than any current need justifies.
 
-### D-144 · 2026-08-19 · Keep file claims; fix claim STALENESS instead of moving to per-agent worktrees
+### D-180 · 2026-08-19 · Keep file claims; fix claim STALENESS instead of moving to per-agent worktrees
+*Renumbered from a duplicated `D-144` by F-283 — this entry and the `D-144` above were allocated the same number before the `agent decision` allocator existed (D-182). A pre-2026-08-20 citation of `D-144` that is about the subject below means this entry.*
 F-189 correctly reported that D-011's own reversal trigger — *"agents working concurrently often
 enough that file claims become a bottleneck"* — has fired repeatedly: one hold on
 `core/net/net_version.gd` spanned four sessions and cost four tasks their `PROTOCOL_VERSION` bump
@@ -4470,7 +4472,8 @@ giving up).
 reversal) — at that point the LOAD_RADIUS-based bound becomes achievable again and is the strictly
 stronger claim, worth reverting to.
 
-### D-150 · 2026-08-19 · The LM lane runs Opus at high effort and second-passes its own work: every completed task is auto-queued as a review-and-fix
+### D-181 · 2026-08-19 · The LM lane runs Opus at high effort and second-passes its own work: every completed task is auto-queued as a review-and-fix
+*Renumbered from a duplicated `D-150` by F-283 — this entry and the `D-150` above were allocated the same number before the `agent decision` allocator existed (D-182). A pre-2026-08-20 citation of `D-150` that is about the subject below means this entry.*
 Two changes to the Max lane, both from measurements taken 2026-08-18/19.
 
 **Opus, not Sonnet.** The five-hour windows kept rolling over only part-used, which reads as spare
@@ -4504,7 +4507,7 @@ the easy defects are gone), or a weekly window that stops being the binding cons
 turns this from leverage into overhead.
 
 ### D-151 · 2026-08-19 · Both Claude lanes run Opus; the second-pass reviewer runs at max effort and owns the bookkeeping
-Extends D-150. LP joins LM on Opus at high effort, for the same reason: a subscription weekly is a
+Extends D-181. LP joins LM on Opus at high effort, for the same reason: a subscription weekly is a
 budget that expires unspent, so the only question is what the most capable thing to spend it on is.
 
 The review pass runs one tier above the work it reviews — `max`, where the implementing pass runs
@@ -5749,3 +5752,39 @@ world per system.
 source-text scan exists because the static `Callable` registry cannot be listed at runtime and a
 booted probe would only see nodes that happen to be in that tree; given the list, this check becomes
 a runtime assertion and stops being a grep.
+
+### D-182 · 2026-08-20 · A duplicated D-number is repaired by renumbering the LATER entry, and the citations move with it
+F-260 gave `agent decision` an allocator, so a new collision is now impossible; F-283 had to decide
+what to do about the three already in the file (`D-050`, `D-144`, `D-150`, each heading two
+unrelated decisions). Two outcomes were open — renumber, or keep the pairs as historical record and
+document them — and the rule below is the one to reuse, because the choice recurs every time a
+hand-written heading slips past the allocator.
+
+**Renumber, and renumber the LATER member.** The earlier entry keeps the number it was correctly
+allocated; the later write is the one that created the collision, so the later write is the one
+that yields. This is mechanical rather than a judgement about which decision matters more or which
+has fewer citations — and mechanical is the point, because "renumber whichever is cheaper to
+rewrite" makes the outcome depend on who is holding the file that day. D-050's second entry became
+D-179, D-144's became D-180, D-150's became D-181.
+
+**Every citation moves in the same commit, classified by reading its prose — not by `sed`.** The
+numbers are ambiguous by construction, so a blind rewrite is guaranteed to break the half that
+meant the entry that kept its number. F-283 read all 34 in-repo citations: three `D-050` sites that
+look like the powerup entry are actually the attack-style entry (`tools/build_check.gd`, two in
+`docs/DELEGATION.md`, one in `docs/FINDINGS.md`), and every `D-144` outside `docs/NEXT.md` is the
+terrain split, not the file-claims decision.
+
+**Two things are deliberately NOT rewritten.** `.agent/JOURNAL.md` is an append-only record of what
+was true when it was written, and a renumbered citation there would be a false record of a past
+session; git history is the same. The renumbered entry instead carries a one-line breadcrumb naming
+its old number, so a `grep D-050 docs/DECISIONS.md` from an old journal line or an old commit lands
+on the pointer rather than silently on the wrong page — the same job `*Superseded by D-0NN.*` does
+for a dead rule, and the reason a renumbering pass is not a `git mv` of the text.
+
+**`python3 tools/decision_ref_check.py` fails on a duplicate heading** as of F-283, so this rule is
+only ever needed for a heading written by hand around the allocator.
+
+**Would change my mind:** a collision where the later entry is the one every citation in the repo
+and every queued work order means, and the earlier is a one-line stub nothing references — then the
+mechanical rule costs more than it saves and the pair should be renumbered the other way, with the
+exception recorded here rather than left as a silent precedent.

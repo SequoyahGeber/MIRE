@@ -13,7 +13,7 @@ extends Resource
 ## Resonance", and "mostly data, not code — once the framework exists, new content is a resource
 ## file". Task 3.4 authors 40–60 of these in the inspector against the one worked example here,
 ## and against docs/POWERUPS.md — the stat catalog, the authoring conventions, and the 60-powerup
-## design sketch that validated this schema before content was committed to it (F-078, D-050).
+## design sketch that validated this schema before content was committed to it (F-078, D-179).
 
 ## §4.4's six families, exactly. A tag outside this list is a typo minting a phantom family —
 ## `&"fire"` and `&"Fire"` count separately and the misspelt one can never resonate, which is the
@@ -49,7 +49,7 @@ const KNOWN_STATS: Array[StringName] = [
 	# harvest / craft / build
 	&"harvest_yield", &"harvest_damage", &"craft_seconds", &"haul_speed", &"ward_radius_m",
 	# condition-suffixed (closed set — POWERUPS.md §2; the consumer owning the condition chains
-	# these onto the unconditional pass, the service stays condition-blind, D-050)
+	# these onto the unconditional pass, the service stays condition-blind, D-179)
 	&"melee_damage_low_hp", &"move_speed_low_hp", &"melee_damage_at_night", &"move_speed_in_mire",
 ]
 

@@ -10,12 +10,21 @@ catches the mechanically detectable half of that shape: a `D-NNN` cited somewher
 that does not correspond to any `### D-NNN` heading in `docs/DECISIONS.md` at all, which is exactly
 what F-229's own two references *would* have been flagged as if 4.7 had never claimed D-095.
 
+F-283 added the other half of the same shape: a `D-NNN` that heads *two* decisions. That is F-229's
+dangerous case by construction — every citation of the number resolves, silently, to whichever of
+the two entries the reader scrolls to first — and the dangling scan above passes it twice over,
+because a set of defined ids cannot tell one heading from two. Three were live at HEAD (`D-050`,
+`D-144`, `D-150`, all allocated before `agent decision` took a lock, F-260); the renumbering pass is
+in F-283 and the assertion below is what stops the next one. It is deliberately a hard failure and
+not a warning: the allocator makes a new collision impossible, so a duplicate reappearing means
+something wrote a heading by hand, which is exactly the thing to catch at the commit that does it.
+
 It cannot catch a citation that resolves to a real, wrong decision (that needs a human to notice
 the prose doesn't match, same as F-229 originally was) — narrowing what needs that read is the
 goal, not replacing it, same posture as `decision_trigger_check.py`.
 
     python3 tools/decision_ref_check.py            # scan the live docs tree
-    python3 tools/decision_ref_check.py --self-test # prove dangling detection on synthetic docs
+    python3 tools/decision_ref_check.py --self-test # prove dangling + duplicate detection
 
 Regression pin: also asserts the two exact citations F-229 fixed (`docs/SPECS.md` lines citing the
 AI-framework and ChunkStreamer decisions) still point at `D-097`/`D-096`, not `D-095` — so this
@@ -47,6 +56,18 @@ PINNED = [
 
 def defined_decisions(decisions_text):
     return set(HEADING_RE.findall(decisions_text))
+
+
+def duplicate_decisions(decisions_text):
+    """Yields (id, [line numbers]) for every D-NNN that heads more than one entry (F-283).
+
+    Line numbers, not just the id: the whole point of the failure is to send the reader to the two
+    pages that share a number, and 'D-150 appears twice' without them is a second search."""
+    seen = {}
+    for m in HEADING_RE.finditer(decisions_text):
+        line_no = decisions_text.count("\n", 0, m.start()) + 1
+        seen.setdefault(m.group(1), []).append(line_no)
+    return [(ref, lines) for ref, lines in sorted(seen.items()) if len(lines) > 1]
 
 
 def find_dangling(defined, doc_paths_and_text):
@@ -95,12 +116,19 @@ def report(repo=ROOT):
     decisions_text = dict(docs).get("docs/DECISIONS.md", "")
     defined = defined_decisions(decisions_text)
     dangling = find_dangling(defined, docs)
+    duplicates = duplicate_decisions(decisions_text)
     pins = check_pins(docs)
 
-    print("DECISION_REF_CHECK defined=%d dangling=%d" % (len(defined), len(dangling)))
+    print("DECISION_REF_CHECK defined=%d dangling=%d duplicate=%d" %
+          (len(defined), len(dangling), len(duplicates)))
     for path, line_no, ref in dangling:
         print("  DANGLING %s:%d cites %s, which has no heading in docs/DECISIONS.md" %
               (path, line_no, ref))
+    for ref, line_nos in duplicates:
+        print("  DUPLICATE %s heads %d entries in docs/DECISIONS.md (lines %s) — every citation of "
+              "it resolves to whichever a reader finds first. Renumber the later one with "
+              "`agent decision`'s allocator and move its citations with it (F-283)." %
+              (ref, len(line_nos), ", ".join(str(n) for n in line_nos)))
 
     pin_failures = 0
     for path, needle, want_id, got, status in pins:
@@ -108,7 +136,7 @@ def report(repo=ROOT):
         if status != "ok":
             pin_failures += 1
 
-    failures = len(dangling) + pin_failures
+    failures = len(dangling) + len(duplicates) + pin_failures
     print("DECISION_REF_CHECK failures=%d" % failures)
     return failures
 
@@ -133,10 +161,26 @@ References D-999, which does not exist.
     dangling = find_dangling(defined, docs)
     dangling_refs = {ref for _, _, ref in dangling}
 
+    # F-283's shape: the same number heading two unrelated entries. The clean fixture above is the
+    # negative control — a detector that only ever fires is worth as little as one that never does,
+    # so both directions are asserted against fixtures that differ in exactly this one respect.
+    colliding_text = decisions_text + """
+### D-002 · 2026-01-02 · Fixture: an unrelated decision that reused D-002
+Body.
+"""
+    clean_dupes = duplicate_decisions(decisions_text)
+    colliding_dupes = duplicate_decisions(colliding_text)
+
     cases = [
         ("D-001 is not flagged (real heading exists)", "D-001" not in dangling_refs),
         ("D-999 is flagged (no heading)", "D-999" in dangling_refs),
         ("exactly one dangling reference found", len(dangling) == 1),
+        ("a file with no repeated heading reports no duplicates", clean_dupes == []),
+        ("a repeated D-number is flagged", [r for r, _ in colliding_dupes] == ["D-002"]),
+        ("the duplicate names both of its heading lines",
+         colliding_dupes[0][1] == [6, 9] if colliding_dupes else False),
+        ("the singleton D-001 is not swept up with it",
+         "D-001" not in [r for r, _ in colliding_dupes]),
     ]
     failed = 0
     for label, ok in cases:

@@ -416,7 +416,7 @@ processes) plus `tools/powerup_check.gd` and `tools/powerup_net_check.gd` for no
 reed16): §2 is the stat catalog — the ONLY names `modifiers` may use, enforced at boot by
 `PowerupDef.KNOWN_STATS`/`KNOWN_FAMILIES` (F-078) — and §4 is a 60-powerup sketch spanning the
 design space to pick from or replace. Also read **D-044** (tags ARE the Resonance families — there
-is no `resonance_family` field; and the stacking maths), **D-050** (conditions/triggers/capabilities
+is no `resonance_family` field; and the stacking maths), **D-179** (conditions/triggers/capabilities
 are stat-name conventions, not fields), and `docs/DELEGATION.md` *Current state* for the replication
 split. Copy **`content/powerups/swift_stride.tres`**; it is the one worked example and it loads
 through the real registry. `PowerupDef.validation_errors()` runs at boot, so a malformed `.tres` is a named error and
@@ -11122,3 +11122,70 @@ of that exact assertion.
 pointer under D-149.
 
 ---
+
+---
+
+## F-283 · Three D-numbers each head two different decisions, and no check detects it
+
+**Claim:** `docs/DECISIONS.md`, `tools/decision_ref_check.py`, plus every file holding a citation
+that has to move with a renumbered heading — at HEAD that was `docs/DELEGATION.md`, `docs/SPECS.md`,
+`docs/POWERUPS.md`, `docs/NEXT.md`, `docs/FINDINGS.md`, `systems/powerups/powerup_def.gd`,
+`.agent/bin/agent`, `.agent/bin/lane`. **Authority:** none — this is documentation and a Python
+tripwire; no runtime code, no replicated state, no RPC, so §2.2 gains no row.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The bug.** `grep -o '^### D-[0-9]*' docs/DECISIONS.md | sort | uniq -d` returned `D-050`, `D-144`
+and `D-150` at HEAD: three numbers each heading two unrelated decisions, all allocated by hand
+before F-260 put `agent decision` behind a lock. F-229 established why this is worse than a dangling
+citation — a reference that resolves to *something* looks healthy right up until you read the target
+and it is about a different system — and a duplicate is that case by construction, because every
+citation of the number resolves to whichever entry the reader scrolls to first. `D-150` was the worst
+of the three: `chunk_stream_check.gd`'s union-of-interest sizing and the LM lane's Opus/second-pass
+routing, two systems with nothing in common, and the collision was itself the collateral of F-260's
+incident (the D-146 clash was repaired by renumbering the director's entry *to* D-150, which was
+already taken).
+
+**Nothing detected it.** `tools/decision_ref_check.py` flagged only a `D-NNN` with *no* heading, and
+its `defined_decisions()` returns a **set**, so two headings and one heading are indistinguishable to
+it. `tools/findings_numbering_check.gd` is the right shape but FINDINGS-only, and
+`tools/findings_hygiene_check.py` deliberately stayed out of DECISIONS.md.
+
+**The fix, in the order it has to happen.**
+
+1. **Renumber the LATER member of each pair** (the rule and its reasoning are D-182): the earlier
+   entry keeps the number it was correctly allocated, the later write created the collision and so
+   is the one that yields. D-050 → **D-179** (powerup stat vocabulary), D-144 → **D-180** (keep file
+   claims, fix claim staleness), D-150 → **D-181** (LM lane Opus / second-pass).
+2. **Leave a breadcrumb under each renumbered heading** naming the old number, so a `grep` from an
+   old journal line or an old commit lands on a pointer instead of silently on the wrong page. This
+   is the same job `*Superseded by D-0NN.*` does for a dead rule, and it is why this is a renumbering
+   pass rather than a `git mv` of the text.
+3. **Move every citation, classified by reading its prose — never by `sed`.** The numbers are
+   ambiguous by construction, so a blind rewrite breaks exactly the half that meant the entry which
+   kept its number. Three `D-050` sites that look like the powerup entry are the attack-style entry
+   (`tools/build_check.gd:548`, `docs/DELEGATION.md:6075` and `:6107`, `docs/FINDINGS.md`'s
+   `attack_style` block); every `D-144` outside `docs/NEXT.md`, `.agent/bin/agent:_claim_liveness()`
+   and F-189's own resolution line is the terrain split.
+4. **Do not rewrite `.agent/JOURNAL.md` or git history.** Both are records of what was true when
+   written; a renumbered citation there would be a false record of a past session. The breadcrumb
+   from step 2 is what makes them still resolvable.
+5. **Add the duplicate assertion to `tools/decision_ref_check.py`** so it cannot come back —
+   `duplicate_decisions()`, reported as a hard failure with both heading line numbers, because the
+   allocator makes a new collision impossible and a duplicate reappearing therefore means a
+   hand-written heading, which is the thing to catch at the commit that writes it.
+
+**Acceptance.**
+
+```bash
+python3 tools/decision_ref_check.py            # defined=182 dangling=0 duplicate=0, failures=0
+python3 tools/decision_ref_check.py --self-test # 7/7
+grep -o '^### D-[0-9]*' docs/DECISIONS.md | sort | uniq -d   # prints nothing
+python3 tools/harness_check.py                 # 36/36 — .agent/bin/agent was edited
+```
+
+Negative-test the detector against the **pre-fix** file rather than trusting a green run — import
+`decision_ref_check` and call `report(repo=...)` against a scratch tree holding
+`git show <pre-fix-sha>:docs/DECISIONS.md`. It must name all three pairs with their real line
+numbers. A detector proven only in the direction where it stays quiet is not proven.

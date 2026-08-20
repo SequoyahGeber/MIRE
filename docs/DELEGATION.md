@@ -75,6 +75,47 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-20 — F-283 resolved: three duplicated D-numbers renumbered, and `decision_ref_check.py` now fails on a repeated heading (lp)
+
+**The numbers moved. If you cite one of these, cite the new one.** `docs/DECISIONS.md` had three
+numbers each heading two unrelated decisions, all hand-allocated before F-260 put `agent decision`
+behind a lock:
+
+| was | is now | which decision |
+|---|---|---|
+| `D-050` (2nd) | **D-179** | the powerup stat vocabulary — conditions/triggers/capabilities are stat names, not schema fields |
+| `D-144` (2nd) | **D-180** | keep file claims, fix claim STALENESS instead of moving to per-agent worktrees (resolved F-189) |
+| `D-150` (2nd) | **D-181** | the LM lane runs Opus at high effort and second-passes its own work |
+
+`D-050` now means **only** attack style / solved grips, `D-144` **only** task 4.13's terrain split,
+and `D-150` **only** `chunk_stream_check.gd`'s union-of-interest sizing. Every in-repo citation was
+read and moved with its meaning; each renumbered entry carries a breadcrumb naming its old number, so
+an old journal line or an old commit still resolves. `.agent/JOURNAL.md` and git history were
+deliberately not rewritten.
+
+**The rule for the next one is D-182:** renumber the **later** member — the earlier entry keeps the
+number it was correctly allocated — and classify every citation by reading its prose, never by `sed`.
+The numbers are ambiguous by construction, so a blind rewrite is guaranteed to break the half that
+meant the entry which kept its number. Three `D-050` sites in this file and `tools/build_check.gd`
+look like the powerup entry and are the attack-style one; they were left alone for that reason.
+
+**The API to build against — `tools/decision_ref_check.py` gained a second assertion:**
+
+```python
+duplicate_decisions(decisions_text) -> [(ref, [line_no, ...]), ...]
+# every D-NNN heading more than one entry, with BOTH heading lines. Hard failure, not a warning:
+# the allocator makes a new collision impossible, so a duplicate means a hand-written heading.
+```
+
+`report(repo=ROOT)` takes a `repo` argument, which is how the pre-fix negative test runs — point it
+at a scratch tree holding `git show <sha>:docs/DECISIONS.md` and it names all three pairs. Extend
+this check rather than writing a new one; `--self-test` is at 7/7 and is where a new case goes.
+
+**Still open, filed from this sweep: F-316** — the same shape in `docs/SPECS.md`, where `## F-226`
+heads two blocks that disagree about the claim set. `docs/FINDINGS.md`'s three duplicate `### F-NNN`
+headings (`F-012`, `F-055`, `F-056`) are **deliberate** and must stay a named exception in any
+generalised check, not a failure.
+
 ### 2026-08-20 — F-281 resolved: the run-scoped reset enumeration is `tools/run_scope_audit_check.gd`, and it is TOTAL over `project.godot` (lp)
 
 **If you add an autoload, you must classify it here or the check fails.** That is the whole point of
@@ -968,7 +1009,7 @@ Spec: `docs/SPECS.md` F-271. Decision: **D-163**.
   bug (F-071) that this whole area exists to fix. The import uses an explicit `SourceFileLoader`
   because `.agent/bin/agent` has no `.py` suffix.
 - **Duplicate F-numbers stay with `tools/findings_numbering_check.gd`**, and duplicate *D*-numbers
-  are unowned by anything — see **F-283**, three live collisions (`D-050`, `D-144`, `D-150`).
+  are unowned by anything. The three live collisions this line named are resolved (F-283).
 
 **D-162 — the bar for closing a finding, and the thing to read before you argue about one:** a
 finding resolves when the defect *its own text asserts* is false at HEAD, not when the area is
@@ -6400,7 +6441,7 @@ design space live in `tags` + `max_stacks` + `(stat → Vector2)`, or is a field
 force re-authoring everything? **docs/POWERUPS.md is the answer: a 60-powerup sketch spanning all
 six families and every archetype (always-on, conditional, on-event, proc, capability, tradeoff,
 tag-only feeder) — zero need a new field.** Conditions, triggers and capabilities are stat-name
-conventions consumed at the owning system, not schema; D-050 records why that beats fields, and §5
+conventions consumed at the owning system, not schema; D-179 records why that beats fields, and §5
 of the doc records what evidence would reopen the question.
 
 **For 3.4:** author against POWERUPS.md §2 (the stat catalog — names, signs, consumers) and §4

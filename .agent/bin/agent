@@ -2119,7 +2119,7 @@ CLAIM_STALE_HOURS = 2.0          # a claim older than this whose file is untouch
 def _claim_liveness(path, claim):
     """' — held 6.1h, file untouched 5.4h (likely abandoned)' or '' when the claim looks active.
 
-    D-144: the harm D-011's reversal trigger actually measured was not claims-as-such, it was claims
+    D-180: the harm D-011's reversal trigger actually measured was not claims-as-such, it was claims
     that OUTLIVE the session holding them. One hold on `core/net/net_version.gd` spanned four
     sessions and cost four tasks their PROTOCOL_VERSION bump (F-161/F-165/F-169/F-178); another held
     twelve files for six hours without a single write while blocking three queued items. In every
@@ -2892,7 +2892,7 @@ def _wait_for_new_orders(lane, seen, grace=EMPTY_QUEUE_GRACE_SECONDS):
 def _queue_second_pass(lane, tid, queue, seen):
     """After a task lands on a second-pass lane, queue a review-and-fix of the commit it just made.
 
-    D-150. Today's evidence: 26 independent reviews found 8 real defects that the implementing lane's
+    D-181. Today's evidence: 26 independent reviews found 8 real defects that the implementing lane's
     own green checks had missed — roughly a third of the reviews. But every one of those findings
     then needed its own order, brief, claim and verify cycle to repair, rebuilding context the
     reviewer already had. Chaining the pass onto completion closes that loop without a director in it.

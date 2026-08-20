@@ -1,11 +1,5 @@
 {
   "claims": {
-    ".agent/bin/agent": {
-      "agent": "galef95fa6",
-      "at": "2026-08-20T20:19:47+00:00",
-      "task": "F-314",
-      "token": "CLAUDE_CODE_SESSION_ID:d9bd1b9f-bbd0-404d-a0e5-774d72edf018"
-    },
     "core/dev/dev_launch.gd": {
       "agent": "quill5fa5c7",
       "at": "2026-08-20T20:20:19+00:00",
@@ -42,21 +36,45 @@
       "task": "4.19",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
-    "tools/harness_check.py": {
-      "agent": "galef95fa6",
-      "at": "2026-08-20T20:19:47+00:00",
-      "task": "F-314",
-      "token": "CLAUDE_CODE_SESSION_ID:d9bd1b9f-bbd0-404d-a0e5-774d72edf018"
-    },
     "tools/harvest_batch_check.gd": {
       "agent": "quill5fa5c7",
       "at": "2026-08-20T20:20:19+00:00",
       "task": "4.19",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
+    "tools/menu_kit_check.gd": {
+      "agent": "reed31c598",
+      "at": "2026-08-20T20:27:08+00:00",
+      "task": "7.4",
+      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
+    },
+    "tools/verify_setup.gd": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:30:39+00:00",
+      "task": "4.19",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
     "tools/world_contract_check.gd": {
       "agent": "quill5fa5c7",
       "at": "2026-08-20T20:20:19+00:00",
+      "task": "4.19",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
+    "ui/theme/mire_theme.gd": {
+      "agent": "reed31c598",
+      "at": "2026-08-20T20:27:08+00:00",
+      "task": "7.4",
+      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
+    },
+    "world/chunk/chunk_streamer.gd": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:30:39+00:00",
+      "task": "4.19",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
+    "world/gen/procedural_world.gd": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T20:23:09+00:00",
       "task": "4.19",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     }
@@ -72,37 +90,40 @@
         "tools/chest_placement_check.gd",
         "tools/ground_fog_check.gd",
         "tools/harvest_batch_check.gd",
-        "docs/WORLDGEN.md"
+        "docs/WORLDGEN.md",
+        "world/gen/procedural_world.gd",
+        "world/chunk/chunk_streamer.gd",
+        "tools/verify_setup.gd"
       ],
       "notes": [],
       "started": "2026-08-20T20:20:19+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
-    "F-314": {
-      "agent": "galef95fa6",
+    "7.4": {
+      "agent": "reed31c598",
       "files": [
-        ".agent/bin/agent",
-        "tools/harness_check.py"
+        "ui/theme/mire_theme.gd",
+        "tools/menu_kit_check.gd"
       ],
       "notes": [],
-      "started": "2026-08-20T20:19:47+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:d9bd1b9f-bbd0-404d-a0e5-774d72edf018"
+      "started": "2026-08-20T20:27:08+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     }
   },
   "recent": {
     ".agent/bin/agent": {
-      "agent": "galef95fa6",
-      "at": "2026-08-20T20:15:13+00:00",
-      "hash": "107d33019d6fcf0436ac12a457bd1856b8b760e4e9834e2ce28bff395100d1ea",
-      "task": "F-313",
-      "token": "CLAUDE_CODE_SESSION_ID:d9bd1b9f-bbd0-404d-a0e5-774d72edf018"
+      "agent": "lp",
+      "at": "2026-08-20T20:30:45+00:00",
+      "hash": "061cdb08f58fcef6b3466e3a001a053301000931cedd0681dc6f511b4f93cd68",
+      "task": "F-283",
+      "token": null
     },
     ".agent/bin/lane": {
-      "agent": "bram1",
-      "at": "2026-08-20T06:55:12+00:00",
-      "hash": "8d350b7a3a9396e9d7094245db0679195c7183b58475b0289fd5e0495f26c7db",
-      "task": "F-299",
-      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
+      "agent": "lp",
+      "at": "2026-08-20T20:30:45+00:00",
+      "hash": "fe17501ede033540fe622dec499fef639dcd2c5ecb881181a7aa5c0b2c6d8fc3",
+      "task": "F-283",
+      "token": null
     },
     "AGENTS.md": {
       "agent": "lp",
@@ -358,23 +379,23 @@
     },
     "docs/DECISIONS.md": {
       "agent": "lp",
-      "at": "2026-08-20T20:21:37+00:00",
-      "hash": "a91bdcea7b7f8276ca24ea6c23020ba19bc09ebddbe78952700bc08e236b4265",
-      "task": "F-281",
+      "at": "2026-08-20T20:30:45+00:00",
+      "hash": "97aa8ae168c144b6d3788d0a5dbe8235e88f20e297cf12765628c6ccf27067d0",
+      "task": "F-283",
       "token": null
     },
     "docs/DELEGATION.md": {
       "agent": "lp",
-      "at": "2026-08-20T20:21:37+00:00",
-      "hash": "b6601ff0e4a026eb2b1a7a10faca10426f93b451aa12122111931bd2bdd6540f",
-      "task": "F-281",
+      "at": "2026-08-20T20:30:45+00:00",
+      "hash": "f77e4b4a8fd3d51c29e7e20c1ecb31bb12ae5f8d2cc072ed2c496228d905ccf2",
+      "task": "F-283",
       "token": null
     },
     "docs/FINDINGS.md": {
       "agent": "lp",
-      "at": "2026-08-20T20:21:37+00:00",
-      "hash": "c65c337e68f5f752919431aca0a9db63e0cd8e399f9a699265edbc26813a0e52",
-      "task": "F-281",
+      "at": "2026-08-20T20:30:45+00:00",
+      "hash": "2160d7cea60ee38aaf7af98761e1a0dfdbefb160ea1172d7782aa84fd7a3f548",
+      "task": "F-283",
       "token": null
     },
     "docs/MENU.md": {
@@ -386,16 +407,23 @@
     },
     "docs/NEXT.md": {
       "agent": "lp",
-      "at": "2026-08-20T16:25:39+00:00",
-      "hash": "afde84e22e47ad4f8e59aa7e7138e65974245e8d1355bdb6532c0f07b1ee863f",
-      "task": "F-266",
+      "at": "2026-08-20T20:30:45+00:00",
+      "hash": "99e4a25f6b29040f80a8c07d21adefae9532fb73ff8bd21cf319095d923c322f",
+      "task": "F-283",
+      "token": null
+    },
+    "docs/POWERUPS.md": {
+      "agent": "lp",
+      "at": "2026-08-20T20:30:45+00:00",
+      "hash": "fb294ef3bca9da15f4e753842b0dec4ec4bb38b220de3439c593cfaf83dfccec",
+      "task": "F-283",
       "token": null
     },
     "docs/SPECS.md": {
       "agent": "lp",
-      "at": "2026-08-20T20:21:37+00:00",
-      "hash": "9e6bb78504ae25bb1df953dfc1520559244916b814a4ebdeaeaa00f659564732",
-      "task": "F-281",
+      "at": "2026-08-20T20:30:45+00:00",
+      "hash": "46f6ba573b1966a58b360c1d788a6bf465de942d81d79b3149c19fd51c497ec6",
+      "task": "F-283",
       "token": null
     },
     "steam_appid.txt": {
@@ -473,6 +501,13 @@
       "at": "2026-08-20T05:24:46+00:00",
       "hash": "7632f021ce78c0e8c670c4187fb0f50fd2dda9adbe9ffc52ffe07a9505cee375",
       "task": "F-258",
+      "token": null
+    },
+    "systems/powerups/powerup_def.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T20:30:45+00:00",
+      "hash": "ff9cf53763798d950b8ca709312e7976d535b3246adc997c96f5ee11057a80d9",
+      "task": "F-283",
       "token": null
     },
     "systems/unlocks/unlock_def.gd": {
@@ -636,6 +671,13 @@
       "task": "F-278",
       "token": null
     },
+    "tools/decision_ref_check.py": {
+      "agent": "lp",
+      "at": "2026-08-20T20:30:45+00:00",
+      "hash": "3347f8981134be40c84e958ccb04cddc6972c79610783c7d2826013db36546bd",
+      "task": "F-283",
+      "token": null
+    },
     "tools/enemy_content_check.gd": {
       "agent": "lm3",
       "at": "2026-08-19T22:25:02+00:00",
@@ -666,9 +708,9 @@
     },
     "tools/harness_check.py": {
       "agent": "galef95fa6",
-      "at": "2026-08-20T20:15:13+00:00",
-      "hash": "f04fb96aff9a42e844ab3184c2e593be28d866a9ae8e2441a898e7632f5f8eed",
-      "task": "F-313",
+      "at": "2026-08-20T20:22:02+00:00",
+      "hash": "896612e7e72d9fd325448977e03c32a51ac54b0fb248f92561ea9e2921106a01",
+      "task": "F-314",
       "token": "CLAUDE_CODE_SESSION_ID:d9bd1b9f-bbd0-404d-a0e5-774d72edf018"
     },
     "tools/harvest_restart_check.gd": {
@@ -1057,7 +1099,7 @@
       "token": null
     }
   },
-  "rev": 49,
+  "rev": 62,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -2382,7 +2424,7 @@
     "7.4": {
       "est": "6",
       "milestone": "M7",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T0",
       "title": "UI/UX polish pass, consistent visual language, transitions"
     },
@@ -5097,9 +5139,11 @@
       "title": "The Hunt spawns one Cycle late because WaveSpawner reads the modifier stack before CycleModifierService draws"
     },
     "F-283": {
+      "done_at": "2026-08-20T20:30:45+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Three D-numbers each head two different decisions \u2014 D-050, D-144 and D-150 are live collisions from before F-260's allocator, and no check detects them"
     },
@@ -5321,11 +5365,20 @@
       "title": "agent collect crashes on any journal header whose timestamp has no timezone"
     },
     "F-314": {
+      "done_at": "2026-08-20T20:22:02+00:00",
+      "done_by": "galef95fa6",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "A lane's queue drains in task-id order, so routing priority is whatever the F-numbers happen to be"
+    },
+    "F-315": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "A drain chain silently stops draining the moment it re-executes for a harness change"
     }
   },
   "version": 1

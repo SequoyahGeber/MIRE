@@ -528,46 +528,6 @@ they would be two phases of one check.
 
 ---
 
-### F-283 · Three D-numbers each head two different decisions — D-050, D-144 and D-150 are live collisions from before F-260's allocator, and no check detects them
-
-**Area:** ? · **Severity:** medium · **Found:** 2026-08-20 by lp
-
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-20 by lp during F-269
-
-F-260 fixed the *cause* — `agent decision` now allocates the next `D-NNN` under a lock — and left the
-collisions already in the file. At HEAD `grep -o '^### D-[0-9]*' docs/DECISIONS.md | sort | uniq -d`
-returns three:
-
-- **D-050** ×2
-- **D-144** ×2
-- **D-150** ×2 — `chunk_stream_check.gd`'s union-of-interest sizing, and the LM lane's Opus/
-  second-pass routing. Two unrelated systems, one number. This pair is the collateral of F-260's own
-  incident: the D-146 collision was repaired by renumbering the director's entry *to D-150*, which
-  was already taken.
-
-**Why this is worse than a dangling citation.** F-229 established that a reference which resolves to
-*something* is the dangerous case, because nothing about it looks broken until you read the target
-and it is about a different system. A duplicate is that case by construction: every `D-150` citation
-in the docs tree and in code comments resolves, silently, to whichever of the two a reader finds
-first. `docs/SPECS.md` and this file both cite these numbers.
-
-**Nothing detects it.** `tools/decision_ref_check.py` only flags a `D-NNN` with *no* `### D-NNN`
-heading, so a duplicated heading passes it twice over. `tools/findings_numbering_check.gd` is the
-right shape but is FINDINGS-only by design, and `tools/findings_hygiene_check.py` (F-269)
-deliberately stayed out of DECISIONS.md so it would not ship failing.
-
-**What fixing it takes** — a renumbering pass, not a doc edit, which is why it is filed rather than
-done inline. The harness's own `_duplicate_findings()` says the same thing about the F-number pairs
-it declines to renumber: code comments and queued work orders cite both members, so the citations
-have to move with the headings. Concretely: give the later member of each pair a fresh number from
-`agent decision`'s allocator, rewrite every citation of it across `docs/` and `--include=*.gd`, then
-add the duplicate assertion to `decision_ref_check.py` so it cannot come back.
-
-Deciding NOT to renumber is also a legitimate outcome — the pairs are historical record — but it
-needs the detector either way, so a reader hits a named exception instead of a silent wrong page.
-
----
-
 ### F-285 · `tools/nav_bake_check.gd` has 4 pre-existing failures at a clean HEAD — chunk-streamed terrain reports NaN heights to the check's seam search
 
 **Area:** worldgen · **Severity:** medium · **Found:** 2026-08-20 by lp
@@ -1403,7 +1363,195 @@ F-293 predicts, and a third data point that the suite has drifted.
 
 ---
 
+### F-315 · A drain chain silently stops draining the moment it re-executes for a harness change
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-20 by galef95fa6
+
+`agent saturate <LANE>` with no ids is *drain mode*: `drain = not wanted`, which is what makes the
+chain call `_wait_for_new_orders()` and pick up orders written after it started. §4 calls an idle
+lane the failure mode, and drain mode is the whole defence against it.
+
+Between tasks the chain re-executes itself if the harness changed on disk:
+
+    argv = [sys.executable, os.path.abspath(__file__), "saturate", lane] + queue
+    os.execv(sys.executable, argv)
+
+It passes the remaining queue as explicit task ids. In the new process `wanted` is therefore
+non-empty, so `drain = not wanted` is **False** — the chain that re-executed is no longer a drain
+chain. It works its list, never looks for new orders, and exits into an idle lane.
+
+Observed live 2026-08-20. A detached drain chain on LP re-executed after a harness edit, then ran
+F-281 and moved to F-283. Two p1 orders written four minutes after the re-exec — F-301 (island ships
+with crafting unreachable) and F-307 (non-host peer soft-locked when the host leaves) — were invisible
+to it, and with LP at 92% of its weekly the remaining budget was about to go to doc cleanups instead.
+The priority ranking added in F-314 could not help either, because the queue had already been fixed
+as a list.
+
+It is silent in both directions: the log line says "re-executing this chain with the new code", which
+reads as continuity, and nothing afterwards says the chain stopped watching for orders. The lane just
+goes quiet at the end of a list that no longer grows.
+
+Fix: preserve the mode across the re-exec — pass an explicit `--drain` marker when `drain` is true
+and honour it alongside the ids, so a re-executed drain chain is still a drain chain. The ids must
+still be passed; they are the un-run remainder.
+
+Verify: `python3 tools/harness_check.py`, with a case asserting that the re-exec argv a drain chain
+builds parses back into drain mode, and that a chain started with explicit ids does not.
+
+---
+
+### F-316 · docs/SPECS.md carries two different F-226 blocks under one heading, and nothing checks SPECS for duplicate headings
+
+**Area:** tooling · **Severity:** low · **Found:** 2026-08-20 by lp
+
+Found by lp during F-283's sweep. F-283 fixed the duplicate-heading class in `docs/DECISIONS.md`;
+the same `grep -o '^#* <id>' | sort | uniq -d` over `docs/SPECS.md` finds it there too:
+
+```
+$ grep -n '^## F-226' docs/SPECS.md
+1487:## F-226 · `WaveSpawner.current_cycle()` is documented "readable on any peer" but is stuck at 1 ...
+7392:## F-226 · `WaveSpawner.current_cycle()` is documented "readable on any peer" but is stuck at 1 ...
+```
+
+**Why it is milder than F-283's, and why it is still worth fixing.** Both blocks are about the same
+finding, so a citation of "F-226's spec" cannot land on an unrelated system the way a `D-150`
+citation could — the silent-wrong-page hazard that made F-283 medium is absent. What is present is
+that the two blocks **say different things**: 1487 is a past-tense close-out record (`**Shipped
+2026-08-19.**`, a bug/fix narrative), and 7392 is the execution spec proper (`**Claim:**`,
+`**Authority:**`, `**No spec existed for this finding**`). An agent handed F-226 and told "read its
+block here" gets whichever it scrolls to, and the two differ in the detail that matters most for a
+re-run — 1487 lists `tools/wave_director_check.gd` in its claim, 7392 lists it `(+ its .uid)`.
+`agent brief` slices this file by heading, so it is the one that decides which the reader sees.
+
+**Nothing checks it.** `tools/decision_ref_check.py`'s new `duplicate_decisions()` (F-283) is
+DECISIONS-only by construction — it matches `^### (D-\d+)\s*·` against one file.
+`tools/findings_numbering_check.gd` asserts no F-number heads two entries **within `## Open`** in
+`docs/FINDINGS.md`, which is a narrower claim than "no duplicate headings in SPECS", and it does not
+read SPECS at all. So both existing duplicate detectors have a shape that would catch this and
+neither is pointed at the file.
+
+**What fixing it takes.** Two parts, and the second is the one that stops the class:
+
+1. Merge the two blocks — keep 7392's spec shape as the block (it is the one `agent brief` should
+   serve), fold anything 1487 records that 7392 does not (the `.uid`, the "`wave_director_check`
+   would have PASSED with the bug present" note, which is a real and non-obvious fact about that
+   check's coverage), and leave a single heading. Do NOT delete the close-out prose — it is the
+   evidence for why the fix is believed.
+2. Generalise the duplicate assertion so it covers SPECS' `## F-NNN` and `## <n.m>` headings, not
+   just DECISIONS' `### D-NNN`. Note `## 3.8` and `## 3.8b` are **not** a collision — a naive
+   `[0-9]+\.[0-9]+` capture reports them as one, which is a false positive to write a case against.
+
+Also worth knowing while doing it: `docs/FINDINGS.md` has three duplicate `### F-NNN` headings at
+HEAD (`F-012`, `F-055`, `F-056`). Those are **deliberate** — `agent`'s own `_duplicate_findings()`
+declines to renumber them, and `findings_numbering_check.gd` only forbids the collision inside
+`## Open`. Any generalised check must treat them as a named exception rather than fail on them, or
+it ships red and joins F-293's pile.
+
+**Would change my mind about fixing part 1 at all:** if 1487 turns out to be inside a section this
+file treats as an append-only history rather than as live spec, merging is wrong and the fix is
+part 2 plus a pointer line. Whoever takes this should check that before editing — F-283 did not,
+because a merge was outside its claim.
+
+---
+
 ## Resolved
+
+### F-283 · Three D-numbers each head two different decisions — D-050, D-144 and D-150 are live collisions from before F-260's allocator, and no check detects them — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-20 by lp
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-20 by lp during F-269
+
+F-260 fixed the *cause* — `agent decision` now allocates the next `D-NNN` under a lock — and left the
+collisions already in the file. At HEAD `grep -o '^### D-[0-9]*' docs/DECISIONS.md | sort | uniq -d`
+returns three:
+
+- **D-050** ×2
+- **D-144** ×2
+- **D-150** ×2 — `chunk_stream_check.gd`'s union-of-interest sizing, and the LM lane's Opus/
+  second-pass routing. Two unrelated systems, one number. This pair is the collateral of F-260's own
+  incident: the D-146 collision was repaired by renumbering the director's entry *to D-150*, which
+  was already taken.
+
+**Why this is worse than a dangling citation.** F-229 established that a reference which resolves to
+*something* is the dangerous case, because nothing about it looks broken until you read the target
+and it is about a different system. A duplicate is that case by construction: every `D-150` citation
+in the docs tree and in code comments resolves, silently, to whichever of the two a reader finds
+first. `docs/SPECS.md` and this file both cite these numbers.
+
+**Nothing detects it.** `tools/decision_ref_check.py` only flags a `D-NNN` with *no* `### D-NNN`
+heading, so a duplicated heading passes it twice over. `tools/findings_numbering_check.gd` is the
+right shape but is FINDINGS-only by design, and `tools/findings_hygiene_check.py` (F-269)
+deliberately stayed out of DECISIONS.md so it would not ship failing.
+
+**What fixing it takes** — a renumbering pass, not a doc edit, which is why it is filed rather than
+done inline. The harness's own `_duplicate_findings()` says the same thing about the F-number pairs
+it declines to renumber: code comments and queued work orders cite both members, so the citations
+have to move with the headings. Concretely: give the later member of each pair a fresh number from
+`agent decision`'s allocator, rewrite every citation of it across `docs/` and `--include=*.gd`, then
+add the duplicate assertion to `decision_ref_check.py` so it cannot come back.
+
+Deciding NOT to renumber is also a legitimate outcome — the pairs are historical record — but it
+needs the detector either way, so a reader hits a named exception instead of a silent wrong page.
+
+---
+
+**Resolved 2026-08-20 by lp.** **Resolved 2026-08-20 by lp.** Renumbered, all citations moved, and the detector added so it cannot
+come back. The three collisions were still live at HEAD when this started — re-checked before
+editing anything, per the brief's stale-finding warning.
+
+**The renumbering.** Later member of each pair yields its number (the rule and its reasoning are
+**D-182**): `D-050` → **D-179** (the powerup stat vocabulary, 2026-08-18), `D-144` → **D-180** (keep
+file claims / fix claim staleness, the entry that resolved F-189), `D-150` → **D-181** (the LM
+lane's Opus + second-pass routing). Each renumbered entry carries a one-line breadcrumb naming its
+old number, so a `grep D-150 docs/DECISIONS.md` from an old journal line or an old commit lands on a
+pointer rather than silently on the wrong page.
+
+**The citations, classified by reading each one — not by `sed`.** All 34 in-repo sites were read,
+which is the whole cost of this finding: the numbers are ambiguous by construction, so a blind
+rewrite breaks exactly the half that meant the entry which kept its number. Moved: `D-050` → `D-179`
+in `docs/DELEGATION.md:6403`, `docs/POWERUPS.md:106,252`, `systems/powerups/powerup_def.gd:16,52`,
+`docs/SPECS.md:419`; `D-144` → `D-180` in `.agent/bin/agent`'s `_claim_liveness()` and F-189's own
+resolution lines in this file; `D-150` → `D-181` in `.agent/bin/lane:47,119,135`, `.agent/bin/agent:2895`
+and D-151's opening line ("Extends D-150"). **Deliberately left alone:** three `D-050` sites that
+look like the powerup entry and are the attack-style one (`tools/build_check.gd:548`,
+`docs/DELEGATION.md:6075` and `:6107`, this file's `attack_style` block), and every `D-144` outside
+the three above, all of which are task 4.13's terrain split. `.agent/JOURNAL.md` and git history are
+**not** rewritten — both are records of what was true when written, and the breadcrumbs are what keep
+them resolvable.
+
+**The detector** — `duplicate_decisions()` in `tools/decision_ref_check.py`, a hard failure naming
+both heading line numbers. It is a failure and not a warning because F-260's allocator makes a new
+collision impossible, so a duplicate reappearing means a heading written by hand around it, which is
+the thing to catch at the commit that writes it.
+
+**Verified — the detector proven in BOTH directions against the real file, not just green at HEAD:**
+
+- `python3 tools/decision_ref_check.py` → `defined=182 dangling=0 duplicate=0`, **failures=0**.
+- `python3 tools/decision_ref_check.py --self-test` → **7/7** (4 new cases: clean fixture reports no
+  duplicates, a repeated number is flagged, both its heading lines are named, the singleton beside it
+  is not swept up).
+- **Negative test on the pre-fix file**: `git show HEAD:docs/DECISIONS.md` into a scratch tree, then
+  `decision_ref_check.report(repo=...)` → `duplicate=3`, naming `D-050` (lines 805, 959), `D-144`
+  (1236, 4241) and `D-150` (4446, 4473) — the exact three this finding names, with their real line
+  numbers. A detector proven only where it stays quiet is not proven.
+- `grep -o '^### D-[0-9]*' docs/DECISIONS.md | sort | uniq -d` → prints nothing.
+- `python3 tools/harness_check.py` → **36/36** (`.agent/bin/agent` and `.agent/bin/lane` were edited;
+  both are comment-only changes, and `lane` re-parses clean).
+- `.agent/bin/agent godot --script tools/powerup_check.gd` → **POWERUP_CHECK failures=0**
+  (`systems/powerups/powerup_def.gd` was touched, comment-only).
+- `python3 tools/findings_hygiene_check.py` → failures=0.
+
+**Spec written:** `docs/SPECS.md` had no F-283 block — one now exists, per that file's preamble.
+
+**Filed from the sweep: F-316** — the same duplicate-heading shape in `docs/SPECS.md`, where `##
+F-226` heads two different blocks (a close-out record and the execution spec, which disagree about
+the claim set). Milder than this one because both are about the same finding, but `agent brief`
+slices SPECS by heading, so it decides which an agent reads. Not fixed here: merging two 100-line
+blocks is a judgement about whether that region of SPECS is live spec or append-only history, which
+is outside this claim. `docs/FINDINGS.md`'s own three duplicate `### F-NNN` headings (`F-012`,
+`F-055`, `F-056`) were checked and are **deliberate** — `agent`'s `_duplicate_findings()` declines to
+renumber them on purpose — so they are an exception any generalised check must name, not a bug.
 
 ### F-314 · A lane's queue drains in task-id order, so routing priority is whatever the F-numbers happen to be — **fixed**
 
@@ -2722,8 +2870,7 @@ there, and someone should move them:
 
 **Area:** worldgen · **Severity:** medium · **Found:** 2026-08-20 by lm during F-261's review
 
-D-144 (the 4.13 terrain one at `docs/DECISIONS.md:1236` — that number is double-allocated, see
-F-260) splits `IslandHeightmap` in two precisely so a biome can shape its own ground: `continent()`
+D-144 splits `IslandHeightmap` in two precisely so a biome can shape its own ground: `continent()`
 decides where the biomes are, `height(x, z, seed, detail_amplitude, ridge_amplitude)` decides how
 rough each one is, and the decision's own closing line is "**`BiomeMap.terrain_amplitudes()` is the
 seam that hands a point's pair to the heightmap**". The seam was built. Nothing shipped crosses it.
@@ -4897,7 +5044,7 @@ rewriting working hand-authored art code, and there is now something that would 
 incidental re-evaluation stopped happening. Run it from a plain shell, no Blender needed:
 `python3 tools/blender/preview_census.py`.
 
-### F-189 · File claims have become the bottleneck D-011 named as its own reversal trigger — one claim blocked four consecutive tasks from bumping PROTOCOL_VERSION — **decided: D-144, claims stay**
+### F-189 · File claims have become the bottleneck D-011 named as its own reversal trigger — one claim blocked four consecutive tasks from bumping PROTOCOL_VERSION — **decided: D-180, claims stay**
 
 **Area:** coordination · **Severity:** high · **Found:** 2026-08-19 by reed16
 
@@ -4962,7 +5109,8 @@ scale to the point where it now hurts. This is the trigger firing, not a design 
 Filed by reed16 (director) rather than fixed here: choosing between these is a D-011-level call, and
 option 4 is already someone's live task.
 
-**Resolved 2026-08-19 by bram1 (director), as D-144.** The finding's evidence is accepted in full —
+**Resolved 2026-08-19 by bram1 (director), as D-180.** (It was recorded as `D-144` at the time;
+F-283 renumbered it, because that number was already task 4.13's terrain split.) The finding's evidence is accepted in full —
 the trigger fired, four times, and nobody called it. The inference is not: every measured blockage was
 a claim that outlived its session, not two agents needing one file at the same moment, and each
 cleared in bulk when those sessions ended. Worktrees would trade that transient bottleneck for a
@@ -4973,7 +5121,7 @@ git-side hazards (F-081, F-117, F-149, F-191, F-197) are all closed and regressi
 Shipped instead: a claim refusal now names how long the claim has been held and whether its file has
 been written to since — turning "claimed by X", which read identically for an active edit and an
 abandoned session, into a judgement a director can act on. It frees nothing; the rule against working
-around a claim is what keeps two agents out of one file. D-144 carries the reversal trigger.
+around a claim is what keeps two agents out of one file. D-180 carries the reversal trigger.
 
 ---
 
@@ -5023,7 +5171,7 @@ rewriting it.
 
 **Correction, same session.** The first version of this refresh introduced an error of its own: it
 reported "8 open" and singled out F-189 as the only open process question. F-189 had already been
-resolved as D-144 (claims stay; fix claim staleness rather than move to per-agent worktrees), and
+resolved as D-180 (claims stay; fix claim staleness rather than move to per-agent worktrees), and
 `docs/FINDINGS.md` carries 7 open, every one of them hardware- or dependency-bound.
 
 The cause is worth more than the fix: the count was taken from `state.json`, which still lists F-189
