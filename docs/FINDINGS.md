@@ -542,6 +542,16 @@ Two things this adds to the diagnosis above:
    suggestion — still works here and is the one that would have caught it, since LM's block predates
    nothing but is textually inseparable. Timestamps, not hunks.
 
+**And again, in the opposite direction, sixty seconds later.** F-269 swept LM's docs into `773fb3b`;
+LM then swept F-269's `D-162` and this very paragraph's parent note into `cffbbdd`, under an F-271
+message. Both lanes were closing out at the same time, both were correct in their own terms, and
+each ended up publishing the other's work. Nothing was lost either time — which is the reason this
+stays medium and keeps not getting fixed — but the record of who decided what is now wrong in two
+commits, and `git log --follow` on a decision is how the next agent finds the reasoning behind it.
+Treat it as: **any two lanes closing out in the same minute will swap doc hunks.** It is not a rare
+race, it is the default outcome of concurrent close-out, and the timestamp warning above is the
+cheapest thing that would make it visible.
+
 ---
 
 ### F-268 · F-243's restart never clears placed buildables — BuildService has no run_restarted subscription at all, and its own check has been failing at HEAD since the feature shipped
