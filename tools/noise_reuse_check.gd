@@ -118,12 +118,15 @@ func _check_mesh_matches_direct(chunk_x: int, chunk_z: int, world_seed: int, lod
 	var lowest: float = 1.0e30
 	var highest: float = -1.0e30
 	# Every terrain vertex, not just a corner or two — the border rows are exactly where an apron
-	# off-by-one would show up.
+	# off-by-one would show up. Sampled at the vertex's OWN stored XZ, not the grid point: interior
+	# vertices carry 4.18/D-184's deterministic jitter, and "this vertex sits on the analytic
+	# ground at its own position" is the same contract with the same strength — a vertex anywhere
+	# off the surface still fails. Border-on-grid is asserted by tools/biome_terrain_check.gd.
 	for z in side:
 		for x in side:
 			var v: int = z * side + x
-			var world_x: float = origin_x + float(x * step)
-			var world_z: float = origin_z + float(z * step)
+			var world_x: float = origin_x + verts[v].x
+			var world_z: float = origin_z + verts[v].z
 			var expected: float = BiomeMap.surface_from_set(
 				world_x, world_z, noise_set, world_seed, table)
 			checked += 1

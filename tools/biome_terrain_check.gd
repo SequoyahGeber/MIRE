@@ -189,10 +189,20 @@ func _check_every_consumer_agrees() -> void:
 	var mesh_bad: int = 0
 	var oneshot_bad: int = 0
 	var manual_bad: int = 0
+	var border_off_grid: int = 0
 	for z: int in side:
 		for x: int in side:
-			var world_x: float = origin_x + float(x)
-			var world_z: float = origin_z + float(z)
+			# The vertex's OWN stored position, not the grid point: interior vertices carry the
+			# 4.18/D-184 XZ jitter, and the contract is "every vertex sits on the analytic
+			# ground AT ITS OWN XZ" — which is exactly as strong, since a vertex parked anywhere
+			# off the surface still fails. Border vertices additionally must sit ON the grid, or
+			# neighbouring chunks stop tiling; asserted below.
+			var vert: Vector3 = verts[z * side + x]
+			var world_x: float = origin_x + vert.x
+			var world_z: float = origin_z + vert.z
+			var on_border: bool = x == 0 or x == side - 1 or z == 0 or z == side - 1
+			if on_border and (vert.x != float(x) or vert.z != float(z)):
+				border_off_grid += 1
 			var expected: float = BiomeMap.surface_from_set(world_x, world_z, set, SEED, table)
 			# Compared through a float32 round-trip, not against the raw double. The mesher stores
 			# its apron in a `PackedFloat32Array` and its vertices in `Vector3`s, both of which are
@@ -200,13 +210,19 @@ func _check_every_consumer_agrees() -> void:
 			# calculation — every vertex matches exactly once the same narrowing is applied to the
 			# reference. Widening this to `is_equal_approx` instead would hide a real drift of
 			# millimetres, which is the size of drift that matters here.
-			if verts[z * side + x].y != PackedFloat32Array([expected])[0]:
+			#
+			# Jittered vertices narrow their XZ through Vector3 too, so the reference must sample
+			# at the float32 position the mesh actually stores — which it does: `vert.x` above IS
+			# that float32.
+			if vert.y != PackedFloat32Array([expected])[0]:
 				mesh_bad += 1
 			if BiomeMap.surface_at(world_x, world_z, SEED, biome_defs) != expected:
 				oneshot_bad += 1
 			var pair: Vector2 = BiomeMap.terrain_amplitudes(world_x, world_z, SEED, biome_defs)
 			if IslandHeightmap.height(world_x, world_z, SEED, pair.x, pair.y) != expected:
 				manual_bad += 1
+	_check(border_off_grid == 0, "every border vertex sits exactly on the chunk grid",
+		"%d off-grid" % border_off_grid)
 	_check(mesh_bad == 0, "every chunk vertex equals surface_from_set() to the float32 it stores",
 		"%d differ" % mesh_bad)
 	_check(oneshot_bad == 0, "surface_at() equals surface_from_set() bit-for-bit",

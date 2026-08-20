@@ -5855,6 +5855,17 @@ per-face-normal meshes deliberately: that alternative triples every resident chu
 and MIRE targets the worst machines. The mesh, its smooth normals, collision and LOD are all
 untouched — the shader only changes lighting. No height-based coloring either, matching the post.
 
+**Fourth refinement (same day, call delegated — "you do whatever you think is best"):** the thread's
+Delaunay link names why the reference's facets look organic where a grid's do not — irregular
+triangulation. Shipped the equivalent without retriangulating: deterministic integer-hash XZ jitter
+on INTERIOR chunk vertices (`ChunkMesher.VERTEX_JITTER_FRACTION` 0.35 of the LOD step, strictly
+under the 0.5 that would fold a quad). Border vertices stay exactly on-grid — chunk tiling, LOD
+seam divergence, skirt and perimeter indexing all key on the border and are untouched. Every
+jittered vertex re-samples the analytic surface at its (float32-narrowed) actual position, so the
+"every vertex sits on the ground" agreement contracts in `biome_terrain_check`/`noise_reuse_check`
+hold exactly; those checks and `chunk_stream_check`'s layout assertion now read the vertex's own
+stored XZ instead of assuming grid placement — same strength, no grid assumption.
+
 ---
 
 ### D-185 · 2026-08-20 · F-307: a terminal run-summary overlay whose session ends offers the way OUT, not a restart — and it leaves `blocks_gameplay_input` to make that reachable

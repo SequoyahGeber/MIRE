@@ -50,6 +50,17 @@ const INDEX_COUNT: int = TRI_COUNT * 3
 const SKIRT_DEPTH_FRACTION: float = 1.70
 const SKIRT_DEPTH: float = Heightmap.HEIGHT_SCALE * SKIRT_DEPTH_FRACTION
 
+## Interior-vertex XZ jitter, as a fraction of the LOD's vertex spacing (4.18/D-184's flat-shaded
+## low-poly look). A regular grid flat-shades into uniform right triangles; the rvr9ca reference —
+## and the Delaunay approach its comment thread suggests — gets its organic read from IRREGULAR
+## facets. Deterministic hash jitter on the grid's interior gives the same read without
+## retriangulating: strictly under 0.5 so no quad can fold, borders exempt so chunks and LOD tiers
+## still tile exactly (seam divergence, skirt and `_perimeter_indices` are all keyed to the
+## border). Each jittered vertex RE-SAMPLES the true surface at its actual position, so every
+## vertex still sits exactly on the analytic ground — `tools/noise_reuse_check.gd`'s and
+## `tools/biome_terrain_check.gd`'s mesh/surface agreement contracts hold by construction.
+const VERTEX_JITTER_FRACTION: float = 0.35
+
 
 static func verts_per_side(lod: int) -> int:
 	return CHUNK_SIZE / LOD_STEPS[lod] + 1
@@ -135,14 +146,17 @@ static func collision_faces(mesh: ArrayMesh, lod: int) -> PackedVector3Array:
 ## and a default is how that gets shipped again.
 ##
 ## Samples through ONE `BiomeMap.NoiseSet`, one `TerrainTable` and one reused
-## `IslandHeightmap.Shape`, all built once per call rather than once per sample (F-241, F-274): a
+## `IslandHeightmap.Shape`, built once per `build_mesh()` call and passed in (F-241, F-274; the
+## jitter pass in `build_mesh` samples the same surface, which is why the trio moved up a level): a
 ## LOD0 apron is 35x35 = 1,225 points and every one of them would otherwise rebuild seven
 ## `FastNoiseLite` fields and re-read six exported values off three `BiomeDef` resources. Still safe
-## from any WorkerThreadPool task — all three are locals built fresh on every call into this
-## function, never shared or cached across calls, the same one-per-task rule
-## `IslandHeightmap.NoiseSet` documents.
+## from any WorkerThreadPool task — all three are locals of `build_mesh`, built fresh per call,
+## never shared or cached across calls, the same one-per-task rule `IslandHeightmap.NoiseSet`
+## documents.
 static func _sample_heights(
-	chunk_x: int, chunk_z: int, world_seed: int, lod: int, biome_defs: Array
+	chunk_x: int, chunk_z: int, world_seed: int, lod: int,
+	noise_set: BiomeMapScript.NoiseSet, table: BiomeMapScript.TerrainTable,
+	shape: Heightmap.Shape
 ) -> PackedFloat32Array:
 	var step: int = LOD_STEPS[lod]
 	var side: int = verts_per_side(lod)
@@ -151,9 +165,6 @@ static func _sample_heights(
 	heights.resize(apron_side * apron_side)
 	var origin_x: float = float(chunk_x * CHUNK_SIZE)
 	var origin_z: float = float(chunk_z * CHUNK_SIZE)
-	var noise_set: BiomeMapScript.NoiseSet = BiomeMapScript.make_noise_set(world_seed)
-	var table: BiomeMapScript.TerrainTable = BiomeMapScript.make_terrain_table(biome_defs)
-	var shape := Heightmap.Shape.new()
 	for az: int in apron_side:
 		var world_z: float = origin_z + float((az - 1) * step)
 		var row: int = az * apron_side
@@ -162,6 +173,17 @@ static func _sample_heights(
 			heights[row + ax] = BiomeMapScript.surface_from_set(
 				world_x, world_z, noise_set, world_seed, table, shape)
 	return heights
+
+
+## Unit-range jitter for the vertex at integer WORLD metres (ix, iz) — the same offset whichever
+## chunk or LOD asks, and identical on every platform: integer mixing and one division by a
+## constant, the D-017 discipline `IslandHeightmap.lobes()` set. Components in [-1, 1]; the caller
+## scales by `VERTEX_JITTER_FRACTION * step`.
+static func _vertex_jitter(ix: int, iz: int, world_seed: int) -> Vector2:
+	var mixed: int = ((ix * 73856093) ^ (iz * 19349663) ^ (world_seed * 83492791)) & 0x7FFFFFFF
+	var jx: float = float(mixed % 2048) / 1023.5 - 1.0
+	var jz: float = float((mixed / 2048) % 2048) / 1023.5 - 1.0
+	return Vector2(jx, jz)
 
 
 ## Winding note (F-133): Godot's front face is the one whose vertices run CLOCKWISE as seen from
@@ -215,7 +237,11 @@ static func build_mesh(
 	var step: int = LOD_STEPS[lod]
 	var side: int = verts_per_side(lod)
 	var apron_side: int = side + 2
-	var heights: PackedFloat32Array = _sample_heights(chunk_x, chunk_z, world_seed, lod, biome_defs)
+	var noise_set: BiomeMapScript.NoiseSet = BiomeMapScript.make_noise_set(world_seed)
+	var table: BiomeMapScript.TerrainTable = BiomeMapScript.make_terrain_table(biome_defs)
+	var shape := Heightmap.Shape.new()
+	var heights: PackedFloat32Array = _sample_heights(
+		chunk_x, chunk_z, world_seed, lod, noise_set, table, shape)
 
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
@@ -230,6 +256,9 @@ static func build_mesh(
 	# difference must be halved AND divided by `step` to stay a per-metre slope regardless of LOD —
 	# at step=1 this reduces to the original R2 formula (`diff * 0.5`).
 	var slope_scale: float = 0.5 / float(step)
+	var origin_x: float = float(chunk_x * CHUNK_SIZE)
+	var origin_z: float = float(chunk_z * CHUNK_SIZE)
+	var jitter_amp: float = VERTEX_JITTER_FRACTION * float(step)
 	var v: int = 0
 	for z: int in side:
 		var arow: int = (z + 1) * apron_side
@@ -238,6 +267,23 @@ static func build_mesh(
 			var h: float = heights[ai]
 			var local_x: float = float(x * step)
 			var local_z: float = float(z * step)
+			# Interior vertices only — the border must stay on-grid so neighbouring chunks and LOD
+			# tiers keep sampling identical seam points (see VERTEX_JITTER_FRACTION's note). The
+			# jittered vertex re-samples the real surface, so it still sits ON the ground.
+			if x > 0 and x < side - 1 and z > 0 and z < side - 1:
+				var jitter: Vector2 = _vertex_jitter(
+					chunk_x * CHUNK_SIZE + x * step, chunk_z * CHUNK_SIZE + z * step, world_seed)
+				# Through a Vector2 FIRST: components are float32, the same narrowing Vector3
+				# applies when the vertex is stored. Sampling at the narrowed position is what
+				# keeps `biome_terrain_check`'s exact vertex==surface comparison exact — sampling
+				# at the double and narrowing afterwards can drift the stored y a ULP off the
+				# surface at the stored x.
+				var snapped := Vector2(local_x + jitter.x * jitter_amp,
+					local_z + jitter.y * jitter_amp)
+				local_x = snapped.x
+				local_z = snapped.y
+				h = BiomeMapScript.surface_from_set(
+					origin_x + local_x, origin_z + local_z, noise_set, world_seed, table, shape)
 			vertices[v] = Vector3(local_x, h, local_z)
 			var dx: float = (heights[ai + 1] - heights[ai - 1]) * slope_scale
 			var dz: float = (heights[ai + apron_side] - heights[ai - apron_side]) * slope_scale
@@ -306,7 +352,12 @@ static func build_mesh(
 static func build_mesh_surface_tool(
 	chunk_x: int, chunk_z: int, world_seed: int, biome_defs: Array
 ) -> ArrayMesh:
-	var heights: PackedFloat32Array = _sample_heights(chunk_x, chunk_z, world_seed, 0, biome_defs)
+	# Grid-only, no jitter pass: this path exists to benchmark SurfaceTool against the array path
+	# on comparable work, and nothing renders what it returns.
+	var heights: PackedFloat32Array = _sample_heights(
+		chunk_x, chunk_z, world_seed, 0,
+		BiomeMapScript.make_noise_set(world_seed),
+		BiomeMapScript.make_terrain_table(biome_defs), Heightmap.Shape.new())
 
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)

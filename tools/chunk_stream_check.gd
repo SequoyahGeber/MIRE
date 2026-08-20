@@ -190,15 +190,26 @@ func _check_skirt_geometry() -> void:
 			all_counts_ok = false
 			detail += "LOD%d counts; " % lod
 
-		# The terrain block must still be the first `vert_count(lod)` vertices in grid order — the
-		# invariant `collision_faces()` slices on, and what keeps the determinism test above
-		# comparing terrain rather than skirt.
+		# The terrain block must still be the first `vert_count(lod)` vertices in row-major order —
+		# the invariant `collision_faces()` slices on, and what keeps the determinism test above
+		# comparing terrain rather than skirt. Since 4.18/D-184 an interior vertex sits within
+		# VERTEX_JITTER_FRACTION of a step of its grid point rather than exactly on it, so the
+		# assertion is a bound, not an equality — still tight enough that any skirt vertex (a full
+		# SKIRT_DEPTH below, on the perimeter) or reordered row lands far outside it. Border
+		# vertices stay EXACT: that is the tiling contract the seam measurement below rests on.
 		var side: int = ChunkMesher.verts_per_side(lod)
 		var step: int = ChunkMesher.LOD_STEPS[lod]
+		var jitter_bound: float = ChunkMesher.VERTEX_JITTER_FRACTION * float(step) + 0.001
 		for z: int in side:
 			for x: int in side:
 				var p: Vector3 = verts[z * side + x]
-				if not is_equal_approx(p.x, float(x * step)) or not is_equal_approx(p.z, float(z * step)):
+				var on_border: bool = x == 0 or x == side - 1 or z == 0 or z == side - 1
+				if on_border:
+					if not is_equal_approx(p.x, float(x * step)) \
+							or not is_equal_approx(p.z, float(z * step)):
+						all_layout_ok = false
+				elif absf(p.x - float(x * step)) > jitter_bound \
+						or absf(p.z - float(z * step)) > jitter_bound:
 					all_layout_ok = false
 
 		# Collision must be terrain only: same triangle count, its lowest point matches the

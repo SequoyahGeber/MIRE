@@ -156,7 +156,18 @@ plateau stays clean. Same check suite green; fresh renders (seed 1856316070) in
 low-poly terrain, no mountains, no height coloring). Shipped as
 `world/chunk/terrain_flat.gdshader` on `ChunkStreamer`'s shared material: per-facet normals from
 screen-space derivatives, zero mesh change — do NOT "improve" this into non-indexed per-face
-meshes, that triples resident vertex counts against the low-end target. The D-184 flattening also
+meshes, that triples resident vertex counts against the low-end target.
+
+**Fourth pass — interior-vertex jitter (call delegated to the agent).** Uniform grid triangles
+flat-shade into a visibly regular pattern; the reference's facets are irregular. `ChunkMesher` now
+jitters INTERIOR vertices by a deterministic integer hash (`VERTEX_JITTER_FRACTION` 0.35 x step),
+re-sampling the true surface at each jittered, float32-narrowed position — so every vertex still
+sits exactly on the analytic ground and the mesh/surface agreement checks pass by construction.
+Borders stay on-grid (tiling/seams/skirt untouched). If you write a check against chunk vertices,
+read the vertex's OWN stored XZ off the mesh — never assume grid placement; three checks
+(`biome_terrain`, `noise_reuse`, `chunk_stream`) were updated to that form and
+`biome_terrain_check` now also asserts border-on-grid. Extra cost is one additional surface sample
+per interior vertex, on the worker thread. The D-184 flattening also
 collapsed the worst LOD seam divergence 12.44 m → 3.10 m; `chunk_stream_check`'s recorded
 spot-check constant is re-measured accordingly (the island-wide sweep assertion is what carries
 the skirt guarantee; the constant only catches drift). Skirt is 18.7 m now via MAX_HEIGHT and
