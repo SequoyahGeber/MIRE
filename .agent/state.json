@@ -1,47 +1,32 @@
 {
   "claims": {
+    "docs/SPECS.md": {
+      "agent": "lp",
+      "at": "2026-08-20T05:30:46+00:00",
+      "task": "F-259",
+      "token": null
+    },
+    "systems/waves/wave_spawner.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T05:29:14+00:00",
+      "task": "F-259",
+      "token": null
+    },
     "tools/run_restart_check.gd": {
       "agent": "lp",
       "at": "2026-08-20T05:28:06+00:00",
       "task": "F-259",
       "token": null
-    },
-    "tools/run_restart_net_check.gd": {
-      "agent": "lc1",
-      "at": "2026-08-20T05:17:22+00:00",
-      "task": "F-243-review",
-      "token": null
-    },
-    "tools/run_restart_net_check.gd.uid": {
-      "agent": "lc1",
-      "at": "2026-08-20T05:26:31+00:00",
-      "task": "F-243-review",
-      "token": null
     }
   },
   "in_flight": {
-    "F-243-review": {
-      "agent": "lc1",
-      "dispatched": true,
-      "files": [
-        "tools/run_restart_net_check.gd",
-        "tools/run_restart_net_check.gd.uid"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-20T05:21:56+00:00",
-          "by": "lc1",
-          "text": "At 6d7e756: run_restart_check fails 1/25 because placed buildables survive (already F-268); new two-process check proves client run_restarted relay exactly twice with DefeatService reset, but exposes two new failures: no GUI focus on Start Next Run for keyboard/gamepad, and depleted Hollowmere harvestables stay inactive into next run. Generic --quit-after 120 has 0 ERROR lines."
-        }
-      ],
-      "started": "2026-08-20T05:14:59+00:00",
-      "token": null
-    },
     "F-259": {
       "agent": "lp",
       "dispatched": true,
       "files": [
-        "tools/run_restart_check.gd"
+        "tools/run_restart_check.gd",
+        "systems/waves/wave_spawner.gd",
+        "docs/SPECS.md"
       ],
       "notes": [],
       "started": "2026-08-20T05:25:15+00:00",
@@ -2204,6 +2189,20 @@
       "hash": "a3401240e6b32868130128b44c01f545c628e6aadb1127d45f2ab700bdba1763",
       "task": "F-243",
       "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
+    },
+    "tools/run_restart_net_check.gd": {
+      "agent": "lc1",
+      "at": "2026-08-20T05:31:06+00:00",
+      "hash": "e49a6f00010dc062dcc868d094eef690abb20198ad381be5fd099ddbcaf06bce",
+      "task": "F-243-review",
+      "token": null
+    },
+    "tools/run_restart_net_check.gd.uid": {
+      "agent": "lc1",
+      "at": "2026-08-20T05:31:06+00:00",
+      "hash": "40c6b4cf5b1715d00b29acb87a5d2bca5fe158886255075854c27f40d72a13fe",
+      "task": "F-243-review",
+      "token": null
     },
     "tools/run_summary_check.gd": {
       "agent": "lp",
@@ -6217,10 +6216,12 @@
       "title": "The run loop is a line, not a circle \u2014 after defeat or extraction there is no path to a next run short of relaunching the process"
     },
     "F-243-review": {
+      "done_at": "2026-08-20T05:31:06+00:00",
+      "done_by": "lc1",
       "est": "0.5",
       "milestone": "Findings",
       "review_of": "F-243",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T1",
       "title": "Review F-243 @ 6d7e756 \u2014 judge the commit, file findings, no edits"
     },

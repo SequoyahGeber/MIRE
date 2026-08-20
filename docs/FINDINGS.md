@@ -931,6 +931,66 @@ a review edit, which is why it is filed rather than fixed here.
 
 ---
 
+### F-275 · F-243's terminal restart buttons are unreachable from a bare controller
+
+**Area:** UI/input · **Severity:** high · **Found:** 2026-08-20 by lc1
+
+At commit `6d7e756`, `ui/hud/defeat_hud.gd:92-105` and `ui/hud/extraction_hud.gd:123-137` reveal the terminal overlay and make the mouse visible, but neither calls `grab_focus()` on the enabled restart button built at `defeat_hud.gd:216-221` / `extraction_hud.gd:380-385`. A host using only keyboard/gamepad therefore has no focused control for `ui_accept`; the only action that can leave either terminal screen is present but unreachable without pointer input.
+
+`tools/run_restart_net_check.gd` boots the shipped Hollowmere scene, drives both endings, and inspects `gui_get_focus_owner()`: both "terminal overlay focuses Start Next Run" assertions fail at `6d7e756`. This repeats the exact mandatory-panel trap F-216 fixed for AttunementUI. Focus the enabled host button when each overlay opens (and give it a visible focus style if the default theme is insufficient); a non-host's disabled waiting label must not take focus.
+
+---
+
+### F-276 · F-243 carries depleted Hollowmere resources into the next run
+
+**Area:** systems · **Severity:** medium · **Found:** 2026-08-20 by lc1
+
+`autoload/harvest_world.gd:46-50` wires authored-map Harvestables but never subscribes to `EventBus.run_restarted`, and `systems/harvesting/harvestable.gd:260-265` restores a depleted node only when its ordinary respawn timer expires (the shipped definitions use 90-300 seconds). F-243 resets inventory and the Mire but leaves every authored resource's `health`/`active`/`visual_state` and remaining respawn clock untouched.
+
+At commit `6d7e756`, `tools/run_restart_net_check.gd` depletes a real Harvestable in shipped `levels/hollowmere.tscn`, ends the run, restarts immediately, and the node still reads `active == false`. The next run therefore inherits resources harvested in the prior run for up to five minutes. F-258's `WorldDeltaLog` clear is not this fix: Hollowmere's 1,156 authored Harvestables are live nodes, not regenerated `ResourceScatterField` points. Reset them host-authoritatively through their existing `host_respawn()` seam on `run_restarted`, with normal synchronizer replication to clients.
+
+---
+
+### F-277 · F-243 clears Attunement effects but keeps the selection locked across runs
+
+**Area:** systems · **Severity:** medium · **Found:** 2026-08-20 by lc1
+
+`autoload/powerup_service.gd:163-164` clears every Powerup stack on `run_restarted`, including the one an Attunement grants, but `autoload/attunement_service.gd:46-54` never subscribes and leaves `_selections` intact. Its `_process_selection()` then refuses every next-run choice at `attunement_service.gd:102-104` as "already selected". `ui/attunement/attunement_ui.gd:102-109` also permanently stops its poll timer after the first choice and has no restart path.
+
+At `6d7e756`, `tools/run_restart_net_check.gd` selects `forager`, restarts, and gets two failures: `local_selection()` is still `forager`, while the mandatory run-start picker remains closed. The player begins run two with no Attunement Powerup and no way to select one. The host must clear/broadcast every selection on `run_restarted`, and each peer's UI must reopen/re-arm its picker for the new run.
+
+---
+
+### F-278 · F-243 starts the next run at the previous run's time of day
+
+**Area:** systems · **Severity:** medium · **Found:** 2026-08-20 by lc1
+
+`systems/environment/day_night.gd:62-65` initializes the host-authoritative clock only in `_ready()` and has no `run_restarted` subscription. `CycleService.host_restart_run()` resets the Cycle and Mire spread, but leaves `DayNight.time_of_day`, its replication accumulator, and client interpolation state untouched.
+
+At commit `6d7e756`, `tools/run_restart_net_check.gd` moves the real clock to `0.80` (night), ends the run, restarts, and the assertion that it returned to the authored `0.348` morning fails. A run ending at night therefore starts the next run at night; it also does not create a fresh `night_started` edge for WaveSpawner. Reset the host clock on `run_restarted` and push/adopt that reset on clients through DayNight's existing authority path.
+
+---
+
+### F-279 · F-243 revives players where the previous run ended instead of at the run spawn
+
+**Area:** systems/netcode · **Severity:** medium · **Found:** 2026-08-20 by lc1
+
+`systems/health/player_health.gd:829-840` rebuilds health/hunger state on `run_restarted`, but never invokes the existing spawn teleport path. Because the player bodies persist outside the level tree, an extraction leaves everybody aboard the shipwreck and a defeat leaves them wherever they fell; the fresh health snapshot merely stands them up there.
+
+At `6d7e756`, `tools/run_restart_net_check.gd` records the shipped spawn, moves the authoritative local player 12 metres, ends the run and restarts; the player remains at the moved position. F-258's new `ProceduralWorld._replace_players()` only covers that currently non-main procedural scene, not shipped `levels/hollowmere.tscn`. The reset must return each peer to Hollowmere's run spawn while respecting ARCHITECTURE §2.2: each client owns its own transform, so the host must not directly write remote-player transforms.
+
+---
+
+### F-280 · F-243's public run_started hook stays one-shot when a second run starts
+
+**Area:** commands/systems · **Severity:** medium · **Found:** 2026-08-20 by lc1
+
+`systems/cycle/cycle_service.gd:112-118` permanently latches `_run_started_emitted`, and `host_restart_run()` at lines 173-186 never clears or re-emits it. `autoload/command_service.gd:78-80` exposes that signal as the public `run_started` HookDef event. The F-154 spec explicitly said a future play-again flow would need to revisit the once-per-process guard; F-243 is that flow, but added a private-to-services `EventBus.run_restarted` sibling without updating the public hook contract.
+
+At `6d7e756`, `tools/run_restart_net_check.gd` subscribes after boot, performs a real restart, and sees zero `run_started` emissions. Any enabled/user-authored `run_started` hook runs on process boot but silently skips every later run in the same lobby. Either make `run_started` mean every run start as its name and F-154 reversal trigger require, or expose/bind a separately documented restart hook and update the command vocabulary.
+
+---
+
 ## Resolved
 
 ### F-258 · F-243's restart keeps the same world seed — no fresh island, no re-broadcast to already-connected peers

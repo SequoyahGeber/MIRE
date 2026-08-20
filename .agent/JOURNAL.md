@@ -6584,3 +6584,19 @@ Notes along the way:
 Files: `tools/terrain_map_render.gd`, `docs/FINDINGS.md`, `docs/NEXT.md`, `docs/SPECS.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `ca72e14`
+
+---
+
+### DONE · F-243-review · lc1 · 2026-08-20T05:31:06+00:00
+
+**Review F-243 @ 6d7e756 — judge the commit, file findings, no edits**
+
+CHANGES REQUIRED at 6d7e756. Baseline run_restart_check: 24 PASS, 1 FAIL/ERROR (placed buildables, already F-268). Added run_restart_net_check: co-op run_restarted relay passed two real ENet restarts exactly once and both ending gates reset, but RUN_RESTART_NET_CHECK failures=8: terminal focus twice (F-275), harvested resource (F-276), Attunement selection+picker twice (F-277), DayNight (F-278), player spawn (F-279), run_started hook (F-280). Generic --quit-after 120 exited 0 with zero ERROR lines. Existing F-258/F-259/F-268 cover the other reviewed gaps.
+
+Notes along the way:
+- At 6d7e756: run_restart_check fails 1/25 because placed buildables survive (already F-268); new two-process check proves client run_restarted relay exactly twice with DefeatService reset, but exposes two new failures: no GUI focus on Start Next Run for keyboard/gamepad, and depleted Hollowmere harvestables stay inactive into next run. Generic --quit-after 120 has 0 ERROR lines.
+- Verdict: changes required. Existing exact-commit check: 24 PASS / 1 FAIL (F-268 buildables). New exact-commit check: co-op relay PASS twice/exactly-once, both ending gates PASS, but 8 assertion failures covering F-275 (2 focus paths), F-276 harvest reset, F-277 (selection + picker), F-278 time, F-279 spawn position, F-280 run_started. F-258/F-259/F-268 already cover seed, wave roster, buildables. Generic 120s boot exit 0, 0 ERROR lines.
+
+Files: `tools/run_restart_net_check.gd`, `tools/run_restart_net_check.gd.uid`
+
+Commit at time of writing: `07e9c2f`
