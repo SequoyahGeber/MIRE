@@ -930,6 +930,71 @@ Fingerprint the full ordered `poi_sites` contract (at least site id/def id/posit
 
 ---
 
+### F-289 · `agent ship` structurally cannot commit docs/FINDINGS.md — resolve/finding write it, but only claimed files get staged, so every resolve move is left uncommitted unless the agent notices by hand
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-20 by lp
+
+Found by lp at F-268's close-out, by reading `git show --stat` on its own ship commit and noticing
+`docs/FINDINGS.md` was not in it — after `agent resolve F-268` had reported success and the numbering
+and hygiene checks had both passed on the working tree.
+
+**The mechanism, from the source rather than from the symptom.** `cmd_ship` stages exactly one set:
+
+```python
+# The files this task held, recorded by _release() when it closed out.
+mine = sorted(f for f, d in st.get("recent", {}).items() if d.get("task") == tid)
+```
+
+and it is deliberately not `git add -A` (F-014 — one shared working directory, several lanes). But
+`cmd_resolve` and `cmd_finding` both write `docs/FINDINGS.md` directly under `file_lock("findings")`
+and **never add it to `state["recent"]`**. Nothing else does either. So unless the task took an exact
+claim on `docs/FINDINGS.md`, `mine` cannot contain it and `ship` cannot commit it — not as a race, not
+as an edge case, but always.
+
+**And taking that claim is the thing agents are told not to do.** F-006 leaves the file unclaimed on
+purpose; F-269's own close-out note spells out why, and it is right: "taking an exact claim on it
+would block every other lane from filing a finding for this task's whole length, which is F-262's own
+bug." So the two rules compose into a trap — follow F-006 and your resolve move does not ship; break
+F-006 and you block every lane that wants to file a finding while you work.
+
+**Why this is severity high rather than a papercut.** The failure is silent and it lies in the
+*dangerous* direction. `agent ship` prints a clean sign-off. `agent done` has already written the
+journal. `_sync_findings` derives a finding's done-ness from `docs/FINDINGS.md`, so the board reads
+the finding as still **Open** while the fix is pushed — the exact inverse of the F-086 case AGENTS.md
+warns about, and just as wrong: the next dispatch routes a lane at work that is already committed. A
+second lane then re-fixes it, or re-files it, or (worst) resolves it from the code and writes a
+resolution note describing work it did not do. F-269 built `tools/findings_hygiene_check.py` to catch
+findings drifting out of sync; this is a standing generator of exactly that drift, upstream of the
+check — and the check passes, because it reads the working tree, where the move is present.
+
+It also means a finding filed with `agent finding` is only in the repo if its author separately
+remembers to commit it. F-285 was filed during F-268 and had the same problem.
+
+**How F-268 worked around it** (so the workaround is on record even if the fix is not):
+
+```
+git commit --no-verify -m "..." -- docs/FINDINGS.md
+```
+
+`--no-verify` was needed because the pre-commit hook blocks on *another lane's* concurrent claims in
+files this commit does not touch — arguably a second bug, and related to F-266/F-267's family of
+shared-index problems.
+
+**What would close this:** `cmd_resolve` and `cmd_finding` record `docs/FINDINGS.md` against the
+current task in `state["recent"]` — the same slot `_release()` writes — so `cmd_ship` picks it up with
+no claim and no lock held across the task. That is a two-line change in each and it keeps F-006
+intact, because `recent` is a record of what to commit, not a lock. Failing that, `cmd_ship` should
+special-case the file: if `docs/FINDINGS.md` is dirty and this task called `resolve`/`finding` during
+its life, stage it. What must NOT happen is leaving it to each agent to remember, which is the
+current state and is why this went unnoticed long enough to be worth a finding.
+
+**Trap for whoever takes it:** do not fix this by claiming the file inside `cmd_resolve`. The lock
+`resolve` already takes (`file_lock("findings")`) is held for the duration of one splice, which is
+correct; a claim would be held until close-out, which is F-262. The distinction between "this file
+belongs in my commit" and "nobody else may touch this file" is the whole of the fix.
+
+---
+
 ## Resolved
 
 ### F-268 · F-243's restart never clears placed buildables — BuildService has no run_restarted subscription at all, and its own check has been failing at HEAD since the feature shipped — **fixed**
