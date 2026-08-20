@@ -75,6 +75,32 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-20 — F-259 resolved: WaveSpawner joins F-243's restart — the roster, the night latch, and the ambient field it suppressed (lp)
+
+- **`WaveSpawner.host_reset_for_new_run() -> void`** — host-guarded, already wired to
+  `EventBus.run_restarted`. Clears `_unlocked_pool` (so `host_unlock_next_enemy()` can widen the
+  roster again — a stale full pool froze it permanently), clears `_night_active` **and restores the
+  `EnemyWorld.ambient_enabled` value the night wave suppressed**, drops the `the_hunt` elite ref, and
+  re-seeds `_rng` from `GameState.ensure_seed() ^ DEFAULT_SEED`. `roster_order` is an export and is
+  NOT touched: exports are Gamerule/inspector values, never run state.
+- **If you add run-scoped state to a service, add it to the restart in the same commit.** F-243's
+  enumeration (D-149) has now been short three separate times — F-258 (seed), F-259 (this),
+  F-268 (buildables) — and F-281 lists three more still open (`DayNight.time_of_day`,
+  `HaulService`'s haulables, `AttunementService._selections`, that last one a real desync: the pick
+  survives, the `PowerupService` stack it granted does not). The seam is one line:
+  `EVENT_BUS.subscribe_run_restarted(_on_run_restarted)` in `_ready()`, `unsubscribe` in
+  `_exit_tree()`.
+- **Restoring beats re-running.** The reset puts `ambient_enabled` back by hand instead of calling
+  the existing `host_stop_wave()`, because that path also queues a `_refill_daytime()` that both
+  races `EnemyWorld._on_run_restarted()`'s despawn (subscriber order = autoload registration order)
+  and does a job the ambient loop already does on its own cadence. A reset should undo what it
+  suppressed, not re-drive the systems it sat on top of.
+- **`tools/run_restart_check.gd` is the restart's one check** and now covers WaveSpawner; it fails
+  `failures=1` at HEAD on `every placed buildable was cleared` (F-268, another lane's, pre-existing).
+  Seed your state in phase 2, assert it cleared in phase 4, and assert it is USABLE again in phase 5
+  — "reset to empty" and "reset to working" are different claims, and the second is the one that
+  catches a frozen unlock path.
+
 ### 2026-08-20 — F-258 resolved: a run restart draws a FRESH world seed and re-broadcasts it to already-connected peers, over the delta channel that was already there (lp)
 
 **The APIs the next task builds on** (all host-only unless noted):

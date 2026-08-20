@@ -1,35 +1,12 @@
 {
-  "claims": {
-    "docs/SPECS.md": {
-      "agent": "lp",
-      "at": "2026-08-20T05:30:46+00:00",
-      "task": "F-259",
-      "token": null
-    },
-    "systems/waves/wave_spawner.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T05:29:14+00:00",
-      "task": "F-259",
-      "token": null
-    },
-    "tools/run_restart_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T05:28:06+00:00",
-      "task": "F-259",
-      "token": null
-    }
-  },
+  "claims": {},
   "in_flight": {
-    "F-259": {
-      "agent": "lp",
+    "F-245-review": {
+      "agent": "lc1",
       "dispatched": true,
-      "files": [
-        "tools/run_restart_check.gd",
-        "systems/waves/wave_spawner.gd",
-        "docs/SPECS.md"
-      ],
+      "files": [],
       "notes": [],
-      "started": "2026-08-20T05:25:15+00:00",
+      "started": "2026-08-20T05:31:51+00:00",
       "token": null
     }
   },
@@ -1267,17 +1244,17 @@
       "token": null
     },
     "docs/DELEGATION.md": {
-      "agent": "lm",
-      "at": "2026-08-20T05:29:07+00:00",
-      "hash": "341087e5cafdf7a9d2545bc25af72814977a3896c8cb1ff0c75938774631dcf4",
-      "task": "F-261-review",
+      "agent": "lp",
+      "at": "2026-08-20T05:32:48+00:00",
+      "hash": "d038654cf376226e04cb4824bf729791580b109d3932817792bd84d7cfedc68c",
+      "task": "F-259",
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "lm",
-      "at": "2026-08-20T05:29:07+00:00",
-      "hash": "e124723b4207a1579e54246df6c2d84efa0f76032c2008b1261542de6cd9d8b8",
-      "task": "F-261-review",
+      "agent": "lp",
+      "at": "2026-08-20T05:32:48+00:00",
+      "hash": "3d0dfa26bf4d6689bf38fadbdf883069a46788813695c41c762e328d549c254c",
+      "task": "F-259",
       "token": null
     },
     "docs/NEXT.md": {
@@ -1295,10 +1272,10 @@
       "token": "CLAUDE_CODE_SESSION_ID:7fea7368-2734-4f59-9d4a-147b2b5d903e"
     },
     "docs/SPECS.md": {
-      "agent": "lm",
-      "at": "2026-08-20T05:29:07+00:00",
-      "hash": "bec4ca9a199bf86c34bb4b7353bf675e79c65462ac6216f1330a2f745fabb3a7",
-      "task": "F-261-review",
+      "agent": "lp",
+      "at": "2026-08-20T05:32:48+00:00",
+      "hash": "b4a3a9805d3ea077318f038a4c922e2a402445f775bdc71c64048ea7b208d4c1",
+      "task": "F-259",
       "token": null
     },
     "entities/player/player_camera.gd": {
@@ -1477,10 +1454,10 @@
       "token": null
     },
     "systems/waves/wave_spawner.gd": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:42:54+00:00",
-      "hash": "87cd10fd5d716127be661befa982f0a80058beeef5abe1c4608bbd54cc45cfdc",
-      "task": "F-245",
+      "agent": "lp",
+      "at": "2026-08-20T05:32:48+00:00",
+      "hash": "5320a76c4651335fe9bde5599897a98bdd8cc0e48714b3fa27997e4e5de477f9",
+      "task": "F-259",
       "token": null
     },
     "systems/wellspring/wellspring.gd": {
@@ -2184,11 +2161,11 @@
       "token": null
     },
     "tools/run_restart_check.gd": {
-      "agent": "bram1",
-      "at": "2026-08-19T22:14:05+00:00",
-      "hash": "a3401240e6b32868130128b44c01f545c628e6aadb1127d45f2ab700bdba1763",
-      "task": "F-243",
-      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
+      "agent": "lp",
+      "at": "2026-08-20T05:32:48+00:00",
+      "hash": "8b7fbab9e3eb5595f750d268bb6f386757b911b529d700c09a7339a90ee2c4f5",
+      "task": "F-259",
+      "token": null
     },
     "tools/run_restart_net_check.gd": {
       "agent": "lc1",
@@ -6255,7 +6232,7 @@
       "est": "0.5",
       "milestone": "Findings",
       "review_of": "F-245",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T1",
       "title": "Review F-245 @ 94cf796 \u2014 judge the commit, file findings, no edits"
     },
@@ -6384,9 +6361,11 @@
       "title": "F-243's restart keeps the same world seed \u2014 no fresh island, no re-broadcast to already-connected peers"
     },
     "F-259": {
+      "done_at": "2026-08-20T05:32:48+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "F-243's restart resets Cycle/Mire/inventory/etc but not WaveSpawner's unlocked enemy roster"
     },
@@ -6516,6 +6495,55 @@
       "status": "todo",
       "tier": "F",
       "title": "`BiomeMap.terrain_amplitudes()` has no shipped caller \u2014 every biome's authored `detail_amplitude`/`ridge_amplitude` is dead, and only the audit render applies them"
+    },
+    "F-275": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "F-243's terminal restart buttons are unreachable from a bare controller"
+    },
+    "F-276": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "F-243 carries depleted Hollowmere resources into the next run"
+    },
+    "F-277": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "F-243 clears Attunement effects but keeps the selection locked across runs"
+    },
+    "F-278": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "F-243 starts the next run at the previous run's time of day"
+    },
+    "F-279": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "F-243 revives players where the previous run ended instead of at the run spawn"
+    },
+    "F-280": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "F-243's public run_started hook stays one-shot when a second run starts"
+    },
+    "F-281": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "F-243's reset enumeration is short by three more run-scoped systems: DayNight's clock, HaulService's spawned haulables, AttunementService's selections"
     }
   },
   "version": 1

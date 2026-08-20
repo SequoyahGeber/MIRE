@@ -440,27 +440,6 @@ with no pile-up on either lock.
 
 ---
 
-### F-259 · F-243's restart resets Cycle/Mire/inventory/etc but not WaveSpawner's unlocked enemy roster
-
-**Area:** systems · **Severity:** low · **Found:** 2026-08-19 by lm
-
-`CycleService.host_advance_cycle()` calls `WaveSpawner.host_unlock_next_enemy()` each Cycle,
-progressively widening which enemies can spawn (`systems/waves/wave_spawner.gd`). F-243's restart
-(docs/DECISIONS.md D-149) resets every run-scoped system the finding itself enumerated — Cycle, Mire,
-Cycle Modifiers, inventory, health, enemies (despawned), buildables, chest/wellspring/ship progress —
-but WaveSpawner's own unlocked-roster state was never in that enumeration and this task did not touch
-it. A restarted run therefore starts at Cycle 1 with whatever enemy roster the PREVIOUS run had
-already unlocked, rather than the Cycle-1 starting roster a genuinely fresh run should see.
-
-**Would take:** a `WaveSpawner.host_reset_for_new_run()` (or equivalent) subscribed to
-`EVENT_BUS.subscribe_run_restarted()` — the same seam every other F-243 reset hangs off
-(`core/events/event_bus.gd`) — clearing whatever internal "unlocked so far" state
-`host_unlock_next_enemy()` tracks. Small, but needs its own look at that file (outside this task's
-claim) to confirm the roster is stored the way this assumes and that resetting it doesn't fight
-`_bind_rules()`'s export-fallback adoption.
-
----
-
 ### F-260 · docs/DECISIONS.md has no atomic number allocator, so two agents took D-146 within minutes of each other
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by bram1
@@ -991,7 +970,124 @@ At `6d7e756`, `tools/run_restart_net_check.gd` subscribes after boot, performs a
 
 ---
 
+### F-281 · F-243's reset enumeration is short by three more run-scoped systems: DayNight's clock, HaulService's spawned haulables, AttunementService's selections
+
+**Area:** systems · **Severity:** medium · **Found:** 2026-08-20 by lp
+
+Found by F-259's close-out sweep. F-259 was WaveSpawner missing from F-243/D-149's enumeration of
+run-scoped systems (`docs/DECISIONS.md` D-149: "Only RUN-scoped state resets: Cycle, Mire corruption,
+Cycle Modifiers, inventory, health, enemies, buildables, chest/wellspring/ship progress"). The sweep
+that closed it — every autoload in `project.godot` that holds mutable state, checked against
+`grep -l subscribe_run_restarted` — turned up three more, plus the already-filed F-268.
+
+The exact list, worst first:
+
+**1 · `autoload/attunement_service.gd` — `_selections` survives, its granted stat does not.**
+This is a genuine state desync F-243 introduced, not just stale state. D-070: an Attunement grants
+exactly one stack of a backing `PowerupDef` through `PowerupService`'s host seam. `PowerupService`
+DOES reset on `run_restarted` (`autoload/powerup_service.gd:87`), so the restarted run wipes the
+stack — but `_selections` keeps the peer's pick, and D-071's trigger is "the local player's first
+spawn this session", which has already happened. So the restarted run shows every player locked into
+a role with nothing backing it, and no path to re-pick. **Needs a design call before a fix**: clear
+`_selections` and re-prompt at the new run's first spawn (matches D-071's "run start" wording), or
+keep the pick and re-grant the stack after `PowerupService`'s own reset (ordering-sensitive — both
+are `run_restarted` subscribers, and subscriber order is autoload-registration order).
+Whichever, mind D-035: selections are keyed by peer id.
+
+**2 · `autoload/haul_service.gd` — spawned haulables survive a restart.** The same shape as F-268's
+buildables, in the second container of host-owned run-scoped world objects (`_container`/`Haulables`,
+replicated by its own code-built `MultiplayerSpawner`). No `run_restarted` subscriber; the ended
+run's heavy objects are still lying where they were dropped. `EnemyWorld._on_run_restarted()`'s
+one-liner over an existing self-guarded despawn is the shape to copy. Fix this together with F-268 —
+same reasoning, same test phase, one commit.
+
+**3 · `systems/environment/day_night.gd` — `time_of_day` survives.** A restarted run resumes at the
+clock of the moment the last one ended. Because a run usually ends at night, the new run typically
+starts mid-night: the wave for that night never spawns (its `night_started` crossing fired during the
+PREVIOUS run — F-259 cleared the latch, it cannot re-fire the signal), and the new run's first "day"
+is a partial one. `CycleService` already resets its own `_days_elapsed` to 0 in `host_restart_run()`,
+so the day COUNT and the clock disagree after every restart. Fix is a `run_restarted` subscriber
+setting `time_of_day` back to the export default (0.348, dawn-ish) host-side; it replicates to
+clients through the existing `net_push_time` path, so no new RPC. Check that `_has_client_snapshot`
+interpolation (`_lerp_wrapped_unit`) does not smear a client across the wrap when the host jumps
+backwards.
+
+Checked and deliberately NOT on this list: `UnlockService` (meta-progression — must survive, by
+design), `SalvageService` (self-resets at bank time; `tools/run_restart_check.gd` already asserts
+it), `HarvestWorld` (node depletion lives in `world/gen/resource_scatter_field.gd`, which does
+subscribe), `CraftingService`/`ExtractionService`/`WellspringService`/`ChestPlacementService`
+(`_refresh_scheduled` transients only), `RewardService` (`_next_reward_event_id` is an id counter,
+not run state).
+
+**Verify:** extend `tools/run_restart_check.gd`'s phases 2/4 the way F-259 did — seed each piece of
+state before the defeat, assert it cleared after `host_restart_run()`. It already boots the shipped
+map with all three services live.
+
+---
+
 ## Resolved
+
+### F-259 · F-243's restart resets Cycle/Mire/inventory/etc but not WaveSpawner's unlocked enemy roster — **fixed**
+
+**Area:** systems · **Severity:** low · **Found:** 2026-08-19 by lm
+
+`CycleService.host_advance_cycle()` calls `WaveSpawner.host_unlock_next_enemy()` each Cycle,
+progressively widening which enemies can spawn (`systems/waves/wave_spawner.gd`). F-243's restart
+(docs/DECISIONS.md D-149) resets every run-scoped system the finding itself enumerated — Cycle, Mire,
+Cycle Modifiers, inventory, health, enemies (despawned), buildables, chest/wellspring/ship progress —
+but WaveSpawner's own unlocked-roster state was never in that enumeration and this task did not touch
+it. A restarted run therefore starts at Cycle 1 with whatever enemy roster the PREVIOUS run had
+already unlocked, rather than the Cycle-1 starting roster a genuinely fresh run should see.
+
+**Would take:** a `WaveSpawner.host_reset_for_new_run()` (or equivalent) subscribed to
+`EVENT_BUS.subscribe_run_restarted()` — the same seam every other F-243 reset hangs off
+(`core/events/event_bus.gd`) — clearing whatever internal "unlocked so far" state
+`host_unlock_next_enemy()` tracks. Small, but needs its own look at that file (outside this task's
+claim) to confirm the roster is stored the way this assumes and that resetting it doesn't fight
+`_bind_rules()`'s export-fallback adoption.
+
+---
+
+**Resolved 2026-08-20 by lp.** Fixed 2026-08-20 by lp. `systems/waves/wave_spawner.gd` now subscribes to
+`EVENT_BUS.subscribe_run_restarted()` and clears its run-scoped state in
+`host_reset_for_new_run()` — host-guarded, no new RPC, no PROTOCOL_VERSION bump. Spec block written
+(none existed): docs/SPECS.md § F-259.
+
+Three pieces of state, not the one the finding named — the other two came out of reading what else
+`host_start_wave()` leaves set:
+· `_unlocked_pool` — the finding. The roster was not just stale, it was FROZEN: with a full pool,
+  `host_unlock_next_enemy()` returns &"" forever, so no restarted run could ever widen its roster
+  again. `roster_order` is an export (a Gamerule value, not run state) and is untouched — which also
+  answers the finding's open question about `_bind_rules()`: adoption writes base_count/per_player,
+  never the pool, so the two cannot fight.
+· `_night_active` + the `EnemyWorld.ambient_enabled` value it suppressed — a run that ends AT NIGHT
+  (the usual way one ends) left the latch set, and `host_start_wave()` returns -1 while it is set, so
+  every later `_on_night_started()` was a silent no-op for the life of the process: the restarted run
+  got no night waves at all. The ambient flag is restored directly rather than via `host_stop_wave()`
+  on purpose — that path also queues `_refill_daytime()`, which races EnemyWorld's own despawn
+  subscriber and duplicates the ambient loop's own job.
+· `_hunt_elite`/`_hunt_retarget_elapsed` — dropped (EnemyWorld frees the body), so `_physics_process`
+  cannot retarget the ended run's corpse.
+Plus `_rng` re-seeded per run from `GameState.ensure_seed() ^ DEFAULT_SEED` — the chest/poi_map/
+resource_scatter salt convention — so F-258's fresh island is not paired with a wave-composition
+stream replaying the previous run's rolls. `_ready()` still seeds DEFAULT_SEED flat; the first run of
+a process is unchanged.
+
+Verified: `.agent/bin/agent godot --script tools/run_restart_check.gd` → `RUN_RESTART_CHECK
+failures=1`, the one pre-existing `every placed buildable was cleared` (F-268, another lane's).
+The same command reported `failures=5` before the fix — the four extra were the new assertions, which
+were written and run BEFORE the fix precisely so they were proved to detect the bug. Six assertions
+added to F-243's own check: roster/latch/ambient/cycle cleared in phase 4, and in phase 5 that the
+restarted run can unlock its roster again from Cycle 1 and start a night wave again ("reset to empty"
+and "reset to working" are different claims).
+Regression green: `tools/wave_spawner_check.gd` and `tools/wave_spawner_cycle_net_check.gd`,
+`failures=0` each.
+
+Sweep for the same shape elsewhere → **F-281**: three more systems missing from F-243's reset
+enumeration (`AttunementService._selections`, which is a real desync — the pick survives, the
+PowerupService stack it granted does not; `HaulService`'s spawned haulables, the F-268 shape in the
+second object container; `DayNight.time_of_day`, so a restarted run resumes on the dead run's clock
+while `CycleService._days_elapsed` reads 0). Findings F-281 lists what was checked and cleared, too.
 
 ### F-258 · F-243's restart keeps the same world seed — no fresh island, no re-broadcast to already-connected peers
 

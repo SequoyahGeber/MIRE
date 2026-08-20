@@ -6600,3 +6600,18 @@ Notes along the way:
 Files: `tools/run_restart_net_check.gd`, `tools/run_restart_net_check.gd.uid`
 
 Commit at time of writing: `07e9c2f`
+
+---
+
+### DONE · F-259 · lp · 2026-08-20T05:32:48+00:00
+
+**F-243's restart resets Cycle/Mire/inventory/etc but not WaveSpawner's unlocked enemy roster**
+
+WaveSpawner now resets on run_restarted: host_reset_for_new_run() clears _unlocked_pool (which was not merely stale but FROZEN — a full pool makes host_unlock_next_enemy() return "" forever), clears _night_active AND restores the EnemyWorld.ambient_enabled it suppressed (a run ending at night left every later _on_night_started() a silent no-op for the life of the process), drops the_hunt's elite ref, and re-seeds _rng per run from GameState.ensure_seed() ^ DEFAULT_SEED. roster_order (an export) untouched. Proof: agent godot --script tools/run_restart_check.gd -> RUN_RESTART_CHECK failures=1, the pre-existing F-268 buildables one; the same command reported failures=5 BEFORE the fix, because the six new assertions were written and run first. wave_spawner_check + wave_spawner_cycle_net_check failures=0. Spec block written at docs/SPECS.md § F-259 (none existed). Sweep -> F-281: three more systems missing from F-243's enumeration, worst being AttunementService (_selections survives but the PowerupService stack it granted does not).
+
+Notes along the way:
+- Wrote the four new run_restart_check assertions and ran them BEFORE touching wave_spawner.gd: failures=5 (1 pre-existing F-268 buildables + the 4 new). Post-fix failures=1. An assertion that has never failed is not evidence.
+
+Files: `tools/run_restart_check.gd`, `systems/waves/wave_spawner.gd`, `docs/SPECS.md`, `docs/DELEGATION.md`, `docs/FINDINGS.md`
+
+Commit at time of writing: `e0a6ad4`

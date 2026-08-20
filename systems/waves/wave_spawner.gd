@@ -92,6 +92,7 @@ func _ready() -> void:
 	# Binding rules is not conditional on a day cycle existing — the wave sizes are still the sizes.
 	_bind_rules()
 	EVENT_BUS.subscribe_cycle_advanced(_on_cycle_advanced)
+	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
 	var day_night: Node = get_node_or_null(^"/root/DayNight")
 	if day_night == null:
 		return
@@ -121,6 +122,67 @@ func _on_rule_changed(id: StringName, new_value: float) -> void:
 		base_count = roundi(new_value)
 	elif id == &"wave_per_player":
 		per_player = roundi(new_value)
+
+
+func _exit_tree() -> void:
+	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
+
+
+func _on_run_restarted() -> void:
+	host_reset_for_new_run()
+
+
+## F-259. Everything in this file that a RUN owns rather than a session, put back the way a freshly
+## launched process would have it — hung off the same `EVENT_BUS.subscribe_run_restarted()` seam
+## every other F-243 reset uses (D-149). Host-guarded like every other mutation here, and honestly
+## so: a client never unlocks anything (`host_unlock_next_enemy()` is guarded), never latches a
+## night (`host_start_wave()` is guarded) and never owns an elite, so its own copy has nothing to
+## clear — it picks the reset up the way it picked the state up, by not having had it.
+##
+## THREE things, not just the roster the finding names:
+##   · `_unlocked_pool` — the finding itself. Without this a restarted run starts at Cycle 1 with
+##     the PREVIOUS run's widened roster, and `host_unlock_next_enemy()` then refuses to unlock
+##     anything more because the pool is already `roster_order`-sized. `roster_order` is an export
+##     (a Gamerule/inspector value, not run state) and is deliberately untouched, so the new run
+##     walks the same unlock curve the old one did.
+##   · `_night_active` + the ambient field it suppressed — a run that ends AT NIGHT (the usual way
+##     a run ends) leaves the latch set and `EnemyWorld.ambient_enabled` false behind it. The latch
+##     alone would make every later `_on_night_started()` a silent no-op for the life of the
+##     process. Restored rather than `host_stop_wave()`d on purpose: that path also queues
+##     `_refill_daytime()`, and repopulating the field is EnemyWorld's own ambient loop's job on its
+##     own cadence — the restart's job is only to stop suppressing it. EnemyWorld's own
+##     `run_restarted` subscriber has already cleared the bodies either way, in either order.
+##   · `_hunt_elite` — dropped rather than freed; `EnemyWorld._on_run_restarted()` frees the body
+##     itself, and holding the ended run's ref alive here is what would make `_physics_process`
+##     retarget a corpse.
+func host_reset_for_new_run() -> void:
+	if not _owns_wave_director():
+		return
+	_unlocked_pool.clear()
+	_current_cycle = 1
+	_hunt_elite = null
+	_hunt_retarget_elapsed = 0.0
+	if _night_active:
+		_night_active = false
+		var world: Node = get_node_or_null(^"/root/EnemyWorld")
+		if world != null:
+			world.set("ambient_enabled", _ambient_was_enabled)
+	_ambient_was_enabled = true
+	_rng.seed = _seed_for_run()
+
+
+## Per-RUN, not per-process: `_ready()` still seeds `DEFAULT_SEED` flat, so nothing about the first
+## run of a process moves. F-258 gives every restart a fresh `GameState.run_seed`, so mixing it in
+## here is what keeps the second run's wave composition from replaying the first's roll-for-roll —
+## the same "XOR a per-file salt into run_seed" convention `systems/loot/chest.gd`,
+## `world/gen/poi_map.gd` and `world/gen/resource_scatter.gd` already share, with `DEFAULT_SEED`
+## ("WAVE") as this file's salt. No GameState — a `--script` harness that registered no autoloads —
+## falls back to the flat boot seed rather than to entropy, so a check stays reproducible.
+func _seed_for_run() -> int:
+	var game_state: Node = get_node_or_null(^"/root/GameState")
+	if game_state == null:
+		return DEFAULT_SEED
+	return int(game_state.call("ensure_seed")) ^ DEFAULT_SEED
 
 
 func _on_cycle_advanced(cycle: int) -> void:

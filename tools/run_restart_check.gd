@@ -128,6 +128,23 @@ func _phase_seed_state() -> void:
 	await physics_frame
 	check(int(cycle_service.call("current_cycle")) == 2, "the Cycle advanced to 2 before restart")
 
+	# F-259: the Cycle advance above is also what widens the wave roster —
+	# `CycleService._expand_enemy_pool()` calls `WaveSpawner.host_unlock_next_enemy()` once per
+	# advance. One advance is enough: `roster_order` ships with a single archetype, so an unlocked
+	# pool of exactly 1 is the whole of what a restart has to clear.
+	var wave: Node = root.get_node_or_null(^"WaveSpawner")
+	check(wave != null, "WaveSpawner is up")
+	check(not (wave.call("unlocked_enemy_pool") as Array).is_empty(),
+		"the wave roster unlocked an archetype before restart")
+
+	# F-259: and the night latch, the second piece of WaveSpawner's run-scoped state. A run that
+	# ends AT NIGHT — the common case, since that is when the wave that kills you is on the ground —
+	# leaves `_night_active` true and EnemyWorld's ambient field switched off behind it.
+	check(int(wave.call("host_start_wave")) >= 0, "a night wave is running before restart")
+	check(bool(wave.get(&"_night_active")), "WaveSpawner's night latch is set before restart")
+	check(not bool(enemy_world.get(&"ambient_enabled")),
+		"the ambient field is suppressed by that night wave before restart")
+
 
 # ── 3 · a real defeat ────────────────────────────────────────────────────────────────────────────
 
@@ -182,6 +199,17 @@ func _phase_restart() -> void:
 	var enemy_world: Node = root.get_node_or_null(^"EnemyWorld")
 	check(int(enemy_world.call("live_count")) == 0, "every live enemy was despawned")
 
+	# F-259: the three pieces of WaveSpawner's own run-scoped state. The roster is the finding
+	# itself; the night latch and the ambient restore are the same bug in the same file, found by
+	# reading what else `host_start_wave()` leaves set (see docs/FINDINGS.md F-259).
+	var wave: Node = root.get_node_or_null(^"WaveSpawner")
+	check((wave.call("unlocked_enemy_pool") as Array).is_empty(),
+		"WaveSpawner's unlocked roster reset to the Cycle-1 starting roster")
+	check(not bool(wave.get(&"_night_active")), "WaveSpawner's night latch cleared")
+	check(bool(enemy_world.get(&"ambient_enabled")),
+		"the ambient field the night wave suppressed is switched back on")
+	check(int(wave.call("current_cycle")) == 1, "WaveSpawner reads Cycle 1 again")
+
 	var inventory: Node = root.get_node_or_null(^"InventoryService")
 	check(int(inventory.call("host_count", HOST_PEER, TEST_ITEM_ID)) == 0,
 		"the inventory reset to empty")
@@ -203,6 +231,16 @@ func _phase_playable_again() -> void:
 	var cycle_service: Node = root.get_node_or_null(^"CycleService")
 	var new_cycle: int = int(cycle_service.call("host_advance_cycle"))
 	check(new_cycle == 2, "a second Cycle advance works after restart (Cycle %d)" % new_cycle)
+
+	# F-259: the reset has to leave the roster REFILLABLE, not merely empty — `roster_order` is an
+	# export `_bind_rules()`-style adoption never touches, so clearing `_unlocked_pool` alone should
+	# put the next run back on the same unlock curve the first one walked.
+	var wave: Node = root.get_node_or_null(^"WaveSpawner")
+	check((wave.call("unlocked_enemy_pool") as Array).size() == 1,
+		"the restarted run unlocks its roster again from Cycle 1")
+	# And the cleared latch has to let a night actually start again — a stuck latch makes every
+	# subsequent `_on_night_started()` a silent no-op for the rest of the process.
+	check(int(wave.call("host_start_wave")) >= 0, "a night wave can start again after restart")
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────────────────────────

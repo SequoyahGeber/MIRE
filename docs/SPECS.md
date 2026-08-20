@@ -9271,3 +9271,78 @@ doc comment: `CycleModifierService._announced_draws` justified its restart clear
 being unchanged" — the clear is still required, the reason is not.
 
 **Resolved** — see `docs/FINDINGS.md`.
+
+---
+
+## F-259 · F-243's restart resets Cycle/Mire/inventory/etc but not WaveSpawner's unlocked enemy roster
+
+**Claim:** `systems/waves/wave_spawner.gd`, `tools/run_restart_check.gd`.
+**Authority:** §2.2 — "Day/night, wave director, Cycle state, active modifiers": **HOST**, unchanged.
+The reset is host-guarded like every other mutation in the file and rides the existing
+`EventBus.run_restarted` seam. **No new RPC, no `PROTOCOL_VERSION` bump, no new check tool.**
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The gap:** F-243/D-149 enumerated the run-scoped systems a restart resets (Cycle, Mire, Cycle
+Modifiers, inventory, health, enemies, buildables, chest/wellspring/ship progress) and
+`systems/waves/wave_spawner.gd` was not in that enumeration — it subscribed to `cycle_advanced` but
+never to `run_restarted`. A restarted run therefore began at Cycle 1 carrying the PREVIOUS run's
+widened enemy roster, and worse, could never widen it again: `host_unlock_next_enemy()` refuses once
+`_unlocked_pool.size() >= roster_order.size()`, so the roster was permanently frozen at whatever the
+first run reached.
+
+**The fix — three pieces of state, not just the roster the finding names.** The finding is the
+roster; reading what else `host_start_wave()` leaves set turned up two more in the same file, which
+is why the fix is one method rather than one line:
+1. `_unlocked_pool.clear()` — the finding itself. `roster_order` is an **export** (a Gamerule /
+   inspector value, not run state) and is deliberately untouched, so the new run walks the same
+   unlock curve the old one did. This is also what answers the finding's own open question about
+   `_bind_rules()`: rule adoption writes `base_count`/`per_player`, never the pool, so the reset and
+   the export-fallback adoption cannot fight.
+2. `_night_active` **and the ambient field it suppressed**. A run that ends AT NIGHT — the usual way
+   a run ends, since that is when the wave that kills you is on the ground — left the latch set and
+   `EnemyWorld.ambient_enabled` false behind it. The latch alone makes every later
+   `_on_night_started()` a silent no-op **for the life of the process**: `host_start_wave()` returns
+   -1 while `_night_active`, so the restarted run gets no night waves at all, ever. The ambient flag
+   is restored directly rather than by calling `host_stop_wave()`, on purpose: that path also queues
+   `_refill_daytime()`, and repopulating the field is EnemyWorld's own ambient loop's job on its own
+   cadence — the restart's job is only to stop suppressing it. (It would also race
+   `EnemyWorld._on_run_restarted()`'s despawn, whose subscriber order is autoload-registration
+   order.)
+3. `_hunt_elite`/`_hunt_retarget_elapsed` — dropped, not freed. `EnemyWorld._on_run_restarted()`
+   frees the body; holding the ended run's ref is what would have `_physics_process` retargeting a
+   corpse.
+
+Plus `_rng` re-seeded **per run** from `GameState.ensure_seed() ^ DEFAULT_SEED` — the same "XOR a
+per-file salt into `run_seed`" convention `systems/loot/chest.gd`, `world/gen/poi_map.gd` and
+`world/gen/resource_scatter.gd` share, with `DEFAULT_SEED` ("WAVE") as this file's salt. `_ready()`
+still seeds `DEFAULT_SEED` flat, so nothing about the FIRST run of a process moves; without this,
+F-258's fresh island would be paired with a wave composition stream that replays the previous run's
+rolls one for one. No GameState (a `--script` harness that registered no autoloads) falls back to the
+flat boot seed rather than to entropy, so a check stays reproducible.
+
+**Verify:** no new tool — the six new assertions belong in F-243's own check, which is the thing that
+was wrong: `.agent/bin/agent godot --script tools/run_restart_check.gd`. It seeds the state (a Cycle
+advance to unlock an archetype; `host_start_wave()` to latch the night and suppress the ambient
+field), asserts all three cleared after `host_restart_run()`, and — phase 5 — that the restarted run
+can unlock its roster again from Cycle 1 and start a night wave again.
+`RUN_RESTART_CHECK failures=1`, the **1 pre-existing** `every placed buildable was cleared` failure
+(**F-268**, filed, another lane's). Before the fix the same command reported `failures=5`: the four
+extra were exactly these assertions.
+Regression: `tools/wave_spawner_check.gd` and `tools/wave_spawner_cycle_net_check.gd`, `failures=0`
+each.
+
+**Traps:**
+- **A restart-reset test that only asserts "empty" proves half of it.** The pool being empty and the
+  pool being *refillable* are different claims, and the second is the one a frozen
+  `host_unlock_next_enemy()` breaks — hence the phase-5 re-unlock assertion.
+- The assertion `the restarted run unlocks its roster again from Cycle 1` PASSES on the broken code
+  too (the stale pool is already size 1). It is only meaningful next to the phase-4 assertion that
+  the pool was cleared; do not read it alone as coverage.
+- `_on_run_restarted()` fires **before** `CycleService._announce()`'s `cycle_advanced(1)`, so
+  `_current_cycle` would be restored anyway — it is reset here regardless, because relying on a
+  sibling service's emit order for your own field's correctness is how the next reordering breaks it
+  silently.
+
+**Resolved** — see `docs/FINDINGS.md`.
