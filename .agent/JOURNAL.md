@@ -7463,3 +7463,27 @@ Fourth look pass shipped: deterministic interior-vertex XZ jitter in ChunkMesher
 Files: `world/chunk/chunk_mesher.gd`, `docs/DELEGATION.md`, `docs/DECISIONS.md`, `assets/audit/terrain/island_orbit.png`, `assets/audit/terrain/island_spawn_view.png`, `assets/audit/terrain/island_shore_look.png`, `tools/biome_terrain_check.gd`, `tools/noise_reuse_check.gd`
 
 Commit at time of writing: `90bc04c`
+
+---
+
+### REOPEN · 4.18 · quill5fa5c7 · 2026-08-20T21:38:21+00:00
+
+**Three-seed island-feel walk vs Hollowmere (tuning input, not a gate — D-125)**
+
+Reopened (was marked done 2026-08-20 by quill5fa5c7).
+
+Playtest feedback: striations, seam lines, aggressive river gorge/pits, no ocean water, land too high above sea, sparse plants. Rebasing terrain to sea level, softening river, adding low-poly ocean, border jitter, scatter audit.
+
+Commit at time of writing: `69c5561`
+
+---
+
+### DONE · 4.18 · quill5fa5c7 · 2026-08-20T21:58:15+00:00
+
+**Three-seed island-feel walk vs Hollowmere (tuning input, not a gate — D-125)**
+
+Playtest round shipped: land rebased to sea level (very gentle hills), river is a stream, real low-poly ocean + seabed, biome/POI bands retuned, six scatter tables dress all biomes, border jitter kills seam lines, shadow bias fixes striations. Full suite green; renders sent to Sequoyah and committed.
+
+Files: `world/gen/island_heightmap.gd`, `world/chunk/chunk_mesher.gd`, `levels/procedural_island.tscn`, `content/biomes/shore.tres`, `content/biomes/grassland.tres`, `content/biomes/forest.tres`, `tools/biome_terrain_check.gd`, `tools/chunk_stream_check.gd`, `world/environment/water_low_poly.gdshader`, `world/gen/resource_scatter.gd`, `world/gen/scatter_def.gd`, `content/scatter/grassland_meadow.tres`, `content/scatter/grassland_shrubs.tres`, `content/scatter/forest_floor.tres`, `content/scatter/shore_beach.tres`, `content/scatter/forest_canopy.tres`, `content/scatter/forest_undergrowth.tres`, `content/poi/standing_stones.tres`, `content/poi/wellspring.tres`, `content/poi/enemy_nest.tres`, `content/poi/station_camp.tres`, `tools/terrain_check.gd`
+
+Commit at time of writing: `2075ae3`

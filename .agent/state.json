@@ -240,6 +240,27 @@
       "task": "F-258",
       "token": null
     },
+    "content/biomes/forest.tres": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T21:58:15+00:00",
+      "hash": "577b5c6ec585ff6548963cde9b55ed0e0b5143dbb4a8cf14412b0751c022e382",
+      "task": "4.18",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
+    "content/biomes/grassland.tres": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T21:58:15+00:00",
+      "hash": "e1a6a83de690c72e84c9075f75029fe9006ed89389bee05089b529e2ab6fc026",
+      "task": "4.18",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
+    "content/biomes/shore.tres": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T21:58:15+00:00",
+      "hash": "292905f03f2beab39ab05b1c8b8c926ce65d268dfda3e4faa5ed048b36b56c88",
+      "task": "4.18",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
     "content/cycle_modifiers/bloom.tres": {
       "agent": "lm2",
       "at": "2026-08-19T22:42:54+00:00",
@@ -290,11 +311,11 @@
       "token": null
     },
     "content/poi/enemy_nest.tres": {
-      "agent": "hollow7",
-      "at": "2026-08-19T22:12:05+00:00",
-      "hash": "15cfb53c20cc31912a35d61dc4241db2c21173f69c4ad640f6f29c31b15172d4",
-      "task": "4.16",
-      "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T21:58:15+00:00",
+      "hash": "f7f3a6db3de243286768bd95edbde1bf588ed36d428ca08638c82eeb9b9a67ed",
+      "task": "4.18",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "content/poi/loot_cache.tres": {
       "agent": "hollow7",
@@ -310,19 +331,68 @@
       "task": "4.16",
       "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
+    "content/poi/standing_stones.tres": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T21:58:15+00:00",
+      "hash": "6be559641ba5cfeb06eebc0c621851d7756c108f3933f7c7311c2f82ee92a8dd",
+      "task": "4.18",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
     "content/poi/station_camp.tres": {
-      "agent": "lp",
-      "at": "2026-08-20T20:42:48+00:00",
-      "hash": "d8422bdae19b75e294b5fbbc073a92cdfdd0bb41cd2c39aabf159d51194f5161",
-      "task": "F-301",
-      "token": null
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T21:58:15+00:00",
+      "hash": "c9b1a2af1c8e0550c95432837838fe1cd181f3e3d69e2871e558183f1d2a3a95",
+      "task": "4.18",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "content/poi/wellspring.tres": {
-      "agent": "hollow7",
-      "at": "2026-08-19T22:12:05+00:00",
-      "hash": "361365bf27795ccc1ab0aa86ccc1a78d18c081424e8530a120d96d323914391c",
-      "task": "4.16",
-      "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T21:58:15+00:00",
+      "hash": "1b2a1902128fe2b54d28af59c75e685e011e60ae53481706044c07e7105361e3",
+      "task": "4.18",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
+    "content/scatter/forest_canopy.tres": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T21:58:15+00:00",
+      "hash": "ea73d0d25eb89af8556bbfe1b6ccda35a86c47bef7ee2c0dcae0c36b8753dacf",
+      "task": "4.18",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
+    "content/scatter/forest_floor.tres": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T21:58:15+00:00",
+      "hash": "bc40084af395fab58172fd6c4337c7e7bba1b86c2efdf4db491945eaab0012ed",
+      "task": "4.18",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
+    "content/scatter/forest_undergrowth.tres": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T21:58:15+00:00",
+      "hash": "33a5c16a863c9c86a47c2385a793edcd8bcb449f1d4e801aedfd36824cfddbcf",
+      "task": "4.18",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
+    "content/scatter/grassland_meadow.tres": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T21:58:15+00:00",
+      "hash": "dc43acb9697a3e3dd76fc8ab217ce3b9887733f8397cb18c1ef1f3791cdbb1f0",
+      "task": "4.18",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
+    "content/scatter/grassland_shrubs.tres": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T21:58:15+00:00",
+      "hash": "a8fe739850ec6b1ca369fba2192456e5affffe9588f68e40a95f80cf37e6fc9c",
+      "task": "4.18",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
+    "content/scatter/shore_beach.tres": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T21:58:15+00:00",
+      "hash": "9b87dc7f97be0d472bbc3d82274c982ac8ed0ece4a7c993cd9c1a1c2400db616",
+      "task": "4.18",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "content/unlocks": {
       "agent": "lp",
@@ -452,9 +522,9 @@
     },
     "levels/procedural_island.tscn": {
       "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:41:46+00:00",
-      "hash": "15aa6043ad758b07bbd85358d88a3b96883ab245a426017263e947578067ac34",
-      "task": "4.19",
+      "at": "2026-08-20T21:58:15+00:00",
+      "hash": "f8f9ebeb84241a7d83174a64cf47ef0b629ec367b3190d502349dbea19d9dfb3",
+      "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "project.godot": {
@@ -613,8 +683,8 @@
     },
     "tools/biome_terrain_check.gd": {
       "agent": "quill5fa5c7",
-      "at": "2026-08-20T21:26:49+00:00",
-      "hash": "ec56c2cf9523fd01ebc1b0f9bd296989d323e231a310bd83764e1912abbeffb2",
+      "at": "2026-08-20T21:58:15+00:00",
+      "hash": "da67cf57780714d6479e60bcd68ae2c5cfe357ddf5e2c039d25dd01d0ccfe632",
       "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
@@ -655,8 +725,8 @@
     },
     "tools/chunk_stream_check.gd": {
       "agent": "quill5fa5c7",
-      "at": "2026-08-20T21:00:13+00:00",
-      "hash": "4dbfcaa19b6dfc82211a2fff9fb21fe765f42a087f33f38c417eb2f6bb011496",
+      "at": "2026-08-20T21:58:15+00:00",
+      "hash": "8019ae13cf46181aedb5389aef531ee7defb4598a849fc87ea4126826ec2cc9a",
       "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
@@ -1061,8 +1131,8 @@
     },
     "tools/terrain_check.gd": {
       "agent": "quill5fa5c7",
-      "at": "2026-08-20T20:46:13+00:00",
-      "hash": "1138b7ed752b06421a3a7dac590396550f8c5ef8af4ce08b955fe6a0e782c2f3",
+      "at": "2026-08-20T21:58:15+00:00",
+      "hash": "4111b2095c336bb0a93527fe8055efacb4ee14e7754d4011344e7790c49b39f4",
       "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
@@ -1250,8 +1320,8 @@
     },
     "world/chunk/chunk_mesher.gd": {
       "agent": "quill5fa5c7",
-      "at": "2026-08-20T21:26:49+00:00",
-      "hash": "715c3cb06e9feb29496d446984d5b7e592488e698659b6574bd55b2c578d02bd",
+      "at": "2026-08-20T21:58:15+00:00",
+      "hash": "1dbdaf08a119b08d03d2f5617266a9a06b6e7cac045e1c3445a3b3531f6a4fdf",
       "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
@@ -1283,6 +1353,13 @@
       "task": "4.19",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
+    "world/environment/water_low_poly.gdshader": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T21:58:15+00:00",
+      "hash": "37d3feabbd8a33b3ebf2ae66f1c7eed3ffa759758b623c00141e1fe20ac2d20c",
+      "task": "4.18",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
     "world/gen/authored_world.gd": {
       "agent": "lp",
       "at": "2026-08-20T10:34:51+00:00",
@@ -1306,8 +1383,8 @@
     },
     "world/gen/island_heightmap.gd": {
       "agent": "quill5fa5c7",
-      "at": "2026-08-20T21:00:13+00:00",
-      "hash": "a721b8c47229beb42266ba6b3477521c0d4dd8f4d6ba550b400cc6a1958fe75f",
+      "at": "2026-08-20T21:58:15+00:00",
+      "hash": "dab95984f268d6d4154d49af5ac86b5392f5b4c8f2566074136f619a81e34c33",
       "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
@@ -1333,11 +1410,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:dcf988c3-f81b-4177-97bb-d3f72dcb1927"
     },
     "world/gen/resource_scatter.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T06:20:25+00:00",
-      "hash": "f944a15393b10e9e09ef78887ccaf40ffda64f822521966964e154a13331f9a2",
-      "task": "F-274",
-      "token": null
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T21:58:15+00:00",
+      "hash": "a877314d14cc137aacda32ae676cec8894866812d60e5f8a395740c62ed89c85",
+      "task": "4.18",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "world/gen/resource_scatter_field.gd": {
       "agent": "lp",
@@ -1345,6 +1422,13 @@
       "hash": "5cff93ad7eaaae25933750bdd5d115f43ea6297df0d07c3cc64ed16e5ec16a47",
       "task": "F-258",
       "token": null
+    },
+    "world/gen/scatter_def.gd": {
+      "agent": "quill5fa5c7",
+      "at": "2026-08-20T21:58:15+00:00",
+      "hash": "aaea305e70cb156448dca644599505e0f70fce252af0c727a406cf12a216c940",
+      "task": "4.18",
+      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "world/gen/undergrowth.gd": {
       "agent": "hollow7",
@@ -1361,7 +1445,7 @@
       "token": null
     }
   },
-  "rev": 140,
+  "rev": 150,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -2189,7 +2273,7 @@
       "title": "Spike: one-time seeded erosion; cross-platform hash on the D-028 machine; adopt/reject with numbers"
     },
     "4.18": {
-      "done_at": "2026-08-20T21:26:49+00:00",
+      "done_at": "2026-08-20T21:58:15+00:00",
       "done_by": "quill5fa5c7",
       "est": "1",
       "milestone": "M4",
