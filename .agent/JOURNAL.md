@@ -7412,3 +7412,27 @@ is the last one, which is why this finding is still open.
 D-073's one-at-a-time rule applies — these want a design decision each, not a template fill.
 
 Commit at time of writing: `cc66c13`
+
+---
+
+### REOPEN · 4.18 · quill5fa5c7 · 2026-08-20T21:15:20+00:00
+
+**Three-seed island-feel walk vs Hollowmere (tuning input, not a gate — D-125)**
+
+Reopened (was marked done 2026-08-20 by quill5fa5c7).
+
+Continuing the look work: adding deterministic interior-vertex XZ jitter to ChunkMesher so facets read organic like the rvr9ca reference (Delaunay-style irregularity without retriangulating). Sequoyah delegated the call.
+
+Commit at time of writing: `f787d5d`
+
+---
+
+### HANDOFF · 7.4 · reed31c598 · 2026-08-20T21:19:06+00:00
+
+**UI/UX polish pass, consistent visual language, transitions**
+
+MENU-1..8 built, verified and pushed; docs/MENU.md §11 has the full status table. NEXT AGENT: (1) flip project.godot run/main_scene to res://levels/frontend.tscn once 4.18/4.19 release the world-scene cutover, then re-run every tools/ check plus a -- host/-- client two-process launch — the launch bypass is already in and asserted by title_check. (2) MENU-9 audio hooks, MENU-10 a11y/Deck audit. (3) F-320 (HUD autoloads draw over the front end — worked around in frontend.gd, real fix is per-HUD run-state visibility), F-323 (lobby member metadata for ready flags), F-325 (RunStatsService for per-player summary rows). WATCH OUT: world/chunk/chunk_mesher.gd is currently broken in the WORKING TREE by quill5fa5c7's in-flight 4.18 edit (_sample_heights gained 2 args, its two call sites were not updated), so the game does not boot right now — that is theirs, not the menu's, and every menu check passes regardless.
+
+Files: `ui/theme/mire_theme.gd`, `tools/menu_kit_check.gd`, `ui/menu_stack.gd`, `tools/menu_stack_check.gd`, `ui/frontend/backdrop.gd`, `ui/frontend/title_screen.gd`, `ui/frontend/frontend.gd`, `levels/frontend.tscn`, `tools/title_check.gd`, `tools/title_render.gd`, `assets/audit/menu/title_1080p_creep000.png`, `assets/audit/menu/title_1080p_creep042.png`, `assets/audit/menu/title_1080p_creep150.png`, `assets/audit/menu/title_deck_creep000.png`, `assets/audit/menu/title_deck_creep042.png`, `assets/audit/menu/title_deck_creep150.png`, `ui/frontend/island_minimap.gd`, `ui/frontend/expedition_screen.gd`, `tools/expedition_check.gd`, `assets/audit/menu/dock_1080p.png`, `assets/audit/menu/dock_deck.png`, `ui/menu/pause_menu.gd`, `tools/pause_menu_check.gd`, `ui/frontend/settings_screen.gd`, `tools/settings_screen_check.gd`, `ui/frontend/salvage_bench_screen.gd`, `tools/salvage_bench_check.gd`, `core/save/run_record_save.gd`, `autoload/run_record.gd`, `ui/frontend/run_summary_screen.gd`, `tools/run_summary_check.gd`, `docs/MENU.md`
+
+Commit at time of writing: `0882c89`
