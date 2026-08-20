@@ -905,6 +905,32 @@ def _(harness):
     return out.strip() or "(no output — silent pass)"
 
 
+@case("a journal header with no timezone does not take down every time-windowed reader (F-313)")
+def _(harness):
+    mod = _load_harness(harness)
+    # `collect` is the command a director is told to lead with, and it windows the journal through
+    # age_hours(). One hand-written header carrying a bare date parses fine and comes back naive,
+    # which used to raise TypeError out of the subtraction and kill the whole command — so a single
+    # bad line among hundreds made collect report that the lanes had done nothing.
+    for stamp in ("2026-08-20", "2026-08-20T11:38:27", "2026-08-20T11:38:27+00:00", "", None, 17):
+        try:
+            got = mod.age_hours(stamp)
+        except Exception as e:                                  # noqa: BLE001 — that IS the bug
+            raise AssertionError("age_hours(%r) raised %s: %s" % (stamp, type(e).__name__, e))
+        assert isinstance(got, float), "age_hours(%r) returned %r, not a float" % (stamp, got)
+
+    # A naive stamp must be read as UTC, not silently discarded: an entry two hours old has to land
+    # inside collect's 24h window rather than being treated as unreadable and therefore brand new.
+    from datetime import datetime, timedelta, timezone as _tz
+    two_hours_ago = (datetime.now(_tz.utc) - timedelta(hours=2)).replace(microsecond=0)
+    naive = mod.age_hours(two_hours_ago.replace(tzinfo=None).isoformat())
+    aware = mod.age_hours(two_hours_ago.isoformat())
+    assert abs(naive - aware) < 0.01, (
+        "a naive timestamp read as %.2fh old but the same instant with +00:00 read as %.2fh — "
+        "naive must be assumed UTC" % (naive, aware))
+    return "6 stamp shapes tolerated; naive assumed UTC"
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--rev", help="test the harness as of this git revision instead of the working tree")

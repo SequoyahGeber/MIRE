@@ -101,10 +101,20 @@ def now():
 
 
 def age_hours(iso):
+    """Hours since an ISO timestamp, tolerating anything a hand-written line can contain (F-313).
+
+    Every timestamp we write is UTC-aware, but JOURNAL.md is also hand-edited, and one header
+    carrying a bare date ("2026-08-20") parses fine and comes back NAIVE — which the old
+    `except ValueError` never saw, so the subtraction below raised TypeError and took `agent
+    collect` down entirely. `collect` is the command a director is told to lead with, so one
+    malformed line out of 518 made it report that nothing landed. Assume UTC when the writer
+    omitted a zone, and treat an unreadable stamp as brand new rather than infinitely old."""
     try:
         then = datetime.fromisoformat(iso)
-    except ValueError:
+    except (ValueError, TypeError):
         return 0.0
+    if then.tzinfo is None:
+        then = then.replace(tzinfo=timezone.utc)
     return (datetime.now(timezone.utc) - then).total_seconds() / 3600.0
 
 
