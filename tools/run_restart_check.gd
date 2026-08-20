@@ -16,6 +16,12 @@ extends SceneTree
 ## just gated on a different `(kind, key)` pair; no two-process check exercises it directly for
 ## `run_restarted` itself. Filed as F-260, not fixed here.
 ##
+## F-268 extended it: `BuildService` had no `run_restarted` subscription at all (the assertion below
+## had been failing at a clean HEAD since F-243 shipped), and its sweep found the identical omission
+## in `HaulService`. Both are asserted here, and the buildable half is asserted twice over —
+## `placed_count()` for the host's bookkeeping AND the replicated container's own child count, since
+## the failure mode the finding warns about is exactly a cleared dictionary over living nodes.
+##
 ##   .agent/bin/agent godot --script tools/run_restart_check.gd
 
 const CommandServiceScript = preload("res://autoload/command_service.gd")
@@ -28,6 +34,7 @@ const TEST_SAVE_PATH: String = "user://run_restart_check_salvage.json"
 const TEST_ITEM_ID: StringName = &"iron_ingot"
 const TEST_BUILDABLE_ID: StringName = &"wall_wood"
 const TEST_ENEMY_ID: StringName = &"crawler"
+const TEST_HAULABLE_ID: StringName = &"heavy_ore_crate"
 
 var failures: int = 0
 var command_service: CommandServiceScript
@@ -107,6 +114,17 @@ func _phase_seed_state() -> void:
 		build_service.call("request_place", TEST_BUILDABLE_ID, snapped)
 		await physics_frame
 	check(int(build_service.call("placed_count")) >= 1, "a buildable piece is placed before restart")
+
+	# F-268's sweep: HaulService is BuildService's twin — same code-built MultiplayerSpawner, same
+	# run-scoped nodes, and it had the same missing `run_restarted` subscription. Seeded here so the
+	# restart phase can assert its container empties too. `host_spawn()` is host-guarded and
+	# path-resolves Registry itself, so a solo/offline harness drives it exactly as a real host does.
+	var haul_service: Node = root.get_node_or_null(^"HaulService")
+	if haul_service != null and player != null:
+		haul_service.call("host_spawn", TEST_HAULABLE_ID, player.global_position + Vector3(0.0, 0.0, 3.0))
+		await physics_frame
+	check(haul_service != null and int(haul_service.call("live_count")) >= 1,
+		"a haulable is in the world before restart")
 
 	var wellspring: Node = _first_node_in_group(&"wellspring")
 	if wellspring != null:
@@ -193,8 +211,23 @@ func _phase_restart() -> void:
 	var ship: Node = _first_node_in_group(&"extraction_ship")
 	check(ship != null and int(ship.get(&"repair_stage")) == 0, "the ship's repair progress cleared")
 
+	# F-268: the finding itself. `BuildService` now subscribes `run_restarted` and frees the piece
+	# NODES through `host_clear_all()`, not just its `_placed` dictionary — the pieces are
+	# MultiplayerSpawner children, so an emptied dictionary over living nodes would replay the
+	# previous run's walls to the next joiner. Both halves are asserted: the host's own bookkeeping
+	# (`placed_count`) and the container the spawner actually replicates from.
 	var build_service: Node = root.get_node_or_null(^"BuildService")
 	check(int(build_service.call("placed_count")) == 0, "every placed buildable was cleared")
+	var buildings: Node = build_service.get_node_or_null(^"Buildings")
+	check(buildings != null and buildings.get_child_count() == 0,
+		"the replicated Buildings container is empty, not just BuildService's dictionary")
+	check(get_nodes_in_group(&"buildable_piece").is_empty(),
+		"no buildable_piece node survived the restart anywhere in the tree")
+
+	# F-268's sweep: the same fix in HaulService, the other spawner-backed run-scoped autoload.
+	var haul_service: Node = root.get_node_or_null(^"HaulService")
+	check(haul_service != null and int(haul_service.call("live_count")) == 0,
+		"every haulable was cleared")
 
 	var enemy_world: Node = root.get_node_or_null(^"EnemyWorld")
 	check(int(enemy_world.call("live_count")) == 0, "every live enemy was despawned")

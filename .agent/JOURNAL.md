@@ -6725,3 +6725,15 @@ Notes along the way:
 - ac99417 meets the 6.4 functional contract and authority gates, but its new wellspring_recorrupted EventBus emit is host-process-only; this exact defect is already F-181 and fixed by a4d33fc, so no duplicate finding filed. At ac99417: focused check 24 assertions/failures=0; seven regressions failures=0; full boot ERROR lines=0.
 
 Commit at time of writing: `a28f346`
+
+---
+
+### DONE · F-268 · lp · 2026-08-20T05:57:20+00:00
+
+**F-243's restart never clears placed buildables — BuildService has no run_restarted subscription at all, and its own check has been failing at HEAD since the feature shipped**
+
+BuildService now subscribes run_restarted and FREES every placed piece node through a host-guarded host_clear_all() before clearing _placed — the finding's own trap was that emptying the dictionary over living MultiplayerSpawner children makes the assertion pass while handing the next joiner the previous run's walls. Each piece emits piece_destroyed on the way out because NavBaker tracks placed geometry off that signal (F-159) and has no run_restarted subscription of its own. Sweep found one real sibling and it is fixed in the same commit: HaulService, same code-built spawner, same missing subscription, same host_clear_all() name (D-164) — latent today since host_spawn() has no shipped gameplay caller, and it is F-281's item 2, which asked to be fixed here. Audited the remaining 15 subscribe_run_restarted sites: all wired, all with matching unsubscribe; CraftingService/EnvironmentVFX self-invalidate and are NOT the same shape; UnlockService persists by design. Verified: agent godot --script tools/run_restart_check.gd -> RUN_RESTART_CHECK failures=0 (was failures=1 at HEAD, this finding's own assertion, reconfirmed before any edit). Four assertions added to that check, two of them because placed_count()==0 cannot tell a freed piece from a forgotten one: the replicated Buildings container's child count and no surviving buildable_piece node anywhere. Regression: build_check failures=0, haul_check failures=0. nav_bake_check failures=4 is pre-existing — agent baseline at a28f346 yields the byte-identical four FAIL lines, compared line by line rather than by count; filed F-285. Spec block written at docs/SPECS.md (none existed), D-164 recorded, DELEGATION Current state updated.
+
+Files: `autoload/build_service.gd`, `autoload/haul_service.gd`, `tools/run_restart_check.gd`, `docs/SPECS.md`, `docs/DELEGATION.md`, `docs/DECISIONS.md`
+
+Commit at time of writing: `ac1db8a`

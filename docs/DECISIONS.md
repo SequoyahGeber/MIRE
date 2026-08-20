@@ -4999,3 +4999,47 @@ something seed- and biome-dependent in a way an author cannot predict from the n
 POI half of this decision is worth revisiting. The biome half is not: it gets *more* correct as
 amplitudes get real, since that is when `height()`-based classification becomes properly circular
 rather than merely inconsistent.
+
+---
+
+### D-164 · 2026-08-20 · F-268: run-scoped world objects are FREED on `run_restarted`, never merely forgotten — and the method that does it is called `host_clear_all()`
+
+A service that owns spawned nodes for the duration of a run must, on `EventBus.run_restarted`, free
+the nodes. Clearing its own bookkeeping dictionary is not the fix and does not become the fix by
+making the test pass.
+
+**Why this is a decision and not a code comment.** The nodes in question are `MultiplayerSpawner`
+children, and a spawner replays every LIVE spawn to a newly connected peer
+(`core/net/net_session.gd`). So a host that empties `_placed` while the piece nodes still exist has
+built the worst version of the bug rather than fixed it: the host believes the map is clear, its own
+`placed_count()` agrees, the check passes — and the next player to join receives the previous run's
+walls from the spawner's own replay, with no host-side record to destroy them by. The freed node is
+what makes the despawn replicate. Nothing else does.
+
+Two corollaries, both learned from the finding that produced this:
+
+- **Announce each removal on the way out.** `BuildService.host_clear_all()` emits `piece_destroyed`
+  per piece rather than clearing silently, because `NavBaker` tracks placed geometry off that signal
+  (F-159) and has no `run_restarted` subscription of its own. A consumer that learns about
+  destruction from a signal must learn about *this* destruction from the same signal, or the mass
+  clear is the one code path that silently desyncs it.
+- **Assert the container, not the bookkeeping.** `placed_count() == 0` cannot distinguish a freed
+  piece from a forgotten one, which is exactly why F-268's assertion could have been "fixed" wrongly.
+  `tools/run_restart_check.gd` now also asserts the replicated container's own child count and that
+  no piece node survives anywhere in the tree.
+
+**The name is part of the decision.** `host_clear_all()`, on `BuildService` and `HaulService` today.
+A third spawner-backed service should be findable with one `grep -rn 'host_clear_all'`, not by
+reading three files for three spellings of one idea. Host-guarded internally on the file's own
+`_owns_mutation()`, and called unconditionally from `_on_run_restarted()` — every peer's copy may
+call it and only the host's frees anything, matching every other `run_restarted` subscriber.
+
+**No refund on a restart clear.** `InventoryService` empties every peer's inventory off the same
+signal, so materials paid back would land in a bucket emptying in the same frame. This matches
+`host_piece_destroyed_by_damage()`, which also refunds nothing, and differs deliberately from
+`_process_destroy()`, which does.
+
+**What would change my mind:** a run-scoped object that must genuinely outlive its run — a
+meta-progression structure a player keeps between runs, say. That is a different lifetime, not an
+exception to this: it should not be in a run-scoped container in the first place, the way
+`UnlockService._purchased` is not.

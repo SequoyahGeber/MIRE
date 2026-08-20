@@ -29,6 +29,7 @@ extends Node
 ## error.
 
 const VALIDATOR := preload("res://systems/building/placement_validator.gd")
+const EVENT_BUS := preload("res://core/events/event_bus.gd")
 ## F-085: the `&"damageable"` group's damage implementation. Attached to whichever piece root
 ## doesn't already bring its own — see `_net_spawn_piece()` and the script's own doc comment.
 const BUILDABLE_PIECE := preload("res://systems/building/buildable_piece.gd")
@@ -98,8 +99,19 @@ func _ready() -> void:
 	# The tick exists only to time a pending nav rebake; _request_nav_rebake() turns it on (F-099).
 	set_physics_process(false)
 	_register_commands()
+	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
 	_wire_mire_grid.call_deferred()
 
+
+func _exit_tree() -> void:
+	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
+
+
+## F-268: a new run starts on a bare island. Unconditional on authority, like every other
+## `run_restarted` subscriber in this codebase — `host_clear_all()` self-guards on
+## `_owns_mutation()`, so every peer's copy may call it and only the host's frees anything.
+func _on_run_restarted() -> void:
+	host_clear_all()
 
 
 func _physics_process(delta: float) -> void:
@@ -268,6 +280,40 @@ func host_piece_destroyed_by_damage(piece_name: StringName, instigator_peer_id: 
 		StringName(String(record.get("def", ""))), int(record.get("owner", 0)),
 		piece_name, piece_position)
 	MireLog.info(LOG_CHANNEL, "peer %d destroyed %s by damage" % [instigator_peer_id, piece_name])
+
+
+## F-268 / D-161. Host-only teardown of the whole run's build state, for `run_restarted`. Every
+## piece goes through the same free-and-announce path `_process_destroy()` uses, for two reasons the
+## finding names explicitly:
+##
+##   · The nodes are `MultiplayerSpawner` children, and a spawner replays every LIVE spawn to a
+##     newly connected peer (`core/net/net_session.gd`). Emptying `_placed` without freeing them
+##     would hand the next run's joiner the previous run's walls while the host believed the map was
+##     clear — the despawn replicates because the host frees the node, not because the host forgot it.
+##   · `NavBaker` tracks placed pieces off `piece_destroyed` (F-159) and has no `run_restarted`
+##     subscription of its own, so a silent clear would leave the previous run's piece geometry
+##     baked into its chunks for the rest of the process.
+##
+## No refund, unlike `_process_destroy()`: `InventoryService` clears every peer's inventory off the
+## same `run_restarted`, so paying materials into it would be paying them into a bucket that empties
+## in the same frame. Matches `host_piece_destroyed_by_damage()`, which also refunds nothing.
+func host_clear_all() -> void:
+	if not _owns_mutation() or _placed.is_empty():
+		return
+	var cleared: int = _placed.size()
+	for piece_name: StringName in _placed.keys():
+		var record: Dictionary = _placed[piece_name]
+		var piece: Node = _container.get_node_or_null(NodePath(String(piece_name)))
+		var piece_position: Vector3 = \
+			(piece as Node3D).global_position if piece != null else Vector3.ZERO
+		if piece != null:
+			piece.queue_free()
+		piece_destroyed.emit(
+			StringName(String(record.get("def", ""))), int(record.get("owner", 0)),
+			piece_name, piece_position)
+	_placed.clear()
+	_request_nav_rebake()
+	MireLog.info(LOG_CHANNEL, "run restarted — cleared %d placed piece(s)" % cleared)
 
 
 ## floor(cost * refund_fraction) per item, never more than was paid and never a fractional log.

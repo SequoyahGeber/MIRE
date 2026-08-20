@@ -9498,3 +9498,91 @@ agreed with D-144.
 
 **What it costs.** Every seed's scatter layout moves. That is the intended output of the task, not a
 regression — see D-163 for the measured size and why it is small today and will not stay small.
+
+---
+
+## F-268 · F-243's restart never clears placed buildables — `BuildService` has no `run_restarted` subscription at all
+
+**Claim:** `autoload/build_service.gd`, `autoload/haul_service.gd`, `tools/run_restart_check.gd`.
+**Authority:** §2.2 — "world mutation": **HOST**, unchanged, and §2.2 "Carryable objects": **HOST**,
+unchanged. Both new methods are host-guarded on their file's existing `_owns_mutation()` and ride the
+existing `EventBus.run_restarted` seam. **No new RPC, no `PROTOCOL_VERSION` bump, no new check tool.**
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The gap:** F-243 shipped the docs, the header enumeration and the assertion for "a restart clears
+placed buildables", and did not ship the wiring. `autoload/build_service.gd` contained no
+`EVENT_BUS.subscribe_run_restarted` of any kind, so `_placed` and every piece node survived into the
+next run — while `systems/cycle/cycle_service.gd`'s F-243 header named `BuildService` in its
+subscriber list, `docs/DELEGATION.md` described the restart as resetting build state, and
+`tools/run_restart_check.gd:180` asserted `placed_count() == 0`. That assertion had therefore been
+**failing at a clean HEAD since F-243 shipped** — confirmed by `agent baseline`, and re-confirmed at
+the top of this task (`RUN_RESTART_CHECK failures=1`, that one assertion, before any edit).
+
+D-161 is what raises the severity: F-258 made a restart draw a **fresh world seed**, so the surviving
+pieces no longer merely persist on the same island — they sit at coordinates chosen against terrain
+that no longer exists, floating over the new island's water or buried in its hills, with `NavBaker`
+regions baked around them.
+
+**The fix — free the nodes, do not merely forget them (D-164).** `BuildService.host_clear_all()`, host-guarded
+and called unconditionally from a new `_on_run_restarted()` (subscribe in `_ready()`, unsubscribe in
+`_exit_tree()` — the convention every other subscriber in that list follows). For each entry in
+`_placed` it frees the piece node, emits `piece_destroyed`, then clears the dictionary and requests
+one debounced nav rebake. Three things make the per-piece announce load-bearing rather than tidy:
+
+1. **The nodes are `MultiplayerSpawner` children**, and a spawner replays every LIVE spawn to a newly
+   connected peer (`core/net/net_session.gd`). The despawn replicates because the host frees the
+   node; a cleared dictionary over living nodes would hand the next run's joiner the previous run's
+   walls while the host believed the map was clear. This is the finding's own stated trap.
+2. **`NavBaker` tracks placed pieces off `piece_destroyed`** (F-159) and has no `run_restarted`
+   subscription of its own, so a silent clear would leave the previous run's piece geometry baked
+   into its chunks for the rest of the process — exactly D-161's stranded-collision consequence, in
+   the navmesh instead of the render.
+3. **No refund**, unlike `_process_destroy()`: `InventoryService` clears every peer's inventory off
+   the same `run_restarted`, so paying materials in would be paying into a bucket that empties in the
+   same frame. This matches `host_piece_destroyed_by_damage()`, which also refunds nothing.
+
+**The sibling, fixed under the same claim.** The sweep for "spawner-backed autoload holding run-scoped
+nodes with no `run_restarted` subscription" turns up exactly one other: `autoload/haul_service.gd`,
+whose own header says it mirrors `BuildService` — and which inherited the same omission along with
+the pattern. It gets the same `_on_run_restarted()` → `host_clear_all()` pair. **Latent, not live:**
+`HaulService.host_spawn()` has no shipped gameplay caller yet (only `tools/haul_check.gd` and
+`tools/haul_net_check.gd`), so no real run has a crate to strand. Wired anyway, because the wiring is
+precisely the part that gets forgotten — F-268 *is* the case of a subscriber list written from intent
+while the subscription never shipped. Carriers need no explicit release: freeing the body takes its
+`carriers` list with it, and `PlayerHealth`'s own `run_restarted` handler respawns every player.
+
+Everything else in the F-243 subscriber list was audited and is genuinely wired: MireGrid,
+CycleModifierService, PowerupService, InventoryService, PlayerHealth, EnemyWorld, DefeatService,
+Wellspring, Chest, ExtractionShip — plus WaveSpawner (F-259), ProceduralWorld and
+ResourceScatterField, which the header does not list. Every one of the 15 `subscribe_run_restarted`
+call sites has its matching `unsubscribe_run_restarted` in `_exit_tree()`. `CraftingService`'s
+`_station_positions` and `EnvironmentVFX`'s `_sites` look like the same shape but are not: both
+self-invalidate on a scene-id/census change, so a regenerated island rebuilds them without a
+subscription. `UnlockService._purchased` is meta-progression and persists across runs by design.
+
+**Verify:** no new tool — the assertions belong in F-243's own check, which already held the correct
+one: `.agent/bin/agent godot --script tools/run_restart_check.gd` → `RUN_RESTART_CHECK failures=0`
+(was `failures=1` at HEAD, that single assertion). Four assertions added: a haulable seeded before the
+run ends and cleared after, and two that close the gap the finding's trap describes — the replicated
+`Buildings` container's own child count is 0, and no `&"buildable_piece"` node survives anywhere in
+the tree. `placed_count() == 0` alone cannot tell a freed piece from a forgotten one.
+Regression: `tools/build_check.gd` → `failures=0`, `tools/haul_check.gd` → `failures=0`.
+`tools/nav_bake_check.gd` reports `failures=4`, **pre-existing and unrelated** — `agent baseline
+--script tools/nav_bake_check.gd` at `a28f346` produces the byte-identical four FAIL lines (filed as
+F-285).
+
+**Traps:**
+- **`placed_count() == 0` is half the assertion.** The failure mode the finding warns about is a
+  cleared dictionary over living nodes, and `placed_count()` reads the dictionary. Assert the
+  container the spawner actually replicates from, not the host's bookkeeping about it.
+- Iterate `_placed.keys()` (a copy) and clear the dictionary once at the end — `queue_free()` is
+  deferred, so nothing re-enters `_placed` mid-loop, but the copy keeps that true if a future
+  `piece_destroyed` listener ever does.
+- The container's node lookup must tolerate a missing node: `host_piece_destroyed_by_damage()` already
+  established that `_placed` can outlive its node by a frame, and the clear path inherits that.
+- Both new methods are named `host_clear_all()` deliberately — a third spawner-backed autoload should
+  be findable by that name, not by reading three files for three spellings of the same idea.
+
+**Resolved** — see `docs/FINDINGS.md`.

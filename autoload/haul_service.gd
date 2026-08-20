@@ -15,6 +15,7 @@ extends Node
 ## error.
 
 const HAULABLE_SCRIPT := preload("res://systems/hauling/haulable.gd")
+const EVENT_BUS := preload("res://core/events/event_bus.gd")
 
 const LOG_CHANNEL: StringName = &"world"
 const CONTAINER_NODE: StringName = &"Haulables"
@@ -38,6 +39,43 @@ func _ready() -> void:
 	if session != null and session.has_signal(&"run_player_rebound"):
 		session.connect(&"run_player_rebound", _on_run_player_rebound)
 		session.connect(&"run_player_expired", _on_run_player_expired)
+	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
+
+
+func _exit_tree() -> void:
+	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
+
+
+## F-268's sibling, found by that finding's sweep. A haulable is run-scoped world state exactly as a
+## placed buildable is, and this file spawns through the same code-built `MultiplayerSpawner` it says
+## in its own header it mirrors from `BuildService` — so it inherited the same omission: nothing
+## cleared the container on `run_restarted`, and after F-258 the next run draws a FRESH SEED, so a
+## surviving crate sits at coordinates chosen against terrain that no longer exists (D-161).
+##
+## Latent rather than live today: `host_spawn()` has no shipped gameplay caller yet (only
+## `tools/haul_check.gd` and `tools/haul_net_check.gd`), so no real run has a crate to strand. Wired
+## now because the wiring is the part that gets forgotten — F-268 is precisely the case of a
+## subscriber list written from intent while the subscription never shipped.
+##
+## Unconditional on authority, like every other `run_restarted` subscriber; `host_clear_all()`
+## self-guards. Carriers need no explicit release: freeing the body takes its `carriers` list with
+## it, and `PlayerHealth`'s own `run_restarted` handler respawns every player regardless.
+func _on_run_restarted() -> void:
+	host_clear_all()
+
+
+## Host-only. Frees the node rather than merely forgetting it, for the reason
+## `BuildService.host_clear_all()` spells out: these are `MultiplayerSpawner` children, and a
+## spawner replays every LIVE spawn to a newly connected peer (`core/net/net_session.gd`).
+func host_clear_all() -> void:
+	if not _owns_mutation() or _container == null:
+		return
+	var cleared: int = _container.get_child_count()
+	if cleared == 0:
+		return
+	for child: Node in _container.get_children():
+		child.queue_free()
+	MireLog.info(LOG_CHANNEL, "run restarted — cleared %d haulable(s)" % cleared)
 
 
 # ── Spawning (D-023: built in code so every peer's tree is identical) ─────────────────────────────

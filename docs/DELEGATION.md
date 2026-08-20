@@ -75,6 +75,63 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-20 — F-268 resolved: the restart actually clears placed buildables, and HaulService gets the same wiring it had been missing alongside it (lp)
+
+**Claim:** `autoload/build_service.gd`, `autoload/haul_service.gd`, `tools/run_restart_check.gd`,
+`docs/SPECS.md`, `docs/DELEGATION.md`. Authority unchanged — §2.2 "world mutation" and "Carryable
+objects", both HOST. No new RPC, no `PROTOCOL_VERSION` bump, no new check tool.
+
+**Two new public methods, same name on purpose.** A third spawner-backed autoload should be findable
+by grepping one spelling, not by reading three files for three ideas:
+
+```gdscript
+BuildService.host_clear_all() -> void   # frees every placed piece node, then clears `_placed`
+HaulService.host_clear_all()  -> void   # frees every haulable in the replicated container
+```
+
+Both are host-guarded on their file's existing `_owns_mutation()` and both are called
+unconditionally from a new `_on_run_restarted()`, so every peer's copy may run and only the host's
+frees anything — the convention every other `run_restarted` subscriber follows. Subscribe in
+`_ready()`, unsubscribe in `_exit_tree()`.
+
+**The rule the next such service inherits, now D-164: free the nodes, do not merely forget them.** F-243's own
+check had been failing at a clean HEAD since the feature shipped, on `every placed buildable was
+cleared`, because `BuildService` had no `run_restarted` subscription at all while three separate
+places asserted it did. Emptying `_placed` would have made that assertion pass and left the bug: the
+pieces are `MultiplayerSpawner` children, and a spawner replays every LIVE spawn to a newly connected
+peer (`core/net/net_session.gd`) — so the despawn replicates because the host frees the node, not
+because the host stopped tracking it. `host_clear_all()` also emits `piece_destroyed` per piece,
+because `NavBaker` tracks placed geometry off that signal (F-159) and has no `run_restarted`
+subscription of its own. Neither method refunds, matching `host_piece_destroyed_by_damage()`:
+`InventoryService` empties every inventory off the same signal.
+
+**F-281 is now one third smaller.** Its enumeration lists `DayNight.time_of_day`, `HaulService`'s
+haulables and `AttunementService._selections`; the haulables third is done here, found independently
+by F-268's own sweep. The other two are untouched and still that finding's. HaulService's fix is
+**latent, not live** — `host_spawn()` still has no shipped gameplay caller (only `tools/haul_check.gd`
+and `tools/haul_net_check.gd`), so nothing in a real run strands a crate yet. It is wired anyway
+because the wiring is precisely the half that gets forgotten.
+
+**Audited and genuinely wired**, so nobody re-walks this list: MireGrid, CycleModifierService,
+PowerupService, InventoryService, PlayerHealth, EnemyWorld, DefeatService, Wellspring, Chest,
+ExtractionShip, plus WaveSpawner / ProceduralWorld / ResourceScatterField, which
+`cycle_service.gd`'s F-243 header does not name. All 15 `subscribe_run_restarted` sites have their
+matching `unsubscribe`. `CraftingService._station_positions` and `EnvironmentVFX._sites` are NOT the
+same shape — both self-invalidate on a scene-id/census change, so a regenerated island rebuilds them
+with no subscription. `UnlockService._purchased` persists across runs by design (meta-progression).
+
+**`tools/run_restart_check.gd` gained four assertions, not a new tool.** Two of them exist because
+`placed_count() == 0` cannot tell a freed piece from a forgotten one: the replicated `Buildings`
+container's own child count is 0, and no `&"buildable_piece"` node survives anywhere in the tree.
+The other two seed and clear a haulable. `.agent/bin/agent godot --script tools/run_restart_check.gd`
+-> `RUN_RESTART_CHECK failures=0` (was `failures=1` at HEAD). Regression: `tools/build_check.gd` and
+`tools/haul_check.gd`, `failures=0` each.
+
+**`tools/nav_bake_check.gd` fails 4 and it is not this — filed as F-285.** `agent baseline --script
+tools/nav_bake_check.gd` at `a28f346` yields the byte-identical four FAIL lines. Compare the FAIL
+LINES, not the count: a matching count across two runs of a check with a dozen assertions is not
+evidence that the same things failed.
+
 ### 2026-08-20 — F-271 resolved: biome classification obeys D-144 in scatter too, and worldgen gained a fourth layout tripwire (lm)
 
 **Claim:** `world/gen/resource_scatter.gd`, `tools/resource_scatter_check.gd`,
