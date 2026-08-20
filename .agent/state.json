@@ -122,14 +122,6 @@
     }
   },
   "in_flight": {
-    "F-258-review": {
-      "agent": "lc1",
-      "dispatched": true,
-      "files": [],
-      "notes": [],
-      "started": "2026-08-20T05:51:51+00:00",
-      "token": null
-    },
     "F-274": {
       "agent": "lm",
       "dispatched": true,
@@ -1636,13 +1628,6 @@
       "at": "2026-08-19T09:20:59+00:00",
       "hash": "b4f691b113a160c281d5390d711b468ba6d87ea169eb32dca05c86eed8decc60",
       "task": "F-196",
-      "token": null
-    },
-    "tools/audio/repro_check.py": {
-      "agent": "lm",
-      "at": "2026-08-19T05:58:02+00:00",
-      "hash": "5ae221bde2de4c95f276a333146a214c62947d179f1f6f32ab605c6e18709fe5",
-      "task": "F-176",
       "token": null
     },
     "tools/autoload_tracked_check.py": {
@@ -6506,10 +6491,12 @@
       "title": "F-243's restart keeps the same world seed \u2014 no fresh island, no re-broadcast to already-connected peers"
     },
     "F-258-review": {
+      "done_at": "2026-08-20T05:59:01+00:00",
+      "done_by": "lc1",
       "est": "0.5",
       "milestone": "Findings",
       "review_of": "F-258",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T1",
       "title": "Review F-258 @ ca72e14 \u2014 judge the commit, file findings, no edits"
     },

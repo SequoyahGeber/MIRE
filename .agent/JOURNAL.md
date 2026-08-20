@@ -6737,3 +6737,16 @@ BuildService now subscribes run_restarted and FREES every placed piece node thro
 Files: `autoload/build_service.gd`, `autoload/haul_service.gd`, `tools/run_restart_check.gd`, `docs/SPECS.md`, `docs/DELEGATION.md`, `docs/DECISIONS.md`
 
 Commit at time of writing: `ac1db8a`
+
+---
+
+### DONE · F-258-review · lc1 · 2026-08-20T05:59:01+00:00
+
+**Review F-258 @ ca72e14 — judge the commit, file findings, no edits**
+
+Changes required: F-286 stale authoritative CraftingService station cache on same-count procedural reseeds; F-287 EnvironmentVfx accumulates old-island emitter sites; F-288 run_reseed_check compares POI counts rather than layouts. Verified .agent/bin/agent godot --script tools/run_reseed_check.gd: RUN_RESEED_CHECK failures=0, exit 0, ERROR_COUNT=0.
+
+Notes along the way:
+- Review at ca72e14: run_reseed_check passes failures=0, exit 0, ERROR_COUNT=0. Filed F-286 (CraftingService same-census station cache), F-287 (EnvironmentVfx emitter sites survive in-place island rebuild), F-288 (phase 5 compares POI counts, not layouts). No authority, determinism, typed-GDScript, RPC-version, or bare-autoload regression found in the changed paths.
+
+Commit at time of writing: `7af2bd3`

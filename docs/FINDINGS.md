@@ -888,6 +888,48 @@ reason written in, so the check's clean state is `failures=0` and a future regre
 
 ---
 
+### F-286 · Procedural reseed can leave CraftingService validating against the previous island's station coordinates
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-20 by lc1
+
+**Area:** crafting/worldgen · **Severity:** medium · **Found:** 2026-08-20 by lc1 reviewing F-258 at `ca72e14`
+
+`world/gen/procedural_world.gd:132-143` rebuilds the fresh island in place: it removes `PoiSites`, then publishes a new seed-derived set under the same current scene. `autoload/crafting_service.gd:299-331` caches station positions and invalidates only when the current-scene instance id or the TOTAL count of `playtest_hollow_asset` + `authored_world_marker` nodes changes. Neither is a generation identity. If two seeds produce the same marker count, the cache survives even though `Station_station_workbench_primitive` moved.
+
+This is not a theoretical count shape: repeated `tools/run_reseed_check.gd` runs produced seed `908245843` with 11 POI/marker sites, and the harness' fixed rebuild seed `424242` also has 11; their worlds/spawns differ. If any station-range query populated `_station_positions` before that restart, `_station_positions_for()` sees the same scene id and census and returns the old island's station coordinates. The new station can reject crafting while standing beside it, while the vacated coordinate can authorize a craft with no station there. The host repeats this stale lookup, so this is an authoritative gameplay failure, not presentation only.
+
+Invalidate the cache on `run_restarted`/procedural generation change (or key it by a generation value that changes even when counts match), and extend the reseed check to populate the cache before rebuilding and assert only the new station position validates afterward.
+
+---
+
+### F-287 · Procedural reseed accumulates EnvironmentVfx emitter sites from every previous island
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-20 by lc1
+
+**Area:** worldgen/VFX · **Severity:** low · **Found:** 2026-08-20 by lc1 reviewing F-258 at `ca72e14`
+
+`world/gen/procedural_world.gd:132-143` rebuilds derived nodes inside the existing current scene. `autoload/environment_vfx.gd:108-116` clears `_sites` only when the current-scene instance id changes, which this rebuild deliberately does not do. Its `node_added` handler then discovers the replacement island's geometry, and `_register_emitter()` at `environment_vfx.gd:480-495` appends the new positions to the old arrays; there is no node-removed path and no `run_restarted` subscription.
+
+The fixed VFX pools therefore continue ranking and rendering emitter sites from the ended island as well as the new one. Effects can remain at now-empty coordinates, valid new-island effects can lose the nearest-first pool slots to ghosts, and `emitter_site_count` grows on every restart. F-258's promise that the procedural world is torn down and re-derived is incomplete for this autoload-owned cache.
+
+Clear/rebuild EnvironmentVfx's scene-derived site state on the procedural generation boundary (without redressing shared mesh resources unnecessarily), and assert a reseed replaces rather than appends a known emitter-site set.
+
+---
+
+### F-288 · run_reseed_check claims POI-layout parity but compares only POI counts
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-20 by lc1
+
+**Area:** testing/worldgen · **Severity:** low · **Found:** 2026-08-20 by lc1 reviewing F-258 at `ca72e14`
+
+The F-258 spec says phase 5 proves that a new seed changes the POI layout and that an in-place rebuild is identical to a boot on the same seed. `tools/run_reseed_check.gd:243-282` stores only `before_sites: int`, checks only that the rebuilt list is non-empty, and compares only the rebuilt/fresh list sizes. It never compares any site's id, position, rotation, marker kind, or scene path before-versus-after or rebuilt-versus-fresh. The assertion labelled "byte-identical" compares four terrain height samples, and the following POI assertion explicitly proves only count.
+
+A rebuild that retained every old POI transform, assigned the wrong transforms to the right number of ids, or disagreed with a fresh boot while preserving count would report `RUN_RESEED_CHECK failures=0`. That blind spot also explains why downstream marker consumers such as F-286 are outside the green result.
+
+Fingerprint the full ordered `poi_sites` contract (at least site id/def id/position/rotation/scene path) before rebuild and on the fresh boot: require a new seed's fingerprint to differ and the rebuilt/fresh fingerprints to match exactly. Consumer-cache checks remain separate; a correct internal list does not prove subscribers adopted it.
+
+---
+
 ## Resolved
 
 ### F-268 · F-243's restart never clears placed buildables — BuildService has no run_restarted subscription at all, and its own check has been failing at HEAD since the feature shipped — **fixed**
