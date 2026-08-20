@@ -7345,3 +7345,27 @@ Notes along the way:
 Files: `world/gen/island_heightmap.gd`, `tools/terrain_check.gd`, `assets/audit/terrain/island_orbit.png`, `assets/audit/terrain/island_spawn_view.png`, `assets/audit/terrain/island_shore_look.png`, `docs/WORLDGEN.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `179bb52`
+
+---
+
+### REOPEN · 4.18 · quill5fa5c7 · 2026-08-20T20:47:29+00:00
+
+**Three-seed island-feel walk vs Hollowmere (tuning input, not a gate — D-125)**
+
+Reopened (was marked done 2026-08-20 by quill5fa5c7).
+
+Sequoyah's second walk verdict, minutes after the first tune shipped: still way too steep — he wants 3-5 discrete hills on an otherwise flat island. The fBm rolling interior is the wrong structure, not just the wrong amplitude; replacing it with a near-flat plateau plus placed seeded hills.
+
+Commit at time of writing: `a12fd76`
+
+---
+
+### DONE · 4.18 · quill5fa5c7 · 2026-08-20T21:00:13+00:00
+
+**Three-seed island-feel walk vs Hollowmere (tuning input, not a gate — D-125)**
+
+Three tuning passes off Sequoyah's live verdicts, all shipped: (1) amplitude drop, (2) flat plateau + 3-5 placed hills (IslandHeightmap.hills, BASE_NOISE_WEIGHT 0.25), (3) flat-shaded facet lighting (terrain_flat.gdshader) per his linked r/Unity3D reference. D-184 records the direction and each reversal. All terrain/contract/chunk checks green; renders in assets/audit/terrain.
+
+Files: `world/gen/island_heightmap.gd`, `docs/DELEGATION.md`, `docs/DECISIONS.md`, `assets/audit/terrain/island_orbit.png`, `assets/audit/terrain/island_spawn_view.png`, `assets/audit/terrain/island_shore_look.png`, `world/chunk/chunk_mesher.gd`, `world/chunk/terrain_flat.gdshader`, `tools/chunk_stream_check.gd`
+
+Commit at time of writing: `cef19e3`

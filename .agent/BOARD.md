@@ -8,14 +8,18 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
-| **7.4** UI/UX polish pass, consistent visual language, transitions | reed31c598 | 2026-08-20 20:27 | `ui/theme/mire_theme.gd`, `tools/menu_kit_check.gd`, `ui/menu_stack.gd`, `tools/menu_stack_check.gd`, `ui/frontend/backdrop.gd`, `ui/frontend/title_screen.gd`, `ui/frontend/frontend.gd`, `levels/frontend.tscn`, `tools/title_check.gd`, `tools/title_render.gd` |
-| **F-307** A non-host peer whose host leaves is soft-locked on F-243's terminal overlay — the restart button never re-reads its own host check, and no menu can open over it | lp | 2026-08-20 20:43 | `tools/terminal_focus_check.gd` |
+| **7.4** UI/UX polish pass, consistent visual language, transitions | reed31c598 | 2026-08-20 20:27 | `ui/theme/mire_theme.gd`, `tools/menu_kit_check.gd`, `ui/menu_stack.gd`, `tools/menu_stack_check.gd`, `ui/frontend/backdrop.gd`, `ui/frontend/title_screen.gd`, `ui/frontend/frontend.gd`, `levels/frontend.tscn`, `tools/title_check.gd`, `tools/title_render.gd`, `assets/audit/menu/title_1080p_creep000.png`, `assets/audit/menu/title_1080p_creep042.png`, `assets/audit/menu/title_1080p_creep150.png`, `assets/audit/menu/title_deck_creep000.png`, `assets/audit/menu/title_deck_creep042.png`, `assets/audit/menu/title_deck_creep150.png`, `ui/frontend/island_minimap.gd`, `ui/frontend/expedition_screen.gd`, `tools/expedition_check.gd`, `assets/audit/menu/dock_1080p.png`, `assets/audit/menu/dock_deck.png` |
+| **F-307** A non-host peer whose host leaves is soft-locked on F-243's terminal overlay — the restart button never re-reads its own host check, and no menu can open over it | lp | 2026-08-20 20:43 | `tools/terminal_focus_check.gd`, `ui/hud/defeat_hud.gd`, `ui/hud/extraction_hud.gd`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md` |
+
+**F-307 notes:**
+- The shipped LEAVE button (ui/lobby/lobby_menu.gd:148 request_leave) calls NetTransport.leave() directly; NetSession.end_session() — the API whose own doc says 'prefer this over NetTransport.leave()' — has ZERO shipped callers, only tools/session_lifecycle_check.gd. So a real host quit gives clients no notice: they burn the full 4-attempt rejoin ladder (~19s) and end with CONNECTION_LOST 'lost contact with the host' instead of HOST_CLOSED. Filing separately; F-307's phase 3 drives the SHIPPED (ungraceful) path for the defeat overlay and end_session() for the extraction one, so the fix is proven against both EndReasons.
+- Sweep done. (a) _is_host_or_solo() exists in exactly the two files fixed — no third copy; the only other ui/ read of transport authority is net_debug_panel.gd, which re-polls every refresh and cannot latch. (b) The mandatory-panel class (no Esc, no dismiss, blocks_gameplay_input) is exactly three files: attunement_ui.gd, defeat_hud.gd, extraction_hud.gd — F-275's sweep already enumerated it. (c) THIRD MEMBER IS STILL BROKEN, same shape, filing as F-320: attunement_ui.gd closes only on an ACCEPTED selection_confirmed, which needs a live host, and subscribes to nothing session-lifecycle. An orphaned client loops forever — F-297's 8s timer re-enables the buttons, each press request_select()s into the void, re-disables, times out — and the panel never leaves blocks_gameplay_input, so no menu can open over it either. F-297 fixed the latch, not the reachability.
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `█████████░` 294/327 | 33 |
+| Findings | `█████████░` 294/328 | 34 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -82,6 +86,7 @@
 | ⬜ | **F-316** docs/SPECS.md carries two different F-226 blocks under one heading, and nothing checks SPECS for duplicate headings | todo |
 | ⬜ | **F-317** A full headless boot of the shipped procedural map prints ~10 dummy-renderer RID ERROR lines from chunk mesh upload — windowed boots are clean, but the '0 stray ERROR lines' full-boot bar needs a headless caveat | todo |
 | ⬜ | **F-319** Every multi-site POI badly under-places on the 118 m island, and the Wellspring's 180 m spacing makes a second one geometrically impossible | todo |
+| ⬜ | **F-320** Every gameplay HUD autoload builds and shows itself unconditionally, so they all draw over the front end | todo |
 
 ## Done
 
