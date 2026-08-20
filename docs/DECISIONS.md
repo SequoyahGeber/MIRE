@@ -5171,3 +5171,52 @@ replication interval late — but the interpolator is what makes it correct.
 
 **The general form, for anyone pairing an unreliable state push with a reliable event:** the push can
 arrive first. Do not make the receiver's correctness depend on the event landing first.
+
+
+### D-167 · 2026-08-20 · F-277: an Attunement selection is RUN-scoped — the lock dies with the run that set it, and each peer re-arms its OWN picker
+
+**The call.** A pick made under D-071's "run start" trigger lasts exactly one run. On
+`EventBus.run_restarted` the host clears every peer's selection (`AttunementService.host_clear_all()`,
+D-164's naming) and broadcasts the clear; every peer's `AttunementUI` then reopens its own picker for
+the new run. D-071's one-pick-per-run lock and "respec is out of scope" both stand — they are
+statements about a *run*, and F-243 made "run" stop meaning "process".
+
+**Why it is a decision and not just a bug fix.** The alternative reading was defensible: DESIGN §4.5
+calls the pick identity-flavoured, and the file's own header says "locked for the run" while D-071's
+trigger is worded "this session". F-243 turned that ambiguity into a soft-lock, because the *effect*
+was already run-scoped — `PowerupService.host_clear_all()` clears the granted stack on the same
+event — while the *record* was not. Half-scoped state is the worst of both: the player loses the
+Attunement and keeps the ban on choosing one. Whichever way it was settled, the two halves had to
+agree, and run-scoped is the half F-243 had already shipped.
+
+**The pattern this generalises, and the one thing that is easy to get wrong.** A UI that re-arms
+itself on a run boundary must not key that re-arm on the run event alone. `AttunementUI` re-arms from
+**both** `run_restarted` and `AttunementService.selection_changed`, because on a client the host's
+clearing broadcast and the client-side re-derived `run_restarted` travel different channels and can
+land in either order; whichever arrives second is a harmless no-op, because the re-arm is guarded on
+the local selection actually being empty rather than on the event that woke it. Keying only on
+`run_restarted` looks correct in a single-process check and loses the race roughly half the time on
+a real client.
+
+**Re-arm on the NEXT frame, not inside the emit.** `run_restarted` subscribers run synchronously in
+autoload registration order, and `AttunementUI` sits ahead of `DefeatHud`/`ExtractionHud` in
+`project.godot` — both of which restore `Input.mouse_mode` to `CAPTURED` inside their own handler.
+A panel that opens during that emit samples the terminal overlay's VISIBLE cursor as "what to restore
+afterwards" and then has the mouse captured out from under it. Any run-boundary UI that touches the
+mouse mode has to open deferred, after every peer subscriber has finished with it.
+
+**A mandatory panel's in-flight request is a bounded wait, never a latch (F-297).** A panel with no
+Esc and no dismiss path that disables its controls while waiting for a host answer must re-enable
+them on a timeout, because "the answer never came" is a reachable state (the host drops between the
+send and the reply) and its consequence is a player with no operable control and no route back to
+gameplay. `AttunementUI` gives that wait 8 seconds and puts the failure in its existing error status
+line. Panels with a dismiss path — `chest_ui.gd`, `crafting_ui.gd` — do not need this; the dismiss
+path already is the bound.
+
+**What would change my mind:** DESIGN §4.5 growing an explicit meta-progression Attunement that a
+player keeps between runs. That would be a different lifetime, not an exception — like
+`UnlockService._purchased`, it would live outside the run-scoped map rather than inside it with a
+carve-out.
+
+**D-number provenance (F-260).** Taken by reading the highest `### D-` heading in this file and
+adding one, with no atomic allocator. D-165 was already held by F-274 at the time this was written.

@@ -1,31 +1,6 @@
 {
-  "claims": {
-    "autoload/attunement_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T06:33:22+00:00",
-      "task": "F-277",
-      "token": null
-    },
-    "ui/attunement/attunement_ui.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T06:34:12+00:00",
-      "task": "F-277",
-      "token": null
-    }
-  },
-  "in_flight": {
-    "F-277": {
-      "agent": "lm",
-      "dispatched": true,
-      "files": [
-        "autoload/attunement_service.gd",
-        "ui/attunement/attunement_ui.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-20T06:31:54+00:00",
-      "token": null
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     ".": {
       "agent": "lp",
@@ -783,6 +758,13 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
+    "autoload/attunement_service.gd": {
+      "agent": "lm",
+      "at": "2026-08-20T06:50:30+00:00",
+      "hash": "bcb6bedff24d901446465302bde64125e976f060840c1f2cc85cdf135cd283df",
+      "task": "F-277",
+      "token": null
+    },
     "autoload/build_service.gd": {
       "agent": "lp",
       "at": "2026-08-20T05:57:20+00:00",
@@ -1196,13 +1178,6 @@
       "task": "8.3",
       "token": null
     },
-    "core/util/mire_log.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T06:46:55+00:00",
-      "hash": "90c365a3fd7ff2da0aadb4f65478aad6752a5918640408a4334094b0e96efb1c",
-      "task": "F-183",
-      "token": null
-    },
     "docs/ARCHITECTURE.md": {
       "agent": "lm",
       "at": "2026-08-19T14:59:41+00:00",
@@ -1225,24 +1200,24 @@
       "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
     "docs/DECISIONS.md": {
-      "agent": "lp",
-      "at": "2026-08-20T06:34:42+00:00",
-      "hash": "85c70ed7af7aba61b389a8146e4254717faf562ed9c46a747fba8255f77ad98a",
-      "task": "F-278",
+      "agent": "lm",
+      "at": "2026-08-20T06:50:30+00:00",
+      "hash": "90925e3f32e7dd41f9e3a7fe52a12f6d9dee07e3c6b72dd226bdae18ad062f27",
+      "task": "F-277",
       "token": null
     },
     "docs/DELEGATION.md": {
-      "agent": "lp",
-      "at": "2026-08-20T06:34:42+00:00",
-      "hash": "bf014814ea168fdf6a2ff689d83b850b18e31b2c58f8b3466c00921837211bfe",
-      "task": "F-278",
+      "agent": "lm",
+      "at": "2026-08-20T06:50:30+00:00",
+      "hash": "dd986db05e39ed373970e90b7f3c3410b2b513d4009b71316fa5e81571ffa412",
+      "task": "F-277",
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "lp",
-      "at": "2026-08-20T06:34:42+00:00",
-      "hash": "bfc167a86f7a2f944cc758d4a4a1fad49db884d151db3adc41bc7f6720b8a161",
-      "task": "F-278",
+      "agent": "lm",
+      "at": "2026-08-20T06:50:30+00:00",
+      "hash": "640c7e7e368d1fc8806dbd8f73aa85e373ef2ab01f4e96975c1a898e93dcb9a3",
+      "task": "F-277",
       "token": null
     },
     "docs/NEXT.md": {
@@ -1252,18 +1227,11 @@
       "task": "F-261-review",
       "token": null
     },
-    "docs/ROADMAP.md": {
-      "agent": "pike14",
-      "at": "2026-08-19T06:48:55+00:00",
-      "hash": "099498fe1e69cc975029b2bffc8457647f87e29aa9a9a0bb876689b5a8ec3385",
-      "task": "F-006",
-      "token": "CLAUDE_CODE_SESSION_ID:7fea7368-2734-4f59-9d4a-147b2b5d903e"
-    },
     "docs/SPECS.md": {
-      "agent": "lp",
-      "at": "2026-08-20T06:34:42+00:00",
-      "hash": "a94e09b9c9fbccff5a19510c5f9cea761c8c877d11f5cc68a011912898a7bb5f",
-      "task": "F-278",
+      "agent": "lm",
+      "at": "2026-08-20T06:50:30+00:00",
+      "hash": "0aff85d2e88fdb6046651b460fc097f2a41303cc6205a8d3d01122c76a94aad4",
+      "task": "F-277",
       "token": null
     },
     "entities/player/player_camera.gd": {
@@ -1301,39 +1269,11 @@
       "task": "F-209",
       "token": null
     },
-    "scenes/buildables/door.tscn": {
-      "agent": "slate17",
-      "at": "2026-08-19T06:36:13+00:00",
-      "hash": "f71cad41102a0b1348ea043ab27b877b97de14186f339618ae89c655469a7852",
-      "task": "3.7",
-      "token": null
-    },
-    "scenes/buildables/gate.tscn": {
-      "agent": "slate17",
-      "at": "2026-08-19T06:36:13+00:00",
-      "hash": "78c8786e28e9d80e9a3f42aa6548dfa1967a5aac092a732c15419c3d5fa75d6c",
-      "task": "3.7",
-      "token": null
-    },
-    "scenes/buildables/palisade_gate.tscn": {
-      "agent": "slate17",
-      "at": "2026-08-19T06:36:13+00:00",
-      "hash": "9fd3ef2ae57cae5025f54e07305ea1a50db5db745b853b953068d464608f4f61",
-      "task": "3.7",
-      "token": null
-    },
     "steam_appid.txt": {
       "agent": "lm3",
       "at": "2026-08-19T22:35:43+00:00",
       "hash": "ddfe0e8d462af661f81db36589c39882dc0f2330785b5d80cd34f2f520ad618f",
       "task": "F-257",
-      "token": null
-    },
-    "systems/building/buildable_door.gd": {
-      "agent": "slate17",
-      "at": "2026-08-19T06:36:13+00:00",
-      "hash": "03bb64c7b1af9d38d510ae282f163fb8894d74eedeb6fec9b1168f0a4b68019a",
-      "task": "3.7",
       "token": null
     },
     "systems/commands/function_runner.gd": {
@@ -1359,9 +1299,9 @@
     },
     "systems/cycle/cycle_service.gd": {
       "agent": "lp",
-      "at": "2026-08-20T05:24:46+00:00",
-      "hash": "a9b3cadecc68cb65eb0aebfc2392056b2d1a1204ac6587c2e02bf601a36f4430",
-      "task": "F-258",
+      "at": "2026-08-20T06:37:03+00:00",
+      "hash": "92cfa7c1c70c7c9abf97b19e06ff9acb7b48655b3df00a74f5b7bb73a5d4e189",
+      "task": "F-280",
       "token": null
     },
     "systems/enemies/boss.gd": {
@@ -1448,20 +1388,6 @@
       "task": "F-245",
       "token": null
     },
-    "tools/_probe_lods.gd": {
-      "agent": "nettle12",
-      "at": "2026-08-19T06:46:23+00:00",
-      "hash": null,
-      "task": "F-144",
-      "token": null
-    },
-    "tools/_probe_merge.gd": {
-      "agent": "nettle12",
-      "at": "2026-08-19T06:46:23+00:00",
-      "hash": null,
-      "task": "F-144",
-      "token": null
-    },
     "tools/asset_scope_check.gd": {
       "agent": "lm",
       "at": "2026-08-20T05:07:23+00:00",
@@ -1469,11 +1395,11 @@
       "task": "F-255",
       "token": null
     },
-    "tools/audio/audio_check.py": {
+    "tools/attunement_restart_check.gd": {
       "agent": "lm",
-      "at": "2026-08-19T06:49:28+00:00",
-      "hash": "ba7a007a54f22175513991e81913a564d3e1bb850c10c04ac8f17316e22b0d4e",
-      "task": "F-184",
+      "at": "2026-08-20T06:50:30+00:00",
+      "hash": "c9d5124423d8023e94b8ebd841e607ef8f35145d36dde62261d5a922ad1c8cab",
+      "task": "F-277",
       "token": null
     },
     "tools/audio/render_music.py": {
@@ -1861,20 +1787,6 @@
       "task": "F-218",
       "token": null
     },
-    "tools/door_check.gd": {
-      "agent": "slate17",
-      "at": "2026-08-19T06:36:13+00:00",
-      "hash": "aebf4f7cdf03eaeccc607138aeb6ebedd93a58dcfe321fe8b0046977bd70be26",
-      "task": "3.7",
-      "token": null
-    },
-    "tools/door_check.gd.uid": {
-      "agent": "slate17",
-      "at": "2026-08-19T06:36:13+00:00",
-      "hash": "df0d7e0e8d85d3ac6672b48f862e8ad66943be4cf4a0f520decb0197253d12c7",
-      "task": "3.7",
-      "token": null
-    },
     "tools/enemy_content_check.gd": {
       "agent": "lm3",
       "at": "2026-08-19T22:25:02+00:00",
@@ -1924,13 +1836,6 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
-    "tools/frame_cost_check.gd": {
-      "agent": "nettle12",
-      "at": "2026-08-19T06:46:23+00:00",
-      "hash": "28ba5d67e7def8e82fb5a53c6bc197fc04304d1afdefdefdb8b9571461239173",
-      "task": "F-144",
-      "token": null
-    },
     "tools/function_check.gd": {
       "agent": "lm",
       "at": "2026-08-19T15:32:50+00:00",
@@ -1964,13 +1869,6 @@
       "at": "2026-08-19T10:25:06+00:00",
       "hash": "dfcf6d64f6f472b5fbc4c58b432ed05063d7060e7fd81adf6c8aafba09463020",
       "task": "F-205",
-      "token": null
-    },
-    "tools/harvest_batch_check.gd": {
-      "agent": "nettle12",
-      "at": "2026-08-19T06:46:23+00:00",
-      "hash": "ddf7a967ed573e4218136850285596aeee50d1e7ab0583cd8c6aa68a640a2f86",
-      "task": "F-144",
       "token": null
     },
     "tools/harvest_restart_check.gd": {
@@ -2099,13 +1997,6 @@
       "task": "F-208",
       "token": null
     },
-    "tools/render_census.gd": {
-      "agent": "nettle12",
-      "at": "2026-08-19T06:46:23+00:00",
-      "hash": "157ec0d11c0a40681a7c20f6948ab4a39847a69377a3be68a862235e3b04cce3",
-      "task": "F-144",
-      "token": null
-    },
     "tools/resource_scatter_check.gd": {
       "agent": "lm",
       "at": "2026-08-20T05:43:32+00:00",
@@ -2133,13 +2024,6 @@
       "hash": "5cba90001df2ff241373cc98c59902dcb5243e0b3a581703ee2ba19f0cae716e",
       "task": "F-248",
       "token": null
-    },
-    "tools/rpc_manifest_check.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-19T06:44:02+00:00",
-      "hash": "8758ce994232864b8667f81a9c08cca8d86b9b2fdd436d40d9d2f12bf7f96293",
-      "task": "F-161",
-      "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
     "tools/rpc_surface_audit_check.gd": {
       "agent": "lm",
@@ -2423,9 +2307,9 @@
     },
     "ui/attunement/attunement_ui.gd": {
       "agent": "lm",
-      "at": "2026-08-19T13:00:01+00:00",
-      "hash": "f288b95013a5a4cd86d9d07b58b3c52eb96f4d8e691e1bb13ba727500657bf17",
-      "task": "F-216",
+      "at": "2026-08-20T06:50:30+00:00",
+      "hash": "587d7387ba616c8e0053af887c69dbbb457be24d68419cd3b8ef327c122363ad",
+      "task": "F-277",
       "token": null
     },
     "ui/building/build_bar.gd": {
@@ -2433,20 +2317,6 @@
       "at": "2026-08-19T13:07:12+00:00",
       "hash": "4ac936be0227259feeed82d27c1ad5d92ae0acf2f1ff4e431b739d783b6e7161",
       "task": "F-217",
-      "token": null
-    },
-    "ui/building/door_prompt.gd": {
-      "agent": "slate17",
-      "at": "2026-08-19T06:36:13+00:00",
-      "hash": "8012e8d29bb1020412a560498d2849ac7cbbc500de7c5e227477535cae636714",
-      "task": "3.7",
-      "token": null
-    },
-    "ui/building/door_prompt.gd.uid": {
-      "agent": "slate17",
-      "at": "2026-08-19T06:36:13+00:00",
-      "hash": "c65d50fe2157af8a33f4add71c2b4662414ae1ae1b8c6d28646e4952ef3da44f",
-      "task": "3.7",
       "token": null
     },
     "ui/crafting/crafting_ui.gd": {
@@ -2552,13 +2422,6 @@
       "at": "2026-08-20T06:20:25+00:00",
       "hash": "e0a2bff75e62401a00608ae4ef128e00143734aebad8ef730fe3a11625eebb0d",
       "task": "F-274",
-      "token": null
-    },
-    "world/environment/draw_policy.gd": {
-      "agent": "nettle12",
-      "at": "2026-08-19T06:46:23+00:00",
-      "hash": "1bd0097c3138d21ae0aa94e08b2e661c7452980bc775563450bf3d0fa5df8f58",
-      "task": "F-144",
       "token": null
     },
     "world/environment/foliage_wind.gdshader": {
@@ -6630,9 +6493,11 @@
       "title": "F-243 carries depleted Hollowmere resources into the next run"
     },
     "F-277": {
+      "done_at": "2026-08-20T06:50:30+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "F-243 clears Attunement effects but keeps the selection locked across runs"
     },

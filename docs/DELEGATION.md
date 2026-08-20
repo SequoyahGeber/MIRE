@@ -75,6 +75,67 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-20 — F-277 resolved: an Attunement selection is run-scoped, and every peer re-arms its own picker for the new run (lm)
+
+**What shipped.** `AttunementService` had no `run_restarted` subscription at all, while the
+`PowerupService` stack its pick grants was already cleared by that event (F-243). Run two therefore
+began with the Attunement's effect gone and `_process_selection()` still refusing every new pick as
+"already selected", on a picker that never reopened because `AttunementUI` stops its D-071 poll timer
+permanently after the first pick. Both halves are fixed; D-167 settles that the lock is run-scoped.
+This closes item 1 of F-281 — its enumeration is now empty.
+
+**Seams the next task builds against.**
+
+```gdscript
+AttunementService.host_clear_selection(peer_id: int) -> bool  # erase + broadcast &"" + emit; host-only
+AttunementService.host_clear_all() -> int                     # every peer, on run_restarted; D-164's name
+AttunementUI.is_picking() -> bool
+AttunementUI.operable_button_count() -> int                   # what decides whether a no-dismiss panel is stuck
+AttunementUI.pending_request_seconds_left() -> float          # F-297's bounded wait, 0.0 when idle
+AttunementUI.expire_pending_request_now() -> void             # debug seam, like the existing poll_now()
+```
+
+`host_clear_selection()` is the erase + `net_attunement_selected(peer, &"")` broadcast +
+`selection_changed` emit that `_on_run_player_expired()` used to open-code; that handler now calls it.
+**Clear per peer, never by wiping `_selections`** — the per-peer `selection_changed` is what re-arms
+each peer's picker, and a bulk wipe emits nothing.
+
+**The rule beyond this file — a UI that re-arms on a run boundary must not key on the run event
+alone.** `AttunementUI` re-arms from **both** `EventBus.run_restarted` and
+`AttunementService.selection_changed`, because on a client the host's clearing broadcast and the
+client-side re-derived `run_restarted` ride different channels and land in either order. The re-arm
+is guarded on the local selection actually being empty, so whichever arrives second is a no-op.
+Keying only on `run_restarted` passes a single-process check and loses the race on a real client
+about half the time. D-167.
+
+**And it must open DEFERRED.** `run_restarted` subscribers run synchronously in autoload registration
+order; `AttunementUI` sits ahead of `DefeatHud`/`ExtractionHud` in `project.godot`, both of which
+restore `Input.mouse_mode` to `CAPTURED` in their own handler. Opening inside that emit samples the
+terminal overlay's VISIBLE cursor as "what to restore afterwards" and then loses the mouse to the HUD
+— on a panel whose only mouse control is a CHOOSE button. `_rearm_for_new_run()` therefore calls
+`_poll_for_local_player.call_deferred()`.
+
+**F-297 fixed in the same file** (its own text named F-277's owner): `_picking` is now a bounded wait
+— `choose()` arms a one-shot 8-second Timer, any `selection_confirmed` disarms it, an expiry
+re-enables every CHOOSE button and says why. A mandatory panel — no Esc, in `blocks_gameplay_input` —
+must never be able to reach zero operable controls. Panels with a dismiss path (`chest_ui.gd`,
+`crafting_ui.gd`) do not need this; the dismiss path is the bound.
+
+**New check — `tools/attunement_restart_check.gd`** (`ATTUNEMENT_RESTART_CHECK failures=0`, 49 PASS).
+Phase 1 solo on the shipped map drives the real `DefeatService.defeated` → `host_restart_run()` path
+and asserts run two is genuinely pickable, focus included. Phase 2 is a real second process because
+the host-clears/each-peer-re-arms split is invisible to one: a joined client picks over the wire, the
+host restarts three times, and the client reports its own selection and its own picker each time,
+then picks a *different* role over the wire — the assertion that proves the host's lock lifted for a
+remote peer. Its F-297 sub-phase sends a request and really `leave()`s so the answer can never
+arrive, rather than simulating a timeout.
+
+**Harness lesson worth copying.** A check that calls a seam the fix *adds* aborts its own coroutine
+on a pre-fix build, so the pre-fix proof stops after three assertions instead of showing the bug.
+Wrap those calls in `has_method` guards and let them degrade to a sentinel: this check goes from
+`failures=18` at HEAD to `failures=0` after, and those 18 are exactly the finding's symptoms on both
+sides of the wire.
+
 ### 2026-08-20 — F-278 resolved: the day/night clock is run-scoped, and a client SNAPS to a host jump instead of interpolating backwards through it (lp)
 
 **What shipped.** `systems/environment/day_night.gd` subscribes `run_restarted` and resets

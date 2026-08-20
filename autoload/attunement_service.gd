@@ -20,10 +20,17 @@ extends Node
 ## and lock. D-071: it triggers at the local player's first spawn this session ("run start"), not
 ## DESIGN §4.5's unbuilt "first Wellspring cap".
 ##
+## F-277 / D-167: a selection is RUN-scoped, not session-scoped. `run_restarted` clears every peer's
+## pick through `host_clear_all()` and broadcasts the clear, because the PowerupService stack the
+## pick granted is cleared by that same event — leaving the lock behind would mean a second run with
+## no Attunement effect and no way to choose one.
+##
 ## D-035 DISCIPLINE: selections are keyed by peer id, and peer ids change across a reconnect. This
 ## service does **not** drop state on `peer_left` — it waits for
 ## `NetSession.run_player_rebound(old, new)` to move it or `run_player_expired(peer)` to drop it,
 ## exactly like PowerupService and InventoryService before it.
+
+const EVENT_BUS := preload("res://core/events/event_bus.gd")
 
 const LOG_CHANNEL: StringName = &"attunement"
 
@@ -52,6 +59,15 @@ func _ready() -> void:
 	if session != null and session.has_signal(&"run_player_rebound"):
 		session.connect(&"run_player_rebound", _on_run_player_rebound)
 		session.connect(&"run_player_expired", _on_run_player_expired)
+
+	# F-277. D-071 ties a pick to "run start", and D-010 says a run is one sitting — so a selection
+	# is RUN-scoped, exactly like the PowerupService stack it grants. PowerupService already clears
+	# that stack on `run_restarted`; without this line the effect went away and the lock did not.
+	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
+
+
+func _exit_tree() -> void:
+	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
 
 
 # ── Client-facing request ───────────────────────────────────────────────────────────────────────
@@ -128,6 +144,34 @@ func _process_selection(peer_id: int, attunement_id: StringName) -> void:
 	selection_changed.emit(peer_id, attunement_id)
 
 
+## F-277: drop one peer's pick and tell every peer, so the next `request_select()` from them is no
+## longer refused as "already selected". Host-only, like every other mutation here; a client's mirror
+## follows through the same `net_attunement_selected(peer, &"")` broadcast a rebind/expiry uses.
+## Returns true if there was actually something to clear, so callers can report real work.
+func host_clear_selection(peer_id: int) -> bool:
+	if not _owns_mutation() or not _selections.has(peer_id):
+		return false
+	_selections.erase(peer_id)
+	_broadcast(peer_id, &"")
+	selection_changed.emit(peer_id, &"")
+	return true
+
+
+## F-277: every peer's pick, for a fresh run. Shaped after `PowerupService.host_clear_all()` — it
+## reuses the per-peer seam rather than wiping `_selections` directly, so each cleared peer still
+## gets its own broadcast and its own `selection_changed`, which is what re-arms each peer's picker.
+func host_clear_all() -> int:
+	if not _owns_mutation():
+		return 0
+	var cleared: int = 0
+	for peer_id: int in _selections.keys().duplicate():
+		if host_clear_selection(peer_id):
+			cleared += 1
+	if cleared > 0:
+		MireLog.info(LOG_CHANNEL, "cleared %d Attunement selection(s) for a new run" % cleared)
+	return cleared
+
+
 func _confirm(peer_id: int, accepted: bool, attunement_id: StringName, detail: String) -> void:
 	if peer_id == _local_peer_id():
 		selection_confirmed.emit(accepted, attunement_id, detail)
@@ -185,11 +229,15 @@ func _on_run_player_rebound(old_peer_id: int, new_peer_id: int) -> void:
 
 
 func _on_run_player_expired(peer_id: int) -> void:
-	if not _owns_mutation() or not _selections.has(peer_id):
-		return
-	_selections.erase(peer_id)
-	_broadcast(peer_id, &"")
-	selection_changed.emit(peer_id, &"")
+	host_clear_selection(peer_id)
+
+
+## F-277. Unconditional on authority, like every other `run_restarted` subscriber in this codebase —
+## `host_clear_all()` self-guards, so a client's own copy of this event is a no-op and its mirror is
+## updated by the host's broadcast instead. That keeps ARCHITECTURE §2.2's "Attunement selection =
+## Host" row true across a restart: nothing but the host ever writes a selection.
+func _on_run_restarted() -> void:
+	host_clear_all()
 
 
 # ── Internals ────────────────────────────────────────────────────────────────────────────────────

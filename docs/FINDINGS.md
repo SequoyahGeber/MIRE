@@ -600,16 +600,6 @@ it should have been.
 
 ---
 
-### F-277 · F-243 clears Attunement effects but keeps the selection locked across runs
-
-**Area:** systems · **Severity:** medium · **Found:** 2026-08-20 by lc1
-
-`autoload/powerup_service.gd:163-164` clears every Powerup stack on `run_restarted`, including the one an Attunement grants, but `autoload/attunement_service.gd:46-54` never subscribes and leaves `_selections` intact. Its `_process_selection()` then refuses every next-run choice at `attunement_service.gd:102-104` as "already selected". `ui/attunement/attunement_ui.gd:102-109` also permanently stops its poll timer after the first choice and has no restart path.
-
-At `6d7e756`, `tools/run_restart_net_check.gd` selects `forager`, restarts, and gets two failures: `local_selection()` is still `forager`, while the mandatory run-start picker remains closed. The player begins run two with no Attunement Powerup and no way to select one. The host must clear/broadcast every selection on `run_restarted`, and each peer's UI must reopen/re-arm its picker for the new run.
-
----
-
 ### F-279 · F-243 revives players where the previous run ended instead of at the run spawn
 
 **Area:** systems/netcode · **Severity:** medium · **Found:** 2026-08-20 by lc1
@@ -1152,33 +1142,6 @@ task rather than a one-line guard.
 
 ---
 
-### F-297 · AttunementUI's mandatory picker latches _picking on an unanswered request, leaving a no-dismiss panel with every button disabled
-
-**Area:** UI/input · **Severity:** medium · **Found:** 2026-08-20 by lm
-
-Found by F-275's sweep for its own shape: a mandatory panel (no Esc, no dismiss path) left with no
-operable control, the class F-216 named and F-275 repeated for both terminal run-summary overlays.
-
-`ui/attunement/attunement_ui.gd:77-81` sets `_picking = true` and calls `_set_buttons_disabled(true)`
-the moment a CHOOSE button is pressed, and `_picking` is cleared in exactly one place —
-`_on_selection_confirmed()` at line 146. `_open_picker()`'s own `_picking = false` (line 117) cannot
-help, because it early-returns while `_open` is already true.
-
-So if the host's `selection_confirmed` never arrives — the host peer drops between the
-`AttunementService.request_select()` send and the answer, or the reply is lost — every CHOOSE button
-stays disabled forever on a panel that has no dismiss path and joins `blocks_gameplay_input`. The
-player is left staring at "Requesting forager…" with no control that responds to a mouse OR a
-controller, and no way to reach gameplay again. This is strictly worse than F-275's original symptom:
-there the button worked and merely could not be focused.
-
-The fix wants a bounded wait, not a new signal: re-enable the buttons and put the failure in
-`_show_status()` after a timeout (the file already has a Timer and an error-status path from the
-`accepted == false` branch), and/or clear `_picking` on `NetTransport`'s disconnect. Not fixed under
-F-275 because `ui/attunement/attunement_ui.gd` is outside that task's claim set and F-277 is already
-open against this same file's restart path — whoever takes F-277 is the natural owner of both.
-
----
-
 ### F-298 · A client carries its own stamina and sprint lockout across a run restart — PlayerHealth's run_restarted handler is gated on _owns_mutation()
 
 **Area:** systems/netcode · **Severity:** low · **Found:** 2026-08-20 by lp
@@ -1228,6 +1191,141 @@ Best fixed together with F-279, which is the same file and the same handler.
 ---
 
 ## Resolved
+
+### F-297 · AttunementUI's mandatory picker latches _picking on an unanswered request, leaving a no-dismiss panel with every button disabled — **fixed**
+
+**Area:** UI/input · **Severity:** medium · **Found:** 2026-08-20 by lm
+
+Found by F-275's sweep for its own shape: a mandatory panel (no Esc, no dismiss path) left with no
+operable control, the class F-216 named and F-275 repeated for both terminal run-summary overlays.
+
+`ui/attunement/attunement_ui.gd:77-81` sets `_picking = true` and calls `_set_buttons_disabled(true)`
+the moment a CHOOSE button is pressed, and `_picking` is cleared in exactly one place —
+`_on_selection_confirmed()` at line 146. `_open_picker()`'s own `_picking = false` (line 117) cannot
+help, because it early-returns while `_open` is already true.
+
+So if the host's `selection_confirmed` never arrives — the host peer drops between the
+`AttunementService.request_select()` send and the answer, or the reply is lost — every CHOOSE button
+stays disabled forever on a panel that has no dismiss path and joins `blocks_gameplay_input`. The
+player is left staring at "Requesting forager…" with no control that responds to a mouse OR a
+controller, and no way to reach gameplay again. This is strictly worse than F-275's original symptom:
+there the button worked and merely could not be focused.
+
+The fix wants a bounded wait, not a new signal: re-enable the buttons and put the failure in
+`_show_status()` after a timeout (the file already has a Timer and an error-status path from the
+`accepted == false` branch), and/or clear `_picking` on `NetTransport`'s disconnect. Not fixed under
+F-275 because `ui/attunement/attunement_ui.gd` is outside that task's claim set and F-277 is already
+open against this same file's restart path — whoever takes F-277 is the natural owner of both.
+
+---
+
+**Resolved 2026-08-20 by lm.** **Fixed 2026-08-20 by lm**, under F-277 — this finding's own text named F-277's owner as the natural
+owner of `ui/attunement/attunement_ui.gd`'s other restart defect, and both shipped together.
+
+`_picking` is now a **bounded wait rather than a latch**. `choose()` arms a one-shot Timer at
+`REQUEST_TIMEOUT_SEC = 8.0`; any `selection_confirmed` — accepted or refused — disarms it; an expiry
+clears `_picking`, re-enables every CHOOSE button through the existing `_set_buttons_disabled(false)`
+and puts "No answer from the host — pick again." through the existing error-status path the
+`accepted == false` branch already used. A late answer arriving after the expiry is still handled
+normally. No new signal and no new dependency on `NetTransport`, exactly as the finding suggested.
+
+The rule, now recorded as part of D-167: **a mandatory panel — no Esc, no dismiss path, in
+`blocks_gameplay_input` — must never be able to reach zero operable controls.** Panels that have a
+dismiss path (`chest_ui.gd`, `crafting_ui.gd`, both `ui_cancel`) do not need a bounded wait; the
+dismiss path already is the bound. That distinction is what F-277's sweep used to conclude the only
+mandatory panels in `ui/` are the two terminal overlays F-275 fixed and this one.
+
+**Verified** by `tools/attunement_restart_check.gd`'s phase-2 sub-phase, in this finding's own
+scenario rather than a simulated one: a really joined client sends `request_select()` and then really
+`NetTransport.leave()`s, so the host's answer can never arrive. The check asserts the wait is genuinely
+armed (`pending_request_seconds_left()` reported 7.83 s of an 8 s budget) before running it out
+through the `expire_pending_request_now()` debug seam — a check that only asserted "the buttons came
+back" would pass against a fix that re-enabled them immediately and silently dropped the request.
+After expiry: `operable_button_count() == 4`, `is_picking() == false`, and the status line carries the
+failure. `ATTUNEMENT_RESTART_CHECK failures=0`, 49 PASS, exit 0. At HEAD the same sub-phase cannot
+complete at all (part of the 18 pre-fix failures).
+
+New public seams, in the style of the file's existing `poll_now()`: `is_picking()`,
+`operable_button_count()`, `pending_request_seconds_left()`, `expire_pending_request_now()`.
+
+### F-277 · F-243 clears Attunement effects but keeps the selection locked across runs — **fixed**
+
+**Area:** systems · **Severity:** medium · **Found:** 2026-08-20 by lc1
+
+`autoload/powerup_service.gd:163-164` clears every Powerup stack on `run_restarted`, including the one an Attunement grants, but `autoload/attunement_service.gd:46-54` never subscribes and leaves `_selections` intact. Its `_process_selection()` then refuses every next-run choice at `attunement_service.gd:102-104` as "already selected". `ui/attunement/attunement_ui.gd:102-109` also permanently stops its poll timer after the first choice and has no restart path.
+
+At `6d7e756`, `tools/run_restart_net_check.gd` selects `forager`, restarts, and gets two failures: `local_selection()` is still `forager`, while the mandatory run-start picker remains closed. The player begins run two with no Attunement Powerup and no way to select one. The host must clear/broadcast every selection on `run_restarted`, and each peer's UI must reopen/re-arm its picker for the new run.
+
+---
+
+**Resolved 2026-08-20 by lm.** **Fixed 2026-08-20 by lm.** An Attunement selection is RUN-scoped (D-167): the lock dies with the run
+that set it, and every peer re-arms its own picker for the next one.
+
+**Host half — `autoload/attunement_service.gd`.** It now subscribes `EventBus.run_restarted` and
+calls a new `host_clear_all() -> int`, built on a new per-peer `host_clear_selection(peer_id) -> bool`
+that is the erase + `net_attunement_selected(peer, &"")` broadcast + `selection_changed` emit
+`_on_run_player_expired()` previously open-coded (that handler now calls it). Clearing per peer
+rather than wiping `_selections` is load-bearing: the per-peer `selection_changed` is what re-arms
+each peer's picker, and a bulk wipe emits nothing. Handler unconditional on authority with the seam
+self-guarding on `_owns_mutation()`, the house shape every `run_restarted` subscriber here uses, so
+ARCHITECTURE §2.2's "Attunement selection = Host" row still holds across a restart — a client's own
+copy is a no-op and its mirror follows the broadcast. Both return counts, so a restart with nothing
+picked reports 0. No new RPC; no `PROTOCOL_VERSION` bump.
+
+**UI half — `ui/attunement/attunement_ui.gd`.** The D-071 poll trigger re-arms from **both**
+`run_restarted` and `AttunementService.selection_changed`, guarded on the local selection actually
+being empty. Both, not either: on a client the host's clearing broadcast and the client-side
+re-derived `run_restarted` ride different channels and land in either order, so keying on the run
+event alone passes a single-process check and loses the race about half the time on a real client.
+The re-arm polls via `call_deferred`, not immediately — `run_restarted` subscribers run synchronously
+in autoload registration order and `AttunementUI` sits ahead of `DefeatHud`/`ExtractionHud`, both of
+which restore `Input.mouse_mode` to `CAPTURED` in their own handler; opening inside that emit samples
+the terminal overlay's VISIBLE cursor as "what to restore" and then loses the mouse to the HUD, on a
+panel whose only mouse control is a CHOOSE button.
+
+**F-297 fixed in the same file**, since its own text named F-277's owner — see its own resolution.
+
+**Verified:** `.agent/bin/agent godot --script tools/attunement_restart_check.gd` →
+`ATTUNEMENT_RESTART_CHECK failures=0`, 49 PASS, exit 0. Phase 1 solo on the shipped
+`levels/hollowmere.tscn` drives the real ending → restart path (`DefeatService.defeated` then
+`CycleService.host_restart_run()`, never a bare `emit_run_restarted()` shortcut, F-291) and asserts
+run two is genuinely pickable: selection cleared, backing Powerup gone, picker reopened with all four
+CHOOSE buttons operable and one focused (F-216's no-mouse guarantee has to survive into run two), no
+stale `_picking`, a DIFFERENT role accepted, and `host_clear_all()` honest about doing nothing twice
+in a row. The lock still holds WITHIN a run — F-277 is about it outliving the run, not removing it.
+Phase 2 is a real second process because the host-clears/each-peer-re-arms split is invisible to one:
+a joined client picks over the wire, the host restarts three times, the client reports its own
+cleared selection and its own reopened picker each time, and then picks a second, different role over
+the wire — the assertion that proves the host's lock lifted for a REMOTE peer. The client also
+asserts its own `host_clear_all()` returns 0.
+
+**Pre-fix proof.** `agent baseline` cannot help (the check does not exist at HEAD — F-261/F-275's
+constraint). Both source files were temporarily restored to their HEAD contents (copies kept aside;
+deliberately not `git stash`, which would have touched other lanes' uncommitted work) and the new
+check run against them: `failures=18`, exactly the finding's symptoms on both sides of the wire.
+Files restored, same check, `failures=0`. The check wraps calls into seams the fix ADDS in
+`has_method` guards — without that a pre-fix run aborts its own coroutine on the first missing method
+and shows three assertions instead of the bug.
+
+**Neighbours green at this commit:** `run_restart_check` 0, `terminal_focus_check` 0,
+`attunement_check` 0, `attunement_ui_check` 0, `attunement_net_check` 0, `powerup_check` 0, each with
+0 `ERROR:` lines; generic `agent godot --quit-after 120` exit 0, 0 `ERROR:` lines. The
+`attunement_restart_check` run emits 4 engine `ERROR: Condition "!_has_authority(spawner)"` lines
+from its client process — pre-existing, already filed as F-296.
+
+**Swept for the same shape.** (a) Every `"already …"` refusal across `autoload/`, `systems/`, `core/`:
+this was the only permanent run-scoped one-pick lock — `NetTransport`/`SteamLobby`'s guard session
+state, `WaveSpawner`'s is transient. (b) Every `ui/` file with a `_pending`/`_awaiting`/`_requested`
+in-flight latch: `chest_ui.gd` and `crafting_ui.gd` both have `ui_cancel`, so neither is F-297's
+class; the only mandatory panels are the two F-275 fixed and this one. (c) Every autoload against
+`subscribe_run_restarted`: the remaining run-scoped gaps are already enumerated (F-278 DayNight,
+F-279 spawn position, F-280 `run_started`), so nothing new was filed.
+
+**Closes item 1 of F-281** — with F-268 having taken HaulService and F-278 the DayNight clock, that
+finding's enumeration is now empty.
+
+Spec written at `docs/SPECS.md` (none existed). Decision: D-167. Seams: `docs/DELEGATION.md`
+*Current state*.
 
 ### F-278 · F-243 starts the next run at the previous run's time of day — **fixed**
 

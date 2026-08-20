@@ -6853,3 +6853,45 @@ Notes along the way:
 Files: `systems/environment/day_night.gd`, `tools/day_night_restart_check.gd`, `tools/run_restart_net_check.gd`, `docs/DECISIONS.md`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `15efeed`
+
+---
+
+### HANDOFF · F-280 · lp · 2026-08-20T06:37:03+00:00
+
+**F-243's public run_started hook stays one-shot when a second run starts**
+
+LP stopped on F-280 at 2026-08-20T06:37:03+00:00 (exit 1, quota wall). Tokens this run: 681,132 in / 7,905 out.
+The working diff is UNTOUCHED — its partial edits are still on disk, so read them before redoing anything. Full log: .agent/logs/LP-F-280-20260820-063510.jsonl
+
+Files it had already written or edited: systems/cycle/cycle_service.gd.
+Its last words: "You've hit your session limit · resets 3:10am (America/Vancouver)"
+Its last actions:
+  - Bash cat -n tools/hook_events_check.gd
+  - Bash sed -n '/\[autoload\]/,/^\[/p' project.godot
+  - Bash sed -n '260,300p' docs/COMMANDS.md; echo "=== 395-410 ==="; sed -n '395,410p' do
+  - Bash .agent/bin/agent claim F-280 systems/cycle/cycle_service.gd 2>&1 | tail -5
+  - Read /Users/sequoyahgeber/Desktop/MIRE/systems/cycle/cycle_service.gd
+  - Edit /Users/sequoyahgeber/Desktop/MIRE/systems/cycle/cycle_service.gd
+
+Tail of the failure:
+hit your session limit · resets 3:10am (America/Vancouver)","type":"result","duration_ms":112007,"uuid":"66bf5852-c706-4008-bd9a-324a65abd5f7"}
+{"type":"system","subtype":"task_summary","detail":null,"uuid":"a87d73e1-7488-488e-83e0-dcb0292fb271","session_id":"7b8db720-8dab-4c3c-ba77-4923d274f57d"}
+
+Files: `systems/cycle/cycle_service.gd`
+
+Commit at time of writing: `98bd87f`
+
+---
+
+### DONE · F-277 · lm · 2026-08-20T06:50:30+00:00
+
+**F-243 clears Attunement effects but keeps the selection locked across runs**
+
+An Attunement selection is now RUN-scoped (D-167). AttunementService subscribes run_restarted and clears every peer's pick through a new host_clear_all()/host_clear_selection() pair (D-164's naming; _on_run_player_expired now reuses the per-peer seam), broadcasting each clear so ARCHITECTURE §2.2's host row still holds. AttunementUI re-arms its D-071 poll from BOTH run_restarted and selection_changed — on a client those ride different channels and land in either order — and opens via call_deferred so it does not sample the terminal overlay's cursor mode and lose the mouse to DefeatHud/ExtractionHud's own CAPTURED restore. F-297 fixed in the same file: _picking is a bounded 8s wait, not a latch. No new RPC, no PROTOCOL_VERSION bump. Proof: agent godot --script tools/attunement_restart_check.gd -> ATTUNEMENT_RESTART_CHECK failures=0, 49 PASS, exit 0 (phase 1 solo on hollowmere through the real DefeatService.defeated -> host_restart_run() path; phase 2 a real joined client picking over the wire across three restarts, plus F-297's lost-host sub-phase driven by a real leave()). Pre-fix proof: both source files temporarily restored to HEAD (copies aside, not git stash) -> failures=18, exactly the finding's symptoms on both sides of the wire; restored -> 0. Neighbours green: run_restart_check 0, terminal_focus_check 0, attunement_check 0, attunement_ui_check 0, attunement_net_check 0, powerup_check 0, all 0 ERROR lines; agent godot --quit-after 120 exit 0 with 0 ERROR lines. Closes item 1 of F-281. Spec written in docs/SPECS.md (none existed).
+
+Notes along the way:
+- AttunementService now subscribes run_restarted -> host_clear_all(); AttunementUI re-arms from BOTH run_restarted and selection_changed because on a client the clearing broadcast and the re-derived run_restarted can land in either order. The re-arm poll is call_deferred: AttunementUI is registered ahead of DefeatHud/ExtractionHud in project.godot, both of which restore Input.mouse_mode=CAPTURED inside their own run_restarted handler, so an immediate open would sample the overlay's VISIBLE cursor and then get the mouse captured out from under it.
+
+Files: `autoload/attunement_service.gd`, `ui/attunement/attunement_ui.gd`, `tools/attunement_restart_check.gd`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `98bd87f`

@@ -22,10 +22,27 @@ extends CanvasLayer
 ## down and rebuilt per open), and each carries a visible "focus" stylebox override. ui_accept
 ## already carries a gamepad binding project-wide (tools/bind_ui_gamepad_actions.gd, F-209) so no
 ## further wiring is needed for CHOOSE itself.
+##
+## F-277: "run start" is every run, not just the first. `EventBus.run_restarted` re-arms this panel —
+## AttunementService clears the run-scoped selection on that same event, so the picker has to reopen
+## for the new run or the player spends it with no Attunement and no way to pick one. The re-arm is
+## driven from BOTH `run_restarted` and `selection_changed`, because on a client the host's clearing
+## broadcast and the re-derived `run_restarted` can land in either order.
+##
+## F-297: `_picking` is a bounded wait, not a latch. A mandatory panel — no Esc, no dismiss path,
+## `blocks_gameplay_input` while open — that disables every button until an answer that may never
+## come is a soft-lock with no way back to gameplay, so an unanswered request expires after
+## REQUEST_TIMEOUT_SEC and re-enables the buttons with the failure in the status line.
+
+const EVENT_BUS := preload("res://core/events/event_bus.gd")
 
 const BLOCKING_UI_GROUP: StringName = &"blocks_gameplay_input"
 const PLAYERS_GROUP: StringName = &"players"
 const POLL_INTERVAL_SEC: float = 0.5
+## F-297: how long an unanswered `request_select()` may keep the buttons disabled. Generous enough
+## that a normal host round-trip (one reliable RPC each way) never trips it, short enough that a
+## player whose host vanished mid-request is not staring at a dead panel.
+const REQUEST_TIMEOUT_SEC: float = 8.0
 const ROLE_ORDER: Array[StringName] = [&"warden", &"forager", &"tinker", &"reaver"]
 
 const COLOUR_SCREEN_SHADE := Color(0.018, 0.035, 0.028, 0.85)
@@ -44,6 +61,7 @@ var _status_label: Label
 var _roles_box: VBoxContainer
 var _party_label: Label
 var _poll_timer: Timer
+var _request_timer: Timer
 
 var _open: bool = false
 var _picking: bool = false
@@ -65,6 +83,19 @@ func _ready() -> void:
 	_poll_timer.timeout.connect(_poll_for_local_player)
 	add_child(_poll_timer)
 
+	# F-297's bounded wait. One-shot, armed by `choose()` and disarmed by any answer.
+	_request_timer = Timer.new()
+	_request_timer.wait_time = REQUEST_TIMEOUT_SEC
+	_request_timer.one_shot = true
+	_request_timer.timeout.connect(_on_request_timeout)
+	add_child(_request_timer)
+
+	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
+
+
+func _exit_tree() -> void:
+	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
+
 
 # ── Public API (the check drives these) ─────────────────────────────────────────────────────────
 
@@ -79,6 +110,7 @@ func choose(attunement_id: StringName) -> void:
 	_picking = true
 	_set_buttons_disabled(true)
 	_show_status("Requesting %s…" % attunement_id, false)
+	_request_timer.start()
 	AttunementService.request_select(attunement_id)
 
 
@@ -90,10 +122,38 @@ func status_text() -> String:
 	return _status_label.text
 
 
+func is_picking() -> bool:
+	return _picking
+
+
+## F-297: seconds left on the bounded wait, 0.0 when nothing is pending. A check asserting only that
+## the buttons come back could pass against a fix that re-enabled them immediately and dropped the
+## request; this proves the wait is real and armed.
+func pending_request_seconds_left() -> float:
+	return _request_timer.time_left
+
+
+## F-297: how many CHOOSE buttons a player could actually press right now. On a panel with no
+## dismiss path this — not `_picking` — is what decides whether they are stuck, so it is what the
+## check asserts.
+func operable_button_count() -> int:
+	var operable: int = 0
+	for button: Button in _role_buttons.values():
+		if not button.disabled:
+			operable += 1
+	return operable
+
+
 ## Test/debug seam: force-checks for the local player right now instead of waiting for the poll
 ## interval, so a check does not need to sleep POLL_INTERVAL_SEC to prove the trigger works.
 func poll_now() -> void:
 	_poll_for_local_player()
+
+
+## Test/debug seam, same shape as `poll_now()`: run F-297's bounded-wait expiry immediately instead
+## of sleeping REQUEST_TIMEOUT_SEC, so a check can prove the panel recovers without stalling for it.
+func expire_pending_request_now() -> void:
+	_on_request_timeout()
 
 
 # ── Trigger ──────────────────────────────────────────────────────────────────────────────────────
@@ -141,6 +201,7 @@ func _close_picker() -> void:
 
 
 func _on_selection_confirmed(accepted: bool, attunement_id: StringName, detail: String) -> void:
+	_request_timer.stop()
 	if not _open:
 		return
 	_picking = false
@@ -154,6 +215,57 @@ func _on_selection_confirmed(accepted: bool, attunement_id: StringName, detail: 
 func _on_selection_changed(_peer_id: int, _attunement_id: StringName) -> void:
 	if _open:
 		_refresh_party()
+		return
+	# F-277: on a CLIENT this is the event that actually frees the next run's pick — the host's
+	# `net_attunement_selected(peer, &"")` clear can land after the re-derived `run_restarted`, in
+	# which case the re-arm below is the one that opens the picker. `_rearm_for_new_run()` is a no-op
+	# unless the LOCAL selection is now empty, so a teammate's pick never reopens this panel.
+	_rearm_for_new_run()
+
+
+## F-297. Not "the request failed" — "the request has not been answered inside a bounded wait", which
+## on a panel with no dismiss path has to be recoverable. Restores the buttons and says so; a late
+## answer that arrives afterwards is still handled by `_on_selection_confirmed()` above.
+func _on_request_timeout() -> void:
+	if not _open or not _picking:
+		return
+	_picking = false
+	_set_buttons_disabled(false)
+	_show_status("No answer from the host — pick again.", true)
+
+
+# ── Run boundary (F-277) ─────────────────────────────────────────────────────────────────────────
+
+
+## Every peer's own `EventBus.run_restarted` (the host emits it directly, a client re-derives it from
+## the WorldDeltaLog record — see `CycleService.host_restart_run()`). The selection it invalidates is
+## AttunementService's to clear; all this does is put the panel back in its pre-pick state.
+func _on_run_restarted() -> void:
+	_picking = false
+	_request_timer.stop()
+	if _open:
+		# Already open — the pick was never made, so keep the panel and just drop any stale request.
+		_set_buttons_disabled(false)
+		_show_status("Pick one — it is locked for the run.", false)
+		_refresh_party()
+		return
+	_rearm_for_new_run()
+
+
+## Re-arms the D-071 trigger for a new run: guarded so it only fires once the local selection really
+## is clear, and polled straight away rather than waiting out POLL_INTERVAL_SEC — the player's body
+## already exists on a restart, so there is nothing to wait for.
+##
+## The poll is DEFERRED, not immediate. `run_restarted` subscribers run synchronously in autoload
+## order and this file is registered ahead of DefeatHud/ExtractionHud, each of which restores
+## `Input.mouse_mode` to CAPTURED inside its own handler. Opening during that emit would sample the
+## terminal overlay's VISIBLE cursor as "what to restore afterwards", and the HUD would then capture
+## the mouse out from under a panel whose only mouse control is a CHOOSE button.
+func _rearm_for_new_run() -> void:
+	if _open or AttunementService.local_selection() != &"":
+		return
+	_poll_timer.start()
+	_poll_for_local_player.call_deferred()
 
 
 # ── Internals ────────────────────────────────────────────────────────────────────────────────────
