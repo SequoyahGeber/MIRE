@@ -528,29 +528,6 @@ they would be two phases of one check.
 
 ---
 
-### F-273 · `GameState.seed_ready` is now a run boundary, not a session boundary, and two subscribers' doc comments still say otherwise
-
-**Area:** architecture · **Severity:** low · **Found:** 2026-08-20 by lp
-
-F-258/D-161 made `seed_ready` fire on every restart, not only at session start. Both current
-subscribers do the RIGHT thing with that — `SalvageService`'s per-run Wellspring tally and
-`RewardService`'s per-run event counter both SHOULD reset at a run boundary, which is why nothing
-broke and why this is a finding rather than a bug — but neither file's comment describes the signal
-correctly any more:
-
-- `autoload/salvage_service.gd:128`: "`GameState.seed_ready` fires once at the start of every hosted
-  session and once when a client…" — now also once per restart.
-- `autoload/reward_service.gd:47`: "Reset on `GameState.seed_ready`, the same 'a run…'" — the
-  reasoning is right, the stated trigger frequency is not.
-
-Left alone because both files were outside F-258's claim set and neither behaves wrongly. The risk is
-the next subscriber: someone reading those comments will write a `seed_ready` handler assuming
-once-per-session and get it called mid-run. Fix is two comment edits, plus a line in
-`core/game_state.gd`'s `seed_ready` declaration stating the contract at the source — which is where
-it should have been.
-
----
-
 ### F-281 · F-243's reset enumeration is short by three more run-scoped systems: DayNight's clock, HaulService's spawned haulables, AttunementService's selections
 
 **Area:** systems · **Severity:** medium · **Found:** 2026-08-20 by lp
@@ -1525,6 +1502,96 @@ F-293 predicts, and a third data point that the suite has drifted.
 ---
 
 ## Resolved
+
+### F-273 · `GameState.seed_ready` is now a run boundary, not a session boundary, and two subscribers' doc comments still say otherwise — **fixed**
+
+**Area:** architecture · **Severity:** low · **Found:** 2026-08-20 by lp
+
+F-258/D-161 made `seed_ready` fire on every restart, not only at session start. Both current
+subscribers do the RIGHT thing with that — `SalvageService`'s per-run Wellspring tally and
+`RewardService`'s per-run event counter both SHOULD reset at a run boundary, which is why nothing
+broke and why this is a finding rather than a bug — but neither file's comment describes the signal
+correctly any more:
+
+- `autoload/salvage_service.gd:128`: "`GameState.seed_ready` fires once at the start of every hosted
+  session and once when a client…" — now also once per restart.
+- `autoload/reward_service.gd:47`: "Reset on `GameState.seed_ready`, the same 'a run…'" — the
+  reasoning is right, the stated trigger frequency is not.
+
+Left alone because both files were outside F-258's claim set and neither behaves wrongly. The risk is
+the next subscriber: someone reading those comments will write a `seed_ready` handler assuming
+once-per-session and get it called mid-run. Fix is two comment edits, plus a line in
+`core/game_state.gd`'s `seed_ready` declaration stating the contract at the source — which is where
+it should have been.
+
+---
+
+**Resolved 2026-08-20 by lp.** **FIXED 2026-08-20 by lp.** Nothing behavioural changed — as the entry says, both subscribers were
+already doing the right thing. What changed is that the contract now exists in one place, at the
+signal, and a check holds the code to it.
+
+**The contract, on `core/game_state.gd`'s `signal seed_ready` declaration** (D-177 records the call
+so nobody relitigates it): a RUN boundary on every peer, host and client alike; emitted by
+`host_generate_seed()` (session start, and `MireGrid`'s lazy `ensure_seed()` at boot),
+`host_redraw_seed()` (`CycleService.host_restart_run()`) and `set_replicated_seed()`
+(`net_world_snapshot` for a mid-run joiner, `_on_world_delta_applied()` for a reseed reaching a peer
+already here); **may fire more than once per boundary**, so a handler must be idempotent; and
+`reset()` is a session END that deliberately does not fire it. The three handlers each got a short
+comment pointing at that block rather than restating it — one copy to keep true.
+
+**Three things this entry got wrong, found by reading before editing.**
+
+1. **Three subscribers, not two.** `ui/menu/main_menu.gd:68` is an autoload and connects too,
+   re-`_refresh()`ing its seed label. Harmless, but it belongs in any census — and it is now in one.
+2. **The stale comment had a sibling in the same file.** `host_generate_seed()`'s own header said
+   "Called once per hosted session", which D-161 falsified in the same stroke, because
+   `host_redraw_seed()` delegates the draw straight to it. F-168 → F-181 exactly: same bug, same
+   file, sibling function, missed on the first pass. Fixed. `reset()`'s comment now also says why it
+   is silent.
+3. **The real contract is not "once per run" either — and this is the part worth carrying forward.**
+   One `CycleService.host_restart_run()` fires `seed_ready` **twice on the host with the same
+   value**: `_host_redraw_world_seed()`, then `WorldDeltaLog.host_reseed()` → `_reseed_local()` →
+   `set_replicated_seed()`, which runs on the sending side by design (D-161: send and receive must
+   not drift in what a reseed MEANS). Invisible today only because every handler is a zeroing reset;
+   it is the most likely way a future subscriber breaks. D-177 also records why deduplicating the
+   emit is the wrong fix — `set_replicated_seed()`'s idempotence is a stated contract, and guarding
+   the emit would turn a loud harmless duplicate into a silently missed boundary on a replayed delta.
+
+**`ARCHITECTURE.md` §2.2 gained a `Run world seed` row.** `game_state.gd`'s header had always opened
+"NETWORK AUTHORITY (docs/ARCHITECTURE.md §2.2)" and pointed at a table with no row for it; a finding
+about a contract nobody can find is the right task to close that.
+
+**Verified** — `.agent/bin/agent godot --script tools/seed_ready_contract_check.gd` →
+`SEED_READY_CONTRACT_CHECK failures=0`, 30 PASS, exit 0, **zero** `ERROR:` lines, no declared error
+patterns. Six phases against the real autoloads in one solo process: an exact subscriber census
+(`["MainMenu", "RewardService", "SalvageService"]` — a fourth subscriber turns it red on purpose, and
+the failure text tells its author to read the contract first); every emitter firing once with the
+right value, including `ensure_seed()` being *silent* on an already-seeded process; the run boundary
+driven through the real producers in the real order `host_restart_run()` uses, asserting the double
+emit and that all three subscribers re-derived; the client-adoption half; idempotence on a repeated
+value; and `reset()` being silent. Per-run state is accumulated by firing the real
+`EventBus.wellspring_capped` producer, never by poking a handler — F-310's rule, load-bearing here
+because a three-way fan-out is the thing under test. A doc-only finding cannot have a pre-fix red;
+the check's job is to make the next regression impossible to introduce quietly.
+
+Neighbours re-run green after the edits: `run_reseed_check` 0, `reward_service_seed_check` 0,
+`main_menu_check` 0, `salvage_check` 0 (its two declared JSON patterns only), `seed_launch_arg_check`
+0 with its required `-- --seed=204060517`.
+
+**Sweep** — the class is *a doc comment stating an event's trigger frequency or scope that a later
+change to when it fires has invalidated*. `grep -rn "once per session\|once at the start of\|per
+hosted session\|once per process\|session boundary"` over `autoload/ core/ world/ ui/ systems/
+levels/`: eight hits, one real sibling (item 2 above, fixed), six accurate as written
+(`net_session.gd`'s `session_ready`/`session_ended` are genuinely once-per-session,
+`defeat_service.gd:78` already spells out "a restart is a new run without a new NetTransport
+session", `net_transport.gd`/`net_interest.gd`/`extraction_ship.gd` all describe real session
+boundaries). A second sweep for the behavioural half — `grep -rn "fires once\|fired once\|emitted
+once\|exactly once"` — found no multi-fire event meeting an accumulating handler;
+`cycle_service.gd:85`'s "Fires exactly once per RUN" for `run_started` is true after F-280/D-168.
+Nothing filed.
+
+Spec block written in `docs/SPECS.md` (none existed); seam and the add-a-subscriber briefing in
+`docs/DELEGATION.md` *Current state*; the call in `docs/DECISIONS.md` D-177.
 
 ### F-266 · cmd_claim's load-check-save on state.json has no file lock, so two lanes can both pass the conflict check and both believe they hold the same claim — **fixed**
 

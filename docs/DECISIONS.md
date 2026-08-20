@@ -5660,3 +5660,45 @@ or absent lock. `tools/agent_state_lock_check.py` is where the evidence for that
 
 **D-number hazard (F-283):** allocated by `agent decision` under `file_lock("decisions")`, which is
 F-260's atomic allocator — not by reading the file's tail.
+
+### D-177 · 2026-08-20 · F-273: `GameState.seed_ready` is the RUN-boundary hook, and every subscriber's handler must be idempotent — the signal can fire twice for one boundary
+Settles what F-258/D-161 changed but never wrote down, so nobody has to re-derive it from three
+files the way F-273 did. The signal's declaration in `core/game_state.gd` now carries this verbatim
+and `tools/seed_ready_contract_check.gd` holds the code to it.
+
+**`seed_ready` is a RUN boundary on every peer — not a session boundary, not host-only.** It fires
+from `host_generate_seed()` (session start via `NetTransport.server_started`, plus `MireGrid`'s lazy
+`ensure_seed()` at boot), from `host_redraw_seed()` (`CycleService.host_restart_run()`), and from
+`set_replicated_seed()` on a client (`WorldDeltaLog.net_world_snapshot()` for a mid-run joiner,
+`_on_world_delta_applied()` for a reseed reaching a peer already here). Before D-161 the first of
+those was the only one that mattered, which is why two subscribers' comments said "once per hosted
+session" for a week after it stopped being true.
+
+**A subscriber's handler must be IDEMPOTENT, because one boundary can emit more than once.** A
+single `host_restart_run()` fires it TWICE on the host with the same value: once for
+`_host_redraw_world_seed()`, once again for `WorldDeltaLog.host_reseed()` → `_reseed_local()` →
+`set_replicated_seed()`, which deliberately runs on the sending side too so the host and a receiving
+client cannot drift in what a reseed MEANS (D-161). So a handler may zero, assign or re-derive; it
+may never increment, toggle, advance a phase, or count boundaries. Both shipped service subscribers
+are zeroing resets and `MainMenu`'s re-derives a whole label, so the rule costs nothing today — the
+point is that it is now stated before a fourth subscriber assumes otherwise.
+
+**Deduplicating the double emit was considered and rejected.** A `run_seed == value` early-out in
+`set_replicated_seed()` would collapse it, but that method's contract is explicitly "safe to call
+host-side with its own value — idempotent, so callers never need to branch on who they are", and a
+client re-adopting an unchanged seed after a reconnect must still get the reset. Guarding the emit
+would turn a loud, harmless duplicate into a silent missed boundary in exactly the case (a repeated
+or replayed delta) where a subscriber most needs the reset. Idempotent handlers are the cheaper
+invariant, and the census phase of the check is what keeps them idempotent.
+
+**`GameState.reset()` is a session END and does not fire this signal.** Session end and run boundary
+are different events; only the second one is on `seed_ready`. Anything that needs the first listens
+to `NetSession.session_ended`. Anything that must re-derive its WORLD rather than a per-run tally
+hangs off `EventBus.run_restarted` instead, which arrives immediately after the reseed on the same
+reliable channel.
+
+**Would change my mind:** a subscriber appears whose per-run work is genuinely not idempotent —
+something that must run exactly once per boundary (a one-shot telemetry event, a save write, a UI
+animation). At that point the right fix is not to loosen this rule but to give `CycleService` a
+distinct once-per-boundary emit, because the duplicate is structural in `host_restart_run()` and
+will not go away by being ignored.
