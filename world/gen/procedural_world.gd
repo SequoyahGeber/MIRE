@@ -153,6 +153,12 @@ func rebuild_for_seed(seed_value: int) -> void:
 	_publish_spawn_marker()
 	_replace_players()
 
+	# LAST, and only on the rebuild path — every contract node above is published by now, so a
+	# handler that re-reads the tree sees THIS island and never the one just torn down (F-286,
+	# D-175). The boot path deliberately does not emit: a first build changes `current_scene`, which
+	# every scene-keyed consumer already watches, and "rebuilt in place" is the fact this announces.
+	EVENT_BUS.emit_world_rebuilt()
+
 	MireLog.info(&"world", "ProceduralWorld: rebuilt on seed %d — %d POI site(s), %d marker(s), spawn %s" % [
 		world_seed, poi_sites.size(), _markers_built, spawn_position])
 

@@ -75,6 +75,65 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-20 — F-286 resolved: `EventBus.world_rebuilt` + `world_generation()`, the seam for anything cached off the world (lp)
+
+**Rule: D-175.** Read it before adding any consumer that caches something derived from the world
+scene. Short form: **state to reset subscribes; a cache derived from the scene pulls a counter.**
+
+**1. The new API.** `core/events/event_bus.gd`:
+
+```gdscript
+EventBus.subscribe_world_rebuilt(callable)     # () -> void
+EventBus.unsubscribe_world_rebuilt(callable)
+EventBus.emit_world_rebuilt()                  # producers only
+EventBus.world_rebuilt_subscriber_count() -> int
+EventBus.world_generation() -> int             # monotonic count of the emits above
+```
+
+Meaning: *a world composer just re-derived its contract nodes IN PLACE.* Emitted at the **end** of
+`ProceduralWorld.rebuild_for_seed()`, after `PoiSites`/`SpawnMarker`/every marker group is
+published — so a handler that re-reads the tree sees the NEW island, never the torn-down one. The
+counter is bumped **before** the dispatch, so a subscriber consulting a generation-keyed cache from
+inside its own handler sees the new value. **Boot does not emit**: a first build changes
+`current_scene`, which scene-keyed consumers already watch. One producer today, and
+`rebuild_for_seed()` is the only in-place world rebuild in the repo.
+
+**2. Which half to use.** Hold state that must be reset → subscribe. Hold only a cache derived from
+the scene → fold `world_generation()` into the cache key and subscribe to nothing. The worked
+example is `CraftingService._station_positions_for()`, whose key is now
+`(scene_id, census, generation)`:
+
+```gdscript
+var generation: int = EVENT_BUS.world_generation()
+if scene_id != _station_scene_id or census != _station_census \
+        or generation != _station_generation:
+```
+
+The pull half is not a micro-optimisation. A handler is **ordered against every other subscriber**
+and `ProceduralWorld` is itself one of them — an autoload's `run_restarted` handler runs while the
+ended island is still standing, so clearing there lets the very next query re-cache the dead
+coordinates. A counter read at the query has no ordering to lose. It also covers `rebuild_for_seed()`
+called directly (console reroll, a `--script` check), which fires no `run_restarted` at all.
+
+**3. Do not reach for `run_restarted` for this.** It fires on both maps, the authored one tears
+nothing down (D-170 records what a blanket reaction costs there), its dispatch precedes the rebuild,
+and it misses the direct call entirely. Three separate failures, one wrong event.
+
+**4. Before you choose clear-or-prune (D-170 vs D-175).** Ask whether your re-derivation is
+*unconditional*. `_station_positions_for()` re-walks the live groups every time, so clearing is
+always recoverable — pull the counter and clear. `EnvironmentVfx`'s re-walk is blocked by
+`VFX_META` early-returns, so clearing leaves the authored map permanently dark — prune by source
+instead. Same class of bug, opposite fixes, and the mechanism decides.
+
+**5. Checking a reseed defect without depending on the seed.** `tools/crafting_reseed_check.gd` is
+the pattern for the next one. Two things it does that a naive version cannot: it **constructs** the
+census collision (a fixed pad of kind-less markers planted inside `PoiSites`, then exactly the
+shortfall replanted after the rebuild frees them) rather than waiting for a lucky seed pair; and it
+**plants its own probe stations at y = 500** on the real marker contract, because **F-301 is open —
+some seeds publish no station marker at all**, so nothing in a procedural check may assume the
+island has one. Any new procedural fixture check should assume the same.
+
+
 ### 2026-08-20 — F-282 resolved: a `cycle_advanced` consumer must not read the modifier stack from its own listener (lp)
 
 **Rule: D-174.** Read it before adding any subscriber that both listens to an event and reads state

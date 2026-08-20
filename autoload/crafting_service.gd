@@ -12,6 +12,8 @@ extends Node
 ## request id, and completion still arrives solely through craft_confirmed. Per-station and timed
 ## crafting are both provable with that same pair, so this task does not bump the protocol.
 
+const EVENT_BUS := preload("res://core/events/event_bus.gd")
+
 ## Legacy Playtest Hollow prop group: a station is a StaticBody3D/Node3D holding meta `asset`.
 const LEGACY_STATION_GROUP: StringName = &"playtest_hollow_asset"
 ## Hollowmere marker group (world/gen/authored_world.gd): a station is a Marker3D with meta
@@ -45,9 +47,20 @@ var _host_pending_crafts: Dictionary[int, Dictionary] = {}
 ## Station instances never move once a map is built, so their positions are cached per asset and the
 ## two group scans run once per scene instead of on every range query (F-099). The census (a cheap
 ## O(1) count per group) re-triggers the scan if a harness or a later system adds or removes one.
+##
+## F-286: the census and the scene id are both counts of the CURRENT tree, and neither is a
+## generation identity. `ProceduralWorld.rebuild_for_seed()` re-derives a whole island under the
+## SAME current scene, so the scene id never moves; and two seeds routinely publish the same number
+## of markers (measured: seed 908245843 and seed 424242 both give 11), so the census does not move
+## either. A cache populated on the ended run then survives into the new one holding the PREVIOUS
+## island's coordinates — the host rejecting a craft at the station the player is standing beside,
+## and authorising one at a coordinate that now has nothing on it. `EventBus.world_generation()` is
+## the third key component and the only one that is an identity: it counts in-place world rebuilds,
+## so it changes even when the other two cannot.
 var _station_positions: Dictionary[StringName, Array] = {}
 var _station_scene_id: int = 0
 var _station_census: int = -1
+var _station_generation: int = -1
 
 
 func _ready() -> void:
@@ -303,9 +316,15 @@ func _station_positions_for(asset: StringName) -> Array:
 		get_tree().get_node_count_in_group(LEGACY_STATION_GROUP)
 		+ get_tree().get_node_count_in_group(MARKER_GROUP)
 	)
-	if scene_id != _station_scene_id or census != _station_census:
+	# Pulled, not subscribed (D-175). There is no state here to reset — only a cache derived from
+	# the scene — and a `world_rebuilt`/`run_restarted` handler would be racing dispatch order for
+	# the right to clear it, where reading the counter at the query itself cannot lose that race.
+	var generation: int = EVENT_BUS.world_generation()
+	if scene_id != _station_scene_id or census != _station_census \
+			or generation != _station_generation:
 		_station_scene_id = scene_id
 		_station_census = census
+		_station_generation = generation
 		_station_positions.clear()
 		for node: Node in get_tree().get_nodes_in_group(LEGACY_STATION_GROUP):
 			var station_node := node as Node3D

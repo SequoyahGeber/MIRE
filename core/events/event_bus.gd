@@ -25,6 +25,9 @@ static var _boss_engaged_subscribers: Array[Callable] = []
 static var _boss_phase_changed_subscribers: Array[Callable] = []
 static var _boss_defeated_subscribers: Array[Callable] = []
 static var _run_restarted_subscribers: Array[Callable] = []
+static var _world_rebuilt_subscribers: Array[Callable] = []
+## Monotonic count of `world_rebuilt` emits — the PULL half of that event. See its block below.
+static var _world_generation: int = 0
 
 
 ## Listener signature:
@@ -499,6 +502,52 @@ static func emit_run_restarted() -> void:
 static func run_restarted_subscriber_count() -> int:
 	_prune_invalid(_run_restarted_subscribers)
 	return _run_restarted_subscribers.size()
+
+
+## Listener signature: () -> void
+##
+## F-286/D-175 — "a world composer just re-derived its contract nodes IN PLACE". Emitted at the END
+## of `ProceduralWorld.rebuild_for_seed()`, once the new `PoiSites`/`SpawnMarker`/marker groups are
+## published, so a handler that re-reads the tree sees the NEW island and never the torn-down one.
+##
+## `run_restarted` is NOT a substitute, on three counts. It fires on both maps, and the authored one
+## tears nothing down (D-170 records what a blanket reaction to it costs there). Its dispatch order
+## is against you: `ProceduralWorld` subscribes to it too, from `_ready()`, and every autoload
+## subscribed earlier — so an autoload's handler runs while the ENDED island is still standing.
+## And `rebuild_for_seed()` is public: a console reroll or a `--script` check driving it directly
+## emits no `run_restarted` at all, which is the gap D-170 had to cover with a periodic sweep.
+static func subscribe_world_rebuilt(listener: Callable) -> void:
+	_prune_invalid(_world_rebuilt_subscribers)
+	if listener.is_valid() and not _world_rebuilt_subscribers.has(listener):
+		_world_rebuilt_subscribers.append(listener)
+
+
+static func unsubscribe_world_rebuilt(listener: Callable) -> void:
+	_world_rebuilt_subscribers.erase(listener)
+
+
+## The counter is bumped BEFORE the dispatch, deliberately: a subscriber that reads a
+## generation-keyed cache from inside its own handler must see the new value, not the one it is
+## being told is stale.
+static func emit_world_rebuilt() -> void:
+	_world_generation += 1
+	_prune_invalid(_world_rebuilt_subscribers)
+	for listener: Callable in _world_rebuilt_subscribers.duplicate():
+		listener.call()
+
+
+static func world_rebuilt_subscriber_count() -> int:
+	_prune_invalid(_world_rebuilt_subscribers)
+	return _world_rebuilt_subscribers.size()
+
+
+## How many times a world has been re-derived in place this process. For consumers that hold no
+## state to reset, only something CACHED off the scene: fold this into the cache key and the entry
+## dies with the island it was read from. O(1), needs no subscription to keep alive, and — unlike a
+## handler — cannot be raced by a query that lands before this event reaches a given subscriber.
+## `CraftingService._station_positions_for()` is the worked example (F-286).
+static func world_generation() -> int:
+	return _world_generation
 
 
 static func _prune_invalid(subscribers: Array[Callable]) -> void:

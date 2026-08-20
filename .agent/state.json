@@ -380,6 +380,13 @@
       "task": "F-280",
       "token": null
     },
+    "autoload/crafting_service.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T16:07:35+00:00",
+      "hash": "38a71f278a6f78d4eed983afb5484510e00b3b43c30f74b6d1f034c1c81ea945",
+      "task": "F-286",
+      "token": null
+    },
     "autoload/defeat_service.gd": {
       "agent": "bram1",
       "at": "2026-08-19T22:14:05+00:00",
@@ -655,9 +662,9 @@
     },
     "core/events/event_bus.gd": {
       "agent": "lp",
-      "at": "2026-08-20T00:02:22+00:00",
-      "hash": "de793b9b4a4309d0ff4aec7cbe5da315d7e7c470b36e3af5d07a35ee5239271f",
-      "task": "F-254",
+      "at": "2026-08-20T16:07:35+00:00",
+      "hash": "d67e9cb5458e208a06a9929c625b59cddca50d308758d09cb9196b7139767a69",
+      "task": "F-286",
       "token": null
     },
     "core/game_state.gd": {
@@ -711,16 +718,16 @@
     },
     "docs/DECISIONS.md": {
       "agent": "lp",
-      "at": "2026-08-20T15:40:30+00:00",
-      "hash": "584a3c37156ca17270d1ce741d22abe10055c181388446122027025fe466a933",
-      "task": "F-279",
+      "at": "2026-08-20T16:07:35+00:00",
+      "hash": "5e6258b4f6c8653e3140d86ae27055558df1309347024743584c1421aaf719a4",
+      "task": "F-286",
       "token": null
     },
     "docs/DELEGATION.md": {
       "agent": "lp",
-      "at": "2026-08-20T15:52:40+00:00",
-      "hash": "1f82edb5b7dabbfb4ca7bc407150f09534467d79952b3ddbcbd4a972affc65e6",
-      "task": "F-282",
+      "at": "2026-08-20T16:07:35+00:00",
+      "hash": "0393340613cbfc88349a1b8af93f895fdfe084a9e8004c0ba3dbfa07c82063c7",
+      "task": "F-286",
       "token": null
     },
     "docs/FINDINGS.md": {
@@ -739,9 +746,9 @@
     },
     "docs/SPECS.md": {
       "agent": "lp",
-      "at": "2026-08-20T15:52:40+00:00",
-      "hash": "0228f84466904c9b076f77fe66757a2c2942f671239eb87af0f579ad4801e181",
-      "task": "F-282",
+      "at": "2026-08-20T16:07:35+00:00",
+      "hash": "7b7d6ee3c930195526f9c779c3aa753cec4b6c7c57f7b6390598448eae847973",
+      "task": "F-286",
       "token": null
     },
     "steam_appid.txt": {
@@ -1003,6 +1010,13 @@
       "task": "F-290",
       "token": null
     },
+    "tools/crafting_reseed_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T16:07:35+00:00",
+      "hash": "b53c7e14aa4a92f8e191aafef3bb19c870a78b75597faedf80dfbbf3d3a816e3",
+      "task": "F-286",
+      "token": null
+    },
     "tools/cycle_advanced_net_check.gd": {
       "agent": "lp",
       "at": "2026-08-20T11:15:17+00:00",
@@ -1183,13 +1197,6 @@
       "at": "2026-08-19T19:56:11+00:00",
       "hash": "5cba90001df2ff241373cc98c59902dcb5243e0b3a581703ee2ba19f0cae716e",
       "task": "F-248",
-      "token": null
-    },
-    "tools/rpc_surface_audit_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T15:52:54+00:00",
-      "hash": "a6eac80a28ab1e98e2745455c762a3cb3004150406aafd70a5be9662943cb998",
-      "task": "F-233",
       "token": null
     },
     "tools/run_reseed_check.gd": {
@@ -1516,9 +1523,9 @@
     },
     "world/gen/procedural_world.gd": {
       "agent": "lp",
-      "at": "2026-08-20T10:34:51+00:00",
-      "hash": "d91bdd450887b4b95e790266d817740f7ef4a6aaf75bd131fc002ce42a1dd179",
-      "task": "F-284",
+      "at": "2026-08-20T16:07:35+00:00",
+      "hash": "5d77f34f82638cd0036f9295202d3fa9036859c592d3e2cb682e4c6f04092653",
+      "task": "F-286",
       "token": null
     },
     "world/gen/resource_scatter.gd": {
@@ -5608,9 +5615,11 @@
       "title": "`tools/nav_bake_check.gd` has 4 pre-existing failures at a clean HEAD \u2014 chunk-streamed terrain reports NaN heights to the check's seam search"
     },
     "F-286": {
+      "done_at": "2026-08-20T16:07:35+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Procedural reseed can leave CraftingService validating against the previous island's station coordinates"
     },
@@ -5775,6 +5784,13 @@
       "status": "todo",
       "tier": "F",
       "title": "`inventory_net_check` fails 10 with \"grant timeout\" roughly one run in five \u2014 F-038's exact symptom, back"
+    },
+    "F-310": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Ten tools/ checks call a consumer's event handler directly instead of driving the producer, so the fan-out ordering between two or three independent subscribers is never exercised \u2014 the exact blind spot that let F-282 ship"
     }
   },
   "version": 1

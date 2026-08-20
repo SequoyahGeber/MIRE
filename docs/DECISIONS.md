@@ -5554,3 +5554,64 @@ today; a third independent occurrence of this shape is the signal that it is. Eq
 ever needs a consumer to act on the trigger *itself* — where reacting to the completed action is
 observably too late for the player — this rule loses to that, and the ordering must instead be made
 explicit at the producer (a direct call, not a subscription).
+
+### D-175 · 2026-08-20 · F-286: a cache derived from the world is keyed by a generation counter it PULLS, not cleared by an event it subscribes to
+
+**The decision.** `EventBus` now carries `world_rebuilt` — "a world composer just re-derived its
+contract nodes in place" — emitted at the END of `ProceduralWorld.rebuild_for_seed()`, plus
+`EventBus.world_generation()`, a monotonic count of those emits bumped **before** the dispatch. A
+consumer that holds *state to reset* subscribes. A consumer that holds only a *cache derived from
+the scene* folds `world_generation()` into its cache key and subscribes to nothing.
+`CraftingService._station_positions_for()` is the worked example and the reason the rule exists.
+
+**Why the pull half, when subscribe-and-clear is the obvious fix.** Three reasons, and the second is
+the one that would have bitten:
+
+1. **There is nothing to reset.** A handler that exists solely to clear a cache is a subscription
+   kept alive, unsubscribed on exit, and ordered against every other subscriber, to do what one
+   integer comparison in the key does for free. `CraftingService` deliberately idles with
+   `set_process(false)` (F-099); this keeps it that way.
+
+2. **A handler races dispatch order; a key cannot.** `ProceduralWorld` subscribes to `run_restarted`
+   from `_ready()`, and every autoload subscribed earlier — so an autoload's handler runs *while the
+   ended island is still standing*. Clear the cache there and the next query, still inside the same
+   frame, re-caches the dead coordinates and the bug survives its own fix. D-170 hit this from the
+   other side and had to `call_deferred` its whole rediscovery to get around it. A counter read at
+   the query itself has no ordering to lose: whenever the query lands, it sees the generation that
+   is current at that instant.
+
+3. **`rebuild_for_seed()` is public and `run_restarted` is not the only way in.** A console reroll
+   or a `--script` check calling it directly fires no restart at all. D-170 covered that gap with a
+   quarter-second periodic sweep because nothing announced the call; `world_rebuilt` now does, and
+   the pull key covers it with no sweep at all.
+
+**The emit goes LAST, and the counter goes UP FIRST.** Last, because every contract node —
+`PoiSites`, `SpawnMarker`, the marker groups — must already be published when a handler re-reads the
+tree, or the handler sees the island it is being told is gone. First, because a subscriber that
+consults a generation-keyed cache from inside its own handler has to see the new value, not the one
+it is being notified about.
+
+**Boot does not emit.** A first build changes `current_scene`, which every scene-keyed consumer
+already watches. `world_rebuilt` means "rebuilt in place" specifically, and widening it to mean
+"a world exists now" would make it useless for the one thing it is for.
+
+**This does not overturn D-170, and the two are not in tension.** "Prune by source, do not clear" is
+about `EnvironmentVfx`, whose re-walk is blocked by `VFX_META` early-returns, so a clear on the
+authored map leaves it permanently dark. `_station_positions_for()` re-derives unconditionally from
+the live groups; dropping it is always recoverable. Same class of bug, opposite fixes, and the
+difference is in the mechanism rather than in preference: **before choosing clear-or-prune, ask
+whether the re-derivation is unconditional.** If anything can make the re-walk skip what it is
+supposed to find, clearing is a silent regression waiting to happen.
+
+**Scope.** `ARCHITECTURE.md` §2.2 unchanged. Crafting stays host-authoritative — this was a defect
+*in* that row, not a move of it — and `EventBus` still sends nothing. `world_rebuilt` has exactly
+one producer today (`rebuild_for_seed()` is the only in-place world rebuild in the repo) and a
+second producer would be a new map generator, not a new caller.
+
+**What would change my mind:** a consumer that must act on the rebuild *before* the new island is
+published — the D-174 case, where reacting to the completed action is observably too late. Nothing
+has that need yet, and a consumer that grows one wants a direct call from the producer, not a second
+event fired earlier.
+
+**D-number hazard (F-283).** Taken by reading the file's tail; D-174 was the highest at the time.
+Still no atomic allocator, so a concurrent lane could take D-175 too.

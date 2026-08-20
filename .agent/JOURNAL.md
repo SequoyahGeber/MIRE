@@ -7128,3 +7128,18 @@ Notes along the way:
 Files: `systems/waves/wave_spawner.gd`, `tools/cycle_modifier_effects_check.gd`, `docs/SPECS.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `b41c15b`
+
+---
+
+### DONE · F-286 · lp · 2026-08-20T16:07:35+00:00
+
+**Procedural reseed can leave CraftingService validating against the previous island's station coordinates**
+
+Fixed. EventBus gains world_rebuilt + world_generation() (core/events/event_bus.gd); ProceduralWorld.rebuild_for_seed() emits it LAST, after every contract node is published; CraftingService folds the counter into its station-cache key as a third component alongside scene id and census. Pulled, not subscribed (D-175): a handler would race dispatch order for the right to clear — ProceduralWorld subscribes to run_restarted from _ready() too and every autoload subscribed earlier, so an autoload's handler runs while the ENDED island is still standing and the next query re-caches the dead coordinates. It also misses rebuild_for_seed() called directly. Proof: agent godot --script tools/crafting_reseed_check.gd -> CRAFTING_RESEED_CHECK failures=0, 22 PASS, exit 0, zero ERROR lines. Pre-fix (generation clause removed, copy in scratchpad not git stash) -> failures=6, including the craft at the VACATED coordinate returning 'crafted Stone Axe' instead of 'craft rejected: station out of range' — the host authorising a craft where nothing stands. Check has teeth on any seed: the census collision is CONSTRUCTED (64-marker pad inside PoiSites, shortfall replanted after the rebuild frees them) and the probe stations are planted at y=500 on the real marker contract because F-301 is open and some seeds publish none. Siblings green: CRAFTING_CHECK failures=0, RUN_RESEED_CHECK failures=0, ENVIRONMENT_VFX_RESEED_CHECK failures=0. CRAFTING_NET_CHECK went red once then green x3 and green on agent baseline at HEAD — F-304's truncate-write race, evidence added there. Filed F-311, F-312. Recorded D-175. Pre-existing and NOT mine: findings_hygiene_check fails 2 on F-236/F-299 (flagged at agent start before I touched anything).
+
+Notes along the way:
+- Design: the fix is a PULL seam, not a subscription. EventBus gains world_rebuilt + a monotonic world_generation() counter bumped on emit; CraftingService folds that counter into its (scene_id, census) cache key. Chosen over subscribe-and-clear because (a) CraftingService deliberately idles with set_process(false) (F-099) and has no state to reset — only a derived cache, (b) a pull key cannot be beaten by dispatch ORDER, which is the trap D-170 hit from the other side: ProceduralWorld subscribes to run_restarted too, and an autoload subscribing from _ready() runs BEFORE it, so a clear-on-run_restarted would clear the cache while the OLD island is still standing and the very next query would re-cache the dead coordinates, and (c) run_restarted does not fire at all for a direct rebuild_for_seed() (console reroll, a check).
+
+Files: `core/events/event_bus.gd`, `world/gen/procedural_world.gd`, `autoload/crafting_service.gd`, `tools/crafting_reseed_check.gd`, `docs/SPECS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `0d6ff27`
