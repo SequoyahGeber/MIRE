@@ -79,6 +79,7 @@ SteamStats="*res://autoload/steam_stats.gd"
 RichPresenceService="*res://autoload/rich_presence_service.gd"
 MenuStack="*res://ui/menu_stack.gd"
 PauseMenu="*res://ui/menu/pause_menu.gd"
+RunRecord="*res://autoload/run_record.gd"
 
 [display]
 

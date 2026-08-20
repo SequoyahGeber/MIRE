@@ -24,6 +24,7 @@ extends Control
 
 const MireTheme := preload("res://ui/theme/mire_theme.gd")
 const SalvageSave := preload("res://core/save/salvage_save.gd")
+const RunRecordSave := preload("res://core/save/run_record_save.gd")
 
 ## Width of the lower-left choice column. Wide enough for "SETTINGS" at Title size with the button's
 ## own padding, narrow enough to leave the island uncovered.
@@ -110,13 +111,13 @@ func _persona_name() -> String:
 	return "offline"
 
 
-## The last run's record, written by `RunStatsService` (MENU-7). Absent on a first-ever boot and on
-## any save from before that service existed, in which case the card is hidden entirely rather than
-## shown empty — a "Cycle 0 / nothing banked" card would tell a new player they had already failed.
+## The last run's record, written by `autoload/run_record.gd` (MENU-7). Empty on a first-ever boot,
+## in which case the card is hidden entirely rather than shown empty — a "Cycle 0 / nothing banked"
+## card would tell a new player they had already failed.
 func _last_expedition() -> Dictionary:
-	var data: Dictionary = SalvageSave.load_data()
-	var record: Variant = data.get("last_run", null)
-	return record if record is Dictionary else {}
+	var service: Node = get_node_or_null(^"/root/RunRecord")
+	var record: Dictionary = service.call("last_run") if service != null else RunRecordSave.load_data()
+	return record if bool(record.get("has_run", false)) else {}
 
 
 # ── Layout ────────────────────────────────────────────────────────────────────────────────────────
