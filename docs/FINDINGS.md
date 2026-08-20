@@ -1403,7 +1403,9 @@ F-293 predicts, and a third data point that the suite has drifted.
 
 ---
 
-### F-314 · A lane's queue drains in task-id order, so routing priority is whatever the F-numbers happen to be
+## Resolved
+
+### F-314 · A lane's queue drains in task-id order, so routing priority is whatever the F-numbers happen to be — **fixed**
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-20 by galef95fa6
 
@@ -1438,9 +1440,25 @@ is the default. The order header already carries `lane:`/`model:`/`effort:`/`fil
 Verify: `python3 tools/harness_check.py`, plus a case asserting a high-priority order sorts ahead of
 a numerically-lower id and that unprioritised orders keep their id order.
 
----
+**Resolved 2026-08-20 by galef95fa6.** Orders now carry a `priority:` field in their header comment, and both drain sites go through one
+`_drain_order()` that sorts by `(priority, task id)` — `cmd_saturate`'s initial queue build and
+`_wait_for_new_orders`, which had the same id-only sort and would otherwise have re-imposed filing
+order on every order that arrived mid-chain.
 
-## Resolved
+`agent order <id> --lane <L> --priority 1..9`; 1 drains first, 9 last, 5 is the default, and an
+unreadable or absent value falls back to the default — so an order written before this field existed,
+and any queue where nobody sets a priority, drains in exactly the id order it did before.
+`agent report`'s "Orders waiting" now prints in true drain order with the rank shown, so the list
+answers "what will LP do next" instead of "what has the lowest F-number".
+
+Verified: `python3 tools/harness_check.py` → 36/36, including the new case "a lane's queue drains by
+priority, and by id only as a tie-break (F-314)", which asserts the priority sort, that another
+lane's orders do not leak into the queue, that a flat queue keeps plain id order, and that six
+unusable header values (`""`, `"?"`, None, `"banana"`, `"0"`, `"99"`) all clamp into 1..9.
+
+Applied to the live LP queue the same session: F-301 (island ships with crafting unreachable) and
+F-307 (non-host peer soft-locked when the host leaves) at p1, ahead of the four doc/harness cleanups
+that had sorted above them.
 
 ### F-281 · F-243's reset enumeration is short by three more run-scoped systems: DayNight's clock, HaulService's spawned haulables, AttunementService's selections — **closed**
 
