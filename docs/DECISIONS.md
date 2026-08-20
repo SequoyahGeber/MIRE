@@ -4380,6 +4380,7 @@ which point the right fix is probably `NetConfig`/`DevLaunch` gaining a flag tha
 itself Steam-free regardless of what autoloads want, not reverting this call.
 
 ### D-149 · 2026-08-19 · F-243's run restart resets services IN PLACE — no level reload, no fresh world seed, host-only trigger with no new RPC
+*Middle third superseded by D-161 (a restart draws a fresh seed). Its run-scoped reset enumeration is amended by D-178 — the live list is `tools/run_scope_audit_check.gd`, and the sentence below has been short since F-259.*
 
 Three scope calls, made together, closing F-243 ("the run loop is a line, not a circle").
 
@@ -5702,3 +5703,49 @@ something that must run exactly once per boundary (a one-shot telemetry event, a
 animation). At that point the right fix is not to loosen this rule but to give `CycleService` a
 distinct once-per-boundary emit, because the duplicate is structural in `host_restart_run()` and
 will not go away by being ignored.
+
+### D-178 · 2026-08-20 · F-281: the run-scoped reset enumeration lives in `tools/run_scope_audit_check.gd`, not in D-149's prose — every autoload is classified, and the classification must be TOTAL
+
+D-149 wrote the enumeration as a sentence: "Only RUN-scoped state resets: Cycle, Mire corruption,
+Cycle Modifiers, inventory, health, enemies, buildables, chest/wellspring/ship progress." That
+sentence was accurate the day it was written and has been short ever since. It went short four times
+in five days — F-259 (`WaveSpawner`), F-268 (`BuildService`, and `HaulService` in its own sweep),
+F-277 (`AttunementService`), F-278 (`DayNight`) — and **three of those four were found twice, by two
+different lanes, independently**, because each lane redid the same `grep -l subscribe_run_restarted`
+by hand and each got a slightly different answer about what the remainder meant. F-281 exists only
+because one of those sweeps wrote its leftovers down.
+
+**Why a check and not a better-maintained list.** Prose cannot fail. The failure mode is never "the
+list was wrong when written"; it is "somebody added an autoload and nobody re-read the list", and no
+amount of care in the writing addresses that. `tools/run_scope_audit_check.gd` classifies every
+autoload in `project.godot` as either `RESETS` (it subscribes `EventBus.run_restarted`, asserted) or
+a one-line reason why it does not (asserted to still not subscribe). **The load-bearing property is
+totality, not the contents**: an autoload nobody classified fails the check, which is the one moment
+somebody is forced to actually decide whether the thing they just wrote is run-scoped. That moment is
+precisely what the four rediscoveries above were each missing.
+
+**Why the reasons are asserted in both directions.** A reason that has quietly become false is how
+F-259 and F-277 were both missed on a first pass — the sweep saw a name it recognised, remembered a
+justification, and moved on. So a file carrying a "not run-scoped" reason that starts subscribing
+fails the check too: the reason is now stale and the row must be reclassified. The reasons are also
+the answer to "was this considered?", which is the question every one of these rediscoveries
+re-asked from scratch.
+
+**Why the non-autoload half is listed separately.** D-149 chose per-node `host_reset_for_new_run()`
+over a scene reload for Chest, Wellspring and ExtractionShip, so a third of its own enumeration lives
+in the level tree where an autoload sweep structurally cannot see it — as do `ProceduralWorld`
+(D-161) and `ResourceScatterField`. `SCENE_SCOPE` names those five explicitly so the autoload-sweep
+habit stays honest about what it does not cover.
+
+**What this does NOT assert.** Only that the subscription exists — not that the handler resets the
+right things. That half stays with the behavioural checks (`run_restart_check`,
+`day_night_restart_check`, `attunement_restart_check`, `harvest_restart_check`,
+`run_restart_spawn_check`, `run_restart_net_check`), and it is a real gap: F-303 is a subscriber
+whose handler resets the wrong quantity, and this check would pass it. The split is deliberate —
+subscription is a source fact one cheap check can pin for all 65 files, behaviour needs a booted
+world per system.
+
+**Would change my mind:** `EventBus` gaining a runtime-enumerable subscriber registry. The
+source-text scan exists because the static `Callable` registry cannot be listed at runtime and a
+booted probe would only see nodes that happen to be in that tree; given the list, this check becomes
+a runtime assertion and stops being a grep.

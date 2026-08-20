@@ -7238,3 +7238,19 @@ Planning slice done: docs/MENU.md is the whole menu spec — read it end to end 
 Files: `docs/MENU.md`
 
 Commit at time of writing: `6519d39`
+
+---
+
+### DONE · F-281 · lp · 2026-08-20T20:21:37+00:00
+
+**F-243's reset enumeration is short by three more run-scoped systems: DayNight's clock, HaulService's spawned haulables, AttunementService's selections**
+
+All three F-281 items were already fixed at HEAD by lanes that never read the entry (F-268 haulables, F-277/D-167 attunement selections, F-278 day/night clock); re-ran all three checks before editing anything — run_restart_check failures=0, day_night_restart_check failures=0, attunement_restart_check failures=0. What was left is the finding's TITLE: D-149's prose enumeration named 8 things while the code resets 22, and that sentence is why the same class was found four times in five days with three of the four found twice over independently. Fixed the enumeration itself: new tools/run_scope_audit_check.gd classifies ALL 60 project.godot autoloads as either RESETS (asserted to still call subscribe_run_restarted) or a recorded one-line reason (asserted to still NOT call it), plus the 5 run-scoped nodes that are not autoloads and that an autoload sweep structurally cannot see. Totality is the tripwire: a new autoload nobody classified FAILS the check. Proves: .agent/bin/agent godot --script tools/run_scope_audit_check.gd -> RUN_SCOPE_AUDIT_CHECK failures=0, 4 PASS, exit 0, no ERROR lines. Negative-tested all five failure paths (each produced its own FAIL line), which caught a real defect in the check itself — PASS lines printing beneath FAILs of the same assertion, now bracketed per section. No shipped source file touched. D-178 recorded, D-149 given the permitted amendment pointer, spec written (none existed), DELEGATION Current state entry added. Sweep filed nothing new: the live members of the class are already F-300, F-303, F-307, now recorded in the table; four classifications (EntityDirectory, RuleService, BossMusicDirector, WorldDeltaLog) were checked rather than assumed.
+
+Notes along the way:
+- All three F-281 items already fixed at HEAD by other lanes (F-268 haulables, F-277 attunement selections, F-278 day/night clock). Re-ran all three checks myself: run_restart_check failures=0, day_night_restart_check failures=0, attunement_restart_check failures=0. The finding's TITLE is about the enumeration, not the three items — D-149's prose list is still short, so the real fix is a tripwire.
+- Negative-tested all five failure paths by varying the classification table (not shipped source, not git stash — F-261/F-275's constraint). That run caught a real defect in my own check: PASS lines printed alongside FAILs of the same assertion. Each section now brackets its own failure count.
+
+Files: `tools/run_scope_audit_check.gd`, `docs/DECISIONS.md`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DELEGATION.md`, `tools/run_scope_audit_check.gd.uid`
+
+Commit at time of writing: `8017b58`

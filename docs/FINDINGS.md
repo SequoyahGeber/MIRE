@@ -528,82 +528,6 @@ they would be two phases of one check.
 
 ---
 
-### F-281 · F-243's reset enumeration is short by three more run-scoped systems: DayNight's clock, HaulService's spawned haulables, AttunementService's selections
-
-**Area:** systems · **Severity:** medium · **Found:** 2026-08-20 by lp
-
-Found by F-259's close-out sweep. F-259 was WaveSpawner missing from F-243/D-149's enumeration of
-run-scoped systems (`docs/DECISIONS.md` D-149: "Only RUN-scoped state resets: Cycle, Mire corruption,
-Cycle Modifiers, inventory, health, enemies, buildables, chest/wellspring/ship progress"). The sweep
-that closed it — every autoload in `project.godot` that holds mutable state, checked against
-`grep -l subscribe_run_restarted` — turned up three more, plus the already-filed F-268.
-
-The exact list, worst first:
-
-**1 · `autoload/attunement_service.gd` — `_selections` survives, its granted stat does not.**
-This is a genuine state desync F-243 introduced, not just stale state. D-070: an Attunement grants
-exactly one stack of a backing `PowerupDef` through `PowerupService`'s host seam. `PowerupService`
-DOES reset on `run_restarted` (`autoload/powerup_service.gd:87`), so the restarted run wipes the
-stack — but `_selections` keeps the peer's pick, and D-071's trigger is "the local player's first
-spawn this session", which has already happened. So the restarted run shows every player locked into
-a role with nothing backing it, and no path to re-pick. **Needs a design call before a fix**: clear
-`_selections` and re-prompt at the new run's first spawn (matches D-071's "run start" wording), or
-keep the pick and re-grant the stack after `PowerupService`'s own reset (ordering-sensitive — both
-are `run_restarted` subscribers, and subscriber order is autoload-registration order).
-Whichever, mind D-035: selections are keyed by peer id.
-
-**2 · `autoload/haul_service.gd` — spawned haulables survive a restart.** The same shape as F-268's
-buildables, in the second container of host-owned run-scoped world objects (`_container`/`Haulables`,
-replicated by its own code-built `MultiplayerSpawner`). No `run_restarted` subscriber; the ended
-run's heavy objects are still lying where they were dropped. `EnemyWorld._on_run_restarted()`'s
-one-liner over an existing self-guarded despawn is the shape to copy. Fix this together with F-268 —
-same reasoning, same test phase, one commit.
-
-> **DONE 2026-08-20 by lp — this third only.** Fixed in F-268's commit, exactly as this entry asks:
-> `HaulService` now subscribes `run_restarted` and clears its container through a host-guarded
-> `host_clear_all()`, the same method name `BuildService` grew in the same commit, and
-> `tools/run_restart_check.gd` seeds a haulable and asserts it is gone after the restart. Found
-> independently by F-268's own sweep before this entry was read, which is some evidence the shape is
-> greppable rather than lucky. **Item 3 is now done too (below); item 1 is untouched and this
-> finding stays open for it.**
-
-> **DONE 2026-08-20 by lp — item 3 only.** Fixed as **F-278**, filed independently by F-243's review
-> before this entry was read — the third time this week the same shape was found twice from two
-> directions, which is more evidence for the sweep habit than for luck. `DayNight` now subscribes
-> `run_restarted` and resets `time_of_day` to the authored run-start morning, host-side, replicating
-> through the existing `net_push_time` path with no new RPC, exactly as this item predicted. Two
-> things this item did not predict: the reset must NOT go through `host_set_time()` (it crosses
-> thresholds, and `day_started_at` sits between a night-time run end and the morning, so it would
-> hand `CycleService` a phantom elapsed day — D-166), and the `_lerp_wrapped_unit()` smear this item
-> flagged as a thing to *check* is real and is NOT solved by a client-side `run_restarted` handler,
-> because the unreliable time push overtakes the reliable restart record; the interpolator itself
-> needed a discontinuity threshold. See F-278 under '## Resolved' and
-> `tools/day_night_restart_check.gd`. **Item 1 (AttunementService) is untouched — it is F-277's.**
-
-**3 · `systems/environment/day_night.gd` — `time_of_day` survives.** A restarted run resumes at the
-clock of the moment the last one ended. Because a run usually ends at night, the new run typically
-starts mid-night: the wave for that night never spawns (its `night_started` crossing fired during the
-PREVIOUS run — F-259 cleared the latch, it cannot re-fire the signal), and the new run's first "day"
-is a partial one. `CycleService` already resets its own `_days_elapsed` to 0 in `host_restart_run()`,
-so the day COUNT and the clock disagree after every restart. Fix is a `run_restarted` subscriber
-setting `time_of_day` back to the export default (0.348, dawn-ish) host-side; it replicates to
-clients through the existing `net_push_time` path, so no new RPC. Check that `_has_client_snapshot`
-interpolation (`_lerp_wrapped_unit`) does not smear a client across the wrap when the host jumps
-backwards.
-
-Checked and deliberately NOT on this list: `UnlockService` (meta-progression — must survive, by
-design), `SalvageService` (self-resets at bank time; `tools/run_restart_check.gd` already asserts
-it), `HarvestWorld` (node depletion lives in `world/gen/resource_scatter_field.gd`, which does
-subscribe), `CraftingService`/`ExtractionService`/`WellspringService`/`ChestPlacementService`
-(`_refresh_scheduled` transients only), `RewardService` (`_next_reward_event_id` is an id counter,
-not run state).
-
-**Verify:** extend `tools/run_restart_check.gd`'s phases 2/4 the way F-259 did — seed each piece of
-state before the defeat, assert it cleared after `host_restart_run()`. It already boots the shipped
-map with all three services live.
-
----
-
 ### F-283 · Three D-numbers each head two different decisions — D-050, D-144 and D-150 are live collisions from before F-260's allocator, and no check detects them
 
 **Area:** ? · **Severity:** medium · **Found:** 2026-08-20 by lp
@@ -1479,7 +1403,184 @@ F-293 predicts, and a third data point that the suite has drifted.
 
 ---
 
+### F-314 · A lane's queue drains in task-id order, so routing priority is whatever the F-numbers happen to be
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-20 by galef95fa6
+
+`agent saturate <LANE>` in drain mode builds its queue as
+
+    wanted = [t for t, m in sorted(orders.items()) if m["lane"] == lane]
+
+(`.agent/bin/agent`, `cmd_saturate`, and again in `_wait_for_new_orders`). `sorted()` on task ids
+means a lane works its orders in **filing order**, which is the one attribute of an order that
+carries no information about how much the work matters.
+
+Observed live 2026-08-20 from the director seat. LP was the only dispatchable lane (LC2 parked to
+Aug 23, LM and LC1 flagged `manual`), and it parks on its five-hour wall after roughly one or two
+tasks — so queue position is not a nicety, it is days of latency. The queue sorted to:
+
+    F-264 F-281 F-283 F-285 F-289 F-300 F-301 F-303 F-306 F-307
+
+Four doc/harness cleanups (F-281 enumeration gap, F-283 duplicate D-numbers, F-285 a red check,
+F-289 a ship limitation) run **before** F-301, where some procedural seeds publish no station marker
+at all and ship the island with crafting unreachable, and before F-307, where a non-host peer whose
+host leaves is soft-locked with no way back. The two player-facing bugs are last purely because they
+were filed later.
+
+The director can work around it by naming ids explicitly (`agent saturate LP F-307 F-301 ...`), but
+that abandons drain mode, so orders filed afterwards are not picked up and the lane goes idle at the
+end of the list — trading the wrong order for an idle window, which §4 calls the failure mode.
+
+Fix: give an order an explicit priority and drain by it, falling back to the id so today's behaviour
+is the default. The order header already carries `lane:`/`model:`/`effort:`/`files:`, so a
+`priority:` field there costs nothing and stays readable in the file.
+
+Verify: `python3 tools/harness_check.py`, plus a case asserting a high-priority order sorts ahead of
+a numerically-lower id and that unprioritised orders keep their id order.
+
+---
+
 ## Resolved
+
+### F-281 · F-243's reset enumeration is short by three more run-scoped systems: DayNight's clock, HaulService's spawned haulables, AttunementService's selections — **closed**
+
+**Area:** systems · **Severity:** medium · **Found:** 2026-08-20 by lp
+
+Found by F-259's close-out sweep. F-259 was WaveSpawner missing from F-243/D-149's enumeration of
+run-scoped systems (`docs/DECISIONS.md` D-149: "Only RUN-scoped state resets: Cycle, Mire corruption,
+Cycle Modifiers, inventory, health, enemies, buildables, chest/wellspring/ship progress"). The sweep
+that closed it — every autoload in `project.godot` that holds mutable state, checked against
+`grep -l subscribe_run_restarted` — turned up three more, plus the already-filed F-268.
+
+The exact list, worst first:
+
+**1 · `autoload/attunement_service.gd` — `_selections` survives, its granted stat does not.**
+This is a genuine state desync F-243 introduced, not just stale state. D-070: an Attunement grants
+exactly one stack of a backing `PowerupDef` through `PowerupService`'s host seam. `PowerupService`
+DOES reset on `run_restarted` (`autoload/powerup_service.gd:87`), so the restarted run wipes the
+stack — but `_selections` keeps the peer's pick, and D-071's trigger is "the local player's first
+spawn this session", which has already happened. So the restarted run shows every player locked into
+a role with nothing backing it, and no path to re-pick. **Needs a design call before a fix**: clear
+`_selections` and re-prompt at the new run's first spawn (matches D-071's "run start" wording), or
+keep the pick and re-grant the stack after `PowerupService`'s own reset (ordering-sensitive — both
+are `run_restarted` subscribers, and subscriber order is autoload-registration order).
+Whichever, mind D-035: selections are keyed by peer id.
+
+**2 · `autoload/haul_service.gd` — spawned haulables survive a restart.** The same shape as F-268's
+buildables, in the second container of host-owned run-scoped world objects (`_container`/`Haulables`,
+replicated by its own code-built `MultiplayerSpawner`). No `run_restarted` subscriber; the ended
+run's heavy objects are still lying where they were dropped. `EnemyWorld._on_run_restarted()`'s
+one-liner over an existing self-guarded despawn is the shape to copy. Fix this together with F-268 —
+same reasoning, same test phase, one commit.
+
+> **DONE 2026-08-20 by lp — this third only.** Fixed in F-268's commit, exactly as this entry asks:
+> `HaulService` now subscribes `run_restarted` and clears its container through a host-guarded
+> `host_clear_all()`, the same method name `BuildService` grew in the same commit, and
+> `tools/run_restart_check.gd` seeds a haulable and asserts it is gone after the restart. Found
+> independently by F-268's own sweep before this entry was read, which is some evidence the shape is
+> greppable rather than lucky. **Item 3 is now done too (below); item 1 is untouched and this
+> finding stays open for it.**
+
+> **DONE 2026-08-20 by lp — item 3 only.** Fixed as **F-278**, filed independently by F-243's review
+> before this entry was read — the third time this week the same shape was found twice from two
+> directions, which is more evidence for the sweep habit than for luck. `DayNight` now subscribes
+> `run_restarted` and resets `time_of_day` to the authored run-start morning, host-side, replicating
+> through the existing `net_push_time` path with no new RPC, exactly as this item predicted. Two
+> things this item did not predict: the reset must NOT go through `host_set_time()` (it crosses
+> thresholds, and `day_started_at` sits between a night-time run end and the morning, so it would
+> hand `CycleService` a phantom elapsed day — D-166), and the `_lerp_wrapped_unit()` smear this item
+> flagged as a thing to *check* is real and is NOT solved by a client-side `run_restarted` handler,
+> because the unreliable time push overtakes the reliable restart record; the interpolator itself
+> needed a discontinuity threshold. See F-278 under '## Resolved' and
+> `tools/day_night_restart_check.gd`. **Item 1 (AttunementService) is untouched — it is F-277's.**
+
+**3 · `systems/environment/day_night.gd` — `time_of_day` survives.** A restarted run resumes at the
+clock of the moment the last one ended. Because a run usually ends at night, the new run typically
+starts mid-night: the wave for that night never spawns (its `night_started` crossing fired during the
+PREVIOUS run — F-259 cleared the latch, it cannot re-fire the signal), and the new run's first "day"
+is a partial one. `CycleService` already resets its own `_days_elapsed` to 0 in `host_restart_run()`,
+so the day COUNT and the clock disagree after every restart. Fix is a `run_restarted` subscriber
+setting `time_of_day` back to the export default (0.348, dawn-ish) host-side; it replicates to
+clients through the existing `net_push_time` path, so no new RPC. Check that `_has_client_snapshot`
+interpolation (`_lerp_wrapped_unit`) does not smear a client across the wrap when the host jumps
+backwards.
+
+Checked and deliberately NOT on this list: `UnlockService` (meta-progression — must survive, by
+design), `SalvageService` (self-resets at bank time; `tools/run_restart_check.gd` already asserts
+it), `HarvestWorld` (node depletion lives in `world/gen/resource_scatter_field.gd`, which does
+subscribe), `CraftingService`/`ExtractionService`/`WellspringService`/`ChestPlacementService`
+(`_refresh_scheduled` transients only), `RewardService` (`_next_reward_event_id` is an id counter,
+not run state).
+
+**Verify:** extend `tools/run_restart_check.gd`'s phases 2/4 the way F-259 did — seed each piece of
+state before the defeat, assert it cleared after `host_restart_run()`. It already boots the shipped
+map with all three services live.
+
+---
+
+**Resolved 2026-08-20 by lp.** All three items were already fixed at HEAD, each by a lane that had
+never read this entry — item 2 (`HaulService`) inside F-268's own sweep, item 3 (`DayNight`) as
+F-278, item 1 (`AttunementService`) as F-277/D-167. Re-ran all three checks myself before editing
+anything, and all three are green at this commit:
+
+    tools/run_restart_check.gd         RUN_RESTART_CHECK failures=0          ("every haulable was cleared")
+    tools/day_night_restart_check.gd   DAY_NIGHT_RESTART_CHECK failures=0    (client ends at 0.3493, 0 smeared frames)
+    tools/attunement_restart_check.gd  ATTUNEMENT_RESTART_CHECK failures=0   (client's picker reopens, second pick accepted)
+
+**What was actually left is this finding's title.** "The enumeration is short" is not a statement
+about three systems, it is a statement about D-149's prose sentence — and that sentence was still
+short: it names 8 things, the code now resets 22. Every previous pass fixed items and left the
+sentence alone, which is why the same class was found four times in five days (F-259, F-268, F-277,
+F-278) and why **three of those four were found twice over, independently, by two lanes each**. This
+entry exists only because one of those sweeps happened to write its leftovers down. Closing it by
+fixing a fourth item would have closed the incident and left the generator running.
+
+**So the fix is a tripwire on the enumeration.** `tools/run_scope_audit_check.gd` (new) classifies
+every one of `project.godot`'s 60 autoloads as either `RESETS` — asserted to still call
+`subscribe_run_restarted` — or a one-line recorded reason why it does not, asserted to still not
+call it. The load-bearing property is **totality**: an autoload no row classifies fails the check,
+which forces the decision "is this run-scoped?" to be made on the record at the one moment somebody
+is actually thinking about it. The five non-autoload run-scoped nodes are listed separately
+(`SCENE_SCOPE`), because D-149 gave Chest/Wellspring/ExtractionShip their own
+`host_reset_for_new_run()` instead of reloading the level, so a third of its own enumeration lives
+where an autoload sweep structurally cannot see it. Decision recorded as **D-178**; D-149 carries
+the permitted one-line amendment pointer so nobody reads its sentence as the live list. Spec written
+at `docs/SPECS.md` (none existed).
+
+**Verified.** `.agent/bin/agent godot --script tools/run_scope_audit_check.gd` →
+`RUN_SCOPE_AUDIT_CHECK failures=0`, 4 PASS, exit 0, no `ERROR:` lines: 60 autoloads covered exactly,
+17 resetting, 43 reasoned, 5 scene-scope nodes. Its independent cross-check is that those 17/43
+numbers match a plain `grep` of the same set.
+
+**Negative-tested, because a check that only ever passes is worthless.** All five failure paths were
+driven and each produced its own distinct `FAIL:` line — unclassified autoload, stale row, `RESETS`
+row that stopped subscribing, reason that went stale, `SCENE_SCOPE` node that stopped subscribing.
+Done by varying the classification table rather than shipped source: the assertions branch on
+*(classification, source fact)*, so varying either side exercises the same branch, and varying the
+table touches no file another lane might hold (deliberately not `git stash` — F-261/F-275's
+constraint). **That run also caught a real defect in the check itself**: it printed "PASS: 16
+autoload(s) reset … all still subscribed" directly beneath a `FAIL:` of that exact assertion. Each
+of the three sections now counts `failures` before and after itself and prints its `PASS` only if
+its own count did not move.
+
+**Swept, and the sweep is the deliverable.** Every autoload was individually classified rather than
+pattern-matched, which is what turned up the three live members of this class that are already
+filed and are now recorded as such in the table: `core/dev/dev_loadout.gd` (**F-300**, `_granted` is
+boot-only), and — from the other direction — **F-303** (`EnvironmentVfx` subscribes but its handler
+resets the wrong quantity) and **F-307**. Nothing new was filed. Four classifications were checked
+rather than assumed, having looked wrong at first glance: `EntityDirectory` (`snapshot()` prunes
+dead instance ids every call, and `_serials` is documented monotonic-per-boot), `RuleService`
+(`_values` are operator knobs set through the `rule` console verb — a host who sets one wants it to
+hold across runs), `BossMusicDirector` (`_streams` is a load cache; the cues are ~7 s non-looping
+one-shots), and `WorldDeltaLog` (`_reseed_local()` clears `_state`, and D-161 makes every restart
+draw a fresh seed).
+
+**What this does NOT assert**, stated here so the next lane does not mistake a green check for a
+guarantee: only that the subscription exists, never that the handler resets the right things. F-303
+is a subscriber whose handler resets the wrong quantity and this check passes it. That half stays
+with the behavioural checks, per D-178.
+
+---
 
 ### F-299 · Lanes need a reserved-for-human flag: LM's weekly must last a week of manual sessions, and 'remember not to route there' is not a mechanism — **fixed**
 

@@ -12,30 +12,6 @@
       "task": "4.19",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
-    "docs/DECISIONS.md": {
-      "agent": "lp",
-      "at": "2026-08-20T20:18:38+00:00",
-      "task": "F-281",
-      "token": null
-    },
-    "docs/DELEGATION.md": {
-      "agent": "lp",
-      "at": "2026-08-20T20:20:43+00:00",
-      "task": "F-281",
-      "token": null
-    },
-    "docs/FINDINGS.md": {
-      "agent": "lp",
-      "at": "2026-08-20T20:19:42+00:00",
-      "task": "F-281",
-      "token": null
-    },
-    "docs/SPECS.md": {
-      "agent": "lp",
-      "at": "2026-08-20T20:19:09+00:00",
-      "task": "F-281",
-      "token": null
-    },
     "docs/WORLDGEN.md": {
       "agent": "quill5fa5c7",
       "at": "2026-08-20T20:20:19+00:00",
@@ -78,12 +54,6 @@
       "task": "4.19",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
-    "tools/run_scope_audit_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T20:16:28+00:00",
-      "task": "F-281",
-      "token": null
-    },
     "tools/world_contract_check.gd": {
       "agent": "quill5fa5c7",
       "at": "2026-08-20T20:20:19+00:00",
@@ -107,26 +77,6 @@
       "notes": [],
       "started": "2026-08-20T20:20:19+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
-    },
-    "F-281": {
-      "agent": "lp",
-      "dispatched": true,
-      "files": [
-        "tools/run_scope_audit_check.gd",
-        "docs/DECISIONS.md",
-        "docs/SPECS.md",
-        "docs/FINDINGS.md",
-        "docs/DELEGATION.md"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-20T20:18:38+00:00",
-          "by": "lp",
-          "text": "All three F-281 items already fixed at HEAD by other lanes (F-268 haulables, F-277 attunement selections, F-278 day/night clock). Re-ran all three checks myself: run_restart_check failures=0, day_night_restart_check failures=0, attunement_restart_check failures=0. The finding's TITLE is about the enumeration, not the three items \u2014 D-149's prose list is still short, so the real fix is a tripwire."
-        }
-      ],
-      "started": "2026-08-20T20:12:27+00:00",
-      "token": null
     },
     "F-314": {
       "agent": "galef95fa6",
@@ -408,23 +358,23 @@
     },
     "docs/DECISIONS.md": {
       "agent": "lp",
-      "at": "2026-08-20T16:07:35+00:00",
-      "hash": "5e6258b4f6c8653e3140d86ae27055558df1309347024743584c1421aaf719a4",
-      "task": "F-286",
+      "at": "2026-08-20T20:21:37+00:00",
+      "hash": "a91bdcea7b7f8276ca24ea6c23020ba19bc09ebddbe78952700bc08e236b4265",
+      "task": "F-281",
       "token": null
     },
     "docs/DELEGATION.md": {
       "agent": "lp",
-      "at": "2026-08-20T16:38:19+00:00",
-      "hash": "be2dc7a3f372a4311fe3ea2b80ed30ef5b1d36d54f271ef21724b22dc8028226",
-      "task": "F-273",
+      "at": "2026-08-20T20:21:37+00:00",
+      "hash": "b6601ff0e4a026eb2b1a7a10faca10426f93b451aa12122111931bd2bdd6540f",
+      "task": "F-281",
       "token": null
     },
     "docs/FINDINGS.md": {
       "agent": "lp",
-      "at": "2026-08-20T15:40:30+00:00",
-      "hash": "8809894002dcab1e92b396ac8fb15b6145b9064e7ea4546b03ae9e607ab14df3",
-      "task": "F-279",
+      "at": "2026-08-20T20:21:37+00:00",
+      "hash": "c65c337e68f5f752919431aca0a9db63e0cd8e399f9a699265edbc26813a0e52",
+      "task": "F-281",
       "token": null
     },
     "docs/MENU.md": {
@@ -443,9 +393,9 @@
     },
     "docs/SPECS.md": {
       "agent": "lp",
-      "at": "2026-08-20T16:38:19+00:00",
-      "hash": "6472ba0f5ce2fd612eecea844a49ad0f35b16e8c5d705deaa4d9aa83ae0438ae",
-      "task": "F-273",
+      "at": "2026-08-20T20:21:37+00:00",
+      "hash": "9e6bb78504ae25bb1df953dfc1520559244916b814a4ebdeaeaa00f659564732",
+      "task": "F-281",
       "token": null
     },
     "steam_appid.txt": {
@@ -840,6 +790,20 @@
       "task": "F-279",
       "token": null
     },
+    "tools/run_scope_audit_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T20:21:37+00:00",
+      "hash": "9992bc876d268a4efcb0f41cea88362674623257196243cee5febd1c83c607b4",
+      "task": "F-281",
+      "token": null
+    },
+    "tools/run_scope_audit_check.gd.uid": {
+      "agent": "lp",
+      "at": "2026-08-20T20:21:37+00:00",
+      "hash": "4acdf87c9dcca48727faa8d120f91d2ec636941a360b42210114f78869165c1d",
+      "task": "F-281",
+      "token": null
+    },
     "tools/run_started_hook_check.gd": {
       "agent": "lp",
       "at": "2026-08-20T10:21:34+00:00",
@@ -1093,7 +1057,7 @@
       "token": null
     }
   },
-  "rev": 46,
+  "rev": 49,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -5115,9 +5079,11 @@
       "title": "F-243's public run_started hook stays one-shot when a second run starts"
     },
     "F-281": {
+      "done_at": "2026-08-20T20:21:37+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "F-243's reset enumeration is short by three more run-scoped systems: DayNight's clock, HaulService's spawned haulables, AttunementService's selections"
     },

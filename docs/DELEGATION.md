@@ -75,6 +75,40 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-20 — F-281 resolved: the run-scoped reset enumeration is `tools/run_scope_audit_check.gd`, and it is TOTAL over `project.godot` (lp)
+
+**If you add an autoload, you must classify it here or the check fails.** That is the whole point of
+the file, not a side effect of it.
+
+`tools/run_scope_audit_check.gd` holds the live answer to "what resets when a run restarts?" — the
+question D-149 answered in prose and got wrong four times in five days (F-259, F-268, F-277, F-278;
+three of the four found twice over, by two lanes each). Two tables:
+
+- `AUTOLOAD_SCOPE` — **every** entry in `project.godot`'s `[autoload]` section, mapped to either
+  `RESETS` (the file must call `EventBus.subscribe_run_restarted`) or a one-line reason why it does
+  not (the file must NOT call it). Both directions are asserted, because a reason that has quietly
+  become false is how F-259 and F-277 were each missed on a first pass. Currently 17 resetting, 43
+  reasoned.
+- `SCENE_SCOPE` — the 5 run-scoped nodes that are not autoloads and that an autoload sweep therefore
+  cannot see: `Chest`, `Wellspring`, `ExtractionShip` (D-149 gave each its own
+  `host_reset_for_new_run()` rather than reloading the level), `ProceduralWorld` (D-161) and
+  `ResourceScatterField`.
+
+    .agent/bin/agent godot --script tools/run_scope_audit_check.gd   # RUN_SCOPE_AUDIT_CHECK failures=0
+
+**What it does not do, so you do not mistake green for safe:** it asserts only that the subscription
+*exists*, never that the handler resets the right things. F-303 is a subscriber whose handler resets
+the wrong quantity and this check passes it. Behaviour stays with `run_restart_check`,
+`day_night_restart_check`, `attunement_restart_check`, `harvest_restart_check`,
+`run_restart_spawn_check`, `run_restart_net_check`. D-178 records why the split is drawn there, and
+why the check reads source text instead of introspecting `EventBus` (its `Callable` registry has no
+listing API, and a booted probe sees only what is in that tree).
+
+**Reading the reasons is cheaper than re-deriving them.** Each row is the recorded answer to "was
+this considered?", which is the question every one of the four rediscoveries above re-asked from
+scratch. `dev_loadout.gd`'s row, for instance, is a known gap pointing at F-300 rather than a
+justification.
+
 ### 2026-08-20 — F-273 resolved: `GameState.seed_ready`'s contract is written down at the signal, and `tools/seed_ready_contract_check.gd` enforces it (lp)
 
 **Rule: D-177.** Read it before you write a `seed_ready` handler. Short form: **it is a RUN boundary

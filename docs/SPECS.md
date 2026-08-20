@@ -11049,3 +11049,76 @@ Nothing filed.
 **Resolved** — see `docs/FINDINGS.md`.
 
 ---
+
+## F-281 · F-243's reset enumeration is short by three more run-scoped systems — and the enumeration itself is the bug
+
+**Claim:** `tools/run_scope_audit_check.gd` (new), `docs/DECISIONS.md`, `docs/SPECS.md`,
+`docs/FINDINGS.md`, `docs/DELEGATION.md`. **No shipped source file is touched** — see below.
+Network authority: **none added**. This task ships one `--script` check and the docs around it; it
+introduces no runtime behaviour, no RPC, no `PROTOCOL_VERSION` bump.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Read the finding as a title, not as a list of three.** All three items were already fixed at HEAD
+by other lanes before this task started, each one filed independently by a lane that had never read
+F-281: item 2 (`HaulService`) by F-268's own sweep, item 3 (`DayNight`) as F-278, item 1
+(`AttunementService`) as F-277/D-167. Confirm that before touching anything — the brief's staleness
+warning is correct:
+
+    .agent/bin/agent godot --script tools/run_restart_check.gd         → failures=0 (haulables)
+    .agent/bin/agent godot --script tools/day_night_restart_check.gd   → failures=0 (the clock)
+    .agent/bin/agent godot --script tools/attunement_restart_check.gd  → failures=0 (selections)
+
+**What is therefore left is the actual finding.** Its title says "the enumeration is short", and the
+enumeration is D-149's prose sentence. That sentence was short when F-281 was filed and it is still
+short now: the code resets 22 things, the sentence names 8. Fixing three systems and leaving the
+sentence alone closes three incidents and leaves the generator running — which is exactly what the
+previous four passes did. **The deliverable is a tripwire on the enumeration, not another item on it.**
+
+**The shape of the fix.** `tools/run_scope_audit_check.gd` reads `project.godot`'s `[autoload]`
+section and classifies every entry as either `RESETS` (asserted to contain a
+`subscribe_run_restarted` call) or a one-line reason why it does not (asserted to still NOT contain
+one). Five failure modes, all of them real:
+
+1. an autoload in `project.godot` that no row classifies — **this is the tripwire**; a new autoload
+   cannot ship without somebody deciding, on the record, whether its state is run-scoped;
+2. a row naming a file that is no longer an autoload — the enumeration describing something nothing
+   loads;
+3. a `RESETS` row whose file stopped subscribing — a reset the enumeration claims is happening;
+4. a reasoned row whose file *started* subscribing — the reason has gone stale, which is how F-259
+   and F-277 were each missed on a first pass;
+5. a `SCENE_SCOPE` entry (the five run-scoped nodes that are not autoloads) that stopped subscribing.
+
+`SCENE_SCOPE` is listed separately and deliberately: D-149 gave Chest, Wellspring and ExtractionShip
+their own `host_reset_for_new_run()` rather than reloading the level, so a third of its own
+enumeration lives where an autoload sweep structurally cannot see it, as do `ProceduralWorld` and
+`ResourceScatterField`.
+
+**Why source-text scanning and not runtime introspection.** `EventBus`'s subscriber registry is a
+static `Callable` table (`core/events/event_bus.gd`) with no listing API, and a booted probe could
+only observe nodes that happen to be in that tree. The failure being caught — a file written without
+the subscription at all — is a source fact, so read the source. D-178 records the trigger that would
+reverse this.
+
+**What it deliberately does not assert:** that a handler resets the *right* things. That needs a
+booted world per system and stays with the behavioural checks. F-303 is a live example of a
+subscriber whose handler resets the wrong quantity, and this check passes it. Do not widen the scope
+here to try to cover it.
+
+**Verify:** `.agent/bin/agent godot --script tools/run_scope_audit_check.gd` →
+`RUN_SCOPE_AUDIT_CHECK failures=0`, 4 PASS, exit 0, no undeclared `ERROR:` lines. **A check that
+only ever passes is worthless, so negative-test all five paths before believing it** — vary the
+classification table rather than shipped source (the assertions branch on *(classification, source
+fact)*, so varying either side exercises the same branch, and varying the table touches no file
+another lane might hold). All five must produce their own distinct `FAIL:` line.
+
+**The PASS lines must not lie.** Each of the three sections counts `failures` before and after
+itself and prints its `PASS` only if its own count did not move; the first negative-test run caught
+this check printing "PASS: 16 autoload(s) reset … all still subscribed" directly beneath a `FAIL:`
+of that exact assertion.
+
+**Resolved** — see `docs/FINDINGS.md`. Records D-178, and adds the permitted one-line amendment
+pointer under D-149.
+
+---
