@@ -736,23 +736,6 @@ needs the detector either way, so a reader hits a named exception instead of a s
 
 ---
 
-### F-284 · The both-map contract matrix never checks the authored map's spawn is standable
-
-**Area:** testing/worldgen · **Severity:** medium · **Found:** 2026-08-20 by lc1
-
-At review target `74aeb60`, `tools/world_contract_check.gd:165-166` calls
-`_check_procedural_specifics()` only when `procedural == true`, and the file's sole spawn-ground
-assertion lives inside that helper at `tools/world_contract_check.gd:198-202`. The authored half
-therefore checks no spawn position at all.
-
-That contradicts the 4.16/D-152 contract that the same loop fixtures — including a standable spawn
-— are asserted per map. Hollowmere's spawn can move into water or below terrain and
-`WORLD_CONTRACT_CHECK PASS` will remain green. Add an authored-map spawn source and assert it
-against the authored ground/layout, while keeping the procedural assertion on
-`ProceduralWorld.spawn_position`.
-
----
-
 ### F-285 · `tools/nav_bake_check.gd` has 4 pre-existing failures at a clean HEAD — chunk-streamed terrain reports NaN heights to the check's seam search
 
 **Area:** worldgen · **Severity:** medium · **Found:** 2026-08-20 by lp
@@ -1214,7 +1197,157 @@ Cheap to fix now that F-280 exists: `run_started` is the per-run seam §5.3 lack
 
 ---
 
+### F-301 · Some procedural seeds publish NO station marker at all, so the island ships with crafting unreachable
+
+**Area:** worldgen · **Severity:** high · **Found:** 2026-08-20 by lp
+
+Found by F-284's sweep, and it is a live gameplay bug rather than a flaky check.
+
+`tools/world_contract_check.gd`'s procedural arm fails intermittently on a clean tree with
+`no REGISTERED station marker ... crafting is unreachable on this map`. Two of six consecutive
+runs failed. The cause is not the check: `ProceduralWorld` genuinely publishes zero markers of
+kind `station` on some seeds.
+
+Measured directly, building `ProceduralWorld` at three fixed seeds and listing every
+`authored_world_marker` whose `kind` meta is `station`:
+
+    REGISTERED_ASSETS ["station_workbench_primitive", "station_stone_furnace"]
+    SEED 3503374054 —  9 POI site(s),  9 marker(s)  station_markers=[]
+    SEED 3803646258 — 10 POI site(s),  9 marker(s)  station_markers=[]
+    SEED  987654321 — 10 POI site(s), 11 marker(s)  station_markers=["Station_station_workbench_primitive"]
+
+So a run on seed 3503374054 or 3803646258 starts a player on an island with no crafting station
+anywhere — the loop audit's own "a station marker exists proves nothing" lesson arriving from the
+other end: here not even the marker exists. Whatever POI rule emits the station is losing its site
+to placement rejection (clearance, shoreline, POI count) on those seeds, silently, and nothing
+demands the survivor.
+
+Why nothing caught it: `tools/procedural_world_check.gd` builds at the single fixed seed
+`987654321`, which happens to be a seed that gets one, and asserts the marker histogram against it.
+A per-seed fixture that only ever sees one seed is not a per-seed fixture.
+
+The fix has two halves and they are separable:
+  1. worldgen — guarantee at least one registered station survives placement on EVERY seed
+     (a mandatory-POI pass that re-places rather than drops, or a fallback stamped near the spawn).
+  2. testing — `procedural_world_check` should sweep a spread of seeds for the fixtures the loop
+     cannot run without, not one. Until half 1 lands, the both-map matrix stays a coin flip.
+
+Note for whoever takes this: F-284 left the spawn phase of `world_contract_check` passing on both
+maps at every seed observed; this failure is the station fixture only, so a FAIL naming
+`registered station` on the procedural arm today is this finding and not a regression of that one.
+
+---
+
+### F-302 · The two shipped layout JSONs write the spawn record in two different shapes, so every generic reader needs both
+
+**Area:** worldgen · **Severity:** low · **Found:** 2026-08-20 by lp
+
+Found by F-284, which had to read the spawn record from any layout-convention map.
+
+`world/gen/layouts/hollowmere.json` writes the spawn as a bare triple:
+
+    "spawn": [-6.614, 2.423, 1.622]
+
+`world/gen/layouts/playtest_hollow.json` writes it as a record with a `pos` field:
+
+    "spawn": {"pos": [...]}
+
+Both are read today, each by exactly one map-specific check (`tools/hollowmere_check.gd:138` takes
+`layout.get("spawn", []) as Array`; `tools/playtest_hollow_check.gd:67` takes
+`(layout.get("spawn", {}) as Dictionary).get("pos", [])`), so the divergence has cost nothing while
+every reader knew its map. It stops being free the moment a reader is generic: F-284's
+`_layout_spawn()` in `tools/world_contract_check.gd` carries both shapes, and the cast that is
+wrong for the other shape returns an empty default rather than erroring — a schema mismatch reads
+as "this layout has no spawn", which is the F-076 blind spot in miniature.
+
+Every other layout field agrees across the two files. This one does not because the two generators
+(`tools/mapgen/hollowmere_layout.py` and Playtest Hollow's) were written apart.
+
+Fix: pick one shape, migrate the other layout and its generator, and drop the second branch from
+`_layout_spawn()`. `{"pos": [...]}` is the better target — it is the only one with room for the
+yaw a spawn eventually needs, and PlayerNet already reads a full `Transform3D` off the spawn point.
+Small, and worth doing before a third map picks a third shape.
+
+---
+
 ## Resolved
+
+### F-284 · The both-map contract matrix never checks the authored map's spawn is standable — **fixed**
+
+**Area:** testing/worldgen · **Severity:** medium · **Found:** 2026-08-20 by lc1
+
+At review target `74aeb60`, `tools/world_contract_check.gd:165-166` calls
+`_check_procedural_specifics()` only when `procedural == true`, and the file's sole spawn-ground
+assertion lives inside that helper at `tools/world_contract_check.gd:198-202`. The authored half
+therefore checks no spawn position at all.
+
+That contradicts the 4.16/D-152 contract that the same loop fixtures — including a standable spawn
+— are asserted per map. Hollowmere's spawn can move into water or below terrain and
+`WORLD_CONTRACT_CHECK PASS` will remain green. Add an authored-map spawn source and assert it
+against the authored ground/layout, while keeping the procedural assertion on
+`ProceduralWorld.spawn_position`.
+
+---
+
+**Resolved 2026-08-20 by lp.** **Fixed 2026-08-20 by lp.** The spawn assertion moved out of `_check_procedural_specifics()` — where
+`if procedural:` meant the map `project.godot` actually ships asserted no spawn position at all —
+into a shared `_check_spawn_standable()` that `_check_loop_fixtures()` calls on BOTH arms. Full spec
+in `docs/SPECS.md`; the call not to relitigate is **D-169**.
+
+**What it does now.** `procedural` decides only where the spawn is READ from, never what is demanded
+of it. Procedural reads `ProceduralWorld.spawn_position` (unchanged, as the finding asked); authored
+reads the level's own `Player` node — the transform `PlayerNet._claim_spawn_point()` actually takes
+at session open — and cross-checks it horizontally against the layout JSON's `spawn` record. A level
+with no `Player` node FAILS rather than skipping: it would spawn every player at the world origin,
+and a silent skip there is F-076's blind spot verbatim.
+
+**The symmetric API that makes it map-agnostic.** Both world builders now answer `height_at(x, z)`
+AND the new `water_surface_at(x, z)` — `AuthoredWorld` from the layout's water bodies (the public
+half of `_water_level`, the same geometry `_build_water` meshes), `ProceduralWorld` from a new named
+`SEA_LEVEL` const. "Standable" is defined from that pair alone, so nothing below the read knows
+which map it holds and a future map gets the assertion free. `SPAWN_DRY_CLEARANCE_M = 0.5` is set so
+a sea-level map demands the identical `ground > 0.5` the composer was always held to.
+
+**The trap this cost, and why D-169 exists.** The level's `Player` is a real `CharacterBody3D` and it
+FALLS. The first run of the new phase measured Hollowmere's authored 2.423 as 2.023 — sixteen warm-up
+frames had landed it. An assertion against that number grades the terrain's ability to catch a
+falling body and passes identically for a spawn 10 m in the air or 1 m inside the terrain: the exact
+bug, surviving the check for it. The transform is now captured off `packed.instantiate()` before
+`add_child()` and before any frame.
+
+**Verified** — `.agent/bin/agent godot --script tools/world_contract_check.gd` → exit 0,
+`WORLD_CONTRACT_CHECK PASS`, **zero** `ERROR:` lines (no declared patterns, so zero allowance), with
+`WORLD_CONTRACT_AUTHORED spawn=(-6.614, 2.423, 1.622) ground=2.02 water=none` — the authored value,
+not the settled one — and `WORLD_CONTRACT_PROCEDURAL … water=0.00`.
+
+Each of the five new failure modes was proved to FIRE by mutating the spawn inside the check,
+running, and reverting the harness (the check is byte-identical to its pre-mutation state):
+  · `buried` −3 m  → "the spawn is 2.60 m BELOW the ground at (-6.614, -0.577, 1.622) — a player
+                     starts inside the terrain"   [fired on both maps]
+  · `water`  → moved to the Mere at (38, 46) → "the spawn is in the water (ground -7.32, water
+                     surface -3.20)" — that -3.20 is `The_Mere.level` from the layout, read through
+                     the new accessor
+  · `float`  +9 m  → "the spawn floats 9.40 m above the ground"   [both maps]
+  · `drift`  +4 m horizontal → "the Player node is 4.00 m from the layout's spawn record"
+  · `noplayer` → "the level has no Player node — PlayerNet._claim_spawn_point() would put every
+                     player at the world origin"
+
+**Sweep.** `world_contract_check` is the repo's only both-map matrix; its one remaining
+`if procedural:` (harvest proxy wiring) is genuinely procedural-only — the authored map's harvest
+wiring is asserted by `_check_harvest_world` against the layout. The settled-body half of the trap
+had two siblings, both reading `player.position` after their warm-up frames:
+`tools/hollowmere_check.gd:_check_spawn` and `tools/playtest_hollow_check.gd`. Neither was live —
+both compare horizontally, where a body does not drift — but both were one vertical assertion away,
+and playtest's 0.01 m tolerance was being graded against gravity. Both fixed under this claim:
+`HOLLOWMERE_CHECK PASS` (`HOLLOWMERE_SPAWN at (-6.614, 2.423, 1.622) clear=true`, was reporting the
+settled 2.023), `PLAYTEST_HOLLOW_CHECK … failures=0`, `PROCEDURAL_WORLD_CHECK failures=0`.
+
+**Two findings filed, neither a regression of this one.** **F-301** — the procedural arm fails
+intermittently at a clean HEAD (two of six runs) with "no REGISTERED station marker"; measured to be
+real content, not a check artifact: seeds 3503374054 and 3803646258 publish ZERO station markers, so
+those islands ship with crafting unreachable. That is where a `registered station` FAIL on the
+procedural arm belongs today. **F-302** — the two shipped layout JSONs write the spawn record in two
+different shapes, which is why `_layout_spawn()` has to carry both.
 
 ### F-280 · F-243's public run_started hook stays one-shot when a second run starts — **fixed**
 
