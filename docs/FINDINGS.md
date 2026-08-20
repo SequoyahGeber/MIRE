@@ -452,55 +452,6 @@ a claim not being enforced at commit time for files a second lane also legitimat
 
 ---
 
-### F-266 · cmd_claim's load-check-save on state.json has no file lock, so two lanes can both pass the conflict check and both believe they hold the same claim
-
-**Area:** tooling · **Severity:** high · **Found:** 2026-08-19 by lm3
-
-Observed live during F-244 (this session, identity lm3). I ran `agent claim F-244
-autoload/build_service.gd` at 22:19:09 and got `✓ F-244 claimed by lm3`. I then wrote
-`_ground_command_placement()` in autoload/build_service.gd (a downward raycast grounding a
-command's raw y before `_process_place()`, 3m up / 20m down, same mask as the placement ghost).
-
-Partway through, the working file transiently contained a SECOND, independently-written
-implementation of the identical fix that I never wrote: a function `_grounded()` with its own
-constants `GROUND_PROBE_ABOVE_M`/`GROUND_PROBE_BELOW_M`, same shape, same doc-comment style. I
-deleted it as apparent orphaned dead code and moved on. Minutes later `agent board` showed F-244
-in flight under agent **`lm`** (not `lm3`) since the SAME timestamp, 22:19:09 -- identical start
-time to my own successful claim. At 22:28:29 identity `lm` ran `agent done F-244` describing and
-shipping (commit 039c5da) a fix that is byte-for-byte what I had independently built: same
-function name, same 3m/20m constants, same doc comment. My own later
-`agent claim F-244 docs/FINDINGS.md docs/SPECS.md` calls then failed with `F-244 is already done`.
-
-`MIRE_AGENT=lm3` was confirmed set in my shell throughout (`echo $MIRE_AGENT` -> `lm3`), so this was
-not my own whoami() drifting -- a second, genuinely distinct lane process also picked up and worked
-F-244 concurrently, in the same claim window.
-
-**Root cause, read from the source:** `.agent/bin/agent`'s `load()`/`save()` (~line 111-130) do a
-plain `json.load`/`json.dump` on `.agent/state.json` with no `flock`, no lockfile, no atomic
-compare-and-swap. `cmd_claim` (~line 958) is `load()` -> check `st["in_flight"]`/`st["claims"]` for
-conflicts -> mutate -> `save()`. Two lanes racing this window both `load()` a state where F-244 and
-autoload/build_service.gd are unclaimed, both pass the conflict check against that stale read, both
-mutate their own in-memory copy, and both print a `✓ claimed` success message -- neither one's write
-knows about the other's. Whichever `save()` lands last wins the stored `agent` field; the loser's
-process has no way to discover it lost until some LATER command (`claim`, `done`, `ship`) reads the
-now-overwritten state and gets a confusing "already claimed by X" / "already done" from someone it
-never saw claim anything.
-
-**Why this one didn't lose work:** both lanes' generated fixes converged almost exactly, so the
-shipped result is correct and nothing was lost -- but that was luck in the LLM's output converging
-on the same approach, not a property the locking (or lack of it) guarantees. A less mechanical fix,
-or two lanes solving the same finding two different ways, would have raced their `Edit` calls against
-the same file with no coordination at all, well inside a window both consider theirs.
-
-**Suggested direction, not implemented here (out of this task's scope, and D-152 said this class of
-change is deliberate, not live-flipped):** `save()` needs either a real file lock around the
-load-mutate-save cycle, or an atomic read-modify-write (e.g. flock on a sidecar `.lock` file for the
-duration of `load()`...`save()`, or a compare-and-swap using a version counter written into
-state.json and checked before `save()` commits). F-262's own claim-late change is landing in the same
-file/area and would be a natural place to add real locking alongside it.
-
----
-
 ### F-267 · ship sweeps a sibling's uncommitted hunks when its claimed file carries them — F-197's shape reached source files and carried a debug probe into HEAD
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by bram1
@@ -1574,6 +1525,128 @@ F-293 predicts, and a third data point that the suite has drifted.
 ---
 
 ## Resolved
+
+### F-266 · cmd_claim's load-check-save on state.json has no file lock, so two lanes can both pass the conflict check and both believe they hold the same claim — **fixed**
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-19 by lm3
+
+Observed live during F-244 (this session, identity lm3). I ran `agent claim F-244
+autoload/build_service.gd` at 22:19:09 and got `✓ F-244 claimed by lm3`. I then wrote
+`_ground_command_placement()` in autoload/build_service.gd (a downward raycast grounding a
+command's raw y before `_process_place()`, 3m up / 20m down, same mask as the placement ghost).
+
+Partway through, the working file transiently contained a SECOND, independently-written
+implementation of the identical fix that I never wrote: a function `_grounded()` with its own
+constants `GROUND_PROBE_ABOVE_M`/`GROUND_PROBE_BELOW_M`, same shape, same doc-comment style. I
+deleted it as apparent orphaned dead code and moved on. Minutes later `agent board` showed F-244
+in flight under agent **`lm`** (not `lm3`) since the SAME timestamp, 22:19:09 -- identical start
+time to my own successful claim. At 22:28:29 identity `lm` ran `agent done F-244` describing and
+shipping (commit 039c5da) a fix that is byte-for-byte what I had independently built: same
+function name, same 3m/20m constants, same doc comment. My own later
+`agent claim F-244 docs/FINDINGS.md docs/SPECS.md` calls then failed with `F-244 is already done`.
+
+`MIRE_AGENT=lm3` was confirmed set in my shell throughout (`echo $MIRE_AGENT` -> `lm3`), so this was
+not my own whoami() drifting -- a second, genuinely distinct lane process also picked up and worked
+F-244 concurrently, in the same claim window.
+
+**Root cause, read from the source:** `.agent/bin/agent`'s `load()`/`save()` (~line 111-130) do a
+plain `json.load`/`json.dump` on `.agent/state.json` with no `flock`, no lockfile, no atomic
+compare-and-swap. `cmd_claim` (~line 958) is `load()` -> check `st["in_flight"]`/`st["claims"]` for
+conflicts -> mutate -> `save()`. Two lanes racing this window both `load()` a state where F-244 and
+autoload/build_service.gd are unclaimed, both pass the conflict check against that stale read, both
+mutate their own in-memory copy, and both print a `✓ claimed` success message -- neither one's write
+knows about the other's. Whichever `save()` lands last wins the stored `agent` field; the loser's
+process has no way to discover it lost until some LATER command (`claim`, `done`, `ship`) reads the
+now-overwritten state and gets a confusing "already claimed by X" / "already done" from someone it
+never saw claim anything.
+
+**Why this one didn't lose work:** both lanes' generated fixes converged almost exactly, so the
+shipped result is correct and nothing was lost -- but that was luck in the LLM's output converging
+on the same approach, not a property the locking (or lack of it) guarantees. A less mechanical fix,
+or two lanes solving the same finding two different ways, would have raced their `Edit` calls against
+the same file with no coordination at all, well inside a window both consider theirs.
+
+**Suggested direction, not implemented here (out of this task's scope, and D-152 said this class of
+change is deliberate, not live-flipped):** `save()` needs either a real file lock around the
+load-mutate-save cycle, or an atomic read-modify-write (e.g. flock on a sidecar `.lock` file for the
+duration of `load()`...`save()`, or a compare-and-swap using a version counter written into
+state.json and checked before `save()` commits). F-262's own claim-late change is landing in the same
+file/area and would be a natural place to add real locking alongside it.
+
+---
+
+**Resolved 2026-08-20 by lp.** **Resolved 2026-08-20 by lp.** Spec: `docs/SPECS.md` § F-266 (none existed — written as this task's
+first step). Rule: **D-176**. Seam for the next task: `docs/DELEGATION.md` *Current state*,
+2026-08-20 entry.
+
+**Reproduced first, deterministically.** The finding's diagnosis was read from the source and was
+correct, but a microsecond window is not testable by launching `agent claim` eight times — interpreter
+startup smears the racers apart and a green run proves nothing. `tools/agent_state_lock_check.py`
+(new) builds a throwaway repo, **imports** that repo's copy of the harness as a module, and `fork()`s
+eight children that block on a pipe barrier before dispatching through `mod.COMMANDS["claim"]` — so
+every racer is warm at the gun and only the load→save window separates them. At HEAD:
+`AGENT_STATE_LOCK_CHECK failures=5`, 1/6 passed —
+
+- **8 of 8** racers told `✓ 9.0 claimed by <them>` on the same task;
+- **8 of 8** believing they held `world/shared.gd` across eight different tasks;
+- **7 of 8** in-flight records and 7 of 8 file claims never reaching disk, every one of those lanes
+  having been told it had the claim;
+- **26** truncated `json.load` reads of a 537 KB `state.json` in three seconds;
+- `save()` silently overwriting a state that had changed since its `load()`.
+
+**The bug was not `cmd_claim`'s.** It is `load()`/`save()`'s, and thirteen windows sit on it —
+`claim`, `note`, `done`, `handoff`, `drop`, `reopen`, `sync`, `reap`, `start`, `board`, the review
+registration in `order`, and both dispatch markers in `saturate`. Fixing only the one the finding
+tripped over would have left twelve open (the F-059 → 7.8 shape).
+
+**Fix, in `.agent/bin/agent`:**
+
+1. **`state_txn(label)`** — re-entrant `flock` on `.agent/locks/state.lock` held across the whole
+   load→check→mutate→save cycle. Deliberately not `file_lock()`: that one guards minutes-long
+   operations and narrates them, this one is taken by every invocation for milliseconds, so it is
+   re-entrant (`save()` nests inside its command's transaction), silent below 2 s, and skips
+   `file_lock`'s per-acquire holder-file write. `in_state_txn(fn)` wraps a whole command;
+   `COMMANDS` applies it to the eight short local commands, and `start`/`board`/`order`/`saturate`
+   bracket their own windows.
+2. **Atomic writes** — `_atomic_write()` (`mkstemp` → `fsync` → `os.replace`) for `state.json` and
+   `BOARD.md`. This half is not optional and locking would not have covered it: every reader
+   (`agent board`, the pre-commit hook, `.agent/bin/lane`'s `_task_still_open()`,
+   `tools/findings_hygiene_check.py`) reads without the lock, which is what the 26 torn reads were.
+   Same class as F-304; same shape `_save_sessions()` and `lane`'s `save_lanes()` already used.
+3. **A `rev` compare-and-swap in `save()`** — an alarm, not the lock. Under the transaction it can
+   never disagree, so if it ever fires, some path reached `save()` with a stale state and the right
+   outcome is a loud stop with nothing written, not a silent clobber of another lane's claim.
+
+**The scope rule is the part that must not be relitigated — D-176.** Never hold the transaction
+across a subprocess. `_saturate_locked()` keeps its two writes in *separate* transactions because a
+whole lane run (capped at 8 h) happens between them; one transaction over both would freeze every
+other lane's board for that run. Lock order is always outer-resource → state (`ship` holds the `git`
+lock and reaches state only via `save()`), so there is no cycle.
+
+**Verified:** `python3 tools/agent_state_lock_check.py` → `AGENT_STATE_LOCK_CHECK failures=0`, 6/6,
+stable over five consecutive runs. `python3 tools/agent_state_lock_check.py --rev HEAD` →
+`failures=5`, 1/6, which is the pre-fix proof. Case 6 (`claim`/`note`/`done`/`claim`/`board`/`drop`
+through the real CLI) passes on both sides and exists to catch a deadlock or a mis-wired decorator —
+the way this fix would most plausibly fail. No regression elsewhere: `python3 tools/harness_check.py`
+34/34, `decision_ref_check` failures=0, `autoload_tracked_check` failures=0,
+`import_cache_guard_check` 3/3, `decision_trigger_check` fired=0.
+`findings_hygiene_check` fails 2 — F-236 and F-299, pre-existing and unrelated (see F-275's review).
+
+**Sweep.** Class: *an unserialised read-check-write, or a truncate-then-rewrite, on a coordination
+file several processes share*. `.agent/bin/agent` is the only writer of `state.json` in the repo
+(grepped repo-wide) and all thirteen windows are covered. `.agent/bin/lane` **already had this fix**
+— `lanes.lock`, re-read inside the lock, atomic `save_lanes()`, with a docstring describing the
+identical bug observed on 2026-08-17 — which is the clearest evidence that `state.json` was the one
+shared ledger the pattern had never reached. `cmd_finding`/`cmd_resolve`/`cmd_decision`/`cmd_autoload`
+already hold `file_lock`s and already write through `tmp` + `os.replace`. `_touch_session()`
+documents its lost-update window as a deliberate trade (a lock there cost 10 s per command when
+tried) and is left as is.
+
+One real sibling found and fixed under this claim: **`.agent/JOURNAL.md`** was six separate
+`f.write()` calls under `open(…, "a")`, which flushes mid-entry once a handoff body passes the
+text-IO buffer and lets a second writer's lines land inside the first one's. Now one string, one
+`write()`; output verified byte-identical to HEAD for entries both with and without a file list.
+`tools/` probe transports are the same class and already belong to F-304 — evidence not duplicated.
 
 ### F-286 · Procedural reseed can leave CraftingService validating against the previous island's station coordinates — **fixed**
 

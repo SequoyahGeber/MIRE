@@ -5615,3 +5615,48 @@ event fired earlier.
 
 **D-number hazard (F-283).** Taken by reading the file's tail; D-174 was the highest at the time.
 Still no atomic allocator, so a concurrent lane could take D-175 too.
+
+### D-176 · 2026-08-20 · state.json mutations go through state_txn, and the transaction never spans a subprocess
+**Context: F-266.** Every mutating `agent` command was `load()` -> check -> mutate -> `save()` with
+no lock, so two lanes could both read a state where a task and its files were free, both pass the
+conflict check, both print `✓ claimed`, and the later `save()` erase the earlier one silently. The
+fix adds `state_txn()` — `flock` on `.agent/locks/state.lock`, re-entrant, held across the whole
+window — plus atomic writes for `state.json` and `BOARD.md` and a `rev` compare-and-swap in
+`save()`.
+
+**The rule this decision fixes is the scope of that lock, not its existence.** The obvious
+"improvement" is to wrap every command in `COMMANDS` uniformly, or to widen `_saturate_locked()`'s
+two brackets into one. **Do not.** `state_txn()` is taken by every single `agent` invocation across
+five or six concurrent agents, so anything it is held across, every other lane waits behind.
+
+- **Wrap in `COMMANDS` (`in_state_txn`) only commands whose whole body is local and short**:
+  `claim`, `note`, `done`, `handoff`, `drop`, `reopen`, `sync`, `reap`. These are milliseconds.
+- **Bracket the window inside the body** when the command does anything else worth not blocking on:
+  `start` and `board` print a `git status`/`git log` summary afterwards; `order` writes order files
+  and renders a brief; `saturate` runs a whole lane dispatch.
+- **Never hold it across a subprocess.** `_saturate_locked()` keeps its two writes — the pre-dispatch
+  intent marker and the post-run marker cleanup — in *separate* transactions because an entire lane
+  run, capped at eight hours, happens between them. One transaction spanning both would freeze every
+  other agent's board for the length of that run, which is a worse outage than the race it closes.
+- **Lock order is always outer-resource -> state.** `ship` holds `file_lock("git")` and reaches the
+  state lock only through `save()`; `_saturate_locked()` holds its lane lock and takes short state
+  transactions inside it; `godot`/`findings`/`decisions`/`project` never take the state lock at all.
+  Nothing goes the other way, so there is no cycle. A future command that takes the state lock and
+  then a `file_lock` would introduce one — take the `file_lock` first instead.
+
+**`save()` self-locks when it is not already inside a transaction**, so a write can never be
+unserialised even if a future command forgets to bracket. That is a safety net, not the mechanism:
+it makes the *write* atomic but does nothing for the read-check that preceded it, which is where
+F-266 actually lived. Bracket the window.
+
+**The `rev` counter is an alarm, not the lock.** Under the transaction it can never disagree. If
+`save()` ever refuses with "it changed under this command", the correct response is to find the code
+path that reached `save()` with a stale state — not to raise the threshold or drop the check.
+
+**Would change my mind:** a measured case where the millisecond-scale lock is itself the contention
+bottleneck — i.e. `agent` commands visibly queueing on `.agent/locks/state.lock` under normal lane
+load. The answer then is a finer-grained state file (splitting `claims` from `tasks`), not a wider
+or absent lock. `tools/agent_state_lock_check.py` is where the evidence for that would be built.
+
+**D-number hazard (F-283):** allocated by `agent decision` under `file_lock("decisions")`, which is
+F-260's atomic allocator — not by reading the file's tail.
