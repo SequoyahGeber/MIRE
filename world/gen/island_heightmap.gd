@@ -41,9 +41,12 @@ const FREQUENCY_SCALE: float = _FREQUENCY_REFERENCE_RADIUS / ISLAND_RADIUS
 
 ## Peak terrain amplitude in metres, before the island mask is applied.
 ##
-## 26 m, down from 60: sixty metres of relief across a 236 m island is a cone, and every slope on it
-## is steeper than the player's 46 degree floor limit (F-136). This is a place with a hill on it.
-const HEIGHT_SCALE: float = 26.0
+## 11 m, down from 26 (which was down from 60): Sequoyah's island-feel direction after seeing the
+## first shipped procedural island (2026-08-20, 4.18's tuning input) — "mostly flat, some gentle
+## rolling hills is nice but no mountains, look at Muck for reference." At 26 the island rendered
+## as a massif; at 11, with the raised LAND_BIAS below, the interior settles around 5-12 m of
+## gentle roll a player can sprint straight across.
+const HEIGHT_SCALE: float = 11.0
 ## Fraction of ISLAND_RADIUS where the falloff begins. Inside this, height is unmasked; outside,
 ## it tapers cubically to 0 at ISLAND_RADIUS.
 ##
@@ -65,8 +68,11 @@ const DETAIL_NOISE_FREQUENCY: float = 0.05
 const DETAIL_NOISE_OCTAVES: int = 2
 const DETAIL_NOISE_WEIGHT: float = 0.08
 ## Peak metres the masked ridged layer may add. Sized against HEIGHT_SCALE: at 22
-## on a 26 m island the layer was the terrain rather than a feature on it.
-const RIDGE_WEIGHT: float = 8.5
+## on a 26 m island the layer was the terrain rather than a feature on it, and at 8.5 the crests
+## still read as a mountain range — the exact thing the Muck-reference direction rules out. 2 m,
+## multiplied by the biome amplitudes (forest 0.9, grassland 0.25), is rolling texture on the high
+## ground, not a skyline.
+const RIDGE_WEIGHT: float = 2.0
 
 ## Domain warp: the coastline's own coordinates are pushed around by a second
 ## noise field before the continental noise is sampled, which is what turns fBm's
@@ -115,7 +121,12 @@ const RIDGE_NOISE_SALT: int = 0x2FA5E1
 ## and the coast is where the noise dips below the bias, rather than wherever it
 ## happens to cross zero. The mask then brings the edge down through sea level on
 ## its own, which is what makes a beach a beach instead of a ring.
-const LAND_BIAS: float = 0.54
+##
+## 0.75 (was 0.54), raised together with the HEIGHT_SCALE drop to 11: the bias sets where the
+## interior SITS and the scale sets how much it rolls, and the two must move together or the
+## flatter island sinks — at 0.54 x 11 the interior centred on 5.9 m and every ordinary noise dip
+## fell under the 4 m shore/grassland biome boundary, scattering sand through the meadows.
+const LAND_BIAS: float = 0.75
 
 ## How far the coastline wanders in and out, in metres, and how quickly it does
 ## so. Without this the falloff is a circle and the island renders as a coin with

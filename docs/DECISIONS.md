@@ -5822,3 +5822,17 @@ change that first loses one and names the seed.
 ladder permits — spacing is never relaxed by design, so a def whose target count exceeds what its
 own `min_spacing_m` allows on the island cannot be rescued by `required` at any rung. That case
 needs the spacing content fixed (F-319) or a real fallback, and this decision does not cover it.
+
+### D-184 · 2026-08-20 · MIRE island terrain targets Muck: mostly flat, gentle rolling hills, no mountains — supersedes the 4.13 ridged-silhouette goal
+Sequoyah's island-feel verdict (2026-08-20, 4.18's tuning input, given off the first shipped
+procedural island renders): "the map should be mostly flat, some gentle rolling hills is nice but
+no mountains, look at muck for reference." This supersedes D-142/D-144's Hollowmere-derived
+"plateau/ridge silhouette" as the AMPLITUDE target — the ridged layer machinery stays (D-144's
+only-add rule, the mask, the biome amplitude tables all hold), but it is tuned as rolling texture
+(RIDGE_WEIGHT 2.0), not a skyline, and HEIGHT_SCALE/LAND_BIAS sit at 11/0.75 so the interior is
+sprintable end to end. Valheim remains the lighting/atmosphere reference; Muck is the terrain-shape
+reference. Applied in world/gen/island_heightmap.gd by quill5fa5c7.
+
+**Would change my mind:** Sequoyah walking a retuned island (a real 4.18 walk, not renders) and
+asking for more verticality back — the tune is three constants, so reversal is cheap and needs no
+structural change.

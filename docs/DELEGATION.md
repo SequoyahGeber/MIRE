@@ -75,6 +75,26 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-20 — 4.18 tuning applied: the island is Muck-shaped now — mostly flat, gentle rolls, no mountains (quill5fa5c7)
+
+**D-184.** Sequoyah's verdict off the first shipped renders: "mostly flat, some gentle rolling
+hills is nice but no mountains, look at muck for reference." Three constants in
+`world/gen/island_heightmap.gd` moved, nothing structural: `HEIGHT_SCALE` 26 → **11**, `LAND_BIAS`
+0.54 → **0.75** (the pair moves together — bias sets where the interior sits, scale sets how much
+it rolls; dropping scale alone pushed ordinary noise dips under the 4 m shore/grassland biome
+boundary and scattered sand through the meadows), `RIDGE_WEIGHT` 8.5 → **2.0** (the D-144 ridge
+machinery — only-add, highland mask, biome amplitudes — all still holds; it is texture now, not a
+skyline). `MAX_HEIGHT` follows automatically.
+
+**Verified:** `terrain_check` 0, `biome_check` 0, `poi_check` 0, `procedural_world_check` 0,
+`world_contract_check` PASS both arms. Fresh evidence renders in `assets/audit/terrain/`
+(island_orbit / island_spawn_view / island_shore_look, seed 1744425603) — the orbit shows a flat
+lobed island with the river still cutting through; the spawn view is a sprintable meadow.
+
+**If a later walk wants more verticality back**, D-184 names the reversal: it is those three
+constants, cheap to move.
+
+
 ### 2026-08-20 — 4.19 DONE: the shipped map is procedural. Press Play and you get a generated island (quill5fa5c7)
 
 **What ships.** `run/main_scene` is **`levels/procedural_island.tscn`**: `world/gen/
