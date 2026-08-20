@@ -66,6 +66,9 @@ const VFX_META: StringName = &"mire_environment_vfx_applied"
 ## it by name parses fine in the editor and fails everywhere an agent can actually verify, so the
 ## path is spelled out here instead.
 const AssetVfx := preload("res://world/environment/asset_vfx_library.gd")
+## Same spelled-out-path reasoning as `AssetVfx` above, and the idiom every other
+## `run_restarted` subscriber in this project uses (`autoload/build_service.gd:32`).
+const EVENT_BUS := preload("res://core/events/event_bus.gd")
 const FOLIAGE_SHADER := preload("res://world/environment/foliage_wind.gdshader")
 const PARTICLE_SHADER := preload("res://world/environment/particle_billboard.gdshader")
 ## Marks the prop an emitter site was already taken from, so its other forty mesh parts do not each
@@ -91,6 +94,12 @@ var emitter_site_count: int = 0
 var _sway_materials: Dictionary = {}
 var _dressed_meshes: Dictionary = {}
 var _sites: Dictionary = {}
+## `AssetVfx.Emitter` -> `PackedInt64Array` of the instance id of the node each site in
+## `_sites[emitter]` was registered from, index for index. The two arrays are written and
+## pruned only by `_register_emitter()`/`_prune_dead_sites()`, which is what keeps them in step.
+## This is the whole node-removed path (F-287): a site is scene-derived state, and nothing
+## else in this file records which piece of scene it was derived FROM.
+var _site_sources: Dictionary = {}
 var _pools: Dictionary = {}
 var _effect_root: Node3D = null
 var _time: float = 0.0
@@ -102,7 +111,16 @@ func _ready() -> void:
 	# Imported GLBs and generated worlds both enter the tree after autoloads, so cover the current
 	# scene and everything added later.
 	get_tree().node_added.connect(_on_node_added)
+	# F-287: the procedural generation boundary. `ProceduralWorld.rebuild_for_seed()` re-derives the
+	# island INSIDE the existing current scene, so the scene-id test in `_process` — the only
+	# invalidation this file had — deliberately does not fire, and every site of the ended island
+	# would otherwise stay in the pools alongside the new one's.
+	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
 	call_deferred("refresh_scene")
+
+
+func _exit_tree() -> void:
+	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
 
 
 func _process(delta: float) -> void:
@@ -127,6 +145,21 @@ func _process(delta: float) -> void:
 	_budget_timer += delta
 	if _budget_timer >= BUDGET_INTERVAL:
 		_budget_timer = 0.0
+		# Pruned on the same tick that ranks, because "which sites exist" and "which sites are
+		# nearest" are the same question asked of the same array — and because this is the one
+		# path that covers a teardown NO signal announces: a streamed-out scatter chunk, a
+		# harvested prop, or `rebuild_for_seed()` driven straight from a console verb rather than
+		# through `run_restarted`. Strictly cheaper than the sort `_assign_slots()` already pays.
+		_prune_dead_sites()
+		# On the tick and NOT on the generation boundary, unlike the site prune, because a Mesh
+		# cannot be asked the question a Node can. `remove_child()` is synchronous, so a site's
+		# source node reads as out-of-tree the instant the island is torn down; a Mesh is a
+		# RefCounted that does not die until the last MeshInstance3D referencing it is actually
+		# deleted, and which frame that lands on is an engine detail. Measured rather than assumed:
+		# pruning inside `_rediscover_world()` dropped nothing at all, and re-armed one frame later
+		# it STILL found both of the ended island's meshes alive (probed: 4 entries, 2 valid, and
+		# `sway_asset_count` stuck at 4). Waiting for the next tick needs no such guess.
+		_prune_dressed_meshes()
 		_assign_slots()
 	_animate_lights()
 
@@ -146,6 +179,7 @@ func _reset() -> void:
 		_effect_root.queue_free()
 	_effect_root = null
 	_sites.clear()
+	_site_sources.clear()
 	_pools.clear()
 	_dressed_meshes.clear()
 	fire_source_count = 0
@@ -153,6 +187,133 @@ func _reset() -> void:
 	foliage_mesh_count = 0
 	sway_asset_count = 0
 	_scene_id = 0
+
+
+# ---------------------------------------------------------------------------------------------
+# The generation boundary (F-287)
+# ---------------------------------------------------------------------------------------------
+
+## A new run re-derives the island in place. AUTHORITY: none, and this subscription does not change
+## that — `run_restarted` reaches every peer (the host emits it, a client re-derives it from the
+## WorldDeltaLog seed record), and every peer independently re-reads its own scene. Nothing here is
+## sent, requested or trusted across the wire.
+##
+## Deferred rather than immediate, and correct in either subscription order. Autoloads subscribe
+## from `_ready()`, so this file's handler runs BEFORE `ProceduralWorld`'s and the old island is
+## still standing when the signal lands — pruning synchronously here would find every source node
+## alive and drop nothing. By the time a deferred call runs, `rebuild_for_seed()` has finished
+## (it is synchronous inside the emit) and the ended island's nodes have been `remove_child`-ed,
+## which is what `_prune_dead_sites()` reads. If some future ordering put this handler last, the
+## deferred call is still after the rebuild, so it stays correct rather than merely lucky.
+func _on_run_restarted() -> void:
+	call_deferred("_rediscover_world")
+
+
+## Prune, then re-walk. Both halves are needed and neither is enough alone: the prune retires the
+## ended island's sites (nothing else would, since the current scene id is unchanged by design), and
+## the re-walk registers the new island's immediately instead of waiting on `node_added`'s own
+## deferred pass — which for the nodes added before this call is already queued behind it, and would
+## otherwise leave a frame of the new world lit by the old world's fires.
+func _rediscover_world() -> void:
+	_prune_dead_sites()
+	refresh_scene()
+
+
+## Drop every site whose source node is gone, and recount from what is left.
+##
+## "Gone" is `not is_instance_valid() or not is_inside_tree()`, and the second half is the one that
+## does the work here: `ProceduralWorld._teardown_derived()` calls `remove_child()` — synchronous —
+## and only then `queue_free()`, which does not run until the end of the frame. A validity-only test
+## would call every node of the ended island alive and prune nothing at exactly the moment this
+## exists for. It is also the right test for a scatter chunk streaming out, which frees its holder
+## the same way (`world/gen/resource_scatter_field.gd:_teardown_chunk`); those come back as NEW
+## nodes with no `VFX_META`, so re-entry is `node_added`'s ordinary path and needs nothing here.
+##
+## An emitter class that loses ALL of its sites keeps its (now empty) key on purpose: `_assign_slots`
+## iterates `_sites`, and an emitter missing from it is one whose pooled effect nodes are never
+## reached and so stay switched on, burning at coordinates the ended island had. Empty array in,
+## `live` of 0 out, every slot hidden.
+func _prune_dead_sites() -> void:
+	if _sites.is_empty():
+		return
+	var live_sites: int = 0
+	var live_fires: int = 0
+	var dropped: int = 0
+	for emitter: AssetVfx.Emitter in _sites:
+		var sites: Array = _sites[emitter] as Array
+		var sources: PackedInt64Array = _site_sources.get(emitter, PackedInt64Array())
+		var kept: Array = []
+		var kept_sources: PackedInt64Array = PackedInt64Array()
+		for index: int in sites.size():
+			# A site with no recorded source cannot be proven dead, so it is kept — losing a real
+			# emitter is worse than holding a ghost, and the two writers are in step by
+			# construction anyway.
+			if index < sources.size() and not _source_alive(sources[index]):
+				dropped += 1
+				continue
+			kept.append(sites[index])
+			if index < sources.size():
+				kept_sources.append(sources[index])
+		_sites[emitter] = kept
+		_site_sources[emitter] = kept_sources
+		live_sites += kept.size()
+		if _is_fire(emitter):
+			live_fires += kept.size()
+	if dropped == 0:
+		return
+	# Recounted rather than decremented: these are published counters (`tools/
+	# environment_vfx_check.gd` and the Hollowmere check both read them), and a census that can
+	# only ever be re-derived from the arrays should be, not tracked by arithmetic on both sides.
+	emitter_site_count = live_sites
+	fire_source_count = live_fires
+
+
+## Forget dressed meshes that no longer exist.
+##
+## NOT a correctness fix, and the difference is worth stating because the obvious reading of it is
+## wrong: `_dressed_meshes` is keyed by `Mesh.get_instance_id()`, and a freed mesh's id handed to a
+## new mesh would silently mark the new one "already dressed" and ship a patch of foliage with no
+## wind in it. Godot does not do that — an `ObjectID` packs a validator that changes when the slot
+## is reused. Measured before relying on it: 500 freed meshes against 5,000 fresh allocations, zero
+## id collisions.
+##
+## What it is instead is the same census argument as `_prune_dead_sites`, applied to the other
+## scene-derived cache in this file. A rebuild frees a whole island's chunk and batch meshes, and
+## every one of their entries stays in this dictionary for the life of the process, unread, with
+## `sway_asset_count` counting them — so the published number climbs by an island on every restart
+## and describes a world that no longer exists. Surviving entries are untouched, so nothing already
+## dressed is redressed and no shared mesh resource is walked twice, and the `false` values are the
+## entries that never counted toward `sway_asset_count` in the first place (already wind-dressed
+## when found, or a degenerate AABB) — decrementing by what was actually counted rather than by
+## how many keys went away is what keeps the number exact instead of merely smaller.
+func _prune_dressed_meshes() -> void:
+	var live: Dictionary = {}
+	var counted_dropped: int = 0
+	for mesh_key: int in _dressed_meshes:
+		if is_instance_id_valid(mesh_key):
+			live[mesh_key] = _dressed_meshes[mesh_key]
+		elif bool(_dressed_meshes[mesh_key]):
+			counted_dropped += 1
+	if live.size() == _dressed_meshes.size():
+		return
+	sway_asset_count = maxi(0, sway_asset_count - counted_dropped)
+	_dressed_meshes = live
+
+
+func _source_alive(instance_id: int) -> bool:
+	if not is_instance_id_valid(instance_id):
+		return false
+	var node := instance_from_id(instance_id) as Node
+	return node != null and node.is_inside_tree()
+
+
+## The classes that burn — a flickering light and a fire-source count, as opposed to the ambient
+## ones. Spelled once because three separate copies of the same three-way `or` is three chances for
+## a fourth fire class to be added to two of them.
+func _is_fire(emitter: AssetVfx.Emitter) -> bool:
+	return emitter == AssetVfx.Emitter.CAMPFIRE \
+		or emitter == AssetVfx.Emitter.FORGE \
+		or emitter == AssetVfx.Emitter.EMBER
 
 
 func _on_node_added(node: Node) -> void:
@@ -302,10 +463,14 @@ func _apply_sway(node: GeometryInstance3D, sway: AssetVfx.Sway) -> void:
 	# asset to the default green, so the shader itself is the durable "already done" mark.
 	var existing := mesh.surface_get_material(0)
 	if existing is ShaderMaterial and (existing as ShaderMaterial).shader == FOLIAGE_SHADER:
-		_dressed_meshes[mesh_key] = true
+		_dressed_meshes[mesh_key] = false
 		foliage_mesh_count += 1
 		return
-	_dressed_meshes[mesh_key] = true
+	# `false` = "in the cache, but not counted toward `sway_asset_count`". Flipped to `true` below
+	# only on the path that actually increments it, so `_prune_dressed_meshes()` can decrement by
+	# exactly what it drops instead of approximating (this path can still return early on a
+	# degenerate AABB, and the branch above never counted at all).
+	_dressed_meshes[mesh_key] = false
 
 	var bounds := mesh.get_aabb()
 	if bounds.size.y <= 0.001:
@@ -317,6 +482,7 @@ func _apply_sway(node: GeometryInstance3D, sway: AssetVfx.Sway) -> void:
 			surface_index, _sway_material(original, profile, bounds))
 	foliage_mesh_count += 1
 	sway_asset_count += 1
+	_dressed_meshes[mesh_key] = true
 
 
 ## Materials are cached across assets that agree on colour, roughness and sway numbers, so the
@@ -379,10 +545,14 @@ func _apply_baked_sway(node: GeometryInstance3D, sway: AssetVfx.Sway) -> void:
 		return
 	var existing := mesh.surface_get_material(0)
 	if existing is ShaderMaterial and (existing as ShaderMaterial).shader == FOLIAGE_SHADER:
-		_dressed_meshes[mesh_key] = true
+		_dressed_meshes[mesh_key] = false
 		foliage_mesh_count += 1
 		return
-	_dressed_meshes[mesh_key] = true
+	# `false` = "in the cache, but not counted toward `sway_asset_count`". Flipped to `true` below
+	# only on the path that actually increments it, so `_prune_dressed_meshes()` can decrement by
+	# exactly what it drops instead of approximating (this path can still return early on a
+	# degenerate AABB, and the branch above never counted at all).
+	_dressed_meshes[mesh_key] = false
 
 	var profile := AssetVfx.sway_profile(sway)
 	for surface_index: int in mesh.get_surface_count():
@@ -390,6 +560,7 @@ func _apply_baked_sway(node: GeometryInstance3D, sway: AssetVfx.Sway) -> void:
 		mesh.surface_set_material(surface_index, _baked_sway_material(original, profile))
 	foliage_mesh_count += 1
 	sway_asset_count += 1
+	_dressed_meshes[mesh_key] = true
 
 
 ## Same appearance-collapsing cache `_sway_material` keeps, kept separate from it: a baked-mask
@@ -477,7 +648,14 @@ func _register_emitter(
 	if emitter == AssetVfx.Emitter.GLOW:
 		return
 
+	# The node the sites BELONG to, which is not always the node that resolved them (F-287). For a
+	# published-placements batch or a MultiMesh it is this node; for a loose prop it is the host
+	# ancestor `_emitter_host()` picked and stamped, because that is the node whose lifetime the
+	# prop's existence actually tracks — a GLB's forty mesh parts can come and go under a holder
+	# that stays put.
+	var source: Node = _emitter_host(node)
 	var sites: Array = _sites.get_or_add(emitter, [] as Array) as Array
+	var sources: PackedInt64Array = _site_sources.get_or_add(emitter, PackedInt64Array())
 	for position: Vector3 in placements:
 		var duplicate: bool = false
 		for existing: Vector3 in sites:
@@ -487,12 +665,15 @@ func _register_emitter(
 		if duplicate:
 			continue
 		sites.append(position)
+		sources.append(source.get_instance_id())
 		emitter_site_count += 1
-		if emitter == AssetVfx.Emitter.CAMPFIRE \
-				or emitter == AssetVfx.Emitter.FORGE \
-				or emitter == AssetVfx.Emitter.EMBER:
+		if _is_fire(emitter):
 			fire_source_count += 1
 	_sites[emitter] = sites
+	# Written back because a PackedInt64Array is a value type — what `get_or_add` handed back is a
+	# copy, and appending to it stores nothing (the same trap `_check_placement_space` documents in
+	# `tools/environment_vfx_hollowmere_check.gd`).
+	_site_sources[emitter] = sources
 
 
 ## The node that IS this prop: the nearest ancestor carrying the asset id, or the node itself when
@@ -599,9 +780,7 @@ func _restart(node: Node3D) -> void:
 
 func _animate_lights() -> void:
 	for emitter: AssetVfx.Emitter in _pools:
-		var flickers: bool = emitter == AssetVfx.Emitter.CAMPFIRE \
-			or emitter == AssetVfx.Emitter.FORGE \
-			or emitter == AssetVfx.Emitter.EMBER
+		var flickers: bool = _is_fire(emitter)
 		var pool: Array = _pools[emitter] as Array
 		for index: int in pool.size():
 			var slot: Dictionary = pool[index]
@@ -814,6 +993,21 @@ func site_counts() -> Dictionary:
 	for emitter: AssetVfx.Emitter in _sites:
 		counts[emitter] = (_sites[emitter] as Array).size()
 	return counts
+
+
+## WHERE the emitter sites are, per class — the positions behind `site_counts()`.
+##
+## Exists for `tools/environment_vfx_reseed_check.gd` (F-287): a count cannot tell a replaced site
+## set from an appended one, which is the entire failure this system had. Returns copies, so a
+## caller cannot edit the live arrays out from under `_assign_slots`.
+func site_positions() -> Dictionary:
+	var out: Dictionary = {}
+	for emitter: AssetVfx.Emitter in _sites:
+		var positions: PackedVector3Array = PackedVector3Array()
+		for site: Vector3 in _sites[emitter] as Array:
+			positions.append(site)
+		out[emitter] = positions
+	return out
 
 
 ## How many effect nodes actually exist, per class. This is a property of the BUDGET, and the two

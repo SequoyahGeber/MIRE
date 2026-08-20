@@ -75,6 +75,57 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-20 — F-287 resolved: `EnvironmentVfx` retires emitter sites with the props they came from, so an in-place reseed REPLACES its site set (lp)
+
+**What was wrong.** F-258 rebuilds the island inside the existing current scene. `EnvironmentVfx`
+invalidated only on a change of `current_scene`'s instance id, which that rebuild deliberately does
+not cause, so every restart appended a whole island's emitter sites to the previous one's: 22 sites
+→ 38 after one restart (all 21 old ones still registered) → 52 after a second. The fixed pools then
+ranked ghosts against real props, so effects burned where nothing stood and new sites lost
+nearest-first slots.
+
+**The API you build against.** One new introspection call, alongside the existing
+`site_counts()` / `pool_counts()` / `live_count()`:
+
+```gdscript
+EnvironmentVfx.site_positions() -> Dictionary   # AssetVfx.Emitter -> PackedVector3Array, copies
+```
+
+Use it in preference to `site_counts()` in any check about world *identity*. A count cannot tell a
+replaced site set from an appended one — that blind spot is exactly what let this ship, and it is
+the same blind spot `F-288` records in `run_reseed_check`'s POI phase.
+
+**The invariant now maintained,** and what it costs you: a site lives exactly as long as the node it
+was registered from is valid AND inside the tree. Pruned on `EventBus.run_restarted` (deferred) and
+again on the existing quarter-second budget tick, so a teardown that announces nothing —
+`ProceduralWorld.rebuild_for_seed()` driven straight from a check or a console reroll, a scatter
+chunk streaming out, a prop freed mid-run — is retired within a tick without any new signal.
+`emitter_site_count`, `fire_source_count` and `sway_asset_count` are therefore a **census of what
+exists**, not running totals; assert on them accordingly. `foliage_mesh_count` is the exception and
+still accumulates — it is a per-node tally with no per-node record behind it (36 → 62 across one
+reseed). That is **F-303**; do not read it as a world census.
+
+**Do not "simplify" this into a clear on `run_restarted` (D-170).** The authored map fires the same
+signal and rebuilds nothing; its props all carry `VFX_META`, `_apply_node()` early-returns on that
+meta, so a clear-and-re-walk skips every one of them and Hollowmere goes dark with no error.
+`tools/environment_vfx_reseed_check.gd` plants a survivor prop outside the rebuilt subtree
+specifically so that mistake fails a check instead of shipping.
+
+**If you write a headless check against a procedural island, anchor the streamer yourself.** With
+`build_player = false` (what `run_reseed_check` and this check both use) nothing calls
+`ChunkStreamer.set_anchors()`, so no chunk reaches LOD0-with-collision, `ResourceScatterField` builds
+no holder, and the island produces **zero** scatter — no harvestables, no emitter sites, no props.
+This check measured exactly that on its first run and every island assertion in it was vacuous. Call
+`streamer.set_anchors(PackedVector3Array([world.spawn_position]))` every frame and wait; the first
+sites land in ~45 frames, a fresh ring after a rebuild in ~31.
+
+**Verified:** `.agent/bin/agent godot --script tools/environment_vfx_reseed_check.gd` →
+`ENVIRONMENT_VFX_RESEED_CHECK failures=0` (`RESTART before=22 after=17 shared=0 sway_assets=2`,
+unchanged from the boot's 2); three siblings
+re-run green — `ENVIRONMENT_VFX_CHECK foliage=8103 failures=0`,
+`ENVIRONMENT_VFX_HOLLOWMERE_CHECK failures=0`, `RUN_RESEED_CHECK failures=0`.
+
+
 ### 2026-08-20 — F-284 resolved: both world builders answer `water_surface_at()`, and the contract matrix asserts a standable spawn on BOTH maps (lp)
 
 **The new API you build against.** Both world scripts now answer the same *pair* of pure, read-only

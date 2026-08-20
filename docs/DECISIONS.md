@@ -5305,3 +5305,51 @@ blind spot arriving through the door marked "generic".
 **What would change my mind:** a spawn source that is no longer a node in the scene — if PlayerNet
 ever takes the spawn from the layout record directly, the record becomes the only truth and the
 node cross-check retires with it.
+
+---
+
+### D-170 · 2026-08-20 · F-287: scene-derived VFX state is pruned by the node it came from, never cleared wholesale on `run_restarted`
+
+**The decision.** `EnvironmentVfx` records, for every emitter site, the instance id of the prop it
+was registered from, and retires a site when that prop is freed or leaves the tree. It does **not**
+clear its site arrays when a run restarts. The clearing version of this fix is not a cheaper
+variant of the same thing — it is a different, wrong behaviour.
+
+**Why the obvious fix is wrong.** `EventBus.run_restarted` fires on *both* maps. On the procedural
+map it accompanies `ProceduralWorld.rebuild_for_seed()`, which frees the island and builds a new one,
+so a blanket clear happens to be right there. On the authored map nothing is torn down at all:
+Hollowmere's props stand through the restart, every one of them already carries `VFX_META` from its
+first registration, and `_apply_node()` early-returns on that meta — so the re-walk that is supposed
+to repopulate the arrays skips all of them and the map goes dark for the rest of the process. Five
+fires, 101 crystals, 161 spore sites, no error, no log line. `tools/environment_vfx_reseed_check.gd`
+plants a survivor prop outside the rebuilt subtree and asserts it keeps its site; that assertion
+exists to fail if someone later "simplifies" this into a clear.
+
+Stripping `VFX_META` from the surviving nodes to force re-registration is the other exit, and it was
+rejected: it re-dresses shared mesh resources to solve a bookkeeping problem, and it makes the cost
+of a restart proportional to the whole scene rather than to what actually changed.
+
+**The membership test is `not is_instance_valid() or not is_inside_tree()`, in that order.**
+`remove_child()` is synchronous and `queue_free()` is not, and the teardown that matters here does
+both in that sequence — so during the frame a run restarts, every node of the ended island is still
+a perfectly valid instance and only the tree test can tell it is gone. Any future prune written
+against validity alone will silently do nothing at the one moment it is needed.
+
+**Where it runs, and why two places.** A deferred prune-and-re-walk on `run_restarted`, and a prune
+on the existing quarter-second budget tick. The signal is the shipped boundary but not the only one:
+`rebuild_for_seed()` is public and announces nothing, so a console reroll or a check driving it
+directly is invisible to any subscriber. The periodic prune is what makes the invariant true rather
+than merely usually true — and it is strictly cheaper than the nearest-first sort that tick already
+pays, so "prune only on the signal to save time" is a false economy.
+
+**Scope.** This is `EnvironmentVfx` state — no authority, nothing on the wire, `ARCHITECTURE.md`
+§2.2 "VFX, audio, camera, UI". The same reasoning applies to any autoload that discovers nodes via
+`node_added` and caches something derived from them; today that cache is the only one that
+accumulated (`F-286` is the same class in `CraftingService`, filed separately).
+
+**What would change my mind:** a generator that reuses prop nodes across a rebuild instead of
+freeing them. Then "still in the tree" stops meaning "still the current island", and the source
+record would need a generation counter rather than a liveness test.
+
+**D-number hazard (F-283).** Taken by reading the file's tail; D-169 was the highest at the time.
+Still no atomic allocator, so a concurrent lane could take D-170 too.

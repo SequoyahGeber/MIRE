@@ -10164,3 +10164,134 @@ at every seed observed. **F-302** records a second, cosmetic find: the two shipp
 write the spawn record in two different shapes, which is why `_layout_spawn()` carries both.
 
 **Resolved** — see `docs/FINDINGS.md`.
+
+---
+
+## F-287 · Procedural reseed accumulates `EnvironmentVfx` emitter sites from every previous island
+
+**Claim:** `autoload/environment_vfx.gd`, `tools/environment_vfx_reseed_check.gd` (new), plus the
+four docs. Network authority: **none** — `ARCHITECTURE.md` §2.2, "VFX, audio, camera, UI" row,
+unchanged by this task. The new `run_restarted` subscription does not change it: that event already
+reaches every peer (the host emits it, a client re-derives it from the `WorldDeltaLog` seed record
+via `CycleService._on_world_delta_applied()`), and each peer re-reads only its own scene. Nothing
+here is sent, requested or trusted across the wire. **No new RPC, no `PROTOCOL_VERSION` bump.**
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The shape of the bug.** F-258 made a new run re-derive the island *in place*:
+`ProceduralWorld.rebuild_for_seed()` frees the streamer, nav baker, scatter field, `PoiSites` and
+`SpawnMarker` and rebuilds them under the same current scene, deliberately not replacing the scene
+itself (the player body is repositioned, not re-instanced). `EnvironmentVfx` had exactly one
+invalidation, in `_process`: compare `current_scene.get_instance_id()` against a stored `_scene_id`
+and `_reset()` when it changes. An in-place rebuild changes nothing it looks at, so the ended
+island's emitter sites stayed registered, `node_added` appended the new island's on top, and the
+fixed pools then ranked both sets together — effects burning at coordinates that no longer have a
+prop, real new sites losing nearest-first slots to ghosts, and `emitter_site_count` climbing by a
+whole island on every restart. Measured, before the fix: 22 sites → 38 after one restart with all 21
+of the old island's still present → 52 after a second.
+
+**The call: prune by source, do not clear (D-170).** The obvious fix — clear `_sites` on
+`run_restarted` and re-walk — is wrong, and quietly so. `run_restarted` also fires on the authored
+map, where nothing is torn down: Hollowmere's props survive the restart, they all carry `VFX_META`
+from their first registration, and `_apply_node()` early-returns on that meta, so the re-walk skips
+every one of them and the map goes permanently dark — five fires, 101 crystals and 161 spore sites
+gone, with no error and no log line. Stripping the metas to force re-registration would work but
+re-dresses shared mesh resources for nothing.
+
+So each site now records **which node it came from**, and the boundary prunes rather than clears.
+`_site_sources[emitter]` is a `PackedInt64Array` of instance ids parallel to `_sites[emitter]`,
+written only by `_register_emitter()` and `_prune_dead_sites()`. The source is `_emitter_host(node)`
+— the prop, not the mesh part, so a GLB's forty children coming and going under a holder that stays
+put changes nothing. This is also the node-removed path the file never had: a site is scene-derived
+state and nothing else here recorded what scene it was derived *from*.
+
+**Dead is `not is_instance_valid() or not is_inside_tree()`**, and the second half does the work.
+`_teardown_derived()` calls `remove_child()` — synchronous — and only then `queue_free()`, which does
+not run until the end of the frame; a validity-only test would call every node of the ended island
+alive at exactly the moment this exists for. It is also the right test for a scatter chunk streaming
+out (`resource_scatter_field.gd:_teardown_chunk`), which frees its holder the same way; those return
+as *new* nodes with no `VFX_META`, so re-entry is `node_added`'s ordinary path and needs nothing.
+
+**Two entry points, because one is not enough.** `_on_run_restarted()` defers `_rediscover_world()`
+(prune, then `refresh_scene()`), and `_process`'s existing quarter-second budget tick prunes before
+`_assign_slots()`. The subscription alone would miss `rebuild_for_seed()` called directly — a console
+reroll, or `tools/run_reseed_check.gd` phase 5 — which emits no signal at all; the periodic prune
+alone would leave a quarter-second of the new world lit by the old world's fires. The deferral is
+load-bearing and correct in either subscription order: autoloads subscribe from `_ready()`, so this
+handler runs *before* `ProceduralWorld`'s and the old island is still standing when the signal lands,
+which means a synchronous prune would find every source alive and drop nothing.
+
+An emitter class that loses all of its sites **keeps its now-empty key**. `_assign_slots()` iterates
+`_sites`, so a class erased from it is one whose pooled effect nodes are never reached again and stay
+switched on, burning where the ended island had them.
+
+**`_dressed_meshes` is pruned too, on the TICK and not on the boundary, for the census reason
+only.** The tempting justification is wrong and was checked rather than assumed: that cache is keyed
+by `Mesh.get_instance_id()`, but Godot does not hand a freed object's id to a new one — an
+`ObjectID` packs a validator that changes when the slot is reused (probed headless: 500 freed meshes
+against 5,000 fresh allocations, zero collisions). What is real is that a rebuild frees a whole
+island's meshes and leaves an unread entry per mesh forever, with `sway_asset_count` counting them.
+
+The placement is the part worth remembering, because the first two attempts were both wrong and both
+looked right. A `Mesh` cannot answer the question a `Node` can: `remove_child()` is synchronous, so a
+site's source node reads as out-of-tree the instant the island is torn down, but a Mesh is a
+`RefCounted` that does not die until the last `MeshInstance3D` referencing it is actually deleted.
+Pruning inside `_rediscover_world()` dropped **nothing** — every mesh of the ended island was still a
+valid instance. Re-armed as a one-frame-later flag it *still* found them alive; probing
+`_dressed_meshes` directly from the check showed 4 entries, 2 valid, and `sway_asset_count` stuck at
+4 across a reseed that should have left it at 2. Which frame the deletion lands on is an engine
+detail, so the prune waits for the next quarter-second tick and guesses nothing. It now measures
+`sway_assets=2` before and after.
+
+Entries carry a **bool**: `true` means "counted toward `sway_asset_count`", `false` means "in the
+cache but never counted" (already wind-dressed when found, or a degenerate AABB that returns before
+the increment). The prune decrements by what was actually counted, not by how many keys went away,
+which is the difference between a number that is exact and one that is merely smaller.
+
+**Verify:** `.agent/bin/agent godot --script tools/environment_vfx_reseed_check.gd` →
+`ENVIRONMENT_VFX_RESEED_CHECK failures=0`, with `BOOT sites=20 fires=0 foliage=36 sway_assets=2`,
+`RESTART before=22 after=17 shared=0 foliage=62 sway_assets=2` and `REROLL prune_frames=30`. The check boots a real procedural island, plants a **ghost**
+prop under `PoiSites` (which the rebuild frees) and a **survivor** under the scene root (which it
+does not), fires the shipped `EventBus.run_restarted` with a new seed in `GameState`, and asserts on
+positions rather than counts — a count cannot tell a replaced site set from an appended one, which is
+the whole failure. The survivor is the standing regression guard for the wrong fix above.
+
+**The harness detail that cost the first run.** With `build_player = false` nothing calls
+`ChunkStreamer.set_anchors()`, so no chunk reaches LOD0-with-collision, `ResourceScatterField` builds
+no holder, and the island registers **zero** emitter sites however long it is left alone — the first
+run of this check measured `before=2`, both of them its own planted props, and every assertion about
+the island was vacuous. The check now anchors the streamer at `spawn_position` itself, every frame,
+and reports the frame count it took (45 at boot, 31 after the rebuild).
+
+**Pre-fix proof.** With the subscription and the periodic prune commented out (copy in scratchpad,
+not `git stash` — a stash would touch other lanes' uncommitted work), the check reports
+`failures=3`: the ghost site survives, all 21 of the ended island's sites survive, and the reroll
+ghost is still registered after the full 4,000-frame budget. The two census assertions pass pre-fix
+and are supposed to — `emitter_site_count` grows in lockstep with the accumulated arrays, so it is
+the position assertions that catch this.
+
+**Sweep.** The class is *an autoload cache of scene-derived state whose only invalidation is the
+current-scene identity*. Three siblings share the shape and only one is live: `crafting_service.gd`
+(`_station_scene_id`) is **F-286**, already filed by another lane; `harvest_world.gd`
+(`_observed_scene_id`) is not affected — it is a "has the main scene been assigned yet" edge trigger,
+and `wired_harvestables()` re-derives from the live group on every call; `graphics_quality.gd`
+(`_applied_scene_id`) is not affected either — the sun and `WorldEnvironment` it touches live on the
+level and are not what `rebuild_for_seed()` frees, and `DrawPolicy.apply()` reads the preset at
+creation time, so a new island's props are born at the right draw distance. The four `node_added`
+services (`wellspring`, `chest_placement`, `extraction`, `harvest`) hold no position arrays at all —
+they build content on markers and re-derive from groups, so an in-place rebuild is their ordinary
+path. `EnvironmentVfx` was the only one accumulating.
+
+**Left standing, and filed rather than hidden: `foliage_mesh_count`.** It is the one counter here
+that is a per-NODE tally with no per-node record behind it — every dressed node increments it, cache
+hits included — so it cannot be re-derived and pruned the way the other four now are, and it still
+climbs by a whole island per restart (measured 36 → 62 across one reseed). The check prints it rather
+than asserting it. **F-303.**
+
+**Siblings re-run, both green:** `ENVIRONMENT_VFX_CHECK foliage=8103 failures=0` (Playtest Hollow,
+the name-fallback map), `ENVIRONMENT_VFX_HOLLOWMERE_CHECK failures=0` (2 campfire / 2 ember / 1 forge
+/ 101 crystal / 83 leaf / 161 spore sites, pools capped as before), and `RUN_RESEED_CHECK failures=0`
+— the F-258 check whose own restart path now runs this subscription.
+
+**Resolved** — see `docs/FINDINGS.md`.
