@@ -1715,7 +1715,235 @@ The stable `spawn_ground_check.gd` run emitted repeated `Navigation region synch
 
 ---
 
+### F-349 · Blight drains a standing player to death with no signal that anything is happening
+
+**Area:** systems · **Severity:** high · **Found:** 2026-08-21 by ivycc0920
+
+Reported from play (2026-08-20): "the player health just starts dropping after a bit and then i die."
+
+`systems/health/player_health.gd:_tick_blight()` drains hp whenever
+`MireGrid.corruption_at(player_position)` is at or above `BLIGHT_CORRUPTION_THRESHOLD` (0.15),
+at `BLIGHT_HP_DRAIN_PER_SEC_AT_FULL_CORRUPTION` (4.0) x corruption. The Mire spreads on its own
+(`world/mire/mire_grid.gd`: a tick every 2 s at `BASE_SPREAD_RATE` 0.06, from four seeded clusters,
+escalated per Cycle), and `MireGridSim.tick()` is purely additive — corruption never decays, so any
+ground not inside a ward or the wellspring's 48 m clear radius eventually crosses the threshold and
+stays there.
+
+The mechanic is intended. What is missing is that NOTHING tells the player it is happening. Grepping
+`ui/` for blight/corruption finds only `ui/frontend/backdrop.gd` (the title screen's shader) and
+`ui/hud/wellspring_hud.gd` (a wellspring-recorruption timer). There is no screen tint, no damage
+direction, no status icon, no log line the player sees, and `core/events/event_bus.gd` carries no
+blight event at all. The player watches the health bar fall with no cause on screen, which is
+indistinguishable from a bug — and was in fact reported as one.
+
+Two things are separately worth deciding:
+
+1. Feedback. Standing in Blight needs to read instantly — a vignette/tint that scales with
+   `corruption`, plus something persistent enough to survive looking away. This is the part that
+   turns "random death" into a mechanic.
+2. Whether unbounded, non-decaying spread is the intent. `MireGridSim.tick()` gives a corrupted cell
+   `value * spread_rate` into each orthogonal neighbour every tick and never removes any, so the
+   steady state of an unwarded island is total saturation at 1.0 — 4 hp/sec everywhere, everywhere,
+   forever. Wards and the wellspring are the counterplay, but a player who has not built one yet has
+   no survivable ground on a long enough run.
+
+See also F-350 for how fast this actually arrives.
+
+---
+
+### F-350 · The Mire saturates the whole island in 30 minutes and nothing ever pushes it back
+
+**Area:** world · **Severity:** high · **Found:** 2026-08-21 by ivycc0920
+
+Measured, `tools/blight_timeline_check.gd` (new), seed 20260819, no wards, no caps — the state a run
+actually starts in:
+
+     time   island above threshold   corruption at spawn   hp/s   time-to-die
+        0 s          12.9%                  0.000          0.00      —
+      120 s          27.7%                  1.000          4.00     25 s
+      600 s          66.9%                  1.000          4.00     25 s
+     1200 s          94.9%                  1.000          4.00     25 s
+     1800 s         100.0%                  1.000          4.00     25 s
+
+Spawn crosses `PlayerHealth.BLIGHT_CORRUPTION_THRESHOLD` at **58 seconds** and is at full corruption
+— 4 hp/sec, dead from full health in 25 seconds — inside two minutes. At thirty minutes every cell
+on the island is at 1.0. This is the direct cause of the death reported in F-349.
+
+**The missing term is decay.** `MireGridSim.tick()` gives every corrupted cell `value * spread_rate`
+to each of its four orthogonal neighbours and never subtracts anything from anywhere. Corruption is
+monotonically non-decreasing by construction, so the only fixed point of the system is "the whole
+grid at 1.0", and the 2-second tick reaches it in half an hour. Nothing in the model can move the
+front backwards.
+
+The counterplay that exists does not change this:
+
+- Wards (`_is_warded()`) only stop a cell being written; they do not lower it, and they cover the
+  footprint a player has actually built.
+- Capping a Wellspring calls `clear_radius()` once for 48 m, and `mire_grid.gd`'s own comment notes
+  that the cleared circle "regrows from its still-corrupted edge inward" on the very next tick,
+  because clearing zeroes cells without freezing them.
+- `SPREAD_REDUCTION_PER_CAP` (0.85) slows the rate; it cannot reverse it. Even at rate zero the
+  already-corrupted 100% stays corrupted.
+
+So a run has roughly one minute of safe ground at spawn, and after half an hour there is no
+survivable square metre on the map for any player, at any skill level, with any build. That reads to
+a player exactly as it was reported: health starts dropping and you die.
+
+What needs deciding (a real design call, not a code fix): whether corrupted ground should recover on
+its own away from a source, whether spread should be sourced from a bounded set of Mire origins
+rather than from every corrupted cell equally, and what the intended shape of the pressure curve
+over a run actually is. Any of those turns this from a countdown into a mechanic. Tuning
+`BASE_SPREAD_RATE` alone only moves the half-hour.
+
+Filed alongside F-349 (the same drain has no player-facing signal at all).
+
+---
+
+### F-351 · Enemies navigate a map the streamed world never bakes into — every chunk navmesh is on NavBaker's private map
+
+**Area:** gameplay · **Severity:** high · **Found:** 2026-08-21 by ivycc0920
+
+Reported from play (2026-08-20): "when it became night time the crawlers spawned from the well but
+they walked backwards away from me."
+
+**Two navigation maps exist and nothing joins them.**
+
+`world/chunk/nav_baker.gd:_ensure_map()` calls `NavigationServer3D.map_create()` and puts every
+streamed chunk's region on that private map (`region_set_map(region, _map)`, line 279).
+`Enemy._build_agent()` creates a plain `NavigationAgent3D` and never assigns a map, so it queries the
+viewport's DEFAULT world map. `EnemyWorld.bake_navigation()` adds its `EnemyNavRegion` as a child of
+the autoload, which also lands on the default map.
+
+Measured in the shipped level (`tools/enemy_nav_map_check.gd`, new — boots
+`res://levels/procedural_island.tscn` and reads both maps):
+
+    default map (what every enemy queries):  1 region, 0 region connections
+    NavBaker's own map:                     25 regions (25 chunk navmeshes baked)
+    same map as the enemies query?          false
+
+So **none of the island's terrain navmesh is reachable by any enemy.** What an enemy actually paths
+on is `EnemyNavRegion`: one region, baked ONCE from `get_tree().current_scene`'s static colliders at
+session start, and never rebaked as chunks stream. `autoload/enemy_world.gd`'s own header states the
+assumption out loud — "the region is baked once from the level's static collision at session start" —
+which was true of the authored maps and is false of a streamed island, where at session start the
+only colliders that exist are the handful of spawn chunks `ChunkStreamer.prime()` built.
+
+**Why it reads as "walked away from me."** `Enemy._nav_ready` is TRUE — the default map is valid and
+has a non-zero iteration id, because `EnemyNavRegion` is on it — so `_steer_toward()` never takes its
+"no map, steer straight" fallback. It hands the target to an agent whose only navmesh is a small
+stale patch near the world spawn point. A `NavigationAgent3D` given a target off its navmesh paths
+toward the nearest reachable point instead, so a crawler spawned out at the well walks off toward
+that spawn patch — away from the player standing next to it.
+
+**Reproduced.** From a spawn marker at (-69.1, 3.1, -32.4), with a player 12 m away, the crawler
+walks the other way — the agent returns a constant step direction that has almost nothing in common
+with the direction of the player, and the gap widens for as long as the trace runs:
+
+     t(s)   dist(m)   step_dir.x   direct_dir.x
+      0.0    11.98       0.21          0.99
+      1.0    11.93       0.21          0.98
+      2.0    14.27       0.21          0.95
+      2.7    18.56       0.21          0.92
+     end     21.44       — DID NOT CLOSE
+
+That is the reported behaviour exactly: the crawler is not confused about which way it is facing, it
+is walking, deliberately and steadily, at the stale region instead of at the player.
+
+Whether it happens at a given spot is positional, which is why it looks intermittent from inside the
+game. At other ambient spawn markers the agent returns nothing usable and `_steer_toward()` falls
+through to `direct.normalized()` — step direction and direct direction identical to two decimals —
+and the crawler closes normally. That fallback is incidental, not the designed one: it depends on
+where the stale region's polygons happen to lie relative to the enemy.
+
+Ruled out on the way, so nobody re-treads it:
+
+- **Facing is correct.** The crawler GLB really does face +Z (measured: `head` bone z=+0.180, `jaw`
+  z=+0.360, `abdomen` z=-0.160), so F-039's `model_yaw_offset_degrees = 180.0` workaround is right
+  and all five enemy defs are correctly set. This is not a repeat of F-039.
+- **Targeting never flees.** `_resolve_target()` only ever returns a player, and `_tick_pursuit()`
+  zeroes horizontal velocity when there is none. No code path steers an enemy away from its target.
+
+Fix direction: enemies must query the map their world actually bakes. Either point each
+`NavigationAgent3D` at `NavBaker.map_rid()` when a `NavBaker` owns navigation for the level, or stop
+NavBaker minting a private map and have it register chunk regions on the default world map that
+`EnemyWorld` and every agent already share. The second is less machinery but needs a decision about
+`EnemyNavRegion` overlapping chunk regions on one map — two overlapping navmeshes over the same
+ground is its own pathing hazard, so whichever way this goes, `EnemyWorld.bake_navigation()` should
+not also be baking terrain in a streamed level.
+
+---
+
 ## Resolved
+
+### F-348 · Procedural trees collide as canopy-wide cylinders, not trunks — **fixed**
+
+**Area:** world · **Severity:** high · **Found:** 2026-08-21 by ivycc0920
+
+`world/gen/resource_scatter_field.gd:_build_node_holder()` derives a NODE harvestable's collider
+from the union AABB of every mesh part it loaded:
+
+    cylinder.radius = maxf(maxf(merged.size.x, merged.size.z) * 0.5, 0.05)
+    cylinder.height = maxf(merged.size.y, 0.1)
+    shape_node.position = merged.get_center()
+
+For a tree, `merged` is the whole tree — trunk AND canopy. So the collider is a cylinder as wide as
+the leaf crown and as tall as the tree, centred on the crown's centre. A willow with a 6 m crown
+gets a ~3 m-radius invisible wall around a ~0.4 m trunk, and it stands ~1 m off the ground because
+the AABB centre is up in the canopy rather than at the base.
+
+Every tree in the procedural island is a NODE harvestable (`systems/harvesting/harvest_library.gd`
+maps `tree_` and `mire_broadleaf_tree` to `Represent.NODE`), so this is every tree the player walks
+past, not an edge case.
+
+`world/gen/authored_world.gd` does NOT have this bug: `_add_prop_collision()`/`_add_shapes()` read
+an authored `cols` array off the layout, so each prop carries a hand-sized shape. The procedural
+scatter path was written to "mirror" the authored holders' shape and layout but had no authored
+collider data to mirror, and derived one from the mesh bounds instead.
+
+Fix direction: the collider a tree needs is the trunk, not the silhouette. Either author `cols` for
+flora the way the authored layouts do, or derive the radius from the mesh cross-section at ankle
+height instead of the full AABB, and seat the cylinder on the holder origin (y = height/2) rather
+than the AABB centre.
+
+**Resolved 2026-08-21 by ivycc0920.** Fixed in `world/gen/resource_scatter_field.gd`. The derived collider now measures the prop's SOLID
+geometry instead of its silhouette, by two rules that are both needed:
+
+1. Surfaces painted with a foliage material contribute nothing (`FOLIAGE_MATERIAL_PREFIXES`). The
+   art pipeline names every material `"MIRE_" + CamelCase(palette_token)` and groups leaf/pine/
+   grass/moss/reed/sedge/bracken/flower tokens under one `-- foliage` heading in
+   `tools/blender/mire_art.py`, so this is the foliage family as the pipeline defines it, not a list
+   guessed off today's assets. A willow carries its trunk on `MIRE_WoodBark` and its crown on three
+   `MIRE_Leaf*` surfaces of the same mesh, which is what makes the question answerable without
+   hand-authored shapes.
+2. Of what is left, only vertices below `COLLIDER_OBSTACLE_HEIGHT_M` (1.8 m) count — the bark
+   BRANCHES are solid wood spreading roughly twice as wide as the trunk, and are still something you
+   walk under.
+
+Radius is measured radially from the prop's own vertical axis, not off an AABB corner, and the
+cylinder is seated on the holder origin. Height stays the full height so an arrow still hits a trunk
+high up. Computed once per asset into `_collider_cache` rather than once per prop — the old code
+re-merged AABBs for every instance, and vertex-walking a few hundred times per chunk would not have
+been affordable.
+
+Measured, `tools/tree_collider_check.gd` (new), radius before -> after:
+
+    tree_willow_a  1.89 -> 1.29 m
+    tree_willow_b  1.48 -> 0.86 m
+    tree_willow_c  1.79 -> 1.00 m
+    tree_snag_a    1.34 -> 1.06 m
+    sapling_b      0.41 -> 0.25 m
+
+Every one now sits flush against its own solid geometry (overhang 0.00 m), where the check measures
+that geometry straight off the vertex buffers rather than by calling the shipped helper.
+
+Residual, deliberate: a cylinder cannot taper, so a tree with a wide root flare still blocks at
+flare width all the way up (willow_a's 1.29 m is its buttresses, not its bole). That is honest for a
+walking body — the flare is real solid wood and your feet reach it first — but it does mean you
+cannot press your chest against the bark. Tapering would need a second shape or an authored `cols`
+array like `world/gen/authored_world.gd` uses; not worth it until something asks for it.
+
+`tools/chunk_stream_check.gd` (0 functional failures) and `tools/harvest_batch_check.gd`
+(763 batched, 0 failures) both still pass.
 
 ### F-336 · GAMELOOP.md reports several pre-cutover states as current — **fixed**
 
