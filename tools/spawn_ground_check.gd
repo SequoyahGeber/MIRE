@@ -19,6 +19,15 @@ extends SceneTree
 ## the broken build.
 
 const WorldScene := preload("res://levels/procedural_island.tscn")
+## Preloaded for its constants — `SPAWN_CLEARANCE_M` and `TERRAIN_LAYER` are the contract this file
+## asserts against, and reading them here means a change to either fails loudly instead of silently
+## moving the goalposts.
+const ProceduralWorldScript := preload("res://world/gen/procedural_world.gd")
+
+## The independent ground probe's window. Generous in both directions: it only has to find the
+## collision mesh near a point already known to be on the island.
+const PROBE_UP_M: float = 4.0
+const PROBE_DOWN_M: float = 8.0
 
 ## Two islands with quite different shore geometry, so the assertion is about the seam and not about
 ## one lucky seed. SEED_A is the one F-324 was measured on.
@@ -147,6 +156,18 @@ func _check_boot(game_state: Node, seed_value: int) -> void:
 ## used to carry slot one's HEIGHT to all six. `standing_position_at()` is the seam that fixes it, so
 ## assert its contract directly: every offset lands on the ground under THAT offset, not under the
 ## spawn point.
+##
+## **F-345: what "its own ground" means changed under this check.** It used to compare the placement
+## against `height_at()`, the analytic heightmap, and require agreement within 0.35 m — and after
+## 4.18/D-184 it reported a worst slot 0.37 m out. Those are two different surfaces now, on purpose.
+## `ChunkMesher` jitters every vertex up to `VERTEX_JITTER_FRACTION` of the LOD step in XZ and
+## re-samples Y there, so the vertices still sit on the analytic field but the TRIANGLES between them
+## span an irregular grid; a ray at an arbitrary (x, z) lands on a plane that can be several tens of
+## centimetres off the smooth surface on a steep shore. A body does not rest on the analytic field —
+## it rests on the collision mesh. So the contract is asserted against the collision mesh, by casting
+## the same ray a capsule would fall along, and the analytic field is kept only as a sanity bound.
+##
+## Asserting against the heightmap was measuring the terrain retune, not the spawn rule.
 func _check_offset_slots(game_state: Node) -> void:
 	var world: Node3D = await _build_world(game_state, SEED_A)
 	var spawn: Vector3 = world.get(&"spawn_position")
@@ -162,21 +183,58 @@ func _check_offset_slots(game_state: Node) -> void:
 		_teardown(world)
 		return
 
-	var worst: float = 0.0
+	var clearance: float = float(ProceduralWorldScript.SPAWN_CLEARANCE_M)
+	var worst_physics: float = 0.0
+	var worst_analytic: float = 0.0
+	var unsupported: int = 0
 	var spread: float = 0.0
 	for offset: Vector3 in offsets:
 		var asked: Vector3 = spawn + offset
 		var placed: Vector3 = world.call(&"standing_position_at", asked)
-		var surface: float = float(world.call(&"height_at", asked.x, asked.z))
-		worst = maxf(worst, absf(placed.y - surface))
 		spread = maxf(spread, absf(placed.y - spawn.y))
 
-	check(worst < 0.35,
-		"co-op slots: every offset is placed on its own ground (worst error %.2f m)" % worst)
+		# The real contract: the feet sit one clearance above the collision surface AT THIS OFFSET.
+		var ground: float = _physics_ground_at(world, Vector3(placed.x, placed.y, placed.z))
+		if is_nan(ground):
+			unsupported += 1
+			continue
+		worst_physics = maxf(worst_physics, absf(placed.y - (ground + clearance)))
+		worst_analytic = maxf(
+			worst_analytic, absf(placed.y - float(world.call(&"height_at", asked.x, asked.z))))
+
+	check(unsupported == 0,
+		"co-op slots: every offset has a collider under it (%d without)" % unsupported)
+	# Millimetres, not centimetres: `standing_position_at()` returns the ray hit plus the clearance,
+	# so anything above float noise means it did not use the ray at that offset at all.
+	check(worst_physics < 0.01,
+		"co-op slots: every offset rests on the collision surface under THAT offset "
+		+ "(worst error %.4f m)" % worst_physics)
 	check(spread > 0.0,
 		"co-op slots: and the heights genuinely differ per slot — not all six on slot one's y")
+	# Diagnostic, not the contract. It bounds how far the jittered collision mesh may wander from the
+	# analytic field before something is wrong with the terrain rather than with the spawn rule; the
+	# tolerance is loose because that divergence is a deliberate 4.18 product of the jitter.
+	check(worst_analytic < 1.0,
+		"co-op slots: the collision mesh still tracks the analytic field (worst %.2f m)"
+			% worst_analytic)
 
 	_teardown(world)
+
+
+## Where the collision mesh actually is under `from`, or NAN if nothing is there. The same ray
+## `ProceduralWorld._standing_position()` casts, cast independently so the assertion above is a
+## second opinion rather than a restatement of the thing it is checking.
+func _physics_ground_at(world: Node3D, from: Vector3) -> float:
+	var space: PhysicsDirectSpaceState3D = world.get_world_3d().direct_space_state
+	if space == null:
+		return NAN
+	var query := PhysicsRayQueryParameters3D.create(
+		from + Vector3(0.0, PROBE_UP_M, 0.0), from - Vector3(0.0, PROBE_DOWN_M, 0.0))
+	query.collision_mask = ProceduralWorldScript.TERRAIN_LAYER
+	var hit: Dictionary = space.intersect_ray(query)
+	if hit.is_empty():
+		return NAN
+	return (hit.get("position", Vector3.ZERO) as Vector3).y
 
 
 # ── the net under it ──────────────────────────────────────────────────────────────────────────────

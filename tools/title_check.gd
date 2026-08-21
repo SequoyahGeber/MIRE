@@ -17,6 +17,15 @@ const Frontend := preload("res://ui/frontend/frontend.gd")
 const TitleScreen := preload("res://ui/frontend/title_screen.gd")
 const TitleBackdrop := preload("res://ui/frontend/backdrop.gd")
 const MireTheme := preload("res://ui/theme/mire_theme.gd")
+## The persistence boundary the SHIPPED title actually reads (MENU-7). This check used to read
+## `salvage_save.gd` and a `last_run` key, which is where the card lived before MENU-7 moved it —
+## so it failed against correct product code and proved nothing about the screen (F-335).
+const RunRecordSave := preload("res://core/save/run_record_save.gd")
+
+## A path no real player save can collide with. `RunRecord.save_path` is a `var` precisely so a check
+## can point the service somewhere disposable; the title reads through the service, so redirecting it
+## redirects the screen too.
+const TEST_RECORD_PATH: String = "user://title_check_last_run.json"
 
 ## The 1080p reference the type scale and every offset in the front end are authored against
 ## (docs/MENU.md §3.2). MENU-10 re-runs the same layout assertions at the Deck's 1280×800.
@@ -115,9 +124,7 @@ func _run() -> void:
 	# First boot has no run to report; an empty card would tell a new player they had already failed.
 	var card: Control = title.get("_expedition_card")
 	check(card != null, "the last-expedition card exists")
-	check(card.visible == _last_run_recorded(),
-		"the last-expedition card appears exactly when a run has been recorded (recorded=%s)"
-			% _last_run_recorded())
+	await _check_expedition_card_states()
 
 	# Everything on the title must clear the type floor — it is the screen most likely to be read
 	# from a couch on a Deck.
@@ -220,10 +227,64 @@ func _run() -> void:
 	finish()
 
 
-func _last_run_recorded() -> bool:
-	var save := load("res://core/save/salvage_save.gd")
-	var data: Dictionary = save.load_data()
-	return data.get("last_run", null) is Dictionary
+## F-335: the card's contract, driven from both sides instead of read off whatever this machine
+## happens to have on disk.
+##
+## The old assertion compared the card's visibility to a record it read itself — which passes whether
+## the card is right or wrong, as long as both agree. Worse, it read the PRE-MENU-7 boundary
+## (`salvage_save.gd`, key `last_run`) while the shipped title reads `RunRecord`/`run_record_save.gd`,
+## so it went red against correct code and its redness said nothing about the screen.
+##
+## Here the record is written, the title rebuilt, and the card asserted VISIBLE; then the record is
+## removed, the title rebuilt, and the card asserted HIDDEN. Both directions, so a card stuck on or
+## stuck off fails.
+func _check_expedition_card_states() -> void:
+	var service: Node = root.get_node_or_null(^"RunRecord")
+	if service == null:
+		check(false, "RunRecord autoload is present — it is what the title reads through")
+		return
+	var real_path: String = String(service.get("save_path"))
+	service.set("save_path", TEST_RECORD_PATH)
+	_remove_test_record()
+
+	# No record: a first-ever boot.
+	var empty: Dictionary = await _rebuilt_card_state()
+	check(bool(empty.get("exists", false)), "a rebuilt title still builds an expedition card")
+	check(not bool(empty.get("visible", true)),
+		"with no recorded run the last-expedition card is hidden, not shown empty")
+
+	# A recorded run, written through the shipped writer so the fixture is the real format.
+	service.call("record", &"extracted", 7, 420)
+	check(bool(RunRecordSave.load_data(TEST_RECORD_PATH).get("has_run", false)),
+		"the fixture wrote a real record through the shipped boundary")
+	var filled: Dictionary = await _rebuilt_card_state()
+	check(bool(filled.get("visible", false)),
+		"with a recorded run the last-expedition card appears")
+
+	_remove_test_record()
+	service.set("save_path", real_path)
+
+
+## `{exists, visible}` for a freshly built title's expedition card.
+##
+## Built and freed here rather than reusing the screen under test, because visibility is decided
+## during `_build()`: poking the save afterwards would not move an already-built card, and a check
+## that flipped the flag itself would be asserting its own poke. Returns plain values because the
+## screen is gone by the time the caller reads them.
+func _rebuilt_card_state() -> Dictionary:
+	var screen: Control = TitleScreen.new()
+	root.add_child(screen)
+	await process_frame
+	var card: Control = screen.get("_expedition_card") as Control
+	var state := {"exists": card != null, "visible": card != null and card.visible}
+	screen.queue_free()
+	await process_frame
+	return state
+
+
+func _remove_test_record() -> void:
+	if FileAccess.file_exists(TEST_RECORD_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_RECORD_PATH))
 
 
 ## Walks a screen for Label font sizes so the type floor is asserted against what was actually

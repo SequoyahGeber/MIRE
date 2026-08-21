@@ -20,8 +20,10 @@ extends CharacterBody3D
 ## ACQUISITION only; an already-held target is kept on distance alone, per the existing hysteresis),
 ## **alerting** (`_alert_nearby()`/`alert()` — a fresh acquisition hands the same target directly to
 ## any untargeted packmate in `alert_radius_m`, one hop, no perception check of its own), and an
-## **attack-slot cap** (`_engaged_attackers()` — at most `max_concurrent_attackers` of one kind may be
-## telegraphing or swinging at the same target; the rest hold position instead of piling on). All
+## **attack-slot cap** (`_engaged_attackers()` — at most `max_concurrent_attackers` OF THIS KIND may
+## be telegraphing or swinging at the same target; the rest hold position instead of piling on. Until
+## F-331 the count ignored `definition.id`, so every kind spent one shared budget and this sentence
+## described behaviour the code did not have). All
 ## three are still host-only decisions inside the same state machine; no new replicated property, no
 ## new RPC.
 ##
@@ -92,6 +94,10 @@ var state: int = State.IDLE:
 		if value == State.DEAD:
 			# The dissolve runs in _process, which idles off until something animates (F-099).
 			set_process(true)
+		# Every transition into or out of TELL/ATTACK is an attack-slot change (F-331). Publishing
+		# from the setter rather than from each transition site is what makes the ledger impossible
+		# to forget: DEAD, CHASE, IDLE and a replicated delta all arrive through here.
+		_sync_engagement()
 		_play_state_animation()
 
 var health: int = 0
@@ -106,7 +112,18 @@ var hit_counter: int = 0:
 		if jumped:
 			_react_to_hit()
 
-var _target_peer: int = 0
+## `EnemyWorld`, resolved once in `_ready()`. See `_engagement_ledger()` for why it is cached.
+var _enemy_world: Node = null
+
+## The peer this enemy is committed to. A setter rather than a plain field so all five assignment
+## sites — acquisition, `alert()`, death, deaggro, and `Boss`'s own phase reset — refresh the
+## engagement ledger without each of them having to remember to (F-331).
+var _target_peer: int = 0:
+	set(value):
+		if _target_peer == value:
+			return
+		_target_peer = value
+		_sync_engagement()
 ## The held target's node, validated by reference each tick instead of re-found by a group scan
 ## (F-099). Reacquisition scans for a NEW target run at RESCAN_INTERVAL_SEC, not every tick.
 var _target_node: Node3D
@@ -158,6 +175,9 @@ func _ready() -> void:
 	_build_agent()
 	_build_synchronizer()
 	_play_state_animation()
+	# Any state or target set during construction reached the setters before this node was in the
+	# tree, so the ledger could not see it. One publish here reconciles that (F-331).
+	_sync_engagement()
 
 	# Only the host simulates. A client's copy is moved entirely by replication, and 1.6's
 	# interpolator smooths it — the enemy's synchronizer is named NetConfig.PLAYER_SYNC_NODE for
@@ -477,12 +497,32 @@ func alert(peer_id: int) -> void:
 	_target_node = node
 
 
-## How many OTHER enemies of any kind are currently telegraphing or swinging at `peer_id` (5.1's
-## attack-slot cap). Walks the same group `_alert_nearby()` does rather than a maintained counter —
-## counters drift when an enemy dies mid-swing; a live scan cannot.
+## How many OTHER enemies OF THIS KIND are currently telegraphing or swinging at `peer_id` (5.1's
+## attack-slot cap).
+##
+## Reads `EnemyWorld`'s engagement ledger instead of walking the whole enemy group (F-331). The old
+## scan was O(N) from every in-range enemy on every host physics tick — O(N^2) exactly when combat
+## density is highest — and it compared nothing but the target, so a strider's swing consumed a slot
+## the crawler cap was supposed to own.
+##
+## The ledger keeps the property the old comment was defending: it stores engagements rather than a
+## tally, republishes them on every transition, and drops rows whose instance has gone away as it
+## counts. It is still a live scan, just over the handful of enemies engaged on ONE target instead of
+## the entire roster.
 func _engaged_attackers(peer_id: int) -> int:
-	if peer_id <= 0:
+	if peer_id <= 0 or definition == null:
 		return 0
+	var world: Node = _engagement_ledger()
+	if world == null:
+		# An isolated fixture with no EnemyWorld autoload. Falling back to the original scan keeps
+		# the cap enforced there rather than silently disabling it, which a plain `return 0` would.
+		return _engaged_attackers_by_scan(peer_id)
+	return int(world.call(&"engaged_attackers", peer_id, definition.id, self))
+
+
+## The pre-F-331 scan, kept only for the no-autoload fixture path above. Now filters on kind, so the
+## two paths answer the same question.
+func _engaged_attackers_by_scan(peer_id: int) -> int:
 	var count: int = 0
 	for node: Node in get_tree().get_nodes_in_group(ENEMY_GROUP):
 		if node == self:
@@ -490,9 +530,49 @@ func _engaged_attackers(peer_id: int) -> int:
 		var other := node as Enemy
 		if other == null or not is_instance_valid(other):
 			continue
+		if other.definition == null or other.definition.id != definition.id:
+			continue
 		if other.target_peer() == peer_id and (other.state == State.TELL or other.state == State.ATTACK):
 			count += 1
 	return count
+
+
+## Publishes this enemy's current attack-slot engagement, or clears it. Called from the `state` and
+## `_target_peer` setters and from `_exit_tree()`, so every way an engagement can begin or end runs
+## through here.
+##
+## Deliberately a SET of the whole current engagement rather than a paired increment/decrement: a
+## missed call is corrected by the next one instead of drifting permanently, which is what the
+## original group scan existed to avoid.
+func _sync_engagement() -> void:
+	var world: Node = _engagement_ledger()
+	if world == null:
+		return
+	var engaged: bool = definition != null and _target_peer > 0 \
+		and (state == State.TELL or state == State.ATTACK) \
+		and _owns_simulation()
+	if engaged:
+		world.call(&"set_engagement", self, _target_peer, definition.id)
+	else:
+		world.call(&"clear_engagement", self)
+
+
+## Resolved once in `_ready()` and cached. The `state` setter runs before a node is in the tree
+## (`definition` and `health` are assigned during construction), where a `/root/...` lookup would
+## come back null anyway, and this is the path F-331 exists to keep cheap — a fresh
+## `get_node_or_null()` per transition would put back a slice of what the group walk cost.
+func _engagement_ledger() -> Node:
+	if _enemy_world == null and is_inside_tree():
+		_enemy_world = get_node_or_null(^"/root/EnemyWorld")
+	return _enemy_world
+
+
+func _exit_tree() -> void:
+	# A corpse that times out, a despawn, a run restart — all of them remove the node, and none of
+	# them should leave this enemy holding an attack slot (F-331).
+	var world: Node = _engagement_ledger()
+	if world != null:
+		world.call(&"clear_engagement", self)
 
 
 ## Facing cone plus an optional line-of-sight ray, both acquisition-only (5.1) — see the doc comment

@@ -280,6 +280,13 @@ func _on_cycle_advanced(_cycle: int) -> void:
 ## ROADMAP.md's 6.4 line names this explicitly ("unless Warded"). Reuses `BuildService.ward_radii()`
 ## rather than `MireGrid`'s own `_ward_circles_provider` (private to that file) — same source, same
 ## shape, one extra hop through the autoload instead of threading a second seam through MireGrid.
+##
+## Called from `host_tick()`, so once per rendered frame for as long as a re-corruption clock runs.
+## That was the expensive half of F-337: `ward_radii()` used to rebuild itself from every placed
+## piece on every call, having been written for a consumer that asks twice a second. It is cached
+## now, so this reads a small list of circles and nothing else. No throttle was added here on
+## purpose — a ward raised mid-re-corruption should stop the clock on the frame it goes up, not up to
+## a tick later, and the cache removes the reason to trade that away.
 func _is_warded() -> bool:
 	var build_service: Node = get_node_or_null(^"/root/BuildService")
 	if build_service == null:

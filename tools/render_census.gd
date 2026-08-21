@@ -15,7 +15,10 @@ extends SceneTree
 ## roughly `opaque + casters * cascades`. That is why F-098 measured ~3.3k of 5.4k draws in the
 ## shadow pass.
 
-const SCENE_PATH: String = "res://levels/hollowmere.tscn"
+const ProbeScene := preload("res://tools/probe_scene.gd")
+
+## Whatever `project.godot` boots, unless `-- --scene res://...` overrides it (F-342).
+var scene_path: String = ""
 ## `directional_shadow_blend_splits` makes casters near a cascade boundary render into both, so
 ## the shadow pass draws somewhat more than one copy per caster. A flat surcharge is a coarse
 ## stand-in for a boundary test, and it is deliberately on the pessimistic side: this number
@@ -26,9 +29,10 @@ var failures: Array[String] = []
 
 
 func _init() -> void:
-	var packed: PackedScene = load(SCENE_PATH) as PackedScene
+	scene_path = ProbeScene.resolve()
+	var packed: PackedScene = load(scene_path) as PackedScene
 	if packed == null:
-		failures.append("could not load %s" % SCENE_PATH)
+		failures.append("could not load %s" % scene_path)
 		_finish()
 		return
 	var level := packed.instantiate()
@@ -37,8 +41,15 @@ func _init() -> void:
 	for _frame in 24:
 		await process_frame
 		await physics_frame
+	# A streaming world is still arriving at frame 24. Counting it there reports a fraction of the
+	# geometry as if it were the whole scene (F-342).
+	var settle: Dictionary = await ProbeScene.settle(level)
 
-	print("\n=== MIRE render census — %s ===" % SCENE_PATH)
+	print("\n=== MIRE render census — %s ===" % ProbeScene.describe(scene_path))
+	if bool(settle.get("streaming", false)):
+		print("streamed %d chunk(s) in %d frame(s)%s" % [
+			int(settle.get("chunks", 0)), int(settle.get("frames", 0)),
+			"" if bool(settle.get("settled", true)) else " — NOT SETTLED, see warning above"])
 	print("Godot %s | %s" % [Engine.get_version_info()["string"], OS.get_name()])
 
 	var stats := _walk(level)
@@ -104,14 +115,38 @@ func _walk_into(node: Node, stats: Dictionary, seen: Dictionary) -> void:
 
 
 ## Triangles in a mesh, from the surface arrays — `get_faces()` allocates the whole soup.
+##
+## `surface_get_primitive_type`/`surface_get_array_len`/`surface_get_array_index_len` are `ArrayMesh`
+## methods, not `Mesh` ones. That was invisible while the census only ever measured Hollowmere, whose
+## meshes are all imported or runtime-built `ArrayMesh`es; the shipped procedural world dresses its
+## ocean with a `PlaneMesh`, and pointing the census at it (F-342) turned every call here into
+## "Nonexistent function ... in base 'PlaneMesh'". A `PrimitiveMesh` has to go through
+## `surface_get_arrays()` instead, which is the one path in this function that allocates — acceptable
+## because it is reached once per distinct primitive mesh, of which a world has a handful.
 func _triangles(mesh: Mesh) -> int:
-	var total := 0
-	for surface in mesh.get_surface_count():
-		if mesh.surface_get_primitive_type(surface) != Mesh.PRIMITIVE_TRIANGLES:
+	var array_mesh := mesh as ArrayMesh
+	var total: int = 0
+	for surface: int in mesh.get_surface_count():
+		if array_mesh != null:
+			if array_mesh.surface_get_primitive_type(surface) != Mesh.PRIMITIVE_TRIANGLES:
+				continue
+			var indices: int = array_mesh.surface_get_array_index_len(surface)
+			var verts: int = array_mesh.surface_get_array_len(surface)
+			total += int(indices if indices > 0 else verts) / 3
 			continue
-		var indices: int = mesh.surface_get_array_index_len(surface)
-		var verts: int = mesh.surface_get_array_len(surface)
-		total += int(indices if indices > 0 else verts) / 3
+		var arrays: Array = mesh.surface_get_arrays(surface)
+		if arrays.size() <= Mesh.ARRAY_INDEX:
+			continue
+		var index_count: int = 0
+		if arrays[Mesh.ARRAY_INDEX] is PackedInt32Array:
+			index_count = (arrays[Mesh.ARRAY_INDEX] as PackedInt32Array).size()
+		var vertex_count: int = 0
+		if arrays[Mesh.ARRAY_VERTEX] is PackedVector3Array:
+			vertex_count = (arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()
+		var count: int = index_count if index_count > 0 else vertex_count
+		# A PointMesh or a line strip has no triangles; integer division would quietly invent some.
+		if count >= 3:
+			total += count / 3
 	return total
 
 

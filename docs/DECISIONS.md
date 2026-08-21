@@ -5753,6 +5753,30 @@ source-text scan exists because the static `Callable` registry cannot be listed 
 booted probe would only see nodes that happen to be in that tree; given the list, this check becomes
 a runtime assertion and stops being a grep.
 
+**Amendment · 2026-08-20 (ivy1bcae0, F-328): the first three autoloads this caught, and what it
+caught.** MENU-2/5/7 registered `ui/menu_stack.gd`, `ui/menu/pause_menu.gd` and
+`autoload/run_record.gd` without classifying them, taking `project.godot` to 63 autoloads against a
+map of 60 — so the check went red exactly as designed, on its first real test. The three
+classifications, and the reasoning this amendment exists to record:
+
+- **`MenuStack` — session-scoped.** Its state is the stack of screens the *player* opened. A run
+  boundary does not make an open Settings screen wrong, and a screen that does care about the run
+  pops itself; the stack is navigation, not run state.
+- **`PauseMenu` — session-scoped.** Its only state is `_screen`, and that is cleared by the screen's
+  own `tree_exited`, so it structurally cannot outlive the thing it points at.
+- **`RunRecord` — RUN-scoped, and it was not resetting.** This is the one the tripwire was built for.
+  `_pending` accumulates half a record — `run_extracted`/`run_wiped` supplies the ending and Cycle,
+  `salvage_banked` supplies the figure — and `_flush_if_ready()` clears it only when *both* halves
+  arrive. An ending that banks nothing (a Cycle 1 wipe whose fractional Salvage rounds to zero, so
+  `salvage_banked` never fires) leaves `{ending, cycle}` behind. The next run's `salvage_banked` then
+  completes *that* stale record, and the title card shows the previous expedition's Cycle and ending
+  against this run's Salvage: one run's brag attributed to another. `RunRecord` now subscribes
+  `run_restarted` and clears `_pending`.
+
+The general point, restated because it is the return on the check: nobody was careless here. Three
+autoloads shipped in one menu milestone and the question "is any of this run-scoped?" was never put
+to anyone. Totality is what put it.
+
 ### D-182 · 2026-08-20 · A duplicated D-number is repaired by renumbering the LATER entry, and the citations move with it
 F-260 gave `agent decision` an allocator, so a new collision is now impossible; F-283 had to decide
 what to do about the three already in the file (`D-050`, `D-144`, `D-150`, each heading two

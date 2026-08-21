@@ -15,7 +15,14 @@ extends SceneTree
 ## Pair it with `agent baseline --windowed --script tools/frame_cost_check.gd` to get the same
 ## counters at HEAD, which is the only honest way to claim a change made anything faster.
 
-const SCENE_PATH: String = "res://levels/hollowmere.tscn"
+const ProbeScene := preload("res://tools/probe_scene.gd")
+
+## Whatever `project.godot` boots, unless `-- --scene res://...` overrides it (F-342). Resolved at
+## run time in `_run()`, because `ProjectSettings` is not readable from a const initialiser.
+var scene_path: String = ""
+
+## The procedural default streams its chunks in rather than arriving whole the way an authored level
+## did, so a warmup sized for Hollowmere would sample a half-built world and report it as cheap.
 const WARMUP_FRAMES: int = 90
 const SAMPLE_FRAMES: int = 120
 const VIEWPORT_SIZE: Vector2i = Vector2i(1280, 720)
@@ -35,9 +42,10 @@ func _run() -> void:
 	# anything resolution-dependent do, and a before/after taken at two different sizes is not a
 	# before/after at all.
 	root.size = VIEWPORT_SIZE
-	var packed := load(SCENE_PATH) as PackedScene
+	scene_path = ProbeScene.resolve()
+	var packed := load(scene_path) as PackedScene
 	if packed == null:
-		push_error("could not load %s" % SCENE_PATH)
+		push_error("could not load %s" % scene_path)
 		quit(1)
 		return
 	var level := packed.instantiate()
@@ -49,7 +57,7 @@ func _run() -> void:
 	for _i in WARMUP_FRAMES:
 		await process_frame
 
-	print("\n=== MIRE frame cost — %s ===" % SCENE_PATH)
+	print("\n=== MIRE frame cost — %s ===" % ProbeScene.describe(scene_path))
 	print("Godot %s | %s | %s" % [
 		Engine.get_version_info()["string"], OS.get_name(), OS.get_processor_name()])
 	print("viewport %s | samples %d per row" % [root.size, SAMPLE_FRAMES])

@@ -540,9 +540,10 @@ func _prime_ground_at(position: Vector3) -> void:
 		return
 	var anchors: Array[Vector3] = [position]
 	# `prime()` takes its anchors as an argument and does NOT set the streamer's — the anchor set is
-	# the union of every peer's position (F-132's host contract), and a rescue narrowing it to one
-	# point, even for a tick, would drop a remote peer's proxies. Every caller here sets anchors
-	# properly on its own path immediately after.
+	# whatever `_stream_anchors()` decides for this peer (the union on a host, the local player on a
+	# client — F-132 and F-330), and a rescue narrowing it to one point, even for a tick, would drop
+	# a remote peer's proxies on the host. Every caller here sets anchors properly on its own path
+	# immediately after.
 	var cooked: int = int(streamer.call(&"prime", anchors))
 	if not bool(streamer.call(&"has_ground_at", position)):
 		# Not fatal, and deliberately not a push_error: the void recovery below still catches the
@@ -554,17 +555,58 @@ func _prime_ground_at(position: Vector3) -> void:
 		cooked, position])
 
 
+## The positions this peer streams terrain around — F-330.
+##
+## **The host anchors on every player.** It owns the authoritative world every peer acts in, so a
+## chunk under any player has to be resident here even when nobody local is standing near it. That is
+## F-132's contract and it does not change.
+##
+## **A client anchors on its own player only.** Feeding it the whole `players` group made every peer
+## pay for every other peer's terrain, and `ChunkStreamer` multiplies that in three places at once:
+## `_ring_distance()` is a MINIMUM over anchors, so each anchor earns its own LOD0 ring and therefore
+## its own 5x5 block of cooked colliders (~1.33 ms each); `_evaluate_rings()` scans a 19x19 candidate
+## box PER anchor every 0.2 s; and the resident set is the union of every anchor's neighbourhood.
+## Six separated players turned a client's 25 collision cooks into as many as 150 and its ring scan
+## into 2,166 cells — the exact opposite of interest management, on the machine least able to afford
+## it.
+##
+## Nothing on a client needs the extra ground. A remote player's body runs
+## `set_physics_process(false)` (`entities/player/player_controller.gd`), so it is a replicated visual
+## proxy that never touches a collider; and at 32 m chunks the local 8-chunk load radius already
+## reaches ~256 m, past the island's own ~200 m bound, so a remote peer on the same island is inside
+## the local anchor's loaded set regardless. No transition margin is added because there is no case
+## that needs one — if the island bound ever exceeds the load radius, that is the moment to add one
+## deliberately rather than to have been carrying it unexamined.
+##
+## Offline takes the client branch and is identical to the union: there is one player, and it holds
+## its own authority (`_local_player_body()`'s rule). Before this peer's player exists — boot, or a
+## client that has not been spawned yet — the list is empty and falls back to the spawn point, which
+## is what streams the ground the player is about to arrive on.
+func _stream_anchors() -> Array[Vector3]:
+	var anchors: Array[Vector3] = []
+	# Resolved by path, not through the bare `NetTransport` identifier. This file carries a
+	# `class_name`, so Godot compiles it during the global class scan — before autoload singletons
+	# are registered — and the shorthand every autoload-to-autoload call in this project uses fails
+	# to compile here. Same reason `Enemy._owns_simulation()` reaches for `/root/NetTransport`.
+	var transport: Node = get_node_or_null(^"/root/NetTransport")
+	if transport != null and bool(transport.call(&"is_host")):
+		for node: Node in get_tree().get_nodes_in_group(&"players"):
+			var body := node as Node3D
+			if body != null:
+				anchors.append(body.global_position)
+	else:
+		var local: Node3D = _local_player_body()
+		if local != null:
+			anchors.append(local.global_position)
+	if anchors.is_empty():
+		anchors.append(spawn_position)
+	return anchors
+
+
 func _physics_process(delta: float) -> void:
 	if streamer == null:
 		return
-	var anchors: Array[Vector3] = []
-	for node: Node in get_tree().get_nodes_in_group(&"players"):
-		var body := node as Node3D
-		if body != null:
-			anchors.append(body.global_position)
-	if anchors.is_empty():
-		anchors.append(spawn_position)
-	streamer.call(&"set_anchors", anchors)
+	streamer.call(&"set_anchors", _stream_anchors())
 
 	_void_accum += delta
 	if _void_accum >= VOID_CHECK_INTERVAL_SEC:

@@ -32,6 +32,10 @@ const SWEEP_COUNT: int = 128
 const SWEEP_STRIDE: int = 2654435761
 const SWEEP_MASK: int = 0xFFFFFFFF
 
+## A biome id no `BiomeDef` ships, so `PoiDef.accepts_biome()` rejects every dart at relax 0. The
+## lever the negative control below uses to make a base pass fail on purpose (F-335).
+const UNPLACEABLE_BIOME: StringName = &"__poi_check_no_such_biome__"
+
 ## Every `required` def must land on every seed (D-152). Kept as data rather than hard-coded to the
 ## station: the bug F-301 found is a CLASS — "a fixture the loop cannot run without, lost silently
 ## to placement rejection" — and the wellspring and shipwreck are the same class with the same
@@ -112,33 +116,75 @@ func _run() -> void:
 		% [seeds.size(), station_missing.size()] + "without one%s" % _sample(station_missing))
 
 	# ── the detector's own teeth (F-261/F-275: vary the FIXTURE, never the shipped source) ────────
-	# The sweep above passing proves nothing on its own unless it can fail. Rather than editing
-	# content or stashing the fix, re-run the identical sweep against a DUPLICATE of the station def
-	# with `required` cleared — exactly the state the tree was in when F-301 was filed. If that
-	# still reports zero missing seeds, this check is not measuring what it claims to and every PASS
-	# above is decoration.
 	if station_def != null:
-		var unfixed: Resource = station_def.duplicate()
-		unfixed.set(&"required", false)
-		var mutated: Array = []
-		for definition: Resource in poi_defs:
-			mutated.append(unfixed if StringName(String(definition.get(&"id"))) == &"station_camp"
-				else definition)
-		var mutated_by_id: Dictionary = defs_by_id.duplicate()
-		mutated_by_id[&"station_camp"] = unfixed
-		var control: Dictionary = _sweep(seeds, mutated, biome_defs, mutated_by_id, registered)
-		var lost: Array = control[&"registered_station"]
-		check(not lost.is_empty(),
-			"NEGATIVE: clearing `required` on the station def loses it on %d of %d seeds — the "
-			% [lost.size(), seeds.size()] + "sweep above has teeth, and the relax ladder is what "
-			+ "is doing the work%s" % _sample(lost))
-		for named: int in NAMED_SEEDS.slice(0, 2):
-			check(lost.has(named),
-				"NEGATIVE: seed %d — one F-301 measured failing — still fails without the fix, so "
-				% named + "this check reproduces the filed bug and not a different one")
+		_check_relax_ladder_has_teeth(seeds, station_def, poi_defs, biome_defs, defs_by_id, registered)
 
 	print("\nPOI_REQUIRED_STATION_CHECK seeds=%d failures=%d" % [seeds.size(), failures])
 	finish()
+
+
+## F-335: the negative control, redesigned so it can actually fail.
+##
+## **What broke it.** The old control cleared `required` on a duplicate of the station def and
+## expected some seeds to lose their station — the state the tree was in when F-301 was filed. After
+## the 4.18 terrain retune the base (relax 0) pass succeeds on every one of the 132 seeds, so the
+## ladder never fires, so removing the ladder changes nothing: the control reported zero lost seeds
+## and the check exited red while the product was fine. That is the worst possible reading, because
+## the red says "the guarantee is broken" when what it means is "the guarantee is currently
+## unexercised". A control whose teeth depend on the terrain staying stingy is not a control.
+##
+## **What replaces it.** Make the base pass IMPOSSIBLE for a fixture def, then run it both ways. The
+## fixture asks for a biome that does not exist, so `PoiDef.accepts_biome()` rejects every dart at
+## relax 0 — deterministically, on every seed, regardless of how generous the island becomes. Rung 1
+## waives the biome test, so:
+##
+##   * `required = true`  -> the ladder fires and the site lands on EVERY seed
+##   * `required = false` -> no ladder, and the site is lost on EVERY seed
+##
+## Both directions asserted. That demonstrates exactly D-152's guarantee — "a REQUIRED kind that
+## placed nothing gets the ladder, not a shrug" — and that `required` is the flag gating it. The
+## shipped content is never touched (F-261/F-275): only a `duplicate()` is mutated.
+func _check_relax_ladder_has_teeth(
+	seeds: Array[int], station_def: Resource, poi_defs: Array, biome_defs: Array,
+	defs_by_id: Dictionary, registered: Array[StringName]
+) -> void:
+	var recovered: Dictionary = _sweep_with_fixture(
+		seeds, station_def, true, poi_defs, biome_defs, defs_by_id, registered)
+	var lost_with_ladder: Array = recovered[&"registered_station"]
+	check(lost_with_ladder.is_empty(),
+		"NEGATIVE: a station whose authored biome cannot be satisfied is still placed on all %d "
+		% seeds.size() + "seeds — the relax ladder is what recovers it (%d lost%s)"
+			% [lost_with_ladder.size(), _sample(lost_with_ladder)])
+
+	var abandoned: Dictionary = _sweep_with_fixture(
+		seeds, station_def, false, poi_defs, biome_defs, defs_by_id, registered)
+	var lost_without: Array = abandoned[&"registered_station"]
+	check(lost_without.size() == seeds.size(),
+		"NEGATIVE: with `required` cleared the same unplaceable station is lost on all %d seeds "
+		% seeds.size() + "— the ladder, and only the ladder, was doing the work (%d lost%s)"
+			% [lost_without.size(), _sample(lost_without)])
+	for named: int in NAMED_SEEDS.slice(0, 2):
+		check(lost_without.has(named),
+			"NEGATIVE: seed %d — one F-301 measured failing — is among them, so this check still "
+			% named + "speaks about the seeds the original bug was filed on")
+
+
+## One sweep with `station_camp` swapped for a duplicate that cannot satisfy its own biome, and
+## `required` set as given. Only the duplicate is mutated; `poi_defs` and the Registry are untouched.
+func _sweep_with_fixture(
+	seeds: Array[int], station_def: Resource, required: bool, poi_defs: Array, biome_defs: Array,
+	defs_by_id: Dictionary, registered: Array[StringName]
+) -> Dictionary:
+	var fixture: Resource = station_def.duplicate()
+	fixture.set(&"biomes", [UNPLACEABLE_BIOME] as Array[StringName])
+	fixture.set(&"required", required)
+	var mutated: Array = []
+	for definition: Resource in poi_defs:
+		mutated.append(fixture if StringName(String(definition.get(&"id"))) == &"station_camp"
+			else definition)
+	var mutated_by_id: Dictionary = defs_by_id.duplicate()
+	mutated_by_id[&"station_camp"] = fixture
+	return _sweep(seeds, mutated, biome_defs, mutated_by_id, registered)
 
 
 ## The two lists above, in one pass. Order matters only for readable output: the `required` kinds

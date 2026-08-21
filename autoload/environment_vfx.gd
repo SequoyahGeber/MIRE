@@ -497,11 +497,21 @@ func _sway_material(original: Material, profile: Dictionary, bounds: AABB) -> Sh
 		material_roughness = standard.roughness
 		vertex_color = standard.vertex_color_use_as_albedo
 
-	var key := "%s:%.2f:%d:%.3f:%.3f:%.3f:%.2f:%.2f:%.3f" % [
+	# F-341: the key carries BOTH ends of the bounds, not just the height. The material bakes
+	# `bounds.position.y` into `wind_root_y` and `1.0 / bounds.size.y` into `wind_inv_height`, so two
+	# meshes that agree on appearance and height but sit at different vertical origins — a plant
+	# modelled with its base at y=0 and one modelled centred, say — used to share the first one's
+	# root and bend around a pivot somewhere off its own geometry.
+	#
+	# Keyed at the same 1 mm precision as the height, and it cannot fragment the cache per instance:
+	# `bounds` comes from `mesh.get_aabb()`, which is mesh-LOCAL, so this is a per-asset constant.
+	# The worst case is one material per distinct asset origin, which is what the cache existed to
+	# improve on and still does.
+	var key := "%s:%.2f:%d:%.3f:%.3f:%.3f:%.2f:%.2f:%.3f:%.3f" % [
 		color.to_html(), material_roughness, int(vertex_color),
 		float(profile.get("strength", 0.1)), float(profile.get("speed", 1.3)),
 		float(profile.get("bob", 0.0)), float(profile.get("mask_power", 1.0)),
-		float(profile.get("vertex_phase", 1.0)), bounds.size.y]
+		float(profile.get("vertex_phase", 1.0)), bounds.size.y, bounds.position.y]
 	if _sway_materials.has(key):
 		return _sway_materials[key] as ShaderMaterial
 

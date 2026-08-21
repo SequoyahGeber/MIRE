@@ -102,6 +102,7 @@ const AUTOLOAD_SCOPE: Dictionary[String, String] = {
 	"autoload/player_net.gd":
 		"session-scoped — peers, slots and the spawner are per-SESSION; the per-run half is PlayerHealth's (F-279, F-298)",
 	"autoload/net_interp.gd": "session-scoped — smoothing state for live peers",
+	"autoload/run_record.gd": RESETS,               # F-328 — `_pending` is a half-built record
 	"autoload/registry.gd": "boot-time — content defs, immutable after load",
 	"autoload/command_service.gd": "boot-time — the command registry",
 	"autoload/debug_console.gd": "no run state — debug chrome",
@@ -122,6 +123,10 @@ const AUTOLOAD_SCOPE: Dictionary[String, String] = {
 	"ui/menu/main_menu.gd": "session-scoped — menu chrome",
 	"ui/menu/settings_menu.gd": "session-scoped — menu chrome",
 	"ui/menu/unlock_menu.gd": "session-scoped — meta chrome, reads UnlockService",
+	"ui/menu_stack.gd":
+		"session-scoped — navigation chrome (MENU-2). Its state is the stack of screens the PLAYER opened; a run boundary does not make an open Settings screen wrong, and screens that do care pop themselves",
+	"ui/menu/pause_menu.gd":
+		"session-scoped — menu chrome (MENU-5). Its only state is `_screen`, cleared by that screen's own `tree_exited`, so it cannot outlive what it points at",
 }
 
 ## Run-scoped state that is NOT an autoload. D-149 chose per-node `host_reset_for_new_run()` over a

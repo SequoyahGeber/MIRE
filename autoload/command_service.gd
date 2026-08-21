@@ -61,6 +61,15 @@ const RATE_LIMITER := preload("res://core/net/rpc_rate_limiter.gd")
 ## flood to a small, bounded rate.
 const RATE_LIMIT_INTERVAL_MSEC: int = 100
 
+## F-333: how many commands a peer may submit at once before the sustained ceiling above applies.
+##
+## The interval alone rejected the SECOND of any two commands issued inside 100 ms, which is what
+## ordinary sequential work looks like — grant, craft, place, demolish — and what three shipped
+## integration checks do. Generous on purpose: a burst costs the host at most this many command
+## executions once, while the refill rate is what bounds the flood F-232 filed. Thirty-two is well
+## past any hand-typed or scripted sequence and still an order of magnitude below "free".
+const RATE_LIMIT_BURST: int = 32
+
 ## docs/COMMANDS.md §5.1/§5.3. content/functions/autoexec.mcmd, if present, is scanned in like any
 ## other function and also auto-run at boot (host/offline only) — see `_run_autoexec()`.
 const FUNCTIONS_DIR: String = "res://content/functions"
@@ -345,7 +354,7 @@ func net_submit_command(request_id: int, line: String) -> void:
 	if not _owns_execution():
 		return
 	var sender_id: int = multiplayer.get_remote_sender_id()
-	if not _rate_limiter.allow(sender_id, RATE_LIMIT_INTERVAL_MSEC):
+	if not _rate_limiter.allow(sender_id, RATE_LIMIT_INTERVAL_MSEC, RATE_LIMIT_BURST):
 		if _peer_connected(sender_id):
 			net_command_result.rpc_id(
 				sender_id, request_id, _result(false, "commands too frequent — slow down", {}))

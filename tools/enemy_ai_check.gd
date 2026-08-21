@@ -38,6 +38,10 @@ func _run() -> void:
 	await _check_alert()
 	await process_frame
 	await _check_attack_slot_cap()
+	await process_frame
+	await _check_attack_slot_cap_is_per_kind()
+	await process_frame
+	await _check_engagement_ledger_hygiene()
 
 	print("ENEMY_AI_CHECK failures=%d" % failures)
 	quit(0 if failures == 0 else 1)
@@ -195,6 +199,110 @@ func _check_attack_slot_cap() -> void:
 	check(third_got_a_turn, "the held-back enemy attacks once a slot frees up")
 
 	_cleanup(attackers + [player])
+
+
+# ── Group behaviour: the cap is per KIND, and its ledger does not drift (F-331) ─────────────────────
+
+
+## `Enemy`'s class comment has always said "at most `max_concurrent_attackers` of one kind", but
+## `_engaged_attackers()` never compared `definition.id` — so crawlers, striders and bosses all drew
+## on one shared budget against the same target. This is the assertion that behaviour finally matches
+## the documented contract, and the one that would go red if the kind comparison were removed again.
+func _check_attack_slot_cap_is_per_kind() -> void:
+	var origin := Vector3(3000.0, 0.0, 0.0)
+	var shared: Dictionary = {
+		"alert_radius_m": 0.0, "max_concurrent_attackers": 1,
+		"attack_range_m": 5.0, "attack_tell_seconds": 0.4, "attack_seconds": 0.4,
+		"attack_recovery_seconds": 0.4,
+	}
+	var alpha: Resource = _make_def(shared.merged({"id": &"ai_test_alpha"}, true))
+	var beta: Resource = _make_def(shared.merged({"id": &"ai_test_beta"}, true))
+
+	var player: Node3D = _spawn_player(origin)
+	var pack: Array[Node3D] = [
+		_spawn_enemy(alpha, origin + Vector3(0.0, 0.0, -1.5)),
+		_spawn_enemy(alpha, origin + Vector3(1.3, 0.0, -1.0)),
+		_spawn_enemy(beta, origin + Vector3(-1.3, 0.0, -1.0)),
+		_spawn_enemy(beta, origin + Vector3(0.0, 0.0, 1.5)),
+	]
+	for enemy: Node3D in pack:
+		_step(enemy, 0.1)
+
+	var alpha_engaged: int = _engaged_of_kind(pack, &"ai_test_alpha")
+	var beta_engaged: int = _engaged_of_kind(pack, &"ai_test_beta")
+	check(alpha_engaged == 1, "one alpha holds the alpha cap (got %d)" % alpha_engaged)
+	# The regression assertion. Under the shared budget the single alpha filled the ONE slot and no
+	# beta could ever telegraph, so this read 0.
+	check(beta_engaged == 1,
+		"a beta commits too — the cap is per kind, not one budget shared across kinds (got %d)"
+			% beta_engaged)
+
+	_cleanup(pack + [player])
+
+
+## The ledger `_engaged_attackers()` now reads must hold exactly the engaged enemies, and must let
+## go of them however they stop being engaged. A drifting count is the specific failure the original
+## group scan was written to avoid, so it is the specific thing worth proving.
+func _check_engagement_ledger_hygiene() -> void:
+	var world: Node = root.get_node_or_null(^"EnemyWorld")
+	check(world != null, "EnemyWorld autoload is present to hold the engagement ledger")
+	if world == null:
+		return
+
+	var origin := Vector3(4000.0, 0.0, 0.0)
+	var def: Resource = _make_def({
+		"id": &"ai_test_ledger", "alert_radius_m": 0.0, "max_concurrent_attackers": 1,
+		"attack_range_m": 5.0, "attack_tell_seconds": 5.0, "attack_seconds": 0.2,
+		"attack_recovery_seconds": 0.2,
+	})
+	var player: Node3D = _spawn_player(origin)
+	var engaged: Node3D = _spawn_enemy(def, origin + Vector3(0.0, 0.0, -1.5))
+	var waiting: Node3D = _spawn_enemy(def, origin + Vector3(1.3, 0.0, -1.0))
+
+	var before: int = int(world.call(&"engagement_row_count"))
+	_step(engaged, 0.1)
+	_step(waiting, 0.1)
+	check(int(world.call(&"engagement_row_count")) == before + 1,
+		"exactly one row appears when one enemy commits")
+	check(int(waiting.get("state")) == 1, "the second enemy of the same kind is held at CHASE")
+
+	# Idle enemies far from anyone must not enter the ledger at all. This is what makes the lookup
+	# O(engaged) rather than O(roster): if an idle enemy could hold a row, the "scan" would grow back
+	# into the O(N^2) walk F-331 removed.
+	var idle: Array[Node3D] = []
+	for i: int in 12:
+		idle.append(_spawn_enemy(def, origin + Vector3(500.0 + float(i) * 10.0, 0.0, 0.0)))
+	for enemy: Node3D in idle:
+		_step(enemy, 0.1)
+	check(int(world.call(&"engagement_row_count")) == before + 1,
+		"12 idle enemies add no rows — the ledger holds engagements, not the roster")
+
+	# Death mid-telegraph: the exact case the original comment said a counter could not survive.
+	engaged.set("state", 5)  # DEAD
+	check(int(world.call(&"engagement_row_count")) == before,
+		"dying mid-telegraph releases the slot immediately")
+	var freed: bool = _step_until_state(waiting, 2, 0.1, 40)
+	check(freed, "the held-back enemy takes the slot the dead one released")
+
+	# Removal from the tree is the other way an engagement ends, and it goes through `_exit_tree()`.
+	var rows_with_waiting: int = int(world.call(&"engagement_row_count"))
+	check(rows_with_waiting == before + 1, "the new attacker holds exactly one row")
+	waiting.queue_free()
+	await process_frame
+	check(int(world.call(&"engagement_row_count")) == before,
+		"freeing an engaged enemy releases its row through _exit_tree()")
+
+	_cleanup(idle + [engaged, player])
+
+
+## Enemies of `kind` currently telegraphing or swinging (states TELL=2, ATTACK=3).
+func _engaged_of_kind(pack: Array[Node3D], kind: StringName) -> int:
+	var count: int = 0
+	for enemy: Node3D in pack:
+		var def: Resource = enemy.get("definition") as Resource
+		if def != null and StringName(def.get("id")) == kind and int(enemy.get("state")) in [2, 3]:
+			count += 1
+	return count
 
 
 # ── Construction ──────────────────────────────────────────────────────────────────────────────────

@@ -12,6 +12,11 @@ const TIMEOUT_SEC: float = 15.0
 ## The client draws, fires, misses on purpose, then runs dry — outlast the sum of its own waits.
 const CLIENT_COMPLETE_TIMEOUT_SEC: float = 60.0
 
+## `RangedCombatService.Phase.RECOVERY`. Duplicated by value rather than reached through the autoload
+## because this is read in the DRIVER, which asserts on a result the probe process wrote — the enum
+## has to be a constant on both sides of that file, and a rename must fail loudly here.
+const RANGED_PHASE_RECOVERY: int = 3
+
 var failures: int = 0
 var transport: Node
 var player_net: Node
@@ -182,7 +187,10 @@ func _run_driver() -> void:
 	check(int(result.get("landed_peer", 0)) == peer_id,
 		"the connect is attributed to the client on the client")
 	check(bool(result.get("hitstop_applied", false)),
-		"a host-confirmed connect freezes the client's own local clock")
+		"a host-confirmed connect freezes the client's own local clock, measured at the emit itself")
+	check(int(result.get("recovery_at_emit", -1)) == RANGED_PHASE_RECOVERY,
+		"local recovery is already committed when shot_landed fires (F-327 ordering), phase=%d"
+			% int(result.get("recovery_at_emit", -1)))
 	check(bool(result.get("local_predicted", false)),
 		"the client's draw started locally without waiting for the host")
 	check(int(inventory.call("host_count", peer_id, &"arrow")) == 0,
@@ -249,7 +257,6 @@ func _client_drive() -> void:
 	# ...so the spam path is exercised against the host directly, bypassing the local guard.
 	Callable(ranged, "net_request_shot").rpc_id(NetConfig.HOST_PEER_ID, 0, 9001)
 	var shot_landed_flag: bool = await _until(func() -> bool: return landed.size() >= 1, TIMEOUT_SEC)
-	var hitstop_applied: bool = float(ranged.call("local_hitstop_remaining")) > 0.0
 	_stage("shot_landed=%s" % shot_landed_flag, peer_id)
 
 	await _until(func() -> bool: return int(ranged.call("local_phase")) == 0, TIMEOUT_SEC)
@@ -279,7 +286,11 @@ func _client_drive() -> void:
 		"landed_count": landed.size(),
 		"missed_count": missed.size(),
 		"rejection_count": rejections.size(),
-		"hitstop_applied": hitstop_applied,
+		# Both sampled inside `_on_landed`, at the emit — see its header. RECOVERY is phase 3 in
+		# `RangedCombatService.Phase`; observing it here is what proves the ordering, not just the
+		# hitstop value.
+		"hitstop_applied": float(first.get("hitstop_at_emit", 0.0)) > 0.0,
+		"recovery_at_emit": int(first.get("phase_at_emit", -1)),
 		"local_predicted": local_predicted and suppressed_locally,
 		"second_draw_predicted_locally": second_predicted,
 		"out_of_ammo_rejected": out_of_ammo_rejected,
@@ -302,9 +313,22 @@ func _stage(stage: String, peer_id: int) -> void:
 	})
 
 
+## F-327: the feel state is read HERE, synchronously inside the emit, not by a later poll.
+##
+## The driver used to sample `local_hitstop_remaining()` after `_until(...)` noticed `landed` had
+## grown. `_until` polls every 50 ms and hitstop is a sub-frame effect, so the sample could land
+## after the freeze had already decayed — the assertion was intermittently red on correct code, which
+## is worse than useless: it trains people to rerun until green. A signal callback is synchronous, so
+## this observes the exact transition instead of racing its aftermath.
+##
+## It is also what makes F-327's source fix observable: `RangedCombatService._apply_resolved()` now
+## commits local recovery and hitstop BEFORE emitting, so a listener here sees committed state. Read
+## in the old order, these two fields would be the pre-shot values every time.
 func _on_landed(peer_id: int, position: Vector3, damage: int, target_name: StringName) -> void:
 	landed.append({
-		"peer_id": peer_id, "position": position, "damage": damage, "target_name": target_name
+		"peer_id": peer_id, "position": position, "damage": damage, "target_name": target_name,
+		"hitstop_at_emit": float(ranged.call("local_hitstop_remaining")),
+		"phase_at_emit": int(ranged.call("local_phase")),
 	})
 
 

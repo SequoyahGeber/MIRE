@@ -396,20 +396,26 @@ func _apply_resolved(
 	if weapon == null:
 		weapon = _feel_weapon()
 
+	# F-327: local feel state is committed BEFORE the outcome is announced. Godot signal callbacks
+	# are synchronous, so a listener connected to `shot_landed` runs inside the emit — and with the
+	# old order it observed a confirmed hit while `_local_phase` still read the firing phase and
+	# `_local_hitstop_remaining` still read zero. Any consumer that reacts to a landed shot by asking
+	# "how long is the hitstop" got the answer from before the shot resolved. Nothing in the shipped
+	# tree listens yet, which is exactly why this is the moment to fix the order rather than the
+	# moment to document the hazard.
+	if peer_id == _local_peer_id():
+		_enter_local_recovery()
+		if hit:
+			_local_hitstop_remaining = weapon.hitstop_seconds
+			var camera: Node = _local_camera()
+			if camera != null and camera.has_method("add_shake"):
+				camera.call("add_shake", weapon.shake_magnitude, weapon.shake_duration)
+
 	if hit:
 		shot_landed.emit(peer_id, position, damage, target_name)
 		_play_impact(position, weapon)
 	else:
 		shot_missed.emit(peer_id, position)
-
-	if peer_id != _local_peer_id():
-		return
-	_enter_local_recovery()
-	if hit:
-		_local_hitstop_remaining = weapon.hitstop_seconds
-		var camera: Node = _local_camera()
-		if camera != null and camera.has_method("add_shake"):
-			camera.call("add_shake", weapon.shake_magnitude, weapon.shake_duration)
 
 
 func _feel_weapon() -> RangedWeaponDef:

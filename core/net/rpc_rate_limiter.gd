@@ -22,18 +22,49 @@ extends RefCounted
 ## own. `Time.get_ticks_msec()` is real engine time, not run-seeded, so nothing about determinism
 ## applies here the way it does to world generation.
 
-var _last_request_msec: Dictionary[int, int] = {}
+## F-333 made this a TOKEN BUCKET rather than a hard minimum interval.
+##
+## The interval gate bounded abuse correctly and broke ordinary use at the same time. A peer doing
+## normal sequential work — grant an item, craft it, place the result, demolish it — issues several
+## commands inside 100 ms and had all but the first REJECTED, not delayed. Three shipped integration
+## checks (`command_net_check`, `command_craft_build_net_check`, `entity_net_check`) failed on it,
+## which is the executable contract declining to adopt the behaviour.
+##
+## A bucket separates the two things the interval gate conflated. `burst` is how many requests may
+## arrive at once, which is what ordinary use needs; the refill rate — one token per
+## `min_interval_msec` — is the SUSTAINED ceiling, which is the only thing F-232 was actually
+## protecting. A scripted flood still flattens to the same rate it did before; a human, or a check,
+## doing four things in a row no longer gets told to slow down.
+##
+## `peer_id -> [tokens, last_msec]`. Two-element array rather than two dictionaries so a peer's whole
+## state is added and erased in one place and cannot half-survive a `reset()`.
+var _buckets: Dictionary[int, Array] = {}
 
 
-## True and records "now" as the peer's last allowed request the instant at least
-## [param min_interval_msec] have passed since its last allowed one; false (and no side effect)
-## otherwise. A peer's very first call always passes — there is nothing to have flooded yet.
-func allow(peer_id: int, min_interval_msec: int) -> bool:
+## True (consuming one token) if this peer may act now; false with no side effect otherwise.
+##
+## A peer's very first call always passes — the bucket starts full, because there is nothing to have
+## flooded yet. `burst` of 1 reproduces the pre-F-333 minimum-interval behaviour exactly, which is
+## why callers that want the old semantics can simply not pass it.
+func allow(peer_id: int, min_interval_msec: int, burst: int = 1) -> bool:
+	var capacity: float = float(maxi(burst, 1))
+	var interval: float = float(maxi(min_interval_msec, 1))
 	var now: int = Time.get_ticks_msec()
-	var last: int = _last_request_msec.get(peer_id, -min_interval_msec)
-	if now - last < min_interval_msec:
+
+	var bucket: Array = _buckets.get(peer_id, [capacity, now])
+	var tokens: float = float(bucket[0])
+	var last: int = int(bucket[1])
+	# Fractional accrual, so a caller arriving at 60 ms of a 100 ms interval keeps the 0.6 it earned
+	# instead of losing it to integer truncation and drifting slower than the advertised rate.
+	tokens = minf(capacity, tokens + float(now - last) / interval)
+
+	if tokens < 1.0:
+		# Deliberately still records the refill: dropping the timestamp on a rejection would restart
+		# accrual from now and make a spamming peer strictly slower than the ceiling says, which is a
+		# rate limit that lies about its own rate.
+		_buckets[peer_id] = [tokens, now]
 		return false
-	_last_request_msec[peer_id] = now
+	_buckets[peer_id] = [tokens - 1.0, now]
 	return true
 
 
@@ -42,4 +73,4 @@ func allow(peer_id: int, min_interval_msec: int) -> bool:
 ## brand-new connection against a flood that never happened. Callers key this off
 ## `NetSession.run_player_expired`/peer_left, not this file — it has no signal of its own to hear one.
 func reset(peer_id: int) -> void:
-	_last_request_msec.erase(peer_id)
+	_buckets.erase(peer_id)

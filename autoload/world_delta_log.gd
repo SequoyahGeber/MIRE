@@ -35,6 +35,34 @@ extends Node
 ## specifically, and any future kind gets the same for free.
 signal delta_applied(chunk: Vector2i, kind: StringName, key: String, value: Variant)
 
+## The world this log can describe, used only to bound a snapshot (F-332). One-directional: nothing
+## in the Mire knows about this file, and this file never instantiates the simulation — it reads a
+## constant so the bound below FOLLOWS the world instead of being a number somebody picked once and
+## forgot to revisit when the grid grew.
+const MireGridSim := preload("res://world/mire/mire_grid_sim.gd")
+
+## Entries a legitimate snapshot can hold. The Mire is by far the largest writer here — one record
+## per corrupted cell, over a 256x256 grid — and doubling it leaves room for every other kind
+## (harvest depletion, Cycle, modifiers) plus growth, without the cap becoming decorative.
+const MAX_SNAPSHOT_ENTRIES: int = MireGridSim.CELL_COUNT * 2
+
+## Generous per-entry allowance for `var_to_bytes`: a key String and a small Variant with their type
+## tags run well under 50 bytes, so this is roughly 3x headroom. Deliberately loose — a cap that
+## rejects a legitimate late joiner is a worse bug than the one it guards against.
+const SNAPSHOT_BYTES_PER_ENTRY: int = 128
+
+## The hard ceiling on a DECLARED uncompressed snapshot size: ~16 MiB. `net_world_snapshot` takes
+## this number over the wire from whoever is acting as host and used to hand it straight to
+## `PackedByteArray.decompress()`, which allocates it before anything has been validated — so a
+## malicious host, a buggy one, or a corrupted packet could ask a joining client for an arbitrarily
+## large allocation at the most vulnerable moment in its lifecycle.
+const MAX_SNAPSHOT_BYTES: int = MAX_SNAPSHOT_ENTRIES * SNAPSHOT_BYTES_PER_ENTRY
+
+## A compressed payload can never legitimately exceed the uncompressed budget — gzip on a dictionary
+## this repetitive runs far better than 1:1 — so the same ceiling bounds the received bytes, and
+## rejects them before any decompression is attempted.
+const MAX_COMPRESSED_BYTES: int = MAX_SNAPSHOT_BYTES
+
 ## chunk -> kind (as String) -> key -> value.
 var _state: Dictionary = {}
 
@@ -148,12 +176,41 @@ func net_world_snapshot(seed_value: int, original_size: int, compressed: PackedB
 	var game_state: Node = get_node_or_null(^"/root/GameState")
 	if game_state != null:
 		game_state.call("set_replicated_seed", seed_value)
+
+	# F-332. Everything below rejects rather than repairs, and rejects BEFORE allocating: a snapshot
+	# that fails any of these leaves `_state` exactly as it was. A client that refuses a bad snapshot
+	# is a client that catches up wrong; a client that honours a hostile `original_size` is a client
+	# that is gone. Order matters — each test is cheaper than the one after it.
 	if original_size <= 0:
 		return
+	if original_size > MAX_SNAPSHOT_BYTES:
+		push_warning("WorldDeltaLog: refused a snapshot declaring %d bytes (cap %d) — see F-332"
+			% [original_size, MAX_SNAPSHOT_BYTES])
+		return
+	if compressed.size() > MAX_COMPRESSED_BYTES:
+		push_warning("WorldDeltaLog: refused a %d-byte compressed snapshot (cap %d)"
+			% [compressed.size(), MAX_COMPRESSED_BYTES])
+		return
+	if compressed.is_empty():
+		return
+
 	var raw: PackedByteArray = compressed.decompress(original_size, FileAccess.COMPRESSION_GZIP)
+	# `decompress()` returns an empty array on failure, and a short one if the payload did not
+	# actually hold what its header claimed. Both mean the declared size was not the truth, which is
+	# the whole reason this validation exists.
+	if raw.size() != original_size:
+		push_warning("WorldDeltaLog: snapshot decompressed to %d bytes, not the declared %d — dropped"
+			% [raw.size(), original_size])
+		return
+
+	# `bytes_to_var`, never `bytes_to_var_with_objects`: the latter instantiates whatever the payload
+	# names, which turns a malformed snapshot into arbitrary object construction. This was already
+	# right and is restated so a future edit does not "fix" it by reaching for the other one.
 	var decoded: Variant = bytes_to_var(raw)
-	if decoded is Dictionary:
-		_state = decoded as Dictionary
+	if not decoded is Dictionary:
+		push_warning("WorldDeltaLog: snapshot did not decode to a Dictionary — dropped")
+		return
+	_state = decoded as Dictionary
 
 
 ## Host -> everyone already connected, one live mutation. Reliable: a dropped delta is a point that
@@ -179,6 +236,13 @@ func _on_peer_admitted(peer_id: int) -> void:
 	var game_state: Node = get_node_or_null(^"/root/GameState")
 	var seed_value: int = int(game_state.call("ensure_seed")) if game_state != null else 0
 	var raw: PackedByteArray = var_to_bytes(_state)
+	if raw.size() > MAX_SNAPSHOT_BYTES:
+		# The receiver would refuse this (F-332), so sending it would produce a peer that is silently
+		# and permanently behind. Loud here, where the state that outgrew the budget actually lives.
+		push_error("WorldDeltaLog: snapshot is %d bytes, past the %d-byte budget — peer %d cannot be "
+			% [raw.size(), MAX_SNAPSHOT_BYTES, peer_id]
+			+ "caught up. Raise MAX_SNAPSHOT_ENTRIES deliberately, or shrink what is logged.")
+		return
 	var compressed: PackedByteArray = raw.compress(FileAccess.COMPRESSION_GZIP)
 	net_world_snapshot.rpc_id(peer_id, seed_value, raw.size(), compressed)
 

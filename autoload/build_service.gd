@@ -85,6 +85,22 @@ var _next_request_id: int = 1
 ## Piece node name -> { "def": StringName, "owner": int }. Host-side only; it is what a destroy
 ## request is resolved against and what a refund is computed from.
 var _placed: Dictionary[StringName, Dictionary] = {}
+
+## Cached `ward_radii()` result, rebuilt lazily on the first read after any change to `_placed`
+## (F-337).
+##
+## The old comment here said caching was not worth it because the only consumer was `MireGrid`, once
+## per 2-second tick. That was true when it was written and stopped being true when
+## `systems/wellspring/wellspring.gd` became a second consumer: every active re-corruption Wellspring
+## calls `_is_warded()` from `_process()`, so the full scan — every placed piece, a `Registry`
+## definition lookup for each, and a `get_node_or_null()` for each — ran
+## `active_wellsprings x placed_pieces x FPS` times, for the minutes a re-corruption clock runs, on a
+## base that is at its largest exactly when this is happening.
+##
+## Safe to cache a position because a placed piece never moves: `host_place()` puts it down and the
+## only other things that happen to it are destruction and a run reset, all of which invalidate here.
+var _ward_cache: Array[Dictionary] = []
+var _ward_cache_valid: bool = false
 var _nav_rebake_pending: bool = false
 var _nav_rebake_elapsed: float = 0.0
 ## Cached transport ref (F-099). Path-resolved (F-011 — harnesses install theirs at /root).
@@ -208,6 +224,7 @@ func _process_place(
 		return
 
 	_placed[StringName(piece.name)] = {"def": piece_id, "owner": peer_id}
+	_invalidate_ward_cache()
 	_request_nav_rebake()
 	piece_placed.emit(piece, piece_id, peer_id)
 	MireLog.info(LOG_CHANNEL, "peer %d placed %s at %s" % [peer_id, piece_id, snapped.origin])
@@ -224,6 +241,7 @@ func _process_destroy(peer_id: int, piece_name: StringName, request_id: int) -> 
 	var piece: Node = _container.get_node_or_null(NodePath(String(piece_name)))
 	if piece == null:
 		_placed.erase(piece_name)
+		_invalidate_ward_cache()
 		_answer(peer_id, request_id, false, "no such piece")
 		return
 
@@ -255,6 +273,7 @@ func _process_destroy(peer_id: int, piece_name: StringName, request_id: int) -> 
 				inventory.call(&"host_transaction", peer_id, {} as Dictionary, refund)
 
 	_placed.erase(piece_name)
+	_invalidate_ward_cache()
 	piece.queue_free()
 	_request_nav_rebake()
 	piece_destroyed.emit(def_id, int(record["owner"]), piece_name, piece_position)
@@ -273,6 +292,7 @@ func host_piece_destroyed_by_damage(piece_name: StringName, instigator_peer_id: 
 	var piece: Node = _container.get_node_or_null(NodePath(String(piece_name)))
 	var piece_position: Vector3 = (piece as Node3D).global_position if piece != null else Vector3.ZERO
 	_placed.erase(piece_name)
+	_invalidate_ward_cache()
 	if piece != null:
 		piece.queue_free()
 	_request_nav_rebake()
@@ -312,6 +332,7 @@ func host_clear_all() -> void:
 			StringName(String(record.get("def", ""))), int(record.get("owner", 0)),
 			piece_name, piece_position)
 	_placed.clear()
+	_invalidate_ward_cache()
 	_request_nav_rebake()
 	MireLog.info(LOG_CHANNEL, "run restarted — cleared %d placed piece(s)" % cleared)
 
@@ -343,11 +364,18 @@ func placed_record(piece_name: StringName) -> Dictionary:
 	return (_placed.get(piece_name, {} as Dictionary) as Dictionary).duplicate()
 
 
-## Task 4.11's Mire consumer: every placed Ward's live position and radius, host-side —
-## `MireGrid`'s own ward-resistance provider seam (`set_ward_circles_provider`) calls this once per
-## tick. Re-walks `_placed` each call rather than caching: placement/destruction is rare compared to
-## the Mire's own 2s tick, so there is nothing worth caching against.
+## Every placed Ward's position and radius, host-side. Two consumers: `MireGrid`'s ward-resistance
+## provider seam (`set_ward_circles_provider`), once per 2-second tick, and
+## `Wellspring._is_warded()`, once per rendered frame per active re-corruption.
+##
+## Cached, and rebuilt only when `_placed` has actually changed (F-337) — see `_ward_cache`.
+##
+## The returned array is the cache itself, not a copy. Callers iterate it read-only, and copying it
+## per frame would put back most of what the cache saves; `placed_record()` above duplicates because
+## it hands out a mutable record, which this does not.
 func ward_radii() -> Array[Dictionary]:
+	if _ward_cache_valid:
+		return _ward_cache
 	var result: Array[Dictionary] = []
 	for piece_name: StringName in _placed:
 		var record: Dictionary = _placed[piece_name]
@@ -361,7 +389,16 @@ func ward_radii() -> Array[Dictionary]:
 			"position": Vector2(piece.global_position.x, piece.global_position.z),
 			"radius": float(def.get(&"ward_radius_m")),
 		})
-	return result
+	_ward_cache = result
+	_ward_cache_valid = true
+	return _ward_cache
+
+
+## Drops the ward cache. Called from every path that adds to, removes from or clears `_placed`, so
+## the cache can never outlive the pieces it describes.
+func _invalidate_ward_cache() -> void:
+	_ward_cache_valid = false
+	_ward_cache = []
 
 
 ## `MireGrid` registers AFTER this autoload in project.godot, so `/root/MireGrid` does not exist yet

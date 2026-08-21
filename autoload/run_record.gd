@@ -62,6 +62,22 @@ func _ready() -> void:
 	EVENT_BUS.subscribe_run_extracted(_on_run_extracted)
 	EVENT_BUS.subscribe_run_wiped(_on_run_wiped)
 	EVENT_BUS.subscribe_salvage_banked(_on_salvage_banked)
+	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
+
+
+## F-328/D-178: `_pending` is RUN-scoped, and until this existed nothing reset it.
+##
+## `_flush_if_ready()` clears it only when BOTH halves have arrived. An ending that banks nothing —
+## a Cycle 1 wipe whose fractional Salvage rounds to zero, so `salvage_banked` never fires — leaves
+## `{ending, cycle}` sitting here. The next run's `salvage_banked` then completes THAT record, and
+## the title card shows the previous expedition's Cycle and ending against this run's Salvage. One
+## run's brag, attributed to another.
+##
+## This is exactly the class D-149's prose enumeration kept going short on, which is why the
+## run-scope tripwire is a check rather than a paragraph: it is what noticed this file was never
+## classified at all.
+func _on_run_restarted() -> void:
+	_pending.clear()
 
 
 # ── Public API ────────────────────────────────────────────────────────────────────────────────────

@@ -15,7 +15,10 @@ extends SceneTree
 ## shipped), so each row's delta against config 1 is that suspect's isolated cost. The last
 ## config is the combined candidate fix.
 
-const LEVEL_PATH: String = "res://levels/hollowmere.tscn"
+const ProbeScene := preload("res://tools/probe_scene.gd")
+
+## Whatever `project.godot` boots, unless `-- --scene res://...` overrides it (F-342).
+var level_path: String = ""
 const SETTLE_SECONDS: float = 0.7
 const SAMPLE_SECONDS: float = 2.2
 
@@ -46,9 +49,11 @@ func _run() -> void:
 	print("Godot %s | %s | %s" % [
 		Engine.get_version_info()["string"], OS.get_name(), OS.get_processor_name()])
 
-	var packed := load(LEVEL_PATH) as PackedScene
+	level_path = ProbeScene.resolve()
+	print("measuring %s" % ProbeScene.describe(level_path))
+	var packed := load(level_path) as PackedScene
 	if packed == null:
-		push_error("could not load %s" % LEVEL_PATH)
+		push_error("could not load %s" % level_path)
 		quit(1)
 		return
 	_level = packed.instantiate() as Node3D

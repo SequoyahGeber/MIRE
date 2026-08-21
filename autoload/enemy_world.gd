@@ -353,6 +353,10 @@ func host_despawn_all() -> void:
 		return
 	for node: Node in live_enemies():
 		node.queue_free()
+	# `queue_free()` runs `_exit_tree()` at the end of the frame, which clears each row on its own.
+	# Dropping them now as well means a run restart never carries a single engagement across the
+	# boundary, even if a body was somehow removed from the tree before this ran (F-331).
+	_clear_engagements()
 
 
 ## How many polygons the level's navmesh baked to. Zero means enemies fall back to straight-line
@@ -525,3 +529,109 @@ func _owns_spawning() -> bool:
 	if bool(transport.call("is_host")):
 		return true
 	return not bool(transport.call("is_active")) and not bool(transport.call("is_connecting"))
+
+
+# ── Attack-slot engagement ledger (F-331) ─────────────────────────────────────────────────────────
+
+
+## Which enemies are currently telegraphing or swinging at whom: `peer_id -> {instance_id -> kind}`.
+##
+## `Enemy._engaged_attackers()` used to answer "how many others are already committed to my target?"
+## by walking `get_nodes_in_group(ENEMY_GROUP)` — from every in-range enemy, on every host physics
+## tick. That is an O(N^2) group traversal at exactly the moment combat density is highest, and it
+## also counted every kind against one shared budget, contradicting `Enemy`'s own documented cap "of
+## one kind": crawlers, striders and bosses all spent the same slots on the same target.
+##
+## The original chose the scan for a real reason, recorded in its own comment: "counters drift when
+## an enemy dies mid-swing; a live scan cannot." That is a fair objection to an increment/decrement
+## pair, where one missed decrement is permanent. It is not an objection to this shape. What is
+## stored here is the ENGAGEMENT ITSELF, not a tally: `Enemy` republishes its whole current
+## engagement on every state and target change, anything that is not TELL/ATTACK publishes "none",
+## and `engaged_attackers()` drops rows whose instance has gone away as it counts. So the structure
+## is still a live scan — it has simply been narrowed from the entire roster to the handful of
+## enemies engaged on one target, which is bounded by the cap itself.
+var _engaged: Dictionary[int, Dictionary] = {}
+## `instance_id -> peer_id`, so an engagement can be moved or cleared without its owner having to
+## remember which target it was last published against.
+var _engaged_peer: Dictionary[int, int] = {}
+
+
+## Records that `enemy` is committed to `peer_id` as `kind_id`. Idempotent, and safe to call with a
+## different target than last time — the previous row is removed first.
+func set_engagement(enemy: Node, peer_id: int, kind_id: StringName) -> void:
+	if enemy == null or peer_id <= 0:
+		return
+	var id: int = enemy.get_instance_id()
+	var previous: int = int(_engaged_peer.get(id, 0))
+	if previous == peer_id:
+		var rows: Dictionary = _engaged.get(peer_id, {})
+		if StringName(rows.get(id, &"")) == kind_id:
+			return
+	if previous != 0:
+		_forget(id)
+	if not _engaged.has(peer_id):
+		_engaged[peer_id] = {}
+	(_engaged[peer_id] as Dictionary)[id] = kind_id
+	_engaged_peer[id] = peer_id
+
+
+## Records that `enemy` is committed to nobody. The only way out of the ledger, and reached from
+## `Enemy`'s state setter, its target setter and its `_exit_tree()` alike — so death, despawn,
+## deaggro and a plain transition back to CHASE all clear through one path.
+func clear_engagement(enemy: Node) -> void:
+	if enemy == null:
+		return
+	_forget(enemy.get_instance_id())
+
+
+## How many enemies of `kind_id` are engaged on `peer_id`, not counting `exclude`.
+##
+## `exclude` is the asking enemy: the shipped cap has always meant "how many OTHERS", and an enemy
+## re-evaluating while already engaged must not count itself out of its own slot.
+func engaged_attackers(peer_id: int, kind_id: StringName, exclude: Node = null) -> int:
+	if peer_id <= 0:
+		return 0
+	var rows: Dictionary = _engaged.get(peer_id, {})
+	if rows.is_empty():
+		return 0
+	var exclude_id: int = exclude.get_instance_id() if exclude != null else 0
+	var count: int = 0
+	var stale: Array[int] = []
+	for id: int in rows:
+		# Self-healing, and the reason this keeps the live scan's guarantee: an enemy freed without
+		# passing through `_exit_tree()` leaves a row that is dropped the next time anyone counts,
+		# rather than inflating the cap forever.
+		if not is_instance_id_valid(id):
+			stale.append(id)
+			continue
+		if id == exclude_id:
+			continue
+		if StringName(rows[id]) == kind_id:
+			count += 1
+	for id: int in stale:
+		_forget(id)
+	return count
+
+
+## Rows currently held, for checks that assert the ledger does not leak.
+func engagement_row_count() -> int:
+	var total: int = 0
+	for peer_id: int in _engaged:
+		total += (_engaged[peer_id] as Dictionary).size()
+	return total
+
+
+func _forget(id: int) -> void:
+	var peer_id: int = int(_engaged_peer.get(id, 0))
+	_engaged_peer.erase(id)
+	if peer_id == 0:
+		return
+	var rows: Dictionary = _engaged.get(peer_id, {})
+	rows.erase(id)
+	if rows.is_empty():
+		_engaged.erase(peer_id)
+
+
+func _clear_engagements() -> void:
+	_engaged.clear()
+	_engaged_peer.clear()

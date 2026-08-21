@@ -3,6 +3,10 @@ extends SceneTree
 ## Real-level integration proof for F-029: load playtest_hollow, let HarvestWorld discover its
 ## generated holders, then exercise one of the actual wired A-001 props through depletion/respawn.
 
+## Preloaded for its constants: a script constant is not an object property, so reaching for it with
+## `inventory.get("ROT_LOSS_FRACTION")` is not reliable — the script itself is where it lives.
+const InventoryServiceScript := preload("res://autoload/inventory_service.gd")
+
 const SCENE_PATH: String = "res://levels/playtest_hollow.tscn"
 const EXPECTED_ACTIVE: Dictionary[StringName, int] = {
 	&"harvest_tree_intact": 5,
@@ -94,6 +98,19 @@ func _run() -> void:
 	var tree: Node3D = _first_asset(harvestables, &"harvest_tree_intact")
 	check(tree != null, "an actual map tree is available for lifecycle proof")
 	if tree != null:
+		# F-343: pin this point clean before asserting the authored yield.
+		#
+		# The Mire is live in this harness, and `InventoryService._rot_adjusted_amount()` correctly
+		# spoils part of a harvest taken on corrupted ground. So "a tree yields exactly 3" was only
+		# true for seeds that happened to leave this spot clean — the check passed one audit sweep
+		# and failed the next on identical code, which is the worst kind of red. Setting the
+		# corruption explicitly makes the authored-yield assertion mean what it says, and the rot
+		# path is covered deliberately further down instead of arriving by accident.
+		var mire_grid: Node = root.get_node_or_null(^"MireGrid")
+		if mire_grid != null:
+			mire_grid.call(&"host_set_corruption_at", tree.global_position, 0.0)
+			check(is_zero_approx(float(mire_grid.call(&"corruption_at", tree.global_position))),
+				"the harvested point is pinned clean, so the authored yield is what arrives")
 		# Delta, not absolute (F-047): DevLoadout grants 20 logs at spawn, so asserting a total of 3
 		# is asserting the starting kit doesn't exist — the fifth harness that autoload broke.
 		var logs_before: int = int(inventory.call("local_count", &"log")) if inventory != null else 0
@@ -131,12 +148,57 @@ func _run() -> void:
 			"4 m first-person ray targets the actual map tree")
 		check(int(tree.get("health")) == health_before_ray - 1,
 			"first-person ray submits one definition-authored hit")
+
+		_check_rotted_yield(tree, mire_grid, inventory)
 	event_bus.unsubscribe_harvest_yielded(_on_yield)
 
 	print("HARVEST_WORLD_CHECK live=%d hidden=%d events=%d failures=%d" % [
 		harvestables.size(), hidden_originals, yield_events.size(), failures
 	])
 	finish()
+
+
+## F-343's other half: the rot this check used to trip over, asserted on purpose.
+##
+## A flake removed is not the same as a behaviour covered. The Mire reducing a harvest on corrupted
+## ground is a real 4.11 contract, and it now has an assertion of its own rather than being the thing
+## that made the fixed-yield assertion unreliable. The expectation comes from the same authority the
+## product uses — corruption times `ROT_LOSS_FRACTION`, floored, never below 1 — so this proves the
+## WIRING (that a harvest on corrupt ground is reduced at all, and by that much) rather than
+## restating the formula and calling it a test.
+func _check_rotted_yield(tree: Node3D, mire_grid: Node, inventory: Node) -> void:
+	if mire_grid == null or inventory == null:
+		return
+	if not bool(tree.call("host_respawn")):
+		return
+	await physics_frame
+
+	mire_grid.call(&"host_set_corruption_at", tree.global_position, 1.0)
+	var corruption: float = float(mire_grid.call(&"corruption_at", tree.global_position))
+	check(corruption > 0.0, "the point can be corrupted for the rot case (%.2f)" % corruption)
+	if corruption <= 0.0:
+		return
+
+	var definition: Resource = tree.get("definition")
+	var authored: int = int(definition.get("yield_amount"))
+	var loss_fraction: float = InventoryServiceScript.ROT_LOSS_FRACTION
+	var expected: int = maxi(1, authored - floori(float(authored) * corruption * loss_fraction))
+
+	var events_before: int = yield_events.size()
+	var logs_before: int = int(inventory.call("local_count", &"log"))
+	tree.call("host_apply_damage", int(definition.get("max_health")), 1)
+	await physics_frame
+
+	check(yield_events.size() == events_before + 1, "the corrupted harvest still emits one yield")
+	if yield_events.size() == events_before + 1:
+		check(int(yield_events[events_before].get("amount", 0)) == authored,
+			"the yield EVENT still carries the authored amount — rot is applied on the way into "
+			+ "the pack, not by rewriting what the tree dropped")
+	var granted: int = int(inventory.call("local_count", &"log")) - logs_before
+	check(granted == expected,
+		"a harvest on fully corrupted ground grants %d of %d logs (got %d)"
+			% [expected, authored, granted])
+	check(granted < authored, "and that is strictly less than the clean yield — the rot is real")
 
 
 func _first_asset(harvestables: Array, asset_id: StringName) -> Node3D:
