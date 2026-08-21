@@ -1,32 +1,14 @@
 {
   "claims": {
-    "assets/audit/lighting/f419/forest_sunward.png": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T07:15:46+00:00",
-      "task": "F-419",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
-    },
-    "assets/audit/lighting/f419/golden_evening.png": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T07:15:46+00:00",
-      "task": "F-419",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
-    },
-    "assets/audit/lighting/f419/morning.png": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T07:15:46+00:00",
-      "task": "F-419",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
-    },
-    "assets/audit/lighting/f419/noon.png": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T07:15:46+00:00",
-      "task": "F-419",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
-    },
     "assets/environment/catalog.json": {
       "agent": "gale43d16e",
       "at": "2026-08-21T06:53:08+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "assets/flora/catalog.json": {
+      "agent": "gale43d16e",
+      "at": "2026-08-21T07:19:49+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
@@ -90,11 +72,11 @@
       "task": "F-404",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
-    "levels/procedural_island.tscn": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T07:15:46+00:00",
-      "task": "F-419",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    "tools/audio/audio_check.py": {
+      "agent": "ash843af8",
+      "at": "2026-08-21T07:28:12+00:00",
+      "task": "7.2",
+      "token": "CLAUDE_CODE_SESSION_ID:4cd6e8b1-20ed-494f-89b5-5bbf9904d4e2"
     },
     "tools/audio/mire_voices.py": {
       "agent": "ash843af8",
@@ -119,6 +101,12 @@
       "at": "2026-08-21T06:47:15+00:00",
       "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "tools/blender/build_flora_set.py": {
+      "agent": "gale43d16e",
+      "at": "2026-08-21T07:19:49+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
     "tools/blender/build_mire_map_kit.py": {
       "agent": "gale43d16e",
@@ -178,7 +166,9 @@
         "assets/environment/catalog.json",
         "docs/ASSET_TRACKER.md",
         "tools/tree_collider_check.gd",
-        "tools/blender/trunk_inspect.py"
+        "tools/blender/trunk_inspect.py",
+        "tools/blender/build_flora_set.py",
+        "assets/flora/catalog.json"
       ],
       "notes": [
         {
@@ -196,7 +186,8 @@
         "tools/audio/render_theme.py",
         "tools/audio/render_sfx_options.py",
         "tools/audio/mire_voices.py",
-        "docs/AUDIO.md"
+        "docs/AUDIO.md",
+        "tools/audio/audio_check.py"
       ],
       "notes": [],
       "started": "2026-08-21T07:14:29+00:00",
@@ -237,19 +228,6 @@
       ],
       "notes": [],
       "started": "2026-08-21T06:50:22+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
-    },
-    "F-419": {
-      "agent": "kilnd3a089",
-      "files": [
-        "levels/procedural_island.tscn",
-        "assets/audit/lighting/f419/noon.png",
-        "assets/audit/lighting/f419/golden_evening.png",
-        "assets/audit/lighting/f419/morning.png",
-        "assets/audit/lighting/f419/forest_sunward.png"
-      ],
-      "notes": [],
-      "started": "2026-08-21T07:15:46+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "F-421": {
@@ -801,6 +779,34 @@
       "hash": "1b1c59c91f28cd968dda81eea1a97f54c199262187565a98349b222b65ac3585",
       "task": "F-415",
       "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
+    },
+    "assets/audit/lighting/f419/forest_sunward.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T07:29:17+00:00",
+      "hash": "fa972262802af3367fc9ef85870712c2aa82ae99a220e21ad4700d51d7685c8b",
+      "task": "F-419",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/lighting/f419/golden_evening.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T07:29:17+00:00",
+      "hash": "93455c29f5ccdf68ec205eb923bde53a355f207d3f33826e5c6cf195768872c4",
+      "task": "F-419",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/lighting/f419/morning.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T07:29:17+00:00",
+      "hash": "579f7f9a8373474f94b1ebf36eadcc287e704e4afecae98f399e94005da6b7cc",
+      "task": "F-419",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/lighting/f419/noon.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T07:29:17+00:00",
+      "hash": "b4728d8a06c1598c93b35594fbcde06de1f7d24975175a6c825657441257413f",
+      "task": "F-419",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "assets/audit/menu/dock_1080p.png": {
       "agent": "kilnd3a089",
@@ -1833,9 +1839,9 @@
     },
     "levels/procedural_island.tscn": {
       "agent": "kilnd3a089",
-      "at": "2026-08-21T05:34:42+00:00",
-      "hash": "1250d7bcc23b943b079981d0ea8b42ad06df7a0993f1b0e3b773edc7991c9909",
-      "task": "F-401",
+      "at": "2026-08-21T07:29:17+00:00",
+      "hash": "00744dbdb6c2c3c415cb201ecfbece2c7dc54b0503a78395bc47afdff80fc130",
+      "task": "F-419",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "project.godot": {
@@ -2315,11 +2321,11 @@
       "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
     "tools/menu_focus_check.gd": {
-      "agent": "coil995fd7",
-      "at": "2026-08-21T07:03:58+00:00",
-      "hash": "ea1e40bd76b19802973226898ae2a8250dcbc4ee0795b5969c88d3a3164ca050",
-      "task": "F-418",
-      "token": "CLAUDE_CODE_SESSION_ID:44f62a84-7862-455b-a776-2e1c5eb11d39"
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T07:29:17+00:00",
+      "hash": "9093fb51745fc70972fc526774fdb2408ddfcd97b1143c28cb470217b90f41b0",
+      "task": "F-419",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "tools/menu_kit_check.gd": {
       "agent": "reed31c598",
@@ -2910,7 +2916,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 701,
+  "rev": 705,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -7998,9 +8004,11 @@
       "title": "F-413 deleted the settings focus-navigation proof and never replaced it"
     },
     "F-419": {
+      "done_at": "2026-08-21T07:29:17+00:00",
+      "done_by": "kilnd3a089",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "menu_focus_check has been failing on main for days \u2014 CRAFT ui_accept and an inventory slot move"
     },

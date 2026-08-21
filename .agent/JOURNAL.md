@@ -8238,3 +8238,15 @@ settings focus proof restored; 32 assertions, all passing
 Files: `tools/menu_focus_check.gd`
 
 Commit at time of writing: `81c66d1`
+
+---
+
+### DONE · F-419 · kilnd3a089 · 2026-08-21T07:29:17+00:00
+
+**menu_focus_check has been failing on main for days — CRAFT ui_accept and an inventory slot move**
+
+Both menu_focus_check failures fixed — CRAFT ui_accept (grid navigation) and the slot-move fixture. Both were my regressions from F-380 and F-382.
+
+Files: `levels/procedural_island.tscn`, `assets/audit/lighting/f419/noon.png`, `assets/audit/lighting/f419/golden_evening.png`, `assets/audit/lighting/f419/morning.png`, `assets/audit/lighting/f419/forest_sunward.png`, `tools/menu_focus_check.gd`
+
+Commit at time of writing: `c1dfefa`

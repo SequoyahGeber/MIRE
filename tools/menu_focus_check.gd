@@ -275,9 +275,29 @@ func _check_crafting_ui() -> void:
 	check(not bool(ui.call(&"craft_button_disabled", stone_axe_row)),
 		"stone_axe's CRAFT button is enabled now that its materials are funded")
 
-	# _walk_loop left focus back at row 0 (first_row) — step down to stone_axe's row.
-	for i: int in stone_axe_row:
+	# _walk_loop left focus back at row 0 (first_row) — navigate to stone_axe's cell.
+	#
+	# F-419: this used to press DPAD_DOWN once per row, which was correct while the recipe list was
+	# a single VBoxContainer column. F-380 reflowed it into a width-derived GridContainer, so DOWN
+	# now steps a whole GRID ROW — three recipes at 1080p — and `stone_axe_row` presses of it
+	# overshot into empty space. The CRAFT button was never focused, so `ui_accept` did nothing and
+	# the failure read as "the button does not respond to a gamepad" when the button was fine.
+	#
+	# Two-dimensional navigation is the correct model for a grid and is what a player actually does,
+	# so the check now walks the grid rather than the list: down by whole rows, then right along one.
+	# Reading `recipe_columns()` rather than hard-coding 3 keeps this correct at the panel widths
+	# where the grid collapses to fewer columns.
+	var columns: int = maxi(int(ui.call(&"recipe_columns")), 1)
+	for _row: int in stone_axe_row / columns:
 		await _tap(JOY_BUTTON_DPAD_DOWN)
+	for _col: int in stone_axe_row % columns:
+		await _tap(JOY_BUTTON_DPAD_RIGHT)
+
+	var landed: Control = _focused()
+	# Asserted before the ui_accept below, because if navigation did not land on a CRAFT button then
+	# that assertion cannot mean anything — it would be pressing whatever happened to be focused.
+	check(landed is Button and (landed as Button).text == "CRAFT",
+		"grid navigation lands on a CRAFT button (%s)" % ("null" if landed == null else landed.name))
 	var stone_axe_before: int = int(inventory.call(&"local_count", &"stone_axe"))
 	await _tap(JOY_BUTTON_A)
 	check(int(inventory.call(&"local_count", &"stone_axe")) > stone_axe_before,
@@ -311,6 +331,16 @@ func _check_inventory_ui() -> void:
 	if item_id == &"":
 		return
 
+	# F-419: start this sub-test from an EMPTY inventory.
+	#
+	# It asserts a plain move — pick up slot 0, drop it on slot 1, slot 0 is now empty — and that is
+	# only what happens when the destination is free. Earlier sub-tests in this file fund and craft
+	# (log, stone, stone_axe), and since F-382 made grants fill the HOTBAR before the backpack those
+	# leftovers sit in hotbar slots 0-2. The move then landed on an occupied slot and SWAPPED, so
+	# slot 0 came back holding stone and the assertion failed — reporting a move bug where there was
+	# a fixture bug. Clearing first makes the scenario mean what it says.
+	inventory_service.call(&"host_reset_for_new_run")
+	await process_frame
 	inventory_service.call(&"host_add", 1, item_id, 1)
 	await process_frame
 	var hotbar_start: int = int(inventory_service.call(&"hotbar_start_index"))
