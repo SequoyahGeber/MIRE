@@ -2215,7 +2215,9 @@ here to cover the four kit species) measures 0.50-0.61 m radius with zero overha
 
 ---
 
-### F-423 · The procedural island has never had ground shadows — shadow_normal_bias is 2.4, roughly double the authored maps, and the flat-shaded terrain cannot afford it
+## Resolved
+
+### F-423 · The procedural island has never had ground shadows — shadow_normal_bias is 2.4, roughly double the authored maps, and the flat-shaded terrain cannot afford it — **fixed**
 
 **Area:** render · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
 
@@ -2248,9 +2250,31 @@ and golden evening (grazing, the worst case for peter-panning).
 
 Captures: `assets/audit/lighting/f419/`.
 
----
+**Resolved 2026-08-21 by kilnd3a089.** `shadow_normal_bias` 2.4 -> **0.3** on `levels/procedural_island.tscn`'s Sun. Nothing else changed —
+`directional_shadow_max_distance` stays 85, and the grade constants Codex set (white 1.5, saturation
+1.0, sun energy 1.15) are untouched.
 
-## Resolved
+Isolated rather than inferred: the first test moved bias AND shadow distance together, so the
+distance was then restored to 85 with the bias still low, and the shadows stayed. The bias was the
+whole of it.
+
+0.3 rather than the authored maps' 1.15-1.30 because this is a different receiving surface —
+`terrain_flat.gdshader` computes its facet normal in the fragment stage from screen-space derivatives
+over very large smooth-normalled triangles, so a given bias displaces the shadow lookup much further
+here than on authored geometry. Swept upward to confirm the shape of the response: at 0.9 the
+dappling over open ground is already mostly gone.
+
+Verified at the two angles that bracket the failure modes — noon (sun overhead, worst case for the
+acne this constant exists to prevent) and golden evening (grazing, worst case for the peter-panning
+it was causing). Neither shows acne; both show real cast shadows for the first time on this map.
+Captures in `assets/audit/lighting/f419/`.
+
+grade_check 0, atmosphere_night_check 0, day_night_check 0.
+
+**Not this finding's:** the scene may still read brighter than intended, but if so it is now for
+content reasons rather than lighting ones — F-417 thinned ground cover 36%, and the taller hills moved
+shore (the brightest albedo) from 25.0% to 27.1% of the island, both AFTER Codex graded. That is a
+judgement call against the current terrain, not a bug.
 
 ### F-419 · menu_focus_check has been failing on main for days — CRAFT ui_accept and an inventory slot move — **fixed**
 
