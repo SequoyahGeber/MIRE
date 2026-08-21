@@ -2,14 +2,17 @@
 """Render MIRE theme-song candidates. Deterministic (fixed seeds).
 
     python3 tools/audio/render_theme.py [--only NAME] [--build-dir DIR]
-    python3 tools/audio/render_theme.py --ship hollowmere_hymn   # promote a pick
+    python3 tools/audio/render_theme.py --ship menu_theme=hollowmere_hymn ...
 
 Five candidates in five different styles, all built from the same synthesis
 toolkit as the rest of MIRE's audio (D-066: the score IS the asset). They are
 written to the build dir as WAV + MP3 for auditioning; nothing lands in
-`assets/audio/music/` until `--ship NAME` promotes the chosen one to
-`menu_theme.ogg`. Choosing between them is a taste call, so the render step and
-the ship step are deliberately separate.
+`assets/audio/music/` until `--ship <asset>=<candidate>` promotes one. Choosing
+between them is a taste call, so the render step and the ship step are
+deliberately separate — and a candidate is promoted under the ASSET name for
+the role it won, not under its own working title, so the role mapping lives in
+one place (`ThemeMusicDirector.CUE_PATHS`) rather than being implied by a
+filename.
 
 == What makes them one game, and what makes them different ==
 
@@ -661,20 +664,22 @@ def main() -> None:
     parser.add_argument("--build-dir",
                         default=os.path.join(tempfile.gettempdir(), "mire_audio_build", "themes"))
     parser.add_argument("--only", default=None, help="render just one candidate")
-    parser.add_argument("--ship", default=None,
-                        help="promote a rendered candidate to assets/audio/music/menu_theme.ogg")
+    parser.add_argument("--ship", nargs="*", default=None,
+                        help="promote picks: <asset>=<candidate> [...] into assets/audio/music/")
     args = parser.parse_args()
     os.makedirs(args.build_dir, exist_ok=True)
 
     if args.ship:
-        if args.ship not in THEMES:
-            raise SystemExit(f"unknown theme {args.ship!r}; have {', '.join(THEMES)}")
-        wav = os.path.join(args.build_dir, args.ship + ".wav")
-        if not os.path.exists(wav):
-            raise SystemExit(f"{wav} missing — render first")
-        out = os.path.join(REPO, "assets", "audio", "music", "menu_theme.ogg")
-        encode_ogg(wav, out)
-        print(f"shipped {args.ship} -> {out}")
+        for pick in args.ship:
+            asset, _, candidate = pick.partition("=")
+            if candidate not in THEMES:
+                raise SystemExit(f"unknown candidate {candidate!r}; have {', '.join(THEMES)}")
+            wav = os.path.join(args.build_dir, candidate + ".wav")
+            if not os.path.exists(wav):
+                raise SystemExit(f"{wav} missing — render first")
+            out = os.path.join(REPO, "assets", "audio", "music", asset + ".ogg")
+            encode_ogg(wav, out)
+            print(f"  {asset}.ogg <- {candidate}")
         return
 
     dither = np.random.default_rng(23)

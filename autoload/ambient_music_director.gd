@@ -65,6 +65,18 @@ const DUCK_GAIN: float = 0.28
 const DUCK_ATTACK_SEC: float = 0.35
 const DUCK_RELEASE_SEC: float = 2.5
 
+## A theme (`ThemeMusicDirector`, 7.2) ducks the bed much harder than a stinger does, because it is a
+## different kind of thing: a stinger is a 7 s event the bed should be heard UNDER, while a theme is
+## two minutes of full arrangement that owns the mix outright. -20 dB leaves the bed as air rather
+## than as a second piece of music in a second key — which is what 0.28 would give, and the two beds
+## are in D Dorian and A Aeolian while the themes are in their own keys.
+##
+## Deliberately still above `AUDIBLE_EPSILON`: taking the bed to actual zero would STOP its channel
+## (see `_apply_channel`), and a stopped `AudioStreamPlayer` resumes from the head of a 3:44 loop —
+## so a cycle cue ending mid-run would silently rewind the bed. Ducking to a whisper keeps its
+## playhead where the run left it.
+const THEME_DUCK_GAIN: float = 0.10
+
 ## `AudioStreamPlayer.volume_db` bottoms out at -80; -60 is 0.001 linear and already inaudible under
 ## any master setting, and a channel that reaches it is stopped outright anyway (see `_apply_channel`).
 const SILENT_DB: float = -60.0
@@ -90,6 +102,7 @@ var _duck: float = 1.0
 
 var _day_night_node: Node
 var _boss_director_node: Node
+var _theme_director_node: Node
 
 
 func _ready() -> void:
@@ -150,9 +163,21 @@ func _step_mix(delta: float) -> void:
 ## `DUCK_GAIN` alone changes how DEEP the duck is without also changing how long it takes to get
 ## there — which is what a plain `move_toward(_duck, target, delta / span)` would have coupled.
 func _step_duck(delta: float) -> void:
-	var target: float = DUCK_GAIN if _boss_music_playing() else 1.0
+	var target: float = _duck_target()
 	var span: float = DUCK_ATTACK_SEC if target < _duck else DUCK_RELEASE_SEC
-	_duck = move_toward(_duck, target, delta * (1.0 - DUCK_GAIN) / maxf(span, 0.001))
+	_duck = move_toward(_duck, target, delta * (1.0 - THEME_DUCK_GAIN) / maxf(span, 0.001))
+
+
+## The deepest duck any audible director asks for. Both are checked every frame rather than one
+## winning by priority: a boss engaged during a cycle cue is a real combination, and the bed should
+## sit under whichever is asking for more room, not under whichever was noticed first.
+func _duck_target() -> float:
+	var target: float = 1.0
+	if _music_playing(_boss_director()):
+		target = minf(target, DUCK_GAIN)
+	if _music_playing(_theme_director()):
+		target = minf(target, THEME_DUCK_GAIN)
+	return target
 
 
 func _apply_mix() -> void:
@@ -241,15 +266,14 @@ func _on_day_started() -> void:
 	_target_mix = 0.0
 
 
-# ── The boss duck ────────────────────────────────────────────────────────────────────────────────
+# ── The duck ─────────────────────────────────────────────────────────────────────────────────────
 
 
-## Read off `BossMusicDirector`'s CHILDREN rather than its private `_players` array: the array is
-## private, and "does this director have an audible AudioStreamPlayer right now" is true of any music
-## director this project grows, so the shape survives 7.2's remaining cues (a menu theme, combat
-## stems) being added there without this file learning about them.
-func _boss_music_playing() -> bool:
-	var director: Node = _boss_director()
+## Read off a director's CHILDREN rather than its private `_players`: the array is private, and "does
+## this director have an audible AudioStreamPlayer right now" is true of any music director this
+## project grows. That generality is what let 7.2's `ThemeMusicDirector` be ducked by adding one line
+## to `_duck_target()` rather than by teaching this file anything about cues.
+func _music_playing(director: Node) -> bool:
 	if director == null:
 		return false
 	for child: Node in director.get_children():
@@ -263,6 +287,12 @@ func _boss_director() -> Node:
 	if _boss_director_node == null or not is_instance_valid(_boss_director_node):
 		_boss_director_node = get_node_or_null(^"/root/BossMusicDirector")
 	return _boss_director_node
+
+
+func _theme_director() -> Node:
+	if _theme_director_node == null or not is_instance_valid(_theme_director_node):
+		_theme_director_node = get_node_or_null(^"/root/ThemeMusicDirector")
+	return _theme_director_node
 
 
 # ── Run lifecycle ────────────────────────────────────────────────────────────────────────────────

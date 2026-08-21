@@ -12,6 +12,9 @@ store-page time.
 |---|---|---|
 | Day ambient | `assets/audio/music/ambient_day.ogg` | 3:44 seamless loop, D Dorian over a D pedal. Pads voice-lead a slow soprano arc (E–E–F–G–C5–A–G–F→E); Karplus-Strong motif, rare FM bells. RMS −19 dBFS |
 | Night ambient | `assets/audio/music/ambient_night.ogg` | 3:44 seamless loop, A Aeolian; section 5 is Bb-maj7 over the A pedal (the dread chord, bells strike its #11). Sub-root swells, three far FM groans. RMS −21 dBFS |
+| Menu theme | `assets/audio/music/menu_theme.ogg` | "Hollowmere Hymn", 1:41 loop. Folk lament: bowed viol over a hammered-dulcimer ostinato, D Dorian. Plays while the front end is on screen (`ThemeMusicDirector`, cue `menu`) |
+| Landfall theme | `assets/audio/music/theme_landfall.ogg` | "Wake the Deep", 1:57 loop. Heroic A-B-A: horns take the tune from the strings over choir and drums. One pass at run start, then an 8 s fade (cue `landfall`) |
+| Cycle theme | `assets/audio/music/theme_cycle.ogg` | "Mire Rites", 1:11 loop. Percussive 6/8 building across four stages to a hard stop. One pass on `cycle_advanced` at Cycle 2+ (cue `cycle`) |
 | Boss stinger | `assets/audio/music/boss_stinger.ogg` | ~7.2s non-looping one-shot (task 5.5), NIGHT's own palette — a low FM groan rises into a sub thump and a dissonant pair of detuned FM bells, then rings out on the same reverb IR shape. Played by `BossMusicDirector` (client-local autoload) on `EventBus.boss_engaged`/`boss_phase_changed`/`boss_defeated` |
 | 19 SFX | `assets/audio/sfx/*.wav` | mono 16-bit 44.1 kHz: axe/pick hits (3 variants each), tree/stone breaks, melee whoosh+hit (2 each), mud footsteps (3), item pickup, chest open, ui click, build place |
 
@@ -71,15 +74,17 @@ python3 tools/audio/audio_check.py --sfx-dir <build>/sfx_options/wav
 ```
 
 **Themes.** Five candidates in five styles, all loop-folded (`wrap_loop`, same as the ambient beds)
-because a menu is somewhere a player can sit:
+because a menu is somewhere a player can sit. **Three of the five shipped** — Sequoyah picked
+`hollowmere_hymn`, `wake_the_deep` and `mire_rites` on 2026-08-21; D-187 records which moment each
+one was bound to and why the intuitive pairing was rejected:
 
-| Candidate | Style | Carried by | Key |
-|---|---|---|---|
-| `hollowmere_hymn` | folk lament | bowed viol over a hammered-dulcimer ostinato | D Dorian |
-| `wake_the_deep` | heroic adventure | horns + strings + choir, A-B-A, full arrangement | D Dorian |
-| `mire_rites` | percussive 6/8 | frame drums, bone flute, chanted choir, four-stage build | D Dorian |
-| `the_long_sink` | dark cinematic | low horns, sub swells, the bII dread chord | A Aeolian |
-| `still_water` | eerie minimal | music box through tape warble, no pulse | D Dorian |
+| Candidate | Style | Carried by | Key | Status |
+|---|---|---|---|---|
+| `hollowmere_hymn` | folk lament | bowed viol over a hammered-dulcimer ostinato | D Dorian | **shipped** as `menu_theme.ogg` |
+| `wake_the_deep` | heroic adventure | horns + strings + choir, A-B-A, full arrangement | D Dorian | **shipped** as `theme_landfall.ogg` |
+| `mire_rites` | percussive 6/8 | frame drums, bone flute, chanted choir, four-stage build | D Dorian | **shipped** as `theme_cycle.ogg` |
+| `the_long_sink` | dark cinematic | low horns, sub swells, the bII dread chord | A Aeolian | held — a natural act/boss bed |
+| `still_water` | eerie minimal | music box through tape warble, no pulse | D Dorian | held — shares the hymn's melody |
 
 They share the ambience's modal world and reuse its pad/pluck/bell voices, so any of them still
 sounds like Hollowmere. `hollowmere_hymn` and `still_water` share a melody deliberately — the second
@@ -89,8 +94,15 @@ above: that rule protects *ambience* from imposing a tempo on a procedurally-pac
 has no world to pace.
 
 ```bash
-python3 tools/audio/render_theme.py --ship wake_the_deep   # -> assets/audio/music/menu_theme.ogg
+python3 tools/audio/render_theme.py --ship menu_theme=hollowmere_hymn \
+    theme_landfall=wake_the_deep theme_cycle=mire_rites
+.agent/bin/agent godot --script tools/theme_music_check.gd    # proves they play, at their moments
 ```
+
+A candidate is promoted under the **asset name of the role it won**, not under its working title, so
+the mapping lives in `ThemeMusicDirector.CUE_PATHS` and not in a filename. Re-pointing a cue at a
+different candidate is one `--ship` plus one line there. The two held candidates stay renderable from
+the same seeds — nothing about them is lost by not shipping them.
 
 **SFX takes.** Every family gets **A / B / C** — three different answers to "what is this made of and
 how hard did you hit it", not three seeds of one recipe (that is what the per-sound *variants*
@@ -139,6 +151,21 @@ Add a recipe function in `tools/audio/render_sfx.py` composing `mire_audio` prim
 `RECIPES` with variant count + reverb send + peak, re-render, run both checks. For repetitive
 actions ship 3 seeded variants; play sites should round-robin them with ±4% `pitch_scale` scatter.
 
+## Who plays what
+
+Three client-local directors, all on the "Music" bus `SettingsService` (7.5) creates, so one slider
+governs all of them:
+
+| Autoload | Owns | Ducked by |
+|---|---|---|
+| `AmbientMusicDirector` (F-373) | the day/night bed, 8 s crossfade at dusk | a boss stinger (to 0.28) or any theme (to 0.10) |
+| `ThemeMusicDirector` (D-187) | the three authored themes | nothing — a theme owns the mix |
+| `BossMusicDirector` (5.5) | the boss stinger | nothing |
+
+The bed's duck floor of 0.10 is deliberate rather than zero: `_apply_channel()` *stops* a channel
+below `AUDIBLE_EPSILON`, and a stopped `AudioStreamPlayer` resumes at the head of a 3:44 loop — so a
+cycle cue ending mid-run would silently rewind the ambience.
+
 ## Network authority (ARCHITECTURE.md §2.2)
 
 Audio is **client-local presentation**. Nothing here replicates: playback is triggered by gameplay
@@ -147,20 +174,19 @@ audio RPCs and must never be any.
 
 ## Not done yet (next tasks)
 
-- **Ambient MusicDirector autoload** (client-local, still not built — do not confuse with task 5.5's
-  `BossMusicDirector`, a separate one-shot-stinger autoload that ships): play `ambient_day.ogg`,
-  crossfade ~8 s to `ambient_night.ogg` on DayNight's `night_started` / back on `day_started` (signal
-  names proven in `tools/day_night_check.gd`). Two `AudioStreamPlayer`s on the "Music" bus
-  `SettingsService` (7.5) already creates is enough.
 - **SFX wiring**: `weapon_def.gd` / `harvestable_def.gd` sound fields + play sites — those files
   are under F-113/F-114 claims right now; wire after they clear. Bind sounds to the **asset defs**,
   never to a scene or map — release worlds are procgen.
 - **Buses & mix pass** (7.1's remainder): Master / Music / SFX / UI buses, settings sliders — done,
   task 7.5.
-- **Menu theme playback**: a client-local autoload to play `menu_theme.ogg` on the "Music" bus, and
-  hand off to the ambient director on run start. Blocked only on which candidate wins — the asset
-  name is fixed (`assets/audio/music/menu_theme.ogg`), so the wiring can be written against it now.
-- **More music** (7.2's remainder): combat-intensity stems for escalation. Boss (5.5) is
+- **The `menu` cue has no moment yet.** `project.godot`'s `run/main_scene` still boots straight into
+  the world while task 4.19's cutover is in flight, so nothing puts the `mire_frontend` group on
+  screen in the shipped path. `ThemeMusicDirector` already handles it — when 4.19 flips the boot
+  scene the menu theme starts working with no change here.
+- **SFX v2 picks.** `render_sfx_options.py` has A/B/C rendered for all 11 families and none of them
+  are chosen yet; `assets/audio/sfx/` still holds the v1 takes. One `--ship` per pick.
+- **More music** (7.2's remainder): combat-intensity stems for escalation. `the_long_sink` is already
+  rendered and is the obvious act/boss bed if that lands. Boss (5.5) is
   done — one shared stinger cue, not per-boss stems; a future task can add per-boss/per-phase cues
   through `BossDef.engage_music_cue`/`BossPhaseDef.music_cue`, which exist but route to the shared
   cue only (`BossMusicDirector.CUE_PATHS` has one entry today).

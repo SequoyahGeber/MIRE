@@ -5796,6 +5796,12 @@ The general point, restated because it is the return on the check: nobody was ca
 autoloads shipped in one menu milestone and the question "is any of this run-scoped?" was never put
 to anyone. Totality is what put it.
 
+**Amendment · 2026-08-21 (flinta92725, F-413): `GodModeService` is session-scoped.** God mode is an
+operator playtesting knob, like a live gamerule: restarting the current run must not silently undo
+the tester's chosen environment. It clears when the network session/process ends and deliberately
+does not persist to disk. `tools/run_scope_audit_check.gd` records that classification; the retired
+`SettingsMenu` autoload was removed from the enumeration entirely.
+
 ### D-182 · 2026-08-20 · A duplicated D-number is repaired by renumbering the LATER entry, and the citations move with it
 F-260 gave `agent decision` an allocator, so a new collision is now impossible; F-283 had to decide
 what to do about the three already in the file (`D-050`, `D-144`, `D-150`, each heading two
@@ -6027,3 +6033,52 @@ and the one where a further ambient cut would start crushing.
 maps and cannot be compared — only variants within one run are comparable. And the first shot after
 the settle has not converged; it reads several units darker than the identical config rendered later
 in the same run, so lead with a throwaway variant or discard shot one.
+
+### D-187 · 2026-08-21 · The three authored themes are bound to three moments, and the pairing is chosen on fatigue and shape rather than on which track is "best"
+
+Sequoyah picked three of task 7.2's five theme candidates and said "lets use all 3". Three tracks and
+three moments is not automatic — the assignment is the decision, and shipping three `.ogg`s that
+nothing references is precisely F-373's failure (an asset rendered, imported, loudness-checked,
+documented, and played by no code, in a game that reports no error when it goes silent). So each one
+got a cue in `autoload/theme_music_director.gd`:
+
+| Cue | Asset | Candidate | Fires on | Ends |
+|---|---|---|---|---|
+| `menu` | `menu_theme.ogg` | Hollowmere Hymn (folk lament) | the `mire_frontend` group being on screen | when it leaves |
+| `landfall` | `theme_landfall.ogg` | Wake the Deep (heroic) | the front end going away, or booting with none | one pass, then an 8 s fade |
+| `cycle` | `theme_cycle.ogg` | Mire Rites (percussive 6/8) | `cycle_advanced` at Cycle 2+ | one pass, then an 8 s fade |
+
+**Why not the obvious pairing.** "Wake the Deep" is the biggest arrangement and the only candidate
+with a real A-B-A tune, which makes it the intuitive menu theme — and the wrong one. A title screen
+is the single place in this game where a track may be left running for twenty minutes, so the
+binding constraint there is *fatigue*, not impact, and the calm one wins. Impact belongs where it is
+heard once and then gets out of the way: landfall. "Mire Rites" builds across four stages and ends on
+a hard stop, which is the shape of an escalation cue and is why it is bound to the cycle turning
+rather than to a timer or to combat.
+
+**Cycle 1 deliberately does not fire the cycle cue.** Every run already starts in Cycle 1, so a cue
+there would land on top of landfall and mean nothing. `FIRST_CUE_CYCLE = 2`.
+
+**The two bounded cues still loop.** All five candidates are rendered circularly (`render_theme.py`'s
+`finish()` folds reverb and instrument decay back onto the head, same as the ambient beds), so a
+non-looping playback would stop dead at the fold rather than arrive anywhere. They loop like
+everything else and are retired by a timed fade over their final 8 s, so the fold is only ever heard
+as the wash it was written to be.
+
+**The bed ducks to 0.10, not to zero and not to the boss stinger's 0.28.** A stinger is a 7 s event
+the bed should be heard *under*; a theme is two minutes of full arrangement in its own key that owns
+the mix. But taking the bed to actual zero would cross `AUDIBLE_EPSILON` and *stop* its channel, and
+a stopped `AudioStreamPlayer` resumes at the head of a 3:44 loop — so a cycle cue ending mid-run
+would silently rewind the ambience. Ducking to a whisper keeps its playhead.
+
+**What is not yet audible, and why that is not a bug here.** `project.godot`'s `run/main_scene` still
+boots straight into the world while task 4.19's cutover is in flight, so nothing puts the front end
+on screen in the shipped path and the `menu` cue has no moment yet. `ThemeMusicDirector` handles that
+explicitly rather than sitting silent: no front end at `_ready()` means landfall has already
+happened, and the cue fires immediately. When 4.19 flips the boot scene the menu cue starts working
+with no change here.
+
+Proven headless by `tools/theme_music_check.gd` (registration, all three streams looping at their
+composed lengths, landfall-at-boot, the bounded fade and hand-back, Cycle 1 vs Cycle 2, the duck
+depth and its floor, and a run restart dropping a live cycle cue). `tools/audio_import_check.gd`
+knows the three lengths; `tools/ambient_music_check.gd` still passes unchanged.
