@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_cellar_cache.png" id="ic_cellar_cache"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_cellar_cache")
 id = &"cellar_cache"
 display_name = "Cellar Cache"
 description = "What you are carrying keeps. Hunger arrives on the slow schedule of a cold room rather than a warm one."

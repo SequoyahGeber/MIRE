@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_warm_marrow.png" id="ic_warm_marrow"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_warm_marrow")
 id = &"warm_marrow"
 display_name = "Warm Marrow"
 description = "The rot works on cold bodies first. Yours runs a few degrees ahead of the Mire, and it buys you hours you would not otherwise have."

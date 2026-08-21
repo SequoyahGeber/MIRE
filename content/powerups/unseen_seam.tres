@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_unseen_seam.png" id="ic_unseen_seam"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_unseen_seam")
 id = &"unseen_seam"
 display_name = "Unseen Seam"
 description = "There is a seam in the attention of things and you have learned to stand in it. Move badly and you fall straight out."

@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="AttunementDef" format=3]
 
 [ext_resource type="Script" path="res://systems/attunement/attunement_def.gd" id="1_pb2xn"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_attunement_tinker.png" id="ic_tinker"]
 
 [resource]
 script = ExtResource("1_pb2xn")
+icon = ExtResource("ic_tinker")
 id = &"tinker"
 display_name = "Tinker"
 description = "One of DESIGN.md §4.5's four run-scoped roles."

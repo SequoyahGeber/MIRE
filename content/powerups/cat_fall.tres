@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_cat_fall.png" id="ic_cat_fall"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_cat_fall")
 id = &"cat_fall"
 display_name = "Cat Fall"
 description = "You still hit the ground. You just stop paying full price for it, and the routes that open up when a drop is only a drop are worth more than the health."

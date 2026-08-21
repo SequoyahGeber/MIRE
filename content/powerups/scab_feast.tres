@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_scab_feast.png" id="ic_scab_feast"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_scab_feast")
 id = &"scab_feast"
 display_name = "Scab Feast"
 description = "Something in you feeds on what you put down, and closes you up while it eats. The same mercy Cauter Seal offers, routed through the rot instead of the fire — which matters only if you have already picked a side."

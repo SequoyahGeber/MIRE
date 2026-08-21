@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_rich_marrow.png" id="ic_rich_marrow"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_rich_marrow")
 id = &"rich_marrow"
 display_name = "Rich Marrow"
 description = "Food goes further in you than it has any business going — the Fungal read on the same trick Iron Tongue works from the blood side, and the better of the two if you can afford the tag."

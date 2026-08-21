@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_s2ul0"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_attunement_warden.png" id="ic_attunement_war"]
 
 [resource]
 script = ExtResource("1_s2ul0")
+icon = ExtResource("ic_attunement_war")
 id = &"attunement_warden"
 display_name = "Warden Attunement"
 description = "Better at: ward radius, structure HP, taunts. Worse at: movement speed, gather rate."

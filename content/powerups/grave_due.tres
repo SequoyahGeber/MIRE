@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_grave_due.png" id="ic_grave_due"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_grave_due")
 id = &"grave_due"
 display_name = "Grave Due"
 description = "You can call someone back from further away than should be possible. It has never once been explained why the distance is negotiable and the death is not."

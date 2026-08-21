@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_far_grasp.png" id="ic_far_grasp"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_far_grasp")
 id = &"far_grasp"
 display_name = "Far Grasp"
 description = "Your reach ends slightly further out than your arm does. Nobody who has watched you fight has ever mentioned it."

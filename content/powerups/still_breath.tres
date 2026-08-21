@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_still_breath.png" id="ic_still_breath"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_still_breath")
 id = &"still_breath"
 display_name = "Still Breath"
 description = "You spend less on everything because you have stopped wasting motion. The cold teaches that, eventually, to whoever survives the lesson."

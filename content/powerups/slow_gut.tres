@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_slow_gut.png" id="ic_slow_gut"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_slow_gut")
 id = &"slow_gut"
 display_name = "Slow Gut"
 description = "You burn through a meal at the pace of something that expects to wait a long while for the next one."

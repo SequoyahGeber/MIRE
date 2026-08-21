@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_bellows_lung.png" id="ic_bellows_lung"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_bellows_lung")
 id = &"bellows_lung"
 display_name = "Bellows Lung"
 description = "A bigger chest and a slower burn in it. You do not get faster — you get to stay fast for longer, which is usually the argument that matters."

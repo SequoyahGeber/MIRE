@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_forge_blood.png" id="ic_forge_blood"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_forge_blood")
 id = &"forge_blood"
 display_name = "Forge Blood"
 description = "Fire is not only for the things you kill. Metal comes to temperature faster in your hands, and the bench stops being the slow part of the night."

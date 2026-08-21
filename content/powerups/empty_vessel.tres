@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_empty_vessel.png" id="ic_empty_vessel"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_empty_vessel")
 id = &"empty_vessel"
 display_name = "Empty Vessel"
 description = "It does nothing. It is not a disappointing roll — the Void pays out at depth or not at all, and this is what depth is made of."

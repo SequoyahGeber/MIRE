@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_night_pyre.png" id="ic_night_pyre"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_night_pyre")
 id = &"night_pyre"
 display_name = "Night Pyre"
 description = "After dark you hit like something that belongs out here. The trade is that everything out here can see exactly where you are."

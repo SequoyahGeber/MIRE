@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_pale_guard.png" id="ic_pale_guard"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_pale_guard")
 id = &"pale_guard"
 display_name = "Pale Guard"
 description = "Bloodless, and harder for it. Less of you to hurt and more of you to hurt through."

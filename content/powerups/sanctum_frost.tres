@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_sanctum_frost.png" id="ic_sanctum_frost"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_sanctum_frost")
 id = &"sanctum_frost"
 display_name = "Sanctum Frost"
 description = "The ground your Ward claims reaches a little further out, frozen quiet at the edges where the dark used to start."

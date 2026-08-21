@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_chill_edge.png" id="ic_chill_edge"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_chill_edge")
 id = &"chill_edge"
 display_name = "Chill Edge"
 description = "Now and then a hit takes the speed out of a thing instead of the life. Those are frequently the better hits."

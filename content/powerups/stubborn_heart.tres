@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_stubborn_heart.png" id="ic_stubborn_heart"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_stubborn_heart")
 id = &"stubborn_heart"
 display_name = "Stubborn Heart"
 description = "Down is not the same as finished. You lie there longer than you have any right to, listening for boots."

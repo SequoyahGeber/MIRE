@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_eggshell_warlord.png" id="ic_eggshell_warlo"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_eggshell_warlo")
 id = &"eggshell_warlord"
 display_name = "Eggshell Warlord"
 description = "You hit like a falling tree and you bruise like fruit. Worth it. Probably worth it."

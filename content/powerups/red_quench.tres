@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_red_quench.png" id="ic_red_quench"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_red_quench")
 id = &"red_quench"
 display_name = "Red Quench"
 description = "A little of what you open comes back up the haft. Not enough to fight on. Enough to keep fighting."

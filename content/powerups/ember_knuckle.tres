@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_ember_knuckle.png" id="ic_ember_knuckle"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_ember_knuckle")
 id = &"ember_knuckle"
 display_name = "Ember Knuckle"
 description = "Your knuckles hold heat long after the swing. Nothing you would notice in a mirror — but the things you hit notice."

@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_fletchers_debt.png" id="ic_fletchers_debt"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_fletchers_debt")
 id = &"fletchers_debt"
 display_name = "Fletcher's Debt"
 description = "Arrows you were sure you had spent turn up back in the quiver. Someone, somewhere, is short exactly that many and has not worked out why."

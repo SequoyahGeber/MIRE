@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_loping_gait.png" id="ic_loping_gait"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_loping_gait")
 id = &"loping_gait"
 display_name = "Loping Gait"
 description = "Not a runner's stride. A long, ugly, ground-eating lope that you could hold to the far side of the map if nothing interrupted you."

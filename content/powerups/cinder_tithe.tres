@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_cinder_tithe.png" id="ic_cinder_tithe"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_cinder_tithe")
 id = &"cinder_tithe"
 display_name = "Cinder Tithe"
 description = "Whatever you burn, something downstream counts the ash and pays out. Nobody has explained the arrangement and nobody has refused it either."

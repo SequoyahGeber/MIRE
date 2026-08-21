@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_hollow_bargain.png" id="ic_hollow_bargain"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_hollow_bargain")
 id = &"hollow_bargain"
 display_name = "Hollow Bargain"
 description = "Chests open cheaper for you. Whatever is doing the discounting has not said what it is taking instead."

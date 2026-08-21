@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_fruiting_call.png" id="ic_fruiting_call"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_fruiting_call")
 id = &"fruiting_call"
 display_name = "Fruiting Call"
 description = "Something about you makes the good things surface. Chests come up richer and you have stopped calling it coincidence."

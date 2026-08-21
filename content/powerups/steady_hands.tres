@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_steady_hands.png" id="ic_steady_hands"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_steady_hands")
 id = &"steady_hands"
 display_name = "Steady Hands"
 description = "You get someone up faster because you have stopped shaking while you do it. Nothing in this one helps you. That is rather the point."

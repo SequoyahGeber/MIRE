@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_thin_step.png" id="ic_thin_step"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_thin_step")
 id = &"thin_step"
 display_name = "Thin Step"
 description = "The dodge takes you somewhere fractionally else, and you are untouchable for the whole of the trip rather than most of it."

@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_whetted_thirst.png" id="ic_whetted_thirst"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_whetted_thirst")
 id = &"whetted_thirst"
 display_name = "Whetted Thirst"
 description = "No thicker skin, no harder swing, nothing you could point to on a sheet. Only the wanting — and the wanting is what the deeper Blood pacts are counting."

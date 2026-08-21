@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_foremans_whistle.png" id="ic_foremans_whist"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_foremans_whist")
 id = &"foremans_whistle"
 display_name = "Foreman's Whistle"
 description = "One blast and the tree simply gives up. The quarry has stopped arguing entirely."

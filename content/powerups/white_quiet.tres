@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_white_quiet.png" id="ic_white_quiet"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_white_quiet")
 id = &"white_quiet"
 display_name = "White Quiet"
 description = "Nothing sharpens, nothing thickens, nothing hurries. Only the cold, held and not spent, waiting for the other two to arrive."

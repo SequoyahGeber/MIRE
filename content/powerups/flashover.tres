@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_flashover.png" id="ic_flashover"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_flashover")
 id = &"flashover"
 display_name = "Flashover"
 description = "A room does not burn gradually. It holds, and holds, and then every surface in it goes at once. You are the room."

@@ -1,0 +1,568 @@
+[
+  {
+    "icon": "icon_powerup_adrenal_bloom.png",
+    "id": "adrenal_bloom",
+    "polygons": 79,
+    "tags": [
+      "Blood",
+      "Kinetic"
+    ]
+  },
+  {
+    "icon": "icon_powerup_air_writ.png",
+    "id": "air_writ",
+    "polygons": 72,
+    "tags": [
+      "Kinetic"
+    ]
+  },
+  {
+    "icon": "icon_powerup_ashen_temper.png",
+    "id": "ashen_temper",
+    "polygons": 102,
+    "tags": [
+      "Fire"
+    ]
+  },
+  {
+    "icon": "icon_powerup_attunement_forager.png",
+    "id": "attunement_forager",
+    "polygons": 128,
+    "tags": []
+  },
+  {
+    "icon": "icon_powerup_attunement_reaver.png",
+    "id": "attunement_reaver",
+    "polygons": 122,
+    "tags": []
+  },
+  {
+    "icon": "icon_powerup_attunement_tinker.png",
+    "id": "attunement_tinker",
+    "polygons": 99,
+    "tags": []
+  },
+  {
+    "icon": "icon_powerup_attunement_warden.png",
+    "id": "attunement_warden",
+    "polygons": 57,
+    "tags": []
+  },
+  {
+    "icon": "icon_powerup_bellows_lung.png",
+    "id": "bellows_lung",
+    "polygons": 64,
+    "tags": [
+      "Kinetic"
+    ]
+  },
+  {
+    "icon": "icon_powerup_bottomless_quiver.png",
+    "id": "bottomless_quiver",
+    "polygons": 98,
+    "tags": []
+  },
+  {
+    "icon": "icon_powerup_cat_fall.png",
+    "id": "cat_fall",
+    "polygons": 119,
+    "tags": [
+      "Kinetic"
+    ]
+  },
+  {
+    "icon": "icon_powerup_cauter_seal.png",
+    "id": "cauter_seal",
+    "polygons": 113,
+    "tags": [
+      "Fire",
+      "Blood"
+    ]
+  },
+  {
+    "icon": "icon_powerup_cellar_cache.png",
+    "id": "cellar_cache",
+    "polygons": 110,
+    "tags": [
+      "Cold",
+      "Fungal"
+    ]
+  },
+  {
+    "icon": "icon_powerup_chill_edge.png",
+    "id": "chill_edge",
+    "polygons": 107,
+    "tags": [
+      "Cold"
+    ]
+  },
+  {
+    "icon": "icon_powerup_cinder_tithe.png",
+    "id": "cinder_tithe",
+    "polygons": 127,
+    "tags": [
+      "Fire",
+      "Void"
+    ]
+  },
+  {
+    "icon": "icon_powerup_coin_worm.png",
+    "id": "coin_worm",
+    "polygons": 118,
+    "tags": []
+  },
+  {
+    "icon": "icon_powerup_damp_stride.png",
+    "id": "damp_stride",
+    "polygons": 102,
+    "tags": [
+      "Fungal"
+    ]
+  },
+  {
+    "icon": "icon_powerup_deep_frost.png",
+    "id": "deep_frost",
+    "polygons": 86,
+    "tags": [
+      "Cold"
+    ]
+  },
+  {
+    "icon": "icon_powerup_deep_pocket.png",
+    "id": "deep_pocket",
+    "polygons": 63,
+    "tags": [
+      "Void"
+    ]
+  },
+  {
+    "icon": "icon_powerup_eggshell_warlord.png",
+    "id": "eggshell_warlord",
+    "polygons": 84,
+    "tags": []
+  },
+  {
+    "icon": "icon_powerup_ember_knuckle.png",
+    "id": "ember_knuckle",
+    "polygons": 116,
+    "tags": [
+      "Fire"
+    ]
+  },
+  {
+    "icon": "icon_powerup_empty_vessel.png",
+    "id": "empty_vessel",
+    "polygons": 62,
+    "tags": [
+      "Void"
+    ]
+  },
+  {
+    "icon": "icon_powerup_far_grasp.png",
+    "id": "far_grasp",
+    "polygons": 108,
+    "tags": [
+      "Void"
+    ]
+  },
+  {
+    "icon": "icon_powerup_flashover.png",
+    "id": "flashover",
+    "polygons": 118,
+    "tags": [
+      "Fire"
+    ]
+  },
+  {
+    "icon": "icon_powerup_fletchers_debt.png",
+    "id": "fletchers_debt",
+    "polygons": 53,
+    "tags": [
+      "Void"
+    ]
+  },
+  {
+    "icon": "icon_powerup_foremans_whistle.png",
+    "id": "foremans_whistle",
+    "polygons": 136,
+    "tags": []
+  },
+  {
+    "icon": "icon_powerup_forge_blood.png",
+    "id": "forge_blood",
+    "polygons": 95,
+    "tags": [
+      "Fire"
+    ]
+  },
+  {
+    "icon": "icon_powerup_fruiting_call.png",
+    "id": "fruiting_call",
+    "polygons": 75,
+    "tags": [
+      "Fungal"
+    ]
+  },
+  {
+    "icon": "icon_powerup_gaunt_frame.png",
+    "id": "gaunt_frame",
+    "polygons": 330,
+    "tags": [
+      "Void",
+      "Kinetic"
+    ]
+  },
+  {
+    "icon": "icon_powerup_grave_due.png",
+    "id": "grave_due",
+    "polygons": 113,
+    "tags": [
+      "Void",
+      "Blood"
+    ]
+  },
+  {
+    "icon": "icon_powerup_hollow_bargain.png",
+    "id": "hollow_bargain",
+    "polygons": 132,
+    "tags": [
+      "Void"
+    ]
+  },
+  {
+    "icon": "icon_powerup_iron_tongue.png",
+    "id": "iron_tongue",
+    "polygons": 58,
+    "tags": [
+      "Blood"
+    ]
+  },
+  {
+    "icon": "icon_powerup_long_bound.png",
+    "id": "long_bound",
+    "polygons": 116,
+    "tags": [
+      "Kinetic"
+    ]
+  },
+  {
+    "icon": "icon_powerup_loping_gait.png",
+    "id": "loping_gait",
+    "polygons": 44,
+    "tags": [
+      "Kinetic"
+    ]
+  },
+  {
+    "icon": "icon_powerup_moss_shroud.png",
+    "id": "moss_shroud",
+    "polygons": 88,
+    "tags": [
+      "Fungal",
+      "Void"
+    ]
+  },
+  {
+    "icon": "icon_powerup_night_pyre.png",
+    "id": "night_pyre",
+    "polygons": 136,
+    "tags": [
+      "Fire"
+    ]
+  },
+  {
+    "icon": "icon_powerup_numb_skin.png",
+    "id": "numb_skin",
+    "polygons": 82,
+    "tags": [
+      "Cold"
+    ]
+  },
+  {
+    "icon": "icon_powerup_open_flame.png",
+    "id": "open_flame",
+    "polygons": 87,
+    "tags": [
+      "Fire"
+    ]
+  },
+  {
+    "icon": "icon_powerup_pack_frame.png",
+    "id": "pack_frame",
+    "polygons": 89,
+    "tags": [
+      "Kinetic",
+      "Fungal"
+    ]
+  },
+  {
+    "icon": "icon_powerup_pact_cut.png",
+    "id": "pact_cut",
+    "polygons": 80,
+    "tags": [
+      "Blood"
+    ]
+  },
+  {
+    "icon": "icon_powerup_pale_guard.png",
+    "id": "pale_guard",
+    "polygons": 83,
+    "tags": [
+      "Cold"
+    ]
+  },
+  {
+    "icon": "icon_powerup_patient_draw.png",
+    "id": "patient_draw",
+    "polygons": 147,
+    "tags": [
+      "Cold"
+    ]
+  },
+  {
+    "icon": "icon_powerup_quiet_bloom.png",
+    "id": "quiet_bloom",
+    "polygons": 40,
+    "tags": [
+      "Fungal"
+    ]
+  },
+  {
+    "icon": "icon_powerup_red_quench.png",
+    "id": "red_quench",
+    "polygons": 66,
+    "tags": [
+      "Blood"
+    ]
+  },
+  {
+    "icon": "icon_powerup_rich_marrow.png",
+    "id": "rich_marrow",
+    "polygons": 111,
+    "tags": [
+      "Fungal",
+      "Blood"
+    ]
+  },
+  {
+    "icon": "icon_powerup_rime_shell.png",
+    "id": "rime_shell",
+    "polygons": 91,
+    "tags": [
+      "Cold"
+    ]
+  },
+  {
+    "icon": "icon_powerup_root_hold.png",
+    "id": "root_hold",
+    "polygons": 90,
+    "tags": [
+      "Fungal",
+      "Cold"
+    ]
+  },
+  {
+    "icon": "icon_powerup_rot_chew.png",
+    "id": "rot_chew",
+    "polygons": 53,
+    "tags": [
+      "Fungal"
+    ]
+  },
+  {
+    "icon": "icon_powerup_sanctum_frost.png",
+    "id": "sanctum_frost",
+    "polygons": 79,
+    "tags": [
+      "Cold"
+    ]
+  },
+  {
+    "icon": "icon_powerup_scab_feast.png",
+    "id": "scab_feast",
+    "polygons": 96,
+    "tags": [
+      "Blood",
+      "Fungal"
+    ]
+  },
+  {
+    "icon": "icon_powerup_sealed_veins.png",
+    "id": "sealed_veins",
+    "polygons": 148,
+    "tags": [
+      "Blood"
+    ]
+  },
+  {
+    "icon": "icon_powerup_second_glance.png",
+    "id": "second_glance",
+    "polygons": 64,
+    "tags": [
+      "Void"
+    ]
+  },
+  {
+    "icon": "icon_powerup_second_sunrise.png",
+    "id": "second_sunrise",
+    "polygons": 77,
+    "tags": []
+  },
+  {
+    "icon": "icon_powerup_second_wind.png",
+    "id": "second_wind",
+    "polygons": 127,
+    "tags": [
+      "Kinetic"
+    ]
+  },
+  {
+    "icon": "icon_powerup_seven_league_waders.png",
+    "id": "seven_league_waders",
+    "polygons": 64,
+    "tags": []
+  },
+  {
+    "icon": "icon_powerup_skip_step.png",
+    "id": "skip_step",
+    "polygons": 68,
+    "tags": [
+      "Kinetic",
+      "Void"
+    ]
+  },
+  {
+    "icon": "icon_powerup_slow_gut.png",
+    "id": "slow_gut",
+    "polygons": 150,
+    "tags": [
+      "Fungal"
+    ]
+  },
+  {
+    "icon": "icon_powerup_spent_spring.png",
+    "id": "spent_spring",
+    "polygons": 81,
+    "tags": [
+      "Kinetic"
+    ]
+  },
+  {
+    "icon": "icon_powerup_spore_sole.png",
+    "id": "spore_sole",
+    "polygons": 84,
+    "tags": [
+      "Fungal"
+    ]
+  },
+  {
+    "icon": "icon_powerup_steady_hands.png",
+    "id": "steady_hands",
+    "polygons": 88,
+    "tags": [
+      "Blood",
+      "Cold"
+    ]
+  },
+  {
+    "icon": "icon_powerup_still_breath.png",
+    "id": "still_breath",
+    "polygons": 97,
+    "tags": [
+      "Cold"
+    ]
+  },
+  {
+    "icon": "icon_powerup_stubborn_heart.png",
+    "id": "stubborn_heart",
+    "polygons": 71,
+    "tags": [
+      "Blood"
+    ]
+  },
+  {
+    "icon": "icon_powerup_swift_stride.png",
+    "id": "swift_stride",
+    "polygons": 50,
+    "tags": [
+      "Kinetic"
+    ]
+  },
+  {
+    "icon": "icon_powerup_the_landlord.png",
+    "id": "the_landlord",
+    "polygons": 100,
+    "tags": []
+  },
+  {
+    "icon": "icon_powerup_thick_hide.png",
+    "id": "thick_hide",
+    "polygons": 103,
+    "tags": [
+      "Blood"
+    ]
+  },
+  {
+    "icon": "icon_powerup_thin_step.png",
+    "id": "thin_step",
+    "polygons": 45,
+    "tags": [
+      "Void"
+    ]
+  },
+  {
+    "icon": "icon_powerup_tinder_snap.png",
+    "id": "tinder_snap",
+    "polygons": 110,
+    "tags": [
+      "Fire"
+    ]
+  },
+  {
+    "icon": "icon_powerup_unseen_seam.png",
+    "id": "unseen_seam",
+    "polygons": 60,
+    "tags": [
+      "Void"
+    ]
+  },
+  {
+    "icon": "icon_powerup_warm_marrow.png",
+    "id": "warm_marrow",
+    "polygons": 142,
+    "tags": [
+      "Fire",
+      "Cold"
+    ]
+  },
+  {
+    "icon": "icon_powerup_wellspring_heart.png",
+    "id": "wellspring_heart",
+    "polygons": 82,
+    "tags": []
+  },
+  {
+    "icon": "icon_powerup_whetted_thirst.png",
+    "id": "whetted_thirst",
+    "polygons": 54,
+    "tags": [
+      "Blood"
+    ]
+  },
+  {
+    "icon": "icon_powerup_white_quiet.png",
+    "id": "white_quiet",
+    "polygons": 89,
+    "tags": [
+      "Cold"
+    ]
+  },
+  {
+    "icon": "icon_powerup_wide_cap.png",
+    "id": "wide_cap",
+    "polygons": 70,
+    "tags": [
+      "Fungal"
+    ]
+  }
+]

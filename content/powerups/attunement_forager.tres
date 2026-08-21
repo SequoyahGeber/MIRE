@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_2uvx5"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_attunement_forager.png" id="ic_attunement_for"]
 
 [resource]
 script = ExtResource("1_2uvx5")
+icon = ExtResource("ic_attunement_for")
 id = &"attunement_forager"
 display_name = "Forager Attunement"
 description = "Better at: gather yield & speed, food, sees resources through terrain. Worse at: melee damage."

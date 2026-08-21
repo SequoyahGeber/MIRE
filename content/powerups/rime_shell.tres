@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_rime_shell.png" id="ic_rime_shell"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_rime_shell")
 id = &"rime_shell"
 display_name = "Rime Shell"
 description = "A thin hard skin of frost that reforms faster than anything out here can strip it. Sealed Veins does the same work through the blood; this is the patient version, and it does not cost you anything to keep."

@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_wellspring_heart.png" id="ic_wellspring_hea"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_wellspring_hea")
 id = &"wellspring_heart"
 display_name = "Wellspring Heart"
 description = "Still beating. Still warm. Absolutely nobody's business but yours where it came from."

@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_vdxhh"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_attunement_tinker.png" id="ic_attunement_tin"]
 
 [resource]
 script = ExtResource("1_vdxhh")
+icon = ExtResource("ic_attunement_tin")
 id = &"attunement_tinker"
 display_name = "Tinker Attunement"
 description = "Better at: craft cost, station tiers, can build Ward turrets. Worse at: health pool."

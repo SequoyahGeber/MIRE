@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_seven_league_waders.png" id="ic_seven_league_w"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_seven_league_w")
 id = &"seven_league_waders"
 display_name = "Seven-League Waders"
 description = "Thigh-high, mud-proof, and somehow always a bit ahead of you."

@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="PowerupDef" format=3]
 
 [ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_powerup_cauter_seal.png" id="ic_cauter_seal"]
 
 [resource]
 script = ExtResource("1_powerupdef")
+icon = ExtResource("ic_cauter_seal")
 id = &"cauter_seal"
 display_name = "Cauter Seal"
 description = "Kill something close enough and the heat comes back through the weapon to close what it opened in you. It is not gentle and it is not optional."
