@@ -1953,14 +1953,6 @@ Until 1 or 2 lands, the practical rule for every agent: after committing, run
 
 ---
 
-### F-361 · macOS release host lacks the Metal shader compiler
-
-**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by moss5523e3
-
-The Godot 4.7.1 macOS Release export succeeds with shader baking enabled, but reports `Metal shader baking limited to SPIR-V: Unable to determine toolchain properties to compile .metallib`; several Apple6/MSL 3.1 variants fall back to runtime compilation. This machine selects `/Library/Developer/CommandLineTools`; `xcodebuild -version`, `xcrun -f metal`, and `xcrun -f metallib` all confirm full Xcode/Metal tools are absent. Before final macOS release packaging, install the matching full Xcode toolchain, select it with xcode-select, rerun `tools/steam/export_release.sh`, and require the Metal-toolchain warning to disappear. This is a large machine-level install, not a project setting to guess or silently trigger.
-
----
-
 ### F-362 · The game-loop audit still boots Hollowmere, so nothing proves the loop on the world that ships
 
 **Area:** testing · **Severity:** medium · **Found:** 2026-08-21 by ivy1bcae0
@@ -2039,7 +2031,29 @@ end.
 
 ---
 
+### F-364 · Godot's macOS shader baker leaves ten MSL 3.1 variants for runtime compilation
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by moss5523e3
+
+After F-361 installed Xcode 27 beta 5 plus Metal Toolchain 27A5237l, a fresh macOS Release export produced 88 native Metal cache entries and no longer emitted `Metal shader baking limited to SPIR-V`. It still emits 10 warnings where FSR2, volumetric fog, and SceneForwardClustered variants require Apple6 / MSL 3.1 while Godot 4.7.1 targets Apple7 / MSL 3.0; those variants compile at runtime. This is no longer a missing-toolchain problem. Determine whether Godot 4.7.1 exposes a safe target-language setting or whether this is an engine limitation/upstream bug before changing the pinned engine; measure startup/first-use hitch impact rather than assuming these warnings explain sustained heat.
+
+---
+
 ## Resolved
+
+### F-361 · macOS release host lacks the Metal shader compiler — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by moss5523e3
+
+The Godot 4.7.1 macOS Release export succeeds with shader baking enabled, but reports `Metal shader baking limited to SPIR-V: Unable to determine toolchain properties to compile .metallib`; several Apple6/MSL 3.1 variants fall back to runtime compilation. This machine selects `/Library/Developer/CommandLineTools`; `xcodebuild -version`, `xcrun -f metal`, and `xcrun -f metallib` all confirm full Xcode/Metal tools are absent. Before final macOS release packaging, install the matching full Xcode toolchain, select it with xcode-select, rerun `tools/steam/export_release.sh`, and require the Metal-toolchain warning to disappear. This is a large machine-level install, not a project setting to guess or silently trigger.
+
+---
+
+**Resolved 2026-08-21 by moss5523e3.** Installed Apple Xcode 27.0 beta 5 (build 27A5237l), the version Apple supports on macOS 27, at `/Applications/Xcode-beta.app`. Installed its optional 838.9 MB Metal Toolchain 27A5237l and selected Xcode-beta system-wide through Xcode Settings > Locations; `xcode-select -p` now returns `/Applications/Xcode-beta.app/Contents/Developer`, `xcodebuild -version` returns Xcode 27.0 / 27A5237l, and both `xcrun -f metal` and `xcrun -f metallib` resolve into the mounted Metal toolchain. An independent Metal kernel compiled successfully to LLVM AIR and then a valid MetalLib executable.
+
+A fresh Godot 4.7.1 `macOS (Release)` export exited 0, passed `codesign --verify --deep --strict`, contains 88 native Metal cache entries instead of Vulkan-only shader caches, and no longer emits `Metal shader baking limited to SPIR-V` or `Unable to determine toolchain properties to compile .metallib`. The exported game boots and exits 0. Ten distinct MSL 3.1 target-mismatch fallbacks remain; they are no longer caused by the missing toolchain and are tracked separately.
+
+The incompatible App Store Xcode 26.6 bundle remains at `/Applications/Xcode.app` because it is root-owned and removal requires administrator authentication. It is harmless while Xcode 27 beta remains the selected developer directory.
 
 ### F-338 · The full 256 by 256 Mire simulation has no saturated late-run performance gate — **fixed**
 
