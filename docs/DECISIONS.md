@@ -6083,6 +6083,33 @@ composed lengths, landfall-at-boot, the bounded fade and hand-back, Cycle 1 vs C
 depth and its floor, and a run restart dropping a live cycle cue). `tools/audio_import_check.gd`
 knows the three lengths; `tools/ambient_music_check.gd` still passes unchanged.
 
+## D-187 — one look-at prompt owns every interaction prompt; the systems keep the input
+
+**F-431.** Two prompts existed in the shipped game and they were both proximity driven:
+`ui/building/door_prompt.gd` drew its own panel 168 px above the bottom edge, and `ui/loot/chest_ui.gd`
+drew a second one 152 px above it. Standing between a door and a chest drew both. Everything else a
+player is meant to act on — every tree, every ore vein, every crate — drew nothing, and there was no
+crosshair anywhere in the game to say what was under the aim point.
+
+The call: **`ui/hud/focus_prompt.gd` is the only thing that draws an interaction prompt.** Each
+system keeps what is genuinely its own — Chest owns the request, the in-flight state and the reward
+rows; BuildableDoor owns the toggle — and gives up the panel. A new interactable kind adds a
+`_describe_*()` case and a `Kind` enum entry; it does not add a CanvasLayer.
+
+Two consequences worth stating, because both are load-bearing:
+
+- **Prompts are aim-driven, not proximity-driven.** A chest two metres behind you no longer prompts.
+  That is the point: the prompt names the thing under the crosshair, so it can say "Needs an axe"
+  about *this* tree rather than about whatever is nearest.
+- **The prompt calls the host's own function.** `HarvestableDef.damage_from_tool()` decides both what
+  the panel says and what the swing does, so the prompt can never promise a hit the host refuses.
+
+Targeting is one ray (the same one `autoload/harvest_world.gd` casts) with an aim-cone fallback when
+it misses. The fallback is not a nicety: a live probe of `levels/procedural_island.tscn` found 208 of
+313 harvestables with no collider at all, because `HarvestLibrary.Represent.BATCH` keeps dense flora
+inside a chunk's MultiMesh. Ray-only targeting would have left two thirds of the harvestable world
+silent.
+
 ## D-186 — a leading underscore does not make a method private; the engine owns some of those names
 
 **F-421.** `ui/frontend/frontend.gd` had a helper called `_enter_world()`, meaning "leave the menu
@@ -6166,3 +6193,50 @@ the argument for the approach.
 
 Recorded alongside: `tools/audio/render_sfx.py` (the catalogue), `autoload/sfx_director.gd` (the only
 thing that plays any of it), `tools/sfx_check.gd` and `tools/sfx_runtime_probe.gd` (proof it fires).
+
+### D-189 · 2026-08-21 · Per-target combat feedback is three separate readouts, and only one of them is new UI on the crosshair
+
+F-433: Sequoyah asked for "healthbars for enemies and damage indicators ex -5hp, -3hp, same thing for
+all harvestable resources that take more than one action to harvest ... enemy healthbars should hover
+above their head, resources should have their progress bar just next to the players crosshair while
+harvesting." Three requirements, and they are deliberately NOT one system:
+
+1. **An enemy's health hovers over the enemy** (`ui/hud/target_health_hud.gd`). World-anchored,
+   because the thing you need to know is *which* of the four husks is nearly dead, and a readout in
+   the HUD plane cannot answer that.
+2. **A harvestable's progress sits under the crosshair** (`ui/hud/focus_prompt.gd`, F-431 — already
+   built, not duplicated here). World-anchored is wrong for a prop: you are standing a metre from a
+   trunk that fills the screen, and the bar belongs with the name and the tool hint that are already
+   there. A second panel drawing the same number at a second offset is precisely the defect F-431 was
+   filed to fix, so this task added nothing to the crosshair.
+3. **The number that just landed floats off the impact** (`ui/hud/damage_numbers.gd`), for both kinds
+   of target, because it answers a third question — is this weapon doing anything — that neither bar
+   answers.
+
+**Three supporting calls inside that.**
+
+*Not every enemy gets a bar.* Damaged, non-IDLE, or inside 12 m — any one is enough, within 38 m and
+unoccluded, capped at the twelve nearest. A generated island carries a lot of enemies and a screen of
+bars over distant idle husks hides the one that matters. The rules are all read off already-replicated
+fields (`Enemy.health`, `Enemy.state`), so a client applies them without asking the host anything.
+
+*Only your own damage numbers.* Both combat services broadcast every resolution to every peer, so
+drawing all of them was free — and wrong: six players' numbers over one husk is confetti, and the
+number you actually need is whether *your* swing is landing.
+
+*A zero is shown, not swallowed.* `Harvestable.host_apply_tool_damage()` already reports a pickaxe
+bouncing off a pine as a hit that connected for 0, on purpose. That comes through as a muted "0". The
+alternative — suppressing it — deletes the clearest possible "wrong tool" signal at exactly the moment
+the player is asking the question.
+
+**Why this is a decision.** It settles *where* a given fact about a target belongs on screen, which is
+the thing that gets re-litigated every time someone adds a readout. World-anchored for anything you
+must disambiguate between; crosshair-anchored for the single thing you are aimed at; ephemeral and
+in-world for the event that just happened.
+
+**Would change my mind:** playtest showing the selection rules withhold a bar someone wanted (the fix
+is a constant, not the design), or bars proving unreadable against dense foliage, which would argue
+for an outline or a backing plate rather than for moving them.
+
+**NETWORK AUTHORITY: none.** All three are ARCHITECTURE.md §2.2's "VFX, audio, camera, UI" row —
+client-local presentation over already-replicated state. No new RPC, no protocol bump.

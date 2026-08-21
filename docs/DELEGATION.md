@@ -75,10 +75,90 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
-### 2026-08-21 — F-411 resolved: Settings has a runtime God mode toggle; host-owned immunity, owner-controlled flight (flinta92725)
+### 2026-08-21 — F-433: enemies carry an overhead health bar and every landed hit prints its number (pike3c5846)
 
-`GodModeService` is the one extension seam for playtesting powers. The Settings menu's PLAYTESTING
-section calls `request_local_enabled()`, which submits the same HOST-scope/op-gated `god
+**D-189.** Two new client-local HUD autoloads, both registered and both proved headless. Neither
+touches the crosshair: the third half of Sequoyah's report — a progress bar next to the crosshair
+while harvesting — is F-431's `ui/hud/focus_prompt.gd`, which already draws it off
+`Harvestable.health` and hides it at full health. Duplicating it was the whole thing D-189 refused.
+
+```gdscript
+TargetHealthHud.tracked_bars() -> Array          # what is drawn right now; a check reads this, not pixels
+TargetHealthHud.refresh_now()                    # force one rebuild + projection, for checks
+
+DamageNumbers.show_damage(world_position: Vector3, damage: int) -> void
+DamageNumbers.active_indicators() -> Array       # same idea
+```
+
+`TargetHealthHud` (`ui/hud/target_health_hud.gd`, layer 3) polls the `enemies` group at 10 Hz,
+skipping anything in `bosses` (task 5.5's top-centre bar already reads those), and shows a bar when
+the enemy is damaged, is not IDLE, or is inside `ALWAYS_RANGE_M` — within `MAX_RANGE_M`, unoccluded
+by a world ray, capped at the `MAX_BARS` nearest. Projection runs per frame; the group scan, the
+rules and the rays do not (F-099). Head height is **measured off the model's own mesh AABB and cached
+per definition**, not taken from `EnemyDef.height_m`: that is a movement capsule and is routinely
+taller than what you can see, which parks the bar in empty sky.
+
+`DamageNumbers` (`ui/hud/damage_numbers.gd`, layer 3) binds `CombatService.attack_landed` and
+`RangedCombatService.shot_landed` — identical `(peer_id, position, damage, target_name)` shape, one
+handler — and draws only the LOCAL peer's hits. A hit that applied 0 prints a muted "0" rather than
+nothing, because `Harvestable.host_apply_tool_damage()` reports a wrong-tool bounce as exactly that
+and it is the clearest tool hint in the game.
+
+Anything that wants a world-anchored readout of its own should copy this file's shape rather than add
+a node per entity: one `Control` whose `_draw()` calls back into the HUD, one array of projected
+entries, and the scan on a timer with the projection per frame.
+
+Verification: `tools/target_feedback_check.gd` (`failures=0`) covers every selection rule, the
+nearest-first cap, the `blocks_gameplay_input` blackout, bar geometry (above the head, centred,
+narrower and fainter with distance, nothing behind the camera), and the number's text, colour,
+spread, fade, lifetime and local-peer filter — the last driven through the real signals.
+`tools/target_feedback_shot.gd` renders `/tmp/mire_target_bars.png` and `/tmp/mire_damage_numbers.png`
+for the half of this that only pixels can answer.
+
+### 2026-08-21 — F-431 resolved: one look-at prompt for the world, one hover card for the inventory (wickc3d79c)
+
+`FocusPrompt` is the only thing that draws an interaction prompt (D-187). It raycasts from the active
+camera at 15 Hz, falls back to an aim cone when the ray misses, and renders a crosshair plus a panel
+naming the target, the verb, a hint, and — for a chipped harvestable — a health bar.
+
+```gdscript
+FocusPrompt.describe(node: Node3D, kind: int = -1) -> Dictionary  # {title, action, hint, ratio, blocked, key}
+FocusPrompt.focus_kind() -> int          # FocusPrompt.Kind.{NONE,HARVESTABLE,HAULABLE,CHEST,DOOR}
+FocusPrompt.focus_node() -> Node3D
+FocusPrompt.focus_title() / focus_action() / focus_hint() -> String
+FocusPrompt.focus_ratio() -> float       # 0..1 remaining health, or -1 when there is none to show
+FocusPrompt.refresh_now() -> void        # re-target immediately instead of waiting out the poll
+FocusPrompt.try_carry_focus() -> bool    # [E] on a haulable: pick up, or put down what you carry
+```
+
+**`describe()` takes no camera and no viewport on purpose** — the wording is a pure function of the
+prop's own state, so a headless check can assert it. Add an interactable kind by adding a `Kind`
+entry and a `_describe_*()` case; do not add another CanvasLayer.
+
+Three things changed around it:
+
+- **`HarvestableDef.display_name`** is new, authored on all eleven `content/harvestables/*.tres`, with
+  a humanised-id fallback in `label()`. `tools/focus_prompt_check.gd` fails if a new definition ships
+  without one.
+- **Haulables became reachable.** `Haulable.request_pickup()` shipped with no caller anywhere in the
+  game — every crate was scenery. `FocusPrompt._input()` owns that verb now. Doors and chests keep
+  their own `_input()`, because duplicating it would send two requests per press.
+- **`ui/inventory/item_tooltip.gd`** replaces the two-line `tooltip_text` with a card that reads
+  `ItemDef`/`WeaponDef`/`RangedWeaponDef`: category and attack style, description, damage, reach,
+  swing time, tool class and power, hunger/hp restore, and held/capacity for a stack.
+
+Verification: `tools/focus_prompt_check.gd` (0 failures — wording, the wrong-tool branch against the
+host's own `damage_from_tool()`, and a card built for all 27 shipped items),
+`tools/focus_prompt_shot.gd --windowed` (three PNGs), plus a live probe of the procedural island that
+resolved a real prop end to end: `focus_kind=1 title="Fallen Log" action="Needs an axe"`.
+
+
+### 2026-08-21 — F-411/F-413 resolved: live Settings has runtime God mode; the duplicate legacy panel is retired (flinta92725)
+
+`GodModeService` is the one extension seam for playtesting powers. The single live tabbed screen,
+`ui/frontend/settings_screen.gd`, owns every Settings route (title, pause and the remaining legacy
+MainMenu's SETTINGS handoff); the obsolete `SettingsMenu` autoload/script was removed. Its
+PLAYTESTING tab calls `request_local_enabled()`, which submits the same HOST-scope/op-gated `god
 [on|off]` command the console exposes. There is no privileged UI-only path and the value is
 deliberately not persisted: every new process starts safe/off.
 
@@ -95,7 +175,8 @@ keeps collision and applies flight only on the owning movement authority: camera
 Jump up, Dodge down, Sprint x2. Future God-mode powers query this service rather than adding another
 cheat flag. The one new reliable RPC bumped protocol 21 -> 22 and the recorded manifest 55 -> 56.
 
-Verification: `tools/god_mode_check.gd` covers the Settings checkbox, op refusal, recovery, immunity,
+Verification: `tools/god_mode_check.gd` instantiates the live tabbed screen and covers its checkbox,
+op refusal, recovery, immunity,
 flight entry/exit and restored ordinary damage/gravity; `tools/god_mode_net_check.gd` proves a real
 client is refused before op, approved after op, immune on the host, and cleanly disabled. Both print
 `failures=0`.
