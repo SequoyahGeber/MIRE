@@ -6083,6 +6083,62 @@ composed lengths, landfall-at-boot, the bounded fade and hand-back, Cycle 1 vs C
 depth and its floor, and a run restart dropping a live cycle cue). `tools/audio_import_check.gd`
 knows the three lengths; `tools/ambient_music_check.gd` still passes unchanged.
 
+## D-190 — high ground is a flat top plus a ramp, and the two are sized independently
+
+**F-450.** Sequoyah: *"taller hills please the map is wayy too flat, i do like big flat areas but i
+also like higher areas, i dont like narrow hills that make the map always go up and down."*
+
+A dome cannot satisfy that at any amplitude. Its crown is a single point, so every metre of its
+footprint is sloping ground; making it taller only makes it steeper, and adding more of them turns
+the whole island into slope. What the sentence describes is an UPLAND — level ground at a raised
+elevation, reached over a bounded amount of slope.
+
+So a placed hill is now a flat top of radius `top_radius`, plus a ramp of `height * run` metres
+outside it. The top decides how much high level ground there is; the run decides how you get onto
+it; neither number constrains the other. The first cut made the top a FRACTION of the footprint and
+that coupling immediately bit — a big top meant a narrow ramp, so the most useful tablelands were
+ringed by 38-degree rims on every bearing.
+
+**The ramp blend is cubed toward the steep side, and that is a land-budget decision.** With a linear
+blend, half of every upland's perimeter carries a long gentle ramp; three to five uplands then spent
+so much of the island on their own flanks that level ground fell from 62% to 32% — the same "always
+going up and down" complaint arriving by a different road. There is only so much island, and a metre
+of it is either flat or it is a way up. Cubing concentrates the gentle ramp into the sector opposite
+the steep face, so an upland is a table with a defined edge and one walkable approach.
+
+**Height is derived from the top's radius, not drawn independently of it**, because independent
+draws make a quarter of all hills the tall-and-narrow combination — the exact landform he ruled out.
+
+**And "flat" is not the gate.** When the check gated on the strict `< 4 degrees` share he said *"it
+doesnt need to be perfectly flat"*. The gate is EASY GOING — 10 degrees or less — which is what the
+original sentence was about. Uplands cost sloping ground; the question is whether what is left is
+comfortable to walk, not whether it is a table.
+
+
+## D-191 — terrain height is upstream of the biome bands, the skirt, and every probe in the tools
+
+**F-450.** Tripling the island's relief (peak ~21 m to ~50 m) broke four things that had no obvious
+connection to the heightmap, and each was a constant authored against the terrain's old size:
+
+  · **`content/biomes/*.tres` height bands.** `highland` started at 6.9 m, which was the top of the
+    old plateau and is now the bottom of it; highland took 27-40% of the island and `forest` was
+    left a 1.4 m-wide window. Bands are elevations, and elevations are only meaningful relative to
+    how tall the terrain is.
+  · **`ChunkMesher.SKIRT_DEPTH`**, which was a fraction of `HEIGHT_SCALE`. That is the amplitude of
+    the continental NOISE alone — placed hills add their crown lift on top of it and are not in it,
+    so the relief tripled while the skirt stayed put and the LOD-seam margin fell from 3.4x to
+    1.38x. It is a fraction of `MAX_HEIGHT` now, which is the number that actually means "how tall
+    can this terrain be".
+  · **`tools/biome_terrain_check.gd`'s probe coordinates**, which are downstream of the bands.
+  · **`tools/terrain_map_render.gd`'s height shading**, which clipped at a hard-coded 8 m and so
+    rendered 45 m of relief as one flat white.
+
+**The rule: a constant in metres against the terrain is a constant against the terrain's SIZE.**
+When the heightmap's amplitude moves, grep for the numbers that were calibrated to it rather than
+waiting for the checks to find them — and prefer deriving from `MAX_HEIGHT` over restating a metre
+count, so the next pass does not have to.
+
+
 ## D-188 — an island's silhouette comes from its lobes' SHAPE, not from trim on their edges
 
 **F-447.** Sequoyah has asked three separate times for islands that are not round (2026-08-19 "the

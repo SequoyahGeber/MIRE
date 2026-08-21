@@ -2848,7 +2848,48 @@ timing, but the four above failed on every run of both revisions.
 
 ---
 
-### F-450 · The island is too flat, and its hills are domes when what it needs is broad flat-topped uplands
+### F-452 · render_census sees 388 surfaces in a world whose real frame is 4,908 draw calls — the structural instrument is blind to nearly all of the shipped cost
+
+**Area:** performance · **Severity:** high · **Found:** 2026-08-21 by wick5e2d04
+
+Measured 2026-08-21 on an M5 Pro, both instruments pointed at the shipped main scene
+(`res://levels/procedural_island.tscn`) via `tools/probe_scene.gd`:
+
+    tools/frame_cost_check.gd  (windowed, real renderer counters)
+      as shipped   4908 draws   967,605 primitives   726.1 MB VRAM   14.08 ms
+      preset high  4901         966,909              726.1           13.16
+      preset medium 4289        914,151              567.4           12.99
+      preset low   2208         476,260              378.3            8.47
+
+    tools/render_census.gd  (headless, walks the built tree)
+      opaque surfaces           388
+      MultiMeshInstance3D         0  holding 0 instances
+      distinct meshes           291
+      triangles                 218,778 opaque
+
+The census settled the streamer properly (289 chunks, 30 frames) and still reports a world
+one-twelfth the size of the one the renderer draws. So every structural conclusion drawn from
+the census — including F-352's LOD-gap argument and F-426's MultiMesh-per-colour count — is
+being drawn from a tree that is missing the props entirely. A census that reports zero
+MultiMeshInstance3D while F-426 documents six MultiMesh nodes per pine asset is not measuring
+the same world.
+
+The likely cause is that the headless run never builds the scatter/prop layer: the census sees
+289 chunk meshes plus ~99 other visual instances and nothing else, which is exactly "terrain
+arrived, props did not". Whether that is a rendering-device gate, a deferred build the settle
+does not wait for, or props being pushed straight to the RenderingServer rather than added as
+nodes, needs finding before any structural number from this tool is trustworthy again.
+
+Consequence for the standing performance goal (F-174): 14.08 ms at 4,908 draws is ~71 FPS on
+the fastest machine in the project. The low-end target is several times slower, so the shipped
+default does not currently meet 60 FPS anywhere near the hardware MIRE ships to, and the
+instrument that was supposed to explain why has been reporting an empty world.
+
+---
+
+## Resolved
+
+### F-450 · The island is too flat, and its hills are domes when what it needs is broad flat-topped uplands — **fixed**
 
 **Area:** world-gen · **Severity:** high · **Found:** 2026-08-21 by birchcf39ce
 
@@ -2870,7 +2911,66 @@ crown is a single point and every metre of its footprint is sloping.
 
 ---
 
-## Resolved
+**Resolved 2026-08-21 by birchcf39ce.** **The island has high ground now: broad, flat-topped uplands instead of domes.** All of it in
+`world/gen/island_heightmap.gd`, with the biome bands moved underneath it.
+
+**The structural change is the flat top.** A dome`s crown is a single point, so every metre of its
+footprint is sloping ground — which is what "i dont like narrow hills that make the map always go
+up and down" is about, and no amount of extra height or extra hills fixes it. A hill is now a flat
+top plus a ramp, and the two are sized independently:
+
+  · `HILL_TOP_RADIUS_MIN/MAX` (60-260 m) is the LEVEL AREA on top. Nothing else.
+  · `HILL_LEE_RUN_MIN/MAX` (3.0-6.5 m of run per metre of rise, i.e. 18-9 degrees) is the gentle
+    side`s gradient, and `HILL_SCARP_RUN_*` (1.0-8.0) the steep side`s. The ramp is `height * run`
+    of ground outside the top, so a taller upland gets a longer ramp and keeps its gradient.
+  · Height is derived from the top radius (0.12-0.26 m per metre, clamped 12-40 m), not drawn
+    independently of it, so a big upland is a high one and there are no tall narrow ones.
+
+Measured over five seeds: the island`s peak went from ~21 m to 30-51 m, and of the ground that is
+level at landform scale, **43% is now above 15 m against 0% before**. That second number is the
+ask — flat areas at more than one elevation — and it is the one a height increase alone cannot
+move, because raising a dome only makes its slopes steeper.
+
+**Two intermediate versions were wrong, and both were caught by measurement rather than by looking:**
+
+  1. **Flat top as a FRACTION of the footprint.** A big flat top then meant a narrow ramp, so the
+     tablelands with the most level ground were ringed by 38-degree rims on every bearing — a mesa
+     you cannot get onto, and the one-side-steeper variety collapsed because every side was steep.
+     15-21% of all land sat past 20 degrees. Sizing the top and the ramps independently fixed it.
+  2. **A linear ramp blend.** Half of every upland`s perimeter then carried a long gentle ramp, and
+     a ramp is sloping ground: level land fell from 62% of the island to 32%. There is only so much
+     island and a metre of it is either flat or a way up. The blend is CUBED toward the steep side
+     now, so the gentle ramp is spent in the sector opposite the steep face and the rest of the
+     perimeter is a defined edge — more level ground AND a more legible landform.
+
+**"it doesnt need to be perfectly flat"** — his correction mid-pass, after the check gated on the
+strict `< 4 degrees` share and I was tuning to hit it. `tools/hill_slope_check.gd` gates on EASY
+GOING (10 degrees or less) instead, which is what the sentence is actually about. Shipped island:
+33-45% strictly flat, 58-68% easy, 0.7-1.6% past the 46-degree walk limit.
+
+**Fallout, all of it downstream of "the terrain is three times as tall":**
+
+  · **The biome bands.** They were authored for a ~20 m island and highland started at 6.9 m, so
+     highland took 27-40% of land and forest was left a 1.4 m-wide window at 3-6% (which is F-446).
+     Moved: marsh 3.1-5.2, forest 5.2-20.0, birchwood 3.1-20.0, highland 20.0+. Shipped shares now
+     read grassland 20-27%, highland 18-29%, shore 12-17%, heath 11-15%, birchwood 10-13%, forest
+     9-12%, marsh 2.5-5.6% — every biome present, and forest roughly tripled.
+  · **`ChunkMesher.SKIRT_DEPTH`.** It was 1.70x `HEIGHT_SCALE`, which is the amplitude of the
+     continental NOISE only — placed hills add their lift on top of it and are not in it. So the
+     relief tripled and the skirt did not move: worst recorded seam divergence went 4.40 -> 13.51 m
+     against an 18.70 m skirt, a 1.38x margin where F-128 sized for 3.4x. It is 0.65x `MAX_HEIGHT`
+     now (33.2 m, 2.5x margin) and tracks the hills automatically. Scarps are the reason it needs
+     headroom: a LOD1 chord spans 2 m and a 45-degree face climbs 2 m across it.
+  · **`tools/biome_terrain_check.gd`.** Its per-biome probe coordinates are downstream of the
+     bands; the highland probe at 14 m now falls inside forest. Re-derived.
+  · **`tools/terrain_map_render.gd`.** Its height shading clipped at a hard-coded 8 m, so on 50 m
+     terrain every square metre above 8 m rendered the same white — the picture said "uniformly
+     high" about terrain with 45 m of relief in it. Scaled to `MAX_HEIGHT` now.
+
+Green: terrain_check, hill_slope_check, biome_terrain_check, biome_region_check, terrain_normal_check,
+terrain_accents_check, mire_scatter_check, poi_check, noise_reuse_check, check_determinism,
+blight_ground_check. `chunk_stream_check` reports four failures, all of them F-448 and all present
+before this work.
 
 ### F-451 · Ground cover reads 25% too dense — cut scatter coverage and undergrowth density — **fixed**
 

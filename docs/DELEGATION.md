@@ -75,6 +75,39 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-21 — F-450: the hills are flat-topped uplands, and the terrain is three times as tall (birchcf39ce)
+
+Reported from play: *"taller hills please the map is wayy too flat, i do like big flat areas but i
+also like higher areas, i dont like narrow hills that make the map always go up and down"* — and,
+mid-pass, *"it doesnt need to be perfectly flat"*.
+
+**The island's peak is now 30-50 m, up from ~21.** Anything holding a metre count against the old
+terrain is holding a number against a different island — see D-191 for the four that broke.
+`IslandHeightmap.MAX_HEIGHT` is the constant to derive from; it includes the uplands' crown lift,
+which `HEIGHT_SCALE` does not.
+
+**`IslandHeightmap.Hill` changed shape again.** A hill is a flat top plus a ramp:
+
+```gdscript
+hill.top_radius   # radius of the FLAT TOP — not the footprint
+hill.height       # crown lift, derived from top_radius
+hill.lee_run      # gentle side: metres of run per metre of rise
+hill.scarp_run    # steep side, same unit; never longer than lee_run
+hill.cliff_direction, hill.sharpness
+hill.footprint()  # top_radius + height * max(lee_run, scarp_run) — the whole landform
+```
+
+`hill.radius` and `hill.flat_fraction` are gone. Anything measuring an upland's extent wants
+`footprint()`; anything measuring its summit wants `top_radius`.
+
+**Biome bands moved** (`content/biomes/*.tres`): marsh 3.1-5.2, forest 5.2-20.0, birchwood
+3.1-20.0, highland 20.0+. Shore, grassland and heath are unchanged. If you author a biome or a
+scatter table against an elevation, these are the current numbers.
+
+**`ChunkMesher.SKIRT_DEPTH`** is `MAX_HEIGHT * 0.65` (33.2 m), no longer a fraction of
+`HEIGHT_SCALE`.
+
+
 ### 2026-08-21 — F-447: the island doubled, its lobes are ellipses, its hills are asymmetric (birchcf39ce)
 
 Reported from play: *"the island should be maybe twice as big and id like the shape to be a bit more
