@@ -9,57 +9,13 @@
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
 | **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | gale43d16e | 2026-08-21 17:13 | `docs/ASSET_TRACKER.md`, `tools/blender/build_gatherable_plants.py`, `assets/gatherables/catalog.json`, `tools/blender/build_pickup_kit.py`, `assets/pickups/catalog.json`, `content/items/apple.tres`, `content/harvestables/berry_bush.tres`, `content/harvestables/apple_tree.tres`, `content/harvestables/mushroom_patch.tres`, `tools/item_icons_check.gd` |
-| **F-454** The felt performance problem is chunk streaming, not rendering: traversal drops the 1% low from 81 fps to 13 fps, and no graphics preset touches it | wick5e2d04 | 2026-08-21 21:18 | `tools/traversal_profile.gd`, `world/gen/resource_scatter_field.gd`, `world/chunk/chunk_streamer.gd` |
-
-**F-454 notes:**
-- Localized, partly fixed, not solved. Three profile runs with tools/traversal_profile.gd (new),
-walking 7 m/s for 45 s on BENCH_SEED, M5 Pro fullscreen:
-
-  run                                    worst    hitches (>=25ms)    nodes/hitch frame
-  at HEAD                               217 ms    2.4% frames, 15.4% clock    215 (vs 0 quiet)
-  + LOD0 poll budgeted nearest-first    142 ms    2.5% frames, 16.0% clock    184
-  + asset groups budgeted by ms         150 ms    3.1% frames, 16.8% clock    100
-
-TWO REAL DEFECTS FOUND AND FIXED, neither of which was the dominant cost:
-
-1. `ResourceScatterField`'s LOD0 collision poll had NO per-frame cap — it dressed every chunk whose
-   collider had cooked, in one frame. Now budgeted nearest-first, with the chunk underfoot exempt.
-2. The visual band's budget counted CHUNKS, and a chunk is 200-500 nodes. Budget unit is now
-   milliseconds against the asset GROUP, the seam `_build_chunk()` already had.
-
-Together these removed the node-burst class of hitch entirely: the 353/453/542-node frames are gone
-and the worst frame fell 217 -> 150 ms. `tools/resource_scatter_check.gd` still passes all 19
-assertions (failures=0), so the deferral is behaviourally invisible.
-
-WHAT THEY DID NOT DO is move total hitch time — 15.4% -> 16.8% of the wall clock, which across three
-runs is inside variance. So the node churn was a real bound worth having and NOT the main cost.
-
-WHAT IS STILL UNATTRIBUTED, and it is most of it. The worst frames now look like this:
-
-  frame ms    process    physics   streamer   nodes    navQ    grpQ
-    104.35       8.83       1.25       0.23       5       0      80
-    103.58       9.05       1.14       0.30       5       0      77
-    102.63       8.93       1.24       0.29       5       0      91
-
-A ~104 ms frame with 9 ms of `_process`, 1 ms of `_physics_process`, 0.3 ms of streamer cost and
-FIVE nodes added. Roughly 90 ms per hitch frame is accounted for by none of the four counters this
-tool has. The aggregate line reads "75.6% in _process" only because two outlier frames (62 and
-76 ms of process) dominate the sum; the typical hitch frame is not those.
-
-So the remaining suspects are things a scene-tree instrument cannot see: GPU/driver stalls, resource
-or texture uploads on the main thread, MultiMesh buffer commits, `queue_free` of large subtrees, or
-shader compilation. Resolving it needs a real frame profiler (Godot's own visual profiler, or a
-Metal capture), not another counter bolted onto this tool.
-
-SEPARATELY: `ChunkStreamer` overruns its own FRAME_BUDGET_MS badly under motion — 39, 43, 45, 48,
-53, 55 ms observed against a 4 ms budget. That is roughly 10x and it is its own defect, distinct
-from this one. It accounts for ~21% of hitch time.
+| **F-458** The benchmark seed is arbitrary, its day/night split is 7:2, and nothing flies over the island | quill895277 | 2026-08-21 21:43 | `tools/bench_seed_survey.gd`, `core/bench/benchmark_suite.gd`, `core/bench/benchmark_runner.gd`, `core/bench/settings_advisor.gd`, `tools/benchmark_check.gd`, `ui/frontend/benchmark_screen.gd` |
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `████████░░` 386/458 | 72 |
+| Findings | `████████░░` 387/462 | 75 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -164,8 +120,11 @@ from this one. It accounts for ~21% of hitch time.
 | ⬜ | **F-444** The ordinary ground mist still hangs off one world Y, and on a streamed island that Y is the waterline — it pools in the sea, not in the valleys | todo |
 | ⬜ | **F-446** Deep Forest is 3.5% of the island's dry land, so the richest scatter tables in the game are almost never seen | todo |
 | ⬜ | **F-448** chunk_stream_check's union-of-interest assertions fail at HEAD: neither anchor gets a LOD0 collider or a live Harvestable | todo |
-| 🔵 | **F-454** The felt performance problem is chunk streaming, not rendering: traversal drops the 1% low from 81 fps to 13 fps, and no graphics preset touches it | in_flight |
+| ⬜ | **F-455** Benchmark machine probe reads power and thermal state on macOS only | todo |
+| ⬜ | **F-456** ChunkStreamer overruns its own 4 ms FRAME_BUDGET_MS by 10x under motion — 39 to 55 ms frames observed | todo |
+| ⬜ | **F-457** Traversal hitches to a 17 fps 1% low on the fastest machine in the project | todo |
+| 🔵 | **F-458** The benchmark seed is arbitrary, its day/night split is 7:2, and nothing flies over the island | in_flight |
 
 ## Done
 
-`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.1` `3.3` `3.4` `3.5` `3.6` `3.8` `3.9` `3.10` `3.13` `3.14` `3.15` `3.16` `3.17` `4.1` `4.2` `4.3` `4.4` `4.5` `4.6` `4.7` `4.8` `4.9` `4.11` `4.14` `4.15` `4.16` `4.18` `4.19` `5.1` `5.2` `5.3` `5.5` `5.9` `6.1` `6.2` `6.3` `6.4` `6.5` `6.6` `6.7` `6.8` `6.9` `6.10` `7.5` `7.6` `7.7` `7.8` `8.3` `8.4` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `3.1-review` `3.13-review` `3.14-review` `3.15-review` `3.16-review` `3.17-review` `3.3-review` `3.5-review` `3.6-review` `3.8b` `4.0a` `4.0b` `4.1-review` `4.11-review` `4.13-review` `4.16-review` `4.2-review` `4.3-review` `4.4-review` `4.6-review` `4.7-review` `4.8-review` `4.9-review` `5.1-review` `5.3-review` `5.5-review` `5.9-review` `6.1-review` `6.10-review` `6.2-review` `6.4-review` `6.5-review` `6.6-review` `6.7-review` `6.9-review` `7.6-review` `F-243-review` `F-244-review` `F-245-review` `F-246-review` `F-255-review` `F-258-review` `F-259-review` `F-261-review` `F-268-review` `F-271-review` `F-274-review` `F-275-review` `F-001` `F-002` `F-003` `F-004` `F-005` `F-006` `F-007` `F-008` `F-009` `F-010` `F-011` `F-012` `F-013` `F-014` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-030` `F-031` `F-032` `F-033` `F-034` `F-035` `F-036` `F-037` `F-038` `F-039` `F-040` `F-041` `F-042` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-053` `F-054` `F-055` `F-056` `F-057` `F-058` `F-059` `F-060` `F-061` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-073` `F-074` `F-075` `F-076` `F-077` `F-078` `F-079` `F-080` `F-081` `F-082` `F-083` `F-084` `F-085` `F-086` `F-087` `F-088` `F-089` `F-090` `F-091` `F-092` `F-093` `F-094` `F-095` `F-096` `F-097` `F-098` `F-099` `F-100` `F-101` `F-102` `F-103` `F-104` `F-105` `F-106` `F-107` `F-108` `F-109` `F-110` `F-111` `F-112` `F-113` `F-114` `F-115` `F-116` `F-117` `F-118` `F-119` `F-120` `F-121` `F-122` `F-123` `F-124` `F-125` `F-126` `F-127` `F-128` `F-129` `F-130` `F-131` `F-132` `F-133` `F-134` `F-135` `F-136` `F-137` `F-138` `F-139` `F-140` `F-141` `F-142` `F-143` `F-144` `F-145` `F-146` `F-147` `F-148` `F-149` `F-150` `F-151` `F-152` `F-154` `F-155` `F-156` `F-157` `F-158` `F-159` `F-160` `F-161` `F-162` `F-163` `F-164` `F-165` `F-166` `F-167` `F-168` `F-169` `F-170` `F-171` `F-172` `F-173` `F-175` `F-176` `F-177` `F-178` `F-179` `F-180` `F-181` `F-182` `F-183` `F-184` `F-185` `F-186` `F-187` `F-188` `F-189` `F-190` `F-191` `F-192` `F-193` `F-194` `F-195` `F-196` `F-197` `F-198` `F-199` `F-200` `F-201` `F-202` `F-203` `F-204` `F-205` `F-206` `F-207` `F-208` `F-209` `F-210` `F-211` `F-212` `F-213` `F-214` `F-215` `F-216` `F-217` `F-218` `F-219` `F-220` `F-222` `F-223` `F-224` `F-225` `F-226` `F-227` `F-228` `F-229` `F-230` `F-231` `F-232` `F-233` `F-234` `F-235` `F-237` `F-238` `F-239` `F-240` `F-241` `F-242` `F-243` `F-244` `F-245` `F-246` `F-247` `F-248` `F-250` `F-251` `F-252` `F-253` `F-254` `F-255` `F-256` `F-257` `F-258` `F-259` `F-260` `F-261` `F-262` `F-263` `F-266` `F-268` `F-269` `F-270` `F-271` `F-273` `F-274` `F-275` `F-276` `F-277` `F-278` `F-279` `F-280` `F-281` `F-282` `F-283` `F-284` `F-286` `F-287` `F-288` `F-290` `F-297` `F-298` `F-299` `F-301` `F-307` `F-313` `F-314` `F-315` `F-318` `F-324` `F-326` `F-327` `F-328` `F-329` `F-330` `F-331` `F-332` `F-333` `F-334` `F-335` `F-336` `F-337` `F-338` `F-339` `F-340` `F-341` `F-342` `F-343` `F-345` `F-346` `F-347` `F-348` `F-349` `F-351` `F-353` `F-355` `F-356` `F-357` `F-361` `F-365` `F-366` `F-367` `F-368` `F-369` `F-370` `F-372` `F-373` `F-374` `F-375` `F-376` `F-377` `F-378` `F-379` `F-380` `F-381` `F-382` `F-383` `F-384` `F-385` `F-386` `F-387` `F-390` `F-391` `F-392` `F-395` `F-396` `F-397` `F-398` `F-399` `F-400` `F-401` `F-402` `F-404` `F-405` `F-408` `F-409` `F-410` `F-411` `F-413` `F-414` `F-415` `F-416` `F-418` `F-419` `F-421` `F-430` `F-431` `F-432` `F-433` `F-434` `F-435` `F-442` `F-443` `F-445` `F-447` `F-449` `F-450` `F-451` `F-452` `F-453`
+`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.1` `3.3` `3.4` `3.5` `3.6` `3.8` `3.9` `3.10` `3.13` `3.14` `3.15` `3.16` `3.17` `4.1` `4.2` `4.3` `4.4` `4.5` `4.6` `4.7` `4.8` `4.9` `4.11` `4.14` `4.15` `4.16` `4.18` `4.19` `5.1` `5.2` `5.3` `5.5` `5.9` `6.1` `6.2` `6.3` `6.4` `6.5` `6.6` `6.7` `6.8` `6.9` `6.10` `7.5` `7.6` `7.7` `7.8` `8.3` `8.4` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `3.1-review` `3.13-review` `3.14-review` `3.15-review` `3.16-review` `3.17-review` `3.3-review` `3.5-review` `3.6-review` `3.8b` `4.0a` `4.0b` `4.1-review` `4.11-review` `4.13-review` `4.16-review` `4.2-review` `4.3-review` `4.4-review` `4.6-review` `4.7-review` `4.8-review` `4.9-review` `5.1-review` `5.3-review` `5.5-review` `5.9-review` `6.1-review` `6.10-review` `6.2-review` `6.4-review` `6.5-review` `6.6-review` `6.7-review` `6.9-review` `7.6-review` `F-243-review` `F-244-review` `F-245-review` `F-246-review` `F-255-review` `F-258-review` `F-259-review` `F-261-review` `F-268-review` `F-271-review` `F-274-review` `F-275-review` `F-001` `F-002` `F-003` `F-004` `F-005` `F-006` `F-007` `F-008` `F-009` `F-010` `F-011` `F-012` `F-013` `F-014` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-030` `F-031` `F-032` `F-033` `F-034` `F-035` `F-036` `F-037` `F-038` `F-039` `F-040` `F-041` `F-042` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-053` `F-054` `F-055` `F-056` `F-057` `F-058` `F-059` `F-060` `F-061` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-073` `F-074` `F-075` `F-076` `F-077` `F-078` `F-079` `F-080` `F-081` `F-082` `F-083` `F-084` `F-085` `F-086` `F-087` `F-088` `F-089` `F-090` `F-091` `F-092` `F-093` `F-094` `F-095` `F-096` `F-097` `F-098` `F-099` `F-100` `F-101` `F-102` `F-103` `F-104` `F-105` `F-106` `F-107` `F-108` `F-109` `F-110` `F-111` `F-112` `F-113` `F-114` `F-115` `F-116` `F-117` `F-118` `F-119` `F-120` `F-121` `F-122` `F-123` `F-124` `F-125` `F-126` `F-127` `F-128` `F-129` `F-130` `F-131` `F-132` `F-133` `F-134` `F-135` `F-136` `F-137` `F-138` `F-139` `F-140` `F-141` `F-142` `F-143` `F-144` `F-145` `F-146` `F-147` `F-148` `F-149` `F-150` `F-151` `F-152` `F-154` `F-155` `F-156` `F-157` `F-158` `F-159` `F-160` `F-161` `F-162` `F-163` `F-164` `F-165` `F-166` `F-167` `F-168` `F-169` `F-170` `F-171` `F-172` `F-173` `F-175` `F-176` `F-177` `F-178` `F-179` `F-180` `F-181` `F-182` `F-183` `F-184` `F-185` `F-186` `F-187` `F-188` `F-189` `F-190` `F-191` `F-192` `F-193` `F-194` `F-195` `F-196` `F-197` `F-198` `F-199` `F-200` `F-201` `F-202` `F-203` `F-204` `F-205` `F-206` `F-207` `F-208` `F-209` `F-210` `F-211` `F-212` `F-213` `F-214` `F-215` `F-216` `F-217` `F-218` `F-219` `F-220` `F-222` `F-223` `F-224` `F-225` `F-226` `F-227` `F-228` `F-229` `F-230` `F-231` `F-232` `F-233` `F-234` `F-235` `F-237` `F-238` `F-239` `F-240` `F-241` `F-242` `F-243` `F-244` `F-245` `F-246` `F-247` `F-248` `F-250` `F-251` `F-252` `F-253` `F-254` `F-255` `F-256` `F-257` `F-258` `F-259` `F-260` `F-261` `F-262` `F-263` `F-266` `F-268` `F-269` `F-270` `F-271` `F-273` `F-274` `F-275` `F-276` `F-277` `F-278` `F-279` `F-280` `F-281` `F-282` `F-283` `F-284` `F-286` `F-287` `F-288` `F-290` `F-297` `F-298` `F-299` `F-301` `F-307` `F-313` `F-314` `F-315` `F-318` `F-324` `F-326` `F-327` `F-328` `F-329` `F-330` `F-331` `F-332` `F-333` `F-334` `F-335` `F-336` `F-337` `F-338` `F-339` `F-340` `F-341` `F-342` `F-343` `F-345` `F-346` `F-347` `F-348` `F-349` `F-351` `F-353` `F-355` `F-356` `F-357` `F-361` `F-365` `F-366` `F-367` `F-368` `F-369` `F-370` `F-372` `F-373` `F-374` `F-375` `F-376` `F-377` `F-378` `F-379` `F-380` `F-381` `F-382` `F-383` `F-384` `F-385` `F-386` `F-387` `F-390` `F-391` `F-392` `F-395` `F-396` `F-397` `F-398` `F-399` `F-400` `F-401` `F-402` `F-404` `F-405` `F-408` `F-409` `F-410` `F-411` `F-413` `F-414` `F-415` `F-416` `F-418` `F-419` `F-421` `F-430` `F-431` `F-432` `F-433` `F-434` `F-435` `F-442` `F-443` `F-445` `F-447` `F-449` `F-450` `F-451` `F-452` `F-453` `F-454`

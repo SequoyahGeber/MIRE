@@ -36,11 +36,41 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "core/bench/benchmark_runner.gd": {
+      "agent": "quill895277",
+      "at": "2026-08-21T21:47:19+00:00",
+      "task": "F-458",
+      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
+    },
+    "core/bench/benchmark_suite.gd": {
+      "agent": "quill895277",
+      "at": "2026-08-21T21:46:32+00:00",
+      "task": "F-458",
+      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
+    },
+    "core/bench/settings_advisor.gd": {
+      "agent": "quill895277",
+      "at": "2026-08-21T21:47:19+00:00",
+      "task": "F-458",
+      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
+    },
     "docs/ASSET_TRACKER.md": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:13:34+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "tools/bench_seed_survey.gd": {
+      "agent": "quill895277",
+      "at": "2026-08-21T21:43:21+00:00",
+      "task": "F-458",
+      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
+    },
+    "tools/benchmark_check.gd": {
+      "agent": "quill895277",
+      "at": "2026-08-21T21:47:19+00:00",
+      "task": "F-458",
+      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "tools/blender/build_gatherable_plants.py": {
       "agent": "gale43d16e",
@@ -60,23 +90,11 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "tools/traversal_profile.gd": {
-      "agent": "wick5e2d04",
-      "at": "2026-08-21T21:19:23+00:00",
-      "task": "F-454",
-      "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
-    },
-    "world/chunk/chunk_streamer.gd": {
-      "agent": "wick5e2d04",
-      "at": "2026-08-21T21:21:59+00:00",
-      "task": "F-454",
-      "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
-    },
-    "world/gen/resource_scatter_field.gd": {
-      "agent": "wick5e2d04",
-      "at": "2026-08-21T21:21:59+00:00",
-      "task": "F-454",
-      "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
+    "ui/frontend/benchmark_screen.gd": {
+      "agent": "quill895277",
+      "at": "2026-08-21T21:47:19+00:00",
+      "task": "F-458",
+      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     }
   },
   "in_flight": {
@@ -98,22 +116,19 @@
       "started": "2026-08-21T17:13:34+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "F-454": {
-      "agent": "wick5e2d04",
+    "F-458": {
+      "agent": "quill895277",
       "files": [
-        "tools/traversal_profile.gd",
-        "world/gen/resource_scatter_field.gd",
-        "world/chunk/chunk_streamer.gd"
+        "tools/bench_seed_survey.gd",
+        "core/bench/benchmark_suite.gd",
+        "core/bench/benchmark_runner.gd",
+        "core/bench/settings_advisor.gd",
+        "tools/benchmark_check.gd",
+        "ui/frontend/benchmark_screen.gd"
       ],
-      "notes": [
-        {
-          "at": "2026-08-21T21:32:36+00:00",
-          "by": "wick5e2d04",
-          "text": "Localized, partly fixed, not solved. Three profile runs with tools/traversal_profile.gd (new),\nwalking 7 m/s for 45 s on BENCH_SEED, M5 Pro fullscreen:\n\n  run                                    worst    hitches (>=25ms)    nodes/hitch frame\n  at HEAD                               217 ms    2.4% frames, 15.4% clock    215 (vs 0 quiet)\n  + LOD0 poll budgeted nearest-first    142 ms    2.5% frames, 16.0% clock    184\n  + asset groups budgeted by ms         150 ms    3.1% frames, 16.8% clock    100\n\nTWO REAL DEFECTS FOUND AND FIXED, neither of which was the dominant cost:\n\n1. `ResourceScatterField`'s LOD0 collision poll had NO per-frame cap \u2014 it dressed every chunk whose\n   collider had cooked, in one frame. Now budgeted nearest-first, with the chunk underfoot exempt.\n2. The visual band's budget counted CHUNKS, and a chunk is 200-500 nodes. Budget unit is now\n   milliseconds against the asset GROUP, the seam `_build_chunk()` already had.\n\nTogether these removed the node-burst class of hitch entirely: the 353/453/542-node frames are gone\nand the worst frame fell 217 -> 150 ms. `tools/resource_scatter_check.gd` still passes all 19\nassertions (failures=0), so the deferral is behaviourally invisible.\n\nWHAT THEY DID NOT DO is move total hitch time \u2014 15.4% -> 16.8% of the wall clock, which across three\nruns is inside variance. So the node churn was a real bound worth having and NOT the main cost.\n\nWHAT IS STILL UNATTRIBUTED, and it is most of it. The worst frames now look like this:\n\n  frame ms    process    physics   streamer   nodes    navQ    grpQ\n    104.35       8.83       1.25       0.23       5       0      80\n    103.58       9.05       1.14       0.30       5       0      77\n    102.63       8.93       1.24       0.29       5       0      91\n\nA ~104 ms frame with 9 ms of `_process`, 1 ms of `_physics_process`, 0.3 ms of streamer cost and\nFIVE nodes added. Roughly 90 ms per hitch frame is accounted for by none of the four counters this\ntool has. The aggregate line reads \"75.6% in _process\" only because two outlier frames (62 and\n76 ms of process) dominate the sum; the typical hitch frame is not those.\n\nSo the remaining suspects are things a scene-tree instrument cannot see: GPU/driver stalls, resource\nor texture uploads on the main thread, MultiMesh buffer commits, `queue_free` of large subtrees, or\nshader compilation. Resolving it needs a real frame profiler (Godot's own visual profiler, or a\nMetal capture), not another counter bolted onto this tool.\n\nSEPARATELY: `ChunkStreamer` overruns its own FRAME_BUDGET_MS badly under motion \u2014 39, 43, 45, 48,\n53, 55 ms observed against a 4 ms budget. That is roughly 10x and it is its own defect, distinct\nfrom this one. It accounts for ~21% of hitch time."
-        }
-      ],
-      "started": "2026-08-21T21:18:52+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
+      "notes": [],
+      "started": "2026-08-21T21:43:21+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     }
   },
   "recent": {
@@ -2890,11 +2905,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:34f19dd1-60f4-4279-b7ba-e40ce133b27f"
     },
     "tools/chunk_stream_check.gd": {
-      "agent": "birchcf39ce",
-      "at": "2026-08-21T20:14:02+00:00",
-      "hash": "6c0c7fef90212ea3d7cbe07e982342aea3a300805c650d7ba73fbaceba21d269",
-      "task": "F-450",
-      "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
+      "agent": "wick5e2d04",
+      "at": "2026-08-21T21:52:49+00:00",
+      "hash": "229bd5b57c880eff0fea3352309df96a165d963f898fa63667137b4c5690fab3",
+      "task": "F-454",
+      "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
     },
     "tools/client_stream_budget_check.gd": {
       "agent": "ivy1bcae0",
@@ -3323,6 +3338,13 @@
       "task": "F-335",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
+    "tools/traversal_profile.gd": {
+      "agent": "wick5e2d04",
+      "at": "2026-08-21T21:52:49+00:00",
+      "hash": "07d593f53c10285507fd86798b825eb6a1f529d2a071cf4abe6fed50490a76b9",
+      "task": "F-454",
+      "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
+    },
     "tools/tree_collider_check.gd": {
       "agent": "kiln384569",
       "at": "2026-08-21T17:50:16+00:00",
@@ -3527,11 +3549,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
     },
     "world/chunk/chunk_streamer.gd": {
-      "agent": "hollow80855f",
-      "at": "2026-08-21T18:29:30+00:00",
-      "hash": "6b2a6430fb1881667b6a8f1d26fef028d674dac93449f25779283e95d866dbd3",
-      "task": "F-435",
-      "token": "CLAUDE_CODE_SESSION_ID:0e245ac7-67ca-4077-a49b-e1b4d92abe80"
+      "agent": "wick5e2d04",
+      "at": "2026-08-21T21:52:49+00:00",
+      "hash": "ffbe981dc1c4f996fb9b088d558f0538d4ecdd8131d058ecfd9808b2f49af60c",
+      "task": "F-454",
+      "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
     },
     "world/chunk/nav_baker.gd": {
       "agent": "ivy1bcae0",
@@ -3625,11 +3647,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     },
     "world/gen/resource_scatter_field.gd": {
-      "agent": "kiln384569",
-      "at": "2026-08-21T17:50:16+00:00",
-      "hash": "f2f5c104ea74d6e26b1d4633f03d10190a2a4397ad732f50c06a2ce3a560e240",
-      "task": "F-434",
-      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
+      "agent": "wick5e2d04",
+      "at": "2026-08-21T21:52:49+00:00",
+      "hash": "755855ec391d2ac1da1810aca9b601c6eb165d372af7ec26ea997a6ad5f065bf",
+      "task": "F-454",
+      "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
     },
     "world/gen/scatter_def.gd": {
       "agent": "kilnf96279",
@@ -3660,7 +3682,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     }
   },
-  "rev": 866,
+  "rev": 873,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9020,11 +9042,41 @@
       "title": "No in-game benchmark: a player cannot measure their own machine"
     },
     "F-454": {
+      "done_at": "2026-08-21T21:52:49+00:00",
+      "done_by": "wick5e2d04",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "The felt performance problem is chunk streaming, not rendering: traversal drops the 1% low from 81 fps to 13 fps, and no graphics preset touches it"
+    },
+    "F-455": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Benchmark machine probe reads power and thermal state on macOS only"
+    },
+    "F-456": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "ChunkStreamer overruns its own 4 ms FRAME_BUDGET_MS by 10x under motion \u2014 39 to 55 ms frames observed"
+    },
+    "F-457": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Traversal hitches to a 17 fps 1% low on the fastest machine in the project"
+    },
+    "F-458": {
       "est": "\u2014",
       "milestone": "Findings",
       "status": "in_flight",
       "tier": "F",
-      "title": "The felt performance problem is chunk streaming, not rendering: traversal drops the 1% low from 81 fps to 13 fps, and no graphics preset touches it"
+      "title": "The benchmark seed is arbitrary, its day/night split is 7:2, and nothing flies over the island"
     }
   },
   "version": 1

@@ -149,6 +149,47 @@ const SCATTER_VISUAL_MAX_LOD: int = 1
 ## player wait for them to appear is the one case where the budget would cost more than it saves.
 const SCATTER_VISUAL_BUILDS_PER_FRAME: int = 2
 
+## F-454. The collision ring used to have NO per-frame cap at all: the poll loop below walked every
+## coord in `_pending_lod0` and fully dressed each one whose collider had cooked, in a single frame.
+## That is fine standing still, where chunks become collision-ready one at a time. Under motion it
+## is the traversal hitch — `tools/traversal_profile.gd`, walking at 7 m/s on an M5 Pro:
+##
+##     5,254 frames over 45 s | median 7.23 ms | worst 217.25 ms
+##     frames >= 25 ms: 126 — 2.4% of the frames, 15.4% of the wall clock
+##     nodes added: 215 per hitch frame vs 0 per quiet frame
+##
+## Perfectly bimodal: the slow frames are exactly the frames that add nodes, and the worst of them
+## added 1,488. The streamer's own reported cost accounted for only 20% of that time — it was
+## inside its budget while this file spent the frame.
+##
+## The exemption above was right about ONE chunk and wrong about the ring. Making the player wait
+## for the ground under their feet to be dressed would indeed cost more than it saves; making them
+## wait a frame or two for a chunk five metres to the left does not, and a 217 ms stall is not a
+## trade anyone chose. So the poll is now budgeted nearest-first: the chunk the anchor is standing
+## in is still built the instant its collider exists, and everything else queues behind this
+## allowance.
+##
+## 1, not 2 like the visual band: a collision-ring chunk carries harvest proxies and colliders as
+## well as visuals, so one of these is several times the work of one of those.
+const SCATTER_LOD0_BUILDS_PER_FRAME: int = 1
+
+## F-454, second pass. Budgeting by CHUNK turned out to be budgeting the wrong unit. A chunk is not
+## a quantum of work: `_build_chunk()` groups its placements by asset and dresses every group
+## synchronously, and one chunk is 200-500 nodes. So "2 visual chunks per frame" was a licence to
+## add 542 nodes in one frame, and re-profiling after the LOD0 cap showed exactly that — the worst
+## frame fell 217 ms -> 142 ms and the hitch RATE did not move at all (15.4% -> 16.0% of the wall
+## clock), because the frames were never bounded by chunk count in the first place.
+##
+## The budget unit is now milliseconds, and the work item is the ASSET GROUP — the natural seam
+## `_build_chunk()` already had. A chunk's groups queue up and drain across as many frames as they
+## need; the chunk the anchor stands in still builds whole, immediately, because that is the one
+## case where waiting is worse than the stall.
+##
+## 2.0 ms out of the 16.667 ms frame, sitting alongside `ChunkStreamer.FRAME_BUDGET_MS`'s 4 ms
+## (D-074). The deadline is checked BETWEEN groups, so a single pathological group can still
+## overrun it — the cap on that is the size of one asset group, not this number.
+const SCATTER_BUILD_BUDGET_MS: float = 2.0
+
 ## F-407: how many GLB warm-up requests may be in flight, and how many completed ones may be turned
 ## into cached mesh parts, per frame.
 ##
@@ -200,6 +241,10 @@ var _mesh_cache: Dictionary[String, Array] = {}
 ## times per chunk.
 var _collider_cache: Dictionary[String, Dictionary] = {}
 var _poll_accum: float = 0.0
+## F-454. Asset groups waiting to be dressed, oldest first: `{coord, kit, asset, placements,
+## with_proxies}`. Drained against [constant SCATTER_BUILD_BUDGET_MS] every frame. A chunk's holder
+## exists as soon as the chunk is built; only its contents arrive over the following frames.
+var _group_queue: Array[Dictionary] = []
 ## F-369: coord -> whether the chunk was built WITH harvest proxies. A chunk can be built twice over
 ## its life — visual-only when it reaches LOD1, then rebuilt with proxies when collision cooks — and
 ## this is what keeps those transitions from stacking or from silently skipping the upgrade.
@@ -291,6 +336,7 @@ func _process(delta: float) -> void:
 	if _streamer == null:
 		return
 	_pump_asset_warm()
+	_drain_group_queue()
 	_drain_visual_queue()
 	if _pending_lod0.is_empty():
 		return
@@ -298,15 +344,68 @@ func _process(delta: float) -> void:
 	if _poll_accum < COLLISION_POLL_INTERVAL_SEC:
 		return
 	_poll_accum = 0.0
+	_drain_lod0_pending()
+
+
+## Dresses the collision-ring chunks whose colliders have cooked, nearest to the anchor first, up
+## to [constant SCATTER_LOD0_BUILDS_PER_FRAME] per poll — plus the chunk the anchor is standing in,
+## which is exempt from the allowance and always built the moment it is ready. See that constant
+## for the measurement this budget exists to fix (F-454).
+func _drain_lod0_pending() -> void:
+	var ready: Array[Vector2i] = []
 	for coord: Vector2i in _pending_lod0.keys():
-		if not bool(_streamer.chunk_has_collision(coord)):
-			continue
+		if bool(_streamer.chunk_has_collision(coord)):
+			ready.append(coord)
+	if ready.is_empty():
+		return
+
+	# Nearest-first, in chunk-grid space, against whichever anchor is closest. A Chebyshev distance
+	# rather than Euclidean, to match how `ChunkStreamer` itself defines its rings.
+	var anchor_chunks: Array[Vector2i] = _anchor_chunks()
+	ready.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+		return _chunk_distance(a, anchor_chunks) < _chunk_distance(b, anchor_chunks))
+
+	var built: int = 0
+	for coord: Vector2i in ready:
+		var underfoot: bool = _chunk_distance(coord, anchor_chunks) == 0
+		if not underfoot and built >= SCATTER_LOD0_BUILDS_PER_FRAME:
+			break
 		_pending_lod0.erase(coord)
 		# F-369: the chunk may already carry visual-only scatter from its LOD1 pass. Replace it
 		# rather than adding a second copy on top.
 		if _chunk_holders.has(coord):
 			_teardown_chunk(coord)
-		_build_chunk(coord, true)
+		# Underfoot builds whole and now; everything else queues its groups (F-454).
+		_build_chunk(coord, true, underfoot)
+		if not underfoot:
+			built += 1
+
+
+## The chunk coordinates the world is streaming around. Empty when the streamer has no anchors yet,
+## in which case `_chunk_distance()` answers a constant and the sort degenerates to arbitrary order
+## — which is correct: with nothing to be near, no pending chunk is nearer than another.
+func _anchor_chunks() -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	if _streamer == null or not _streamer.has_method(&"anchors"):
+		return result
+	for anchor: Vector3 in _streamer.call(&"anchors") as Array:
+		result.append(_streamer.call(&"chunk_of", anchor) as Vector2i)
+	return result
+
+
+## True when [param coord] is the chunk an anchor is standing in — the one case where a partly
+## dressed chunk is worse than a stalled frame, so it skips every budget.
+func _is_underfoot(coord: Vector2i) -> bool:
+	return _chunk_distance(coord, _anchor_chunks()) == 0
+
+
+## Chebyshev distance in chunks to the nearest anchor; a large constant when there are no anchors.
+func _chunk_distance(coord: Vector2i, anchor_chunks: Array[Vector2i]) -> int:
+	var best: int = 1 << 30
+	for anchor_chunk: Vector2i in anchor_chunks:
+		best = mini(best, maxi(
+			absi(coord.x - anchor_chunk.x), absi(coord.y - anchor_chunk.y)))
+	return best
 
 
 func _on_chunk_mesh_ready(coord: Vector2i, lod: int) -> void:
@@ -330,13 +429,16 @@ func _on_chunk_mesh_ready(coord: Vector2i, lod: int) -> void:
 			_pending_lod0.erase(coord)
 			if _chunk_holders.has(coord):
 				_teardown_chunk(coord)
-			_build_chunk(coord, true)
+			# Immediate only for the chunk actually underfoot. This fires for every chunk
+			# entering the collision ring, and under motion that is several per second —
+			# dressing each one whole, in the frame it arrives, is most of F-454's hitch.
+			_build_chunk(coord, true, _is_underfoot(coord))
 			return
 		# Otherwise dress it now and poll for collision (see the class doc) — a visible chunk with
 		# nothing on it is worse than one whose props are briefly not yet hittable.
 		_pending_lod0[coord] = true
 		if not _chunk_holders.has(coord):
-			_build_chunk(coord, false)
+			_build_chunk(coord, false, _is_underfoot(coord))
 		return
 
 	# F-369: in the visual band. Dress it, without proxies. A chunk arriving here WITH proxies has
@@ -423,7 +525,13 @@ func visual_queue_count() -> int:
 	return _visual_queue.size()
 
 
-func _build_chunk(coord: Vector2i, with_proxies: bool) -> void:
+## Builds a chunk's holder and either dresses it now or queues its asset groups to be dressed
+## across the following frames (F-454).
+##
+## `immediate` is for the two cases where a partly-dressed chunk is worse than a stalled frame: the
+## chunk the anchor is standing in, and the synchronous world prime behind a loading screen. Every
+## other caller queues — see [constant SCATTER_BUILD_BUDGET_MS].
+func _build_chunk(coord: Vector2i, with_proxies: bool, immediate: bool = false) -> void:
 	var placements: Array[Dictionary] = ResourceScatterLib.placements_for_chunk(
 		coord.x, coord.y, world_seed, scatter_defs, biome_defs
 	)
@@ -440,7 +548,43 @@ func _build_chunk(coord: Vector2i, with_proxies: bool) -> void:
 
 	for key: String in by_asset:
 		var parts := key.split("|")
-		_build_asset_group(holder, parts[0], parts[1], by_asset[key] as Array, with_proxies)
+		if immediate:
+			_build_asset_group(holder, parts[0], parts[1], by_asset[key] as Array, with_proxies)
+		else:
+			_group_queue.append({
+				"coord": coord,
+				"kit": parts[0],
+				"asset": parts[1],
+				"placements": by_asset[key],
+				"with_proxies": with_proxies,
+			})
+
+
+## Dresses queued asset groups until the frame's allowance is spent. Groups whose chunk has since
+## been torn down or rebuilt are dropped without consuming the budget — a stale entry is not work,
+## so it should not displace work (the same rule `_drain_visual_queue()` follows for coords).
+func _drain_group_queue() -> void:
+	if _group_queue.is_empty():
+		return
+	var deadline_usec: int = Time.get_ticks_usec() + int(SCATTER_BUILD_BUDGET_MS * 1000.0)
+	while not _group_queue.is_empty():
+		var item: Dictionary = _group_queue[0]
+		var holder: Node3D = _chunk_holders.get(item["coord"] as Vector2i)
+		if holder == null or bool(item["with_proxies"]) \
+				!= bool(_chunk_has_proxies.get(item["coord"] as Vector2i, false)):
+			_group_queue.pop_front()
+			continue
+		if Time.get_ticks_usec() >= deadline_usec:
+			return
+		_group_queue.pop_front()
+		_build_asset_group(holder, String(item["kit"]), String(item["asset"]),
+			item["placements"] as Array, bool(item["with_proxies"]))
+
+
+## How many asset groups are still waiting to be dressed. Zero means every resident chunk is fully
+## dressed — the condition `tools/chunk_stream_check.gd` and the renderer instruments settle on.
+func pending_group_count() -> int:
+	return _group_queue.size()
 
 
 func _build_asset_group(
@@ -630,6 +774,12 @@ func _teardown_chunk(coord: Vector2i) -> void:
 	# permanent for that coord. Caught by resource_scatter_check's "the same point rebuilds a live
 	# Harvestable again".
 	_chunk_has_proxies.erase(coord)
+	# F-454: anything still queued for this coord is now work on a holder that is about to be
+	# freed. `_drain_group_queue()` would drop it on its own, but leaving it in the queue lets a
+	# chunk that unloads and reloads accumulate dead entries ahead of live ones.
+	for index: int in range(_group_queue.size() - 1, -1, -1):
+		if (_group_queue[index]["coord"] as Vector2i) == coord:
+			_group_queue.remove_at(index)
 	var holder: Node3D = _chunk_holders.get(coord)
 	if holder == null:
 		return

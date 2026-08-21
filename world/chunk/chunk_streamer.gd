@@ -308,6 +308,21 @@ func chunk_has_collision(coord: Vector2i) -> bool:
 	return _loaded.has(coord) and _loaded[coord].has_collision
 
 
+## Where the world is currently streaming around. Public so a consumer that also does per-chunk
+## work can PRIORITISE it the way this node already prioritises its own — `ResourceScatterField`
+## budgets its LOD0 dressing nearest-first, and without this it would have to guess (F-454).
+## Returns a copy: `_anchors` is replaced wholesale every physics frame and a caller holding the
+## live array would be reading a value that changes underneath it.
+func anchors() -> Array[Vector3]:
+	return _anchors.duplicate()
+
+
+## The chunk coordinate a world position falls in. Already the streamer's own definition of the
+## grid; exposed so nothing else has to restate `floor(pos / CHUNK_SIZE)` and drift from it.
+func chunk_of(pos: Vector3) -> Vector2i:
+	return _chunk_of(pos)
+
+
 func loaded_chunk_count() -> int:
 	return _loaded.size()
 

@@ -8542,3 +8542,93 @@ Notes along the way:
 Files: `core/bench/frame_sampler.gd`, `core/bench/benchmark_suite.gd`, `core/bench/settings_advisor.gd`, `core/bench/benchmark_report.gd`, `core/bench/benchmark_runner.gd`, `ui/frontend/benchmark_screen.gd`, `ui/frontend/graphics_settings_page.gd`, `ui/frontend/settings_screen.gd`, `tools/benchmark_check.gd`, `core/bench/machine_probe.gd`
 
 Commit at time of writing: `cbbd2bb`
+
+---
+
+### DONE · F-454 · wick5e2d04 · 2026-08-21T21:52:49+00:00
+
+**The felt performance problem is chunk streaming, not rendering: traversal drops the 1% low from 81 fps to 13 fps, and no graphics preset touches it**
+
+Localized and partly fixed. The asset-group budget takes chunk_stream_check's worst traversal frame from 1049 ms to 22 ms (isolated by experiment; the LOD0 chunk cap alone does almost nothing). resource_scatter_check passes 19/19. Costs a 5th failure in chunk_stream_check, which already fails 4 at HEAD (F-448) — either budget alone trips it, so it is timing sensitivity in an already-red scenario. Remaining ~90 ms per hitch frame is invisible to every scene-tree counter and needs a real frame profiler. Filed F-456 for the streamer's 10x budget overrun. Next: move node construction off the main thread.
+
+Notes along the way:
+- Localized, partly fixed, not solved. Three profile runs with tools/traversal_profile.gd (new),
+walking 7 m/s for 45 s on BENCH_SEED, M5 Pro fullscreen:
+
+  run                                    worst    hitches (>=25ms)    nodes/hitch frame
+  at HEAD                               217 ms    2.4% frames, 15.4% clock    215 (vs 0 quiet)
+  + LOD0 poll budgeted nearest-first    142 ms    2.5% frames, 16.0% clock    184
+  + asset groups budgeted by ms         150 ms    3.1% frames, 16.8% clock    100
+
+TWO REAL DEFECTS FOUND AND FIXED, neither of which was the dominant cost:
+
+1. `ResourceScatterField`'s LOD0 collision poll had NO per-frame cap — it dressed every chunk whose
+   collider had cooked, in one frame. Now budgeted nearest-first, with the chunk underfoot exempt.
+2. The visual band's budget counted CHUNKS, and a chunk is 200-500 nodes. Budget unit is now
+   milliseconds against the asset GROUP, the seam `_build_chunk()` already had.
+
+Together these removed the node-burst class of hitch entirely: the 353/453/542-node frames are gone
+and the worst frame fell 217 -> 150 ms. `tools/resource_scatter_check.gd` still passes all 19
+assertions (failures=0), so the deferral is behaviourally invisible.
+
+WHAT THEY DID NOT DO is move total hitch time — 15.4% -> 16.8% of the wall clock, which across three
+runs is inside variance. So the node churn was a real bound worth having and NOT the main cost.
+
+WHAT IS STILL UNATTRIBUTED, and it is most of it. The worst frames now look like this:
+
+  frame ms    process    physics   streamer   nodes    navQ    grpQ
+    104.35       8.83       1.25       0.23       5       0      80
+    103.58       9.05       1.14       0.30       5       0      77
+    102.63       8.93       1.24       0.29       5       0      91
+
+A ~104 ms frame with 9 ms of `_process`, 1 ms of `_physics_process`, 0.3 ms of streamer cost and
+FIVE nodes added. Roughly 90 ms per hitch frame is accounted for by none of the four counters this
+tool has. The aggregate line reads "75.6% in _process" only because two outlier frames (62 and
+76 ms of process) dominate the sum; the typical hitch frame is not those.
+
+So the remaining suspects are things a scene-tree instrument cannot see: GPU/driver stalls, resource
+or texture uploads on the main thread, MultiMesh buffer commits, `queue_free` of large subtrees, or
+shader compilation. Resolving it needs a real frame profiler (Godot's own visual profiler, or a
+Metal capture), not another counter bolted onto this tool.
+
+SEPARATELY: `ChunkStreamer` overruns its own FRAME_BUDGET_MS badly under motion — 39, 43, 45, 48,
+53, 55 ms observed against a 4 ms budget. That is roughly 10x and it is its own defect, distinct
+from this one. It accounts for ~21% of hitch time.
+- RESULT, isolated by experiment — the group budget is worth 47x on the worst frame.
+
+`tools/chunk_stream_check.gd` walks 500 m and reports its own frame stats, which is a better
+traversal than traversal_profile's 190 m spiral. Four runs, one variable at a time:
+
+  configuration                                worst frame   hitches
+  HEAD                                          1049.17 ms      45
+  LOD0 chunk cap only (groups immediate)        1041.39 ms      50
+  group budget only (LOD0 cap off)                30.41 ms      40
+  both (shipped)                                  22.07 ms      29
+
+So the LOD0 chunk cap does almost nothing on its own and the ASSET GROUP budget is the whole win:
+a 1,049 ms worst frame becomes 22 ms. That is the number traversal_profile could not see, because
+its short spiral never crosses enough unstreamed ground to produce the pathological frame.
+
+COST, stated plainly: this adds a 5th failure to `chunk_stream_check`, which already fails 4 at
+HEAD (F-448 — neither anchor's chunk reaches LOD0 with a collider). The new one is "both far-apart
+chunks are among the ones that materialized scatter". Isolation shows EITHER budget alone trips it,
+so it is timing sensitivity in an already-red scenario rather than a fault in one mechanism. The
+check's fixed 0.4 s sleep was replaced with a real settle on all three of the field's queues
+(`pending_count`, `visual_queue_count`, `pending_group_count`) and that did not recover it, so
+something else in that scenario is order-dependent. Worth resolving with F-448 rather than
+separately — the four assertions around it describe the same broken union-of-interest path.
+
+`tools/resource_scatter_check.gd` passes all 19 assertions (failures=0), so ordinary single-anchor
+scatter behaviour is unaffected.
+
+NEXT, and it is Sequoyah's suggestion: move node CONSTRUCTION off the main thread. Mesh generation,
+scatter asset loading and nav baking are already threaded; what is left on the main thread is
+collider cooking (PhysicsServer/Jolt, synchronous by engine constraint), `add_child`, and rendering
+server commits. But `_build_asset_group()` currently constructs its Node3D/MultiMeshInstance3D
+objects AND parents them in the same main-thread call, and only the parenting has to be there.
+Constructing on a WorkerThreadPool task and handing finished, unparented nodes back for a budgeted
+`add_child` is the natural next step, and it attacks the part budgeting can only spread out.
+
+Files: `tools/traversal_profile.gd`, `world/gen/resource_scatter_field.gd`, `world/chunk/chunk_streamer.gd`, `tools/chunk_stream_check.gd`
+
+Commit at time of writing: `e00eee1`

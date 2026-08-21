@@ -39,6 +39,11 @@ const BiomeDefsLib := preload("res://tools/biome_defs_lib.gd")
 ## margin the game never actually gets.
 var biome_defs: Array = []
 
+## Frames to allow the scatter field to drain its budgeted queues before giving up on it.
+## Generous: two far-apart anchors put two whole LOD0 rings of work in the queue at once, and the
+## per-poll cap is deliberately one chunk.
+const SCATTER_SETTLE_MAX_FRAMES: int = 1800
+
 const BENCH_SEED: int = 20260818
 ## The worst LOD-boundary divergence found when F-128 was fixed, and where it was found — swept
 ## over the whole island across four seeds. Kept as an explicit spot-check so the recorded number
@@ -419,6 +424,40 @@ func _max_neighbour_tier_gap(streamer: ChunkStreamer, anchor: Vector3) -> int:
 	return gap
 
 
+## Waits (bounded) for `ResourceScatterField` to finish dressing everything it has queued.
+##
+## This used to be a fixed `COLLISION_POLL_INTERVAL_SEC * 4.0` sleep, which was a guess about how
+## long the field takes and was only ever right by accident. F-454 gave the field two budgets — a
+## per-poll cap on collision-ring chunks and a millisecond allowance for asset groups — so a wall of
+## queued work now drains over as many frames as it needs, and a fixed sleep asserts against a
+## half-dressed world. Same mistake, same shape, as the fixed warmups F-452 removed from the
+## renderer instruments: wait for the CONDITION, not for a duration someone timed once.
+func _settle_scatter(field: Node) -> void:
+	var frames: int = 0
+	while frames < SCATTER_SETTLE_MAX_FRAMES:
+		if _scatter_idle(field):
+			# One more poll interval: a chunk whose collider cooks on the very next tick has not
+			# been queued yet, so an empty queue this instant is necessary and not sufficient.
+			await _wait_real_seconds(ResourceScatterFieldScript.COLLISION_POLL_INTERVAL_SEC * 2.0)
+			if _scatter_idle(field):
+				return
+		await process_frame
+		frames += 1
+	push_warning("scatter did not settle in %d frames — %d LOD0, %d visual, %d group(s) queued"
+		% [SCATTER_SETTLE_MAX_FRAMES, int(field.call(&"pending_count")),
+			int(field.call(&"visual_queue_count")), int(field.call(&"pending_group_count"))])
+
+
+## All three of the field's queues empty. The visual band matters as much as the collision ring
+## here: a chunk outside LOD0 is dressed through `_visual_queue`, and that queue was ALREADY
+## budgeted before F-454 — so a settle that watched only the collision ring was incomplete even
+## before the group queue existed.
+func _scatter_idle(field: Node) -> bool:
+	return int(field.call(&"pending_count")) == 0 \
+		and int(field.call(&"visual_queue_count")) == 0 \
+		and int(field.call(&"pending_group_count")) == 0
+
+
 func _wait_real_seconds(seconds: float) -> void:
 	var deadline_msec: int = Time.get_ticks_msec() + int(seconds * 1000.0)
 	while Time.get_ticks_msec() < deadline_msec:
@@ -677,7 +716,7 @@ func _check_union_of_interest() -> void:
 
 	# Every chunk in EITHER anchor's LOD0 ring gets scatter, not just the two exact target chunks —
 	# `chunk_count()` alone can't tell them apart, so the holders below are checked by name.
-	await _wait_real_seconds(ResourceScatterFieldScript.COLLISION_POLL_INTERVAL_SEC * 4.0)
+	await _settle_scatter(field)
 	_check("both far-apart chunks are among the ones that materialized scatter (%d chunks total)" % field.chunk_count(),
 		field.get_node_or_null(NodePath("Chunk_%d_%d" % [chunk_a.x, chunk_a.y])) != null
 			and field.get_node_or_null(NodePath("Chunk_%d_%d" % [chunk_b.x, chunk_b.y])) != null)
