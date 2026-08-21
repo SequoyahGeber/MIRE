@@ -714,11 +714,18 @@ func _check_live() -> void:
 	for note: String in report.get("state_notes", []):
 		if note.contains("was not in front"):
 			focus_flagged = true
-	_expect(unfocused == 0 or focus_flagged,
-		"a run measured while the window was not in front says so, and says what it does and "
-		+ "does not prove (%d unfocused frame(s))" % unfocused)
-	_expect(unfocused > 0 or not focus_flagged,
-		"and a run that WAS in front carries no such warning")
+	# F-475: fullscreen runs are never focused when launched from a terminal, and warning about it
+	# stamped "may be invalid" across the most valid run of the day. The note is for windowed runs,
+	# where unfocused genuinely suggests something may be covering the window.
+	var fullscreen: bool = bool(report.get("fullscreen", false))
+	_expect(not fullscreen or not focus_flagged,
+		"a fullscreen run does not warn about focus — it owns its Space, and a terminal-launched "
+		+ "one is never focused (%d unfocused frame(s))" % unfocused)
+	_expect(fullscreen or unfocused == 0 or focus_flagged,
+		"a WINDOWED run that lost focus does say so, and says what it does and does not prove")
+	_expect(not String(report.get("viewport", "")).begins_with("1280x8") or not fullscreen,
+		"a fullscreen run reports the window size, not the 2D content-scale size (%s)"
+		% String(report.get("viewport", "?")))
 	print("  focus: %d unfocused frame(s)%s" % [unfocused, " — FLAGGED" if focus_flagged else ""])
 
 	_expect(_saw_vsync == DisplayServer.VSYNC_DISABLED,

@@ -8817,3 +8817,15 @@ Fullscreen now genuinely applies: set at the top of _run() via DisplayServer.win
 Files: `tools/benchmark_check.gd`
 
 Commit at time of writing: `35c15a8`
+
+---
+
+### DONE · F-475 · quill895277 · 2026-08-21T23:36:06+00:00
+
+**The benchmark reports the 2D content-scale size as its resolution, and cries wolf about focus on a good fullscreen run**
+
+Report the window size and stop warning about focus on fullscreen runs.
+
+Files: `core/bench/benchmark_runner.gd`, `tools/benchmark_check.gd`
+
+Commit at time of writing: `bec24c6`

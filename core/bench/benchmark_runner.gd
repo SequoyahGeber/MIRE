@@ -317,8 +317,17 @@ func run(world: Node3D, target_fps: int = SettingsAdvisor.DEFAULT_TARGET_FPS,
 		# what was already wrong when the player pressed RUN, plus what went wrong during the run.
 		"state_notes": _state_notes(power_before, MachineProbe.drift(power_before, power_after))
 			+ _focus_notes(results) + _refresh_cap_notes(results),
-		"viewport": "%dx%d" % [_viewport.get_visible_rect().size.x,
+		# The WINDOW size, which is what anything was rendered at. Not
+		# `get_visible_rect().size` — with `stretch/mode="canvas_items"` and `aspect="expand"`
+		# (both set in project.godot) that returns the 2D content-scale size, so a genuinely
+		# fullscreen 3024x1898 run reported "1280x803" and read as a small-window measurement.
+		# Under canvas_items the 3D renders at full window resolution, so only the label was wrong
+		# — but a label that wrong invalidates the run in the reader's mind (F-475).
+		"viewport": "%dx%d" % [DisplayServer.window_get_size().x,
+			DisplayServer.window_get_size().y],
+		"content_scale": "%dx%d" % [_viewport.get_visible_rect().size.x,
 			_viewport.get_visible_rect().size.y],
+		"fullscreen": _is_fullscreen(),
 		"settings": settings_state,
 		"settings_summary": _settings_summary(settings_state),
 		"target_fps": target_fps,
@@ -1155,6 +1164,13 @@ func _settings_summary(state: Dictionary) -> String:
 ## which is the lesson F-045 already paid for in this repo. It says exactly what it observed and
 ## what would follow IF the window was covered, and leaves the reader to know which happened.
 func _focus_notes(results: Array) -> PackedStringArray:
+	# Only meaningful for a WINDOWED window. A fullscreen window owns its Space and is either the
+	# displayed one or not; being unfocused says nothing about it, and a benchmark launched from a
+	# terminal is never focused because the terminal keeps focus and the grab is refused (F-470).
+	# Warning anyway put a "these may be invalid" stamp on the most valid run of the day (F-475).
+	# The raw count stays in every scene row for anyone who wants it.
+	if _is_fullscreen():
+		return PackedStringArray()
 	var unfocused: int = 0
 	var scenes_affected: int = 0
 	var total: int = 0
@@ -1174,6 +1190,12 @@ func _focus_notes(results: Array) -> PackedStringArray:
 		+ "stopped drawing it, and every frame rate here describes the window manager rather than "
 		+ "this machine. The draw-call and memory figures are unaffected either way.",
 	])
+
+
+func _is_fullscreen() -> bool:
+	var mode: int = DisplayServer.window_get_mode()
+	return mode == DisplayServer.WINDOW_MODE_FULLSCREEN \
+		or mode == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
 
 
 ## Warns when the measured frame rates cluster on the display's refresh rate, which means something

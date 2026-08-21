@@ -2787,9 +2787,9 @@
     },
     "core/bench/benchmark_runner.gd": {
       "agent": "quill895277",
-      "at": "2026-08-21T23:07:46+00:00",
-      "hash": "4d7671cc45ca277415faf0dba5c97dfecddb26df4ac96bc0345a1303f5f7c170",
-      "task": "F-470",
+      "at": "2026-08-21T23:36:06+00:00",
+      "hash": "2cee1c90778e8ab923ed3954fd91a5ac2cb4beaac7cbf0302fcf9e75cf423e6a",
+      "task": "F-475",
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "core/bench/benchmark_suite.gd": {
@@ -3284,9 +3284,9 @@
     },
     "tools/benchmark_check.gd": {
       "agent": "quill895277",
-      "at": "2026-08-21T23:29:48+00:00",
-      "hash": "1fac49ee672084b564b2e1509ce4904683c291d99fe179907f85ac3e9faf7e81",
-      "task": "F-470",
+      "at": "2026-08-21T23:36:06+00:00",
+      "hash": "1d3dae7b870330e1c05c09b10ef84d88cd363b80a16b1577775175e6054ef828",
+      "task": "F-475",
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "tools/biome_region_check.gd": {
@@ -4291,7 +4291,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     }
   },
-  "rev": 966,
+  "rev": 969,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9832,6 +9832,15 @@
       "status": "todo",
       "tier": "F",
       "title": "Bogsilver is a plain item, so tier 4 lost its two-player carry"
+    },
+    "F-475": {
+      "done_at": "2026-08-21T23:36:06+00:00",
+      "done_by": "quill895277",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "The benchmark reports the 2D content-scale size as its resolution, and cries wolf about focus on a good fullscreen run"
     }
   },
   "version": 1
