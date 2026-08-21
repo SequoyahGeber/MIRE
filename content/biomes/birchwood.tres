@@ -6,8 +6,8 @@
 script = ExtResource("1_birchwood")
 id = &"birchwood"
 display_name = "Birch Wood"
-height_min = 1.7
-height_max = 3.9
+height_min = 2.4
+height_max = 5.3
 moisture_min = 0.4
 moisture_max = 0.62
 priority = 8

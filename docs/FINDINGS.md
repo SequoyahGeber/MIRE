@@ -2162,30 +2162,6 @@ somebody will act on it anyway.
 
 ---
 
-### F-400 · The island's hills are too low to read as landform at the new island size
-
-**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
-
-Requested from play (2026-08-20, Sequoyah): "id also like to make the hills a bit taller as well."
-
-`world/gen/island_heightmap.gd`: `HEIGHT_SCALE` 6.0, `HILL_HEIGHT_MIN` 2.5, `HILL_HEIGHT_MAX` 4.5 —
-so a hill crown lifts 2.5-4.5 m over a hill radius of 30-60 m, which is a grade of roughly 1 in 13 at
-its steepest. The terrain render measures the whole island at low -5.0 / high 6.3 m.
-
-These were tuned against a 118 m island. F-368 raised `ISLAND_RADIUS` to 295 m without touching
-them, so the same relief is now spread over 2.5x the distance and reads flatter than it measured —
-another instance of the absolute-constant-that-was-really-a-fraction pattern this file has already
-hit three times today.
-
-**The constraint:** the standing art direction is explicit that MIRE's terrain is mostly flat with
-gentle rolling hills and no mountains, with Muck as the reference, and the amplitude has already been
-walked down deliberately (60 -> 26 -> 11 -> 6) on earlier playtest verdicts. "A bit taller" is a
-nudge within that brief, not a reversal of it. Whatever number is chosen should be justified against
-a slope measurement, not by eye alone, and re-judged on a top-down render plus a ground-level shot —
-the failure mode on the way up is the "weird pits and aggressive valleys" an earlier pass produced.
-
----
-
 ### F-404 · Three separate movement-feel defects: stopping is near-instant, air control bleeds speed sideways, and gravity_scale 2.0 makes any real fall brutal
 
 **Area:** gameplay · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
@@ -2338,6 +2314,67 @@ Worth re-reading F-357's eliminated-causes list before starting — six are alre
 ---
 
 ## Resolved
+
+### F-400 · The island's hills are too low to read as landform at the new island size — **fixed**
+
+**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Requested from play (2026-08-20, Sequoyah): "id also like to make the hills a bit taller as well."
+
+`world/gen/island_heightmap.gd`: `HEIGHT_SCALE` 6.0, `HILL_HEIGHT_MIN` 2.5, `HILL_HEIGHT_MAX` 4.5 —
+so a hill crown lifts 2.5-4.5 m over a hill radius of 30-60 m, which is a grade of roughly 1 in 13 at
+its steepest. The terrain render measures the whole island at low -5.0 / high 6.3 m.
+
+These were tuned against a 118 m island. F-368 raised `ISLAND_RADIUS` to 295 m without touching
+them, so the same relief is now spread over 2.5x the distance and reads flatter than it measured —
+another instance of the absolute-constant-that-was-really-a-fraction pattern this file has already
+hit three times today.
+
+**The constraint:** the standing art direction is explicit that MIRE's terrain is mostly flat with
+gentle rolling hills and no mountains, with Muck as the reference, and the amplitude has already been
+walked down deliberately (60 -> 26 -> 11 -> 6) on earlier playtest verdicts. "A bit taller" is a
+nudge within that brief, not a reversal of it. Whatever number is chosen should be justified against
+a slope measurement, not by eye alone, and re-judged on a top-down render plus a ground-level shot —
+the failure mode on the way up is the "weird pits and aggressive valleys" an earlier pass produced.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** Hills raised, and the biome bands retuned in the same change because they are coupled — which is why
+this waited for F-401 to land rather than being done alongside it.
+
+    HEIGHT_SCALE      6.0 -> 8.5
+    HILL_HEIGHT_MIN   2.5 -> 4.0        HILL_HEIGHT_MAX  4.5 -> 7.5
+    RIDGE_WEIGHT      1.2 -> 1.7
+
+Island peak height **6.3 m -> 9.5 m**, a touch over 1.5x. A nudge within the standing brief — mostly
+flat, gentle rolling hills, no mountains — not a reversal of the deliberate 60 -> 26 -> 11 -> 6 walk
+down that earlier playtests asked for.
+
+**The coupling, measured rather than assumed.** Biome selection reads absolute height bands, so
+raising the terrain moved every biome without touching a single biome file. Straight after the height
+change, at seed 20260819:
+
+    highland 41.3%  shore 17.8%  grassland 15.5%  forest 7.7%  heath 7.1%  birchwood 5.7%  marsh 4.8%
+
+Highland went 5.2% -> 41.3% purely because its band starts at a fixed 3.9 m and the ground grew past
+it. Forest collapsed 27.1% -> 7.7%. Rescaling the seven bands by ~1.45 restores the intended spread:
+
+    shore 25.0%  forest 21.5%  marsh 14.6%  grassland 13.8%  birchwood 11.2%  highland 7.9%  heath 6.1%
+
+Close to the pre-change distribution on every biome, with highland deliberately landing a little
+higher than its old 5.2% — taller hills should produce more high ground, not less.
+
+`tools/biome_terrain_check.gd` caught the second half of the same coupling immediately: its probe
+points sat inside the OLD bands, so marsh and forest resolved to the wrong biome and it failed 4.
+Re-derived against the new bands. That is the check doing exactly the job it was repaired for.
+
+**This is the fourth instance today of one pattern** — an absolute constant that was really a fraction
+of something that moved. The others were `MireGrid.BASE_SPREAD_RATE`, the river half-widths, and
+`terrain_normal_check`'s sample coordinates. Biome height bands are the next candidate for being
+expressed as fractions of the height range rather than metres.
+
+Verified: terrain_check 0, biome_terrain_check 0, terrain_normal_check 0, resource_scatter_check 0,
+poi_check 0, world_contract_check PASS. Render: `assets/audit/terrain/island_20260819.png`.
 
 ### F-396 · Every tree in the repo is about 3x eye height, so the island reads as scrub rather than forest — **fixed**
 

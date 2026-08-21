@@ -139,13 +139,13 @@ func _check_amplitudes_reach_content() -> void:
 	# Every entry below is re-derived from the shipped bands rather than carried over, so this stays
 	# a real assertion instead of one that happens to still pass.
 	var probes: Dictionary = {
-		&"shore": Vector2(0.0, 0.5),        # height < 1.7, any moisture
-		&"marsh": Vector2(2.3, 0.8),        # 1.7 - 2.9,  wet
-		&"forest": Vector2(3.4, 0.8),       # 2.9 - 3.9,  wet
-		&"birchwood": Vector2(2.8, 0.51),   # 1.7 - 3.9,  mid moisture
-		&"highland": Vector2(14.0, 0.7),    # 3.9+,       mid-wet
-		&"grassland": Vector2(14.0, 0.25),  # 1.7+,       dry
-		&"heath": Vector2(14.0, 0.07),      # 1.7+,       driest
+		&"shore": Vector2(0.0, 0.5),        # height < 2.4, any moisture
+		&"marsh": Vector2(3.3, 0.8),        # 2.4 - 4.2,  wet
+		&"forest": Vector2(4.75, 0.8),      # 4.2 - 5.3,  wet
+		&"birchwood": Vector2(3.6, 0.51),   # 2.4 - 5.3,  mid moisture
+		&"highland": Vector2(14.0, 0.7),    # 5.3+,       mid-wet
+		&"grassland": Vector2(14.0, 0.25),  # 2.4+,       dry
+		&"heath": Vector2(14.0, 0.07),      # 2.4+,       driest
 	}
 	_check(probes.size() == biome_defs.size(),
 		"every shipped biome has a probe (%d biomes, %d probes)" % [biome_defs.size(), probes.size()],

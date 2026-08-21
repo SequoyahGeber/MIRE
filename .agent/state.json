@@ -318,9 +318,33 @@
       "task": "F-410",
       "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
     },
+    "assets/audit/lighting/f410_10_procedural_current.png": {
+      "agent": "emberd89a44",
+      "at": "2026-08-21T05:27:53+00:00",
+      "task": "F-410",
+      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
+    },
+    "assets/audit/lighting/f410_11_procedural_soft.png": {
+      "agent": "emberd89a44",
+      "at": "2026-08-21T05:27:53+00:00",
+      "task": "F-410",
+      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
+    },
+    "assets/audit/lighting/f410_12_procedural_clear.png": {
+      "agent": "emberd89a44",
+      "at": "2026-08-21T05:27:53+00:00",
+      "task": "F-410",
+      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
+    },
     "assets/audit/lighting/f410_probe.json": {
       "agent": "emberd89a44",
       "at": "2026-08-21T05:25:15+00:00",
+      "task": "F-410",
+      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
+    },
+    "assets/audit/lighting/f410_procedural_probe.jsonl": {
+      "agent": "emberd89a44",
+      "at": "2026-08-21T05:27:52+00:00",
       "task": "F-410",
       "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
     },
@@ -650,8 +674,8 @@
     },
     "content/biomes/birchwood.tres": {
       "agent": "kilnd3a089",
-      "at": "2026-08-21T05:08:17+00:00",
-      "task": "F-401",
+      "at": "2026-08-21T05:26:35+00:00",
+      "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "content/biomes/birchwood.tres content/biomes/forest.tres content/biomes/grassland.tres content/biomes/heath.tres content/biomes/highland.tres content/biomes/marsh.tres content/biomes/shore.tres content/poi/station_camp.tres content/scatter/birchwood_canopy.tres content/scatter/birchwood_deadwood.tres content/scatter/birchwood_floor.tres content/scatter/birchwood_undergrowth.tres content/scatter/forest_canopy.tres content/scatter/forest_deadwood.tres content/scatter/forest_floor.tres content/scatter/forest_rocks.tres content/scatter/forest_undergrowth.tres content/scatter/grassland_meadow.tres content/scatter/grassland_rocks.tres content/scatter/grassland_shrubs.tres content/scatter/grassland_trees.tres content/scatter/grassland_turf.tres content/scatter/heath_scrub.tres content/scatter/heath_stones.tres content/scatter/heath_trees.tres content/scatter/heath_turf.tres content/scatter/highland_floor.tres content/scatter/highland_pines.tres content/scatter/highland_rocks.tres content/scatter/highland_scrub.tres content/scatter/marsh_canopy.tres content/scatter/marsh_deadwood.tres content/scatter/marsh_floor.tres content/scatter/marsh_reeds.tres content/scatter/shore_beach.tres content/scatter/shore_drift.tres content/scatter/shore_rocks.tres entities/props/camp_abandoned.tscn entities/props/standing_stone_circle.tscn levels/greybox_test.tscn levels/hollowmere.tscn levels/playtest_hollow.tscn levels/procedural_island.tscn ": {
@@ -662,38 +686,38 @@
     },
     "content/biomes/forest.tres": {
       "agent": "kilnd3a089",
-      "at": "2026-08-21T05:08:17+00:00",
-      "task": "F-401",
+      "at": "2026-08-21T05:26:35+00:00",
+      "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "content/biomes/grassland.tres": {
       "agent": "kilnd3a089",
-      "at": "2026-08-21T05:08:17+00:00",
-      "task": "F-401",
+      "at": "2026-08-21T05:26:35+00:00",
+      "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "content/biomes/heath.tres": {
       "agent": "kilnd3a089",
-      "at": "2026-08-21T05:08:17+00:00",
-      "task": "F-401",
+      "at": "2026-08-21T05:26:35+00:00",
+      "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "content/biomes/highland.tres": {
       "agent": "kilnd3a089",
-      "at": "2026-08-21T05:08:17+00:00",
-      "task": "F-401",
+      "at": "2026-08-21T05:26:35+00:00",
+      "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "content/biomes/marsh.tres": {
       "agent": "kilnd3a089",
-      "at": "2026-08-21T05:08:17+00:00",
-      "task": "F-401",
+      "at": "2026-08-21T05:26:35+00:00",
+      "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "content/biomes/shore.tres": {
       "agent": "kilnd3a089",
-      "at": "2026-08-21T05:08:17+00:00",
-      "task": "F-401",
+      "at": "2026-08-21T05:26:35+00:00",
+      "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "content/poi/station_camp.tres": {
@@ -932,8 +956,8 @@
     },
     "tools/biome_terrain_check.gd": {
       "agent": "kilnd3a089",
-      "at": "2026-08-21T05:08:19+00:00",
-      "task": "F-401",
+      "at": "2026-08-21T05:28:01+00:00",
+      "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "tools/blender/build_flora_set.py": {
@@ -951,6 +975,12 @@
     "tools/f410_asset_material_check.gd": {
       "agent": "emberd89a44",
       "at": "2026-08-21T05:23:55+00:00",
+      "task": "F-410",
+      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
+    },
+    "tools/f410_procedural_sky_probe.gd": {
+      "agent": "emberd89a44",
+      "at": "2026-08-21T05:27:52+00:00",
       "task": "F-410",
       "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
     },
@@ -1007,9 +1037,32 @@
       "at": "2026-08-21T05:08:20+00:00",
       "task": "F-401",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "world/gen/island_heightmap.gd": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:25:41+00:00",
+      "task": "F-400",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     }
   },
   "in_flight": {
+    "F-400": {
+      "agent": "kilnd3a089",
+      "files": [
+        "world/gen/island_heightmap.gd",
+        "content/biomes/shore.tres",
+        "content/biomes/marsh.tres",
+        "content/biomes/forest.tres",
+        "content/biomes/birchwood.tres",
+        "content/biomes/highland.tres",
+        "content/biomes/grassland.tres",
+        "content/biomes/heath.tres",
+        "tools/biome_terrain_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-21T05:25:41+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
     "F-401": {
       "agent": "kilnd3a089",
       "files": [
@@ -1188,7 +1241,12 @@
         "assets/audit/lighting/f410_02_sky_absurd.png",
         "assets/audit/lighting/f410_03_physical_default.png",
         "assets/audit/lighting/f410_04_soft_day.png",
-        "assets/audit/lighting/f410_05_airy_day.png"
+        "assets/audit/lighting/f410_05_airy_day.png",
+        "tools/f410_procedural_sky_probe.gd",
+        "assets/audit/lighting/f410_procedural_probe.jsonl",
+        "assets/audit/lighting/f410_10_procedural_current.png",
+        "assets/audit/lighting/f410_11_procedural_soft.png",
+        "assets/audit/lighting/f410_12_procedural_clear.png"
       ],
       "notes": [
         {
@@ -2785,7 +2843,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 481,
+  "rev": 495,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -7749,7 +7807,7 @@
     "F-400": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "The island's hills are too low to read as landform at the new island size"
     },
