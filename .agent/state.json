@@ -282,6 +282,48 @@
       "task": "F-401",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
+    "assets/audit/lighting/f410_00_warmup.png": {
+      "agent": "emberd89a44",
+      "at": "2026-08-21T05:25:15+00:00",
+      "task": "F-410",
+      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
+    },
+    "assets/audit/lighting/f410_01_current.png": {
+      "agent": "emberd89a44",
+      "at": "2026-08-21T05:25:15+00:00",
+      "task": "F-410",
+      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
+    },
+    "assets/audit/lighting/f410_02_sky_absurd.png": {
+      "agent": "emberd89a44",
+      "at": "2026-08-21T05:25:16+00:00",
+      "task": "F-410",
+      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
+    },
+    "assets/audit/lighting/f410_03_physical_default.png": {
+      "agent": "emberd89a44",
+      "at": "2026-08-21T05:25:16+00:00",
+      "task": "F-410",
+      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
+    },
+    "assets/audit/lighting/f410_04_soft_day.png": {
+      "agent": "emberd89a44",
+      "at": "2026-08-21T05:25:16+00:00",
+      "task": "F-410",
+      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
+    },
+    "assets/audit/lighting/f410_05_airy_day.png": {
+      "agent": "emberd89a44",
+      "at": "2026-08-21T05:25:16+00:00",
+      "task": "F-410",
+      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
+    },
+    "assets/audit/lighting/f410_probe.json": {
+      "agent": "emberd89a44",
+      "at": "2026-08-21T05:25:15+00:00",
+      "task": "F-410",
+      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
+    },
     "assets/audit/menu/dock_1080p.png": {
       "agent": "kilnd3a089",
       "at": "2026-08-21T05:08:14+00:00",
@@ -906,6 +948,12 @@
       "task": "F-401",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
+    "tools/f410_asset_material_check.gd": {
+      "agent": "emberd89a44",
+      "at": "2026-08-21T05:23:55+00:00",
+      "task": "F-410",
+      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
+    },
     "tools/grade_check.gd": {
       "agent": "kilnd3a089",
       "at": "2026-08-21T05:08:19+00:00",
@@ -1129,6 +1177,28 @@
       "notes": [],
       "started": "2026-08-21T05:03:25+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "F-410": {
+      "agent": "emberd89a44",
+      "files": [
+        "tools/f410_asset_material_check.gd",
+        "assets/audit/lighting/f410_probe.json",
+        "assets/audit/lighting/f410_00_warmup.png",
+        "assets/audit/lighting/f410_01_current.png",
+        "assets/audit/lighting/f410_02_sky_absurd.png",
+        "assets/audit/lighting/f410_03_physical_default.png",
+        "assets/audit/lighting/f410_04_soft_day.png",
+        "assets/audit/lighting/f410_05_airy_day.png"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-21T05:23:55+00:00",
+          "by": "emberd89a44",
+          "text": "Sequoyah clarified that 7cf1225 is diagnostic context, not an approved look. Re-establish the daylight target from neutral same-run renders; preserve no value without visual proof. GLB JSON proves pine/crooked bark materials contain the intended brown palette values and leaf_gold is deliberately exported, so F-092's old cache mismatch is not the live cause."
+        }
+      ],
+      "started": "2026-08-21T05:23:55+00:00",
+      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
     }
   },
   "recent": {
@@ -1678,13 +1748,6 @@
       "task": "4.19",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
-    "systems/cycle/cycle_modifier_service.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T05:24:46+00:00",
-      "hash": "d21629238a13987d65ed0d343225e362ea329ffa16ec2ef45171c85e5a452a35",
-      "task": "F-258",
-      "token": null
-    },
     "systems/cycle/cycle_service.gd": {
       "agent": "lp",
       "at": "2026-08-20T10:21:34+00:00",
@@ -1726,13 +1789,6 @@
       "hash": "a4d8075095380b31b446edd2faa36e3117e1b0e4340bbc41009b32593eac3bb4",
       "task": "F-382",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
-    },
-    "systems/loot/chest.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T05:24:46+00:00",
-      "hash": "7632f021ce78c0e8c670c4187fb0f50fd2dda9adbe9ffc52ffe07a9505cee375",
-      "task": "F-258",
-      "token": null
     },
     "systems/powerups/powerup_def.gd": {
       "agent": "lp",
@@ -2729,7 +2785,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 468,
+  "rev": 481,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -7735,16 +7791,23 @@
     "F-408": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Daytime grade is fluorescent and crushed rather than Valheim-like"
     },
     "F-409": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "The daytime white point clips sunlit ground per-channel, and a 1.30 saturation boost multiplies the clipped result \u2014 the ground renders radioactive lime"
+    },
+    "F-410": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Three visual defects remain in the noon frame after the grade fix: pale grey trunks, orange canopy facets, and a flat grey horizon"
     }
   },
   "version": 1

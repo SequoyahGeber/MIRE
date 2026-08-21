@@ -2003,30 +2003,6 @@ After F-361 installed Xcode 27 beta 5 plus Metal Toolchain 27A5237l, a fresh mac
 
 ---
 
-### F-370 · Trees are far too short next to the player, which also puts the leaf-fall emitter above the crown
-
-**Area:** art · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "tree assets should be significantly taller, they are way
-too short compared to the player and other assets".
-
-Visible in the play capture: canopy tops sit at roughly head height to a little above it, so the
-forest reads as shrubbery rather than woodland, and the horizon line is never broken.
-
-The scatter defs scale them 0.85-1.2 (`content/scatter/forest_canopy.tres`), so the source exports
-under `assets/flora/exports/tree_*.glb` are the thing to change, or the scale range is.
-
-This has a second, non-cosmetic consequence, filed separately but caused here:
-`autoload/environment_vfx.gd:855` emits `LEAF_FALL` from a hardcoded `height` of 4.8 m. If a crown
-tops out below 4.8 m the leaves spawn in open air above the tree — which is exactly what was
-reported. Raising the trees fixes the emitter placement for free; lowering the emitter without
-raising the trees fixes the symptom and leaves the forest short.
-
-Fix: retall the tree exports (or the scale range) to a canopy that clears the player by a real
-margin, then re-check `_leaf_fall`'s height against the new crowns.
-
----
-
 ### F-371 · Tree trunk art does not hold up at the distance the player actually stands at
 
 **Area:** art · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
@@ -2186,169 +2162,6 @@ somebody will act on it anyway.
 
 ---
 
-### F-395 · The procedural island ignores 141 assets the authored map used — 699 placements of already-built content, including every pine, birch and meadow grass
-
-**Area:** worldgen · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "I know we had like five or more tree types. Why is there
-only one tree ever placed on the map?" and "There are so many assets in the old map, make sure we're
-not wasting those."
-
-Measured, by diffing `world/gen/layouts/playtest_hollow.json`'s prop list against every `asset` id
-reachable from `content/scatter/*.tres` and `content/poi/*.tres`:
-
-    the authored map places      152 distinct assets
-    the procedural island can     57
-    unused                       141 distinct, 699 placements
-
-By kit:
-
-    environment         634 placements, 104 assets  — grass_meadow_*, grass_seedhead_*, grass_clump_*,
-                                                      grass_tuft_*, tree_pine_a..f, tree_birch_a..d,
-                                                      tree_bare_a..d, tree_crooked_a..d, fences, ...
-    pickups              22 placements,  11 assets
-    loot                 16 placements,   7 assets
-    harvestables         12 placements,   5 assets
-    crafting_stations     7 placements,   6 assets
-    tools_weapons         7 placements,   7 assets
-
-The tree case is the sharpest illustration. `content/scatter/forest_canopy.tres` holds four entries
-and three of them are `tree_willow_a/b/c` from the `flora` kit, with `tree_snag_a` at weight 0.2.
-Meanwhile **eighteen** built, exported, previously-shipped trees sit in `assets/environment/exports/`
-— six pines, four birches, four bare, four crooked — referenced by nothing the procedural island
-loads. Three near-identical willows is why it reads as one tree species.
-
-None of this needs new art. It needs scatter entries, and in a few cases a `scene_path` on a POI def.
-`HarvestLibrary.HARVEST_RULES` already maps the `tree_` prefix to `wild_tree`, so every one of those
-eighteen becomes choppable the moment it is placed, with no code change.
-
-Worth stating plainly because it explains a whole class of "the procedural map feels empty" reports:
-the authored map was dressed by hand from the full kit, and the procedural generator was given a
-small hand-written subset of it. Nothing checks that the two agree, so the gap is invisible.
-
----
-
-### F-396 · Every tree in the repo is about 3x eye height, so the island reads as scrub rather than forest
-
-**Area:** art · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
-
-Reported twice from play (2026-08-20, Sequoyah): "tree assets should be significantly taller, they
-are way too short compared to the player", then again after F-370 was filed: "we didn't do anything
-about the trees being way too short still."
-
-Measured across every tree asset in the repo, from each GLB's merged mesh AABB:
-
-    environment/  tree_pine_a..f      4.84 - 5.90 m
-    environment/  tree_birch_a..d     5.98 - 7.44 m
-    environment/  tree_bare_a..d      4.86 - 6.40 m
-    environment/  tree_crooked_a..d   6.42 - 7.42 m
-    flora/        tree_willow_a..c    4.52 - 5.76 m
-    flora/        tree_snag_a..c      3.55 - 4.91 m
-    wetland_nature/ mangrove, hollow  4.60, 4.90 m
-
-Player eye height is about 1.7 m. So the tallest tree in the game is 4.4x eye height and the median
-is nearer 3.3x. Real forest trees read at 6-15x, which is why the canopy never breaks the horizon in
-the playtest capture and the forest reads as shrubbery.
-
-This is the whole kit, not one bad asset — so it is a generator-level fix, not a per-asset one. The
-two generators are `tools/blender/build_mire_map_kit.py` (`build_pine`/`build_birch`/`build_bare`/
-`build_crooked`, registered at :650) and `tools/blender/build_flora_set.py` (`build_tree_willow` at
-:489, `build_tree_snag` at :535, with an explicit height table at :120 —
-`"tree_willow": (4.20, 6.20, "height", 4.2)`).
-
-**Scaling in the scatter def is the wrong lever and worth saying so before someone reaches for it:**
-`min_scale`/`max_scale` scale the trunk with the canopy, so a 1.6x tree has a 1.6x-thick trunk and
-reads as a normal tree seen from closer, not as a taller one. Height wants to come from the
-generator, where trunk length can grow without the trunk fattening.
-
-Supersedes F-370, which named the same problem from the playtest capture alone; this adds the
-measurement and the generator locations.
-
----
-
-### F-397 · F-379's grade pass turned the forest floor brown, which is further from the target than the green it replaced
-
-**Area:** art · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah), on the change that shipped hours earlier: "the game
-lighting/color grading looks really bad, i really dislike the gross brown ground thats been added."
-
-F-379 gave biomes their own ground colour, which was right — the island had been one flat green. The
-values chosen were not. Uncommitted at the time of this report, in `content/biomes/`:
-
-    forest      Color(0.231, 0.220, 0.184)   <- red == green, and more red than blue. This is mud.
-    grassland   Color(0.380, 0.420, 0.310)   <- desaturated olive
-    shore       Color(0.569, 0.541, 0.471)   <- sand, and the one that is defensible
-
-`world/gen/biome_def.gd`'s own default is `Color(0.26, 0.40, 0.19)` — a real green — so the forest
-biome moved a long way from it in the desaturating direction.
-
-**The reasoning error is worth recording, because it is easy to repeat.** The original complaint was
-"game looks to green/yellow". The problem there was that ground, canopy and light all sat in one
-narrow hue band so nothing separated from anything else. The fix for *no separation* is to separate
-— by hue between biomes, and by value between ground and canopy. Desaturating toward brown reduces
-separation further, and it also walks away from the standing art direction for this project, whose
-reference is Muck: bright, saturated green ground.
-
-"Too green" was never a request for "less green". It was a request for the greens to differ from each
-other and from what stands on them.
-
-Fix: keep the per-biome colour mechanism F-379 added; re-author the values in the green family with
-real hue separation (a cool deep green under forest canopy, a warmer yellow-green meadow, sand only
-at the shore), then re-judge the grade on top of them rather than the other way round.
-
----
-
-### F-398 · The terrain has no ambient occlusion, so nothing is grounded where it meets the ground
-
-**Area:** render · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
-
-Requested from play (2026-08-20, Sequoyah): "can we add ambient occulusion to the game maybe?"
-
-The `WorldEnvironment` in `levels/procedural_island.tscn` (and the three other level scenes) has no
-SSAO configured, and `world/environment/playtest_atmosphere.gd` — which drives every other
-environment knob on the daylight curve — never touches it.
-
-The visible consequence in the playtest captures is that trunks, rocks and props meet the terrain
-with no contact darkening at all, so everything reads as sitting ON the ground rather than IN it, and
-the flat-shaded low-poly forms lose the crease shading that would otherwise separate them from the
-surface behind. It is also part of why the scene reads as one flat hue band (F-397/F-379): with no
-occlusion term, the only thing separating a prop from the ground is its albedo.
-
-Forward+ supports SSAO, so this is configuration rather than new rendering work.
-
-**Must be preset-gated.** SSAO is a per-pixel screen-space pass and this project's standing
-performance goal targets the worst machines. `autoload/graphics_quality.gd`'s LOW preset already
-turns off `glow` and `volumetric` for exactly this reason; SSAO belongs in the same list, off on LOW
-and on above it, with the cost measured rather than assumed.
-
----
-
-### F-399 · The ground is one flat untextured colour per biome, so large areas read as dead space
-
-**Area:** art · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
-
-Requested from play (2026-08-20, Sequoyah): "Maybe we can make a texture for the ground rather than
-just having it be one flat color, maybe subtle texture would be good for the ground."
-
-`world/chunk/terrain_flat.gdshader` assigns `ALBEDO = ground_albedo * albedo_color` and nothing else —
-a single colour per vertex, blended between biomes. On the small 118 m island that was survivable; at
-F-368's 295 m radius there are long stretches of unbroken single-value ground in frame.
-
-**The constraint that makes this non-obvious:** the terrain is deliberately flat-shaded low-poly, and
-the facets are the look. A conventional tiled texture would fight them, and the mesh has no UVs to
-tile one against anyway.
-
-What suits it is procedural breakup in the shader, in world space, at a scale ABOVE the facet size so
-it reads as ground variation rather than as noise on each triangle — a low-frequency value/hue drift
-plus a slight per-facet tint jitter. That keeps the faceted read (which the project wants) while
-stopping a hillside from being one RGB value across forty metres.
-
-Judge it against F-397's re-authored palette, not before — a texture tuned against the wrong base
-colour has to be redone.
-
----
-
 ### F-400 · The island's hills are too low to read as landform at the new island size
 
 **Area:** worldgen · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
@@ -2370,83 +2183,6 @@ walked down deliberately (60 -> 26 -> 11 -> 6) on earlier playtest verdicts. "A 
 nudge within that brief, not a reversal of it. Whatever number is chosen should be justified against
 a slope measurement, not by eye alone, and re-judged on a top-down render plus a ground-level shot —
 the failure mode on the way up is the "weird pits and aggressive valleys" an earlier pass produced.
-
----
-
-### F-401 · The island has three biomes that differ almost entirely by a single moisture threshold, so nothing reads as a distinct place
-
-**Area:** worldgen · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
-
-Requested from play (2026-08-20, Sequoyah): "let's get some proper biome generation going, like we
-should have some distinct, unique biomes, not just everything going everywhere."
-
-`content/biomes/` holds exactly three defs, and the two that cover the whole interior are separated
-by one number:
-
-    forest      height 1.6-100, moisture 0.5-1.0, detail 1.15, ridge 0.90
-    grassland   height 1.6-100, moisture 0.0-0.5, detail 0.80, ridge 0.25
-    shore       height -100-1.6, moisture 0.0-1.0, detail 0.35, ridge 0.00
-
-So "forest" is the wet half of the island and "grassland" is the dry half, split at moisture 0.5,
-with the same height band and near-identical everything else. Before F-397 they did not even differ
-in colour. The result is what was reported: no sense of arriving anywhere, because there is nowhere
-distinct to arrive at.
-
-Compounding it, the scatter tables map one-to-one onto those three ids, so every table applies across
-half the island at uniform density. "Dense forested regions and then some more open areas" (the same
-playtest) is not expressible in this arrangement — there is no *region*, only a moisture gradient.
-
-What is missing is not more biome rows, it is the axes that would make rows mean something:
-
-- **Real regions rather than a global threshold.** Moisture is smooth noise, so the forest/grassland
-  boundary is a soft contour that wanders the whole island. Distinct places need clustered domains —
-  a low-frequency region field, or Voronoi-style cells — so a forest has an edge you cross.
-- **More than one distinguishing axis.** Height band, slope, distance from shore and distance from
-  the river are all already computable and none of them select a biome today.
-- **Per-biome density and character, not just a different asset list.** A marsh should be sparse and
-  low; a deep wood should be dense and dark; a meadow should be open with high grass coverage.
-- **Somewhere between five and eight biomes**, so the island can hold contrast without any one of
-  them being rare enough that a run never sees it.
-
-`world/gen/biome_map.gd` is where selection happens and `world/gen/scatter_def.gd`'s `biome_id` is
-how content binds to it, so both the mechanism and the content hook already exist — what is missing
-is the region structure feeding them.
-
-Do this together with F-395 (141 unused authored-map assets): the reason to have distinct biomes is
-to give that content somewhere characteristic to go.
-
----
-
-### F-402 · A bare workbench stands alone in open ground because the station_camp POI places a single prop and calls it a camp
-
-**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "there was just a random crafting bench in the middle of
-the map as well."
-
-`content/poi/station_camp.tres` is `scene_path =
-"res://assets/crafting_stations/exports/station_workbench_primitive.glb"` with `target_count = 1`.
-`world/gen/procedural_world.gd:342-347` instantiates whatever single scene a POI names. So the whole
-of a "camp" is one workbench dropped on the ground, with no shelter, no fire, no clutter, and nothing
-explaining why it is there.
-
-It reads as a bug rather than a location, which is how it got reported.
-
-Two things are wrong and they are separable:
-
-1. **A POI is one prop.** `PoiDef.scene_path` is a single file, so any POI richer than one mesh needs
-   either an authored `.tscn` that groups several props, or a builder that assembles one from the
-   kit. The authored map made its camps by hand-placing a cluster; nothing carries that forward.
-   `assets/camp/` and `assets/crafting_stations/` hold the pieces — `station_campfire`,
-   `station_woodcutting_block`, `station_stone_furnace`, `station_repair_bench`,
-   `station_cooking_spit`, `station_anvil` — and F-395 records that six of them are placed nowhere.
-2. **One camp per island.** `target_count = 1` on a 295 m island means most runs never find it, and
-   the one that exists carries the map's entire crafting affordance.
-
-Fix: build the camp as a small authored group (fire, workbench, one or two stations, a tent or
-crate, some clutter) rather than a lone mesh, and raise the count now that the island has room. The
-same shape applies to `standing_stones`, which has the same one-prop problem and currently
-under-places at 3-4 of its target 6.
 
 ---
 
@@ -2602,6 +2338,372 @@ Worth re-reading F-357's eliminated-causes list before starting — six are alre
 ---
 
 ## Resolved
+
+### F-396 · Every tree in the repo is about 3x eye height, so the island reads as scrub rather than forest — **fixed**
+
+**Area:** art · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported twice from play (2026-08-20, Sequoyah): "tree assets should be significantly taller, they
+are way too short compared to the player", then again after F-370 was filed: "we didn't do anything
+about the trees being way too short still."
+
+Measured across every tree asset in the repo, from each GLB's merged mesh AABB:
+
+    environment/  tree_pine_a..f      4.84 - 5.90 m
+    environment/  tree_birch_a..d     5.98 - 7.44 m
+    environment/  tree_bare_a..d      4.86 - 6.40 m
+    environment/  tree_crooked_a..d   6.42 - 7.42 m
+    flora/        tree_willow_a..c    4.52 - 5.76 m
+    flora/        tree_snag_a..c      3.55 - 4.91 m
+    wetland_nature/ mangrove, hollow  4.60, 4.90 m
+
+Player eye height is about 1.7 m. So the tallest tree in the game is 4.4x eye height and the median
+is nearer 3.3x. Real forest trees read at 6-15x, which is why the canopy never breaks the horizon in
+the playtest capture and the forest reads as shrubbery.
+
+This is the whole kit, not one bad asset — so it is a generator-level fix, not a per-asset one. The
+two generators are `tools/blender/build_mire_map_kit.py` (`build_pine`/`build_birch`/`build_bare`/
+`build_crooked`, registered at :650) and `tools/blender/build_flora_set.py` (`build_tree_willow` at
+:489, `build_tree_snag` at :535, with an explicit height table at :120 —
+`"tree_willow": (4.20, 6.20, "height", 4.2)`).
+
+**Scaling in the scatter def is the wrong lever and worth saying so before someone reaches for it:**
+`min_scale`/`max_scale` scale the trunk with the canopy, so a 1.6x tree has a 1.6x-thick trunk and
+reads as a normal tree seen from closer, not as a taller one. Height wants to come from the
+generator, where trunk length can grow without the trunk fattening.
+
+Supersedes F-370, which named the same problem from the playtest capture alone; this adds the
+measurement and the generator locations.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** Regenerated through Blender via the two generators the finding named —
+`tools/blender/build_mire_map_kit.py` and `build_flora_set.py` — **not** scaled in the scatter defs,
+which the finding explicitly warned against because `min_scale`/`max_scale` fatten the trunk with the
+canopy and produce the same tree seen from closer rather than a taller one. Trunk radius now grows
+far slower than height (a ~17 m pine carries roughly a 0.5 m base radius).
+
+Measured from each GLB's merged mesh AABB, against a 1.7 m eye:
+
+    pine_a      5.87 -> 19.60 m   (11.5x eye)     birch_b   6.40 -> 15.16 m  (8.9x)
+    pine_d      5.25 -> 17.43 m   (10.3x)         crooked_b 7.42 -> 13.51 m  (7.9x)
+    willow_a    5.76 -> 13.62 m   ( 8.0x)         bare_a    4.86 -> 13.22 m  (7.8x)
+    snag_b      3.55 ->  7.86 m   ( 4.6x)
+
+Was 2.1-4.4x eye height across the whole kit; now 7.8-11.5x for living trees, with snags left
+deliberately shorter since a broken stump is not a canopy tree.
+
+Filenames unchanged, so the scatter entries written concurrently against `tree_pine_a` and friends
+kept working with no coordination.
+
+**Left open on purpose:** F-371 (trunk ART). The generators did rebuild the trunks as stacked frusta
+with a second bark tone, but the noon render shows them arriving pale grey with a near-white root
+flare — so the height is fixed and the look is not. That is now F-410 item 1, handed to Codex.
+
+### F-370 · Trees are far too short next to the player, which also puts the leaf-fall emitter above the crown — **fixed**
+
+**Area:** art · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "tree assets should be significantly taller, they are way
+too short compared to the player and other assets".
+
+Visible in the play capture: canopy tops sit at roughly head height to a little above it, so the
+forest reads as shrubbery rather than woodland, and the horizon line is never broken.
+
+The scatter defs scale them 0.85-1.2 (`content/scatter/forest_canopy.tres`), so the source exports
+under `assets/flora/exports/tree_*.glb` are the thing to change, or the scale range is.
+
+This has a second, non-cosmetic consequence, filed separately but caused here:
+`autoload/environment_vfx.gd:855` emits `LEAF_FALL` from a hardcoded `height` of 4.8 m. If a crown
+tops out below 4.8 m the leaves spawn in open air above the tree — which is exactly what was
+reported. Raising the trees fixes the emitter placement for free; lowering the emitter without
+raising the trees fixes the symptom and leaves the forest short.
+
+Fix: retall the tree exports (or the scale range) to a canopy that clears the player by a real
+margin, then re-check `_leaf_fall`'s height against the new crowns.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** **Superseded by F-396**, which names the same problem with the measurement behind it and the two
+generator locations to fix. F-370 was filed from the playtest capture alone ("trees look short");
+F-396 measured every tree asset in the repo against a 1.7 m eye and found the median at 3.3x, then
+fixed it in `tools/blender/build_mire_map_kit.py` and `build_flora_set.py`.
+
+Closed here rather than left open so nobody works both.
+
+### F-402 · A bare workbench stands alone in open ground because the station_camp POI places a single prop and calls it a camp — **fixed**
+
+**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "there was just a random crafting bench in the middle of
+the map as well."
+
+`content/poi/station_camp.tres` is `scene_path =
+"res://assets/crafting_stations/exports/station_workbench_primitive.glb"` with `target_count = 1`.
+`world/gen/procedural_world.gd:342-347` instantiates whatever single scene a POI names. So the whole
+of a "camp" is one workbench dropped on the ground, with no shelter, no fire, no clutter, and nothing
+explaining why it is there.
+
+It reads as a bug rather than a location, which is how it got reported.
+
+Two things are wrong and they are separable:
+
+1. **A POI is one prop.** `PoiDef.scene_path` is a single file, so any POI richer than one mesh needs
+   either an authored `.tscn` that groups several props, or a builder that assembles one from the
+   kit. The authored map made its camps by hand-placing a cluster; nothing carries that forward.
+   `assets/camp/` and `assets/crafting_stations/` hold the pieces — `station_campfire`,
+   `station_woodcutting_block`, `station_stone_furnace`, `station_repair_bench`,
+   `station_cooking_spit`, `station_anvil` — and F-395 records that six of them are placed nowhere.
+2. **One camp per island.** `target_count = 1` on a 295 m island means most runs never find it, and
+   the one that exists carries the map's entire crafting affordance.
+
+Fix: build the camp as a small authored group (fire, workbench, one or two stations, a tent or
+crate, some clutter) rather than a lone mesh, and raise the count now that the island has room. The
+same shape applies to `standing_stones`, which has the same one-prop problem and currently
+under-places at 3-4 of its target 6.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** `content/poi/station_camp.tres` now points at an authored group (`entities/props/camp_abandoned.tscn`)
+instead of a single `station_workbench_primitive.glb`, and `standing_stones` got the same treatment
+via `entities/props/standing_stone_circle.tscn` — the finding noted it had the identical one-prop
+problem.
+
+`world_contract_check` reports the measurable half: **registered_stations 1 -> 4** on the shipped map.
+It is a place now, not a bench alone in a field.
+
+### F-399 · The ground is one flat untextured colour per biome, so large areas read as dead space — **fixed**
+
+**Area:** art · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Requested from play (2026-08-20, Sequoyah): "Maybe we can make a texture for the ground rather than
+just having it be one flat color, maybe subtle texture would be good for the ground."
+
+`world/chunk/terrain_flat.gdshader` assigns `ALBEDO = ground_albedo * albedo_color` and nothing else —
+a single colour per vertex, blended between biomes. On the small 118 m island that was survivable; at
+F-368's 295 m radius there are long stretches of unbroken single-value ground in frame.
+
+**The constraint that makes this non-obvious:** the terrain is deliberately flat-shaded low-poly, and
+the facets are the look. A conventional tiled texture would fight them, and the mesh has no UVs to
+tile one against anyway.
+
+What suits it is procedural breakup in the shader, in world space, at a scale ABOVE the facet size so
+it reads as ground variation rather than as noise on each triangle — a low-frequency value/hue drift
+plus a slight per-facet tint jitter. That keeps the faceted read (which the project wants) while
+stopping a hillside from being one RGB value across forty metres.
+
+Judge it against F-397's re-authored palette, not before — a texture tuned against the wrong base
+colour has to be redone.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** `world/chunk/terrain_flat.gdshader` now breaks the ground up procedurally in WORLD space rather than
+painting one flat colour per biome — a broad 58 m band evaluated per-vertex plus finer octaves, with
+`ground_detail_strength` as the single tuning knob.
+
+The constraint in the finding drove the shape of the fix: the terrain is deliberately flat-shaded
+low-poly with no UVs, so the noise scale sits deliberately ABOVE facet size. Below it, the effect
+reads as dithering sitting on each triangle, which is worse than the flat colour it replaces.
+
+Verified: terrain_normal_check 0, terrain_check 0, biome_terrain_check 0.
+
+### F-398 · The terrain has no ambient occlusion, so nothing is grounded where it meets the ground — **fixed**
+
+**Area:** render · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Requested from play (2026-08-20, Sequoyah): "can we add ambient occulusion to the game maybe?"
+
+The `WorldEnvironment` in `levels/procedural_island.tscn` (and the three other level scenes) has no
+SSAO configured, and `world/environment/playtest_atmosphere.gd` — which drives every other
+environment knob on the daylight curve — never touches it.
+
+The visible consequence in the playtest captures is that trunks, rocks and props meet the terrain
+with no contact darkening at all, so everything reads as sitting ON the ground rather than IN it, and
+the flat-shaded low-poly forms lose the crease shading that would otherwise separate them from the
+surface behind. It is also part of why the scene reads as one flat hue band (F-397/F-379): with no
+occlusion term, the only thing separating a prop from the ground is its albedo.
+
+Forward+ supports SSAO, so this is configuration rather than new rendering work.
+
+**Must be preset-gated.** SSAO is a per-pixel screen-space pass and this project's standing
+performance goal targets the worst machines. `autoload/graphics_quality.gd`'s LOW preset already
+turns off `glow` and `volumetric` for exactly this reason; SSAO belongs in the same list, off on LOW
+and on above it, with the cost measured rather than assumed.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** SSAO enabled on all four level scenes (`procedural_island`, `hollowmere`, `playtest_hollow`,
+`greybox_test`), and **off on the LOW graphics preset** alongside `glow` and `volumetric`, which is
+where the finding said it belonged — `autoload/graphics_quality.gd` carries `"ssao": false` on LOW,
+so the pass does not run at all there rather than running at reduced quality.
+
+Verified: graphics_quality_check 0, grade_check 0, atmosphere_night_check 0.
+
+### F-395 · The procedural island ignores 141 assets the authored map used — 699 placements of already-built content, including every pine, birch and meadow grass — **fixed**
+
+**Area:** worldgen · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "I know we had like five or more tree types. Why is there
+only one tree ever placed on the map?" and "There are so many assets in the old map, make sure we're
+not wasting those."
+
+Measured, by diffing `world/gen/layouts/playtest_hollow.json`'s prop list against every `asset` id
+reachable from `content/scatter/*.tres` and `content/poi/*.tres`:
+
+    the authored map places      152 distinct assets
+    the procedural island can     57
+    unused                       141 distinct, 699 placements
+
+By kit:
+
+    environment         634 placements, 104 assets  — grass_meadow_*, grass_seedhead_*, grass_clump_*,
+                                                      grass_tuft_*, tree_pine_a..f, tree_birch_a..d,
+                                                      tree_bare_a..d, tree_crooked_a..d, fences, ...
+    pickups              22 placements,  11 assets
+    loot                 16 placements,   7 assets
+    harvestables         12 placements,   5 assets
+    crafting_stations     7 placements,   6 assets
+    tools_weapons         7 placements,   7 assets
+
+The tree case is the sharpest illustration. `content/scatter/forest_canopy.tres` holds four entries
+and three of them are `tree_willow_a/b/c` from the `flora` kit, with `tree_snag_a` at weight 0.2.
+Meanwhile **eighteen** built, exported, previously-shipped trees sit in `assets/environment/exports/`
+— six pines, four birches, four bare, four crooked — referenced by nothing the procedural island
+loads. Three near-identical willows is why it reads as one tree species.
+
+None of this needs new art. It needs scatter entries, and in a few cases a `scene_path` on a POI def.
+`HarvestLibrary.HARVEST_RULES` already maps the `tree_` prefix to `wild_tree`, so every one of those
+eighteen becomes choppable the moment it is placed, with no code change.
+
+Worth stating plainly because it explains a whole class of "the procedural map feels empty" reports:
+the authored map was dressed by hand from the full kit, and the procedural generator was given a
+small hand-written subset of it. Nothing checks that the two agree, so the gap is invisible.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** 31 new scatter and biome defs pull the authored map's kit onto the procedural island: all eighteen
+`tree_pine_/birch_/bare_/crooked_` trees from `assets/environment/exports/`, the
+`grass_meadow_*`/`grass_seedhead_*`/`grass_clump_*`/`grass_tuft_*` families, the `wetland_nature/`
+props (mangrove, hollow tree, uprooted tree) and `mire_broadleaf_tree`.
+
+The finding's central point is what made this cheap: none of it needed new art, only scatter entries.
+`HarvestLibrary.HARVEST_RULES` already maps the `tree_` prefix to `wild_tree`, so all eighteen became
+choppable the moment they were placed, with no code change.
+
+The tree case was the sharpest illustration and is fixed at the root: `forest_canopy.tres` held three
+near-identical willows, which is why the island read as having one tree species.
+
+Landed in `ef962b1`. **This change is also what surfaced F-407** — going from 9 scatter tables to 31
+took the worst frame from 29 ms to 1009 ms, because each new asset paid a synchronous main-thread
+`load()` on first sight. Fixed separately; worth knowing that widening content this far has a cost
+that does not show up in a content check.
+
+### F-397 · F-379's grade pass turned the forest floor brown, which is further from the target than the green it replaced — **fixed**
+
+**Area:** art · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah), on the change that shipped hours earlier: "the game
+lighting/color grading looks really bad, i really dislike the gross brown ground thats been added."
+
+F-379 gave biomes their own ground colour, which was right — the island had been one flat green. The
+values chosen were not. Uncommitted at the time of this report, in `content/biomes/`:
+
+    forest      Color(0.231, 0.220, 0.184)   <- red == green, and more red than blue. This is mud.
+    grassland   Color(0.380, 0.420, 0.310)   <- desaturated olive
+    shore       Color(0.569, 0.541, 0.471)   <- sand, and the one that is defensible
+
+`world/gen/biome_def.gd`'s own default is `Color(0.26, 0.40, 0.19)` — a real green — so the forest
+biome moved a long way from it in the desaturating direction.
+
+**The reasoning error is worth recording, because it is easy to repeat.** The original complaint was
+"game looks to green/yellow". The problem there was that ground, canopy and light all sat in one
+narrow hue band so nothing separated from anything else. The fix for *no separation* is to separate
+— by hue between biomes, and by value between ground and canopy. Desaturating toward brown reduces
+separation further, and it also walks away from the standing art direction for this project, whose
+reference is Muck: bright, saturated green ground.
+
+"Too green" was never a request for "less green". It was a request for the greens to differ from each
+other and from what stands on them.
+
+Fix: keep the per-biome colour mechanism F-379 added; re-author the values in the green family with
+real hue separation (a cool deep green under forest canopy, a warmer yellow-green meadow, sand only
+at the shore), then re-judge the grade on top of them rather than the other way round.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** The rejected `Color(0.231, 0.220, 0.184)` forest mud is gone. All seven biomes now have green
+dominant (G > R and G > B) except shore, which is sand deliberately:
+
+    forest     0.169, 0.329, 0.161      birchwood  0.278, 0.451, 0.212
+    grassland  0.373, 0.588, 0.235      heath      0.451, 0.482, 0.243
+    highland   0.235, 0.396, 0.325      marsh      0.129, 0.267, 0.216
+    shore      0.588, 0.549, 0.427
+
+The finding's reasoning held up: "too green/yellow" was never a request for less green, it was a
+request for the greens to differ from each other. Separation now comes from hue and value between
+biomes rather than from desaturating toward brown.
+
+Worth recording that the palette was then blamed a second time and was NOT at fault — see F-409. The
+ground still rendered as radioactive lime because `DAY_TONEMAP_WHITE = 1.0` clipped it per channel.
+Good albedos can look terrible through a bad grade, and the fix was in the grade.
+
+### F-401 · The island has three biomes that differ almost entirely by a single moisture threshold, so nothing reads as a distinct place — **fixed**
+
+**Area:** worldgen · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Requested from play (2026-08-20, Sequoyah): "let's get some proper biome generation going, like we
+should have some distinct, unique biomes, not just everything going everywhere."
+
+`content/biomes/` holds exactly three defs, and the two that cover the whole interior are separated
+by one number:
+
+    forest      height 1.6-100, moisture 0.5-1.0, detail 1.15, ridge 0.90
+    grassland   height 1.6-100, moisture 0.0-0.5, detail 0.80, ridge 0.25
+    shore       height -100-1.6, moisture 0.0-1.0, detail 0.35, ridge 0.00
+
+So "forest" is the wet half of the island and "grassland" is the dry half, split at moisture 0.5,
+with the same height band and near-identical everything else. Before F-397 they did not even differ
+in colour. The result is what was reported: no sense of arriving anywhere, because there is nowhere
+distinct to arrive at.
+
+Compounding it, the scatter tables map one-to-one onto those three ids, so every table applies across
+half the island at uniform density. "Dense forested regions and then some more open areas" (the same
+playtest) is not expressible in this arrangement — there is no *region*, only a moisture gradient.
+
+What is missing is not more biome rows, it is the axes that would make rows mean something:
+
+- **Real regions rather than a global threshold.** Moisture is smooth noise, so the forest/grassland
+  boundary is a soft contour that wanders the whole island. Distinct places need clustered domains —
+  a low-frequency region field, or Voronoi-style cells — so a forest has an edge you cross.
+- **More than one distinguishing axis.** Height band, slope, distance from shore and distance from
+  the river are all already computable and none of them select a biome today.
+- **Per-biome density and character, not just a different asset list.** A marsh should be sparse and
+  low; a deep wood should be dense and dark; a meadow should be open with high grass coverage.
+- **Somewhere between five and eight biomes**, so the island can hold contrast without any one of
+  them being rare enough that a run never sees it.
+
+`world/gen/biome_map.gd` is where selection happens and `world/gen/scatter_def.gd`'s `biome_id` is
+how content binds to it, so both the mechanism and the content hook already exist — what is missing
+is the region structure feeding them.
+
+Do this together with F-395 (141 unused authored-map assets): the reason to have distinct biomes is
+to give that content somewhere characteristic to go.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** Three biomes separated by one moisture threshold became **seven** separated on height AND moisture:
+shore / marsh / forest / birchwood / highland / grassland / heath, each with its own scatter tables,
+ground albedo and terrain amplitudes.
+
+Measured spread at seed 20260819 (`tools/terrain_map_render.gd` now reports it):
+
+    forest 27.1%  shore 22.3%  grassland 14.1%  marsh 12.9%
+    birchwood 12.0%  heath 6.5%  highland 5.2%
+
+Nothing is rare enough that a run never sees it, and nothing dominates.
+
+Landed in `ef962b1`. Verified: biome_terrain_check 0, resource_scatter_check 0, terrain_check 0,
+world_contract_check PASS.
 
 ### F-409 · The daytime white point clips sunlit ground per-channel, and a 1.30 saturation boost multiplies the clipped result — the ground renders radioactive lime — **fixed**
 
