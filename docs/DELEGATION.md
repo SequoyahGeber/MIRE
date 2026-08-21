@@ -75,6 +75,63 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-21 — 3.18/3.19: the tool ladder has five rungs and the game has a narrator (birche6b40e)
+
+**Spec: `docs/PROGRESSION.md`. Calls: D-200 (the ladder), D-201 (guidance).** Both tasks came from one
+directive — the tools had no progression and nothing ever told a player what the game wanted.
+
+**The code half is committed (5f115a8) and pushed. The CONTENT half is not, and is blocked on the
+Godot editor being closed (D-031/D-021), not on anything else.** Everything below is the API the
+authoring pass builds against.
+
+**`ProgressionService`** (autoload, *not yet registered — see below*) owns the party's high-water tool
+rung for the run:
+
+```gdscript
+ProgressionService.tier_reached() -> int          # 0..5, party-wide, high-water
+ProgressionService.is_tier_reached(t) -> bool
+ProgressionService.tier_of_item(id) -> int        # reads ItemDef.tool_tier
+ProgressionService.tier_name(t) -> String         # "" / Wood / Stone / Iron / Bogsilver / Wellglass
+ProgressionService.host_raise_tier(t, item_id)    # HOST-only; idempotent, rises only
+ProgressionService.host_reset_run()
+EventBus.subscribe_tier_reached(func(tier: int, item_id: StringName) -> void)
+```
+
+Host-owned, replicated through `WorldDeltaLog` under `kind = &"progression"`, re-derived on every peer
+— no new RPC, so **no protocol bump**. `CraftingService._finish_craft()` is the one caller;
+`SalvageService` scores `TIER_REACHED_BONUS` per rung, which is the "tiers reached" milestone
+`DESIGN.md` §4.6 has always listed and never had a fact for.
+
+**One new authored field: `ItemDef.tool_tier` (0..5).** 0 means "not a rung". `tools/progression_check.gd`
+fails any TOOL/WEAPON item that leaves it at 0 — an unauthored tier is a tool that silently never
+advances the ladder, which is the least debuggable content bug available.
+
+**`GuideService`** (autoload, *not yet registered*) + `GuideHud`: the objective line, one-shot tips,
+the tier fanfare. Content family `content/guide/*.tres` → `GuideStepDef`, indexed by `Registry.guide_step_defs()`.
+Conditions are the `GuideStepDef.Condition` enum, never a string. `GuideService.evaluate()` is public
+so a check can step a scripted run without waiting out real seconds. Off switch:
+`SettingsService.guidance_mode()` (0 FULL / 1 OBJECTIVES ONLY / 2 OFF) plus `has_seen_tip()`,
+`mark_tip_seen()`, `reset_seen_tips()`; settings schema is now version 3.
+
+Two small accessors were added for it and are worth knowing about because they are the reusable half:
+`CraftingService.station_count(id)` (a PARTY fact — any station anywhere, riding the F-286 cache) and
+`FocusPrompt.focus_is_blocked()` (is the player looking at something their tool cannot chip).
+
+**What is left, in order — all of it `.tres`, all of it editor-gated:**
+
+1. **`content/guide/`** — the objective ladder `tools/guide_check.gd` already names in order
+   (`gather_fibre`, `craft_first_axe`, `chop_a_tree`, `place_workbench`, then the Wellspring/anvil/
+   guardian rungs) and the tips of `PROGRESSION.md` §5.2.
+2. **T3's missing iron axe**, then all of T4/T5: items + `WeaponDef`s + recipes, the **anvil** station
+   (tier 3, recipe costs a Wellglass Shard), the **bogsilver outcrop** harvestable and its scatter
+   entries, `wellglass_shard` into the `wellspring` loot table and `guardian_core` into the `boss` one.
+3. **Register three autoloads** — `agent autoload ProgressionService res://autoload/progression_service.gd`,
+   same for `GuideService` (`res://autoload/guide_service.gd`) and `GuideHud` (`res://ui/hud/guide_hud.gd`).
+   Order matters only in that `GuideHud` must come after `GuideService`.
+
+`tools/progression_check.gd` and `tools/guide_check.gd` both fail today, and they fail by **naming
+exactly what is unauthored** — run them first, and treat their output as the authoring worklist.
+
 ### 2026-08-21 — F-461: the placement pass is off-thread, and LOD changes retarget instead of rebuilding (quillcfd8d7)
 
 Traversal hitches went from **172 frames / 18.7% of the wall clock to 27 frames / 2.6%**, and the

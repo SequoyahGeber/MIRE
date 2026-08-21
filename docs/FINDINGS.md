@@ -69,6 +69,33 @@ do is worth as much as the record of what we did.
 
 ## Open
 
+### F-472 · Placement snaps to a fixed world grid with no toggle and no piece-to-piece mating, so a structure lines up only where the grid happens to agree
+
+**Area:** systems/building · **Severity:** medium · **Found:** 2026-08-21 by coil26502f, raised by Sequoyah
+
+`PlacementValidator.snap_transform()` rounds x and z to the piece's authored `snap_step` (1.0 m for
+every shipped piece) and snaps yaw to `rotation_step_degrees`. That is the whole of the snapping
+system, and it has three problems the moment someone tries to build an actual structure:
+
+1. **It is a world grid, not a piece grid.** Two walls line up only because both landed on the same
+   metre lines. A 2.0 m wall on a 1.0 m grid can be placed half-overlapping its neighbour or one
+   metre away from it, and nothing pulls it flush. Nothing mates a floor to a floor edge-to-edge, and
+   nothing stacks a wall on top of a wall except D-056's incidental "the aim ray reports the piece's
+   real top surface", which only works while you are aiming straight down at it.
+2. **There is no way to turn it off.** `snap_step` is authored per piece and read from the `.tres`,
+   so a player who wants a barricade at an angle across a path cannot have one — the grid is not a
+   preference, it is a property of the piece.
+3. **The host re-snaps.** `BuildService._process_place()` re-runs `snap_transform()` on whatever the
+   client sent (`autoload/build_service.gd:194`), which is correct as authority but means any snapping
+   the client invents that the host does not reproduce will visibly move the piece on placement.
+
+Sequoyah's requirement, verbatim: *"they should be able to be placed anywhere but when building
+pieces near each other I want there to be a snapping toggle so that it's easy to build structures
+without little gaps and stuff."* So the target behaviour is free placement by default, with an
+explicit toggle that mates a piece to its neighbours' real edges — not a finer grid.
+
+**Being fixed now** by this session under D-202.
+
 ### F-468 · Re-running either art generator rewrites every asset it owns with no pixel or vertex change, so a one-piece addition looks like a 48-file rebuild
 
 **Area:** tooling/assets · **Severity:** low · **Found:** 2026-08-21 by coil26502f during 3.7
@@ -3389,6 +3416,33 @@ Also fixed alongside: `--tag` (added so a sequence of ablation runs does not ove
 reports) changed the ledger's filename, but `_check_ledger()` still asserted against the untagged
 path, so `discard() removes the ledger` failed on any tagged run. The check now asks the writer for
 its own path instead of rebuilding it.
+
+---
+
+### F-471 · Scatter has no slope gate at all, so trees grow straight out of cliff faces
+
+**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-21 by onyx059945
+
+Found while photographing F-464's cliffs (`assets/audit/cliffs/cliff_8102602.png`, first pass): birch
+and maple stand at right angles to a 60-degree rock face, roots in mid-air, with more of them further
+up it. It is the single most artificial thing in the frame — more so than the wall F-464 removed.
+
+`world/gen/resource_scatter.gd` and `world/gen/resource_scatter_field.gd` contain no slope term of
+any kind: `grep -n "slope\|normal.y\|steep"` over both returns nothing. Placement gates on biome,
+height band, moisture and spacing, and a candidate on a cliff passes all four exactly as one on a
+meadow does.
+
+The terrain now hands out the number this needs for free. `ChunkMesher._rock_exposure()` (F-464)
+derives a 0..1 rock mask from the emitted surface's own tilt and ships it in the vertex colour's
+alpha, so "is this ground a face" is already computed per vertex on every chunk. A scatter rule
+wanting the same fact should read the slope the same way rather than inventing a second definition
+of steep — the two disagreeing is how you get a tree standing on bare rock the shader has already
+painted as bare rock.
+
+Rough shape of the fix: a per-`ScatterDef` maximum slope, defaulting to something under the rock
+mask's own `ROCK_START_SLOPE_DEG` (34) for anything that roots, and left open for boulders and
+scree, which belong on a face. Not filed as part of F-464 because both scatter files are claimed by
+F-461 and this is a scatter rule, not a terrain one.
 
 ---
 

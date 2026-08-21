@@ -6661,7 +6661,7 @@ sees every byte of it that did not need to change.
 **Would change my mind:** if NODE harvestables ever became the majority of a chunk's placements, the
 narrow rebuild would stop being narrow and both representations would need to coexist instead.
 
-## D-199 — the floor is a deck piece, not a slab, and it stands at the height the ramp already climbs to
+### D-199 · 2026-08-21 · The floor is a deck piece, not a slab, and it stands at the height the ramp already climbs to
 
 Task 3.7 names "walls/floors/ramps/doors" and the shipped set had thirteen pieces without a floor in
 it. The gap mattered more than one missing row: the construction kit's whole contract is built around
