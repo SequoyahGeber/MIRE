@@ -12,6 +12,7 @@ display_name = "Short Bow"
 description = "Draws slow, hits hard. Needs arrows."
 icon = ExtResource("1_uhe0b")
 category = 2
+tool_tier = 1
 stack_size = 1
 world_model = ExtResource("3_axb2g")
 view_model = ExtResource("3_xy7ha")

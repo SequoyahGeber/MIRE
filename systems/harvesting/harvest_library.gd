@@ -72,6 +72,13 @@ const HARVEST_RULES: Array = [
 	["stone_node_", "", Represent.NODE],
 	["iron_node_intact", "iron_node", Represent.NODE],
 	["iron_node_", "", Represent.NODE],
+	## Task 3.18's tier-4 source. The definition ships ahead of its art (F-473): no export is named
+	## `bogsilver_node_*` yet, so this rule currently claims nothing and the seam simply does not
+	## appear in the world. That is correct data waiting, the same posture ITEMS.md §4.2 takes for a
+	## drop authored ahead of its creature — and bogsilver is reachable meanwhile because a Wellspring
+	## cap grants ore outright (content/loot/wellspring.tres `guaranteed`).
+	["bogsilver_node_intact", "bogsilver_node", Represent.NODE],
+	["bogsilver_node_", "", Represent.NODE],
 
 	## Wood.
 	["mire_broadleaf_tree", "wild_tree", Represent.NODE],

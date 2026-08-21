@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="GuideStepDef" format=3]
+
+[ext_resource type="Script" path="res://systems/guide/guide_step_def.gd" id="1_tip_first_night"]
+
+[resource]
+script = ExtResource("1_tip_first_night")
+id = &"tip_first_night"
+kind = 1
+text = "Night is when things come looking. Walls help. So does not being outside."
+order = 0
+require = 0
+require_count = 1
+satisfied_by = 7
+satisfied_count = 1
+once_per_profile = true
+seconds = 6.0

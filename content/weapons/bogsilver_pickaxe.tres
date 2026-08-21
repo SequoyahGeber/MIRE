@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="WeaponDef" format=3]
+
+[ext_resource type="Script" path="res://systems/combat/weapon_def.gd" id="1_bogsilver_pickaxe"]
+
+[resource]
+script = ExtResource("1_bogsilver_pickaxe")
+item_id = &"bogsilver_pickaxe"
+display_name = "Bogsilver Pickaxe"
+wind_up_seconds = 0.30
+commit_seconds = 0.14
+recovery_seconds = 0.42
+range_m = 2.8
+arc_degrees = 86
+damage = 8
+hitstop_seconds = 0.10
+shake_magnitude = 0.16
+shake_duration = 0.26
+tool_class = 2
+harvest_power = 4

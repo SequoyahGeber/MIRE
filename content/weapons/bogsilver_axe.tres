@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="WeaponDef" format=3]
+
+[ext_resource type="Script" path="res://systems/combat/weapon_def.gd" id="1_bogsilver_axe"]
+
+[resource]
+script = ExtResource("1_bogsilver_axe")
+item_id = &"bogsilver_axe"
+display_name = "Bogsilver Axe"
+wind_up_seconds = 0.27
+commit_seconds = 0.13
+recovery_seconds = 0.35
+range_m = 2.8
+arc_degrees = 98
+damage = 9
+hitstop_seconds = 0.095
+shake_magnitude = 0.15
+shake_duration = 0.25
+tool_class = 1
+harvest_power = 4

@@ -12,6 +12,7 @@ display_name = "Stone Axe"
 description = "A rough chopping tool that doubles as a close-range weapon."
 icon = ExtResource("1_s6mdt")
 category = 2
+tool_tier = 2
 stack_size = 1
 world_model = ExtResource("2_k8e8q")
 view_model = ExtResource("2_s6mdt")

@@ -266,15 +266,18 @@ Headless, through `agent godot` (never bare — F-044):
 
 ---
 
-## 9 · Current state — what shipped, what is left, and what is blocking it
+## 9 · Current state — what shipped
 
-*Written 2026-08-21 (birche6b40e), at commit 5f115a8. This section is here rather than in
-`DELEGATION.md`'s Current state because a sibling holds an exact claim on that file; fold it across
-when the claim frees.*
+*Written 2026-08-21 (birche6b40e). Code half at 5f115a8, content half at the commit that carries this
+edit. Fold into `DELEGATION.md`'s Current state when the exact claim on that file frees.*
 
-### Shipped and pushed — the code half of both tasks
+**Both tasks are complete and both checks are green** — `tools/progression_check.gd` and
+`tools/guide_check.gd`, plus `harvest_tool_ladder_check`, `crafting_check`, `settings_check`,
+`salvage_check`, `chest_check`, `focus_prompt_check` and `build_check` re-run without regression. A
+headless boot reports **37 items · 19 recipes · 3 stations · 14 weapons · 15 buildables · 19 guide
+steps**.
 
-`ProgressionService` (autoload script, **not yet registered**) owns the party's high-water rung:
+### The API other tasks build against
 
 ```gdscript
 ProgressionService.tier_reached() -> int          # 0..5, party-wide, high-water
@@ -291,34 +294,44 @@ peer — **no new RPC, so no protocol bump.** `CraftingService._finish_craft()` 
 `SalvageService` scores `TIER_REACHED_BONUS` per rung, which is the "tiers reached" milestone
 `DESIGN.md` §4.6 has always listed and never had a fact for.
 
-`GuideService` + `GuideHud` (both **not yet registered**) ship the objective line, the one-shot tips
-and the tier fanfare, over the `content/guide/*.tres` → `GuideStepDef` family that
-`Registry.guide_step_defs()` now indexes. `GuideService.evaluate()` is public so a check can step a
-scripted run without waiting out real seconds. Off switch: `SettingsService.guidance_mode()`
-(0 FULL / 1 OBJECTIVES ONLY / 2 OFF) plus `has_seen_tip()` / `mark_tip_seen()` / `reset_seen_tips()`,
-surfaced on Settings → Accessibility. **The settings save schema is now version 3.**
+`GuideService` + `GuideHud` draw the objective line, the tips and the tier fanfare over
+`content/guide/*.tres` → `GuideStepDef`, indexed by `Registry.guide_step_defs()`. `GuideService.evaluate()`
+is public so a check can step a scripted run without waiting out real seconds. Off switch:
+`SettingsService.guidance_mode()` (0 FULL / 1 OBJECTIVES ONLY / 2 OFF) plus `has_seen_tip()` /
+`mark_tip_seen()` / `reset_seen_tips()`, surfaced on Settings → Accessibility. **Settings save schema is
+now version 3**; `settings_check` reads `SCHEMA_VERSION` off the constant now rather than a literal, so
+the next migration does not fail it.
 
-Two small accessors were added for the conditions and are the reusable half: `CraftingService.station_count(id)`
-— a PARTY fact, any station anywhere, riding the F-286 cache — and `FocusPrompt.focus_is_blocked()`,
-which is whether the player is looking at something their held tool cannot chip.
+Three smaller seams worth knowing, because they are the reusable half:
 
-One new authored field: **`ItemDef.tool_tier` (0..5)**, 0 meaning "not a rung".
+- `CraftingService.station_count(id)` — a PARTY fact (any station anywhere, riding the F-286 cache),
+  as opposed to `local_station_in_range()`, which is a fact about where you are standing.
+- `FocusPrompt.focus_is_blocked()` — is the player looking at something their held tool cannot chip.
+- **`LootTableDef.guaranteed`** — entries granted on every roll, before and independent of the weighted
+  draws. This is what makes a cap actually *pay* a Wellglass Shard: a gate that pays out on a weighted
+  draw is a slot machine standing where a rung should be. ITEM entries only, and every other table
+  leaves it empty and behaves exactly as before.
 
-### Left to do — all of it `.tres`, all of it editor-gated (D-031/D-021)
+### What the content half authored
 
-The Godot editor was open for the whole of this session, so nothing below could be authored without
-risking the editor rewriting it on save.
+| | |
+|---|---|
+| Items | `iron_axe` (the rung 3 gap 3.1 left), `bogsilver_ore`, `bogsilver_ingot`, `bogsilver_axe`, `bogsilver_pickaxe`, `wellglass_shard`, `guardian_core`, `wellglass_axe`, `wellglass_pickaxe`; `tool_tier` authored on all thirteen pre-existing tools and weapons |
+| Weapons | the five new `WeaponDef`s — harvest power 3 · 4 · 4 · 6 · 6 |
+| Recipes | `iron_axe`, `bogsilver_ingot` (furnace, 12 s), `bogsilver_axe`, `bogsilver_pickaxe`, `wellglass_axe`, `wellglass_pickaxe` (anvil) |
+| Station | **anvil** — `StationDef` tier 3, a `BuildableDef` costing 6 iron · 4 log · **1 Wellglass Shard**, and `scenes/buildables/anvil.tscn` over the `station_anvil` art that already existed |
+| Harvestable | `bogsilver_node` ("Bogsilver Seam"), 12 health, mine-only, wrong tool scaled to zero |
+| Loot | `wellglass_shard` + `bogsilver_ore` guaranteed on a Wellspring cap; `guardian_core` guaranteed on a boss |
+| Guidance | 13 objectives (`gather_fibre` → `push_or_leave`) and 6 tips |
 
-1. **`content/guide/`** — the objective ladder `tools/guide_check.gd` already names in order
-   (`gather_fibre`, `craft_first_axe`, `chop_a_tree`, `place_workbench`, then the Wellspring / anvil /
-   guardian rungs) plus the tips of §5.2.
-2. **T3's missing iron axe**, then all of T4 and T5: items, `WeaponDef`s, recipes, the **anvil**
-   station (tier 3, its recipe costing a Wellglass Shard), the **bogsilver outcrop** harvestable and
-   its scatter entries, `wellglass_shard` into the `wellspring` loot table and `guardian_core` into
-   the `boss` one.
-3. **Register three autoloads** — `agent autoload ProgressionService res://autoload/progression_service.gd`,
-   the same for `GuideService` and for `GuideHud` (`res://ui/hud/guide_hud.gd`). Order matters only in
-   that `GuideHud` must come after `GuideService`.
+### Known gaps, each with a finding
 
-`tools/progression_check.gd` and `tools/guide_check.gd` both fail at this commit, and they fail by
-**naming exactly what is unauthored** — run them first and treat the output as the worklist.
+- **F-473 — art.** Five tools share two models: `iron_axe`/`bogsilver_axe`/`wellglass_axe` are all on
+  the stone axe's exports, both new pickaxes on the iron pickaxe's, and the four new materials borrow
+  iron/flint art. The bogsilver seam has **no** art, so its `HarvestLibrary` rule claims nothing and it
+  never appears in a world — tier 4 is reachable meanwhile only because a cap grants ore outright.
+- **F-474 — the co-op texture of rung 4.** §2.1 promises bogsilver drops as a two-player Heavy Chunk;
+  it ships as a plain stackable item, because `HarvestableDef` can only name a `yield_item_id`. The
+  rung's objective gate is unaffected and proven; what is missing is the reason to carry it together.
+- **F-469 — unrelated, found in passing.** Four recent decision headings use a shape
+  `decision_ref_check.py` cannot see.

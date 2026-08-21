@@ -165,6 +165,24 @@ max_amount = 1
 rarity = 3
 weight = 1.0
 
+[sub_resource type="Resource" id="Resource_shard"]
+script = ExtResource("2_lootentry")
+kind = 0
+item_id = &"wellglass_shard"
+min_amount = 1
+max_amount = 2
+rarity = 0
+weight = 1.0
+
+[sub_resource type="Resource" id="Resource_bsore"]
+script = ExtResource("2_lootentry")
+kind = 0
+item_id = &"bogsilver_ore"
+min_amount = 1
+max_amount = 2
+rarity = 0
+weight = 1.0
+
 [resource]
 script = ExtResource("1_loottable")
 id = &"wellspring"
@@ -172,3 +190,4 @@ coin_min = 40
 coin_max = 80
 roll_count = 3
 entries = Array[ExtResource("2_lootentry")]([SubResource("Resource_0"), SubResource("Resource_1"), SubResource("Resource_2"), SubResource("Resource_3"), SubResource("Resource_4"), SubResource("Resource_5"), SubResource("Resource_6"), SubResource("Resource_7"), SubResource("Resource_8"), SubResource("Resource_9"), SubResource("Resource_10"), SubResource("Resource_11"), SubResource("Resource_12"), SubResource("Resource_13"), SubResource("Resource_14"), SubResource("Resource_15"), SubResource("Resource_16"), SubResource("Resource_17")])
+guaranteed = Array[ExtResource("2_lootentry")]([SubResource("Resource_shard"), SubResource("Resource_bsore")])

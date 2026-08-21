@@ -15,9 +15,10 @@ const PROGRESSION := preload("res://autoload/progression_service.gd")
 ## The rung each tool sits on. Read as the ladder's own spec: an item here that does not exist yet is
 ## a failure with a name, which is exactly what the authoring pass wants to see.
 const EXPECTED_TIERS: Dictionary = {
-	&"wooden_axe": 1, &"wooden_pickaxe": 1,
+	&"wooden_axe": 1, &"wooden_pickaxe": 1, &"sling": 1, &"short_bow": 1,
 	&"stone_axe": 2, &"stone_pickaxe": 2,
 	&"iron_axe": 3, &"iron_pickaxe": 3, &"iron_sword": 3, &"cleaver": 3, &"skewer": 3,
+	&"repair_hammer": 3, &"longbow": 3, &"crossbow": 3,
 	&"bogsilver_axe": 4, &"bogsilver_pickaxe": 4,
 	&"wellglass_axe": 5, &"wellglass_pickaxe": 5,
 }
@@ -154,12 +155,18 @@ func _ingredient_closure(registry: Node, item_id: StringName) -> Dictionary:
 			# The station this recipe needs is part of the gate: an Anvil recipe that costs a shard
 			# is what makes every Anvil product gated, not the product's own ingredient list.
 			var station_id := StringName(String(recipe.get(&"station")))
-			if station_id != &"" and bool(registry.call("has_station", station_id)):
-				var station: Resource = registry.call("get_station", station_id) as Resource
-				if station != null:
-					var buildable_id := StringName(String(station.get(&"id")))
-					if not seen.has(buildable_id):
-						frontier.append(buildable_id)
+			if station_id == &"" or not bool(registry.call("has_station", station_id)):
+				continue
+			# A station is a gate with its own price. The Anvil is not crafted — it is BUILT, and its
+			# `BuildableDef.cost` is where the Wellglass Shard is actually spent, so the closure has
+			# to walk into the buildable of the same id or it would conclude the Anvil is free.
+			if bool(registry.call("has_buildable", station_id)):
+				var buildable: Resource = registry.call("get_buildable", station_id) as Resource
+				if buildable != null:
+					var cost: Dictionary = buildable.get(&"cost") as Dictionary
+					for cost_id: StringName in cost:
+						if not seen.has(cost_id):
+							frontier.append(cost_id)
 	return seen
 
 

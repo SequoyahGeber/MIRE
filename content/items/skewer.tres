@@ -12,6 +12,7 @@ display_name = "Skewer"
 description = "All reach, no weight. Poke first."
 icon = ExtResource("1_yk17t")
 category = 2
+tool_tier = 3
 stack_size = 1
 world_model = ExtResource("3_e6g7n")
 view_model = ExtResource("3_wae5a")

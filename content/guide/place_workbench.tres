@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="GuideStepDef" format=3]
+
+[ext_resource type="Script" path="res://systems/guide/guide_step_def.gd" id="1_place_workbench"]
+
+[resource]
+script = ExtResource("1_place_workbench")
+id = &"place_workbench"
+kind = 0
+text = "Get to a workbench — stone tools are made there."
+order = 40
+require = 1
+require_arg = &"log"
+require_count = 1
+satisfied_by = 3
+satisfied_arg = &"workbench"
+satisfied_count = 1

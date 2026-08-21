@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="1_bogsilver_pickaxe"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_iron_pickaxe.png" id="2_bogsilver_pickaxe"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/iron_pickaxe_world.glb" id="3_bogsilver_pickaxe"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/iron_pickaxe_viewmodel.glb" id="4_bogsilver_pickaxe"]
+
+[resource]
+script = ExtResource("1_bogsilver_pickaxe")
+id = &"bogsilver_pickaxe"
+display_name = "Bogsilver Pickaxe"
+description = "Goes through stone like stone went through wood."
+icon = ExtResource("2_bogsilver_pickaxe")
+category = 2
+tool_tier = 4
+stack_size = 1
+world_model = ExtResource("3_bogsilver_pickaxe")
+view_model = ExtResource("4_bogsilver_pickaxe")
+grip_offset = Vector3(0.176, -0.3459, -0.484)
+grip_rotation_degrees = Vector3(1.9, 130.3, 21.5)
+grip_scale = 0.22
+attack_style = 2

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="GuideStepDef" format=3]
+
+[ext_resource type="Script" path="res://systems/guide/guide_step_def.gd" id="1_gather_fibre"]
+
+[resource]
+script = ExtResource("1_gather_fibre")
+id = &"gather_fibre"
+kind = 0
+text = "Punch a bush and a sapling — you need fibre and a branch."
+order = 10
+require = 0
+require_count = 1
+satisfied_by = 1
+satisfied_arg = &"fibre_bundle"
+satisfied_count = 1

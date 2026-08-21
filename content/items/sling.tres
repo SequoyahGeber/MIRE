@@ -12,6 +12,7 @@ display_name = "Sling"
 description = "A cord and a pouch. Throws the stones you were going to trip over anyway."
 icon = ExtResource("1_icon")
 category = 2
+tool_tier = 1
 stack_size = 1
 world_model = ExtResource("3_world")
 view_model = ExtResource("4_view")

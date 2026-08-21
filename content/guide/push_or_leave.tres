@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="GuideStepDef" format=3]
+
+[ext_resource type="Script" path="res://systems/guide/guide_step_def.gd" id="1_push_or_leave"]
+
+[resource]
+script = ExtResource("1_push_or_leave")
+id = &"push_or_leave"
+kind = 0
+text = "Repair the wreck and leave with what you have — or push one more Cycle."
+order = 130
+require = 2
+require_count = 5
+satisfied_by = 13
+satisfied_count = 1

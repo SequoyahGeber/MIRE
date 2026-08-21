@@ -12,6 +12,7 @@ display_name = "Cleaver"
 description = "Fast, mean, and not remotely a tool."
 icon = ExtResource("1_nwlxh")
 category = 2
+tool_tier = 3
 stack_size = 1
 world_model = ExtResource("3_wldif")
 view_model = ExtResource("3_an173")

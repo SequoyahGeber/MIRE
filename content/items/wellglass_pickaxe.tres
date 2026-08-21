@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="1_wellglass_pickaxe"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_iron_pickaxe.png" id="2_wellglass_pickaxe"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/iron_pickaxe_world.glb" id="3_wellglass_pickaxe"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/iron_pickaxe_viewmodel.glb" id="4_wellglass_pickaxe"]
+
+[resource]
+script = ExtResource("1_wellglass_pickaxe")
+id = &"wellglass_pickaxe"
+display_name = "Wellglass Pickaxe"
+description = "Last pickaxe of the run. Nothing on this island argues with it."
+icon = ExtResource("2_wellglass_pickaxe")
+category = 2
+tool_tier = 5
+stack_size = 1
+world_model = ExtResource("3_wellglass_pickaxe")
+view_model = ExtResource("4_wellglass_pickaxe")
+grip_offset = Vector3(0.176, -0.3459, -0.484)
+grip_rotation_degrees = Vector3(1.9, 130.3, 21.5)
+grip_scale = 0.22
+attack_style = 2

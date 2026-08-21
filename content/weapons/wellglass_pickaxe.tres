@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="WeaponDef" format=3]
+
+[ext_resource type="Script" path="res://systems/combat/weapon_def.gd" id="1_wellglass_pickaxe"]
+
+[resource]
+script = ExtResource("1_wellglass_pickaxe")
+item_id = &"wellglass_pickaxe"
+display_name = "Wellglass Pickaxe"
+wind_up_seconds = 0.29
+commit_seconds = 0.14
+recovery_seconds = 0.40
+range_m = 2.9
+arc_degrees = 90
+damage = 11
+hitstop_seconds = 0.115
+shake_magnitude = 0.19
+shake_duration = 0.29
+tool_class = 2
+harvest_power = 6

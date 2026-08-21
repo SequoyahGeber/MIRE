@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="GuideStepDef" format=3]
+
+[ext_resource type="Script" path="res://systems/guide/guide_step_def.gd" id="1_cap_wellspring"]
+
+[resource]
+script = ExtResource("1_cap_wellspring")
+id = &"cap_wellspring"
+kind = 0
+text = "Cap a Wellspring. It pushes the Mire back — and it pays in Wellglass."
+order = 80
+require = 2
+require_count = 3
+satisfied_by = 4
+satisfied_count = 1

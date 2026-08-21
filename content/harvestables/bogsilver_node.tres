@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="HarvestableDef" format=3]
+
+[ext_resource type="Script" path="res://systems/harvesting/harvestable_def.gd" id="1_bsnode"]
+
+[resource]
+script = ExtResource("1_bsnode")
+id = &"bogsilver_node"
+display_name = "Bogsilver Seam"
+max_health = 12
+required_tool = 2
+wrong_tool_scale = 0.0
+yield_item_id = &"bogsilver_ore"
+yield_amount = 1
+respawn_seconds = 420.0

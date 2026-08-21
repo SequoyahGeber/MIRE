@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="1_bogsilver_axe"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_stone_axe.png" id="2_bogsilver_axe"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/stone_axe_world.glb" id="3_bogsilver_axe"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/stone_axe_viewmodel.glb" id="4_bogsilver_axe"]
+
+[resource]
+script = ExtResource("1_bogsilver_axe")
+id = &"bogsilver_axe"
+display_name = "Bogsilver Axe"
+description = "Fells a pine in one honest swing. You will still be tired."
+icon = ExtResource("2_bogsilver_axe")
+category = 2
+tool_tier = 4
+stack_size = 1
+world_model = ExtResource("3_bogsilver_axe")
+view_model = ExtResource("4_bogsilver_axe")
+grip_offset = Vector3(0.16, -0.3669, -0.5028)
+grip_rotation_degrees = Vector3(0.5, 132.1, 26.0)
+grip_scale = 0.29
+attack_style = 1

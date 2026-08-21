@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="GuideStepDef" format=3]
+
+[ext_resource type="Script" path="res://systems/guide/guide_step_def.gd" id="1_tip_corrupted_ground"]
+
+[resource]
+script = ExtResource("1_tip_corrupted_ground")
+id = &"tip_corrupted_ground"
+kind = 1
+text = "The Mire eats your health and pays nothing from its nodes. Fight here; do not farm here."
+order = 0
+require = 0
+require_count = 1
+satisfied_by = 10
+satisfied_count = 1
+once_per_profile = true
+seconds = 6.0

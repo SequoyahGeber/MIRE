@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="1_wgshard"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_flint.png" id="2_wgshard"]
+[ext_resource type="PackedScene" path="res://assets/pickups/exports/pickup_flint.glb" id="3_wgshard"]
+
+[resource]
+script = ExtResource("1_wgshard")
+id = &"wellglass_shard"
+display_name = "Wellglass Shard"
+description = "What a Wellspring leaves behind when you win. Do not lick it."
+icon = ExtResource("2_wgshard")
+stack_size = 20
+world_model = ExtResource("3_wgshard")
+view_model = ExtResource("3_wgshard")
+grip_offset = Vector3(0.25, -0.29, -0.37)
+grip_rotation_degrees = Vector3(-11.0, 169.0, 5.0)
+grip_scale = 1.0

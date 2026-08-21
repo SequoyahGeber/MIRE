@@ -12,6 +12,7 @@ display_name = "Iron Pickaxe"
 description = "The good one. Do not lose it in the Mire."
 icon = ExtResource("1_ufo3n")
 category = 1
+tool_tier = 3
 stack_size = 1
 world_model = ExtResource("3_4b430")
 view_model = ExtResource("3_qoymt")

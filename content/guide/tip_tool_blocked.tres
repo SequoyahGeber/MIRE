@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="GuideStepDef" format=3]
+
+[ext_resource type="Script" path="res://systems/guide/guide_step_def.gd" id="1_tip_tool_blocked"]
+
+[resource]
+script = ExtResource("1_tip_tool_blocked")
+id = &"tip_tool_blocked"
+kind = 1
+text = "Bare hands will not fell a tree. Craft an axe — a branch and some fibre."
+order = 0
+require = 0
+require_count = 1
+satisfied_by = 9
+satisfied_count = 1
+once_per_profile = true
+seconds = 6.0

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="GuideStepDef" format=3]
+
+[ext_resource type="Script" path="res://systems/guide/guide_step_def.gd" id="1_smelt_iron"]
+
+[resource]
+script = ExtResource("1_smelt_iron")
+id = &"smelt_iron"
+kind = 0
+text = "Smelt the ore at a furnace, then forge iron tools."
+order = 70
+require = 1
+require_arg = &"iron_ore"
+require_count = 1
+satisfied_by = 2
+satisfied_count = 3

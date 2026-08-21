@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="GuideStepDef" format=3]
+
+[ext_resource type="Script" path="res://systems/guide/guide_step_def.gd" id="1_forge_wellglass"]
+
+[resource]
+script = ExtResource("1_forge_wellglass")
+id = &"forge_wellglass"
+kind = 0
+text = "Forge wellglass. Nothing on this island argues with it."
+order = 120
+require = 6
+require_count = 1
+satisfied_by = 2
+satisfied_count = 5

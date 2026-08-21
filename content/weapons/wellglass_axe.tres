@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="WeaponDef" format=3]
+
+[ext_resource type="Script" path="res://systems/combat/weapon_def.gd" id="1_wellglass_axe"]
+
+[resource]
+script = ExtResource("1_wellglass_axe")
+item_id = &"wellglass_axe"
+display_name = "Wellglass Axe"
+wind_up_seconds = 0.25
+commit_seconds = 0.13
+recovery_seconds = 0.32
+range_m = 2.9
+arc_degrees = 102
+damage = 12
+hitstop_seconds = 0.11
+shake_magnitude = 0.18
+shake_duration = 0.28
+tool_class = 1
+harvest_power = 6

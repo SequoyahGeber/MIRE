@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="GuideStepDef" format=3]
+
+[ext_resource type="Script" path="res://systems/guide/guide_step_def.gd" id="1_build_anvil"]
+
+[resource]
+script = ExtResource("1_build_anvil")
+id = &"build_anvil"
+kind = 0
+text = "Build an anvil. It costs a Wellglass Shard, and it opens the last two tiers."
+order = 90
+require = 4
+require_count = 1
+satisfied_by = 3
+satisfied_arg = &"anvil"
+satisfied_count = 1

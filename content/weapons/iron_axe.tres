@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="WeaponDef" format=3]
+
+[ext_resource type="Script" path="res://systems/combat/weapon_def.gd" id="1_iron_axe"]
+
+[resource]
+script = ExtResource("1_iron_axe")
+item_id = &"iron_axe"
+display_name = "Iron Axe"
+wind_up_seconds = 0.26
+commit_seconds = 0.13
+recovery_seconds = 0.34
+range_m = 2.7
+arc_degrees = 96
+damage = 7
+hitstop_seconds = 0.085
+shake_magnitude = 0.13
+shake_duration = 0.23
+tool_class = 1
+harvest_power = 3

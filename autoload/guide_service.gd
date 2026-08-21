@@ -132,6 +132,11 @@ func reset_run() -> void:
 	_completed.clear()
 	_fired_this_run.clear()
 	_pending_tips.clear()
+	# A new run does not inherit the last one's pacing. Without this a tip that fired in the final
+	# seconds of a run would still be sitting out its gap when the next run's first situation
+	# arrives, and the player would simply never be told — the failure mode is silence, which is
+	# exactly the one nobody reports.
+	_tip_cooldown = 0.0
 	_bosses_defeated = 0
 	_set_objective(&"", "")
 

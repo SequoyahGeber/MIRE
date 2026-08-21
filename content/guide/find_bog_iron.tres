@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="GuideStepDef" format=3]
+
+[ext_resource type="Script" path="res://systems/guide/guide_step_def.gd" id="1_find_bog_iron"]
+
+[resource]
+script = ExtResource("1_find_bog_iron")
+id = &"find_bog_iron"
+kind = 0
+text = "Find a bog-iron vein. Rust-red, and it wants the pickaxe."
+order = 60
+require = 2
+require_count = 2
+satisfied_by = 1
+satisfied_arg = &"iron_ore"
+satisfied_count = 1

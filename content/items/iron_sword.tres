@@ -12,6 +12,7 @@ display_name = "Iron Sword"
 description = "Finally, something that is only for hitting things."
 icon = ExtResource("2_swrdc")
 category = 2
+tool_tier = 3
 stack_size = 1
 world_model = ExtResource("3_swrdw")
 view_model = ExtResource("4_swrdv")

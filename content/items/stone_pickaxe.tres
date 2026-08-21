@@ -12,6 +12,7 @@ display_name = "Stone Pickaxe"
 description = "Heavy enough to break stone, and to be a poor weapon."
 icon = ExtResource("1_vyipw")
 category = 1
+tool_tier = 2
 stack_size = 1
 world_model = ExtResource("3_wimky")
 view_model = ExtResource("3_ceaxx")

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="GuideStepDef" format=3]
+
+[ext_resource type="Script" path="res://systems/guide/guide_step_def.gd" id="1_craft_stone_tools"]
+
+[resource]
+script = ExtResource("1_craft_stone_tools")
+id = &"craft_stone_tools"
+kind = 0
+text = "Forge a stone pickaxe. Bog iron will not budge for anything less."
+order = 50
+require = 3
+require_arg = &"workbench"
+require_count = 1
+satisfied_by = 2
+satisfied_count = 2

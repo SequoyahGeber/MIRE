@@ -25,6 +25,16 @@ const LOOT_ENTRY := preload("res://systems/loot/loot_entry.gd")
 @export_range(1, 20, 1) var roll_count: int = 1
 @export var entries: Array[LOOT_ENTRY] = []
 
+## Entries granted on EVERY roll, before the weighted draws and independent of them — the table's
+## certainties rather than its odds. `weight` and `rarity` are ignored here; `min_amount`/`max_amount`
+## still apply, so "1–2 shards, always" is expressible and "sometimes a shard" is not.
+##
+## Task 3.18 (D-200) is why this exists. The tool ladder's top two rungs are gated on a Wellglass
+## Shard from a Wellspring cap and a Guardian Core from a boss, and a gate that pays out on a
+## weighted draw is not a gate — it is a slot machine standing where a rung should be. Every other
+## table leaves this empty and behaves exactly as it did before the field existed.
+@export var guaranteed: Array[LOOT_ENTRY] = []
+
 
 func validation_errors() -> PackedStringArray:
 	var errors := PackedStringArray()
@@ -36,8 +46,22 @@ func validation_errors() -> PackedStringArray:
 		errors.append("coin_max cannot be less than coin_min")
 	if roll_count <= 0:
 		errors.append("roll_count must be positive")
-	if entries.is_empty() and coin_max <= 0:
+	if entries.is_empty() and guaranteed.is_empty() and coin_max <= 0:
 		errors.append("table grants neither items nor coins")
+	for index: int in guaranteed.size():
+		var certain: Resource = guaranteed[index]
+		if certain == null:
+			errors.append("guaranteed[%d] is empty" % index)
+			continue
+		if StringName(String(certain.get("item_id"))) == &"":
+			errors.append("guaranteed[%d] has no item_id" % index)
+		if int(certain.get("max_amount")) < int(certain.get("min_amount")):
+			errors.append("guaranteed[%d] max_amount is below min_amount" % index)
+		if int(certain.get("kind")) != LOOT_ENTRY.Kind.ITEM:
+			# Deliberate: an unconditionally granted POWERUP would hand every player the same
+			# build every run and would also route around the unlock gate `roll()` applies to
+			# weighted powerup entries (D-111/F-173).
+			errors.append("guaranteed[%d] must be an ITEM entry" % index)
 	for index: int in entries.size():
 		var entry: Resource = entries[index]
 		if entry == null:
@@ -79,6 +103,21 @@ func roll(rng: RandomNumberGenerator, luck: float = 0.0, is_unlocked: Callable =
 	var result: Dictionary = {"coins": 0, "items": {}, "powerups": {}}
 	if coin_max > 0:
 		result["coins"] = rng.randi_range(coin_min, coin_max)
+	# The certainties first, and outside every gate below: no weight, no luck, no unlock filter. They
+	# are consumed from the same rng stream as the draws, so a table's whole outcome stays a pure
+	# function of the seed it was handed.
+	for certain: Resource in guaranteed:
+		if certain == null:
+			continue
+		var certain_id := StringName(String(certain.get("item_id")))
+		if certain_id == &"":
+			continue
+		var certain_amount: int = rng.randi_range(
+			int(certain.get("min_amount")), int(certain.get("max_amount"))
+		)
+		var certain_items: Dictionary = result["items"]
+		certain_items[certain_id] = int(certain_items.get(certain_id, 0)) + certain_amount
+		result["items"] = certain_items
 	if entries.is_empty():
 		return result
 

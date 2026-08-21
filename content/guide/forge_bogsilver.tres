@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="GuideStepDef" format=3]
+
+[ext_resource type="Script" path="res://systems/guide/guide_step_def.gd" id="1_forge_bogsilver"]
+
+[resource]
+script = ExtResource("1_forge_bogsilver")
+id = &"forge_bogsilver"
+kind = 0
+text = "Smelt bogsilver and forge it at the anvil."
+order = 100
+require = 3
+require_arg = &"anvil"
+require_count = 1
+satisfied_by = 2
+satisfied_count = 4

@@ -12,6 +12,7 @@ display_name = "Repair Hammer"
 description = "For mending wards. Also for endings."
 icon = ExtResource("1_2roaq")
 category = 1
+tool_tier = 3
 stack_size = 1
 world_model = ExtResource("3_rm7ab")
 view_model = ExtResource("3_uhtd7")

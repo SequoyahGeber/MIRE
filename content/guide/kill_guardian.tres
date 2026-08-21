@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="GuideStepDef" format=3]
+
+[ext_resource type="Script" path="res://systems/guide/guide_step_def.gd" id="1_kill_guardian"]
+
+[resource]
+script = ExtResource("1_kill_guardian")
+id = &"kill_guardian"
+kind = 0
+text = "Kill a guardian. Its core is the last thing the anvil needs."
+order = 110
+require = 2
+require_count = 4
+satisfied_by = 6
+satisfied_count = 1

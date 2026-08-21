@@ -12,6 +12,7 @@ display_name = "Crossbow"
 description = "Looses the instant you ask. Then makes you span it again."
 icon = ExtResource("1_icon")
 category = 2
+tool_tier = 3
 stack_size = 1
 world_model = ExtResource("3_world")
 view_model = ExtResource("4_view")

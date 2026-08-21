@@ -80,7 +80,11 @@ func _check_settings_save() -> void:
 	corrupt_file.store_string("{ not json")
 	corrupt_file.close()
 	var corrupt: Dictionary = SETTINGS_SAVE.load_data(TEST_CORRUPT_PATH)
-	check(int(corrupt.get(&"schema_version", -1)) == 2, "a corrupt file falls back to fresh defaults, not a crash")
+	# Read off the constant, never a literal: this assertion was hardcoded to 2 and failed the moment
+	# task 3.19 added the guidance keys as schema 3 — a check that has to be edited for every legitimate
+	# migration is a check people learn to edit without reading.
+	check(int(corrupt.get(&"schema_version", -1)) == SETTINGS_SAVE.SCHEMA_VERSION,
+		"a corrupt file falls back to fresh defaults, not a crash")
 
 	var missing_version_file: FileAccess = FileAccess.open(TEST_MISSING_VERSION_PATH, FileAccess.WRITE)
 	missing_version_file.store_string(JSON.stringify({"graphics_preset": 0}))
@@ -89,9 +93,15 @@ func _check_settings_save() -> void:
 	check(int(migrated.get(&"graphics_preset", -1)) == 0, "migration preserves a field the old file already had")
 	check(is_equal_approx(float(migrated.get(&"master_volume", -1.0)), 1.0),
 		"migration backfills a field the old file never had")
-	check(int(migrated.get(&"schema_version", -1)) == 2, "migration stamps the current schema version")
+	check(int(migrated.get(&"schema_version", -1)) == SETTINGS_SAVE.SCHEMA_VERSION,
+		"migration stamps the current schema version")
 	check(int(migrated.get(&"resolution_index", -1)) == 1,
 		"migration backfills the default display resolution")
+	# 3.19's own migration hop: an old file has never seen a tip and gets guidance on by default.
+	check(int(migrated.get(&"guidance_mode", -1)) == 0,
+		"migration backfills guidance mode as FULL")
+	check((migrated.get(&"guide_tips_seen", null) as Array).is_empty(),
+		"migration backfills an empty seen-tips record")
 
 	SETTINGS_SAVE.save_data({
 		"graphics_preset": 1, "master_volume": 0.3, "music_volume": 0.4, "sfx_volume": 0.5,

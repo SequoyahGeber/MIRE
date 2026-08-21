@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="1_bsingot"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_iron_ingot.png" id="2_bsingot"]
+[ext_resource type="PackedScene" path="res://assets/pickups/exports/pickup_iron_ingot.glb" id="3_bsingot"]
+
+[resource]
+script = ExtResource("1_bsingot")
+id = &"bogsilver_ingot"
+display_name = "Bogsilver Ingot"
+description = "Pale, cold, and slightly wrong to hold. The anvil doesn't mind."
+icon = ExtResource("2_bsingot")
+world_model = ExtResource("3_bsingot")
+view_model = ExtResource("3_bsingot")
+grip_offset = Vector3(0.26, -0.3, -0.38)
+grip_rotation_degrees = Vector3(-8.0, 162.0, -4.0)
+grip_scale = 0.9

@@ -86,6 +86,9 @@ SfxDirector="*res://autoload/sfx_director.gd"
 FocusPrompt="*res://ui/hud/focus_prompt.gd"
 TargetHealthHud="*res://ui/hud/target_health_hud.gd"
 DamageNumbers="*res://ui/hud/damage_numbers.gd"
+ProgressionService="*res://autoload/progression_service.gd"
+GuideService="*res://autoload/guide_service.gd"
+GuideHud="*res://ui/hud/guide_hud.gd"
 
 [display]
 

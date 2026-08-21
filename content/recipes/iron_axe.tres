@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="RecipeDef" format=3]
+
+[ext_resource type="Script" path="res://systems/crafting/recipe_ingredient.gd" id="1_ing"]
+[ext_resource type="Resource" path="res://content/items/log.tres" id="2_log"]
+[ext_resource type="Resource" path="res://content/items/iron_ingot.tres" id="3_iron_ingot"]
+[ext_resource type="Resource" path="res://content/items/iron_axe.tres" id="8_out"]
+[ext_resource type="Script" path="res://systems/crafting/recipe_def.gd" id="9_recipe"]
+
+[sub_resource type="Resource" id="Resource_log"]
+script = ExtResource("1_ing")
+item = ExtResource("2_log")
+count = 2
+
+[sub_resource type="Resource" id="Resource_iron_ingot"]
+script = ExtResource("1_ing")
+item = ExtResource("3_iron_ingot")
+count = 3
+
+[resource]
+script = ExtResource("9_recipe")
+id = &"iron_axe"
+display_name = "Iron Axe"
+station = &"workbench"
+inputs = Array[ExtResource("1_ing")]([SubResource("Resource_log"), SubResource("Resource_iron_ingot")])
+output_item = ExtResource("8_out")

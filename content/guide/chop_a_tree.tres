@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="GuideStepDef" format=3]
+
+[ext_resource type="Script" path="res://systems/guide/guide_step_def.gd" id="1_chop_a_tree"]
+
+[resource]
+script = ExtResource("1_chop_a_tree")
+id = &"chop_a_tree"
+kind = 0
+text = "Chop a tree with the axe. Logs build everything."
+order = 30
+require = 2
+require_count = 1
+satisfied_by = 1
+satisfied_arg = &"log"
+satisfied_count = 1

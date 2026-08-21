@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="GuideStepDef" format=3]
+
+[ext_resource type="Script" path="res://systems/guide/guide_step_def.gd" id="1_tip_enemy_close"]
+
+[resource]
+script = ExtResource("1_tip_enemy_close")
+id = &"tip_enemy_close"
+kind = 1
+text = "It winds up before it strikes. Dodge THROUGH the swing — backing away does not work."
+order = 0
+require = 0
+require_count = 1
+satisfied_by = 8
+satisfied_count = 14
+once_per_profile = true
+seconds = 6.0

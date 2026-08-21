@@ -145,6 +145,15 @@ max_amount = 8
 rarity = 1
 weight = 11.0
 
+[sub_resource type="Resource" id="Resource_core"]
+script = ExtResource("2_lootentry")
+kind = 0
+item_id = &"guardian_core"
+min_amount = 1
+max_amount = 1
+rarity = 0
+weight = 1.0
+
 [resource]
 script = ExtResource("1_loottable")
 id = &"boss"
@@ -152,3 +161,4 @@ coin_min = 100
 coin_max = 220
 roll_count = 3
 entries = Array[ExtResource("2_lootentry")]([SubResource("Resource_0"), SubResource("Resource_1"), SubResource("Resource_2"), SubResource("Resource_3"), SubResource("Resource_4"), SubResource("Resource_5"), SubResource("Resource_6"), SubResource("Resource_7"), SubResource("Resource_8"), SubResource("Resource_9"), SubResource("Resource_10"), SubResource("Resource_11"), SubResource("Resource_12"), SubResource("Resource_13"), SubResource("Resource_14"), SubResource("Resource_15")])
+guaranteed = Array[ExtResource("2_lootentry")]([SubResource("Resource_core")])

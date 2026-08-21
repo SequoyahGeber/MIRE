@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="StationDef" format=3]
+
+[ext_resource type="Script" path="res://systems/crafting/station_def.gd" id="1_anvil"]
+
+[resource]
+script = ExtResource("1_anvil")
+id = &"anvil"
+display_name = "Anvil"
+world_scene = &"station_anvil"
+tier = 3

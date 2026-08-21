@@ -12,6 +12,7 @@ display_name = "Wooden Axe"
 description = "A green-wood axe. It bites, eventually."
 icon = ExtResource("1_huql4")
 category = 1
+tool_tier = 1
 stack_size = 1
 world_model = ExtResource("3_du50f")
 view_model = ExtResource("3_cdk4j")

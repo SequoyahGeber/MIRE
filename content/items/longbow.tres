@@ -12,6 +12,7 @@ display_name = "Longbow"
 description = "Taller than you are. Pulls slow, reaches the far bank."
 icon = ExtResource("1_icon")
 category = 2
+tool_tier = 3
 stack_size = 1
 world_model = ExtResource("3_world")
 view_model = ExtResource("4_view")

@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="BuildableDef" format=3]
+
+[ext_resource type="Script" path="res://systems/building/buildable_def.gd" id="1_buildabledef"]
+[ext_resource type="PackedScene" path="res://scenes/buildables/anvil.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_buildabledef")
+id = &"anvil"
+display_name = "Anvil"
+description = "The tier-3 station. Costs a Wellglass Shard, which means it costs a Wellspring — that is the point, not a price to be tuned away (D-200)."
+scene = ExtResource("2_scene")
+size = Vector3(1.38, 1.36, 0.892)
+snap_step = 0.5
+rotation_step_degrees = 45.0
+requires_support = true
+max_ground_slope_degrees = 15.0
+max_build_range_m = 5.0
+cost = Dictionary[StringName, int]({
+&"iron_ingot": 6,
+&"log": 4,
+&"wellglass_shard": 1
+})
+refund_fraction = 0.5
+max_hp = 60

@@ -12,6 +12,7 @@ display_name = "Wooden Pickaxe"
 description = "Better at rock than the rock is at it. Barely."
 icon = ExtResource("1_466da")
 category = 1
+tool_tier = 1
 stack_size = 1
 world_model = ExtResource("3_8q6gr")
 view_model = ExtResource("3_nfvuo")
