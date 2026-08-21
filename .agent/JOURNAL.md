@@ -7535,3 +7535,39 @@ Gradual coast shipped: worst shore slope 71deg -> 48deg, shore run <4m -> ~12m. 
 Files: `world/gen/island_heightmap.gd`, `assets/audit/terrain/island_orbit.png`, `assets/audit/terrain/island_shore_look.png`, `assets/audit/terrain/island_spawn_view.png`
 
 Commit at time of writing: `bf8141a`
+
+---
+
+### DONE · F-326 · ivy1bcae0 · 2026-08-21T00:31:57+00:00
+
+**All five player-facing save writers truncate the only valid copy before replacement**
+
+atomic save seam + failure-injection check
+
+Files: `core/save/salvage_save.gd`, `core/save/unlock_save.gd`, `core/save/run_record_save.gd`, `core/save/steam_stats_save.gd`, `core/save/settings_save.gd`, `core/save/atomic_json.gd`, `tools/save_atomicity_check.gd`
+
+Commit at time of writing: `31470b1`
+
+---
+
+### DONE · F-329 · ivy1bcae0 · 2026-08-21T00:31:57+00:00
+
+**Blender reproducibility checks mutate the shared tracked asset tree and do not restore it**
+
+snapshot/restore guard for Blender repro checks
+
+Files: `tools/blender/asset_repro_check.py`, `tools/blender/crafting_stations_repro_check.py`
+
+Commit at time of writing: `31470b1`
+
+---
+
+### DONE · F-348 · ivycc0920 · 2026-08-21T00:49:15+00:00
+
+**Procedural trees collide as canopy-wide cylinders, not trunks**
+
+Tree colliders now match the trunk, not the canopy — foliage surfaces excluded by material, branches excluded by height; willow radius 1.89 -> 1.29 m
+
+Files: `world/gen/resource_scatter_field.gd`, `tools/tree_collider_check.gd`
+
+Commit at time of writing: `32bbbfe`
