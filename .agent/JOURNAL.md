@@ -7598,3 +7598,183 @@ Notes along the way:
 Files: `tools/enemy_nav_map_check.gd`
 
 Commit at time of writing: `3206cde`
+
+---
+
+### DONE · F-327 · ivy1bcae0 · 2026-08-21T01:08:41+00:00
+
+**Ranged shot observers run before local recovery and hitstop are applied**
+
+audit repair round
+
+Files: `autoload/ranged_combat_service.gd`, `tools/ranged_combat_net_check.gd`
+
+Commit at time of writing: `4a85992`
+
+---
+
+### DONE · F-328 · ivy1bcae0 · 2026-08-21T01:08:41+00:00
+
+**The run-scope totality audit already misses three newly registered autoloads**
+
+audit repair round
+
+Files: `tools/run_scope_audit_check.gd`, `autoload/run_record.gd`, `docs/DECISIONS.md`
+
+Commit at time of writing: `4a85992`
+
+---
+
+### DONE · F-330 · ivy1bcae0 · 2026-08-21T01:08:42+00:00
+
+**Every procedural client streams terrain around every replicated player**
+
+audit repair round
+
+Files: `world/gen/procedural_world.gd`, `tools/client_stream_budget_check.gd`
+
+Commit at time of writing: `4a85992`
+
+---
+
+### DONE · F-331 · ivy1bcae0 · 2026-08-21T01:08:42+00:00
+
+**Enemy attack-slot arbitration is quadratic and the documented per-kind cap counts every kind**
+
+audit repair round
+
+Files: `systems/enemies/enemy.gd`, `autoload/enemy_world.gd`, `tools/enemy_ai_check.gd`
+
+Commit at time of writing: `4a85992`
+
+---
+
+### DONE · F-332 · ivy1bcae0 · 2026-08-21T01:08:42+00:00
+
+**World snapshot decompression trusts an unbounded size supplied by the host**
+
+audit repair round
+
+Files: `autoload/world_delta_log.gd`
+
+Commit at time of writing: `4a85992`
+
+---
+
+### DONE · F-333 · ivy1bcae0 · 2026-08-21T01:08:42+00:00
+
+**Command rate limiting drops legitimate back-to-back operations instead of scheduling them**
+
+audit repair round
+
+Files: `autoload/command_service.gd`
+
+Commit at time of writing: `4a85992`
+
+---
+
+### DONE · F-335 · ivy1bcae0 · 2026-08-21T01:08:42+00:00
+
+**Two verification checks no longer test the shipped contracts they claim**
+
+audit repair round
+
+Files: `tools/title_check.gd`, `tools/poi_required_station_check.gd`
+
+Commit at time of writing: `4a85992`
+
+---
+
+### DONE · F-337 · ivy1bcae0 · 2026-08-21T01:08:42+00:00
+
+**Wellspring re-corruption turns a 2-second ward census into a per-frame full build scan**
+
+audit repair round
+
+Files: `autoload/build_service.gd`, `systems/wellspring/wellspring.gd`
+
+Commit at time of writing: `4a85992`
+
+---
+
+### DONE · F-341 · ivy1bcae0 · 2026-08-21T01:08:42+00:00
+
+**Sway material caching aliases meshes whose vertical origins differ**
+
+audit repair round
+
+Files: `autoload/environment_vfx.gd`
+
+Commit at time of writing: `4a85992`
+
+---
+
+### DONE · F-342 · ivy1bcae0 · 2026-08-21T01:08:42+00:00
+
+**Every renderer performance instrument still measures Hollowmere, not the shipped procedural world**
+
+audit repair round
+
+Files: `tools/frame_cost_check.gd`, `tools/perf_probe.gd`, `tools/render_census.gd`
+
+Commit at time of writing: `4a85992`
+
+---
+
+### DONE · F-343 · ivy1bcae0 · 2026-08-21T01:08:42+00:00
+
+**harvest_world_check is seed-dependent because live Mire can reduce its fixed-yield assertion**
+
+audit repair round
+
+Files: `tools/harvest_world_check.gd`
+
+Commit at time of writing: `4a85992`
+
+---
+
+### DONE · F-345 · ivy1bcae0 · 2026-08-21T01:08:42+00:00
+
+**Procedural co-op spawn offsets are not placed on their own terrain surface**
+
+audit repair round
+
+Files: `world/gen/procedural_world.gd`, `tools/spawn_ground_check.gd`
+
+Commit at time of writing: `4a85992`
+
+---
+
+### DONE · F-336 · ivy1bcae0 · 2026-08-21T01:08:42+00:00
+
+**GAMELOOP.md reports several pre-cutover states as current**
+
+audit repair round
+
+Files: `docs/GAMELOOP.md`
+
+Commit at time of writing: `4a85992`
+
+---
+
+### REOPEN · F-351 · ivycc0920 · 2026-08-21T01:11:17+00:00
+
+**Enemies navigate a map the streamed world never bakes into — every chunk navmesh is on NavBaker's private map**
+
+Reopened (was marked done 2026-08-21 by ivycc0920).
+
+Closed as root-caused-only because systems/enemies/enemy.gd and autoload/enemy_world.gd were claimed by ivy1bcae0 for F-331. That claim is now released and Sequoyah asked for the fix, so the finding goes back in flight to have its actual repair applied.
+
+Commit at time of writing: `4a85992`
+
+---
+
+### DONE · F-351 · ivycc0920 · 2026-08-21T01:40:30+00:00
+
+**Enemies navigate a map the streamed world never bakes into — every chunk navmesh is on NavBaker's private map**
+
+Enemies now query the map their level bakes into. NavBaker announces ownership via a group; EnemyWorld.navigation_map_rid() is the single seam and bake_navigation() declines rather than baking a rival; Enemy points its agent there and retries while the streamed map is still empty. Crawler goes from walking 11.98 -> 21.44 m away to closing 11.94 -> 6.93 m on a real navmesh path.
+
+Files: `systems/enemies/enemy.gd`, `autoload/enemy_world.gd`, `tools/enemy_nav_map_check.gd`, `world/chunk/nav_baker.gd`, `tools/dev_loadout_check.gd`, `tools/nav_bake_check.gd`
+
+Commit at time of writing: `3ac9cdf`

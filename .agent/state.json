@@ -1,129 +1,45 @@
 {
   "claims": {
-    "autoload/build_service.gd": {
+    "export_presets.cfg": {
+      "agent": "moss5523e3",
+      "at": "2026-08-21T01:28:57+00:00",
+      "task": "F-355",
+      "token": "CODEX_SESSION_ID:01a021e9-16c4-79b1-aaa1-daca169c6136"
+    },
+    "levels/hollowmere.tscn": {
+      "agent": "gale47f1fe",
+      "at": "2026-08-21T01:16:15+00:00",
+      "task": "F-353",
+      "token": "CLAUDE_CODE_SESSION_ID:a79bd01a-839b-4869-9a2e-162d784fa591"
+    },
+    "levels/procedural_island.tscn": {
+      "agent": "gale47f1fe",
+      "at": "2026-08-21T01:16:15+00:00",
+      "task": "F-353",
+      "token": "CLAUDE_CODE_SESSION_ID:a79bd01a-839b-4869-9a2e-162d784fa591"
+    },
+    "tools/chunk_stream_check.gd": {
       "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:45:27+00:00",
-      "task": "F-337",
+      "at": "2026-08-21T01:18:21+00:00",
+      "task": "F-340",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
-    "autoload/command_service.gd": {
+    "tools/grade_probe.gd": {
+      "agent": "gale47f1fe",
+      "at": "2026-08-21T01:16:15+00:00",
+      "task": "F-353",
+      "token": "CLAUDE_CODE_SESSION_ID:a79bd01a-839b-4869-9a2e-162d784fa591"
+    },
+    "tools/terrain_look_check.gd": {
       "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:57:48+00:00",
-      "task": "F-333",
+      "at": "2026-08-21T01:18:21+00:00",
+      "task": "F-340",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
-    "autoload/enemy_world.gd": {
+    "tools/worldgen_noise_reuse_check.gd": {
       "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:40:11+00:00",
-      "task": "F-331",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "autoload/environment_vfx.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:46:30+00:00",
-      "task": "F-341",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "autoload/ranged_combat_service.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:43:58+00:00",
-      "task": "F-327",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "autoload/run_record.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:54:19+00:00",
-      "task": "F-328",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "autoload/world_delta_log.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:41:20+00:00",
-      "task": "F-332",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "docs/DECISIONS.md": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:54:19+00:00",
-      "task": "F-328",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "docs/GAMELOOP.md": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:31:22+00:00",
-      "task": "F-336",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "systems/enemies/enemy.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:40:11+00:00",
-      "task": "F-331",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "systems/wellspring/wellspring.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:45:27+00:00",
-      "task": "F-337",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "tools/enemy_ai_check.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:40:11+00:00",
-      "task": "F-331",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "tools/frame_cost_check.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:28:11+00:00",
-      "task": "F-342",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "tools/harvest_world_check.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:49:28+00:00",
-      "task": "F-343",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "tools/perf_probe.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:28:11+00:00",
-      "task": "F-342",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "tools/poi_required_station_check.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:55:20+00:00",
-      "task": "F-335",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "tools/ranged_combat_net_check.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:43:58+00:00",
-      "task": "F-327",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "tools/render_census.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:28:11+00:00",
-      "task": "F-342",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "tools/run_scope_audit_check.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:54:19+00:00",
-      "task": "F-328",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "tools/spawn_ground_check.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:51:13+00:00",
-      "task": "F-345",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "tools/title_check.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:55:20+00:00",
-      "task": "F-335",
+      "at": "2026-08-21T01:18:21+00:00",
+      "task": "F-340",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "world/chunk/chunk_mesher.gd": {
@@ -132,102 +48,20 @@
       "task": "F-339",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
-    "world/gen/procedural_world.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:51:13+00:00",
-      "task": "F-345",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    "world/chunk/chunk_streamer.gd": {
+      "agent": "gale47f1fe",
+      "at": "2026-08-21T01:16:15+00:00",
+      "task": "F-353",
+      "token": "CLAUDE_CODE_SESSION_ID:a79bd01a-839b-4869-9a2e-162d784fa591"
+    },
+    "world/environment/playtest_atmosphere.gd": {
+      "agent": "gale47f1fe",
+      "at": "2026-08-21T01:16:15+00:00",
+      "task": "F-353",
+      "token": "CLAUDE_CODE_SESSION_ID:a79bd01a-839b-4869-9a2e-162d784fa591"
     }
   },
   "in_flight": {
-    "F-327": {
-      "agent": "ivy1bcae0",
-      "files": [
-        "autoload/ranged_combat_service.gd",
-        "tools/ranged_combat_net_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-21T00:43:58+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "F-328": {
-      "agent": "ivy1bcae0",
-      "files": [
-        "tools/run_scope_audit_check.gd",
-        "autoload/run_record.gd",
-        "docs/DECISIONS.md"
-      ],
-      "notes": [],
-      "started": "2026-08-21T00:53:17+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "F-330": {
-      "agent": "ivy1bcae0",
-      "files": [
-        "world/gen/procedural_world.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-21T00:33:26+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "F-331": {
-      "agent": "ivy1bcae0",
-      "files": [
-        "systems/enemies/enemy.gd",
-        "autoload/enemy_world.gd",
-        "tools/enemy_ai_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-21T00:36:45+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "F-332": {
-      "agent": "ivy1bcae0",
-      "files": [
-        "autoload/world_delta_log.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-21T00:41:20+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "F-333": {
-      "agent": "ivy1bcae0",
-      "files": [
-        "autoload/command_service.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-21T00:57:48+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "F-335": {
-      "agent": "ivy1bcae0",
-      "files": [
-        "tools/title_check.gd",
-        "tools/poi_required_station_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-21T00:55:20+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "F-336": {
-      "agent": "ivy1bcae0",
-      "files": [
-        "docs/GAMELOOP.md"
-      ],
-      "notes": [],
-      "started": "2026-08-21T00:31:22+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "F-337": {
-      "agent": "ivy1bcae0",
-      "files": [
-        "autoload/build_service.gd",
-        "systems/wellspring/wellspring.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-21T00:45:27+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
     "F-339": {
       "agent": "ivy1bcae0",
       "files": [
@@ -237,44 +71,50 @@
       "started": "2026-08-21T00:59:35+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
-    "F-341": {
+    "F-340": {
       "agent": "ivy1bcae0",
       "files": [
-        "autoload/environment_vfx.gd"
+        "tools/worldgen_noise_reuse_check.gd",
+        "tools/terrain_look_check.gd",
+        "tools/chunk_stream_check.gd"
       ],
       "notes": [],
-      "started": "2026-08-21T00:46:30+00:00",
+      "started": "2026-08-21T01:18:21+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
-    "F-342": {
-      "agent": "ivy1bcae0",
+    "F-353": {
+      "agent": "gale47f1fe",
       "files": [
-        "tools/frame_cost_check.gd",
-        "tools/perf_probe.gd",
-        "tools/render_census.gd"
+        "levels/procedural_island.tscn",
+        "levels/hollowmere.tscn",
+        "world/environment/playtest_atmosphere.gd",
+        "world/chunk/chunk_streamer.gd",
+        "tools/grade_probe.gd"
       ],
-      "notes": [],
-      "started": "2026-08-21T00:28:11+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+      "notes": [
+        {
+          "at": "2026-08-21T01:35:27+00:00",
+          "by": "gale47f1fe",
+          "text": "Isolation render confirms contributor 1 empirically. Rendering the spawn view with fog_height_density=0 and fog_density=0.0016 restored, versus the shipped grade: near ground (bottom 60px, ~2m from the camera) blue channel 121 -> 103, saturation +0.072; mid ground 126 -> 110, +0.060; far ground/shore unchanged (+/-2, sat -0.006); sky unchanged. A DISTANCE fog cannot touch a pixel two metres away, so the near-field change is the height term alone \u2014 and the far field netting to zero is the trade working as intended: the haze moves off the player's feet and back out to range where aerial perspective belongs."
+        }
+      ],
+      "started": "2026-08-21T01:16:15+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:a79bd01a-839b-4869-9a2e-162d784fa591"
     },
-    "F-343": {
-      "agent": "ivy1bcae0",
+    "F-355": {
+      "agent": "moss5523e3",
       "files": [
-        "tools/harvest_world_check.gd"
+        "export_presets.cfg"
       ],
-      "notes": [],
-      "started": "2026-08-21T00:49:28+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "F-345": {
-      "agent": "ivy1bcae0",
-      "files": [
-        "world/gen/procedural_world.gd",
-        "tools/spawn_ground_check.gd"
+      "notes": [
+        {
+          "at": "2026-08-21T01:28:57+00:00",
+          "by": "moss5523e3",
+          "text": "Audit so far: engine and installed desktop export templates exactly match pinned 4.7.1; project effective physics/display values are covered by verify_setup and align with ARCHITECTURE 5a. Export presets have six debug/release targets but release presets still carry console-wrapper=true, macOS bundle id is placeholder test, and stock Godot icon remains. Signing/notarization and real store identity remain intentionally gated on tasks 8.1/8.2/8.10/8.11."
+        }
       ],
-      "notes": [],
-      "started": "2026-08-21T00:51:13+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+      "started": "2026-08-21T01:28:57+00:00",
+      "token": "CODEX_SESSION_ID:01a021e9-16c4-79b1-aaa1-daca169c6136"
     }
   },
   "recent": {
@@ -412,18 +252,18 @@
       "token": null
     },
     "autoload/build_service.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T05:57:20+00:00",
-      "hash": "6fe6bacd0686b12b872f9f9ee86afc270d987f9558b014c503cac308b862e541",
-      "task": "F-268",
-      "token": null
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T01:08:42+00:00",
+      "hash": "62ab7f525e36293501dbd8ac40717979a249b650bebf8605a0610581543a26a6",
+      "task": "F-337",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "autoload/command_service.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T10:21:34+00:00",
-      "hash": "67aafeae3af86378f518614ec6c71d7eb28c923b8e4f55401d5a7e753104bd7b",
-      "task": "F-280",
-      "token": null
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T01:08:42+00:00",
+      "hash": "b2103dd840ed6f70d4af75dde4b310a3d5fd2f283667eddf2d3e70a0f7a46121",
+      "task": "F-333",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "autoload/crafting_service.gd": {
       "agent": "lp",
@@ -432,12 +272,19 @@
       "task": "F-286",
       "token": null
     },
+    "autoload/enemy_world.gd": {
+      "agent": "ivycc0920",
+      "at": "2026-08-21T01:40:30+00:00",
+      "hash": "aef6849fe21bfcd8a62cf45d20342785634fa544b44c2b607756e8427b9b4be1",
+      "task": "F-351",
+      "token": "CLAUDE_CODE_SESSION_ID:34f19dd1-60f4-4279-b7ba-e40ce133b27f"
+    },
     "autoload/environment_vfx.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T10:57:18+00:00",
-      "hash": "85cb877eb11c207587e17155f607dd5f720c58c8165e03d9e7f641f791029960",
-      "task": "F-287",
-      "token": null
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T01:08:42+00:00",
+      "hash": "ee78ad5221a3a0acc01346d0527e5bb06d472fa6d4b77985596093fcaea402ba",
+      "task": "F-341",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "autoload/harvest_world.gd": {
       "agent": "lp",
@@ -467,6 +314,13 @@
       "task": "F-324",
       "token": "CLAUDE_CODE_SESSION_ID:dcf988c3-f81b-4177-97bb-d3f72dcb1927"
     },
+    "autoload/ranged_combat_service.gd": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T01:08:41+00:00",
+      "hash": "16d8628e90187cff224e23b51cbd64ea777a27a0684760b0035fea9001dbead6",
+      "task": "F-327",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
     "autoload/reward_service.gd": {
       "agent": "lp",
       "at": "2026-08-20T16:38:19+00:00",
@@ -475,11 +329,11 @@
       "token": null
     },
     "autoload/run_record.gd": {
-      "agent": "reed31c598",
-      "at": "2026-08-20T21:19:06+00:00",
-      "hash": "d4c1f26eb69c578ef30634f1dac6eff8d5119552c68f4512d677a17310878958",
-      "task": "7.4",
-      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T01:08:41+00:00",
+      "hash": "fa1e3f202b0db869f246d29ade1896870840b6684798df79468758de739d464e",
+      "task": "F-328",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "autoload/salvage_service.gd": {
       "agent": "lp",
@@ -489,11 +343,11 @@
       "token": null
     },
     "autoload/world_delta_log.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T05:24:46+00:00",
-      "hash": "fe17558b27544ac9e05d7e85f948b412e89db882dc55e6fb9b82206f413d8e4d",
-      "task": "F-258",
-      "token": null
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T01:08:42+00:00",
+      "hash": "396b87e31e6ec0c42f56db86ad4d38ce019b703487cbba3f4c7289de24029d7a",
+      "task": "F-332",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "content/biomes/forest.tres": {
       "agent": "quill5fa5c7",
@@ -678,11 +532,11 @@
       "token": null
     },
     "docs/DECISIONS.md": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T21:26:49+00:00",
-      "hash": "9381b9608225384d59656ae2d0a6f0ab7e1358b410d734661eef2ebbdd7c0002",
-      "task": "4.18",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T01:08:41+00:00",
+      "hash": "ea464329a6e841518145bfd5c3f36d0edc3049c35361c5e93d76edb87d1470c5",
+      "task": "F-328",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "docs/DELEGATION.md": {
       "agent": "quill5fa5c7",
@@ -697,6 +551,13 @@
       "hash": "bb8a18a88cd387d144a21126aa8b9b9ba28a29e6e027106fd379daf4af7fabe9",
       "task": "F-307",
       "token": null
+    },
+    "docs/GAMELOOP.md": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T01:08:42+00:00",
+      "hash": "0931169beca9c211c8ec9346622a8d24dfd76533e02c9195fb52095087ec6c49",
+      "task": "F-336",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "docs/MENU.md": {
       "agent": "reed31c598",
@@ -768,6 +629,13 @@
       "task": "F-280",
       "token": null
     },
+    "systems/enemies/enemy.gd": {
+      "agent": "ivycc0920",
+      "at": "2026-08-21T01:40:30+00:00",
+      "hash": "ee39f1ec7a88eb063d4f61738dc0626145f46d10cb36eb9cefb5217c9e22be14",
+      "task": "F-351",
+      "token": "CLAUDE_CODE_SESSION_ID:34f19dd1-60f4-4279-b7ba-e40ce133b27f"
+    },
     "systems/environment/day_night.gd": {
       "agent": "lp",
       "at": "2026-08-20T06:34:42+00:00",
@@ -809,6 +677,13 @@
       "hash": "2922bc26c5bfbed427a1f2181e1a49429ec0173eb23fb6d7ad9dad3535d03328",
       "task": "F-282",
       "token": null
+    },
+    "systems/wellspring/wellspring.gd": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T01:08:42+00:00",
+      "hash": "7a00b949f967d02c2c95c13ee577b37480da24e3e46149114ea5ca731f589a3c",
+      "task": "F-337",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "tools/agent_state_lock_check.py": {
       "agent": "lp",
@@ -915,6 +790,13 @@
       "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
+    "tools/client_stream_budget_check.gd": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T01:08:42+00:00",
+      "hash": "084ec34f941d206cb5e195cf1bcc419395d4f005bc4c7d14aa063ff01cce58ed",
+      "task": "F-330",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
     "tools/command_check.gd": {
       "agent": "lp",
       "at": "2026-08-20T11:03:39+00:00",
@@ -971,10 +853,24 @@
       "task": "F-283",
       "token": null
     },
+    "tools/dev_loadout_check.gd": {
+      "agent": "ivycc0920",
+      "at": "2026-08-21T01:40:30+00:00",
+      "hash": "09b83a8cc882d06e497e9c994f1c32fe14afa473c5a20c18ad0984da23dd05ca",
+      "task": "F-351",
+      "token": "CLAUDE_CODE_SESSION_ID:34f19dd1-60f4-4279-b7ba-e40ce133b27f"
+    },
+    "tools/enemy_ai_check.gd": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T01:08:42+00:00",
+      "hash": "5294454a62a93c21474e702a5ea170c10bffd3db9e1215b7772f70b270e90685",
+      "task": "F-331",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
     "tools/enemy_nav_map_check.gd": {
       "agent": "ivycc0920",
-      "at": "2026-08-21T01:01:13+00:00",
-      "hash": "976d3b86fe1279dd8c79abae3fc6906b1cd40e5d8a04acac28195ba2f6c5a6fc",
+      "at": "2026-08-21T01:40:30+00:00",
+      "hash": "32c5cacbed895b6127406a328944ef7afc92d3037843906b27de2eb67662e486",
       "task": "F-351",
       "token": "CLAUDE_CODE_SESSION_ID:34f19dd1-60f4-4279-b7ba-e40ce133b27f"
     },
@@ -1013,6 +909,13 @@
       "task": "F-269",
       "token": null
     },
+    "tools/frame_cost_check.gd": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T01:08:42+00:00",
+      "hash": "8dfaed5bb9c8f0313eb2c23cc02494cf50e896da2ab224c3aa22f1812e849145",
+      "task": "F-342",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
     "tools/ground_fog_check.gd": {
       "agent": "quill5fa5c7",
       "at": "2026-08-20T20:41:46+00:00",
@@ -1040,6 +943,13 @@
       "hash": "7762da1d32e3ff530eeffa25e1876ae141b2b645fa9dc3d595df51b0ab8ede62",
       "task": "F-276",
       "token": null
+    },
+    "tools/harvest_world_check.gd": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T01:08:42+00:00",
+      "hash": "5fdd95ee469310e4f11a435944e9f4a473f9dd8de6de8f3a52b267bc6473f182",
+      "task": "F-343",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "tools/hollowmere_check.gd": {
       "agent": "lp",
@@ -1077,11 +987,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
     "tools/nav_bake_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T06:20:25+00:00",
-      "hash": "12e1edbeb6d715c3d9cfd87267f4f408e3254eec177013d06919665dd70c2c90",
-      "task": "F-274",
-      "token": null
+      "agent": "ivycc0920",
+      "at": "2026-08-21T01:40:30+00:00",
+      "hash": "c945859cdc6bfb71b95ba0209352efdd30a82ff05f527bb9ee359d9c400d6641",
+      "task": "F-351",
+      "token": "CLAUDE_CODE_SESSION_ID:34f19dd1-60f4-4279-b7ba-e40ce133b27f"
     },
     "tools/noise_reuse_check.gd": {
       "agent": "quill5fa5c7",
@@ -1096,6 +1006,13 @@
       "hash": "8f14378367ba9de5377de2177a1bad268fd2ebd25a35ce5105e69158e9a4fcc8",
       "task": "7.4",
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
+    },
+    "tools/perf_probe.gd": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T01:08:42+00:00",
+      "hash": "f39185d7c7cec21299f12526a61661545c9803a5384002c81505d5a873d8422e",
+      "task": "F-342",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "tools/playtest_hollow_check.gd": {
       "agent": "lp",
@@ -1112,11 +1029,11 @@
       "token": null
     },
     "tools/poi_required_station_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T20:42:48+00:00",
-      "hash": "36b68e3cb5dbc664e824e5c895e4862265d4839ca6fcd17ba9ce086a8be8d482",
-      "task": "F-301",
-      "token": null
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T01:08:42+00:00",
+      "hash": "5c9db7cfd29eb65c690e0332c9aa21fea12f28afd0a9edcd128491ea6e87a1c4",
+      "task": "F-335",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "tools/poi_required_station_check.gd.uid": {
       "agent": "lp",
@@ -1145,6 +1062,20 @@
       "hash": "e2d76ab75d7d93b1fe50d4921eace59bf36a3cf10e441fd89e4602369e96da11",
       "task": "F-301",
       "token": null
+    },
+    "tools/ranged_combat_net_check.gd": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T01:08:41+00:00",
+      "hash": "032134779f8ce7a651cbe6ba8e46ec40d50c512bc68b113fef346056a659e539",
+      "task": "F-327",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
+    "tools/render_census.gd": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T01:08:42+00:00",
+      "hash": "2b6cb0589c61a3a2a3f06948a7fb111fb99a4658a994e0739c63a07c7af16652",
+      "task": "F-342",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "tools/resource_scatter_check.gd": {
       "agent": "lm",
@@ -1196,11 +1127,11 @@
       "token": null
     },
     "tools/run_scope_audit_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T20:21:37+00:00",
-      "hash": "9992bc876d268a4efcb0f41cea88362674623257196243cee5febd1c83c607b4",
-      "task": "F-281",
-      "token": null
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T01:08:41+00:00",
+      "hash": "9200a2a4446943945e43936da5da211d753dafcfe68773e4fb2467e246ff8ec9",
+      "task": "F-328",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "tools/run_scope_audit_check.gd.uid": {
       "agent": "lp",
@@ -1252,11 +1183,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
     "tools/spawn_ground_check.gd": {
-      "agent": "slate8b6811",
-      "at": "2026-08-20T21:22:10+00:00",
-      "hash": "62eb5b1f87adff8c13586a3ff4aa15b3fd719558f5087b472a6122d59d48a30f",
-      "task": "F-324",
-      "token": "CLAUDE_CODE_SESSION_ID:dcf988c3-f81b-4177-97bb-d3f72dcb1927"
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T01:08:42+00:00",
+      "hash": "6c2f2254821dc778032465cd99321b31118dc6d9e22e1b347c816434a76a5cbf",
+      "task": "F-345",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "tools/terminal_focus_check.gd": {
       "agent": "lp",
@@ -1301,11 +1232,11 @@
       "token": null
     },
     "tools/title_check.gd": {
-      "agent": "reed31c598",
-      "at": "2026-08-20T21:19:06+00:00",
-      "hash": "12d17246b770c153c2a9943bcdc4f7b512a6a154ebbaff69d5c419969a3e2cca",
-      "task": "7.4",
-      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T01:08:42+00:00",
+      "hash": "9e22eeb1831e277d3ac65643602ca00a259e07542bbfafa2bd4f25f797ca52aa",
+      "task": "F-335",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "tools/title_render.gd": {
       "agent": "reed31c598",
@@ -1476,11 +1407,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:dcf988c3-f81b-4177-97bb-d3f72dcb1927"
     },
     "world/chunk/nav_baker.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T11:35:30+00:00",
-      "hash": "d44a755ea7e625a37c33a1a9088a98171c21488374686452532117414c022233",
-      "task": "F-274-review",
-      "token": null
+      "agent": "ivycc0920",
+      "at": "2026-08-21T01:40:30+00:00",
+      "hash": "5e26de2111b4253ed0f1b2199253c53f6bcd4406ca00523157b7a076049ff32f",
+      "task": "F-351",
+      "token": "CLAUDE_CODE_SESSION_ID:34f19dd1-60f4-4279-b7ba-e40ce133b27f"
     },
     "world/chunk/terrain_flat.gdshader": {
       "agent": "quill5fa5c7",
@@ -1546,11 +1477,11 @@
       "token": null
     },
     "world/gen/procedural_world.gd": {
-      "agent": "slate8b6811",
-      "at": "2026-08-20T21:22:10+00:00",
-      "hash": "284bfd3fbb48cdb10c50d630429dc929f8098e7359188ddda3469c5daf1a36f0",
-      "task": "F-324",
-      "token": "CLAUDE_CODE_SESSION_ID:dcf988c3-f81b-4177-97bb-d3f72dcb1927"
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T01:08:42+00:00",
+      "hash": "d8ed2c1bae776b46d7f24add35dad041c99842eaa5c6351d6622223442c837bb",
+      "task": "F-345",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "world/gen/resource_scatter.gd": {
       "agent": "quill5fa5c7",
@@ -1581,7 +1512,7 @@
       "token": null
     }
   },
-  "rev": 196,
+  "rev": 228,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -5956,16 +5887,20 @@
       "title": "All five player-facing save writers truncate the only valid copy before replacement"
     },
     "F-327": {
+      "done_at": "2026-08-21T01:08:41+00:00",
+      "done_by": "ivy1bcae0",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Ranged shot observers run before local recovery and hitstop are applied"
     },
     "F-328": {
+      "done_at": "2026-08-21T01:08:41+00:00",
+      "done_by": "ivy1bcae0",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "The run-scope totality audit already misses three newly registered autoloads"
     },
@@ -5979,30 +5914,38 @@
       "title": "Blender reproducibility checks mutate the shared tracked asset tree and do not restore it"
     },
     "F-330": {
+      "done_at": "2026-08-21T01:08:42+00:00",
+      "done_by": "ivy1bcae0",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Every procedural client streams terrain around every replicated player"
     },
     "F-331": {
+      "done_at": "2026-08-21T01:08:42+00:00",
+      "done_by": "ivy1bcae0",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Enemy attack-slot arbitration is quadratic and the documented per-kind cap counts every kind"
     },
     "F-332": {
+      "done_at": "2026-08-21T01:08:42+00:00",
+      "done_by": "ivy1bcae0",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "World snapshot decompression trusts an unbounded size supplied by the host"
     },
     "F-333": {
+      "done_at": "2026-08-21T01:08:42+00:00",
+      "done_by": "ivy1bcae0",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Command rate limiting drops legitimate back-to-back operations instead of scheduling them"
     },
@@ -6014,23 +5957,29 @@
       "title": "The end-to-end loop passes every phase and then aborts in engine teardown"
     },
     "F-335": {
+      "done_at": "2026-08-21T01:08:42+00:00",
+      "done_by": "ivy1bcae0",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Two verification checks no longer test the shipped contracts they claim"
     },
     "F-336": {
+      "done_at": "2026-08-21T01:08:42+00:00",
+      "done_by": "ivy1bcae0",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "GAMELOOP.md reports several pre-cutover states as current"
     },
     "F-337": {
+      "done_at": "2026-08-21T01:08:42+00:00",
+      "done_by": "ivy1bcae0",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Wellspring re-corruption turns a 2-second ward census into a per-frame full build scan"
     },
@@ -6051,28 +6000,34 @@
     "F-340": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Terrain retuning landed without refreshing its deterministic and structural checks"
     },
     "F-341": {
+      "done_at": "2026-08-21T01:08:42+00:00",
+      "done_by": "ivy1bcae0",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Sway material caching aliases meshes whose vertical origins differ"
     },
     "F-342": {
+      "done_at": "2026-08-21T01:08:42+00:00",
+      "done_by": "ivy1bcae0",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Every renderer performance instrument still measures Hollowmere, not the shipped procedural world"
     },
     "F-343": {
+      "done_at": "2026-08-21T01:08:42+00:00",
+      "done_by": "ivy1bcae0",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "harvest_world_check is seed-dependent because live Mire can reduce its fixed-yield assertion"
     },
@@ -6084,9 +6039,11 @@
       "title": "Remote interpolation misses its own smoothness budget in both synthetic and live phases"
     },
     "F-345": {
+      "done_at": "2026-08-21T01:08:42+00:00",
+      "done_by": "ivy1bcae0",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Procedural co-op spawn offsets are not placed on their own terrain surface"
     },
@@ -6130,13 +6087,41 @@
       "title": "The Mire saturates the whole island in 30 minutes and nothing ever pushes it back"
     },
     "F-351": {
-      "done_at": "2026-08-21T01:01:13+00:00",
+      "done_at": "2026-08-21T01:40:30+00:00",
       "done_by": "ivycc0920",
       "est": "\u2014",
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
       "title": "Enemies navigate a map the streamed world never bakes into \u2014 every chunk navmesh is on NavBaker's private map"
+    },
+    "F-352": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "render_census reports the procedural world's ring-based LOD as a missing lever"
+    },
+    "F-353": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Daytime lighting reads washed out: the frame lives in a 0.48-0.71 luminance band with no blacks and no saturation"
+    },
+    "F-354": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "enemy_check's 'it starts idle' races the engine's own physics tick"
+    },
+    "F-355": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Godot project and export settings need a release-readiness audit"
     }
   },
   "version": 1

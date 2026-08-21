@@ -41,7 +41,10 @@ func _run() -> void:
 	if world == null:
 		print("NO EnemyWorld"); quit(1); return
 
-	print("nav regions on the default map:")
+	# The default map is expected to be EMPTY on a streamed island once F-351 is fixed: the terrain
+	# navmesh lives on NavBaker's map and `EnemyWorld.bake_navigation()` deliberately declines to
+	# bake a rival region here. Printed for contrast, never asserted on.
+	print("the viewport's default map (deliberately not where a streamed island bakes):")
 	var map: RID = root.world_3d.navigation_map
 	print("  map valid=%s iteration=%d regions=%d"
 		% [map.is_valid(), NavigationServer3D.map_get_iteration_id(map),
@@ -61,7 +64,8 @@ func _run() -> void:
 		print("  map valid=%s regions=%d  (chunk regions baked=%d)"
 			% [bmap.is_valid(), NavigationServer3D.map_get_regions(bmap).size(),
 			   int(baker.call("region_count"))])
-		print("  same map as the enemies query? %s" % (bmap == map))
+		print("  is that the default map? %s (expected false — it is a private map)"
+			% (bmap == map))
 
 	var points: Array = world.call("ambient_spawn_points")
 	print("ambient spawn points: %d" % points.size())
@@ -80,7 +84,13 @@ func _run() -> void:
 		print("SPAWN FAILED"); quit(1); return
 	await process_frame
 	await process_frame
+	# The assertion that matters is about the map THIS AGENT queries, not about the default map.
+	# The fix does not move chunk regions onto the default map — it points the agent at the map the
+	# world already bakes into, so comparing the two maps would report a failure for a working game.
+	var agent: NavigationAgent3D = enemy.get_node_or_null(^"EnemyNav") as NavigationAgent3D
+	_agent_map = agent.get_navigation_map() if agent != null else RID()
 	print("enemy _nav_ready = %s" % enemy.get("_nav_ready"))
+	print("enemy agent's map == NavBaker's map? %s" % (_agent_map == _baker_map))
 
 	var start: float = enemy.global_position.distance_to(player.global_position)
 	print("\n t(s)  dist(m)   enemy_pos                 step_dir        direct_dir")
@@ -98,19 +108,24 @@ func _run() -> void:
 	print("\ndistance %.2f -> %.2f m  (%s)"
 		% [start, finish, "CLOSED" if finish < start - 0.5 else "DID NOT CLOSE"])
 
-	var shared: bool = _baker_map == map
+	# "Does the thing that walks query the map the world bakes into?" — nothing else here is a
+	# pass/fail condition. The pursuit trace above is a reading, not an assertion: whether a crawler
+	# closes from any one spawn marker depends on where that marker sits relative to the navmesh.
+	var shared: bool = _agent_map.is_valid() and _agent_map == _baker_map
 	print("")
 	if shared:
-		print("  ok    enemies and the chunk baker share one navigation map")
+		print("  ok    the enemy's agent queries the same map the chunk baker fills (%d region(s))"
+			% _baked_regions)
 	else:
-		print("  FAIL  enemies query a map with %d region(s) while %d chunk navmesh(es) sit on a"
-			% [NavigationServer3D.map_get_regions(map).size(), _baked_regions])
-		print("        map nothing that walks can see (F-351)")
-	print("ENEMY_NAV_MAP_CHECK shared_map=%s enemy_map_regions=%d baker_map_regions=%d failures=%d"
-		% [shared, NavigationServer3D.map_get_regions(map).size(), _baked_regions,
+		print("  FAIL  the enemy's agent queries a map with %d region(s) while %d chunk navmesh(es)"
+			% [NavigationServer3D.map_get_regions(_agent_map).size(), _baked_regions])
+		print("        sit on a map nothing that walks can see (F-351)")
+	print("ENEMY_NAV_MAP_CHECK agent_on_world_map=%s agent_map_regions=%d baker_map_regions=%d failures=%d"
+		% [shared, NavigationServer3D.map_get_regions(_agent_map).size(), _baked_regions,
 		   0 if shared else 1])
 	quit(0 if shared else 1)
 
 
 var _baker_map: RID
+var _agent_map: RID
 var _baked_regions: int = 0

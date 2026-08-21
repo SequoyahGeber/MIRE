@@ -65,6 +65,10 @@ const DISSOLVE_HOLD_FRACTION: float = 0.35
 ## the navigation server and the group system every tick; the attack itself always measures live
 ## positions, so neither affects whether a hit lands.
 const REPATH_DISTANCE_M: float = 1.0
+## How often an agent whose map is not live yet re-asks for it. A streamed world bakes its first
+## chunk region some frames after the level loads, so an enemy that spawns into that window would
+## otherwise latch `_nav_ready = false` and steer straight-line for the rest of its life (F-351).
+const NAV_RECHECK_INTERVAL_SEC: float = 0.5
 const RESCAN_INTERVAL_SEC: float = 0.2
 
 ## Client-local render LOD (7.7). Waves grow without bound as Cycles escalate
@@ -139,6 +143,8 @@ var _visual: Node3D
 var _anim: AnimationPlayer
 var _gravity: float = 9.8
 var _nav_ready: bool = false
+## Counts down only while `_nav_ready` is false — see `NAV_RECHECK_INTERVAL_SEC`.
+var _nav_recheck_wait: float = 0.0
 
 ## Client-local hit/death feedback (2.9). Runs on EVERY peer, including the host's own copy, and is
 ## never networked beyond the two replicated values that trigger it — §2.2's last row.
@@ -241,6 +247,11 @@ func _physics_process(delta: float) -> void:
 	if definition == null:
 		return
 	_rescan_wait = maxf(_rescan_wait - delta, 0.0)
+	if not _nav_ready:
+		_nav_recheck_wait -= delta
+		if _nav_recheck_wait <= 0.0:
+			_nav_recheck_wait = NAV_RECHECK_INTERVAL_SEC
+			_confirm_nav_map()
 	if not is_on_floor():
 		velocity.y -= _gravity * delta
 	else:
@@ -557,14 +568,20 @@ func _sync_engagement() -> void:
 		world.call(&"clear_engagement", self)
 
 
-## Resolved once in `_ready()` and cached. The `state` setter runs before a node is in the tree
-## (`definition` and `health` are assigned during construction), where a `/root/...` lookup would
-## come back null anyway, and this is the path F-331 exists to keep cheap — a fresh
-## `get_node_or_null()` per transition would put back a slice of what the group walk cost.
-func _engagement_ledger() -> Node:
+## The `EnemyWorld` autoload, resolved once and cached. The `state` setter runs before a node is in
+## the tree (`definition` and `health` are assigned during construction), where a `/root/...` lookup
+## would come back null anyway, and the engagement path below is the one F-331 exists to keep cheap —
+## a fresh `get_node_or_null()` per transition would put back a slice of what the group walk cost.
+func _world() -> Node:
 	if _enemy_world == null and is_inside_tree():
 		_enemy_world = get_node_or_null(^"/root/EnemyWorld")
 	return _enemy_world
+
+
+## `EnemyWorld` in its attack-slot-ledger role. Named for the job rather than the node so the call
+## sites read as what they are asking for; same cached lookup as everything else that needs it.
+func _engagement_ledger() -> Node:
+	return _world()
 
 
 func _exit_tree() -> void:
@@ -720,14 +737,37 @@ func _build_agent() -> void:
 	_agent.target_desired_distance = definition.stop_distance_m if definition != null else 1.5
 	_agent.avoidance_enabled = false
 	add_child(_agent)
-	# The map is not available on the frame the agent enters the tree. One deferred check is enough:
-	# EnemyWorld bakes before it spawns anything.
+	# The map is not available on the frame the agent enters the tree, so this waits a frame — and
+	# it re-runs while the answer is still no (see `_confirm_nav_map`).
 	_confirm_nav_map.call_deferred()
 
 
+## Points this agent at the map its LEVEL navigates on, and records whether that map has anything in
+## it yet.
+##
+## F-351: a `NavigationAgent3D` left alone queries the viewport's DEFAULT map. On the procedural
+## island the ground is described on `NavBaker`'s own map instead, so an untouched agent navigated a
+## map containing one stale region baked at session start and nothing else — and an enemy handed a
+## target off that patch paths to the nearest point ON it, which is a crawler walking away from the
+## player it is chasing. `EnemyWorld.navigation_map_rid()` is the one seam that knows which map this
+## level actually uses; on an authored map it answers with the default one and nothing changes.
+##
+## Re-checked rather than latched, because on a streamed world the answer genuinely changes: the map
+## is empty until the first chunk region lands. The old single deferred check was correct only under
+## the assumption stated in `EnemyWorld`'s header — one bake, at session start, before anything
+## spawns — which a streaming level does not honour, and an enemy that spawned into that window
+## would have steered straight-line for the rest of its life. `_physics_process()` retries this on
+## `NAV_RECHECK_INTERVAL_SEC` while the answer is still no, and stops the moment the map is live; a
+## level whose navmesh never bakes pays one cheap server call every half second and steers
+## straight-line throughout, which is exactly what it did before.
 func _confirm_nav_map() -> void:
 	if _agent == null or not _agent.is_inside_tree():
 		return
+	var world: Node = _world()
+	if world != null and world.has_method(&"navigation_map_rid"):
+		var level_map: RID = world.call(&"navigation_map_rid") as RID
+		if level_map.is_valid() and level_map != _agent.get_navigation_map():
+			_agent.set_navigation_map(level_map)
 	var map: RID = _agent.get_navigation_map()
 	_nav_ready = map.is_valid() and NavigationServer3D.map_get_iteration_id(map) > 0
 

@@ -353,6 +353,19 @@ func _check_retire() -> void:
 ## be true for an enemy in the live game.
 func _check_enemy_world_buildable_obstruction() -> void:
 	print("\n== F-177: EnemyWorld.bake_navigation() (the LIVE baker) also sees a placed buildable ==")
+
+	# F-351: `EnemyWorld.bake_navigation()` now declines when a `NavBaker` owns the level, because on
+	# a streamed island baking here would only produce a stale rival to the regions the baker is
+	# already maintaining per chunk. This section tests the OTHER world shape — an authored level
+	# with no baker, where EnemyWorld is the only nav baker there is — so the standalone baker every
+	# section above drove has to be gone before it starts, not merely unused. Every one of those
+	# sections is finished with it (its last use is `_check_retire()`), and `_exit_tree()` takes it
+	# back out of the owner group as it goes.
+	if baker != null:
+		baker.free()
+		baker = null
+		await process_frame
+
 	var enemy_world: Node = root.get_node_or_null(^"EnemyWorld")
 	var build_service: Node = root.get_node_or_null(^"BuildService")
 	var inventory: Node = root.get_node_or_null(^"InventoryService")

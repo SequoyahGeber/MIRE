@@ -25,6 +25,12 @@ const DEFS_PATH: String = "res://content/enemies"
 const CONTAINER_NODE: StringName = &"Enemies"
 const SPAWNER_NODE: StringName = &"EnemySpawner"
 const ENEMY_GROUP: StringName = &"enemies"
+## Group a `NavBaker` joins when it owns a level's navigation (F-351). Kept in sync with that file's
+## own `NAV_OWNER_GROUP` by name rather than by preloading it: this autoload must not take a hard
+## dependency on a world-building script it only ever meets at runtime, and most of the harnesses in
+## `tools/` have no baker at all.
+const NAV_OWNER_GROUP: StringName = &"navigation_map_owner"
+
 ## Matches A-006's crawler: 0.45 m radius, and it climbs the playtest ramps but not walls.
 const NAV_AGENT_RADIUS_M: float = 0.5
 const NAV_AGENT_HEIGHT_M: float = 0.7
@@ -365,6 +371,60 @@ func nav_polygon_count() -> int:
 	return _nav_polygon_count
 
 
+## The navigation map anything that walks in this level must query — the one seam for "where is the
+## navmesh", so no caller has to know how the level was assembled (F-351).
+##
+## A streamed world does not bake into the default map. `world/chunk/nav_baker.gd` mints its own,
+## configured to match `ChunkMesher`'s cell grid and D-016's edge-connection margin, and registers a
+## region per chunk on it as the ring moves. A `NavigationAgent3D` left alone queries the viewport's
+## DEFAULT map instead, so before this every enemy on the procedural island navigated a map holding
+## exactly one region — `bake_navigation()`'s, baked once at session start from the handful of
+## primed spawn chunks — while all 25 streamed chunk navmeshes sat somewhere no walker could see. An
+## enemy handed a target off that stale patch paths to the nearest point ON it, which is why a
+## crawler spawned at the well walked away from the player standing next to it.
+##
+## Returns the default map when no baker owns the level, which is every authored map and every test
+## harness — those bake into the default map through `bake_navigation()` and are unchanged.
+func navigation_map_rid() -> RID:
+	var navigation_owner: Node = _navigation_owner()
+	if navigation_owner != null:
+		return navigation_owner.call(&"map_rid") as RID
+	var tree: SceneTree = get_tree()
+	if tree == null or tree.root == null or tree.root.world_3d == null:
+		return RID()
+	return tree.root.world_3d.navigation_map
+
+
+## The `NavBaker` (or anything else adopting its contract) that owns this level's navigation, or null
+## when nothing does. Duck-typed on `map_rid()` rather than on a class: an owner that joined the
+## group without the method is a wiring bug that must not silently hand back a null RID as if the
+## level simply had no baker.
+func _navigation_owner() -> Node:
+	var tree: SceneTree = get_tree()
+	if tree == null:
+		return null
+	for node: Node in tree.get_nodes_in_group(NAV_OWNER_GROUP):
+		if node.has_method(&"map_rid"):
+			return node
+	return null
+
+
+## Is there a navmesh in this level that something can actually path on? The question
+## `nav_polygon_count() > 0` used to answer, asked in a way that survives F-351.
+##
+## `nav_polygon_count()` still means exactly what its name says — polygons THIS node baked — and on a
+## streamed island that is legitimately zero, because `bake_navigation()` declines in favour of the
+## `NavBaker` that owns the ground. Counting polygons is the wrong unit there anyway: a streamed
+## world's coverage is a region per resident chunk, added and retired as the ring moves. So callers
+## that want "can enemies path here" should ask this, and callers that want "what did EnemyWorld
+## bake" should keep asking `nav_polygon_count()`.
+func navigation_ready() -> bool:
+	var map: RID = navigation_map_rid()
+	if not map.is_valid():
+		return false
+	return not NavigationServer3D.map_get_regions(map).is_empty()
+
+
 func nav_region() -> NavigationRegion3D:
 	return _region
 
@@ -452,6 +512,22 @@ func _on_disconnected() -> void:
 ## it runs once at session start, before anything is spawned, and an enemy that spawns into a
 ## half-baked map paths into walls. R3 measured this shape of bake as viable (D-016).
 func bake_navigation() -> Node:
+	# F-351: when a `NavBaker` owns this level, baking here is worse than redundant. It would parse
+	# the whole scene to produce a SECOND description of the same ground on a DIFFERENT map, and the
+	# one that matters is already being maintained per chunk as the ring moves. Whatever this baked
+	# could then only be a stale rival — which is exactly the region enemies were pathing on.
+	# Deliberately still reachable for the authored maps and for every harness with no baker.
+	var navigation_owner: Node = _navigation_owner()
+	if navigation_owner != null:
+		_nav_polygon_count = 0
+		var regions: int = -1
+		if navigation_owner.has_method(&"region_count"):
+			regions = int(navigation_owner.call(&"region_count"))
+		MireLog.info(&"content",
+			"EnemyWorld: %s owns this level's navigation (%s region(s)) — not baking a rival"
+				% [navigation_owner.name, "?" if regions < 0 else str(regions)])
+		return null
+
 	var scene_root: Node = get_tree().current_scene
 	if scene_root == null:
 		_nav_polygon_count = 0

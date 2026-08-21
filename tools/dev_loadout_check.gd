@@ -92,9 +92,12 @@ func _run() -> void:
 	)
 	check(populated, "ambient spawning fills the field to %d without a session (%d alive)"
 		% [int(world.get("ambient_population")), int(world.call("live_count"))])
-	check(int(world.call("nav_polygon_count")) > 0,
-		"the level's navmesh baked (%d polygons) — crawlers path rather than steer blindly"
-			% int(world.call("nav_polygon_count")))
+	# F-351: asks whether the level HAS a navmesh, not how many polygons EnemyWorld itself baked.
+	# On the procedural island those are different questions — `NavBaker` owns the ground and
+	# maintains a region per resident chunk, so `bake_navigation()` declines and its polygon count
+	# is legitimately zero while the world is fully navigable.
+	check(bool(world.call("navigation_ready")),
+		"the level has a navmesh crawlers can path on rather than steering blindly")
 
 	# The whole population is replaceable: kill the field and it refills on its own.
 	world.call("host_despawn_all")
@@ -106,8 +109,8 @@ func _run() -> void:
 	)
 	check(refilled, "and it refills on its own (%d alive)" % int(world.call("live_count")))
 
-	print("\nDEV_LOADOUT_CHECK alive=%d nav=%d failures=%d"
-		% [int(world.call("live_count")), int(world.call("nav_polygon_count")), failures])
+	print("\nDEV_LOADOUT_CHECK alive=%d nav_ready=%s failures=%d"
+		% [int(world.call("live_count")), bool(world.call("navigation_ready")), failures])
 	finish()
 
 

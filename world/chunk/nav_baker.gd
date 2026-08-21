@@ -53,6 +53,12 @@ const EDGE_CONNECTION_MARGIN: float = 1.10
 ## keeps the whole system inside its 2 ms budget, so it is not an optimization to remove later.
 const MAX_BAKES_IN_FLIGHT: int = 1
 
+## Group a `NavBaker` joins as soon as it owns a map, so `EnemyWorld` — and through it every agent
+## in the level — can find the map the world actually bakes into (F-351). A group rather than a node
+## path or a class reference: the baker is built in code by whoever assembles the world, and nothing
+## that walks should have to know which world script that was.
+const NAV_OWNER_GROUP: StringName = &"navigation_map_owner"
+
 ## Only chunks at this LOD get a nav region. D-084 established that the collision ring IS the LOD0
 ## ring; navigation belongs on exactly the same ring, because an agent pathing across terrain that
 ## has no collider would walk on nothing.
@@ -82,6 +88,7 @@ var _owns_map: bool = false
 
 
 func _exit_tree() -> void:
+	remove_from_group(NAV_OWNER_GROUP)
 	_release_map()
 
 
@@ -443,6 +450,13 @@ func _ensure_map() -> void:
 		return
 	_map = NavigationServer3D.map_create()
 	_owns_map = true
+	# F-351: this map is PRIVATE — it is not the viewport's default world map, which is what a
+	# NavigationAgent3D queries unless told otherwise. Joining the group is how anything that walks
+	# finds out that the ground it is standing on is described over here instead, without having to
+	# know where in the scene a baker was built. Before this, all 25 streamed chunk navmeshes sat on
+	# this map while every enemy pathed on the default one, so enemies walked at whatever stale
+	# region happened to be there rather than at the player.
+	add_to_group(NAV_OWNER_GROUP)
 	NavigationServer3D.map_set_up(_map, Vector3.UP)
 	NavigationServer3D.map_set_cell_size(_map, CELL_SIZE)
 	NavigationServer3D.map_set_cell_height(_map, CELL_HEIGHT)
