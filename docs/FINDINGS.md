@@ -1563,14 +1563,6 @@ Two smaller gaps found alongside, worth folding into the same task:
 
 ---
 
-### F-334 · The end-to-end loop passes every phase and then aborts in engine teardown
-
-**Area:** stability/testing · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
-
-`tools/loop_audit_check.gd` completed boot, harvest, craft, build, eat, wave, chest, Wellspring, Mire, Cycle, extraction and reported no phase failure on 2026-08-20, but the process exited 250 with `libc++abi: terminating ... recursive_mutex lock failed: Invalid argument`. A green gameplay transcript is therefore not a clean lifecycle run and repeated CI/audit execution is unreliable. Isolate the remaining navigation/thread/resource teardown owner, explicitly stop/join it before quit, and require exit 0 plus no engine errors.
-
----
-
 ### F-338 · The full 256 by 256 Mire simulation has no saturated late-run performance gate
 
 **Area:** performance · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
@@ -1939,7 +1931,80 @@ The Godot 4.7.1 macOS Release export succeeds with shader baking enabled, but re
 
 ---
 
+### F-362 · The game-loop audit still boots Hollowmere, so nothing proves the loop on the world that ships
+
+**Area:** testing · **Severity:** medium · **Found:** 2026-08-21 by ivy1bcae0
+
+Found 2026-08-20 by ivy1bcae0 while fixing F-334.
+
+`tools/loop_audit_check.gd` boots `res://levels/hollowmere.tscn`, and its own header calls that "the
+SHIPPED map". It was, when the file was written on 2026-08-19. `project.godot` boots
+`levels/procedural_island.tscn`.
+
+This is the same class as F-336 and F-342 — a stale current-state claim behind the procedural
+cutover — but it lands on the check with the most sweeping claim in the repo. It walks boot, harvest,
+craft, build, eat, wave, chest, Wellspring, Mire, Cycle and extraction and reports the game loop
+works. On the retired authored fixture. Nothing in the battery currently proves the loop end to end
+on the world a player actually gets.
+
+F-342 has already retargeted the renderer instruments and shown the two worlds differ materially:
+250 draw calls against 4,864, 236k primitives against 1.17M, 388 opaque surfaces against 5,772, and
+terrain that streams in over hundreds of frames rather than arriving whole.
+
+Not folded into F-334, which was about the teardown abort, because retargeting is not a one-line
+change. The phases reach for authored nodes by group — `extraction_ship`, Wellspring, chests — which
+`ProceduralWorld` does place (`procedural_world_check` counts 9 sites and every marker kind), but
+each of the eleven phases needs re-validating against generated placement, and the world streams, so
+several phases will need the settle `ProbeScene.settle()` already gives the renderer probes. Likely
+a session, and worth one.
+
+Suggested shape: take the target from `ProjectSettings` the way `tools/probe_scene.gd` now does,
+keep `-- --scene res://levels/hollowmere.tscn` as an explicit fixture override so the authored
+comparison stays available, and settle the streamer before phase one.
+
+---
+
 ## Resolved
+
+### F-334 · The end-to-end loop passes every phase and then aborts in engine teardown — **fixed**
+
+**Area:** stability/testing · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
+
+`tools/loop_audit_check.gd` completed boot, harvest, craft, build, eat, wave, chest, Wellspring, Mire, Cycle, extraction and reported no phase failure on 2026-08-20, but the process exited 250 with `libc++abi: terminating ... recursive_mutex lock failed: Invalid argument`. A green gameplay transcript is therefore not a clean lifecycle run and repeated CI/audit execution is unreliable. Isolate the remaining navigation/thread/resource teardown owner, explicitly stop/join it before quit, and require exit 0 plus no engine errors.
+
+---
+
+**Resolved 2026-08-21 by ivy1bcae0.** **Fixed 2026-08-20 by ivy1bcae0.** Exit 0, `failures=0`, zero engine `ERROR:` lines, twice.
+
+**The cause was a leaked lambda, not a thread or a resource.** `_phase_extraction()` subscribed an
+anonymous closure to `EventBus.subscribe_run_extracted()` and never unsubscribed it. `EventBus` is a
+*static* Callable registry, so it outlives the SceneTree script and everything in it: at process
+shutdown the registry is destroyed still holding a Callable bound to a closure whose owner has gone,
+and tearing that down walks into a server mutex that no longer exists —
+`recursive_mutex lock failed: Invalid argument`, exit 250, on a transcript reading `failures=0`. The
+fix is to hold the Callable in a variable and `unsubscribe_run_extracted()` it. It was the only
+`EVENT_BUS.subscribe` in the file, and no other check and no shipped file has the pattern (checked).
+
+**How it was found**, because the guesses were wrong first. Freeing the level and running 30 frames
+of teardown before `quit()` did NOT fix it — the scene was never the owner. Booting the same level
+bare, and booting it plus spawning enemies, plus ticking the Mire, plus advancing the Cycle, all
+exited 0. A temporary `-- stop-after N` hook then bisected the run body: phases 0-5 exit 0, adding
+the seventh exits 250, which named `_phase_extraction` exactly.
+
+Sequoyah supplied the macOS crash report, which settled the direction: the abort is on the **main
+thread inside `main()`'s shutdown**, with all fifteen WorkerThreads alive and idle on condition
+variables. So no thread needed joining, and the finding's "stop/join it before quit" reading was a
+dead end — what was needed was for nothing to be left to destroy at that point. Two frames in the
+stack repeat, a recursive notification walk reaching a destroyed lock, which is what a static
+registry holding a dead closure produces.
+
+The `-- stop-after N` hook is kept and documented rather than removed: the next time this file
+aborts somewhere in eleven phases, bisecting by hand means editing and re-editing the run body.
+
+Separately filed as **F-362**: this check still boots `levels/hollowmere.tscn` while `project.godot`
+boots the procedural island, so the check with the most sweeping claim in the repo proves the loop
+on the retired fixture. Same class as F-336/F-342, but retargeting needs each of the eleven phases
+re-validated against generated placement, so it is its own task.
 
 ### F-346 · Chunk navigation regions repeatedly report overlapping edge synchronization errors — **fixed**
 

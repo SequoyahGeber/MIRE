@@ -20,6 +20,10 @@ const CommandServiceScript = preload("res://autoload/command_service.gd")
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
 
 const SCENE_PATH: String = "res://levels/hollowmere.tscn"
+
+## F-334: frames given to the world's own teardown before `quit()`. Generous — this runs once, at
+## the very end, and the alternative is a 250 exit code on a run that passed everything.
+const TEARDOWN_FRAMES: int = 30
 const HOST_PEER: int = 1
 const TIMEOUT_SEC: float = 20.0
 
@@ -47,13 +51,23 @@ func _run() -> void:
 		_finish()
 		return
 
-	await _phase_day_verbs()
-	await _phase_night_wave()
-	await _phase_chests()
-	await _phase_wellspring_downstream()
-	await _phase_mire()
-	await _phase_cycle()
-	await _phase_extraction()
+	# `-- stop-after N` runs the first N phases and finishes. Kept rather than removed: it is how
+	# F-334's teardown crash was found — phases 0-5 exited 0, adding the seventh exited 250 — and
+	# the next time this file aborts somewhere in eleven phases, bisecting it by hand means editing
+	# and re-editing the run body. Two lines to keep, a session to rebuild.
+	var stop_after: int = 99
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	for i: int in args.size():
+		if args[i] == "stop-after" and i + 1 < args.size():
+			stop_after = int(args[i + 1])
+	var phases: Array[Callable] = [
+		_phase_day_verbs, _phase_night_wave, _phase_chests,
+		_phase_wellspring_downstream, _phase_mire, _phase_cycle, _phase_extraction,
+	]
+	for i: int in phases.size():
+		if i >= stop_after:
+			break
+		await phases[i].call()
 	_finish()
 
 
@@ -406,8 +420,21 @@ func _phase_extraction() -> void:
 	var salvage: Node = root.get_node_or_null(^"SalvageService")
 	var banked_before: int = int(salvage.call("total_salvage"))
 	var extracted: Dictionary = {"fired": false}
-	EVENT_BUS.subscribe_run_extracted(func(_cycle: int, _position: Vector3) -> void:
-		extracted["fired"] = true)
+	# F-334: held in a variable so it can be UNSUBSCRIBED below.
+	#
+	# `EventBus` is a static Callable registry — it outlives this SceneTree script and everything in
+	# it. An anonymous lambda handed to it is never reclaimed, so at process shutdown the static
+	# registry is destroyed still holding a Callable bound to a closure whose owner has already gone,
+	# and tearing that down walks into a server mutex that no longer exists. That is the
+	# `recursive_mutex lock failed: Invalid argument` abort this check ended every run with: exit 250
+	# on a transcript reading `failures=0`, which is the worst way to fail because the transcript is
+	# what people read.
+	#
+	# This is the only `EVENT_BUS.subscribe` in the file, and it is in the one phase a bisect
+	# (`-- stop-after N`) isolated: phases 0-5 exit 0, adding this one exits 250.
+	var on_extracted: Callable = func(_cycle: int, _position: Vector3) -> void:
+		extracted["fired"] = true
+	EVENT_BUS.subscribe_run_extracted(on_extracted)
 
 	Engine.time_scale = 8.0  # the departure hold is 60 s of accumulated delta; §5a says this is safe
 	ship.call("request_toggle_departure")
@@ -421,6 +448,7 @@ func _phase_extraction() -> void:
 		var save_path: String = "user://salvage.json"
 		note("salvage persisted: %s" % ("yes" if FileAccess.file_exists(save_path)
 			else "NO FILE at %s — extraction did not persist" % save_path))
+	EVENT_BUS.unsubscribe_run_extracted(on_extracted)
 
 
 # ── the other ending ─────────────────────────────────────────────────────────────────────────────
@@ -617,4 +645,34 @@ func _finish() -> void:
 		for entry: String in notes:
 			print("  · %s" % entry)
 	print("\nLOOP_AUDIT failures=%d" % failures)
+	await _teardown_world()
 	quit(0 if failures == 0 else 1)
+
+
+## F-334: take the world down while the engine is still up.
+##
+## Every phase of this audit passed and the process then aborted with
+## `libc++abi: terminating ... recursive_mutex lock failed: Invalid argument`, exit 250 — a green
+## transcript and a crashed run, which is the worst combination because the transcript is what
+## anyone reads. That signature is a mutex being locked after it has been destroyed: node and server
+## teardown racing engine shutdown. `quit()` only REQUESTS the loop stop, so whatever this check
+## still had standing — the level, its enemies, their `NavigationAgent3D`s, the navigation regions
+## `EnemyWorld` bakes — was being destroyed on the way out, alongside the servers that own their
+## locks.
+##
+## So the scene comes down first, explicitly, and the loop is given real frames to run every
+## `_exit_tree()` and free every queued node while the servers are all still alive. Only then quit.
+func _teardown_world() -> void:
+	var enemy_world: Node = root.get_node_or_null(^"EnemyWorld")
+	if enemy_world != null and enemy_world.has_method(&"host_despawn_all"):
+		enemy_world.call(&"host_despawn_all")
+	if current_scene != null:
+		var scene: Node = current_scene
+		current_scene = null
+		scene.queue_free()
+	# Two passes: the first runs `_exit_tree()` and lets `queue_free()` land, the second lets
+	# anything those handlers freed in turn actually go. Physics frames too, because navigation and
+	# the physics server settle on that tick rather than on the idle one.
+	for _pass: int in TEARDOWN_FRAMES:
+		await process_frame
+		await physics_frame
