@@ -57,6 +57,81 @@ these envelopes; `audio_check.py` enforces the hard limits.
 `loop=true` lives in the two committed `.ogg.import` sidecars — gitignore exceptions following the
 `icon.svg.import` precedent, because a fresh clone would otherwise re-import with loop=false.
 
+## The overhaul option sets (task 7.2, 2026-08-21)
+
+Everything above is **v1**. `tools/audio/render_sfx_options.py` and `tools/audio/render_theme.py`
+render the **candidates for a v2 pass** — options to pick from, not shipped assets. Nothing they
+produce lands in `assets/` until an explicit `--ship`, and until then the v1 files stay in place.
+
+```bash
+python3 tools/audio/render_theme.py               # 5 theme candidates -> <build>/themes/
+python3 tools/audio/render_sfx_options.py         # 11 families x 3 takes -> <build>/sfx_options/
+python3 tools/audio/audio_check.py --theme-dir <build>/themes
+python3 tools/audio/audio_check.py --sfx-dir <build>/sfx_options/wav
+```
+
+**Themes.** Five candidates in five styles, all loop-folded (`wrap_loop`, same as the ambient beds)
+because a menu is somewhere a player can sit:
+
+| Candidate | Style | Carried by | Key |
+|---|---|---|---|
+| `hollowmere_hymn` | folk lament | bowed viol over a hammered-dulcimer ostinato | D Dorian |
+| `wake_the_deep` | heroic adventure | horns + strings + choir, A-B-A, full arrangement | D Dorian |
+| `mire_rites` | percussive 6/8 | frame drums, bone flute, chanted choir, four-stage build | D Dorian |
+| `the_long_sink` | dark cinematic | low horns, sub swells, the bII dread chord | A Aeolian |
+| `still_water` | eerie minimal | music box through tape warble, no pulse | D Dorian |
+
+They share the ambience's modal world and reuse its pad/pluck/bell voices, so any of them still
+sounds like Hollowmere. `hollowmere_hymn` and `still_water` share a melody deliberately — the second
+is the first heard through the wrong end of the mire — so picking one leaves the other usable as a
+late-game or diegetic variant. Percussion in three of them does **not** break the no-percussion rule
+above: that rule protects *ambience* from imposing a tempo on a procedurally-paced world, and a menu
+has no world to pace.
+
+```bash
+python3 tools/audio/render_theme.py --ship wake_the_deep   # -> assets/audio/music/menu_theme.ogg
+```
+
+**SFX takes.** Every family gets **A / B / C** — three different answers to "what is this made of and
+how hard did you hit it", not three seeds of one recipe (that is what the per-sound *variants*
+already are). Each take ships its family's full variant count, so a winner drops in with the
+round-robin play sites unchanged. Audition via `<build>/sfx_options/<family>_options.mp3`; takes are
+slated with **pips** — one before A, two before B, three before C — because a listener two minutes
+into a reel otherwise has no way to know which take they are hearing.
+
+```bash
+python3 tools/audio/render_sfx_options.py --ship axe_hit_wood=B melee_hit=C ui_click=A ...
+```
+
+That copies the winners into `assets/audio/sfx/` under the canonical names and prints the take table
+to paste back into this file. It is the only path here that writes into `assets/`, and therefore the
+only one that takes the F-196 import-cache lock — the render paths deliberately skip it, because the
+guard boots Godot for a full re-import on release and the renders touch nothing Godot imports.
+
+**Why the takes sound different from v1 at all:** `mire_voices.modal_bank` — a bank of
+exponentially-decaying partials, the physical model behind any struck object. Material lives almost
+entirely in the partial *ratios* and their relative decay times; v1 approximated struck material with
+fixed sine triples over pink-noise beds, which is why several v1 impacts read as "click plus noise"
+rather than as wood, stone, or bone. `grain_scatter` does the same job for debris and rattles.
+
+## `mire_voices.py` — the extended palette
+
+`mire_audio.py` covers the ambient palette. A theme needs a voice that can *sing a line*, so
+`tools/audio/mire_voices.py` adds, on the same numpy-only, explicit-`Generator` contract:
+
+- **sustained**: `bowed` (viol/fiddle — MIRE's lead voice), `choir` (formant-filtered massed voices,
+  vowels in `VOWELS`), `horn` (FM brass whose brightness tracks its own envelope), `flute` (breathy
+  bone whistle), `glass_pad` (stretched-partial cold pad), `music_box`, `dulcimer` (multi-course
+  Karplus-Strong — the detuned smear is the whole character).
+- **percussion**: `membrane` (drumhead with real circular mode ratios), `log_drum`, `shaker`,
+  `grain_scatter`.
+- **impact**: `modal_bank`, `noise_impact`, `body_drop`, `transient`.
+- **processing**: `tape_warble`, `echo`, `formant_filter`, `phase_of`/`vibrato_curve`.
+
+`phase_of` matters more than it looks: vibrato and glide must be built by integrating a per-sample
+frequency curve into phase. Modulating a fixed-phase sine's argument instead modulates *position*,
+not pitch, and clicks on every zero crossing.
+
 ## Adding a sound
 
 Add a recipe function in `tools/audio/render_sfx.py` composing `mire_audio` primitives
@@ -82,7 +157,10 @@ audio RPCs and must never be any.
   never to a scene or map — release worlds are procgen.
 - **Buses & mix pass** (7.1's remainder): Master / Music / SFX / UI buses, settings sliders — done,
   task 7.5.
-- **More music** (7.2's remainder): menu theme, combat-intensity stems for escalation. Boss (5.5) is
+- **Menu theme playback**: a client-local autoload to play `menu_theme.ogg` on the "Music" bus, and
+  hand off to the ambient director on run start. Blocked only on which candidate wins — the asset
+  name is fixed (`assets/audio/music/menu_theme.ogg`), so the wiring can be written against it now.
+- **More music** (7.2's remainder): combat-intensity stems for escalation. Boss (5.5) is
   done — one shared stinger cue, not per-boss stems; a future task can add per-boss/per-phase cues
   through `BossDef.engage_music_cue`/`BossPhaseDef.music_cue`, which exist but route to the shared
   cue only (`BossMusicDirector.CUE_PATHS` has one entry today).

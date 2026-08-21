@@ -10,6 +10,12 @@ dir render_music.py wrote), the two music master WAVs plus their committed
 OGGs (via ffprobe). Exits non-zero on any failure, prints PASS/FAIL per rule
 like the tools/*_check.gd scripts do.
 
+Candidate audio — the A/B/C option wavs from render_sfx_options.py and the
+theme masters from render_theme.py — is checked the same way before anyone
+spends ears on it, via --sfx-dir and --theme-dir. A candidate that clips or
+sits at -45 dBFS is not a taste question, and finding that out during the
+listening pass wastes the only scarce resource here.
+
 Rules:
   all files : no clipped samples, |DC offset| < 0.002, peak <= -0.9 dBFS
   sfx       : mono, 0.03 s <= duration <= 3 s, RMS >= -40 dBFS
@@ -17,6 +23,8 @@ Rules:
               loop seam continuity (|first - last| within the track's own
               99.9th-percentile sample-to-sample delta, x2 headroom)
   music ogg : exists, ffprobe duration within 0.5 s of the wav
+  theme wav : stereo, 60 s <= duration <= 240 s, -26 <= RMS <= -14 dBFS,
+              loop seam continuity (same rule as the ambient beds)
 """
 
 from __future__ import annotations
@@ -68,6 +76,25 @@ def check_sfx(path: str) -> None:
     common_checks(name, sig)
 
 
+def check_theme(path: str) -> None:
+    """Theme candidates loop (render_theme.finish folds the tail onto the head),
+    so they get the same seam rule as the ambient beds. Their length is free —
+    a theme is as long as it needs to be."""
+    name = os.path.basename(path)
+    sig, sr = ma.read_wav(path)
+    dur = sig.shape[1] / sr
+    check(sr == ma.SR, f"{name}: sample rate {sr} == {ma.SR}")
+    check(sig.shape[0] == 2, f"{name}: stereo ({sig.shape[0]} ch)")
+    check(60.0 <= dur <= 240.0, f"{name}: duration {dur:.1f}s in [60, 240]")
+    rms = ma.rms_db(sig)
+    check(-26.0 <= rms <= -14.0, f"{name}: rms {rms:.1f} dBFS in [-26, -14]")
+    common_checks(name, sig)
+    seam = float(np.max(np.abs(sig[:, 0] - sig[:, -1])))
+    typical = float(np.percentile(np.abs(np.diff(sig, axis=-1)), 99.9))
+    check(seam <= max(typical * 2.0, 0.02),
+          f"{name}: loop seam step {seam:.4f} <= 2x typical delta {typical:.4f}")
+
+
 def check_music(wav_path: str, ogg_path: str) -> None:
     name = os.path.basename(wav_path)
     sig, sr = ma.read_wav(wav_path)
@@ -102,12 +129,24 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--build-dir", default=None,
                         help="dir holding the music master WAVs (from render_music.py)")
+    parser.add_argument("--sfx-dir", default=None,
+                        help="check this dir's wavs as SFX instead of assets/audio/sfx/ "
+                             "(render_sfx_options.py's wav/ dir)")
+    parser.add_argument("--theme-dir", default=None,
+                        help="check this dir's wavs as theme candidates (render_theme.py)")
     args = parser.parse_args()
 
-    sfx_paths = sorted(glob.glob(os.path.join(repo, "assets", "audio", "sfx", "*.wav")))
+    sfx_root = args.sfx_dir or os.path.join(repo, "assets", "audio", "sfx")
+    sfx_paths = sorted(glob.glob(os.path.join(sfx_root, "*.wav")))
     check(len(sfx_paths) > 0, f"found {len(sfx_paths)} sfx wavs")
     for path in sfx_paths:
         check_sfx(path)
+
+    if args.theme_dir:
+        theme_paths = sorted(glob.glob(os.path.join(args.theme_dir, "*.wav")))
+        check(len(theme_paths) > 0, f"found {len(theme_paths)} theme wavs")
+        for path in theme_paths:
+            check_theme(path)
 
     if args.build_dir:
         for track in ("ambient_day", "ambient_night"):
