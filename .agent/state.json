@@ -1269,6 +1269,13 @@
       "task": "F-274",
       "token": null
     },
+    "tools/terrain_normal_check.gd": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T03:44:40+00:00",
+      "hash": "78793babf63afe37d434f6f85fb4ddbf96ff7779c263573723f892aea0052d21",
+      "task": "F-372",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
     "tools/title_check.gd": {
       "agent": "ivy1bcae0",
       "at": "2026-08-21T01:08:42+00:00",
@@ -1530,9 +1537,9 @@
     },
     "world/gen/island_heightmap.gd": {
       "agent": "kilnd3a089",
-      "at": "2026-08-21T03:32:23+00:00",
-      "hash": "96cb9fa0e1d86d14784067580ea2422d0495e1fef6def4005de4a9ca6d2d5e40",
-      "task": "F-368",
+      "at": "2026-08-21T03:44:40+00:00",
+      "hash": "b433df71ff2e5051d8e810c5f9f4833cb2b4cb7610e6f702643b88c6eb72a2c0",
+      "task": "F-372",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "world/gen/poi_def.gd": {
@@ -1592,7 +1599,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 285,
+  "rev": 288,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -6342,9 +6349,11 @@
       "title": "Tree trunk art does not hold up at the distance the player actually stands at"
     },
     "F-372": {
+      "done_at": "2026-08-21T03:44:40+00:00",
+      "done_by": "kilnd3a089",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "The river carve reads as a random ravine cut across open grassland, because nothing dresses its banks or fills its bed"
     },

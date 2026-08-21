@@ -2081,33 +2081,6 @@ a second darker tone so the facets catch light the way the canopy's already do. 
 
 ---
 
-### F-372 · The river carve reads as a random ravine cut across open grassland, because nothing dresses its banks or fills its bed
-
-**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "random ravine in the middle of the island". Visible in
-the play capture: a steep-sided channel running through otherwise flat green ground, dry, unlit,
-with the same grass on its floor as on the plateau either side.
-
-It is `world/gen/island_heightmap.gd`'s river, working as coded. `_river_channel()` (:479) carves a
-bed lerping `RIVER_BED_SOURCE 1.2` down to `RIVER_BED_MOUTH -1.2`, with `RIVER_BANK_RISE 2.2`
-lifting the walls off the bed over a corridor of `RIVER_WIDTH * RIVER_CORRIDOR` (2.6x). The header at
-:273-282 says the intent out loud — "a river out of the northern rim through a gorge into the mere",
-a Hollowmere identity feature.
-
-The geometry shipped; the river did not. There is no water surface in the channel
-(`world/gen/procedural_world.gd:273` `water_surface_at()` returns one constant — "this generator has
-exactly one body of water, the ocean"), no bank material change, no shore-biome band along it, and
-no scatter def keyed to it. So what the player meets is a bare trench with no reason to exist.
-
-Fix, in the order that gets the most back per unit of work: run the shore biome up the channel so its
-banks and floor dress differently from the plateau, then either fill the bed with water above
-`RIVER_BED_MOUTH` or soften `RIVER_BANK_RISE` so it reads as a dry wash rather than a cut. If the
-river is not wanted on the procedural map at all, gating the carve is a one-line alternative — but
-that is a design call, not a bug fix.
-
----
-
 ### F-373 · Nothing plays the ambient soundtrack — ambient_day.ogg and ambient_night.ogg have no player anywhere in the game
 
 **Area:** audio · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
@@ -2581,6 +2554,90 @@ client-side filter.
 ---
 
 ## Resolved
+
+### F-372 · The river carve reads as a random ravine cut across open grassland, because nothing dresses its banks or fills its bed — **fixed**
+
+**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "random ravine in the middle of the island". Visible in
+the play capture: a steep-sided channel running through otherwise flat green ground, dry, unlit,
+with the same grass on its floor as on the plateau either side.
+
+It is `world/gen/island_heightmap.gd`'s river, working as coded. `_river_channel()` (:479) carves a
+bed lerping `RIVER_BED_SOURCE 1.2` down to `RIVER_BED_MOUTH -1.2`, with `RIVER_BANK_RISE 2.2`
+lifting the walls off the bed over a corridor of `RIVER_WIDTH * RIVER_CORRIDOR` (2.6x). The header at
+:273-282 says the intent out loud — "a river out of the northern rim through a gorge into the mere",
+a Hollowmere identity feature.
+
+The geometry shipped; the river did not. There is no water surface in the channel
+(`world/gen/procedural_world.gd:273` `water_surface_at()` returns one constant — "this generator has
+exactly one body of water, the ocean"), no bank material change, no shore-biome band along it, and
+no scatter def keyed to it. So what the player meets is a bare trench with no reason to exist.
+
+Fix, in the order that gets the most back per unit of work: run the shore biome up the channel so its
+banks and floor dress differently from the plateau, then either fill the bed with water above
+`RIVER_BED_MOUTH` or soften `RIVER_BANK_RISE` so it reads as a dry wash rather than a cut. If the
+river is not wanted on the procedural map at all, gating the carve is a one-line alternative — but
+that is a design call, not a bug fix.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** The channel's **bank angle** was the problem, and nothing had ever touched it. An earlier retune
+("weird pits and aggressive valleys") moved the river's DEPTH and left `RIVER_BANK_RISE` alone, so
+its own promise of "banks you walk down" stayed aspirational — shallower is not the same property as
+gentler.
+
+Measured, as the steepest 1 m step on a 90 m transect straight across the channel, against a control
+running the identical transect over inland terrain at least 90 m from the river:
+
+    ordinary inland terrain              9.2 deg   (the control)
+    rise 2.2, corridor 2.6 (shipped)    60.6 deg   <- "a random ravine in the middle"
+    rise 0.3, corridor 5.0              35.0 deg   <- chosen
+    rise 0.1, corridor 10.0             24.7 deg
+
+The control is what makes the shipped number damning: the channel was **51 degrees steeper than
+anything else on the island**, which is exactly why it read as an intrusion rather than as terrain.
+`RIVER_BANK_RISE` 2.2 -> 0.30 with `RIVER_CORRIDOR` 2.6 -> 5.0 halves that excess.
+
+**The corridor had to widen with the rise, and getting that wrong was instructive.** The carve is
+clipped at `width * RIVER_CORRIDOR`, so walls that have not reached the surface by then make the CLIP
+a hard vertical step — the ravine back again, at the corridor edge instead of the bed. Sweeping the
+rise alone proved it: 0.28 at the old 2.9 corridor measured 60.5 deg, no better than shipped.
+
+**And one attempt was simply wrong, caught by rendering rather than by a number.** F-368 raised
+`ISLAND_RADIUS` 2.5x, so I first scaled the river half-widths by the same ratio for symmetry with
+`FREQUENCY_SCALE`. The top-down render killed it in one look: a 2.5x wider channel whose bed already
+dips below sea level at the mouth flooded and **cut the island in half**. A river is a river at any
+island size; only its banks needed to relax. Widths ended at a nudge, 2.5 -> 3.0 and 6.0 -> 7.0.
+
+Not pushed further than 0.3/5.0 on purpose: the curve flattens hard, and what remains is no longer
+the channel — it is the detail noise riding the walls (which deliberately does not scale with the
+island) plus the beach drop at the mouth. The valley is already ~70 m across at the mouth on a 590 m
+island; at corridor 10.0 it would be a fifth of the island, trading one wrong-looking thing for
+another.
+
+**Side finding, fixed here because this change exposed it: `tools/terrain_normal_check.gd` was
+measuring its own teeth against an absolute degree gate calibrated on rougher terrain.** Its four
+sample chunks were absolute coordinates that became a cluster on the island's flattest point once
+the radius grew, and its `MIN_MEAN_IMPROVEMENT_DEG` of 0.05 was calibrated at `mean_stored` 4.16 —
+the margin between the two normal formulas scales with terrain roughness, so it fell 0.15 -> 0.07 ->
+0.03 across this session's terrain work on **correct, unchanged normals**. The check now picks its
+four chunks by measured height variance (self-correcting at any radius or roughness) and gates on the
+improvement as a FRACTION of the stored error, with an absolute float-noise floor. That gate is
+scale-free, which is what the question "can this check tell the fix from the bug?" always was.
+
+Worth naming: that is the **third instance of one mistake in a single session** — a constant in
+absolute units that was implicitly a fraction of the island, left behind when the island moved. The
+others were `MireGrid.BASE_SPREAD_RATE` and the river widths themselves.
+
+Verified: terrain_check 0, biome_terrain_check 0, terrain_normal_check 0, poi_check 0,
+resource_scatter_check 0. Top-down render at seed 20260819 shows a broad walkable valley with a beach
+floor where a dark slot used to be: `assets/audit/terrain/island_20260819.png`.
+
+**Left open:** the finding also asked for the channel to be DRESSED differently from the plateau
+(shore-biome banks, or water in the bed). Not done — the bed already classifies as shore by height,
+so the likely reason it looked bare in play is F-369's scatter radius, not a biome bug. Re-judge it
+after F-369 lands rather than dressing it twice.
 
 ### F-367 · No chest reaches the procedural island: the loot_cache POI asks for 8 sites at 70 m spacing on a 118 m island — **fixed**
 

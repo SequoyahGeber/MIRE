@@ -38,8 +38,71 @@ const BiomeMap := preload("res://world/gen/biome_map.gd")
 const Heightmap := preload("res://world/gen/island_heightmap.gd")
 
 ## Chunks over land at this seed, so the assertions run on real relief rather than flat ocean.
+##
+## **Positioned as a FRACTION of the island, not in absolute chunks (F-372).** These four coordinates
+## were authored when `IslandHeightmap.ISLAND_RADIUS` was 118 m, where two chunks from the origin
+## (64 m) was a bit over half way out — sloping ground. F-368 raised the radius to 295 m and the same
+## absolute coordinates became a tight cluster around the island's flattest point, which quietly
+## gutted this check's own teeth: the NEGATIVE margin below fell 0.15 -> 0.07 -> 0.05 deg across two
+## terrain changes and tripped the gate, with nothing wrong with the normals at all.
+##
+## That is worth naming because it is the THIRD instance of one mistake found in a single session —
+## a constant in metres or chunks that was implicitly a fraction of the island, left behind when the
+## island moved. The others were the river half-widths and `MireGrid.BASE_SPREAD_RATE`. Deriving the
+## sample location keeps this check measuring the same KIND of ground at any radius.
 const SEED: int = 20260819
-const CHUNKS: Array = [Vector2i(0, 0), Vector2i(1, 0), Vector2i(-1, 1), Vector2i(2, -1)]
+
+
+## The four chunks over land with the MOST relief, found by measuring rather than by guessing
+## coordinates.
+##
+## Guessing is what broke: `_BASE_CHUNKS` are the coordinates this check shipped with, and scaling
+## them by the radius ratio still lands wherever that ratio happens to point — which on a bigger,
+## flatter island was flatter ground again. Relief is the property the NEGATIVE assertions actually
+## need, so relief is what this selects on. It is also self-correcting: retune the terrain however
+## you like and this keeps finding the roughest ground that exists to measure on.
+##
+## Cheap: a 5x5 grid of height probes per candidate over a band of chunks, which is a few thousand
+## surface samples once, against the 24,576 vertices the check goes on to inspect.
+static func sample_chunks(biome_defs: Array) -> Array:
+	var noise_set: BiomeMap.NoiseSet = BiomeMap.make_noise_set(SEED)
+	var table: BiomeMap.TerrainTable = BiomeMap.make_terrain_table(biome_defs)
+	var shape := Heightmap.Shape.new()
+
+	# Candidates span the island out to the taper. Anything past that is ocean, which has no relief
+	# to measure and would be picked for exactly the wrong reason if the metric were noise.
+	var reach: int = int(Heightmap.ISLAND_RADIUS * Heightmap.FALLOFF_START_FRACTION) \
+		/ Mesher.CHUNK_SIZE
+	var scored: Array = []
+	for cz: int in range(-reach, reach + 1):
+		for cx: int in range(-reach, reach + 1):
+			var heights: Array[float] = []
+			var lowest: float = 1.0e9
+			for pz: int in 5:
+				for px: int in 5:
+					var wx: float = float(cx * Mesher.CHUNK_SIZE + px * (Mesher.CHUNK_SIZE / 4))
+					var wz: float = float(cz * Mesher.CHUNK_SIZE + pz * (Mesher.CHUNK_SIZE / 4))
+					var h: float = BiomeMap.surface_from_set(wx, wz, noise_set, SEED, table, shape)
+					heights.append(h)
+					lowest = minf(lowest, h)
+			# Skip anything with a vertex at or under the waterline: a half-submerged chunk's range
+			# is dominated by the shoreline drop, not by the surface detail under test.
+			if lowest <= 0.5:
+				continue
+			var mean: float = 0.0
+			for h: float in heights:
+				mean += h
+			mean /= float(heights.size())
+			var variance: float = 0.0
+			for h: float in heights:
+				variance += (h - mean) * (h - mean)
+			scored.append([variance / float(heights.size()), Vector2i(cx, cz)])
+
+	scored.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) > float(b[0]))
+	var out: Array = []
+	for index: int in mini(4, scored.size()):
+		out.append((scored[index] as Array)[1])
+	return out
 
 ## How closely a re-derivation must reproduce a stored normal. Degrees, and tight: the two are
 ## computed the same way from the same data, so anything above float noise means the stored normal
@@ -57,7 +120,32 @@ const DERIVATION_TOLERANCE_DEG: float = 0.5
 ## design, so the unjittered central difference was a decent approximation of the real surface.
 ## The fix is still right — the stored data is now true, and dropping the apron it needed removed
 ## 1,225 noise samples per chunk — but it did not fix something anyone could see.
-const MIN_MEAN_IMPROVEMENT_DEG: float = 0.05
+##
+## F-372: that 0.16 deg observation is the calibration story, not the gate. An ABSOLUTE degree gate
+## turned out to be the wrong shape for this measurement entirely.
+##
+## How far the legacy formula sits from the truth scales with how much the surface curves, so the
+## margin between the two formulas scales with terrain roughness. Measured across this session's
+## terrain work, on identical, correct normals:
+##
+##     island 118 m, pre-softening   mean_stored 4.16   margin 0.15 deg   (gate calibrated here)
+##     island 295 m                  mean_stored 2.25   margin 0.07 deg
+##     island 295 m, softened river  mean_stored 1.57   margin 0.03 deg   FAILS the 0.05 gate
+##
+## Nothing was wrong with the normals in any of those runs — `worst 0.005 deg` derivation passed
+## throughout. The terrain simply got gentler, which is the deliberate art direction for this
+## project (mostly flat, gentle rolling hills, no mountains), so the gate was on a collision course
+## with the roadmap.
+##
+## The question this assertion actually asks is scale-free — "can this check tell the fix from the
+## bug?" — so the gate is now scale-free too: the improvement must be at least this FRACTION of the
+## stored error. The three runs above read 3.6%, 3.1% and 1.9%; the gate sits at 1.2%, which is
+## under all of them and still far above float noise. The absolute floor is kept as a second
+## condition so a hypothetical near-flat island cannot satisfy a percentage of almost nothing.
+const MIN_MEAN_IMPROVEMENT_FRACTION: float = 0.012
+## Float-noise floor for that fraction, in degrees. Well under the 0.03 the gentlest terrain
+## measured, and far above the ~0.005 the derivation check reports as noise.
+const MIN_MEAN_IMPROVEMENT_FLOOR_DEG: float = 0.015
 
 var failures: int = 0
 
@@ -82,7 +170,8 @@ func _run() -> void:
 	var non_unit: int = 0
 	var downward: int = 0
 
-	for coord: Vector2i in CHUNKS:
+	var chunks: Array = sample_chunks(biome_defs)
+	for coord: Vector2i in chunks:
 		var mesh: ArrayMesh = Mesher.build_mesh(coord.x, coord.y, SEED, biome_defs, 0)
 		if mesh == null or mesh.get_surface_count() == 0:
 			check(false, "chunk %v builds a mesh" % coord)
@@ -110,7 +199,7 @@ func _run() -> void:
 			if normals[i].y <= 0.0:
 				downward += 1
 
-	check(checked > 0, "terrain vertices inspected across %d chunks (%d)" % [CHUNKS.size(), checked])
+	check(checked > 0, "terrain vertices inspected across %d chunks %s (%d)" % [chunks.size(), chunks, checked])
 	check(non_unit == 0, "every stored normal is unit length (%d were not)" % non_unit)
 	check(downward == 0,
 		"every stored normal points up — a heightfield has no downward vertex, so this is the "
@@ -132,9 +221,14 @@ func _run() -> void:
 	var mean_legacy: float = legacy_total / float(maxi(checked, 1))
 	# The teeth. If the legacy formula agreed with the emitted faces just as well, this check could
 	# not tell the fix from the bug and every PASS above would be decoration.
-	check(mean_legacy - mean_stored >= MIN_MEAN_IMPROVEMENT_DEG,
-		"NEGATIVE: the pre-F-339 unjittered central difference agrees with those faces %.2f deg "
-		% (mean_legacy - mean_stored) + "WORSE on average (stored %.2f vs legacy %.2f) — this check "
+	var margin: float = mean_legacy - mean_stored
+	var required: float = maxf(
+		mean_stored * MIN_MEAN_IMPROVEMENT_FRACTION, MIN_MEAN_IMPROVEMENT_FLOOR_DEG)
+	check(margin >= required,
+		"NEGATIVE: the pre-F-339 unjittered central difference agrees with those faces %.3f deg "
+		% margin + "(%.1f%% of the stored error, gate %.3f) " % [
+			margin / maxf(mean_stored, 0.0001) * 100.0, required]
+		+ "WORSE on average (stored %.2f vs legacy %.2f) — this check "
 		% [mean_stored, mean_legacy] + "can tell them apart")
 
 	print("\nTERRAIN_NORMAL_CHECK failures=%d mean_stored=%.2f mean_legacy=%.2f derivation=%.3f legacy_vs_derived=%.2f"

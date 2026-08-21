@@ -320,12 +320,61 @@ const RIVER_OVERSHOOT: float = 1.18         # mouth extends to this x ISLAND_RAD
 ## this carved a 10 m gorge with walls; on a ~3 m plateau the same numbers dug a pit you fell into
 ## and could not read from inside. It is a STREAM now — a metre or two below the meadow, banks you
 ## walk down, still ending under the sea so the mouth is open water.
-const RIVER_WIDTH_SOURCE: float = 2.5       # half-width in metres at the source...
-const RIVER_WIDTH_MOUTH: float = 6.0        # ...and at the mouth
+##
+## F-372: that retune moved the DEPTH and left the bank angle alone, so "banks you walk down" stayed
+## aspirational — the walls still measured 60.6 degrees against 9.2 for ordinary ground on the same
+## island. The next playtest reported it as "a random ravine in the middle of the island": a
+## steep-sided dry cut through otherwise flat grass, with the same grass on its floor as on the
+## plateau either side. Shallower is not the same property as gentler, and only the second one was
+## ever what the sentence above promised.
+##
+## **The banks were a gorge, and this project's terrain target is not gorges.** The channel
+## ceiling is `bed + lateral^2 * RIVER_BANK_RISE` against a `min(surface, channel)` carve, so the
+## bank rise decides how far out the walls take to reach the surface, and therefore how steep they
+## are. Measured as the steepest 1 m step on a 90 m transect straight across the channel, against a
+## control running the identical transect over inland terrain at least 90 m from the river:
+##
+##     ordinary inland terrain                9.2 deg   (the control)
+##     rise 2.2, corridor 2.6  (shipped)     60.6 deg   <- "a random ravine in the middle"
+##     rise 0.8, corridor 2.9                44.2 deg
+##     rise 0.3, corridor 5.0                35.0 deg   <- chosen
+##     rise 0.2, corridor 6.5                28.6 deg
+##     rise 0.1, corridor 10.0               24.7 deg
+##
+## The control is what makes the shipped number damning: the channel was **51 degrees steeper than
+## anything else on the island**, which is precisely why it read as an intrusion rather than as
+## terrain. 0.3/5.0 halves that excess and turns the walls into something you walk down.
+##
+## It does not reach the control, and going further is not worth what it costs. The curve flattens
+## hard — the last 10 degrees would need double the width, because what is left is no longer the
+## channel at all: it is the detail noise riding on top of the walls (which deliberately does NOT
+## scale with the island, see FREQUENCY_SCALE above) plus the beach drop where the river meets the
+## sea. At 5.0 the valley is already about 70 m across at the mouth on a 590 m island; at 10.0 it
+## would be a fifth of the island, which trades one thing that looks wrong for another.
+##
+## **The corridor has to widen with a softer rise, and this is not optional.** The carve is clipped
+## at `width * RIVER_CORRIDOR`, so if the walls have not reached the surface by then the clip itself
+## becomes a hard vertical step — the ravine, back, at the corridor edge instead of at the bed.
+## Sweeping the rise alone showed it plainly: 0.28 at the old 2.9 corridor measured 60.5 deg, no
+## better than shipped. Walls need `sqrt(depth / rise)` half-widths to land, so the two move together.
+##
+## **The widths stay in absolute metres and deliberately did NOT scale with F-368's larger island.**
+## The first attempt scaled them by the radius ratio, for symmetry with `FREQUENCY_SCALE`, and the
+## top-down render killed it in one look: a 2.5x wider channel whose bed already dips below sea
+## level at the mouth simply flooded, and cut the island in half. A river is a river at any island
+## size; only its banks needed to relax. (They went 2.5 -> 3.0 and 6.0 -> 7.0, which is a nudge, not
+## a scaling.)
+##
+## The BED is untouched by all of this: still linear in `t`, which is the monotonic-downhill
+## guarantee `tools/terrain_check.gd` walks. Softening banks cannot make water flow uphill.
+const RIVER_WIDTH_SOURCE: float = 3.0       # half-width in metres at the source...
+const RIVER_WIDTH_MOUTH: float = 7.0        # ...and at the mouth
 const RIVER_BED_SOURCE: float = 1.2         # bed height at the source (m)
 const RIVER_BED_MOUTH: float = -1.2         # below sea level: the mouth is open water
-const RIVER_BANK_RISE: float = 2.2          # how fast the channel ceiling rises off the bed
-const RIVER_CORRIDOR: float = 2.6           # carve influence ends at width x this
+const RIVER_BANK_RISE: float = 0.30          # how fast the channel ceiling rises off the bed
+## Widened with the softer banks: at 0.8 the walls need more lateral room to reach the surface, and
+## clipping the corridor before they get there would put a hard step back where the ravine was.
+const RIVER_CORRIDOR: float = 5.0           # carve influence ends at width x this
 const RIVER_SALT: int = 0x71E5B
 
 ## The outer bound of ALL land, as a function rather than a constant: GDScript will not evaluate

@@ -8027,3 +8027,15 @@ verified live: 8/8 loot caches, 13 chests across 3 tiers, streaming cost flat
 Files: `content/poi/treasure_gilded.tres`, `content/poi/treasure_strongbox.tres`
 
 Commit at time of writing: `3de13ac`
+
+---
+
+### DONE · F-372 · kilnd3a089 · 2026-08-21T03:44:40+00:00
+
+**The river carve reads as a random ravine cut across open grassland, because nothing dresses its banks or fills its bed**
+
+River banks 60.6 -> 35.0 deg against a 9.2 deg inland control; terrain_normal_check made scale-free.
+
+Files: `world/gen/island_heightmap.gd`, `tools/terrain_normal_check.gd`
+
+Commit at time of writing: `a23472b`
