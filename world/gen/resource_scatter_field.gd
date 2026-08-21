@@ -18,6 +18,29 @@ extends Node3D
 ##   `Harvestable` the instant it enters `authored_world_harvestable`. No harvest logic is
 ##   duplicated here.
 ##
+## ## F-369: the PROXY boundary is the collision ring. The VISUAL boundary is not, any more.
+##
+## Reported from play: "theres barely any of the nature assets/plants placed around the map". The
+## content was never the problem — `content/scatter/grassland_meadow.tres` asks for 3 m cells at 0.5
+## coverage, which is continuous ground cover. The problem was that this file built scatter ONLY for
+## chunks inside `chunk_has_collision()`, and that is `ChunkStreamer.LOD0_RADIUS_CHUNKS` = 2, or
+## **64 metres**. Terrain streams to `LOAD_RADIUS_CHUNKS` = 8, or 256 m. So the player stood in a
+## small dressed disc and looked out over a quarter kilometre of bare ground — exactly what the
+## playtest capture shows.
+##
+## The paragraph below was right that proxies and visuals should not have two hand-tuned radii
+## drifting apart. It was wrong to conclude they should share ONE radius: they are answering
+## different questions. "Can I walk up and hit this?" is the collision ring and always was. "Can I
+## see it?" is a draw-distance question, and this project already has an answer for it —
+## `world/environment/draw_policy.gd`, which `world/gen/authored_world.gd` has applied to its own
+## props since 4.3 and which this file never called at all.
+##
+## So: visuals build out to `SCATTER_VISUAL_MAX_LOD`, proxies stay on the collision ring, and every
+## instance gets `DrawPolicy.apply()` so the per-prop cutoff is decided by the prop's own height and
+## scaled by the graphics preset. Small flora culls at 80 m, mid at 150, trees at 260 — with the
+## chunk build radius, not a bespoke constant, as the outer bound. A weak machine pulls all three in
+## through `GraphicsQuality.draw_distance` without this file knowing anything about it.
+##
 ## ## The proxy boundary IS the LOD0/collision ring, not a second radius
 ##
 ## A full `Harvestable` node per scattered tree does not survive at island scale — the spec's own
@@ -70,6 +93,7 @@ extends Node3D
 
 const ResourceScatterLib := preload("res://world/gen/resource_scatter.gd")
 const HarvestLib := preload("res://systems/harvesting/harvest_library.gd")
+const DrawPolicy := preload("res://world/environment/draw_policy.gd")
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
 
 ## Same group `world/gen/authored_world.gd` puts its own harvestable holders in — this is the
@@ -101,6 +125,28 @@ const COLLIDER_OBSTACLE_HEIGHT_M: float = 1.8
 ## 0.5 m is chosen as clearly above a root flare and clearly below the waist. Everything under it
 ## stays walk-through, which is the right trade: brushing an ankle through a root is invisible, being
 ## held a metre off a tree is not.
+## F-369: the outermost `ChunkStreamer` LOD whose chunks still get dressed with scatter VISUALS.
+##
+## 1, i.e. `ChunkStreamer.LOD1_RADIUS_CHUNKS` = 5 chunks = **160 m**, against the 64 m the collision
+## ring gave. Not the full `LOAD_RADIUS_CHUNKS` (8 / 256 m): the outer tier exists to put a silhouette
+## on the horizon, its meshes are already the coarsest, and building three times the scatter to dress
+## ground the player reads as distance is the wrong trade for the machines this game targets. The
+## per-prop cutoff inside that band is `DrawPolicy`'s to make, not this constant's.
+const SCATTER_VISUAL_MAX_LOD: int = 1
+
+## How many VISUAL-band chunks may be dressed per frame.
+##
+## F-369: extending the visual radius from 64 m to 160 m is 2.4x the scatter, and building a chunk's
+## worth of it is synchronous. Unbudgeted, that work competes with chunk streaming itself and the
+## world settles visibly slower — measured on `world_contract_check`, whose settled chunk count fell
+## 289 -> 121 and whose wired harvestables fell with it, purely because fewer chunks finished loading
+## inside the same frame window. Nothing was broken; the frames were just spent elsewhere.
+##
+## So the visual band takes a queue and this is its per-frame allowance. Chunks inside the COLLISION
+## ring skip the queue entirely — they are underfoot, they carry the harvest proxies, and making the
+## player wait for them to appear is the one case where the budget would cost more than it saves.
+const SCATTER_VISUAL_BUILDS_PER_FRAME: int = 2
+
 const COLLIDER_TRUNK_BAND_MIN_M: float = 0.5
 ## F-390: nothing shorter than this gets a collider at all. You step over it, so a cylinder there can
 ## only ever be something to trip on.
@@ -137,6 +183,13 @@ var _mesh_cache: Dictionary[String, Array] = {}
 ## times per chunk.
 var _collider_cache: Dictionary[String, Dictionary] = {}
 var _poll_accum: float = 0.0
+## F-369: coord -> whether the chunk was built WITH harvest proxies. A chunk can be built twice over
+## its life — visual-only when it reaches LOD1, then rebuilt with proxies when collision cooks — and
+## this is what keeps those transitions from stacking or from silently skipping the upgrade.
+var _chunk_has_proxies: Dictionary[Vector2i, bool] = {}
+## F-369: visual-band chunks awaiting their turn under SCATTER_VISUAL_BUILDS_PER_FRAME. Insertion
+## order is streaming order, which is near-to-far, so draining it in order dresses inward-out.
+var _visual_queue: Array[Vector2i] = []
 
 
 ## Connects to a running `ChunkStreamer` — a plain `Node3D`, per its own DELEGATION note, so this
@@ -189,6 +242,17 @@ func pending_count() -> int:
 	return _pending_lod0.size()
 
 
+## F-369: how many built chunks carry harvest proxies, as opposed to visuals alone. `chunk_count()`
+## no longer answers "can I hit anything here" now that the two boundaries differ, and a check that
+## conflates them is a check that cannot see the difference this separation exists to make.
+func proxy_chunk_count() -> int:
+	var total: int = 0
+	for coord: Vector2i in _chunk_has_proxies:
+		if _chunk_has_proxies[coord]:
+			total += 1
+	return total
+
+
 ## `WorldDeltaLog` is the shared, cross-peer answer when it has one; this file's own peer-local
 ## `_depleted` memory is only the fallback for the window before a fresh peer's snapshot lands (or a
 ## harness that never registered `WorldDeltaLog` at all — see the header).
@@ -202,36 +266,90 @@ func is_point_depleted(point_id: String) -> bool:
 
 
 func _process(delta: float) -> void:
-	if _pending_lod0.is_empty() or _streamer == null:
+	if _streamer == null:
+		return
+	_drain_visual_queue()
+	if _pending_lod0.is_empty():
 		return
 	_poll_accum += delta
 	if _poll_accum < COLLISION_POLL_INTERVAL_SEC:
 		return
 	_poll_accum = 0.0
 	for coord: Vector2i in _pending_lod0.keys():
-		if bool(_streamer.chunk_has_collision(coord)):
-			_pending_lod0.erase(coord)
-			_build_chunk(coord)
+		if not bool(_streamer.chunk_has_collision(coord)):
+			continue
+		_pending_lod0.erase(coord)
+		# F-369: the chunk may already carry visual-only scatter from its LOD1 pass. Replace it
+		# rather than adding a second copy on top.
+		if _chunk_holders.has(coord):
+			_teardown_chunk(coord)
+		_build_chunk(coord, true)
 
 
 func _on_chunk_mesh_ready(coord: Vector2i, lod: int) -> void:
-	if lod != 0:
-		# Downgraded away from LOD0 (or never reached it) before this file acted on it — tear
-		# down whatever scatter exists, but keep the depletion memory `_teardown_chunk` records.
+	if lod > SCATTER_VISUAL_MAX_LOD:
+		# Too far out to dress at all — tear down whatever scatter exists, but keep the depletion
+		# memory `_teardown_chunk` records.
 		_pending_lod0.erase(coord)
+		_visual_queue.erase(coord)
 		_teardown_chunk(coord)
 		return
-	if _chunk_holders.has(coord) or _pending_lod0.has(coord):
+
+	if lod == 0:
+		if _chunk_has_proxies.get(coord, false):
+			return
+		# Underfoot: skip the visual queue's budget. See SCATTER_VISUAL_BUILDS_PER_FRAME.
+		_visual_queue.erase(coord)
+		# Collision usually cooks before this fires on a chunk that has been resident a while. Take
+		# that path when it is available: building visual-only first and rebuilding a moment later
+		# would dress this chunk TWICE for no visible difference.
+		if bool(_streamer.chunk_has_collision(coord)):
+			_pending_lod0.erase(coord)
+			if _chunk_holders.has(coord):
+				_teardown_chunk(coord)
+			_build_chunk(coord, true)
+			return
+		# Otherwise dress it now and poll for collision (see the class doc) — a visible chunk with
+		# nothing on it is worse than one whose props are briefly not yet hittable.
+		_pending_lod0[coord] = true
+		if not _chunk_holders.has(coord):
+			_build_chunk(coord, false)
 		return
-	_pending_lod0[coord] = true
+
+	# F-369: in the visual band. Dress it, without proxies. A chunk arriving here WITH proxies has
+	# been downgraded away from the collision ring, so its proxies must go even though its visuals
+	# stay — that is the whole point of separating the two boundaries.
+	_pending_lod0.erase(coord)
+	if _chunk_has_proxies.get(coord, false):
+		_teardown_chunk(coord)
+	if not _chunk_holders.has(coord) and not _visual_queue.has(coord):
+		_visual_queue.append(coord)
 
 
 func _on_chunk_unloaded(coord: Vector2i) -> void:
 	_pending_lod0.erase(coord)
+	_visual_queue.erase(coord)
 	_teardown_chunk(coord)
 
 
-func _build_chunk(coord: Vector2i) -> void:
+## Dresses up to [constant SCATTER_VISUAL_BUILDS_PER_FRAME] queued visual-band chunks. Coords that
+## went stale while queued (unloaded, downgraded, or since built with proxies) are dropped without
+## consuming the frame's allowance — a stale entry is not work, so it should not displace work.
+func _drain_visual_queue() -> void:
+	var built: int = 0
+	while built < SCATTER_VISUAL_BUILDS_PER_FRAME and not _visual_queue.is_empty():
+		var coord: Vector2i = _visual_queue.pop_front()
+		if _chunk_holders.has(coord):
+			continue
+		_build_chunk(coord, false)
+		built += 1
+
+
+func visual_queue_count() -> int:
+	return _visual_queue.size()
+
+
+func _build_chunk(coord: Vector2i, with_proxies: bool) -> void:
 	var placements: Array[Dictionary] = ResourceScatterLib.placements_for_chunk(
 		coord.x, coord.y, world_seed, scatter_defs, biome_defs
 	)
@@ -239,6 +357,7 @@ func _build_chunk(coord: Vector2i) -> void:
 	holder.name = "Chunk_%d_%d" % [coord.x, coord.y]
 	add_child(holder)
 	_chunk_holders[coord] = holder
+	_chunk_has_proxies[coord] = with_proxies
 
 	var by_asset: Dictionary = {}
 	for placement: Dictionary in placements:
@@ -247,16 +366,21 @@ func _build_chunk(coord: Vector2i) -> void:
 
 	for key: String in by_asset:
 		var parts := key.split("|")
-		_build_asset_group(holder, parts[0], parts[1], by_asset[key] as Array)
+		_build_asset_group(holder, parts[0], parts[1], by_asset[key] as Array, with_proxies)
 
 
-func _build_asset_group(holder: Node3D, kit: String, asset: String, placements: Array) -> void:
+func _build_asset_group(
+	holder: Node3D, kit: String, asset: String, placements: Array, with_proxies: bool
+) -> void:
 	var asset_id := StringName(asset)
 	var mesh_parts: Array = _load_mesh_parts(kit, asset)
 	if mesh_parts.is_empty():
 		return
 
-	var harvestable: bool = HarvestLib.is_harvestable(asset_id)
+	# F-369: outside the collision ring nothing is harvestable, because nothing there can be reached.
+	# A NODE harvestable therefore batches like any other scenery out at distance, which is also the
+	# cheaper representation — the reason HarvestLibrary gives for batching in the first place.
+	var harvestable: bool = with_proxies and HarvestLib.is_harvestable(asset_id)
 	var represent: int = HarvestLib.representation_for(asset_id)
 
 	var group_holder := Node3D.new()
@@ -289,6 +413,10 @@ func _build_asset_group(holder: Node3D, kit: String, asset: String, placements: 
 		instance.name = "%s_%d" % [asset, part_index]
 		instance.multimesh = multimesh
 		instance.set_meta(&"asset", asset_id)
+		# F-369: the per-prop draw distance the authored map has always had and this one never did.
+		# Decided from the prop's own height, then scaled by the graphics preset — so a grass tuft
+		# stops drawing at 80 m and a willow at 260, and a weak machine pulls all of it in.
+		DrawPolicy.apply(instance, (part["mesh"] as Mesh).get_aabb(), _max_scale(placements))
 		group_holder.add_child(instance)
 		slots.append(multimesh)
 
@@ -326,6 +454,8 @@ func _build_node_holder(
 		var mesh_instance := MeshInstance3D.new()
 		mesh_instance.mesh = part["mesh"]
 		mesh_instance.transform = part["offset"] as Transform3D
+		DrawPolicy.apply(mesh_instance, (part["mesh"] as Mesh).get_aabb(),
+			float(placement.get("scale", 1.0)))
 		visual.add_child(mesh_instance)
 	holder.add_child(visual)
 
@@ -401,7 +531,22 @@ func _wire_point_state(holder_path: NodePath, point_id: String, attempts_left: i
 		_record_point_state(point_id, false))
 
 
+## Largest instance scale in this group, so DrawPolicy grades a MultiMesh by the biggest copy in it
+## rather than by the unscaled source mesh — the same `scale_hint` argument authored_world.gd passes.
+func _max_scale(placements: Array) -> float:
+	var largest: float = 1.0
+	for placement: Dictionary in placements:
+		largest = maxf(largest, float(placement.get("scale", 1.0)))
+	return largest
+
+
 func _teardown_chunk(coord: Vector2i) -> void:
+	# F-369: erased unconditionally, before the null guard. Leaving a stale `true` here is what makes
+	# a chunk that comes back into the collision ring skip its proxy rebuild entirely — the LOD0
+	# branch reads this flag to decide whether to start polling, so a lie here is silent and
+	# permanent for that coord. Caught by resource_scatter_check's "the same point rebuilds a live
+	# Harvestable again".
+	_chunk_has_proxies.erase(coord)
 	var holder: Node3D = _chunk_holders.get(coord)
 	if holder == null:
 		return

@@ -2003,40 +2003,6 @@ After F-361 installed Xcode 27 beta 5 plus Metal Toolchain 27A5237l, a fresh mac
 
 ---
 
-### F-369 · Play shows near-bare ground across the whole island despite scatter defs that ask for 45-50% coverage
-
-**Area:** worldgen · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "theres barely any of the nature assets/plants placed
-around the map, it would be good to have dense forested regions and then some more open areas as
-well" and "there should be far more small grass covering basically the whole island".
-
-The content does not look like what ships. `content/scatter/grassland_meadow.tres` asks for
-`cell_size_m = 3.0` at `coverage = 0.5` over ten entries (four short grasses, two tussocks, three
-flower sets, clover); `forest_floor.tres` is the same 3 m / 0.5 with bracken, moss, nettle and leaf
-litter; `forest_undergrowth.tres` is 4 m / 0.45. A 3 m cell at half coverage is roughly one plant
-per 18 m^2, which should read as continuous ground cover and does not — the attached play capture
-shows flat unbroken green with a handful of isolated tufts.
-
-Two suspects, both worth eliminating before retuning any numbers:
-
-1. `autoload/graphics_quality.gd`'s `undergrowth` multiplier — LOW is `0.45`, MEDIUM `0.8`. If the
-   session ran below HIGH, more than half the scatter is being dropped by the preset, and the
-   defaults are being judged through it.
-2. `world/gen/resource_scatter_field.gd` only builds scatter for chunks inside the collision ring
-   (D-080). Everything past that ring is bare by construction, which is correct for *proxies* but
-   would be very wrong for *visuals* if the two share the boundary — and the file's own header says
-   they do: "scatter (visuals AND proxies together) builds only once a chunk crosses into that ring".
-
-That second one would explain the capture exactly: a small dressed disc around the player and bare
-ground everywhere else, which is what the screenshot shows past ~40 m.
-
-Fix: separate the visual radius from the proxy/collision radius, confirm the preset multiplier is
-not silently in play, then raise density and add the biome contrast Sequoyah asked for — dense
-forest cores against genuinely open meadow, rather than one uniform field.
-
----
-
 ### F-370 · Trees are far too short next to the player, which also puts the leaf-fall emitter above the crown
 
 **Area:** art · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
@@ -2560,7 +2526,132 @@ symptom.
 
 ---
 
+### F-394 · world_contract_check reports wired_harvestables as a fact, but it varies more than 2x run to run on identical code
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+`tools/world_contract_check.gd` prints a `WORLD_CONTRACT_PROCEDURAL wired_harvestables=N` line that
+reads as a measurement of the shipped map. It is not stable enough to be read that way.
+
+Six consecutive runs, three per revision, no code difference within a group and `loaded_chunks=289`
+in every single one:
+
+    HEAD          250   543   318
+    same + F-369  488   397   229
+
+Range 229-543 across both. The distributions overlap completely, so the line cannot support any
+statement about whether a change helped or hurt — and it invites one, because it sits beside
+`loaded_chunks`, which IS stable at 289 every run and therefore lends it false credibility.
+
+The cause is that harvest proxies wire lazily: `ResourceScatterField` polls `chunk_has_collision()`
+every 0.1 s and collision cooks on its own schedule, so how many holders have wired by the moment the
+check samples depends on where the frame boundaries landed. Nothing is broken — a longer settle
+converges (a 60-frame census counts 565) — the number is just being read too early and reported
+without saying so.
+
+This nearly produced two wrong conclusions in one session, in opposite directions: a 567 -> 268 read
+looked like F-369 had halved the map's harvestables, and a later 398 -> 406 read looked like it had
+improved them. Neither was real.
+
+Fix: either settle to a fixed point before sampling (poll until the count stops changing, with a
+timeout) and assert the converged value, or stop printing the number as a bare fact — print it with
+its settle time, or drop it. A check line that a reader cannot act on is worse than no line, because
+somebody will act on it anyway.
+
+---
+
 ## Resolved
+
+### F-369 · Play shows near-bare ground across the whole island despite scatter defs that ask for 45-50% coverage — **fixed**
+
+**Area:** worldgen · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "theres barely any of the nature assets/plants placed
+around the map, it would be good to have dense forested regions and then some more open areas as
+well" and "there should be far more small grass covering basically the whole island".
+
+The content does not look like what ships. `content/scatter/grassland_meadow.tres` asks for
+`cell_size_m = 3.0` at `coverage = 0.5` over ten entries (four short grasses, two tussocks, three
+flower sets, clover); `forest_floor.tres` is the same 3 m / 0.5 with bracken, moss, nettle and leaf
+litter; `forest_undergrowth.tres` is 4 m / 0.45. A 3 m cell at half coverage is roughly one plant
+per 18 m^2, which should read as continuous ground cover and does not — the attached play capture
+shows flat unbroken green with a handful of isolated tufts.
+
+Two suspects, both worth eliminating before retuning any numbers:
+
+1. `autoload/graphics_quality.gd`'s `undergrowth` multiplier — LOW is `0.45`, MEDIUM `0.8`. If the
+   session ran below HIGH, more than half the scatter is being dropped by the preset, and the
+   defaults are being judged through it.
+2. `world/gen/resource_scatter_field.gd` only builds scatter for chunks inside the collision ring
+   (D-080). Everything past that ring is bare by construction, which is correct for *proxies* but
+   would be very wrong for *visuals* if the two share the boundary — and the file's own header says
+   they do: "scatter (visuals AND proxies together) builds only once a chunk crosses into that ring".
+
+That second one would explain the capture exactly: a small dressed disc around the player and bare
+ground everywhere else, which is what the screenshot shows past ~40 m.
+
+Fix: separate the visual radius from the proxy/collision radius, confirm the preset multiplier is
+not silently in play, then raise density and add the biome contrast Sequoyah asked for — dense
+forest cores against genuinely open meadow, rather than one uniform field.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** The content was never the problem. `content/scatter/grassland_meadow.tres` asks for 3 m cells at 0.5
+coverage, which is continuous ground cover, and `forest_floor.tres` matches it.
+
+The problem was the radius. `ResourceScatterField` built scatter only for chunks inside
+`chunk_has_collision()`, and that is `ChunkStreamer.LOD0_RADIUS_CHUNKS` = 2, or **64 metres**, while
+terrain streams to `LOAD_RADIUS_CHUNKS` = 8, or 256 m. The player stood in a small dressed disc and
+looked out over a quarter kilometre of bare ground — exactly the playtest capture.
+
+The file's own header argued proxies and visuals should not have two radii drifting apart. That was
+right; the conclusion that they should therefore share ONE radius was wrong. They answer different
+questions. "Can I walk up and hit this?" is the collision ring and always was. "Can I see it?" is a
+draw-distance question, and this project already had the answer — `world/environment/draw_policy.gd`,
+which `authored_world.gd` has applied to its props since 4.3 and which **this file never called at
+all**. So the procedural island had no per-prop draw distances either.
+
+What shipped:
+
+- Visuals now build out to `SCATTER_VISUAL_MAX_LOD` = 1 (5 chunks / 160 m). Not the full 256 m load
+  radius: the outer tier exists to put a silhouette on the horizon and tripling the scatter to dress
+  ground read as distance is the wrong trade for the machines this targets.
+- Proxies stay on the collision ring. Outside it a NODE harvestable batches like any other scenery,
+  which is also the cheaper representation — HarvestLibrary's own reason for batching.
+- `DrawPolicy.apply()` on every instance, so the per-prop cutoff comes from the prop's own height and
+  scales with the graphics preset: grass stops at 80 m, mid flora at 150, trees at 260, and a weak
+  machine pulls all three in through `GraphicsQuality.draw_distance` without this file knowing.
+
+Result: scattered props on the shipped island **1,876 -> 7,093**, MultiMesh instances 488 -> 2,331.
+
+**Two problems the first cut introduced, both caught by measuring rather than by reading:**
+
+1. `_teardown_chunk()` did not clear `_chunk_has_proxies`, so a chunk returning to the collision ring
+   read a stale `true`, never started polling, and never rebuilt its proxies — silent and permanent
+   for that coord. `resource_scatter_check`'s "the same point rebuilds a live Harvestable again"
+   caught it.
+2. Building 2.4x the scatter synchronously competed with chunk streaming itself: `world_contract_check`
+   settled 121 chunks instead of 289 in the same window. Fixed with a per-frame budget
+   (`SCATTER_VISUAL_BUILDS_PER_FRAME` = 2) that the collision ring skips — chunks underfoot are
+   exactly the case where making the player wait costs more than it saves. Plus a direct
+   build-with-proxies path when collision is already cooked, so a LOD0 chunk is not dressed twice.
+   `loaded_chunks` is back to 289.
+
+Streaming cost, same 500 m traverse: own_cost_mean 0.141 -> 0.175 ms, own_cost_hitches 0, worst frame
+34.99 -> 28.99 ms.
+
+Two shipped assertions in `resource_scatter_check` encoded the single-radius rule and were rewritten
+to the two-boundary one, plus a new `proxy_chunk_count()` accessor — `chunk_count()` alone can no
+longer answer "can I hit anything here", and a check that conflates them cannot see the difference
+this separation exists to make. failures=0.
+
+**Deliberately NOT claimed:** I could not show a harvestable-count change either way.
+`world_contract_check`'s `wired_harvestables` varies 229-543 run to run on identical code; filed
+separately. A 60-frame census does converge higher than HEAD (565 vs 514).
+
+**Left open:** Sequoyah also asked for "dense forested regions and then some more open areas" —
+biome CONTRAST, not density. That is a `content/biomes/*.tres` and scatter-coverage tuning pass, it
+is judged by eye, and it should be done against this radius rather than through the old 64 m keyhole.
 
 ### F-390 · Running into a tree bounces the player and stops them well short of the trunk — prop colliders are cylinders sized to the whole canopy — **fixed**
 

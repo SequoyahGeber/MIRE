@@ -8051,3 +8051,13 @@ Tree colliders now fit the trunk cross-section: willows 1.29 -> 0.59 m. Shipwrec
 Files: `world/gen/resource_scatter_field.gd`
 
 Commit at time of writing: `9446c23`
+
+---
+
+### DONE · F-369 · kilnd3a089 · 2026-08-21T04:01:00+00:00
+
+**Play shows near-bare ground across the whole island despite scatter defs that ask for 45-50% coverage**
+
+Visual radius 64m -> 160m with DrawPolicy per-prop culling; scattered props 1876 -> 7093.
+
+Commit at time of writing: `42f1a09`

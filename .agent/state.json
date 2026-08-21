@@ -1599,7 +1599,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 290,
+  "rev": 291,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -6328,9 +6328,11 @@
       "title": "The island is too small to hold its own content \u2014 ISLAND_RADIUS 118 m against a spec that wants dense forest, open ground and spaced POIs"
     },
     "F-369": {
+      "done_at": "2026-08-21T04:01:00+00:00",
+      "done_by": "kilnd3a089",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Play shows near-bare ground across the whole island despite scatter defs that ask for 45-50% coverage"
     },

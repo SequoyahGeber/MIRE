@@ -189,7 +189,11 @@ func _check_field_lifecycle() -> void:
 	await process_frame
 	check(field.pending_count() == 1,
 		"a LOD0 chunk_mesh_ready with no collider yet waits, rather than building immediately")
-	check(field.chunk_count() == 0, "nothing is built while the chunk still has no collider")
+	# F-369: visuals no longer wait for a collider — they are dressing, and dressing does not need
+	# something to stand on. PROXIES still do, and that is what this asserts.
+	check(field.chunk_count() == 1, "the chunk is dressed with visuals immediately")
+	check(field.proxy_chunk_count() == 0,
+		"but no harvest proxy is built while the chunk still has no collider")
 
 	fake_streamer.set_collision(coord, true)
 	await _wait_real_seconds(0.35)
@@ -277,9 +281,18 @@ func _check_field_lifecycle() -> void:
 					% [count_after_harvest, count_after_rebuild])
 
 	# A chunk downgrading away from LOD0 (never unloading) tears down scatter too.
+	# F-369: dropping out of the COLLISION ring costs a chunk its proxies and keeps its visuals —
+	# the player can no longer reach it, but they can still see it. Only leaving the visual band
+	# (or unloading) clears it entirely.
 	fake_streamer.chunk_mesh_ready.emit(coord, 1)
 	await process_frame
-	check(field.chunk_count() == 0, "a chunk that drops out of the LOD0 ring loses its scatter too")
+	check(field.proxy_chunk_count() == 0,
+		"a chunk that drops out of the LOD0 ring loses its harvest proxies")
+	check(field.chunk_count() == 1, "...and keeps its visuals, because you can still see it")
+
+	fake_streamer.chunk_mesh_ready.emit(coord, 2)
+	await process_frame
+	check(field.chunk_count() == 0, "leaving the visual band entirely does clear the scatter")
 
 
 const WIRE_WAIT_FRAMES: int = 32
