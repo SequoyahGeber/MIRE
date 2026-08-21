@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="HarvestableDef" format=3]
+
+[ext_resource type="Script" path="res://systems/harvesting/harvestable_def.gd" id="1_nettledef"]
+
+[resource]
+script = ExtResource("1_nettledef")
+id = &"nettle"
+max_health = 2
+required_tool = 0
+yield_item_id = &"fibre_bundle"
+yield_amount = 2
+respawn_seconds = 120.0
+request_range_m = 3.0

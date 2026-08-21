@@ -87,6 +87,21 @@ const HARVEST_RULES: Array = [
 	## Sticks. Batched: hundreds of them, no collider, no damage states.
 	["sapling", "sapling", Represent.BATCH],
 	["bush_", "bush", Represent.BATCH],
+
+	## Fibre (F-366). Same batched treatment as the sticks above, and bare-hands like them, because
+	## this is the entry point of the whole tool tree: `wooden_axe` and `wooden_pickaxe` are both
+	## `branch` + `fibre_bundle`, and until this rule existed NO harvestable in the game yielded
+	## fibre — the only sources were a bog chest table and one hand-placed pickup in Playtest
+	## Hollow's layout. On the procedural island that made both starter tools uncraftable, which
+	## locked the player out of every `required_tool` 1 or 2 node forever. Reported from play as
+	## "no way to harvest the base resources without tools and theres no way to craft tools without
+	## base resouces".
+	##
+	## Two prefixes so both halves of the early game have a source: `nettle_*` is in
+	## `content/scatter/forest_floor.tres`, and `sedge_*` is in `shore_beach.tres` — which matters
+	## because the shore is where the player makes landfall.
+	["nettle", "nettle", Represent.BATCH],
+	["sedge_", "nettle", Represent.BATCH],
 ]
 
 

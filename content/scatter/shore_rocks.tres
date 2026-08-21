@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="ScatterDef" format=3]
+
+[ext_resource type="Script" path="res://world/gen/scatter_entry.gd" id="1_entry"]
+[ext_resource type="Script" path="res://world/gen/scatter_def.gd" id="2_def"]
+
+[sub_resource type="Resource" id="Resource_rock_cluster_f"]
+script = ExtResource("1_entry")
+asset = &"rock_cluster_f"
+kit = "environment"
+weight = 1.0
+min_scale = 0.7
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_boulder_h"]
+script = ExtResource("1_entry")
+asset = &"boulder_h"
+kit = "environment"
+weight = 0.8
+min_scale = 0.65
+max_scale = 1.15
+
+[sub_resource type="Resource" id="Resource_stone_node"]
+script = ExtResource("1_entry")
+asset = &"stone_node_intact"
+kit = "harvestables"
+weight = 0.7
+min_scale = 0.85
+max_scale = 1.1
+
+[resource]
+script = ExtResource("2_def")
+id = &"shore_rocks"
+biome_id = &"shore"
+cell_size_m = 11.0
+jitter_fraction = 0.75
+coverage = 0.26
+min_height = 0.2
+max_height = 1.6
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_rock_cluster_f"), SubResource("Resource_boulder_h"), SubResource("Resource_stone_node")])

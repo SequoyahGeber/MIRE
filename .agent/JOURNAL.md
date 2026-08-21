@@ -7967,3 +7967,27 @@ fixed and verified headlessly
 Files: `ui/hud/defeat_hud.gd`, `tools/defeat_check.gd`
 
 Commit at time of writing: `8da3a0a`
+
+---
+
+### DONE · F-365 · kilnd3a089 · 2026-08-21T03:15:17+00:00
+
+**No scatter def places a single rock, so the island has no stone on its surface at all**
+
+fixed and verified with a three-seed placement census
+
+Files: `content/scatter/grassland_rocks.tres`, `content/scatter/forest_rocks.tres`, `content/scatter/shore_rocks.tres`
+
+Commit at time of writing: `0a5326b`
+
+---
+
+### DONE · F-366 · kilnd3a089 · 2026-08-21T03:15:17+00:00
+
+**fibre_bundle has no harvestable source, so both starter tools are uncraftable and the procedural run has no way out of bare hands**
+
+fixed and verified with a three-seed placement census
+
+Files: `content/harvestables/nettle.tres`, `systems/harvesting/harvest_library.gd`
+
+Commit at time of writing: `0a5326b`

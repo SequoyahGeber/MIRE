@@ -2039,66 +2039,6 @@ After F-361 installed Xcode 27 beta 5 plus Metal Toolchain 27A5237l, a fresh mac
 
 ---
 
-### F-365 · No scatter def places a single rock, so the island has no stone on its surface at all
-
-**Area:** worldgen · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "theres no rocks anywhere on the map".
-
-All six shipped `content/scatter/*.tres` defs are flora only — `forest_canopy` (willows + a snag),
-`forest_floor`, `forest_undergrowth`, `grassland_meadow`, `grassland_shrubs`, `shore_beach`. Not one
-entry names a rock, boulder, pebble or outcrop asset.
-
-The harvestable side of the content is fully authored and completely unreachable because of it:
-`content/harvestables/boulder.tres`, `rock_cluster.tres`, `stone_node.tres` and `iron_node.tres` all
-exist, all yield `stone`/`iron_ore`, and `systems/harvesting/harvest_library.gd:82-85` already maps
-`mire_mossy_boulder`, `boulder_` and `rock_cluster` asset prefixes to them as `Represent.NODE`. The
-rules are there; nothing ever stamps an asset that matches them on the procedural island.
-
-Consequence: `stone` and `iron_ore` have no source in the shipped world, which takes out
-`stone_axe`, `stone_pickaxe`, `iron_ingot`, `iron_pickaxe`, `iron_sword` and everything downstream.
-See the companion finding on the fibre deadlock — together they mean the procedural map has no tool
-tier at all.
-
-Fix: add rock entries to `grassland_shrubs`/`forest_floor` (or a new `*_rocks` def per biome) using
-asset ids that `HARVEST_RULES` already recognises, and confirm with a placement census that the
-count is non-zero at several seeds.
-
----
-
-### F-366 · fibre_bundle has no harvestable source, so both starter tools are uncraftable and the procedural run has no way out of bare hands
-
-**Area:** content · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "theres no way to harvest the base resources without
-tools and theres no way to craft tools without base resouces".
-
-Traced. Both starter tools take the same two inputs:
-
-- `content/recipes/wooden_axe.tres` — `branch` + `fibre_bundle`
-- `content/recipes/wooden_pickaxe.tres` — `branch` + `fibre_bundle`
-
-`branch` is fine: `content/harvestables/bush.tres` and `sapling.tres` both carry `required_tool = 0`
-(`HarvestLibrary.Tool.NONE`), so bare hands yield branches.
-
-`fibre_bundle` is the wall. Every reference in the repo is a *sink* or an authored-map placement:
-`content/loot/bog.tres` (a chest table), `content/recipes/{wooden_axe,wooden_pickaxe,short_bow}.tres`,
-`content/buildables/ladder.tres`, `systems/extraction/extraction_ship.gd:73`, and one hand-placed
-`pickup_fibre_bundle` in `world/gen/layouts/playtest_hollow.json:3455`. **No `HarvestableDef` in
-`content/harvestables/` has `yield_item_id = &"fibre_bundle"`** — the four yields in the whole
-directory are `branch`, `log`, `stone`, `iron_ore`.
-
-So on the procedural map the only fibre source is a bog chest, and the companion finding on chest
-placement says chests do not place there either. The player is hard-locked to bare hands: no axe
-means no `log`, no pickaxe means no `stone`, and `required_tool` 1 and 2 gate every other node.
-
-Fix: give fibre a bare-hands harvestable — the obvious one is a `nettle`/`reed` definition with
-`required_tool = 0` mapped off the `nettle_a`/`sedge_`/`marsh_grass_` asset prefixes that
-`content/scatter/{forest_floor,shore_beach}.tres` already place. That closes the loop without
-touching the recipes.
-
----
-
 ### F-367 · No chest reaches the procedural island: the loot_cache POI asks for 8 sites at 70 m spacing on a 118 m island
 
 **Area:** worldgen · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
@@ -2728,6 +2668,112 @@ client-side filter.
 ---
 
 ## Resolved
+
+### F-366 · fibre_bundle has no harvestable source, so both starter tools are uncraftable and the procedural run has no way out of bare hands — **fixed**
+
+**Area:** content · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "theres no way to harvest the base resources without
+tools and theres no way to craft tools without base resouces".
+
+Traced. Both starter tools take the same two inputs:
+
+- `content/recipes/wooden_axe.tres` — `branch` + `fibre_bundle`
+- `content/recipes/wooden_pickaxe.tres` — `branch` + `fibre_bundle`
+
+`branch` is fine: `content/harvestables/bush.tres` and `sapling.tres` both carry `required_tool = 0`
+(`HarvestLibrary.Tool.NONE`), so bare hands yield branches.
+
+`fibre_bundle` is the wall. Every reference in the repo is a *sink* or an authored-map placement:
+`content/loot/bog.tres` (a chest table), `content/recipes/{wooden_axe,wooden_pickaxe,short_bow}.tres`,
+`content/buildables/ladder.tres`, `systems/extraction/extraction_ship.gd:73`, and one hand-placed
+`pickup_fibre_bundle` in `world/gen/layouts/playtest_hollow.json:3455`. **No `HarvestableDef` in
+`content/harvestables/` has `yield_item_id = &"fibre_bundle"`** — the four yields in the whole
+directory are `branch`, `log`, `stone`, `iron_ore`.
+
+So on the procedural map the only fibre source is a bog chest, and the companion finding on chest
+placement says chests do not place there either. The player is hard-locked to bare hands: no axe
+means no `log`, no pickaxe means no `stone`, and `required_tool` 1 and 2 gate every other node.
+
+Fix: give fibre a bare-hands harvestable — the obvious one is a `nettle`/`reed` definition with
+`required_tool = 0` mapped off the `nettle_a`/`sedge_`/`marsh_grass_` asset prefixes that
+`content/scatter/{forest_floor,shore_beach}.tres` already place. That closes the loop without
+touching the recipes.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** `content/harvestables/nettle.tres` — `required_tool = 0` (bare hands), `yield_item_id =
+&"fibre_bundle"`, `yield_amount = 2`, `max_health = 2`, 120 s respawn — plus two
+`HarvestLibrary.HARVEST_RULES` entries in the batched-flora block:
+
+    ["nettle", "nettle", Represent.BATCH],
+    ["sedge_",  "nettle", Represent.BATCH],
+
+Two prefixes so both halves of the early game have a source. `nettle_*` is already placed by
+`content/scatter/forest_floor.tres` and `sedge_*` by `shore_beach.tres` — and the shore one matters,
+because the shore is where the player makes landfall.
+
+That closes the loop without touching a recipe: bushes and saplings already give `branch` bare-handed,
+so `branch` + `fibre_bundle` -> `wooden_axe`/`wooden_pickaxe` is now reachable from an empty
+inventory, which unlocks every `required_tool` 1 and 2 node behind it.
+
+Verified with a placement census over a 13x13 chunk area at three seeds: fibre_bundle sources went
+from **zero** to 82 / 49 / 53. resource_scatter_check, harvestable_check, harvest_tool_ladder_check
+and world_contract_check all failures=0.
+
+### F-365 · No scatter def places a single rock, so the island has no stone on its surface at all — **fixed**
+
+**Area:** worldgen · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "theres no rocks anywhere on the map".
+
+All six shipped `content/scatter/*.tres` defs are flora only — `forest_canopy` (willows + a snag),
+`forest_floor`, `forest_undergrowth`, `grassland_meadow`, `grassland_shrubs`, `shore_beach`. Not one
+entry names a rock, boulder, pebble or outcrop asset.
+
+The harvestable side of the content is fully authored and completely unreachable because of it:
+`content/harvestables/boulder.tres`, `rock_cluster.tres`, `stone_node.tres` and `iron_node.tres` all
+exist, all yield `stone`/`iron_ore`, and `systems/harvesting/harvest_library.gd:82-85` already maps
+`mire_mossy_boulder`, `boulder_` and `rock_cluster` asset prefixes to them as `Represent.NODE`. The
+rules are there; nothing ever stamps an asset that matches them on the procedural island.
+
+Consequence: `stone` and `iron_ore` have no source in the shipped world, which takes out
+`stone_axe`, `stone_pickaxe`, `iron_ingot`, `iron_pickaxe`, `iron_sword` and everything downstream.
+See the companion finding on the fibre deadlock — together they mean the procedural map has no tool
+tier at all.
+
+Fix: add rock entries to `grassland_shrubs`/`forest_floor` (or a new `*_rocks` def per biome) using
+asset ids that `HARVEST_RULES` already recognises, and confirm with a placement census that the
+count is non-zero at several seeds.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** Three new scatter defs, one per biome, all using asset ids `HarvestLibrary.HARVEST_RULES` already
+recognised — so the rocks are harvestable the moment they are placed, with no code change in the
+harvest path:
+
+- `content/scatter/grassland_rocks.tres` — boulder_a..d, rock_cluster_a..c, stone_node_intact,
+  iron_node_intact. 12 m cells, 0.34 coverage.
+- `content/scatter/forest_rocks.tres` — mire_mossy_boulder, boulder_e..g, rock_cluster_d/e, plus
+  both ore nodes. 14 m cells, 0.30 coverage.
+- `content/scatter/shore_rocks.tres` — rock_cluster_f, boulder_h, stone_node_intact, capped at
+  `max_height` 1.6 so it stays on the beach.
+
+Ore weights are deliberately well under the plain-rock weights (0.35-0.45 against 0.7-1.3) so a node
+stays worth finding.
+
+Verified with a placement census over a 13x13 chunk area at three seeds:
+
+    seed 7:    2059 props,  63 rock props, yields={fibre_bundle:82, stone:63, branch:452, log:56}
+    seed 4242: 1607 props,  57 rock props, yields={fibre_bundle:49, log:37, branch:247, stone:54, iron_ore:3}
+    seed 991:  1919 props,  65 rock props, yields={fibre_bundle:53, branch:296, stone:62, log:36, iron_ore:3}
+
+`stone` went from zero sources to 54-65. No regression: resource_scatter_check, harvestable_check and
+harvest_tool_ladder_check all failures=0.
+
+**One thing left thin, deliberately not chased here:** `iron_ore` lands 3 nodes in that window on two
+seeds and none at all on seed 7. That is a density call rather than a defect, and it is entangled
+with F-368's island size — retune the ore weights after the radius moves, not before.
 
 ### F-383 · The death screen's centre column is anchored with KEEP_SIZE before its labels have text, so the whole block sits off-centre — **fixed**
 
