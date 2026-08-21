@@ -1,7 +1,7 @@
 extends SceneTree
 
 ## F-209 proof: every menu that used to require a mouse click to open/select/close
-## (MainMenu/SettingsMenu/LobbyMenu/InventoryUI/CraftingUI/UnlockMenu — ChestUI needed no change,
+## (MainMenu/LobbyMenu/InventoryUI/CraftingUI/UnlockMenu — ChestUI needed no change,
 ## see its own note below) now supports real gamepad/keyboard focus navigation: an initial
 ## grab_focus() on open, a focus_neighbor_* chain reachable by ui_up/ui_down/ui_left/ui_right, and
 ## ui_accept doing what a click would have.
@@ -45,7 +45,6 @@ func _run() -> void:
 	# script's run — going first is what makes every later check's own "players" group node safe.
 	await _check_attunement_ui()
 	await _check_main_menu()
-	await _check_settings_menu()
 	await _check_lobby_menu_idle()
 	await _check_unlock_menu()
 	await _check_crafting_ui()
@@ -137,51 +136,6 @@ func _check_main_menu() -> void:
 	check(_focused() == seed_field, "D-pad down from QUIT wraps back to the seed field")
 
 	await _walk_loop(seed_field, JOY_BUTTON_DPAD_DOWN, 8, "MainMenu")
-
-	menu.call(&"set_open", false)
-	await process_frame
-
-
-# ── SettingsMenu ──────────────────────────────────────────────────────────────────────────────────
-
-
-func _check_settings_menu() -> void:
-	print("\n== SettingsMenu: initial focus, slider ui_left/ui_right, full chain, CLOSE reachable ==")
-	var menu: Node = root.get_node_or_null(^"SettingsMenu")
-	check(menu != null, "SettingsMenu autoload exists")
-	if menu == null:
-		return
-
-	menu.call(&"set_open", true)
-	await process_frame
-	var graphics: Control = _focused()
-	check(graphics is OptionButton, "opening grabs the graphics preset OptionButton")
-
-	await _tap(JOY_BUTTON_DPAD_DOWN)
-	var master_slider: Control = _focused()
-	check(master_slider is HSlider, "D-pad down from graphics reaches the master volume slider")
-	# F-215: Slider has no "focus" theme stylebox item in this Godot version, so every other
-	# control's has_theme_stylebox_override(&"focus") proxy doesn't apply here — the proxy for "has
-	# a visible ring" is FocusRingSlider's own _draw()-based one being wired with a real style.
-	check(master_slider is FocusRingSlider and (master_slider as FocusRingSlider).focus_ring_style != null,
-		"the master volume slider draws its own focus ring (FocusRingSlider, F-215)")
-	var value_before: float = (master_slider as HSlider).value
-	await _tap(JOY_BUTTON_DPAD_LEFT)
-	var value_after: float = (master_slider as HSlider).value
-	check(value_after < value_before,
-		"ui_left on a focused HSlider decrements it through Godot's own Slider.gui_input (%.3f -> %.3f)"
-			% [value_before, value_after])
-	await _tap(JOY_BUTTON_DPAD_RIGHT)
-	check(is_equal_approx((master_slider as HSlider).value, value_before),
-		"ui_right restores the value ui_left just took off it")
-
-	await _walk_loop(graphics, JOY_BUTTON_DPAD_DOWN, 40, "SettingsMenu")
-
-	await _tap(JOY_BUTTON_DPAD_UP)
-	var close_button: Control = _focused()
-	check(close_button is Button and (close_button as Button).text == "CLOSE",
-		"D-pad up from graphics (the chain's first entry) wraps to CLOSE (the chain's last entry)")
-	check(close_button.has_theme_stylebox_override(&"focus"), "CLOSE carries a visible focus ring override")
 
 	menu.call(&"set_open", false)
 	await process_frame

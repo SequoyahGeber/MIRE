@@ -53,9 +53,9 @@ extends CanvasLayer
 ## file knowing anything about runs.
 ##
 ## That conditional consume is deliberate and load-bearing during the migration: while
-## `main_menu.gd`/`lobby_menu.gd`/`settings_menu.gd` still own their own Esc branches, an empty
-## stack leaves their press untouched and they keep working exactly as they do today. Nothing about
-## the shipped front end changes on the frame this autoload is registered.
+## `main_menu.gd`/`lobby_menu.gd` still own their own Esc branches, so an empty stack leaves their
+## press untouched and they keep working exactly as they do today. Nothing about the shipped front
+## end changes on the frame this autoload is registered.
 ##
 ## ## Legacy panels close BEFORE the root listener is offered the press (F-384)
 ##

@@ -12,14 +12,10 @@ extends HSlider
 ##
 ## ## F-385: the numeric readout lives here, not in each screen
 ##
-## Both settings surfaces — `ui/menu/settings_menu.gd` (in-game) and `ui/frontend/settings_screen.gd`
-## (title) — shipped six sliders between them with no number anywhere on the row. FOV spans 60-110 in
-## steps of 1, so once you moved the handle the value you had before was simply gone. The two screens
-## build their rows differently (one stacks label-over-slider in its own palette, the other lays out
-## label-left/control-right through `MireTheme`), so the *row* cannot be shared — but the part that
-## was actually missing can be, and is: `bind_readout()` below owns the formatting, the fixed width
-## and the signal wiring, and each screen only supplies a `Label` it styled itself. One place to fix
-## a format, one place that can forget to update on `set_block_signals()` refreshes.
+## The original and tabbed settings surfaces shipped six sliders without a number anywhere on the
+## row. The legacy surface is gone; `ui/frontend/settings_screen.gd` now owns every settings route,
+## while `bind_readout()` below continues to own formatting, fixed width and signal wiring in one
+## place. FOV spans 60-110 in steps of 1, so the number is part of the control rather than decoration.
 ##
 ## ## F-387: the wheel must scroll the panel, not nudge the setting
 ##

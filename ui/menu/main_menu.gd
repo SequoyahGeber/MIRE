@@ -3,10 +3,9 @@ extends CanvasLayer
 ## MainMenu — the game's persistent menu shell: seed entry, a way into the multiplayer lobby panel
 ## and the settings shell, and quit. Task 6.10's remaining "main menu + seed entry" slice, after the
 ## lobby-UI half shipped ahead of it (D-030, `ui/lobby/lobby_menu.gd`).
-## Register as autoload `MainMenu` → res://ui/menu/main_menu.gd, AFTER `LobbyMenu` and
-## `SettingsMenu` in `project.godot` (this file calls into both by node path at request time, so load
-## order does not matter for correctness — kept after them anyway so the ordering reads the same way
-## the panels nest).
+## Register as autoload `MainMenu` → res://ui/menu/main_menu.gd. The remaining legacy shell still
+## owns seed entry and the post-run entry points, but SETTINGS pushes the same tabbed SettingsScreen
+## used by the title and pause menus rather than maintaining a second settings implementation.
 ##
 ## NETWORK AUTHORITY (docs/ARCHITECTURE.md §2.2): none — client-local UI, the table's free last row.
 ## Seed entry does not grant a client any new power: it only calls `GameState.set_pending_seed()`,
@@ -32,6 +31,7 @@ extends CanvasLayer
 ## from any check or two-process test that boots the main scene expecting to act immediately.
 
 const BLOCKING_UI_GROUP: StringName = &"blocks_gameplay_input"
+const SETTINGS_SCREEN_PATH: String = "res://ui/frontend/settings_screen.gd"
 
 const COLOUR_SCREEN_SHADE := Color(0.018, 0.035, 0.028, 0.78)
 const COLOUR_PANEL := Color(0.055, 0.086, 0.070, 0.97)
@@ -156,9 +156,11 @@ func request_open_multiplayer() -> void:
 
 func request_open_settings() -> void:
 	set_open(false)
-	var settings: Node = get_node_or_null(^"/root/SettingsMenu")
-	if settings != null:
-		settings.call("set_open", true)
+	var stack: Node = get_node_or_null(^"/root/MenuStack")
+	if stack == null or not ResourceLoader.exists(SETTINGS_SCREEN_PATH):
+		return
+	var script: GDScript = load(SETTINGS_SCREEN_PATH)
+	stack.call(&"push", script.new(), true)
 
 
 ## Task 6.9: hands off to the Salvage-spending unlock tree the same "close first, then open" way

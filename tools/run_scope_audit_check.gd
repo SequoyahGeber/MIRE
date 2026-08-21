@@ -94,6 +94,8 @@ const AUTOLOAD_SCOPE: Dictionary[String, String] = {
 	"autoload/steam_stats.gd": "session-scoped — lifetime stats and achievements, meta not run",
 	"autoload/rule_service.gd":
 		"session-scoped — _values are operator knobs set via the `rule` console verb; a host who sets one wants it to hold",
+	"autoload/god_mode_service.gd":
+		"session-scoped — an operator playtest toggle intentionally holds across run restarts and clears when the process/session ends",
 	"autoload/settings_service.gd": "session-scoped — user settings",
 	"autoload/graphics_quality.gd": "session-scoped — user settings",
 	"autoload/net_transport.gd": "session-scoped — the session outlives the run",
@@ -121,7 +123,6 @@ const AUTOLOAD_SCOPE: Dictionary[String, String] = {
 	"ui/building/door_prompt.gd": "derived — reads the door it is aimed at",
 	"ui/lobby/lobby_menu.gd": "session-scoped — lobby chrome",
 	"ui/menu/main_menu.gd": "session-scoped — menu chrome",
-	"ui/menu/settings_menu.gd": "session-scoped — menu chrome",
 	"ui/menu/unlock_menu.gd": "session-scoped — meta chrome, reads UnlockService",
 	"ui/menu_stack.gd":
 		"session-scoped — navigation chrome (MENU-2). Its state is the stack of screens the PLAYER opened; a run boundary does not make an open Settings screen wrong, and screens that do care pop themselves",

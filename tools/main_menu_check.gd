@@ -1,8 +1,8 @@
 extends SceneTree
 
-## MainMenu / SettingsMenu / seed-entry proof (6.10's remaining slice, after the lobby-UI half
-## shipped ahead of it). Covers: both panels build, open, close, own the cursor and the blocking
-## group while open, and refuse to stack on each other or on LobbyMenu (D-032); MainMenu's seed
+## MainMenu / seed-entry proof (6.10's remaining slice, after the lobby-UI half shipped ahead of
+## it). Covers: the legacy seed panel still builds and hands SETTINGS to the live MenuStack screen;
+## MainMenu owns the cursor and blocking group while open and refuses to stack on LobbyMenu (D-032);
 ## entry stages a value into GameState (numeric text used as-is, other text hashed, empty clears)
 ## that only `GameState.host_generate_seed()`/`ensure_seed()` ever consume, never sent anywhere on
 ## its own; opening the lobby or settings panel from MainMenu hands off rather than stacking.
@@ -21,14 +21,14 @@ func _run() -> void:
 	await process_frame
 
 	var menu: Node = root.get_node_or_null(^"MainMenu")
-	var settings: Node = root.get_node_or_null(^"SettingsMenu")
+	var stack: Node = root.get_node_or_null(^"MenuStack")
 	var lobby: Node = root.get_node_or_null(^"LobbyMenu")
 	var game_state: Node = root.get_node_or_null(^"GameState")
 	check(menu != null, "MainMenu autoload exists")
-	check(settings != null, "SettingsMenu autoload exists")
+	check(stack != null, "MenuStack autoload exists")
 	check(lobby != null, "LobbyMenu autoload exists")
 	check(game_state != null, "GameState autoload exists")
-	if menu == null or settings == null or lobby == null or game_state == null:
+	if menu == null or stack == null or lobby == null or game_state == null:
 		finish()
 		return
 
@@ -84,28 +84,23 @@ func _run() -> void:
 	check(bool(lobby.call("is_open")), "opening MULTIPLAYER opens LobbyMenu")
 	lobby.call("set_open", false)
 
-	# ── handing off to the settings panel: MainMenu closes, SettingsMenu opens ──────────────────
+	# ── handing off to the live tabbed settings screen ──────────────────────────────────────────
 	menu.call("set_open", true)
 	menu.call("request_open_settings")
 	check(not bool(menu.call("is_open")), "opening SETTINGS closes MainMenu")
-	check(bool(settings.call("is_open")), "opening SETTINGS opens SettingsMenu")
-	check(settings.is_in_group(&"blocks_gameplay_input"), "open SettingsMenu blocks gameplay input (D-032)")
-	settings.call("set_open", false)
-	check(not bool(settings.call("is_open")), "SettingsMenu closes")
-	check(not settings.is_in_group(&"blocks_gameplay_input"), "closing SettingsMenu releases the blocking group")
+	check(int(stack.call(&"depth")) == 1, "opening SETTINGS pushes one MenuStack screen")
+	var settings_screen: Control = stack.call(&"top") as Control
+	check(settings_screen != null and settings_screen.get_script().resource_path == "res://ui/frontend/settings_screen.gd",
+		"MainMenu opens the same tabbed SettingsScreen used by title and pause")
+	check(settings_screen != null and settings_screen.find_child("GodModeToggle", true, false) != null,
+		"MainMenu's Settings destination contains God Mode")
+	stack.call(&"pop_all")
 
 	# ── D-032: none of the three panels will stack on another ──────────────────────────────────
 	lobby.call("set_open", true)
 	menu.call("set_open", true)
 	check(not bool(menu.call("is_open")), "MainMenu refuses to open while LobbyMenu holds the group")
-	settings.call("set_open", true)
-	check(not bool(settings.call("is_open")), "SettingsMenu refuses to open while LobbyMenu holds the group")
 	lobby.call("set_open", false)
-
-	menu.call("set_open", true)
-	settings.call("set_open", true)
-	check(not bool(settings.call("is_open")), "SettingsMenu refuses to open while MainMenu holds the group")
-	menu.call("set_open", false)
 
 	print("MAIN_MENU_CHECK failures=%d" % failures)
 	finish()

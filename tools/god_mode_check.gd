@@ -8,6 +8,7 @@ extends SceneTree
 
 const PLAYER_SCENE: PackedScene = preload("res://entities/player/player.tscn")
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
+const SETTINGS_SCREEN := preload("res://ui/frontend/settings_screen.gd")
 
 var failures: int = 0
 
@@ -98,17 +99,21 @@ func _run() -> void:
 	player.call(&"_apply_gravity", 0.1)
 	check(player.velocity.y < 0.0, "ordinary gravity resumes after disable")
 
-	var settings_menu: Node = root.get_node_or_null(^"SettingsMenu")
-	var toggle: CheckBox = settings_menu.find_child("GodModeToggle", true, false) as CheckBox \
-		if settings_menu != null else null
-	check(toggle != null, "Settings contains the God Mode toggle")
+	var stack: Node = root.get_node_or_null(^"MenuStack")
+	var settings_screen: Control = SETTINGS_SCREEN.new()
+	stack.call(&"push", settings_screen, false)
+	await process_frame
+	settings_screen.call(&"show_tab", SETTINGS_SCREEN.TABS.find("PLAYTESTING"))
+	var toggle: CheckBox = settings_screen.find_child("GodModeToggle", true, false) as CheckBox
+	check(toggle != null, "the live tabbed Settings screen contains the God Mode toggle")
 	if toggle != null:
 		toggle.button_pressed = true
 		await process_frame
-		check(bool(service.call(&"is_local_enabled")), "the Settings toggle enables God mode")
+		check(bool(service.call(&"is_local_enabled")), "the live Settings toggle enables God mode")
 		toggle.button_pressed = false
 		await process_frame
-		check(not bool(service.call(&"is_local_enabled")), "the Settings toggle disables God mode")
+		check(not bool(service.call(&"is_local_enabled")), "the live Settings toggle disables God mode")
+	stack.call(&"pop_all")
 
 	print("GOD_MODE_CHECK failures=%d" % failures)
 	finish()
