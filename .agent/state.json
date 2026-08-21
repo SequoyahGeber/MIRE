@@ -3758,7 +3758,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     }
   },
-  "rev": 816,
+  "rev": 817,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -8722,7 +8722,7 @@
     "F-400": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "The island's hills are too low to read as landform at the new island size"
     },
@@ -8743,14 +8743,14 @@
     "F-404": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Three separate movement-feel defects: stopping is near-instant, air control bleeds speed sideways, and gravity_scale 2.0 makes any real fall brutal"
     },
     "F-405": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "step_height is 0.4 m but nothing below it is actually climbable \u2014 the capsule's rounded bottom catches the kerb edge and the is_on_floor() guard kills the next attempt"
     },
@@ -9064,6 +9064,13 @@
       "status": "done",
       "tier": "F",
       "title": "The island is half the size it should be, its outline is still round, and every hill is the same symmetric dome"
+    },
+    "F-448": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "chunk_stream_check's union-of-interest assertions fail at HEAD: neither anchor gets a LOD0 collider or a live Harvestable"
     }
   },
   "version": 1
