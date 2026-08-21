@@ -2575,7 +2575,73 @@ a stale joined key is indistinguishable from a legitimately-named file and will 
 
 ---
 
+### F-409 · The daytime white point clips sunlit ground per-channel, and a 1.30 saturation boost multiplies the clipped result — the ground renders radioactive lime
+
+**Area:** render · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-21, Sequoyah), twice: "the game lighting/color grading looks really bad",
+then after the biome palette landed, "Still not happy with the lighting, the colour is wrong."
+
+The palette was not the problem — F-397's biome albedos are reasonable. Two grade constants in
+`world/environment/playtest_atmosphere.gd` were compounding:
+
+    DAY_TONEMAP_WHITE       1.0
+    DAY_ADJUSTMENT_SATURATION  1.30
+    DAY_SUN_ENERGY          1.55
+
+ACES normalises by the white point, so at 1.0 there is **no highlight headroom** — anything the sun
+lights past luminance 1.0 clips flat. Critically it clips PER CHANNEL: grassland is
+`Color(0.373, 0.588, 0.235)`, so under a 1.55-energy sun the GREEN channel pins while red and blue do
+not. That is precisely how a believable green albedo renders as radioactive lime. Then the 1.30
+saturation boost multiplied what was left of the already-clipped result.
+
+The existing comment defending 1.0 is half right and worth preserving rather than deleting: at 3.0
+the scene really did sit in the toe of the ACES curve with blacks lifted and highlights never
+arriving. 1.0 is the opposite overcorrection. **1.8 keeps the range 1.0 recovered while giving
+sunlit highlights somewhere to roll off into.**
+
+Saturation at 1.30 is the second half. A 30% boost is a sensible correction for photographic footage
+that arrives desaturated; it is the wrong instinct for flat-shaded low-poly, whose albedos are
+authored saturated to begin with. 1.10.
+
+Fixed and rendered: `assets/audit/lighting/f408_noon_after.png`. The lime is gone, the ground carries
+tonal variation across facets again, sand reads as sand and the sea as water.
+
+**Still wrong in that same frame, and NOT addressed here** — handed to whoever takes the lighting
+next:
+
+1. **Tree trunks render pale grey with near-white root flare**, not bark. Suspect the F-396 trunk
+   rebuild's second bark tone is landing on the wrong palette entry.
+2. **Some canopy facets are orange/tan** in a way that reads as untextured faces rather than autumn.
+3. **The sky is flat and grey toward the horizon** — this is F-357, still open, and it is now the
+   most obviously wrong thing left in the frame.
+
+---
+
 ## Resolved
+
+### F-408 · Daytime grade is fluorescent and crushed rather than Valheim-like — **fixed**
+
+**Area:** render · **Severity:** high · **Found:** 2026-08-21 by emberd89a44
+
+The current daytime look in `world/environment/playtest_atmosphere.gd` is not an acceptable visual baseline. In the committed F-398 noon and afternoon captures, the terrain clips toward fluorescent yellow-green while shaded faces collapse toward black, leaving few useful midtones and little atmospheric depth. The sky is also a dark, nearly uniform blue field with weak horizon separation, so the bright land looks pasted in front of a background instead of sitting inside one atmosphere. The F-353 varnish stacks `DAY_ADJUSTMENT_SATURATION = 1.30`, `DAY_ADJUSTMENT_CONTRAST = 1.14`, and `DAY_SUN_ENERGY = 1.55`; F-398 then adds very strong SSAO (`intensity = 8.0`, `light_affect = 1.0`). The authored sky pushes a saturated Rayleigh colour through a low `DAY_SKY_ENERGY = 0.45` while the environment independently drives its background multiplier to `0.9`. The result is an overcorrection of the earlier washed-out grade, not the requested Valheim-like daytime atmosphere.
+
+Reset the complete daytime environment to a neutral rendering baseline rather than reverting blindly to pre-F-353, which was itself washed out: neutral post-grade, restrained sun/ambient balance, a coherent physical-sky and horizon treatment, colour authored in biome materials rather than global saturation, moderate contact AO, and fog that connects sky to land through aerial perspective. Keep the useful later work—seven biomes, taller trees, ground texture, quality-preset gating, night curve—unless a rendered comparison proves a specific part harmful.
+
+Acceptance is a fixed-camera render suite from one settled run at noon, forest shade, overcast, morning/golden hour, and night control. Daylight should retain green material identity without channel clipping, readable coloured shadow midtones, ground contact, and atmospheric depth; night must remain unchanged. Judge the set against official Valheim meadow/forest daytime references as an art-direction target, not by optimizing image statistics independently. Record before/after captures and run `tools/grade_check.gd`, `tools/atmosphere_night_check.gd`, `tools/graphics_quality_check.gd`, and the appropriate windowed render probe through `agent godot`.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** `DAY_TONEMAP_WHITE` 1.0 -> 1.8 and `DAY_ADJUSTMENT_SATURATION` 1.30 -> 1.10, with the reasoning left
+at the fix site because the constant it replaces carries a well-argued comment that is half right.
+
+Rendered proof at noon, same camera: `assets/audit/lighting/f408_noon_after.png`. The lime ground is
+gone, facet-to-facet tonal variation is back, sand reads as sand and the sea as water, and tree
+shadows are legible on the ground.
+
+Handed to Codex from here. Three things visibly wrong in that same frame are listed on the finding
+and deliberately untouched: pale grey tree trunks with near-white root flare, orange/tan canopy
+facets, and F-357's flat grey horizon band.
 
 ### F-407 · Chunk loading froze a full second per new asset, because scatter meshes load synchronously on the main thread the first time each is seen — **fixed**
 

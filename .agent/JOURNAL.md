@@ -8073,3 +8073,18 @@ Recipe grid ships; fixed the subagent's two remaining failures (disabled-button 
 Files: `ui/crafting/crafting_ui.gd`, `tools/crafting_ui_check.gd`, `tools/crafting_ui_render_check.gd`
 
 Commit at time of writing: `420b83e`
+
+---
+
+### DONE · F-408 · kilnd3a089 · 2026-08-21T05:20:00+00:00
+
+**Daytime grade is fluorescent and crushed rather than Valheim-like**
+
+White point 1.0 -> 1.8, saturation 1.30 -> 1.10. Per-channel clipping was the lime ground.
+
+Notes along the way:
+- User expanded the reset to the sky: current dark uniform blue backdrop and weak horizon separation are part of the same atmosphere failure, not a separate tweak. Preserve the useful biome/tree/terrain work; replace the coupled daytime grade, sky, fog, and AO baseline together.
+
+Files: `assets/audit/lighting/f408_neutral_probe.json`
+
+Commit at time of writing: `4b38288`

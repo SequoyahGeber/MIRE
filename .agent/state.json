@@ -1167,6 +1167,13 @@
       "task": "F-266",
       "token": null
     },
+    "assets/audit/lighting/f408_neutral_probe.json": {
+      "agent": "emberd89a44",
+      "at": "2026-08-21T05:20:00+00:00",
+      "hash": "89e78984f31c2f6ac12f5c1db940a77a19e8b6b256364da59334f669b48c3a05",
+      "task": "F-408",
+      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
+    },
     "assets/audit/menu/dock_1080p.png": {
       "agent": "reed31c598",
       "at": "2026-08-20T21:19:06+00:00",
@@ -2722,7 +2729,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 460,
+  "rev": 465,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -7724,6 +7731,15 @@
       "status": "todo",
       "tier": "F",
       "title": "agent claim with more than one file stores the whole list as a single dictionary key, so the pre-commit hook never sees any of them as claimed"
+    },
+    "F-408": {
+      "done_at": "2026-08-21T05:20:00+00:00",
+      "done_by": "kilnd3a089",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Daytime grade is fluorescent and crushed rather than Valheim-like"
     }
   },
   "version": 1

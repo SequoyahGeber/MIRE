@@ -219,7 +219,19 @@ const SSAO_AO_CHANNEL_AFFECT: float = 0.0
 ##     apart measured one 1/255 step apart. The sky contribution stays at the authored 0.68, so what
 ##     is left of the fill is blue — warm light against cool shadow is most of the perceived chroma.
 ##   · SATURATION AND CONTRAST. The grade's own last word, once the three above stopped fighting it.
-const DAY_TONEMAP_WHITE: float = 1.0
+## F-408: 1.8, not 1.0.
+##
+## The note above is right that 3.0 buried the scene in the toe of the ACES curve — blacks lifted,
+## highlights never arriving. But 1.0 is the opposite overcorrection: with ACES normalising by the
+## white point, it leaves NO highlight headroom at all, so anything the sun lights past luminance
+## 1.0 clips flat. On a saturated albedo that clips PER CHANNEL — grassland is
+## Color(0.373, 0.588, 0.235), so under a 1.55-energy sun the green channel pins while red and blue
+## do not, and the ground goes radioactive lime. Then DAY_ADJUSTMENT_SATURATION multiplied what was
+## left. Reported from play as "the colour is wrong", twice.
+##
+## 1.8 keeps most of the range 1.0 recovered while giving sunlit highlights somewhere to roll off
+## into instead of a wall.
+const DAY_TONEMAP_WHITE: float = 1.8
 const DAY_TONEMAP_EXPOSURE: float = 0.95
 ## F-378 raised this from F-353's 0.30, and it is NOT a walk-back of that fix — it is what keeps it.
 ## 68% of the ambient term is the sky (the level's own `ambient_light_sky_contribution`), and F-378
@@ -237,7 +249,11 @@ const DAY_TONEMAP_EXPOSURE: float = 0.95
 ## what F-353 lowered this number to stop.
 const DAY_AMBIENT_ENERGY: float = 0.36
 const DAY_ADJUSTMENT_CONTRAST: float = 1.14
-const DAY_ADJUSTMENT_SATURATION: float = 1.30
+## F-408: 1.10, down from 1.30. A 30% boost is a sensible correction for photographic footage that
+## arrives desaturated; it is the wrong instinct for flat-shaded low-poly, whose albedos are authored
+## saturated to begin with (see content/biomes/*.tres). Stacked on a clipping white point it was
+## driving the lit ground off the top of the gamut rather than adding chroma to it.
+const DAY_ADJUSTMENT_SATURATION: float = 1.10
 const DAY_GLOW_BLOOM: float = 0.0
 const DAY_GLOW_HDR_THRESHOLD: float = 1.0
 const DAY_GLOW_INTENSITY: float = 0.70
