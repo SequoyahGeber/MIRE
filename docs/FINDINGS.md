@@ -2780,41 +2780,6 @@ and nothing in the game could spawn either one. `content/harvestables/berry_bush
 
 ---
 
-### F-445 · Purple Mire growth scatters across clean forests, and the Mire's own crystal/tendril assets are placed nowhere
-
-**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-21 by kilnf96279
-
-Sequoyah, from play: "the world gen is not using many of the assets for nature and stuff, also the
-purple mushrooms should only be in the mire."
-
-Both halves are the same defect seen from two sides — the Mire has no scatter of its own, so its
-art was scattered as if it were ordinary woodland decor and the rest of it was never scattered at
-all.
-
-`mushroom_cluster_a..f` are MIRE GROWTH, not toadstools. `tools/blender/build_mire_map_kit.py:923`
-builds them in the `mire_growth` category alongside `mire_crystal_*` and `mire_tendril_*`, and
-`build_mushrooms()` finishes every cluster with an `ico("Mire_Growth", ..., mats["mire"])` blob —
-`mire` is `#5D2473`, the corruption purple. `assets/environment/catalog.json` agrees:
-`"category": "mire_growth"`. They are currently entries in three ordinary biome tables —
-`content/scatter/forest_deadwood.tres`, `birchwood_deadwood.tres` and `marsh_deadwood.tres` — so
-purple corruption grows out of clean birch woodland with no corruption anywhere near it.
-
-Their ten siblings are the other side of it. `mire_crystal_a..f` and `mire_tendril_a..d` appear in
-no scatter table, no layout and no definition; they are ten built, catalogued, committed nature
-exports that no run of the game can ever show (they are on F-439's unreferenced list).
-
-Measured with a throwaway census over 121 chunks of seed 20260821 (every second chunk across the
-island): 175 distinct assets place, 3568 placements, and every `mire_growth` asset that places is a
-purple mushroom cluster standing in a biome with no relationship to the Mire.
-
-The cause is structural, not a bad weight. `ScatterDef` gates a table on exactly one `biome_id`, and
-the Mire is not a biome — it is `MireGrid`'s corruption field, seeded by `MireGridSim.seed_initial()`
-from the world seed and spreading over the run. There is no way to express "here, and only here" in
-the scatter content as it stands, so whoever placed the clusters had only biome tables to put them
-in.
-
----
-
 ### F-446 · Deep Forest is 3.5% of the island's dry land, so the richest scatter tables in the game are almost never seen
 
 **Area:** worldgen · **Severity:** medium · **Found:** 2026-08-21 by kilnf96279
@@ -2876,6 +2841,75 @@ Three separate defects in world/gen/island_heightmap.gd:
 ---
 
 ## Resolved
+
+### F-445 · Purple Mire growth scatters across clean forests, and the Mire's own crystal/tendril assets are placed nowhere — **fixed**
+
+**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-21 by kilnf96279
+
+Sequoyah, from play: "the world gen is not using many of the assets for nature and stuff, also the
+purple mushrooms should only be in the mire."
+
+Both halves are the same defect seen from two sides — the Mire has no scatter of its own, so its
+art was scattered as if it were ordinary woodland decor and the rest of it was never scattered at
+all.
+
+`mushroom_cluster_a..f` are MIRE GROWTH, not toadstools. `tools/blender/build_mire_map_kit.py:923`
+builds them in the `mire_growth` category alongside `mire_crystal_*` and `mire_tendril_*`, and
+`build_mushrooms()` finishes every cluster with an `ico("Mire_Growth", ..., mats["mire"])` blob —
+`mire` is `#5D2473`, the corruption purple. `assets/environment/catalog.json` agrees:
+`"category": "mire_growth"`. They are currently entries in three ordinary biome tables —
+`content/scatter/forest_deadwood.tres`, `birchwood_deadwood.tres` and `marsh_deadwood.tres` — so
+purple corruption grows out of clean birch woodland with no corruption anywhere near it.
+
+Their ten siblings are the other side of it. `mire_crystal_a..f` and `mire_tendril_a..d` appear in
+no scatter table, no layout and no definition; they are ten built, catalogued, committed nature
+exports that no run of the game can ever show (they are on F-439's unreferenced list).
+
+Measured with a throwaway census over 121 chunks of seed 20260821 (every second chunk across the
+island): 175 distinct assets place, 3568 placements, and every `mire_growth` asset that places is a
+purple mushroom cluster standing in a biome with no relationship to the Mire.
+
+The cause is structural, not a bad weight. `ScatterDef` gates a table on exactly one `biome_id`, and
+the Mire is not a biome — it is `MireGrid`'s corruption field, seeded by `MireGridSim.seed_initial()`
+from the world seed and spreading over the run. There is no way to express "here, and only here" in
+the scatter content as it stands, so whoever placed the clusters had only biome tables to put them
+in.
+
+---
+
+**Resolved 2026-08-21 by kilnf96279.** Fixed in 4225374 (engine + docs) and d11b442 (content).
+
+`ScatterDef` grew a second gate orthogonal to `biome_id`: `min_corruption`/`max_corruption`, plus
+`biome_id = "*"` (`ScatterDef.ANY_BIOME`) for a table that opts out of the biome gate entirely.
+Validation rejects `"*"` without a corruption band, since a table with neither gate would carpet the
+island. The gate reads `MireGridSim.initial_corruption_at()` — the field the world STARTS with, not
+the live spreading one — because scatter is generated once per chunk, cached, and identical on every
+peer forever, which a field that moves every two seconds cannot be. The spreading half is already
+F-435's ground shader; this is the permanent growth at the origin it spread from.
+
+`MireGridSim` grew the pure half that makes it affordable: `seed_cluster_centres()` and
+`initial_corruption_at()`/`_from_centres()`, carved OUT of `seed_initial()` rather than copied, so
+the grid MireGrid replicates and the field scatter reads cannot drift. `ResourceScatter` draws the
+centres once per chunk, beside the noise set, and only when some table actually gates on corruption.
+
+Content: `mushroom_cluster_a..f` out of `forest_deadwood`/`birchwood_deadwood`, `e`/`f` out of
+`marsh_deadwood`; two new tables own them and the ten orphans. `mire_growth` (corruption >= 0.12,
+mushroom-led) and `mire_heart` (corruption >= 0.55, crystals and tendrils) overlap, so the patch
+reads as a dense core inside a thinning rim.
+
+`tools/mire_scatter_check.gd` guards both directions and reads the kit list from
+`assets/environment/catalog.json`, so a Mire asset built later is covered the day it exists: no
+`mire_growth` asset in an ungated biome table, no `mire_growth` export referenced by nothing, every
+gated placement inside its band, and the carved-out field agreeing with the grid to 0.000000.
+
+Sequoyah also called the count while this was open — one corruption area, not four (D-191,
+`SEED_CLUSTER_COUNT` 1). That exposed two latent bugs in `tools/world_contract_check.gd`, both
+fixed here: it hunted for the seed on a 48 m lattice (wider than a 32 m cluster's diameter), and its
+Wellspring-cap probe erased the world's only corruption and left the second map arm asserting
+against a grid the check had itself wiped.
+
+Ten previously unreferenced exports now place. `assets/environment/exports/mire_crystal_*` and
+`mire_tendril_*` come off F-439's list.
 
 ### F-432 · Felling a tree has no visible harvest states, and its stump is another species — **fixed**
 

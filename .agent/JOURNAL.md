@@ -8443,3 +8443,27 @@ Wait 0.6 s, not 0.3, before the ray hit.
 Files: `tools/harvest_world_check.gd`
 
 Commit at time of writing: `47f57a4`
+
+---
+
+### DONE · F-435 · hollow80855f · 2026-08-21T18:29:30+00:00
+
+**The Mire's corrupted ground is invisible — the world looks identical where it drains you**
+
+Corruption grid published as a texture; purple ground + low sour fog, gated on rendered frames (D-190)
+
+Files: `world/mire/mire_grid.gd`, `world/chunk/terrain_flat.gdshader`, `world/chunk/chunk_streamer.gd`, `world/environment/ground_fog.gd`, `world/environment/ground_fog.gdshader`, `tools/blight_ground_check.gd`, `docs/FINDINGS.md`, `autoload/world_delta_log.gd`, `docs/DECISIONS.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `b44e5c3`
+
+---
+
+### DONE · F-445 · kilnf96279 · 2026-08-21T19:17:13+00:00
+
+**Purple Mire growth scatters across clean forests, and the Mire's own crystal/tendril assets are placed nowhere**
+
+Mire growth is scattered by corruption, not biome; one seed cluster (D-191); 10 orphaned exports now place
+
+Files: `world/gen/scatter_def.gd`, `world/gen/resource_scatter.gd`, `world/mire/mire_grid_sim.gd`, `content/scatter/forest_deadwood.tres`, `content/scatter/birchwood_deadwood.tres`, `content/scatter/marsh_deadwood.tres`, `content/scatter/mire_growth.tres`, `tools/resource_scatter_check.gd`, `tools/mire_scatter_check.gd`, `content/scatter/mire_heart.tres`, `docs/DECISIONS.md`, `docs/WORLDGEN.md`, `tools/world_contract_check.gd`
+
+Commit at time of writing: `d11b442`
