@@ -2580,48 +2580,6 @@ answer — it cannot go stale.
 
 ---
 
-### F-384 · The multiplayer menu cannot be closed: M is swallowed by the join field it focuses on open, and Esc is consumed by the pause menu first
-
-**Area:** UI · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "esc does not close the multiplayer menu opened with m ...
-and m also does not close the mutplayer menu theres no way to close that menu".
-
-Both halves traced in `ui/lobby/lobby_menu.gd`.
-
-**M cannot close it.** `_input` (:70) guards the M branch against typing:
-
-    if key.keycode == KEY_M:
-        var focus_owner: Control = get_viewport().gui_get_focus_owner()
-        if focus_owner is LineEdit or focus_owner is TextEdit:
-            return
-
-and `set_open(true)` ends with `_join_field.grab_focus()` (:109), where `_join_field` is a `LineEdit`
-(:36). So opening the menu focuses a `LineEdit`, and the very next M press hits the guard and returns
-before reaching `set_open(not _open)`. The guard is correct in intent — typing "m" into a lobby id
-must not toggle the menu — but it fires on the default state, not the exception.
-
-**Esc cannot close it either.** The Esc branch exists (:86) but `_input` opens with
-`if get_viewport().is_input_handled(): return`. `MenuStack` (`ui/menu_stack.gd:101`) and `PauseMenu`
-are both autoloads registered *after* `LobbyMenu` in `project.godot` (lines 49, 80, 81), and `_input`
-propagates in reverse tree order, so they see the press first. `MenuStack` emits `cancel_at_root` on
-an empty stack, the pause menu opens, the event is marked handled, and `LobbyMenu._input` returns at
-its first line.
-
-That second half is the general rule Sequoyah asked for: **"esc key should close any currently open
-menu or interface before opening the settings/pause menu"**. `MenuStack` already owns `ui_cancel`
-project-wide (its header at :49) and already knows about the `blocks_gameplay_input` group (:62) —
-what it does not do is check whether a *non-stack* blocking panel is open before falling through to
-`cancel_at_root`.
-
-Fix: (a) in the M branch, only bail when the focused `LineEdit` actually belongs to this menu — or
-simpler, do not grab the join field on open; (b) in `MenuStack._input`, before emitting
-`cancel_at_root`, ask the `blocks_gameplay_input` group whether anything is open and let it close
-itself. That one change fixes Esc for the lobby menu, the attunement picker (F-321) and every future
-panel at once.
-
----
-
 ### F-385 · Settings show no numeric value for any slider, so FOV, sensitivity and volumes are set blind
 
 **Area:** UI · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
@@ -2861,6 +2819,70 @@ client-side filter.
 ---
 
 ## Resolved
+
+### F-384 · The multiplayer menu cannot be closed: M is swallowed by the join field it focuses on open, and Esc is consumed by the pause menu first — **fixed**
+
+**Area:** UI · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "esc does not close the multiplayer menu opened with m ...
+and m also does not close the mutplayer menu theres no way to close that menu".
+
+Both halves traced in `ui/lobby/lobby_menu.gd`.
+
+**M cannot close it.** `_input` (:70) guards the M branch against typing:
+
+    if key.keycode == KEY_M:
+        var focus_owner: Control = get_viewport().gui_get_focus_owner()
+        if focus_owner is LineEdit or focus_owner is TextEdit:
+            return
+
+and `set_open(true)` ends with `_join_field.grab_focus()` (:109), where `_join_field` is a `LineEdit`
+(:36). So opening the menu focuses a `LineEdit`, and the very next M press hits the guard and returns
+before reaching `set_open(not _open)`. The guard is correct in intent — typing "m" into a lobby id
+must not toggle the menu — but it fires on the default state, not the exception.
+
+**Esc cannot close it either.** The Esc branch exists (:86) but `_input` opens with
+`if get_viewport().is_input_handled(): return`. `MenuStack` (`ui/menu_stack.gd:101`) and `PauseMenu`
+are both autoloads registered *after* `LobbyMenu` in `project.godot` (lines 49, 80, 81), and `_input`
+propagates in reverse tree order, so they see the press first. `MenuStack` emits `cancel_at_root` on
+an empty stack, the pause menu opens, the event is marked handled, and `LobbyMenu._input` returns at
+its first line.
+
+That second half is the general rule Sequoyah asked for: **"esc key should close any currently open
+menu or interface before opening the settings/pause menu"**. `MenuStack` already owns `ui_cancel`
+project-wide (its header at :49) and already knows about the `blocks_gameplay_input` group (:62) —
+what it does not do is check whether a *non-stack* blocking panel is open before falling through to
+`cancel_at_root`.
+
+Fix: (a) in the M branch, only bail when the focused `LineEdit` actually belongs to this menu — or
+simpler, do not grab the join field on open; (b) in `MenuStack._input`, before emitting
+`cancel_at_root`, ask the `blocks_gameplay_input` group whether anything is open and let it close
+itself. That one change fixes Esc for the lobby menu, the attunement picker (F-321) and every future
+panel at once.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** Both halves fixed.
+
+**Esc.** `ui/menu_stack.gd` now closes an open `blocks_gameplay_input` panel before it offers
+`cancel_at_root` to the pause menu — a new public `close_blocking_panel()` walks the group backwards
+and calls the `set_open(false)` every shipped member already has. That is the general rule Sequoyah
+asked for ("esc should close any currently open menu or interface before opening the settings/pause
+menu"), stated once so it holds for panels that do not exist yet. `AttunementUI` has no `set_open`,
+so it is left alone but still stops the press — its reachability stays F-321's call.
+
+**M.** `ui/lobby/lobby_menu.gd`'s typing guard fired on the default state: `set_open(true)` grabs the
+join field, so every M press after opening hit a focused `LineEdit` and returned. New
+`_is_text_entry_in_use()` treats a focused-but-EMPTY field as "not typing", so M stays a toggle until
+there is actually text to type into.
+
+Verified: `agent godot --script tools/lobby_menu_check.gd` — failures=0, with four new assertions
+driven through the real input path (`root.push_input` of a real `InputEventKey`) rather than by
+calling `set_open(false)`, which is what let the original defect ship past a check that already said
+"menu closes". Diagnosing the one failure in that new coverage confirmed the guard: it fired because
+an earlier assertion had left a lobby id in the field, which is the behaviour we want.
+
+No regression: menu_stack_check, pause_menu_check, menu_focus_check, main_menu_check all failures=0.
 
 ### F-361 · macOS release host lacks the Metal shader compiler — **fixed**
 

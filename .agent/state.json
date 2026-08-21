@@ -905,6 +905,13 @@
       "task": "F-290",
       "token": null
     },
+    "tools/lobby_menu_check.gd": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T03:07:34+00:00",
+      "hash": "73e9f422ff3a8dc2c69eb6e2ed10c8a5d1cc7303a44cffd28f9f63edec876eae",
+      "task": "F-384",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
     "tools/loop_audit_check.gd": {
       "agent": "ivy1bcae0",
       "at": "2026-08-21T02:11:31+00:00",
@@ -1311,6 +1318,13 @@
       "task": "F-307",
       "token": null
     },
+    "ui/lobby/lobby_menu.gd": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T03:07:34+00:00",
+      "hash": "0048484cde04056af31514d1a0170875aa2ef270773f3d718ff978f08d26d661",
+      "task": "F-384",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
     "ui/menu/main_menu.gd": {
       "agent": "lp",
       "at": "2026-08-20T16:38:19+00:00",
@@ -1326,11 +1340,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
     "ui/menu_stack.gd": {
-      "agent": "reed31c598",
-      "at": "2026-08-20T21:19:06+00:00",
-      "hash": "8af7e3258731c1c75d479e40c67d5baace60aa63a8605809c9d42b9444836cb4",
-      "task": "7.4",
-      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T03:07:34+00:00",
+      "hash": "6e61b7019e46a0ef3eba521bd3f640426b0feb41cc969177065ce0a22532d027",
+      "task": "F-384",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "ui/theme/mire_theme.gd": {
       "agent": "reed31c598",
@@ -1473,7 +1487,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 263,
+  "rev": 266,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -6297,9 +6311,11 @@
       "title": "The death screen's centre column is anchored with KEEP_SIZE before its labels have text, so the whole block sits off-centre"
     },
     "F-384": {
+      "done_at": "2026-08-21T03:07:34+00:00",
+      "done_by": "kilnd3a089",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "The multiplayer menu cannot be closed: M is swallowed by the join field it focuses on open, and Esc is consumed by the pause menu first"
     },

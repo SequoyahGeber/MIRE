@@ -56,6 +56,27 @@ extends CanvasLayer
 ## `main_menu.gd`/`lobby_menu.gd`/`settings_menu.gd` still own their own Esc branches, an empty
 ## stack leaves their press untouched and they keep working exactly as they do today. Nothing about
 ## the shipped front end changes on the frame this autoload is registered.
+##
+## ## Legacy panels close BEFORE the root listener is offered the press (F-384)
+##
+## The migration's "leave their press untouched" clause had a hole the shipped build fell straight
+## into. This autoload is registered after `LobbyMenu` in `project.godot`, and `_input` propagates in
+## reverse tree order, so a legacy panel's own Esc branch runs *after* this one — but `cancel_at_root`
+## has already fired by then, the pause menu has already opened, and the event is already marked
+## handled. Every legacy panel's Esc branch opens with `if get_viewport().is_input_handled(): return`,
+## so the press never reaches it. Played result: the multiplayer menu could not be closed at all.
+##
+## So an empty stack now checks the `blocks_gameplay_input` group first and closes whatever is open
+## there, and only offers `cancel_at_root` when the screen is otherwise clear. That is the rule
+## Sequoyah asked for in the 2026-08-20 playtest — *Esc closes any open menu or interface before it
+## opens the pause menu* — and stating it here rather than in each panel means it holds for panels
+## that do not exist yet.
+##
+## Membership in that group IS the "I am open" flag (every member adds itself in its own
+## `set_open(true)` and removes itself in `set_open(false)`), and `set_open(bool)` is the shared
+## close API across all six shipped members. A member that does not implement it is left alone —
+## which is exactly right for `AttunementUI`, whose pick is mandatory and whose reachability is
+## F-321's call to make, not this file's.
 
 const MireTheme := preload("res://ui/theme/mire_theme.gd")
 
@@ -105,6 +126,11 @@ func _input(event: InputEvent) -> void:
 		return
 
 	if _stack.is_empty():
+		# F-384: a legacy blocking panel outranks the root listener. Close it and stop here — the
+		# pause menu must not open over an interface the player was trying to leave.
+		if close_blocking_panel():
+			get_viewport().set_input_as_handled()
+			return
 		# Nothing of ours is up. Offer the press to whoever owns "back" at the root (the pause menu
 		# in-run), and consume it only if they actually took it — see the class doc.
 		cancel_at_root.emit()
@@ -124,6 +150,28 @@ func _input(event: InputEvent) -> void:
 
 
 # ── Public API ────────────────────────────────────────────────────────────────────────────────────
+
+
+## Closes the open legacy blocking panel, if there is one, and reports whether it closed anything.
+## Public because the check drives it directly and because a caller that is about to open something
+## cursor-owning has the same "clear the screen first" need Esc does.
+##
+## Walks the group backwards: `get_nodes_in_group` returns tree order, and D-032's interlock means at
+## most one member is ever open, so the direction only matters for the degenerate case — and there,
+## closing the one nearest the front is the better guess.
+func close_blocking_panel() -> bool:
+	var members: Array[Node] = get_tree().get_nodes_in_group(BLOCKING_UI_GROUP)
+	for index: int in range(members.size() - 1, -1, -1):
+		var panel: Node = members[index]
+		if panel == self or not is_instance_valid(panel):
+			continue
+		if not panel.has_method(&"set_open"):
+			# A mandatory panel with no close API (AttunementUI). Not ours to force shut, but it IS
+			# still holding the screen, so the press stops here rather than reaching the pause menu.
+			return true
+		panel.call(&"set_open", false)
+		return true
+	return false
 
 
 ## Shows `screen` as the top of the stack, hiding the one below unless this screen is modal.

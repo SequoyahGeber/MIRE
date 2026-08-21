@@ -77,9 +77,13 @@ func _input(event: InputEvent) -> void:
 		return
 
 	if key.keycode == KEY_M:
-		# Typing an 'm' into the join field must not toggle the menu shut.
+		# Typing an 'm' into the join field must not toggle the menu shut. F-384: but the guard used
+		# to fire on the DEFAULT state, not the exception — `set_open(true)` grabs the join field, so
+		# every M press after opening the menu hit a focused LineEdit and returned, leaving the panel
+		# with no way to close (Esc was being eaten by the pause menu; that half is fixed in
+		# MenuStack). An EMPTY field is nobody typing, so M stays a toggle until there is text in it.
 		var focus_owner: Control = get_viewport().gui_get_focus_owner()
-		if focus_owner is LineEdit or focus_owner is TextEdit:
+		if _is_text_entry_in_use(focus_owner):
 			return
 		set_open(not _open)
 		get_viewport().set_input_as_handled()
@@ -254,6 +258,17 @@ func _on_rejoined() -> void:
 
 
 # ── Internals ─────────────────────────────────────────────────────────────────────────────────────
+
+
+## True when `focus_owner` is a text field the player has actually started typing into. A focused but
+## empty field is not "in use": the player got there because opening the menu put them there, and
+## taking their close key away for it is the F-384 defect.
+func _is_text_entry_in_use(focus_owner: Control) -> bool:
+	if focus_owner is LineEdit:
+		return not (focus_owner as LineEdit).text.is_empty()
+	if focus_owner is TextEdit:
+		return not (focus_owner as TextEdit).text.is_empty()
+	return false
 
 
 func _other_blocking_ui_open() -> bool:

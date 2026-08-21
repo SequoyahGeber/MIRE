@@ -7919,3 +7919,15 @@ Reopened (was marked done 2026-08-21 by ivycc0920).
 Re-reported from play on 2026-08-20 by Sequoyah, in the same words as the original: health starts draining after running around a bit, and 'stuff keeps randomly killing me'. Nothing has shipped that adds Blight feedback — a grep of ui/ still finds no corruption indicator and core/events/event_bus.gd still carries no blight event. The earlier 'done' recorded a session, not a resolution (F-131).
 
 Commit at time of writing: `cf1af0d`
+
+---
+
+### DONE · F-384 · kilnd3a089 · 2026-08-21T03:07:34+00:00
+
+**The multiplayer menu cannot be closed: M is swallowed by the join field it focuses on open, and Esc is consumed by the pause menu first**
+
+Esc closes any open blocking panel before the pause menu; M closes the lobby menu when the join field is empty. lobby_menu_check failures=0 with 4 new assertions.
+
+Files: `ui/menu_stack.gd`, `ui/lobby/lobby_menu.gd`, `tools/lobby_menu_check.gd`
+
+Commit at time of writing: `1aaf4ed`
