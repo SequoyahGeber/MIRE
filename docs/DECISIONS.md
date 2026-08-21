@@ -6110,3 +6110,59 @@ name on the base class, put it in a tree, and see whether it fires on its own.
 `tools/virtual_shadow_check.gd` does exactly that for every `extends <EngineClass>` script in the
 project, and carries a self-test so it cannot silently degrade into a check that passes for the
 wrong reason. Run it when adding lifecycle-shaped methods.
+
+### D-188 · 2026-08-21 · Sound effects are synthesized as *objects* — a material and a geometry — not as layered waveforms, and the level column is loudness rather than peak
+
+Sequoyah's verdict on the v1 SFX, after listening: **"there not great, a couple of them are ok but
+most are wildly innacurate."** He also said what to do about it: **"do some research online, find
+some examples and use them for referenace."** Both halves matter, and the second is the reason the
+first was fixable.
+
+**What v1 did wrong.** Every recipe layered a click, a sine drop and a noise bed, with each partial's
+resonance and decay time picked by ear. That sounds like a reasonable way to build an impact and it
+is not, because it destroys the one cue that carries material identity. Klatzky, Pai & Krotkov
+(*Presence* 9(4), 2000) established that a **shape-invariant, frequency-dependent decay parameter**
+determines perceived material far more strongly than frequency content does, and that it correlates
+with the substance's physical damping. Choosing decay per-partial by ear guarantees no two partials
+agree about what the object is made of, so the ear names it nothing.
+
+**What v2 does instead.** A recipe names a material and a geometry; `tools/audio/mire_material.py`
+derives the rest:
+
+- Decay is never authored. A material is a loss factor η, and every mode decays at `τ = 1/(π·f·η)`.
+  High modes die faster than low ones at a rate set by the substance alone, which is why wood sounds
+  like wood at any pitch and any size.
+- Boundary damping is added on top of the published η, because published figures are for a specimen
+  ringing freely and nothing in a game is: a trunk is rooted, a plank is nailed in, a blade is
+  gripped. Without it a struck dry plank rings for 0.7 s — a xylophone bar on a stand.
+- Excitation is a **contact time**, not a click. A collision force is a half-sine of duration `T_c`
+  and its spectrum rolls off above `1/(2·T_c)`, so a padded mallet physically cannot make a bright
+  sound however hard it is swung. `hardness` therefore changes timbre, not volume.
+- Mode ratios come from real geometry; irregular solids get quasi-random incommensurate ratios,
+  which is the honest model for a rock and is why one clacks instead of ringing.
+- Water is the Minnaert model throughout: a bubble rings at `3.26/r` and its pitch **rises** as it
+  collapses. A swamp game that gets this wrong sounds synthetic no matter what else it does.
+
+Measured separation, one struck object per material: iron 2.1 s, mire crystal 266 ms, dry wood 83 ms,
+granite 33 ms, bone 19 ms, mud 39 ms. v1 had no mechanism that could produce that spread at all.
+
+**The mix is loudness, not peak.** v1 peak-normalised everything into a −2.5..−8 dBFS band, which put
+a footstep within 6 dB of a falling tree — the loudest thing a player did all day was walk. Peak
+normalisation is also simply the wrong measure for sparse material: three cricket chirps across two
+seconds hit the ceiling on one sample and are inaudible. The catalogue's level column is now the
+**loudest 100 ms as RMS**, with a soft limiter before a −1.2 dBFS true-peak ceiling, and levels are
+assigned by how often a sound fires and how much it matters. `audio_check.py` gates the band and
+asserts the catalogue's spread stays under 30 dB.
+
+**Why this is a decision and not just an implementation.** It fixes the *inputs* to sound design
+rather than the outputs. Adding a new sound now means answering "what is it made of, how is it held,
+and how hard was it hit" — three questions with physical answers — instead of guessing at
+frequencies. Two sounds made of the same substance relate to each other without anything being copied
+between them, which is what makes 131 effects feel like one game.
+
+**Would change my mind:** Sequoyah listening and finding a specific material still wrong. The fix
+would then be a number in `LOSS` or a mounting value in one recipe, not a rewrite — which is itself
+the argument for the approach.
+
+Recorded alongside: `tools/audio/render_sfx.py` (the catalogue), `autoload/sfx_director.gd` (the only
+thing that plays any of it), `tools/sfx_check.gd` and `tools/sfx_runtime_probe.gd` (proof it fires).

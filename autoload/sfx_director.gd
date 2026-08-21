@@ -703,13 +703,34 @@ func _on_unlock_purchased(_unlock_id: StringName, _cost: int, _total: int) -> vo
 	play(&"unlock_purchase")
 
 
-func _on_resonance_changed(peer_id: int, _family: StringName, tier: int) -> void:
+## Each of `PowerupDef.KNOWN_FAMILIES` gets its own voice. One shared chime for
+## all six throws away information the signal is already carrying: a player who
+## has been stacking Cold all run should hear that it was Cold that landed,
+## without reading the HUD. All six resolve into D and sit at the same loudness,
+## so none of them is the good one — only the material differs.
+const RESONANCE_CUES: Dictionary[StringName, StringName] = {
+	&"Fire": &"resonance_fire",
+	&"Blood": &"resonance_blood",
+	&"Kinetic": &"resonance_kinetic",
+	&"Fungal": &"resonance_fungal",
+	&"Cold": &"resonance_cold",
+	&"Void": &"resonance_void",
+}
+
+
+func _on_resonance_changed(peer_id: int, family: StringName, tier: int) -> void:
 	if peer_id != multiplayer.get_unique_id():
 		return
 	# Tiers only ever climb during a run, so a drop means a cost was paid —
 	# `powerup_curse` is the same crystal figure inverted, which is how a player
 	# learns the difference without being told.
-	play(&"powerup_pickup" if tier > 0 else &"powerup_curse")
+	if tier <= 0:
+		play(&"powerup_curse")
+		return
+	# An unlisted family is a seventh one being added, which `PowerupDef`'s own
+	# note calls a design event. Falling back keeps it audible rather than silent
+	# until someone authors its voice.
+	play(RESONANCE_CUES.get(family, &"powerup_pickup"))
 
 
 func _on_attunement_confirmed(accepted: bool, _attunement_id: StringName,

@@ -16,7 +16,7 @@ store-page time.
 | Landfall theme | `assets/audio/music/theme_landfall.ogg` | "Wake the Deep", 1:57 loop. Heroic A-B-A: horns take the tune from the strings over choir and drums. One pass at run start, then an 8 s fade (cue `landfall`) |
 | Cycle theme | `assets/audio/music/theme_cycle.ogg` | "Mire Rites", 1:11 loop. Percussive 6/8 building across four stages to a hard stop. One pass on `cycle_advanced` at Cycle 2+ (cue `cycle`) |
 | Boss stinger | `assets/audio/music/boss_stinger.ogg` | ~7.2s non-looping one-shot (task 5.5), NIGHT's own palette — a low FM groan rises into a sub thump and a dissonant pair of detuned FM bells, then rings out on the same reverb IR shape. Played by `BossMusicDirector` (client-local autoload) on `EventBus.boss_engaged`/`boss_phase_changed`/`boss_defeated` |
-| 125 SFX | `assets/audio/sfx/*.wav` | mono 16-bit 44.1 kHz, 260 files. Twelve systems: harvesting, movement, melee, ranged, creatures, the player, building, crafting, items and loot, UI, progression, ambient spot effects. `python3 tools/audio/render_sfx.py --list` prints the catalogue with a one-line intent per sound |
+| 131 SFX | `assets/audio/sfx/*.wav` | mono 16-bit 44.1 kHz, 266 files. Twelve systems: harvesting, movement, melee, ranged, creatures, the player, building, crafting, items and loot, UI, progression, ambient spot effects. `python3 tools/audio/render_sfx.py --list` prints the catalogue with a one-line intent per sound |
 
 All of it is played by three client-local autoloads — `AmbientMusicDirector` (the day/night bed),
 `ThemeMusicDirector` (the three authored themes, D-187), and `SfxDirector` (every sound effect) —
@@ -240,6 +240,11 @@ edge-toned wind on the heath and highland, scree settling on high ground. Duplic
 pool are weights. `sfx_check.gd` asserts every biome has both pools and that no two are identical,
 because a missing pool silently falls back to the generic one and looks like it works.
 
+**Each of the six powerup families resonates in its own voice** rather than sharing one chime —
+`resonance_changed` already carries the family, and throwing that away means a player who has been
+stacking Cold all run cannot hear that it was Cold that landed. All six resolve into D and sit at the
+same loudness, so none of them is the good one; only the material differs.
+
 **Creatures make noise when they move**, driven the same way the player's footsteps are — distance
 travelled, not a timer, so something closing on you sounds like it is closing on you. Arthropods get
 a stutter of three or four chitin taps per step (more than two legs is the whole tell); a tusker gets
@@ -326,7 +331,7 @@ audio RPCs and must never be any.
   the world while task 4.19's cutover is in flight, so nothing puts the `mire_frontend` group on
   screen in the shipped path. `ThemeMusicDirector` already handles it — when 4.19 flips the boot
   scene the menu theme starts working with no change here.
-- **122 of 125 cues are triggered.** The three that are not — `equip_blade`, `equip_tool`,
+- **128 of 131 cues are triggered.** The three that are not — `equip_blade`, `equip_tool`,
   `equip_bow` — are waiting on a system that does not exist: the game has no equip/hotbar concept at
   all, so there is nothing to hang them on. `tools/sfx_check.gd` prints the coverage every run and
   fails if the unwired list grows past twelve, which is what stops it drifting quietly.

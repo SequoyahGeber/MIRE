@@ -2272,6 +2272,150 @@ def wellspring_loop(rng: np.random.Generator) -> np.ndarray:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# RESONANCE — the six powerup families, each with its own voice
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# `PowerupService.resonance_changed` carries the family that just resonated, and
+# there are exactly six of them (`PowerupDef.KNOWN_FAMILIES`). One shared chime
+# for all six throws that information away — a player who has been stacking Cold
+# all run should be able to hear that it was Cold that landed without reading
+# the HUD.
+#
+# All six resolve into D, so they still belong to the world, and all six are the
+# same LENGTH and LOUDNESS so none of them feels like the good one. What differs
+# is entirely material and contour.
+
+
+def _resonance_bed(rng: np.random.Generator, out: np.ndarray, root: str,
+                   gain: float = 0.16) -> None:
+    """The shared floor under every family: a quiet held fifth, so six very
+    different surfaces still land in one key."""
+    dur = 1.3
+    glow = (ma.sine(ma.note_hz(root), dur)
+            + 0.65 * ma.sine(ma.note_hz(root) * 1.4983, dur))
+    put(out, glow * ma.env_asr(ma.samples(dur), 0.18, 0.7), 0.12, gain)
+
+
+def resonance_fire(rng: np.random.Generator) -> np.ndarray:
+    """Fire. Ignition: a hard intake of air, the fuel catching, and crackle that
+    outlives the note. The only family whose tail is noise rather than tone."""
+    out = buf(1.9)
+    n = ma.samples(0.34)
+    intake = ma.swept_bandpass(ma.white(n, rng), np.geomspace(400.0, 2600.0, n),
+                               octaves=1.8, block=512)
+    put(out, intake * (np.linspace(0.0, 1.0, n) ** 2.2), 0.0, 0.5)
+    n2 = ma.samples(0.5)
+    whump = ma.swept_bandpass(ma.white(n2, rng), np.geomspace(700.0, 140.0, n2),
+                              octaves=2.2, block=1024)
+    put(out, whump * np.interp(np.linspace(0, 1, n2), [0, 0.1, 1], [0.0, 1.0, 0.0]) ** 1.2,
+        0.32, 0.85)
+    put(out, ma.sine_glide(90.0, 46.0, 0.4) * ma.exp_decay(ma.samples(0.4), 0.13), 0.33, 0.45)
+    put(out, mm.crackle(1.3, rng, rate=64.0)
+        * np.interp(np.linspace(0, 1, ma.samples(1.3)), [0, 0.1, 0.6, 1.0],
+                    [0.2, 1.0, 0.7, 0.0]), 0.4, 0.42)
+    _resonance_bed(rng, out, "D3")
+    return out
+
+
+def resonance_blood(rng: np.random.Generator) -> np.ndarray:
+    """Blood. Two heavy wet pulses at a resting heart rate, low and damped —
+    `flesh` is the second-highest loss factor in the table, so nothing here
+    rings and the whole family sits under everything else."""
+    out = buf(1.9)
+    for i, at in enumerate((0.0, 0.42)):
+        put(out, mm.body(78.0 - 4.0 * i, 0.3, drop=0.4, curve=0.5, tau_ratio=0.3),
+            at, 1.0 - 0.2 * i)
+        put(out, mm.struck(rng.uniform(95.0, 125.0), "flesh", 0.2, rng,
+                           geometry="membrane", hardness=0.25, mounting=0.05),
+            at + 0.002, 0.6 - 0.15 * i)
+        n = ma.samples(0.18)
+        put(out, ma.fft_filter(ma.pink(n, rng), fc_low=90.0, fc_high=700.0, order=2)
+            * ma.exp_decay(n, 0.06), at + 0.004, 0.45)
+    put(out, mm.bubble_cloud(0.7, rng, count=16, r_min=0.0008, r_max=0.006), 0.2, 0.22)
+    _resonance_bed(rng, out, "D2", gain=0.22)
+    return out
+
+
+def resonance_kinetic(rng: np.random.Generator) -> np.ndarray:
+    """Kinetic. Momentum arriving: a hard steel strike whose ring is allowed to
+    hang — the longest decay of the six, because `iron` at a light mounting is
+    the only material in the table that can do it."""
+    out = buf(2.0)
+    put(out, mm.strike_noise(0.04, rng, "steel", hardness=0.99, brightness=2.0), 0.0, 0.5)
+    put(out, mm.body(210.0, 0.14, drop=0.4, curve=0.4), 0.0, 0.8)
+    base = ma.note_hz("D5")
+    put(out, mm.struck(base, "iron", 1.6, rng, geometry="bar_free", hardness=0.98,
+                       position=0.22, modes=6, mounting=0.012), 0.001, 0.85)
+    put(out, mm.struck(base * 1.4983, "steel", 1.2, rng, geometry="bar_free",
+                       hardness=0.98, modes=5, mounting=0.015), 0.006, 0.35)
+    put(out, mm.air_arc(0.16, rng, f_low=500.0, f_high=2400.0, width=1.2,
+                        peak_at=0.35, sharp=1.6), 0.0, 0.25)
+    _resonance_bed(rng, out, "D3")
+    return out
+
+
+def resonance_fungal(rng: np.random.Generator) -> np.ndarray:
+    """Fungal. A spore head bursting: damp, soft-edged, with no transient worth
+    the name and a long fine hiss of things drifting away. The quietest attack
+    of the six on purpose — fungus does not announce itself."""
+    out = buf(2.1)
+    n = ma.samples(0.28)
+    burst = ma.swept_bandpass(ma.white(n, rng), np.geomspace(600.0, 3200.0, n),
+                              octaves=2.0, block=512)
+    put(out, burst * np.interp(np.linspace(0, 1, n), [0, 0.35, 1], [0.0, 1.0, 0.25]) ** 1.4,
+        0.0, 0.55)
+    put(out, mm.struck(rng.uniform(140.0, 190.0), "clay", 0.3, rng,
+                       geometry="membrane", hardness=0.3, modes=5, mounting=0.12), 0.01, 0.5)
+    put(out, mm.bubble_cloud(0.8, rng, count=28, r_min=0.0006, r_max=0.005,
+                             density_curve=1.2), 0.06, 0.3)
+    put(out, mm.granular(1.4, rng, count=150, fc_low=3000.0, fc_high=13000.0,
+                         grain_s=(0.0005, 0.002), density_curve=1.0, decay=0.0)
+        * np.interp(np.linspace(0, 1, ma.samples(1.4)), [0, 0.2, 1], [0.3, 1.0, 0.0]),
+        0.1, 0.3)
+    _resonance_bed(rng, out, "D3")
+    return out
+
+
+def resonance_cold(rng: np.random.Generator) -> np.ndarray:
+    """Cold. Water going to ice: a low structural crack as the volume expands,
+    then glass modes that ring on and on. `glass` and `crystal` are the two
+    lowest loss factors here, which is why cold is the family that shimmers."""
+    out = buf(2.3)
+    put(out, mm.struck(rng.uniform(180.0, 240.0), "granite", 0.25, rng,
+                       geometry="irregular", hardness=0.9, modes=5, mounting=0.05), 0.0, 0.5)
+    put(out, mm.body(120.0, 0.18, drop=0.4, curve=0.45), 0.0, 0.45)
+    for i, note in enumerate(("D6", "A6", "F6")):
+        put(out, mm.struck(ma.note_hz(note), "glass", 1.7, rng, geometry="plate_free",
+                           hardness=0.95, modes=5, mounting=0.004),
+            0.02 + 0.055 * i, 0.42 - 0.09 * i)
+    put(out, mm.granular(1.1, rng, count=26, fc_low=6000.0, fc_high=15000.0,
+                         grain_s=(0.0006, 0.002), density_curve=1.6), 0.05, 0.22)
+    _resonance_bed(rng, out, "D4", gain=0.12)
+    return out
+
+
+def resonance_void(rng: np.random.Generator) -> np.ndarray:
+    """Void. The only one that goes DOWN: a swell that arrives before its own
+    onset, a sub that drops below everything else in the game, and a bell struck
+    a tritone from the root — the night ambience's dread interval, spent here.
+    It should not feel like a reward."""
+    out = buf(2.6)
+    n = ma.samples(0.6)
+    # an inhale: bright to dark, growing, with no attack at all
+    put(out, ma.swept_bandpass(ma.white(n, rng), np.geomspace(4000.0, 300.0, n),
+                               octaves=1.6, block=512)
+        * (np.linspace(0.0, 1.0, n) ** 1.6), 0.0, 0.4)
+    put(out, ma.sine_glide(ma.note_hz("D3"), ma.note_hz("D1"), 1.1, curve=1.4)
+        * ma.env_asr(ma.samples(1.1), 0.25, 0.6), 0.35, 0.75)
+    put(out, mm.struck(ma.note_hz("Ab4"), "bronze", 1.8, rng, geometry="plate_free",
+                       hardness=0.85, modes=6, mounting=0.008), 0.58, 0.4)
+    put(out, mm.struck(ma.note_hz("D4"), "bronze", 1.4, rng, geometry="plate_free",
+                       hardness=0.8, modes=5, mounting=0.010), 0.64, 0.22)
+    put(out, ma.fm_groan(52.0, 36.0, 1.4, rng), 0.6, 0.4)
+    return out
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # THE CATALOGUE
 # ═══════════════════════════════════════════════════════════════════════════
 #
@@ -2416,6 +2560,12 @@ CATALOGUE: dict[str, tuple] = {
     # ── progression and world events ────────────────────────────────────────
     "powerup_pickup":         (powerup_pickup, 1, 0.10, -18, "progression"),
     "powerup_curse":          (powerup_curse, 1, 0.12, -18, "progression"),
+    "resonance_fire":         (resonance_fire, 1, 0.12, -18, "progression"),
+    "resonance_blood":        (resonance_blood, 1, 0.12, -18, "progression"),
+    "resonance_kinetic":      (resonance_kinetic, 1, 0.12, -18, "progression"),
+    "resonance_fungal":       (resonance_fungal, 1, 0.12, -18, "progression"),
+    "resonance_cold":         (resonance_cold, 1, 0.12, -18, "progression"),
+    "resonance_void":         (resonance_void, 1, 0.12, -18, "progression"),
     "attune_select":          (attune_select, 1, 0.13, -18, "progression"),
     "unlock_purchase":        (unlock_purchase, 1, 0.08, -19, "progression"),
     "salvage_bank":           (salvage_bank, 1, 0.09, -18, "progression"),
