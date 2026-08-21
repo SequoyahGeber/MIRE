@@ -12,18 +12,6 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "autoload/environment_vfx.gd": {
-      "agent": "kiln384569",
-      "at": "2026-08-21T17:58:42+00:00",
-      "task": "F-442",
-      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
-    },
-    "autoload/harvest_world.gd": {
-      "agent": "kiln384569",
-      "at": "2026-08-21T17:51:46+00:00",
-      "task": "F-432",
-      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
-    },
     "autoload/world_delta_log.gd": {
       "agent": "hollow80855f",
       "at": "2026-08-21T17:33:04+00:00",
@@ -102,6 +90,18 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "docs/DECISIONS.md": {
+      "agent": "hollow80855f",
+      "at": "2026-08-21T18:19:44+00:00",
+      "task": "F-435",
+      "token": "CLAUDE_CODE_SESSION_ID:0e245ac7-67ca-4077-a49b-e1b4d92abe80"
+    },
+    "docs/DELEGATION.md": {
+      "agent": "hollow80855f",
+      "at": "2026-08-21T18:19:44+00:00",
+      "task": "F-435",
+      "token": "CLAUDE_CODE_SESSION_ID:0e245ac7-67ca-4077-a49b-e1b4d92abe80"
+    },
     "docs/FINDINGS.md": {
       "agent": "hollow80855f",
       "at": "2026-08-21T17:32:49+00:00",
@@ -113,18 +113,6 @@
       "at": "2026-08-21T07:03:08+00:00",
       "task": "F-404",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
-    },
-    "systems/harvesting/harvestable.gd": {
-      "agent": "kiln384569",
-      "at": "2026-08-21T17:51:46+00:00",
-      "task": "F-432",
-      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
-    },
-    "systems/harvesting/stump_builder.gd": {
-      "agent": "kiln384569",
-      "at": "2026-08-21T17:51:46+00:00",
-      "task": "F-432",
-      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
     "tools/biome_terrain_check.gd": {
       "agent": "kilnd3a089",
@@ -149,12 +137,6 @@
       "at": "2026-08-21T17:32:49+00:00",
       "task": "F-435",
       "token": "CLAUDE_CODE_SESSION_ID:0e245ac7-67ca-4077-a49b-e1b4d92abe80"
-    },
-    "tools/harvest_tree_states_check.gd": {
-      "agent": "kiln384569",
-      "at": "2026-08-21T17:51:46+00:00",
-      "task": "F-432",
-      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
     "tools/item_icons_check.gd": {
       "agent": "gale43d16e",
@@ -267,18 +249,6 @@
       "started": "2026-08-21T06:50:22+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
-    "F-432": {
-      "agent": "kiln384569",
-      "files": [
-        "systems/harvesting/harvestable.gd",
-        "autoload/harvest_world.gd",
-        "systems/harvesting/stump_builder.gd",
-        "tools/harvest_tree_states_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-21T17:51:46+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
-    },
     "F-435": {
       "agent": "hollow80855f",
       "files": [
@@ -289,20 +259,13 @@
         "world/environment/ground_fog.gdshader",
         "tools/blight_ground_check.gd",
         "docs/FINDINGS.md",
-        "autoload/world_delta_log.gd"
+        "autoload/world_delta_log.gd",
+        "docs/DECISIONS.md",
+        "docs/DELEGATION.md"
       ],
       "notes": [],
       "started": "2026-08-21T17:32:49+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:0e245ac7-67ca-4077-a49b-e1b4d92abe80"
-    },
-    "F-442": {
-      "agent": "kiln384569",
-      "files": [
-        "autoload/environment_vfx.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-21T17:58:42+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     }
   },
   "recent": {
@@ -683,6 +646,13 @@
       "hash": "110acd931bf8f852eeb1d22c5af4a4f487c30daa37bbe78f8ff583252196b56f",
       "task": "F-401",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/harvest": {
+      "agent": "kiln384569",
+      "at": "2026-08-21T18:28:32+00:00",
+      "hash": null,
+      "task": "F-432",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
     "assets/audit/lighting/f356_20_noon_control.png": {
       "agent": "emberd89a44",
@@ -1329,11 +1299,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:34f19dd1-60f4-4279-b7ba-e40ce133b27f"
     },
     "autoload/environment_vfx.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T01:08:42+00:00",
-      "hash": "ee78ad5221a3a0acc01346d0527e5bb06d472fa6d4b77985596093fcaea402ba",
-      "task": "F-341",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+      "agent": "kiln384569",
+      "at": "2026-08-21T18:28:38+00:00",
+      "hash": "8b82c72dd793746bc8f300f986551c268e6489a27ad3462eaf5693651066f07f",
+      "task": "F-442",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
     "autoload/god_mode_service.gd": {
       "agent": "flinta92725",
@@ -1348,6 +1318,13 @@
       "hash": "b9eb067138d8956c52f230cf8ef02831b0433cca94d792d7e2d7ce0ac2798ad2",
       "task": "F-414",
       "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
+    },
+    "autoload/harvest_world.gd": {
+      "agent": "kiln384569",
+      "at": "2026-08-21T18:28:32+00:00",
+      "hash": "01b45c297cd9ceed1abd4d0b9864e5ed4149d200ad261398b6f2546511b5cbb7",
+      "task": "F-432",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
     "autoload/player_net.gd": {
       "agent": "slate8b6811",
@@ -2742,12 +2719,26 @@
       "task": "F-439",
       "token": "CLAUDE_CODE_SESSION_ID:1e714a39-d8b1-4450-9d79-102af2c5081f"
     },
+    "systems/harvesting/harvestable.gd": {
+      "agent": "kiln384569",
+      "at": "2026-08-21T18:28:32+00:00",
+      "hash": "afc848bcf295e0771057e010097a99cf0768fad9648e067057346a53529004c0",
+      "task": "F-432",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
+    },
     "systems/harvesting/harvestable_def.gd": {
       "agent": "wickc3d79c",
       "at": "2026-08-21T17:37:48+00:00",
       "hash": "a3bf31ab7738a485540537334c3df4d6d8ae78d68d3ff8bf9d12fc25ae296ea0",
       "task": "F-431",
       "token": "CLAUDE_CODE_SESSION_ID:80d76563-dcca-426a-ad54-2909c9fa380a"
+    },
+    "systems/harvesting/stump_builder.gd": {
+      "agent": "kiln384569",
+      "at": "2026-08-21T18:28:32+00:00",
+      "hash": "3063db8be7e4bee879bb22238f0fcfb455de44ae46ff93ce29b0f4344a6cc665",
+      "task": "F-432",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
     "systems/health/player_health.gd": {
       "agent": "flinta92725",
@@ -3204,12 +3195,26 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "tools/harvest_tree_states_check.gd": {
+      "agent": "kiln384569",
+      "at": "2026-08-21T18:28:32+00:00",
+      "hash": "d20c9f1bd136f81a1bfd92f9eb9112cd342694d86e9fb0a2e605bde2f8a94935",
+      "task": "F-432",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
+    },
+    "tools/harvest_tree_states_shot.gd": {
+      "agent": "kiln384569",
+      "at": "2026-08-21T18:28:32+00:00",
+      "hash": "067e47d40c36d6bacaefe0504983f7baa03add308ce9afae4846712bdf5a107c",
+      "task": "F-432",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
+    },
     "tools/harvest_world_check.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T01:08:42+00:00",
-      "hash": "5fdd95ee469310e4f11a435944e9f4a473f9dd8de6de8f3a52b267bc6473f182",
-      "task": "F-343",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+      "agent": "kiln384569",
+      "at": "2026-08-21T18:28:38+00:00",
+      "hash": "96f6f233a04cd803d978538a4c8c372628588685317101f3decf96fce937f57d",
+      "task": "F-443",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
     "tools/interp_check.gd": {
       "agent": "ivy1bcae0",
@@ -3891,7 +3896,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 787,
+  "rev": 798,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9071,9 +9076,11 @@
       "title": "No world-focus prompt: harvestables, haulables and chests give the player no indication they are interactable"
     },
     "F-432": {
+      "done_at": "2026-08-21T18:28:32+00:00",
+      "done_by": "kiln384569",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Felling a tree has no visible harvest states, and its stump is another species"
     },
@@ -9145,11 +9152,22 @@
       "title": "The berry bushes' fruit was hidden under their own canopy, so the fruiting and picked states looked the same"
     },
     "F-442": {
+      "done_at": "2026-08-21T18:28:38+00:00",
+      "done_by": "kiln384569",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Sway dressing erases a mesh's material names, so nothing downstream can tell bark from leaves"
+    },
+    "F-443": {
+      "done_at": "2026-08-21T18:28:38+00:00",
+      "done_by": "kiln384569",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "harvest_world_check waits 0.3 s on a 0.25 s cooldown and flakes under load"
     }
   },
   "version": 1

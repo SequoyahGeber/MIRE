@@ -8407,3 +8407,39 @@ Reopened (was marked done 2026-08-21 by mossecba4b).
 Only the instrument and one of 46 assets are done. tools/asset_usage_check.gd is committed and fibre_plant is wired; the remaining 45 exports are still unreferenced and each needs companion work (art batch for food+gatherables, a placement system for paths, slope placement for the cliffs, a death-fragment spawn for the crawler gibs, water placement for fish_shoal, and an rm for three rename-orphaned icons). Stays open so it is picked up later.
 
 Commit at time of writing: `6af68a0`
+
+---
+
+### DONE · F-432 · kiln384569 · 2026-08-21T18:28:32+00:00
+
+**Felling a tree has no visible harvest states, and its stump is another species**
+
+Trees now shake on a landed hit, lean as they go down, and leave a stump cut from their own trunk (systems/harvesting/stump_builder.gd). HarvestWorld hands the Harvestable its presentation node. Found and fixed F-442 (sway dressing erased material names) and F-443 (flaky check timing) on the way.
+
+Files: `systems/harvesting/harvestable.gd`, `autoload/harvest_world.gd`, `systems/harvesting/stump_builder.gd`, `tools/harvest_tree_states_check.gd`, `tools/harvest_tree_states_shot.gd`, `assets/audit/harvest`
+
+Commit at time of writing: `47f57a4`
+
+---
+
+### DONE · F-442 · kiln384569 · 2026-08-21T18:28:38+00:00
+
+**Sway dressing erases a mesh's material names, so nothing downstream can tell bark from leaves**
+
+Sway materials carry the original's resource_name, and the cache keys carry it too.
+
+Files: `autoload/environment_vfx.gd`
+
+Commit at time of writing: `47f57a4`
+
+---
+
+### DONE · F-443 · kiln384569 · 2026-08-21T18:28:38+00:00
+
+**harvest_world_check waits 0.3 s on a 0.25 s cooldown and flakes under load**
+
+Wait 0.6 s, not 0.3, before the ray hit.
+
+Files: `tools/harvest_world_check.gd`
+
+Commit at time of writing: `47f57a4`

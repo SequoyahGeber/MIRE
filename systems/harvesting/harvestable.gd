@@ -20,6 +20,11 @@ const HARVESTABLE_DEFINITION := preload("res://systems/harvesting/harvestable_de
 ## ambient effect already is. Preloaded by path for the usual reason — a `class_name` is invisible to
 ## a headless `--script` run until the editor rescans the project.
 const ASSET_VFX := preload("res://world/environment/asset_vfx_library.gd")
+## F-432: the stump a felled tree leaves, cut from that tree's own trunk. Preloaded by path for the
+## usual reason — a `class_name` is invisible to a headless `--script` run until the editor rescans.
+const STUMP_BUILDER := preload("res://systems/harvesting/stump_builder.gd")
+## The tool axis, for the same preload-not-`class_name` reason.
+const HARVEST_LIB := preload("res://systems/harvesting/harvest_library.gd")
 const SYNC_NODE_NAME: StringName = &"HarvestSync"
 const VISUAL_NODE_NAME: StringName = &"HarvestVisual"
 const HARVESTABLE_GROUP: StringName = &"harvestable"
@@ -43,6 +48,33 @@ const IMPACT_ANCHOR_MAX_HEIGHT_M: float = 1.6
 const IMPACT_ANCHOR_FALLBACK_M: float = 0.55
 ## Bounds the one-time mesh walk `_measure_anchor_offset()` does on a prop's first landed hit.
 const IMPACT_MESH_PART_CAP: int = 48
+## F-432 — what a chop LOOKS like while it is happening.
+##
+## Reported from play as "harvest states of trees are not working", and the report was right: every
+## `tree_*` asset resolves to `wild_tree.tres`, which ships no `active_state_scenes`, so a tree went
+## from whole to gone with nothing in between. Authoring damage art per species is not available to
+## a procedurally generated world (see `systems/harvesting/stump_builder.gd`), so the states are
+## POSE rather than geometry, and they cost one node transform each:
+##
+##  · **Every landed hit shakes the tree**, hardest at the top of the swing and gone in
+##    [constant SHAKE_DURATION_SEC]. This is the feedback that says the axe connected.
+##  · **A damaged tree leans**, further the closer it is to coming down, so a half-chopped trunk
+##    reads as one you should finish rather than one you have not started.
+##
+## Both run off `health`, which is a replicated on-change property every peer already has, so a
+## client watching a teammate chop sees the same tree shake — no new RPC, no `PROTOCOL_VERSION`
+## bump. Presentation only: the host still owns whether the prop broke.
+const SHAKE_DURATION_SEC: float = 0.42
+## Peak shake angle, in degrees, for a hit that does not fell the prop. Small on purpose — a tree is
+## a heavy thing and a visible wobble of a couple of degrees at the base is metres of movement at the
+## crown.
+const SHAKE_PEAK_DEG: float = 2.6
+## Oscillations across the whole shake. Two and a bit reads as a thud rather than a wobble.
+const SHAKE_CYCLES: float = 2.4
+## How far a prop leans once it is one hit from depleted. Reached progressively: a prop at half
+## health leans half of it.
+const MAX_LEAN_DEG: float = 5.0
+
 ## The cross-system melee target seam (task 2.8). Anything in this group must implement
 ## `host_apply_damage(amount, instigator_peer_id) -> bool` and expect host-only callers; 2.10's
 ## enemies join it too and CombatService needs no change when they do.
@@ -73,6 +105,8 @@ var health: int = 0:
 		health = value
 		if value < previous:
 			_play_impact_vfx(value == 0)
+			_start_shake()
+		_apply_pose()
 
 var visual_state: int = 0:
 	set(value):
@@ -111,6 +145,16 @@ var _visual_refresh_scheduled: bool = false
 var _impact_muted: bool = false
 var _spawn_msec: int = 0
 var _impact_anchor_offset: float = -1.0
+## F-432 presentation. `_presentation` is the node that DRAWS this prop when the definition ships no
+## state scenes of its own — the world builder's own `Visual`, handed over by
+## `autoload/harvest_world.gd` — and `_presentation_rest` is the transform it was built with, which
+## every pose is applied on top of. `_shake_remaining` runs the hit reaction; `_shake_axis` is the
+## horizontal axis it swings about, fixed per prop so one tree does not shake a different way each
+## time it is struck.
+var _presentation: Node3D = null
+var _presentation_rest: Transform3D = Transform3D.IDENTITY
+var _shake_remaining: float = 0.0
+var _shake_axis: Vector3 = Vector3.RIGHT
 var _respawn_remaining: float = 0.0
 var _last_request_msec: Dictionary[int, int] = {}
 
@@ -154,6 +198,22 @@ func set_visual_hook(hook: Callable) -> void:
 	_visual_hook = hook
 	if is_inside_tree():
 		_schedule_visual_refresh()
+
+
+## The node that draws this prop, for props that keep the world builder's own geometry (F-432).
+##
+## `set_visual_hook()` answers "show or hide it" and deliberately says nothing about WHAT it is,
+## because a batched prop is a MultiMesh slot rather than a node. This says "and here is the node,
+## when there is one" — which is what the hit shake, the damage lean and the stump cut from this
+## tree's own trunk all need. Optional: a batched prop never gets one and simply has no pose.
+func set_presentation(node: Node3D) -> void:
+	_presentation = node
+	_presentation_rest = node.transform if node != null else Transform3D.IDENTITY
+	# A fixed axis per prop, derived from where it stands, so a given tree always shakes the same
+	# way — a tree that picked a new direction per hit reads as jelly rather than as timber.
+	var angle: float = float(hash(name)) * 0.001
+	_shake_axis = Vector3(cos(angle), 0.0, sin(angle))
+	_apply_pose()
 
 
 ## The tool-aware host seam (F-113). `CombatService` calls this in preference to `host_apply_damage`
@@ -401,6 +461,66 @@ func _yield_amount() -> int:
 	return definition.yield_amount
 
 
+## Starts the hit reaction. Client-local and free of authority for the same reason
+## `_play_impact_vfx()` is: it runs off `health`, which every peer already has, and it moves nothing
+## but one node's rotation. Muted in exactly the cases the impact VFX is — a depletion replayed from
+## memory, and the replication catch-up right after this node enters the tree — because a stump felled
+## an hour ago must not lurch when a client finally hears about it.
+func _start_shake() -> void:
+	if _impact_muted or not is_inside_tree():
+		return
+	if Time.get_ticks_msec() - _spawn_msec < IMPACT_ARM_DELAY_MSEC:
+		return
+	if _pose_target() == null:
+		return
+	_shake_remaining = SHAKE_DURATION_SEC
+	set_process(true)
+
+
+func _process(delta: float) -> void:
+	_shake_remaining = maxf(_shake_remaining - delta, 0.0)
+	_apply_pose()
+	if _shake_remaining <= 0.0:
+		set_process(false)
+
+
+## The node a pose is applied to: the world builder's own visual when there is one, and otherwise
+## the state scene this component instantiated. Null for a batched prop, which has no node at all.
+func _pose_target() -> Node3D:
+	if is_instance_valid(_presentation):
+		return _presentation
+	return _visual
+
+
+## Lean plus shake, written onto the presentation node in one assignment.
+##
+## The lean is the persistent part — how far through being felled this prop is — and the shake decays
+## into it, so a hit on a nearly-dead tree settles at its lean rather than snapping back upright.
+func _apply_pose() -> void:
+	var target: Node3D = _pose_target()
+	if target == null:
+		return
+	var rest: Transform3D = _presentation_rest if target == _presentation else Transform3D.IDENTITY
+	var angle: float = deg_to_rad(_lean_degrees() + _shake_degrees())
+	target.transform = rest if is_zero_approx(angle) else rest.rotated_local(_shake_axis, angle)
+
+
+func _lean_degrees() -> float:
+	if definition == null or not active or definition.max_health <= 0:
+		return 0.0
+	var damage: float = 1.0 - float(health) / float(definition.max_health)
+	return clampf(damage, 0.0, 1.0) * MAX_LEAN_DEG
+
+
+func _shake_degrees() -> float:
+	if _shake_remaining <= 0.0:
+		return 0.0
+	var progress: float = 1.0 - _shake_remaining / SHAKE_DURATION_SEC
+	# Amplitude decays as (1 - t)^2 so the first swing carries the hit and the tail settles quietly.
+	var decay: float = (1.0 - progress) * (1.0 - progress)
+	return SHAKE_PEAK_DEG * decay * sin(progress * TAU * SHAKE_CYCLES)
+
+
 func _physics_process(delta: float) -> void:
 	if active or not _owns_world_mutation():
 		return
@@ -499,6 +619,17 @@ func _refresh_visual() -> void:
 		remove_child(_visual)
 		_visual.queue_free()
 		_visual = null
+
+	# F-432: a felled tree leaves a stump cut from its OWN trunk, in preference to the definition's
+	# one authored stump. See `systems/harvesting/stump_builder.gd` for why this is generated rather
+	# than authored per species; it answers null for anything that is not a standing tree, and the
+	# definition's `depleted_scene` then applies as before.
+	if not active:
+		var stump: Mesh = _generated_stump()
+		if stump != null:
+			_show_stump(stump)
+			return
+
 	if scene == null:
 		return
 
@@ -521,6 +652,43 @@ func _refresh_visual() -> void:
 		var merged := MeshMerge.collapse(_visual, source)
 		if merged != null:
 			DrawPolicy.apply(merged, merged.mesh.get_aabb(), maxf(global_basis.get_scale().y, 0.001))
+
+
+## The stump this prop leaves when felled, or null when it should use whatever its definition
+## authored. Only for props that draw the world builder's own geometry — a definition that ships its
+## own damage-state art (`harvest_tree_intact`) already has a stump drawn to match it — and only for
+## CHOP targets, because "cut it off at knee height" is a statement about wood.
+func _generated_stump() -> Mesh:
+	if definition == null or not definition.uses_authored_visual():
+		return null
+	if definition.required_tool != HARVEST_LIB.Tool.CHOP:
+		return null
+	var mesh: Mesh = _presentation_mesh()
+	if mesh == null:
+		return null
+	return STUMP_BUILDER.stump_for(StringName(_asset_id()), mesh)
+
+
+func _presentation_mesh() -> Mesh:
+	if not is_instance_valid(_presentation):
+		return null
+	var instance := _presentation as MeshInstance3D
+	if instance != null:
+		return instance.mesh
+	for child: Node in _presentation.find_children("*", "MeshInstance3D", true, false):
+		var found := child as MeshInstance3D
+		if found != null and found.mesh != null:
+			return found.mesh
+	return null
+
+
+func _show_stump(stump: Mesh) -> void:
+	var instance := MeshInstance3D.new()
+	instance.name = VISUAL_NODE_NAME
+	instance.mesh = stump
+	_visual = instance
+	add_child(instance)
+	DrawPolicy.apply(instance, stump.get_aabb(), maxf(global_basis.get_scale().y, 0.001))
 
 
 func _schedule_visual_refresh() -> void:

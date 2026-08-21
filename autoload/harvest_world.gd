@@ -299,6 +299,11 @@ func _wire_node_holder(
 			if is_instance_valid(original_visual):
 				original_visual.visible = shown
 		)
+		# F-432: and the node itself, not just a way to hide it. A prop that keeps the world
+		# builder's geometry has no state scenes to swap, so its damage states are POSE — the shake
+		# on a landed hit and the lean as it goes down — and the stump it leaves is cut from this
+		# very mesh. All three need the node, which only this file knows how to find.
+		harvestable.call("set_presentation", original_visual)
 
 	# Reparent while Harvestable is still outside the tree, so its _ready() discovers collision and
 	# builds its synchronizer only after the complete, identical subtree exists on every peer.
