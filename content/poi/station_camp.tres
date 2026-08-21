@@ -6,18 +6,50 @@
 script = ExtResource("1_station_camp")
 id = &"station_camp"
 display_name = "Abandoned Camp"
-scene_path = "res://assets/crafting_stations/exports/station_workbench_primitive.glb"
+
+; F-402. This used to point straight at
+; `res://assets/crafting_stations/exports/station_workbench_primitive.glb`, so the
+; entire "camp" was one bench standing alone in open ground with no fire, no
+; shelter and no clutter. It read as a bug rather than a location, and that is
+; exactly how it got reported from play: "there was just a random crafting bench
+; in the middle of the map as well."
+;
+; `scene_path` is one file, so anything richer than one mesh has to be an authored
+; group — `entities/props/camp_abandoned.tscn` is twenty-eight kit pieces from
+; `assets/camp/` and `assets/crafting_stations/`, six of which F-395 recorded as
+; built, exported and placed NOWHERE on the procedural island.
+;
+; The scene's ORIGIN is the workbench, deliberately: `procedural_world.gd` stamps
+; `marker_name` at the site root and `CraftingService.MAX_STATION_DISTANCE_M` is
+; 3.25 m, so the bench has to be the thing standing there. The camp's stone
+; furnace carries its own marker from inside the scene.
+scene_path = "res://entities/props/camp_abandoned.tscn"
 marker_kind = &"station"
 marker_name = "Station_station_workbench_primitive"
 required = true
 placement_priority = 10
-target_count = 1
-clearance_m = 16.0
-min_spacing_m = 64.0
+
+; 1 -> 4. F-402's second half: one camp on a 295 m island means most runs never
+; find it, and the one that exists carries the map's entire crafting affordance.
+; Four is still scarce enough that finding one matters — they sit at least 120 m
+; apart, which is most of a walk across the island.
+target_count = 4
+min_spacing_m = 120.0
+
+; 16 -> 26 m. The clearance ring is what keeps OTHER kinds off a site, and the
+; camp is now about 14 m across rather than 2 m. 26 leaves a few metres of clear
+; ground around the fence line instead of putting an enemy nest inside the tents.
+clearance_m = 26.0
 biomes = Array[StringName]([])
 height_min = 2.2
 height_max = 40.0
 radius_min_fraction = 0.15
 radius_max_fraction = 0.7
-max_slope_m = 1.5
-flatness_probe_m = 3.0
+
+; The whole group is ONE rigid scene: every prop sits at the site's y, so ground
+; that falls away under the far side leaves a barrel floating. The probe has to
+; be sized to the thing being placed, so it goes 3 -> 7 m; the tolerance relaxes
+; 1.5 -> 2.0 to buy that back, because a 7 m probe on rolling ground rejects
+; almost everything at 1.5.
+max_slope_m = 2.0
+flatness_probe_m = 7.0
