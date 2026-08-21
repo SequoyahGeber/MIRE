@@ -168,6 +168,15 @@ PALETTE: dict[str, Swatch] = {
     # it never competes with the reserved Mire purple or Ward teal.
     "fungus_cap": Swatch("#A8437F", 0.88, note="pink toadstool cap"),
     "fungus_blue": Swatch("#4A79A8", 0.88, note="blue toadstool cap"),
+    #: The EDIBLE fungus, and it has to be a different family of colour from the
+    #: two above, not a different shade of them. `fungus_cap`'s pink and
+    #: `fungus_blue`'s blue are mire-growth signal colours — they mean "this grew
+    #: out of the corruption" — so a mushroom a player is meant to eat cannot
+    #: borrow either. A field mushroom is buff-brown with a paler stem, which is
+    #: both what the real thing looks like and the one fungus colour the swamp has
+    #: not already spoken for.
+    "fungus_edible": Swatch("#9C7B55", 0.90, note="buff-brown edible mushroom cap"),
+    "fungus_gill": Swatch("#DCCDB4", 0.88, note="pale gills and stem of an edible mushroom"),
     # Gatherable plants and deposits (A-011). Added, never edited. Berry red is
     # deliberately a true red and not the Mire's purple — a berry a player has to
     # decide about must never read as corruption, which is the one hue that already
@@ -177,6 +186,12 @@ PALETTE: dict[str, Swatch] = {
     # learn but not something they spot across a clearing.
     "berry": Swatch("#B32F35", 0.84, note="ripe edible berry; true red, never toward the Mire"),
     "berry_bloom": Swatch("#C9909A", 0.78, note="pale waxy bloom on berry skin; the poison tell"),
+    #: Tree fruit, which is not a berry: an apple is bigger, lighter and never one
+    #: flat colour. `apple` is the sunward blush and `apple_shade` the green-gold
+    #: cheek that never saw the sun, and every apple gets both — a single-colour
+    #: apple reads as a red ball, which is what a cherry looks like.
+    "apple": Swatch("#C2402F", 0.82, note="sunward blush on ripe apple skin"),
+    "apple_shade": Swatch("#C9B24C", 0.84, note="the green-gold cheek of the same apple"),
     "wax": Swatch("#D8AC5E", 0.88, note="honeycomb wax"),
     "honey": Swatch("#C67C24", 0.42, note="honey in the cell; the low roughness is the wetness"),
     "clay": Swatch("#A57E5B", 0.68, note="riverbank clay; less rough than dirt because it is damp"),

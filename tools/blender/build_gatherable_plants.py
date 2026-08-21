@@ -55,6 +55,7 @@ from mire_art import (  # noqa: E402
     radial,
     reset_materials,
     tapered_between,
+    trunk_tube,
     world_bounds,
 )
 from godot_import_lock import import_cache_guard  # noqa: E402
@@ -114,6 +115,19 @@ SIZE: dict[str, tuple[float, str, float]] = {
     # not to keep a pine thin. Widened deliberately, with the asset measured at
     # 0.59 m across including the needle sprigs at its foot.
     "resin_node": (0.74, "height", 0.64),
+    # A standard orchard apple is 4-8 m and its crown is as wide as it is tall,
+    # so the footprint cap here is nearly the height rather than a fraction of it.
+    # Capping it tighter would produce the one thing an apple tree must not be:
+    # a tall narrow tree with apples on.
+    "apple_tree_full": (5.20, "height", 5.30),
+    "apple_tree_picked": (5.20, "height", 5.30),
+    # Sized on SPREAD, not height, and that is forced rather than preferred: a
+    # state pair is scaled on the geometry it SHARES, and what these two share is
+    # a flat mat of leaf litter 60 mm tall. Asking for a 0.19 m height measured
+    # the litter, found 0.06, and scaled the whole patch up 3.8x — out to 1.70 m
+    # across. The shared geometry has to be measured on an axis it actually has.
+    "mushroom_patch_full": (0.62, "spread", 0.70),
+    "mushroom_patch_harvested": (0.62, "spread", 0.70),
 }
 
 SIZE_TOLERANCE = 0.02
@@ -126,20 +140,79 @@ MAX_MATERIALS = 4
 #: draw cost, so an exception has to buy something — `poison_berry_bush` spends its
 #: fifth material on the pale bloom that is the entire reason the asset exists, and
 #: spends no geometry at all doing it (`paint_faces`).
-MATERIAL_ALLOWANCE = {"poison_berry_bush": 5}
+MATERIAL_ALLOWANCE = {"poison_berry_bush": 5,
+                      # Cap, gill, litter, buried wood and moss. Drop any one and the
+                      # troop stops reading as something that GREW there: a mushroom
+                      # standing on bare ground reads as placed (see the builder).
+                      "mushroom_patch_full": 5,
+                      # Two barks, two leaf tones, and the apple's own two: the
+                      # blush and the cheek are the asset (see `apple_fruit`).
+                      "apple_tree_full": 6, "apple_tree_picked": 5}
+#: Per-asset exceptions to the triangle cap, each with a reason, same discipline.
+#: The three berry bushes are the game's signature forage node and the ONE thing
+#: they have to do is read as fruiting or picked from across a clearing. The 900
+#: cap was met by the version that hid its fruit under the canopy, where it cost
+#: almost nothing and communicated almost nothing (F-429). Seventy-odd berries on
+#: exposed canes is what the read costs; it is spent on the asset's entire point.
+TRIANGLE_ALLOWANCE = {"berry_bush_full": 1300, "poison_berry_bush": 1300,
+                      "berry_bush_harvested": 1000,
+                      # The apple tree is a 5 m landmark, not a shin-high node
+                      # placed by the hundred: it is scattered as a find, and the
+                      # budget the rest of this kit runs on is sized for props a
+                      # player wades through.
+                      "apple_tree_full": 2600, "apple_tree_picked": 2000}
 
-#: The parts every berry-bush state shares. `create_asset` centres the pair on
-#: these and nothing else, so adding fruit cannot move the bush.
-BUSH_ANCHOR_PREFIXES = ("frame_", "bush_")
+#: The parts each state SET shares. `create_asset` centres and scales a state on
+#: these and nothing else, so adding fruit cannot move or resize the plant under
+#: it. Keyed per asset now rather than one global tuple: the apple tree needs the
+#: same guarantee and its shared geometry is a trunk and a canopy, not a bush.
+ANCHOR_PREFIXES: dict[str, tuple[str, ...]] = {
+    "berry_bush_full": ("frame_", "bush_"),
+    "berry_bush_harvested": ("frame_", "bush_"),
+    "poison_berry_bush": ("frame_", "bush_"),
+    "apple_tree_full": ("apple_frame_",),
+    "apple_tree_picked": ("apple_frame_",),
+    "mushroom_patch_full": ("patch_frame_",),
+    "mushroom_patch_harvested": ("patch_frame_",),
+}
 
 #: The bush's three foliage masses, shared by the frame builder and by
 #: `berry_sites` so fruit can be placed on an actual surface rather than at a
 #: guessed radius. Overlapping hard and unequal: three masses give a silhouette
 #: shoulders, three equal masses sitting apart give it three heads.
+#: Deliberately SMALL now. They are the body the canes grow out of, not the bush
+#: itself: at their first sizes (0.29/0.23/0.20 radius) they engulfed every cane
+#: and every leaf spray, and the plant went back to reading as a heap of green
+#: rocks with fruit tucked under one edge. A bush's outline should be made by the
+#: things that stick out of it.
 BUSH_MASSES = [
-    ((0.00, 0.03, 0.44), (0.29, 0.27, 0.25)),
-    ((-0.19, -0.10, 0.33), (0.23, 0.22, 0.21)),
-    ((0.17, -0.13, 0.30), (0.20, 0.21, 0.18)),
+    ((0.00, 0.02, 0.26), (0.175, 0.165, 0.150)),
+    ((-0.13, -0.07, 0.19), (0.140, 0.135, 0.125)),
+    ((0.12, -0.09, 0.17), (0.125, 0.130, 0.115)),
+]
+
+#: The arching canes. A real bramble or blueberry does not grow as a pile of
+#: foliage with fruit tucked underneath it — it throws canes up and over, and the
+#: fruit hangs at their OUTER ends, past the leaves, where the light is. That is
+#: not a stylistic note: it is the whole reason a berry bush is visible as a berry
+#: bush from across a clearing, and the first build got it exactly backwards.
+#: `berry_sites` reads this table so the fruit is on the canes rather than at a
+#: guessed point on a leaf mass.
+#:
+#: (heading angle, cane length, rise, droop) — see `arc_spine`.
+#: Authored at FINAL size so `create_asset`'s scale-to-band comes out near 1.0.
+#: Sized by the rise and droop rather than by eye: a cane peaks where
+#: `rise == droop * 2.2 * t^1.2`, so droop has to be the larger share for the cane
+#: to come over at all. The first retune used a rise that never turned, the height
+#: then measured 0.44 m against a 0.78 m band, and the 1.8x scale-up that followed
+#: threw the bush out to 2.25 m across — three times its footprint cap.
+BUSH_CANES = [
+    (0.35, 0.41, 1.45, 0.88),
+    (1.62, 0.36, 1.32, 0.80),
+    (2.74, 0.39, 1.40, 0.85),
+    (3.86, 0.33, 1.24, 0.76),
+    (4.98, 0.37, 1.36, 0.82),
+    (5.70, 0.31, 1.18, 0.72),
 ]
 
 
@@ -212,27 +285,23 @@ def berry_sites(seed: int) -> list[tuple[Vector, float, int]]:
     the picked bush's leftover stalks and the poison bush's fruit are in exactly
     the same places.
 
-    Each cluster is placed on the surface of one of the three foliage masses in
-    turn, not at a fixed radius from the bush's axis. A fixed radius was the first
-    attempt and it buried most of the fruit: the masses are not a sphere, so one
-    radius is outside the small masses and well inside the big one, and eight of
-    eleven clusters ended up invisible. Elevation is biased downward because that
-    is where berries actually hang, and because the underside of the canopy is
-    where a player standing next to the bush is looking.
+    F-429: these now sit on the OUTER THIRD OF EACH CANE, hanging just below it,
+    which is where a bramble or a blueberry actually fruits. The first version
+    placed them on the surface of the foliage masses with the elevation biased
+    downward — under the canopy, in its shadow, from every angle a player is
+    likely to stand. Eleven of twelve clusters were effectively invisible, which
+    is why the fruiting bush and the picked bush looked the same.
     """
     rng = random.Random(seed + 7)
+    origin = Vector((0.0, 0.0, 0.06))
     sites = []
-    for index, (angle, _rad) in enumerate(radial(12, 1.0, seed=seed + 3, jitter=0.42,
-                                                 radius_jitter=0.0)):
-        (cx, cy, cz), (rx, ry, rz) = BUSH_MASSES[index % len(BUSH_MASSES)]
-        elevation = rng.uniform(-0.62, 0.20)
-        reach = 0.97
-        centre = Vector((
-            cx + math.cos(angle) * math.cos(elevation) * rx * reach,
-            cy + math.sin(angle) * math.cos(elevation) * ry * reach,
-            cz + math.sin(elevation) * rz * reach,
-        ))
-        sites.append((centre, rng.uniform(0.042, 0.058), rng.randint(4, 6)))
+    for index, (angle, length, rise, droop) in enumerate(BUSH_CANES):
+        spine = arc_spine(origin, angle, length, rise, droop, segments=8)
+        for step, fraction in enumerate((0.72, 1.0)):
+            point = spine[min(len(spine) - 1, int(fraction * (len(spine) - 1)))]
+            hang = Vector((rng.uniform(-0.02, 0.02), rng.uniform(-0.02, 0.02),
+                           -rng.uniform(0.045, 0.075)))
+            sites.append((point + hang, rng.uniform(0.038, 0.050), rng.randint(6, 7)))
     return sites
 
 
@@ -247,7 +316,11 @@ def berry_cluster(batch: Batch, rng: random.Random, centre: Vector, radius: floa
                              radius_jitter=0.5):
         offset = Vector((math.cos(angle) * abs(rad), math.sin(angle) * abs(rad),
                          -abs(rad) * rng.uniform(0.2, 0.9)))
-        size = rng.uniform(0.034, 0.044)
+        # ~30-40 mm across, which is a big blackberry. The first build used this
+        # number as a RADIUS, making every berry 7-9 cm — bigger than the leaves
+        # around it. It went unnoticed for as long as the fruit was buried under
+        # the canopy where nothing could be compared against it.
+        size = rng.uniform(0.015, 0.020)
         batch.blob(token, centre + offset, (size, size, size * 0.92), rng)
 
 
@@ -259,24 +332,51 @@ def berry_cluster(batch: Batch, rng: random.Random, centre: Vector, radius: floa
 def build_bush_frame(seed: int, leaf_token: str, leaf_highlight: str) -> list:
     """The woody frame and foliage every berry-bush state shares.
 
-    Three overlapping masses, not one and not eighteen: one reads as an egg,
-    eighteen reads as a bag of peas, three gives the silhouette shoulders.
+    Rebuilt for F-429. The first version was three overlapping foliage blobs with
+    four short stems buried inside them, and it read as a heap of green rocks:
+    the preview render shows three of them side by side and the only difference
+    between the fruiting bush and the picked one is a few red specks along the
+    bottom edge, which is the one thing this asset exists to communicate.
+
+    A bramble or a blueberry is a set of ARCHING CANES. They leave the crown of
+    the root, lift, and fall over; the leaves ride along them; and the fruit hangs
+    at their outer ends, past the foliage, where light reaches it. Building that
+    shape gets the berries out where they can be seen for free — no bigger fruit,
+    no brighter red, just the fruit where the plant actually puts it.
+
+    The three foliage masses stay, because a bush still needs a body under the
+    canes and they are what the silhouette's shoulders come from.
     """
     rng = random.Random(seed)
     made = []
-    # Woody stems, fanned so the bush has structure where the foliage parts.
-    for index, (angle, rad) in enumerate(radial(4, 0.10, seed=seed, jitter=0.6, radius_jitter=0.4)):
-        base = (math.cos(angle) * abs(rad) * 0.4, math.sin(angle) * abs(rad) * 0.4, 0.0)
-        tip = (math.cos(angle) * abs(rad) * 1.5, math.sin(angle) * abs(rad) * 1.5,
-               rng.uniform(0.30, 0.42))
-        # Short, thick and mostly inside the foliage. Long thin stems fanning out
-        # below the canopy read as black spider legs at any distance, which is what
-        # the first build looked like.
-        made.append(cylinder_between(f"frame_stem_{index}", base, tip, 0.026,
-                                     mat("wood_bark"), vertices=6))
+    origin = Vector((0.0, 0.0, 0.06))
+    for index, (angle, length, rise, droop) in enumerate(BUSH_CANES):
+        spine = arc_spine(origin, angle, length, rise, droop, segments=3)
+        for step in range(len(spine) - 1):
+            made.append(cylinder_between(
+                f"frame_cane_{index}_{step}", spine[step], spine[step + 1],
+                0.012 - step * 0.0022, mat("wood_bark"), vertices=4))
+        # Leaves ride the cane rather than sitting in one mass at the middle, so
+        # the outer half of the plant is leafy and the fruit hangs past THAT.
+        # Leaf sprays ELONGATED ALONG the cane. Round flat hulls parked at two
+        # points on a visible stick read as parasols — the preview showed a row of
+        # little green umbrellas — because a disc on a pole is a mushroom, whatever
+        # colour it is. Stretching them down the cane's own heading turns them back
+        # into foliage riding a branch.
+        # Sampled on the SPINE, not on a chord between its ends. Lerping base to
+        # tip walks a straight line under an arc, so every leaf spray hung below
+        # the cane it belongs to and the canes came out as bare brown antennae
+        # over the foliage — which is the one thing a live bush never looks like.
+        for step, point in enumerate(spine[1:]):
+            spray = hull(f"frame_leaf_{index}_{step}", point,
+                         (0.098, 0.086, 0.052), mat(leaf_token),
+                         seed=seed + index * 17 + step,
+                         subdivisions=0, lumps=4, lump=0.46, sharpness=2.0)
+            spray.rotation_euler = (0.0, 0.0, angle)
+            made.append(spray)
     for index, (centre, radius) in enumerate(BUSH_MASSES):
         mass = hull(f"bush_mass_{index}", centre, radius, mat(leaf_token), seed=seed + index * 31,
-                    lumps=8, lump=0.42, sharpness=1.9, jitter=0.05)
+                    subdivisions=0, lumps=8, lump=0.42, sharpness=1.9, jitter=0.05)
         # Sun-caught crown, painted rather than modelled: costs no geometry and
         # stops the bush reading as one flat green blob.
         #
@@ -609,6 +709,315 @@ def build_resin_node(seed: int) -> None:
     return None
 
 
+# ---------------------------------------------------------------------------
+# The apple tree (F-429)
+# ---------------------------------------------------------------------------
+#
+# Sequoyah asked for "a beautiful apple tree", and the way to get one is to build
+# a `Malus domestica` rather than a generic tree with red dots on it. What the
+# real thing is, and what each fact costs here:
+#
+#   * A **short, thick trunk that forks LOW** — a standard orchard apple breaks
+#     into three to five scaffold limbs between about 1.2 m and 1.8 m, which is
+#     barely above head height. That low fork is most of the tree's character and
+#     it is the first thing a generic tree gets wrong.
+#   * A crown **as wide as the tree is tall, or wider**, and rounded rather than
+#     conical. An apple spends its growth sideways.
+#   * **Gnarled, angular limbs.** Apple wood grows in kinks, not sweeps; the
+#     limbs change direction at every fork, which is why an old apple tree reads
+#     as characterful where a birch reads as clean.
+#   * Fruit at the **periphery**, on short spurs, singly and in pairs — never in
+#     bunches, and never deep inside the crown where there is no light. This is
+#     also what makes the picked state legible: the fruit is on the outside, so
+#     removing it changes the silhouette's edge.
+#   * Apples are **two-toned**. A sunward blush and a green-gold cheek, on every
+#     fruit. One flat red is a cherry.
+
+#: The scaffold limbs: (heading, tilt from vertical, length). Deliberately uneven
+#: — an apple tree that is symmetrical is a lollipop, and the asymmetry is free.
+#: Authored at FINAL size, so `create_asset`'s scale-to-band lands near 1.0. The
+#: first cut built a 3.8 m tree and let the 5.2 m band stretch it, which took the
+#: crown out to 7.5 m across — an apple tree is as wide as it is tall, not half
+#: as wide again.
+APPLE_LIMBS = [
+    (0.42, 0.55, 2.45),
+    (1.78, 0.64, 2.20),
+    (3.05, 0.48, 2.65),
+    (4.31, 0.68, 2.10),
+    (5.42, 0.58, 2.35),
+]
+APPLE_FORK_Z = 1.55
+APPLE_SEED = 4409
+
+
+def apple_limb_tips(seed: int) -> list[tuple[Vector, Vector]]:
+    """Where each scaffold limb ends up, and the direction it got there by.
+
+    Shared by the frame builder and by `apple_sites`, so the fruit hangs on the
+    limbs the tree actually has rather than at a guessed radius — the same
+    mistake `berry_sites` was making before F-429, one scale up.
+    """
+    rng = random.Random(seed + 3)
+    tips = []
+    for heading, tilt, length in APPLE_LIMBS:
+        base = Vector((0.0, 0.0, APPLE_FORK_Z))
+        direction = Vector((math.cos(heading) * math.sin(tilt),
+                            math.sin(heading) * math.sin(tilt),
+                            math.cos(tilt))).normalized()
+        # One kink per limb. Apple wood does not sweep, it turns.
+        knee = base + direction * (length * 0.52)
+        turn = Vector((rng.uniform(-0.28, 0.28), rng.uniform(-0.28, 0.28),
+                       rng.uniform(-0.16, 0.20)))
+        onward = (direction + turn).normalized()
+        tip = knee + onward * (length * 0.48)
+        tips.append((knee, tip))
+    return tips
+
+
+def apple_canopy_masses(seed: int) -> list[tuple[Vector, float]]:
+    """The crown's leaf masses: centre and radius, in build order.
+
+    Shared by the frame builder and by `apple_sites`, so the fruit can be placed
+    on the crown's actual surface. Placing it at a guessed offset below the limb
+    is what the first cut did, and it put every apple inside the canopy's shadow
+    where nothing could see it — the identical mistake the berry bush had, one
+    scale up, discovered in the same afternoon.
+    """
+    masses = []
+    for knee, tip in apple_limb_tips(seed):
+        for fraction, size in ((0.55, 0.70), (0.88, 0.89), (1.06, 0.65)):
+            masses.append((knee.lerp(tip, fraction) + Vector((0.0, 0.0, 0.10)), size))
+    masses.append((Vector((0.0, 0.0, APPLE_FORK_Z + 1.72)), 1.16))
+    return masses
+
+
+def build_apple_frame(seed: int) -> list:
+    """Trunk, scaffold limbs and canopy — everything both apple states share."""
+    rng = random.Random(seed)
+    made = []
+    points, radii = trunk_tube(
+        APPLE_FORK_Z, 0.240, 0.196, Vector((0.06, -0.04, 0.0)), 0.010, 3,
+        (mat("wood_bark_dark"), mat("wood_bark"), mat("wood_bark")), rng, seed,
+        vertices=8, flare=1.95, flare_power=1.4, flare_top=0.34, toe=0.55, toe_top=0.26,
+        taper_power=1.05, grain=0.095, flute=0.66, shade_columns=1, lit_columns=0,
+    )
+    # `trunk_tube` names its mesh "Trunk", which is not in this asset's anchor
+    # prefix — so the state pair grounded and scaled on the LIMBS alone and the
+    # whole tree sat three metres underground. Renamed into the anchor rather
+    # than special-cased, because the trunk is exactly the geometry the two
+    # states must be measured on.
+    for obj in list(bpy.context.scene.objects):
+        if obj.type == "MESH" and obj.name.startswith("Trunk"):
+            obj.name = f"apple_frame_{obj.name.lower()}"
+            made.append(obj)
+
+    tips = apple_limb_tips(seed)
+    for index, (knee, tip) in enumerate(tips):
+        base = Vector((0.0, 0.0, APPLE_FORK_Z - 0.10))
+        made.append(tapered_between(f"apple_frame_limb_{index}_a", base, knee,
+                                    radii[-1] * 0.52, radii[-1] * 0.36,
+                                    mat("wood_bark"), 6))
+        made.append(tapered_between(f"apple_frame_limb_{index}_b", knee, tip,
+                                    radii[-1] * 0.36, radii[-1] * 0.18,
+                                    mat("wood_bark"), 5))
+        # Two twigs off each limb tip, so the crown has something to sit on and
+        # the picked tree is not a bare fork.
+        for step in range(2):
+            spur = tip + Vector((rng.uniform(-0.34, 0.34), rng.uniform(-0.34, 0.34),
+                                 rng.uniform(0.10, 0.42)))
+            made.append(tapered_between(f"apple_frame_spur_{index}_{step}", tip, spur,
+                                        radii[-1] * 0.16, radii[-1] * 0.07,
+                                        mat("wood_bark"), 4))
+    # Canopy: leaf masses riding the limbs, biggest at the outside. A single
+    # capping ball would be a lollipop; the point of an apple tree is that the
+    # crown is broad and lumpy and you can see the limbs inside it.
+    for index, (centre, size) in enumerate(apple_canopy_masses(seed)):
+        mass = hull(f"apple_frame_canopy_{index}", centre,
+                    (size, size * 0.94, size * 0.68), mat("leaf"),
+                    seed=seed + index * 23, subdivisions=0,
+                    lumps=5, lump=0.40, sharpness=2.0, droop=0.24, droop_lobes=2)
+        paint_faces(mass, mat("leaf_light"), min_normal_z=0.32, min_height=0.50,
+                    coverage=0.58, seed=seed + index * 7)
+        made.append(mass)
+    return made
+
+
+def apple_sites(seed: int) -> list[Vector]:
+    """Where the fruit hangs: ON the crown's outer surface, singly and in pairs.
+
+    Each site sits just proud of one leaf mass, biased outward and downward but
+    never far enough under it to be in its shadow — which is exactly how an apple
+    spur bears, and also the only way the fruit is visible at the range a player
+    decides whether to walk over.
+    """
+    rng = random.Random(seed + 11)
+    sites = []
+    for index, (centre, size) in enumerate(apple_canopy_masses(seed)):
+        for step in range(rng.randint(3, 5)):
+            angle = rng.uniform(0.0, math.tau)
+            elevation = rng.uniform(-0.55, 0.10)
+            reach = 1.02
+            sites.append(Vector((
+                centre.x + math.cos(angle) * math.cos(elevation) * size * reach,
+                centre.y + math.sin(angle) * math.cos(elevation) * size * 0.94 * reach,
+                centre.z + math.sin(elevation) * size * 0.68 * reach - 0.04,
+            )))
+    return sites
+
+
+def apple_fruit(batch: Batch, rng: random.Random, centre: Vector) -> None:
+    """One apple: a blushed body, a shaded cheek and a stalk.
+
+    The two tones are not decoration. A single flat red sphere at this size is a
+    cherry; the green-gold cheek is what makes the eye read "apple", and it costs
+    one extra blob."""
+    # ~12 cm, against a real 7-9 cm apple. The one deliberate exaggeration in
+    # this asset: at true scale the fruit on a 5.2 m tree is a couple of pixels
+    # at the range a player decides whether to walk over, and a fruit tree whose
+    # fruit you cannot see is the picked state with extra steps.
+    size = rng.uniform(0.062, 0.074)
+    batch.blob("apple", centre, (size, size, size * 0.90), rng)
+    cheek = centre + Vector((rng.uniform(-0.4, 0.4), rng.uniform(-0.4, 0.4), 0.0)) * size
+    batch.blob("apple_shade", cheek, (size * 0.62, size * 0.62, size * 0.58), rng)
+
+
+def build_apple_tree_full(_seed: int) -> None:
+    """In fruit. The state a player walks toward."""
+    seed = APPLE_SEED
+    build_apple_frame(seed)
+    rng = random.Random(seed + 101)
+    batch = Batch()
+    for centre in apple_sites(seed):
+        apple_fruit(batch, rng, centre)
+        batch.ribbon("wood_bark", [centre + Vector((0.0, 0.0, 0.055)), centre],
+                     [0.007, 0.005], [0.005, 0.003])
+    batch.emit("apples")
+
+
+def build_apple_tree_picked(_seed: int) -> None:
+    """The same tree after picking: identical frame, bare spurs where fruit was.
+
+    The spurs matter for the same reason the berry bush's stalks do — without
+    them the picked tree reads as a different, barren tree rather than as THIS
+    tree a moment later, and the player loses the only cue that they already
+    took it."""
+    seed = APPLE_SEED
+    build_apple_frame(seed)
+    batch = Batch()
+    for centre in apple_sites(seed):
+        batch.ribbon("wood_dead", [centre + Vector((0.0, 0.0, 0.055)), centre],
+                     [0.007, 0.004], [0.005, 0.002])
+    batch.emit("spurs")
+
+
+# ---------------------------------------------------------------------------
+# The mushroom patch (F-429)
+# ---------------------------------------------------------------------------
+#
+# The kit already had toadstools — six `mushroom_cluster_*` in the environment
+# kit — but those are DECORATION in the mire's signal colours, and there was no
+# node a player walks up to and forages. This is that node, and it is a different
+# object from a toadstool in three ways that all matter:
+#
+#   * **It is buff-brown, not pink or blue.** `fungus_cap` and `fungus_blue` mean
+#     "this grew out of the corruption". A mushroom the player is meant to eat
+#     cannot wear either, or the palette is lying to them.
+#   * **It is a TROOP**, not one mushroom. Field mushrooms come up in a ring or a
+#     scatter of six or eight at mixed ages — buttons beside open caps — and that
+#     mixture is what says "forage" rather than "prop".
+#   * **It grows out of something.** Leaf litter and a piece of buried deadwood,
+#     because a mushroom standing on bare ground reads as placed.
+
+MUSHROOM_SEED = 8821
+
+#: The mushrooms grow OUT OF the litter mat, so they start at its surface rather
+#: than at z = 0. Without this the troop's stems begin under the litter, the pair
+#: grounds on the litter (its shared anchor), and the whole asset ends up sitting
+#: 13 mm below the soil line — which the build contract catches and a player would
+#: read as mushrooms sunk into the mud.
+MUSHROOM_BASE_Z = 0.030
+
+#: (x, y, cap radius, stem height). Mixed ages on purpose — the two smallest are
+#: buttons that have not opened yet, which is what stops the troop reading as one
+#: mushroom stamped six times.
+MUSHROOM_SITES = [
+    (0.000, 0.000, 0.105, 0.150),
+    (0.145, -0.075, 0.082, 0.115),
+    (-0.130, 0.060, 0.093, 0.132),
+    (0.055, 0.155, 0.060, 0.082),
+    (-0.155, -0.115, 0.048, 0.062),
+    (0.185, 0.095, 0.038, 0.050),
+]
+
+
+def build_mushroom_frame(seed: int) -> list:
+    """The litter, the buried wood and the ground the troop comes out of."""
+    rng = random.Random(seed)
+    made = []
+    made.append(hull("patch_frame_litter", Vector((0.0, 0.0, 0.034)),
+                     (0.30, 0.27, 0.030), mat("leaf_litter"), seed=seed,
+                     subdivisions=0, lumps=5, lump=0.44, sharpness=1.9, flat_base=0.5))
+    made.append(cylinder_between("patch_frame_wood", (-0.24, -0.10, 0.042),
+                                 (0.19, 0.13, 0.054), 0.036, mat("wood_dead"), vertices=6))
+    for index, (angle, rad) in enumerate(radial(3, 0.22, seed=seed + 5, jitter=0.7,
+                                                radius_jitter=0.4)):
+        made.append(hull(f"patch_frame_moss_{index}",
+                         Vector((math.cos(angle) * abs(rad), math.sin(angle) * abs(rad), 0.028)),
+                         (0.072, 0.066, 0.024), mat("moss_dark"), seed=seed + index * 13,
+                         subdivisions=0, lumps=3, lump=0.40, flat_base=0.5))
+    return made
+
+
+def mushroom(batch: Batch, rng: random.Random, x: float, y: float,
+             radius: float, height: float, button: bool) -> None:
+    """One mushroom. A cap, a stem, and gills where the cap overhangs.
+
+    The gills are the whole difference between a mushroom and a nail: a cap with
+    nothing under its rim reads as a disc on a pin from any angle below its own
+    height, which is every angle a standing player has.
+    """
+    lean = Vector((rng.uniform(-0.012, 0.012), rng.uniform(-0.012, 0.012), 0.0))
+    top = Vector((x, y, MUSHROOM_BASE_Z + height)) + lean
+    batch.blob("fungus_gill", Vector((x, y, MUSHROOM_BASE_Z + height * 0.5)),
+               (radius * 0.30, radius * 0.30, height * 0.5), rng)
+    if button:
+        batch.blob("fungus_edible", top, (radius * 0.86, radius * 0.84, radius * 0.82), rng)
+        return
+    batch.blob("fungus_gill", top + Vector((0.0, 0.0, -0.012)),
+               (radius * 0.92, radius * 0.90, radius * 0.14), rng)
+    batch.blob("fungus_edible", top, (radius, radius * 0.96, radius * 0.44), rng)
+
+
+def build_mushroom_patch_full(_seed: int) -> None:
+    """The troop, uncut."""
+    seed = MUSHROOM_SEED
+    build_mushroom_frame(seed)
+    rng = random.Random(seed + 101)
+    batch = Batch()
+    for index, (x, y, radius, height) in enumerate(MUSHROOM_SITES):
+        mushroom(batch, rng, x, y, radius, height, button=index >= 4)
+    batch.emit("mushrooms")
+
+
+def build_mushroom_patch_harvested(_seed: int) -> None:
+    """Picked: the same litter and wood, with cut stems left standing.
+
+    Same rule as the berry bush's stalks and the apple tree's spurs — a picked
+    node has to read as THIS node a moment later, not as bare ground, or the
+    player has no way to know they already took it.
+    """
+    seed = MUSHROOM_SEED
+    build_mushroom_frame(seed)
+    rng = random.Random(seed + 101)
+    batch = Batch()
+    for x, y, radius, height in MUSHROOM_SITES:
+        batch.blob("fungus_gill", Vector((x, y, MUSHROOM_BASE_Z + height * 0.16)),
+                   (radius * 0.30, radius * 0.30, height * 0.16), rng)
+        batch.blob("wood_dead", Vector((x, y, MUSHROOM_BASE_Z + height * 0.30)),
+                   (radius * 0.28, radius * 0.28, radius * 0.05), rng)
+    batch.emit("stumps")
+
+
 SPECS: list[tuple[str, Callable[[int], None]]] = [
     ("berry_bush_full", build_berry_bush_full),
     # Poison built right after full, harvested after that: the berry-decision
@@ -624,6 +1033,10 @@ SPECS: list[tuple[str, Callable[[int], None]]] = [
     ("clay_deposit", build_clay_deposit),
     ("peat_deposit", build_peat_deposit),
     ("resin_node", build_resin_node),
+    ("apple_tree_full", build_apple_tree_full),
+    ("apple_tree_picked", build_apple_tree_picked),
+    ("mushroom_patch_full", build_mushroom_patch_full),
+    ("mushroom_patch_harvested", build_mushroom_patch_harvested),
 ]
 
 
@@ -686,7 +1099,8 @@ def create_asset(name: str, build_fn: Callable[[int], None], display_location) -
     # The state pair centres on the geometry it SHARES, never on its own bounds.
     # Adding fruit must not move the bush, or the mesh visibly jumps at the moment
     # gameplay swaps it and drifts away from collision authored against its sibling.
-    anchor = [obj for obj in made if obj.name.startswith(BUSH_ANCHOR_PREFIXES)] or None
+    prefixes = ANCHOR_PREFIXES.get(name, ())
+    anchor = ([obj for obj in made if obj.name.startswith(prefixes)] if prefixes else None) or None
     ground_and_centre(made, anchor=anchor)
 
     # Scale from the SHARED geometry where there is any. Sizing each state to its
@@ -787,9 +1201,10 @@ def check(records: list[dict]) -> list[str]:
             problems.append(f"{name}: floating geometry: {record['adrift'][:3]}")
         if record["parts"] == 0 or record["polygons"] == 0:
             problems.append(f"{name}: exported no geometry")
-        if record["triangles"] > TRIANGLE_BUDGET:
+        cap_triangles = TRIANGLE_ALLOWANCE.get(name, TRIANGLE_BUDGET)
+        if record["triangles"] > cap_triangles:
             problems.append(f"{name}: {record['triangles']} triangles over the "
-                            f"{TRIANGLE_BUDGET} budget")
+                            f"{cap_triangles} budget")
         cap_materials = MATERIAL_ALLOWANCE.get(name, MAX_MATERIALS)
         if len(record["materials"]) > cap_materials:
             problems.append(f"{name}: {len(record['materials'])} materials, cap is {cap_materials}")

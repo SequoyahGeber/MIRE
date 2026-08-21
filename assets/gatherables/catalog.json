@@ -6,14 +6,14 @@
     {
       "name": "berry_bush_full",
       "file": "exports/berry_bush_full.glb",
-      "width_m": 0.9103,
-      "depth_m": 0.7269,
+      "width_m": 1.0087,
+      "depth_m": 0.9516,
       "height_m": 0.78,
       "target_m": 0.78,
       "axis": "height",
       "parts": 1,
-      "polygons": 720,
-      "triangles": 768,
+      "polygons": 1144,
+      "triangles": 1252,
       "materials": [
         "MIRE_Berry",
         "MIRE_Leaf",
@@ -24,14 +24,14 @@
     {
       "name": "poison_berry_bush",
       "file": "exports/poison_berry_bush.glb",
-      "width_m": 0.9103,
-      "depth_m": 0.7269,
+      "width_m": 1.0087,
+      "depth_m": 0.9516,
       "height_m": 0.78,
       "target_m": 0.78,
       "axis": "height",
       "parts": 1,
-      "polygons": 720,
-      "triangles": 768,
+      "polygons": 1144,
+      "triangles": 1252,
       "materials": [
         "MIRE_Berry",
         "MIRE_BerryBloom",
@@ -43,14 +43,14 @@
     {
       "name": "berry_bush_harvested",
       "file": "exports/berry_bush_harvested.glb",
-      "width_m": 0.8212,
-      "depth_m": 0.7144,
+      "width_m": 0.9639,
+      "depth_m": 0.9256,
       "height_m": 0.78,
       "target_m": 0.78,
       "axis": "height",
       "parts": 1,
-      "polygons": 368,
-      "triangles": 488,
+      "polygons": 624,
+      "triangles": 804,
       "materials": [
         "MIRE_Leaf",
         "MIRE_LeafLight",
@@ -180,6 +180,82 @@
         "MIRE_Resin",
         "MIRE_WoodBarkDark",
         "MIRE_WoodCut"
+      ]
+    },
+    {
+      "name": "apple_tree_full",
+      "file": "exports/apple_tree_full.glb",
+      "width_m": 4.4795,
+      "depth_m": 4.7435,
+      "height_m": 5.2,
+      "target_m": 5.2,
+      "axis": "height",
+      "parts": 1,
+      "polygons": 1865,
+      "triangles": 2296,
+      "materials": [
+        "MIRE_Apple",
+        "MIRE_AppleShade",
+        "MIRE_Leaf",
+        "MIRE_LeafLight",
+        "MIRE_WoodBark",
+        "MIRE_WoodBarkDark"
+      ]
+    },
+    {
+      "name": "apple_tree_picked",
+      "file": "exports/apple_tree_picked.glb",
+      "width_m": 4.3359,
+      "depth_m": 4.6775,
+      "height_m": 5.2,
+      "target_m": 5.2,
+      "axis": "height",
+      "parts": 1,
+      "polygons": 841,
+      "triangles": 1272,
+      "materials": [
+        "MIRE_Leaf",
+        "MIRE_LeafLight",
+        "MIRE_WoodBark",
+        "MIRE_WoodBarkDark",
+        "MIRE_WoodDead"
+      ]
+    },
+    {
+      "name": "mushroom_patch_full",
+      "file": "exports/mushroom_patch_full.glb",
+      "width_m": 0.62,
+      "depth_m": 0.5526,
+      "height_m": 0.1878,
+      "target_m": 0.62,
+      "axis": "spread",
+      "parts": 1,
+      "polygons": 216,
+      "triangles": 228,
+      "materials": [
+        "MIRE_FungusEdible",
+        "MIRE_FungusGill",
+        "MIRE_LeafLitter",
+        "MIRE_MossDark",
+        "MIRE_WoodDead"
+      ]
+    },
+    {
+      "name": "mushroom_patch_harvested",
+      "file": "exports/mushroom_patch_harvested.glb",
+      "width_m": 0.62,
+      "depth_m": 0.5526,
+      "height_m": 0.0695,
+      "target_m": 0.62,
+      "axis": "spread",
+      "parts": 1,
+      "polygons": 184,
+      "triangles": 196,
+      "materials": [
+        "MIRE_FungusGill",
+        "MIRE_LeafLitter",
+        "MIRE_MossDark",
+        "MIRE_WoodDead"
       ]
     }
   ]
