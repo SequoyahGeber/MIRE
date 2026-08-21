@@ -3075,9 +3075,24 @@ baker doing main-thread work as the player moves, landing a handful of very larg
 sample window.
 
 Measured on an M5 Pro, macOS, Metal, Forward+, AC power, unthrottled, preset HIGH, at 1280x803 —
-the fastest machine in the project (F-174) at a small window size. Reproduce with:
+the fastest machine in the project (F-174) at a small window size. 
+**AMENDED 2026-08-21 — the headline number was an artifact.** Every figure above was measured
+through a `--windowed` run whose window was backgrounded and therefore throttled or not drawn by
+macOS (F-466). Re-measured fullscreen at 3024x1898, on a machine confirmed untouched with nothing in
+front of the window, `Running inland` reports a **58 fps (day) / 67 fps (night)** 1% low — not 17.
+The traversal hitch is real but roughly a third of what this finding claims, and it clears 60 fps at
+night on this hardware.
 
-    .agent/bin/agent godot --windowed --script tools/benchmark_check.gd -- --full
+What survived re-measurement, and is now the strongest hitch signal in the suite, is the
+**flyover**: 44 fps (day) / 34 fps (night) 1% low against a 126-154 fps median. A deep tail under a
+healthy median is the streamer signature, and the flyover drags the streamer hardest because it
+crosses the island at 40 m/s. Anyone attributing traversal cost should start there rather than here.
+
+Both numbers are still from the fastest machine in the project (F-174).
+
+Reproduce with:
+
+    .agent/bin/agent godot --display-driver macos --script tools/benchmark_check.gd -- --full --fullscreen
 
 Two reasons this matters more than the number suggests. First, `docs/PERFORMANCE.md` §2 already
 identified the 11.7 ms tail against a 7.1 ms median as "the number that decides whether the game
@@ -3463,6 +3478,55 @@ too heavy to open where it stands). `content/haulables/` has exactly one definit
 ---
 
 ## Resolved
+
+### F-475 · The benchmark reports the 2D content-scale size as its resolution, and cries wolf about focus on a good fullscreen run — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
+
+Both surfaced on a confirmed-clean fullscreen run (Sequoyah, 2026-08-21: *"the game was fullscreen
+with nothing in front of it for the whole test and i did not touch the computer"*), where the report
+still managed to look untrustworthy. Neither affects a measurement; both attack the reader's ability
+to believe one, which for this tool is nearly as bad.
+
+**1. The resolution line is wrong.** `BenchmarkRunner` fills the report's `viewport` field from
+`get_viewport().get_visible_rect().size`. `project.godot` sets
+`window/stretch/mode="canvas_items"` with a 1280x720 base and `aspect="expand"`, so that call
+returns the 2D CONTENT SCALE size — 1280x803, which is the base width with the window's aspect —
+and not the resolution anything was rendered at. A genuinely fullscreen 3024x1898 run therefore
+reported "1280x803" in its header, which reads as "this was measured in a small window" and
+invalidates the run in the reader's mind. Under `canvas_items` stretch the 3D renders at the full
+window resolution, so the numbers were fullscreen numbers all along; only the label lied. It should
+print `DisplayServer.window_get_size()`, with the content-scale size beside it if anyone wants it.
+
+**2. The focus note fires on exactly the runs that are most valid.** F-466 added a warning when the
+window is not focused. A fullscreen benchmark launched from a terminal is NEVER focused — the
+terminal keeps focus and the grab is refused (F-470) — so a correct, uninterrupted, fullscreen
+measurement stamps a warning across itself saying the timings may describe the window manager. That
+is the guard-that-cries-wolf failure F-045 already cost this project once, and the fix there is the
+same: fire on the condition that actually matters, or do not fire.
+
+Focus is not the risk; OCCLUSION is, and the engine does not expose it. But the two are only
+correlated for a WINDOWED window — a fullscreen window has its own Space and is either the displayed
+Space or not. So the note should be raised only when the window is not fullscreen, where "unfocused"
+genuinely suggests something may be in front of it, and the raw unfocused count should stay in
+`report.json` for anyone who wants it.
+
+**Resolved 2026-08-21 by quill895277.** Both fixed.
+
+The report's resolution line now prints `DisplayServer.window_get_size()` with `fullscreen` /
+`windowed` beside it, and keeps the 2D content-scale size as its own field. A confirmed-clean
+fullscreen run was reporting "1280x803" — the `canvas_items` stretch base width at the window's
+aspect — which read as a small-window measurement and made a good run look worthless.
+
+The focus note is now raised only for a WINDOWED window. A fullscreen window owns its Space and a
+terminal-launched run is never focused (F-470), so the note fired on every correct fullscreen
+measurement. The per-scene `unfocused` count stays in `report.json` regardless.
+
+Verified: `.agent/bin/agent godot --display-driver macos --script tools/benchmark_check.gd --
+--fullscreen --tag verify` — 241 assertions, 0 failures, header now reads
+`3024x1898 fullscreen`, and the focus line prints without the warning. Three new assertions guard
+each half: a fullscreen run must not warn about focus, a windowed one that lost focus must, and a
+fullscreen run must not report the content-scale size as its resolution.
 
 ### F-464 · The river's carve ends in a vertical wall wherever it crosses a hill, and nothing on the island reads as rock — **fixed**
 
