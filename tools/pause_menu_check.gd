@@ -117,6 +117,29 @@ func _run() -> void:
 
 	stack.call("pop_all")
 	await process_frame
+
+	# ── two exits, not one ───────────────────────────────────────────────────────────────────────
+	# Leaving a run and leaving the game are different intentions, and a player mid-run should not
+	# have to travel through the title screen to close the game. Both must be on the panel.
+	pause.call("open")
+	await process_frame
+	var panel_text: String = _all_text(stack.call("top"))
+	check(panel_text.contains("QUIT TO TITLE"), "the pause menu offers QUIT TO TITLE")
+	check(panel_text.contains("QUIT TO DESKTOP"), "the pause menu offers QUIT TO DESKTOP")
+
+	# Quitting the whole game confirms, and the confirmation defaults to STAY — the same rule the
+	# abandon dialog follows: you travel to the destructive answer, never land on it.
+	pause.call("request_quit_to_desktop")
+	await process_frame
+	check(int(stack.call("depth")) == 2, "quitting to the desktop asks first")
+	var quit_dialog: Control = stack.call("top")
+	check(bool(quit_dialog.call("menu_is_modal")), "the quit-to-desktop confirmation is modal")
+	var quit_focus: Control = quit_dialog.call("menu_default_focus")
+	check(quit_focus != null and String(quit_focus.text) == "STAY",
+		"the quit-to-desktop confirmation focuses STAY")
+
+	stack.call("pop_all")
+	await process_frame
 	check(not bool(pause.call("is_open")), "popping everything closes the pause menu cleanly")
 
 	print("PAUSE_MENU_CHECK failures=%d" % failures)

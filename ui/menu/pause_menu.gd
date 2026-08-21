@@ -153,6 +153,28 @@ func request_quit_to_title() -> void:
 	)
 
 
+## Quitting to the desktop is QUIT TO TITLE plus closing the window, and it leaves the session on
+## the way out for the same reason: killing the process with a live lobby makes every other peer sit
+## out a connection timeout instead of watching you go. The two exits are separate buttons rather
+## than one button and a sub-menu because the difference matters mid-run — a player who wants
+## another run and a player who wants their evening back should not share a click.
+func request_quit_to_desktop() -> void:
+	var stack: Node = _stack()
+	if stack == null:
+		_quit_to_desktop_now()
+		return
+	var host: bool = _is_host()
+	stack.call(
+		"confirm",
+		"Quit to the desktop?",
+		"This ends the run for everyone. The bog will keep." if host else "You'll leave; the others sail on. The bog will keep.",
+		"QUIT TO DESKTOP",
+		"STAY",
+		_quit_to_desktop_now,
+		true,
+	)
+
+
 # ── Internals ─────────────────────────────────────────────────────────────────────────────────────
 
 
@@ -186,6 +208,15 @@ func _quit_to_title_now() -> void:
 	var frontend_scene: String = "res://levels/frontend.tscn"
 	if ResourceLoader.exists(frontend_scene):
 		get_tree().change_scene_to_file(frontend_scene)
+
+
+## Leaves the session BEFORE quitting: `SceneTree.quit()` takes effect at the end of the current
+## frame, so the transport still gets this frame to put the disconnect on the wire.
+func _quit_to_desktop_now() -> void:
+	_leave_session()
+	var tree: SceneTree = get_tree()
+	if tree != null:
+		tree.quit()
 
 
 func _leave_session() -> void:
@@ -270,12 +301,17 @@ class PauseScreen extends Control:
 		)
 		column.add_child(abandon)
 
-		var quit: Button = Kit.button(
+		var quit_title: Button = Kit.button(
 			"QUIT TO TITLE", func() -> void: _menu.call("request_quit_to_title"), Kit.Variant.DESTRUCTIVE
 		)
-		column.add_child(quit)
+		column.add_child(quit_title)
 
-		Kit.wire_chain([_resume_button, invite, settings, abandon, quit])
+		var quit_desktop: Button = Kit.button(
+			"QUIT TO DESKTOP", func() -> void: _menu.call("request_quit_to_desktop"), Kit.Variant.DESTRUCTIVE
+		)
+		column.add_child(quit_desktop)
+
+		Kit.wire_chain([_resume_button, invite, settings, abandon, quit_title, quit_desktop])
 
 	func menu_default_focus() -> Control:
 		return _resume_button

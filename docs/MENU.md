@@ -286,6 +286,7 @@ vitals HUD stays visible under it — you can be eaten while in this menu and yo
      SETTINGS
      ABANDON RUN
      QUIT TO TITLE
+     QUIT TO DESKTOP
 ```
 
 - RESUME (default focus) and Esc/B both close.
@@ -295,8 +296,12 @@ vitals HUD stays visible under it — you can be eaten while in this menu and yo
   *"Swim home? You'll bank 41 of the 118 Salvage you're carrying. The others sail on without
   you."* [KEEP FIGHTING] [SWIM HOME]. Default focus KEEP FIGHTING. Solo abandon routes through the
   normal wipe path (fraction banked) then the summary.
-- QUIT TO TITLE = leave session (client) / end run for all with the same modal (host). QUIT TO
-  DESKTOP only lives on the title screen — one place to fully exit, fewer misclicks.
+- QUIT TO TITLE = leave session (client) / end run for all with the same modal (host).
+- QUIT TO DESKTOP = the same departure, plus closing the window. Both exits sit on the pause panel
+  (Sequoyah, 2026-08-21). This reverses the earlier "one place to fully exit, fewer misclicks" call:
+  the misclick was already covered by the modal, and routing a player who wants to stop playing
+  through the title screen and a second confirmation is worse than one extra destructive button.
+  It leaves the session BEFORE quitting, so peers see a disconnect instead of a connection timeout.
 - Replaces `player_controller.gd`'s "temporary mouse-release toggle" (its own comment already
   promises this: "Replaced by the pause menu in M7").
 
