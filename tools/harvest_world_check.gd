@@ -135,7 +135,11 @@ func _run() -> void:
 		check(body != null and body.collision_layer != 0, "respawn restores map collision")
 		check(harvest_world.call("request_harvest_from_collider", body),
 			"attack adapter resolves the map collider to its Harvestable")
-		await create_timer(0.3).timeout
+		# F-443: 0.6 s, not 0.3. The gate below has to clear `request_cooldown_seconds` (0.25 s), and
+		# the wait starts AFTER the previous hit was stamped — a ~20 ms margin that fails on a
+		# machine running several headless Godot processes at once. Nothing here depends on the wait
+		# being tight.
+		await create_timer(0.6).timeout
 		var health_before_ray: int = int(tree.get("health"))
 		var camera := Camera3D.new()
 		camera.name = "HarvestCheckCamera"

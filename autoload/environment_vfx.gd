@@ -555,6 +555,13 @@ func _apply_sway(node: GeometryInstance3D, sway: AssetVfx.Sway) -> void:
 	_dressed_meshes[mesh_key] = true
 
 
+## The name the art pipeline gave a material — `"MIRE_" + CamelCase(palette_token)` — or "" when
+## there is no material to ask. Kept in one place because two cache keys and two materials depend on
+## it saying exactly the same thing (F-442).
+func _material_name(original: Material) -> String:
+	return original.resource_name if original != null else ""
+
+
 ## Materials are cached across assets that agree on colour, roughness and sway numbers, so the
 ## eighty-odd flora assets collapse to a handful of shaders rather than one each.
 func _sway_material(original: Material, profile: Dictionary, bounds: AABB) -> ShaderMaterial:
@@ -577,8 +584,14 @@ func _sway_material(original: Material, profile: Dictionary, bounds: AABB) -> Sh
 	# `bounds` comes from `mesh.get_aabb()`, which is mesh-LOCAL, so this is a per-asset constant.
 	# The worst case is one material per distinct asset origin, which is what the cache existed to
 	# improve on and still does.
-	var key := "%s:%.2f:%d:%.3f:%.3f:%.3f:%.2f:%.2f:%.3f:%.3f" % [
-		color.to_html(), material_roughness, int(vertex_color),
+	# F-442: the ORIGINAL's name is part of the key, and is carried onto the material below. A
+	# material's `resource_name` is the only thing in this game that says which surface is foliage —
+	# `world/gen/prop_collider.gd::_is_foliage()` reads it to keep a tree's collider on its trunk —
+	# and dressing a mesh for sway used to drop it, so every surface on a dressed tree looked
+	# unnamed and its whole canopy read as solid. Keying on it as well means two differently-named
+	# materials that happen to agree on colour and roughness cannot collapse onto one name.
+	var key := "%s:%s:%.2f:%d:%.3f:%.3f:%.3f:%.2f:%.2f:%.3f:%.3f" % [
+		_material_name(original), color.to_html(), material_roughness, int(vertex_color),
 		float(profile.get("strength", 0.1)), float(profile.get("speed", 1.3)),
 		float(profile.get("bob", 0.0)), float(profile.get("mask_power", 1.0)),
 		float(profile.get("vertex_phase", 1.0)), bounds.size.y, bounds.position.y]
@@ -586,6 +599,7 @@ func _sway_material(original: Material, profile: Dictionary, bounds: AABB) -> Sh
 		return _sway_materials[key] as ShaderMaterial
 
 	var material := ShaderMaterial.new()
+	material.resource_name = _material_name(original)
 	material.shader = FOLIAGE_SHADER
 	material.set_shader_parameter(&"albedo_color", color)
 	material.set_shader_parameter(&"roughness", material_roughness)
@@ -658,8 +672,10 @@ func _baked_sway_material(original: Material, profile: Dictionary) -> ShaderMate
 		material_roughness = standard.roughness
 		vertex_color = standard.vertex_color_use_as_albedo
 
-	var key := "baked:%s:%.2f:%d:%.3f:%.3f:%.3f:%.2f:%.2f" % [
-		color.to_html(), material_roughness, int(vertex_color),
+	# F-442: see `_sway_material` — the original's name is part of the key and is carried onto the
+	# material, because it is what tells leaves from bark everywhere downstream.
+	var key := "baked:%s:%s:%.2f:%d:%.3f:%.3f:%.3f:%.2f:%.2f" % [
+		_material_name(original), color.to_html(), material_roughness, int(vertex_color),
 		float(profile.get("strength", 0.1)), float(profile.get("speed", 1.3)),
 		float(profile.get("bob", 0.0)), float(profile.get("mask_power", 1.0)),
 		float(profile.get("vertex_phase", 1.0))]
@@ -667,6 +683,7 @@ func _baked_sway_material(original: Material, profile: Dictionary) -> ShaderMate
 		return _sway_materials[key] as ShaderMaterial
 
 	var material := ShaderMaterial.new()
+	material.resource_name = _material_name(original)
 	material.shader = FOLIAGE_SHADER
 	material.set_shader_parameter(&"albedo_color", color)
 	material.set_shader_parameter(&"roughness", material_roughness)
