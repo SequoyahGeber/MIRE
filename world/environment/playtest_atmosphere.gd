@@ -69,8 +69,8 @@ const SKY_CURVE: float = 0.18
 const SKY_SUN_ANGLE_MAX_DEG: float = 1.5
 const SKY_SUN_CURVE: float = 0.08
 const DAY_SKY_ENERGY: float = 1.0
-const NIGHT_SKY_ENERGY: float = 0.78
-const NIGHT_BACKGROUND_ENERGY: float = 0.72
+const NIGHT_SKY_ENERGY: float = 0.75
+const NIGHT_BACKGROUND_ENERGY: float = 0.62
 ## The non-sky ambient floor keeps a moonlit night playable without flattening the terrain.
 const NIGHT_AMBIENT_COLOR := Color(0.42, 0.48, 0.66)
 const NIGHT_AMBIENT_SKY_CONTRIBUTION: float = 0.28
@@ -101,7 +101,7 @@ const SUN_ANGULAR_DIAMETER_DEG: float = 0.85
 const MOONLIGHT_COLOR := Color(0.74, 0.82, 1.0)
 ## Strong enough to carve directional facet and trunk shadows, but still well below the day sun.
 ## The sky and ambient floor provide legibility; this provides shape, so night stays dangerous.
-const MOON_ENERGY: float = 0.72
+const MOON_ENERGY: float = 0.62
 ## Tighter than the sun's, because the moon's shadows are the ones most likely to look wrong — a
 ## soft-edged shadow at this energy is a smudge rather than a shape.
 const MOON_ANGULAR_DIAMETER_DEG: float = 0.6
@@ -146,9 +146,9 @@ const DAY_SUN_ENERGY: float = 1.15
 ## background, and 1.14 saturation multiplied into a black sky and radioactive green terrain. The
 ## restrained grade below keeps authored moonlight out of the ACES toe and pulls flat albedos toward
 ## cool moonlit colour without making the scene a blue daytime.
-const NIGHT_TONEMAP_WHITE: float = 1.65
-const NIGHT_TONEMAP_EXPOSURE: float = 0.94
-const NIGHT_AMBIENT_ENERGY: float = 0.30
+const NIGHT_TONEMAP_WHITE: float = 1.8
+const NIGHT_TONEMAP_EXPOSURE: float = 0.90
+const NIGHT_AMBIENT_ENERGY: float = 0.23
 const NIGHT_ADJUSTMENT_CONTRAST: float = 1.0
 const NIGHT_ADJUSTMENT_SATURATION: float = 0.78
 const NIGHT_GLOW_BLOOM: float = 0.14

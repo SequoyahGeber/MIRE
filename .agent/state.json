@@ -1,5 +1,11 @@
 {
   "claims": {
+    "autoload/graphics_quality.gd": {
+      "agent": "quill5df327",
+      "at": "2026-08-21T06:08:40+00:00",
+      "task": "F-414",
+      "token": "CODEX_SESSION_ID:01a022ed-4e2f-70e3-9184-2c2ffa7d6d13"
+    },
     "autoload/settings_service.gd": {
       "agent": "quill5df327",
       "at": "2026-08-21T06:07:12+00:00",
@@ -72,15 +78,51 @@
       "task": "F-413",
       "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
+    "tools/main_menu_check.gd": {
+      "agent": "flinta92725",
+      "at": "2026-08-21T06:07:49+00:00",
+      "task": "F-413",
+      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
+    },
+    "tools/menu_focus_check.gd": {
+      "agent": "flinta92725",
+      "at": "2026-08-21T06:08:14+00:00",
+      "task": "F-413",
+      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
+    },
+    "tools/run_scope_audit_check.gd": {
+      "agent": "flinta92725",
+      "at": "2026-08-21T06:09:40+00:00",
+      "task": "F-413",
+      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
+    },
     "tools/settings_check.gd": {
       "agent": "quill5df327",
       "at": "2026-08-21T06:07:12+00:00",
       "task": "F-414",
       "token": "CODEX_SESSION_ID:01a022ed-4e2f-70e3-9184-2c2ffa7d6d13"
     },
+    "tools/settings_screen_check.gd": {
+      "agent": "flinta92725",
+      "at": "2026-08-21T06:07:27+00:00",
+      "task": "F-413",
+      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
+    },
+    "ui/frontend/graphics_settings_page.gd": {
+      "agent": "quill5df327",
+      "at": "2026-08-21T06:16:17+00:00",
+      "task": "F-414",
+      "token": "CODEX_SESSION_ID:01a022ed-4e2f-70e3-9184-2c2ffa7d6d13"
+    },
     "ui/frontend/settings_screen.gd": {
       "agent": "flinta92725",
       "at": "2026-08-21T06:05:50+00:00",
+      "task": "F-413",
+      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
+    },
+    "ui/menu/focus_ring_slider.gd": {
+      "agent": "flinta92725",
+      "at": "2026-08-21T06:10:04+00:00",
       "task": "F-413",
       "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
@@ -99,6 +141,12 @@
     "ui/menu/settings_menu.gd.uid": {
       "agent": "flinta92725",
       "at": "2026-08-21T06:06:55+00:00",
+      "task": "F-413",
+      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
+    },
+    "ui/menu_stack.gd": {
+      "agent": "flinta92725",
+      "at": "2026-08-21T06:09:53+00:00",
       "task": "F-413",
       "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
@@ -135,9 +183,21 @@
         "project.godot",
         "ui/menu/settings_menu.gd",
         "ui/menu/settings_menu.gd.uid",
-        "tools/god_mode_check.gd"
+        "tools/god_mode_check.gd",
+        "tools/settings_screen_check.gd",
+        "tools/main_menu_check.gd",
+        "tools/menu_focus_check.gd",
+        "tools/run_scope_audit_check.gd",
+        "ui/menu_stack.gd",
+        "ui/menu/focus_ring_slider.gd"
       ],
-      "notes": [],
+      "notes": [
+        {
+          "at": "2026-08-21T06:15:19+00:00",
+          "by": "flinta92725",
+          "text": "Confirmed ui/menu/settings_menu.gd was a duplicate UI: title and pause already instantiate ui/frontend/settings_screen.gd; only the remaining seed/post-run MainMenu referenced the old autoload. Removed the SettingsMenu autoload/script and routed MainMenu SETTINGS through MenuStack to the same live screen. Live screen now has PLAYTESTING/GodModeToggle; focused settings, God-mode, MainMenu and setup checks pass. tools/settings_check.gd cleanup is coordinated with active F-414 owner because that file is claimed there."
+        }
+      ],
       "started": "2026-08-21T06:05:50+00:00",
       "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
@@ -146,9 +206,22 @@
       "files": [
         "core/save/settings_save.gd",
         "autoload/settings_service.gd",
-        "tools/settings_check.gd"
+        "tools/settings_check.gd",
+        "autoload/graphics_quality.gd",
+        "ui/frontend/graphics_settings_page.gd"
       ],
-      "notes": [],
+      "notes": [
+        {
+          "at": "2026-08-21T06:10:33+00:00",
+          "by": "quill5df327",
+          "text": "Display customization scope: windowed/borderless/exclusive fullscreen, six resolutions, VSync, standard FPS caps, quality preset, Auto/Off/On SSAO, Off/FXAA/TAA/MSAA2x/MSAA4x anti-aliasing, dynamic resolution, brightness, and existing FOV. All are LOCAL presentation settings and participate in preview/save/cancel/default state."
+        },
+        {
+          "at": "2026-08-21T06:15:00+00:00",
+          "by": "flinta92725",
+          "text": "F-413 is removing the dead SettingsMenu autoload/script and migrating God Mode to ui/frontend/settings_screen.gd. tools/settings_check.gd still asserts /root/SettingsMenu and will need its legacy UI sections removed or migrated to settings_screen_check.gd before F-414 closes; I am respecting your claim and will not edit it while held."
+        }
+      ],
       "started": "2026-08-21T06:07:12+00:00",
       "token": "CODEX_SESSION_ID:01a022ed-4e2f-70e3-9184-2c2ffa7d6d13"
     }
@@ -663,6 +736,34 @@
       "at": "2026-08-21T05:48:24+00:00",
       "hash": null,
       "task": "F-410",
+      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
+    },
+    "assets/audit/lighting/f415_10_noon_control.png": {
+      "agent": "emberd89a44",
+      "at": "2026-08-21T06:17:41+00:00",
+      "hash": "f1ea045af6379c27d810852108982884e11dd833210bc3a4e54976c0458ff01b",
+      "task": "F-415",
+      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
+    },
+    "assets/audit/lighting/f415_11_blue_hour.png": {
+      "agent": "emberd89a44",
+      "at": "2026-08-21T06:17:41+00:00",
+      "hash": "1e2b11c3827156895d8eeb4980043c3778e2857d84edad203b59ee1b46ee6e1f",
+      "task": "F-415",
+      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
+    },
+    "assets/audit/lighting/f415_12_dark_moonlit_night.png": {
+      "agent": "emberd89a44",
+      "at": "2026-08-21T06:17:41+00:00",
+      "hash": "67e109a2eac191a8ebe8977b3fad9ad412d703d4e15cf141a9506a5da8963737",
+      "task": "F-415",
+      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
+    },
+    "assets/audit/lighting/f415_dark_night_render.jsonl": {
+      "agent": "emberd89a44",
+      "at": "2026-08-21T06:17:41+00:00",
+      "hash": "1b1c59c91f28cd968dda81eea1a97f54c199262187565a98349b222b65ac3585",
+      "task": "F-415",
       "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
     },
     "assets/audit/menu/dock_1080p.png": {
@@ -1801,9 +1902,9 @@
     },
     "tools/atmosphere_night_check.gd": {
       "agent": "emberd89a44",
-      "at": "2026-08-21T06:07:24+00:00",
+      "at": "2026-08-21T06:17:41+00:00",
       "hash": "7727467ed067f9171380f60a5557b006a9e5526f34fcc305cca47e8c3bbde05f",
-      "task": "F-356",
+      "task": "F-415",
       "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
     },
     "tools/attunement_restart_check.gd": {
@@ -2074,16 +2175,16 @@
     },
     "tools/f356_night_probe.gd": {
       "agent": "emberd89a44",
-      "at": "2026-08-21T06:07:24+00:00",
-      "hash": "a13a7d9268ae43df652da0afa4ee977015c37a8904b2322e62c10cd43d8c29b3",
-      "task": "F-356",
+      "at": "2026-08-21T06:17:41+00:00",
+      "hash": "a9893f2841caeb84230bc71226973881e5fa5417c5aee137b779a03e5cf30775",
+      "task": "F-415",
       "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
     },
     "tools/f356_night_probe.gd.uid": {
       "agent": "emberd89a44",
-      "at": "2026-08-21T06:07:24+00:00",
+      "at": "2026-08-21T06:17:41+00:00",
       "hash": "f69523d472392c1aaf569af11c91dd8e961ac45a28d0f8bd26d66c8158e3c5fe",
-      "task": "F-356",
+      "task": "F-415",
       "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
     },
     "tools/f410_asset_material_check.gd": {
@@ -2137,9 +2238,9 @@
     },
     "tools/grade_check.gd": {
       "agent": "emberd89a44",
-      "at": "2026-08-21T06:07:24+00:00",
+      "at": "2026-08-21T06:17:41+00:00",
       "hash": "5d86a48285f76cf29dfec0850d8ffff59f246f020b59ef3ef54b0e85f94080f2",
-      "task": "F-356",
+      "task": "F-415",
       "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
     },
     "tools/grade_probe.gd": {
@@ -2732,9 +2833,9 @@
     },
     "world/environment/playtest_atmosphere.gd": {
       "agent": "emberd89a44",
-      "at": "2026-08-21T06:07:24+00:00",
-      "hash": "3acb477c3cf5b5926f83e0e0f03bec85dcb346bbfbe2ab32c381e11a3e22382c",
-      "task": "F-356",
+      "at": "2026-08-21T06:17:41+00:00",
+      "hash": "8e40ec9b18ac9e658d9b68bf37a89bbc678ba9f9960d377365b1e14a37f1c763",
+      "task": "F-415",
       "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
     },
     "world/environment/water_low_poly.gdshader": {
@@ -2822,7 +2923,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 579,
+  "rev": 639,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -7450,8 +7551,6 @@
       "title": "Godot project and export settings need a release-readiness audit"
     },
     "F-356": {
-      "done_at": "2026-08-21T06:07:24+00:00",
-      "done_by": "emberd89a44",
       "est": "\u2014",
       "milestone": "Findings",
       "status": "done",
@@ -7879,6 +7978,15 @@
       "status": "in_flight",
       "tier": "F",
       "title": "Graphics settings menu is incomplete"
+    },
+    "F-415": {
+      "done_at": "2026-08-21T06:17:41+00:00",
+      "done_by": "emberd89a44",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Night should strongly reward a torch without making moonless navigation impossible"
     }
   },
   "version": 1

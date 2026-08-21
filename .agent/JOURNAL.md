@@ -8148,3 +8148,30 @@ Notes along the way:
 Files: `world/environment/playtest_atmosphere.gd`, `tools/f410_procedural_sky_probe.gd`, `tools/atmosphere_night_check.gd`, `tools/f356_night_probe.gd`, `tools/f356_night_probe.gd.uid`, `assets/audit/lighting/f356_20_noon_control.png`, `assets/audit/lighting/f356_21_blue_hour.png`, `assets/audit/lighting/f356_22_moonlit_night.png`, `assets/audit/lighting/f356_night_render.jsonl`, `tools/grade_check.gd`
 
 Commit at time of writing: `719600c`
+
+---
+
+### REOPEN · F-356 · emberd89a44 · 2026-08-21T06:10:47+00:00
+
+**Night renders essentially black on the shipped grade — the ground is invisible, not merely dark**
+
+Reopened (was marked done 2026-08-21 by emberd89a44).
+
+User clarified the target after playtest: night should be quite dark and strongly reward a torch, while remaining barely navigable without one. Current readable-night pass is too bright in the ground midtones; preserve the improved sky and moon directionality while lowering terrain visibility.
+
+Commit at time of writing: `27479b0`
+
+---
+
+### DONE · F-415 · emberd89a44 · 2026-08-21T06:17:41+00:00
+
+**Night should strongly reward a torch without making moonless navigation impossible**
+
+Night darkened to a torch-rewarding but navigable midpoint. Fixed-seed median 0.0835; atmosphere, grade, graphics-quality, and findings checks all pass.
+
+Notes along the way:
+- Target settled from user clarification: moonlight-only navigation remains possible, but fine detail should need a torch. Fixed-seed midpoint render: p05 0.0183, median 0.0835, p95 0.2596; 8.66% below 0.02 and 40.04% below 0.05. This is darker than F-356 (median 0.1105) without returning to the broken baseline (0.0127).
+
+Files: `world/environment/playtest_atmosphere.gd`, `tools/f356_night_probe.gd`, `tools/atmosphere_night_check.gd`, `tools/grade_check.gd`, `tools/f356_night_probe.gd.uid`, `assets/audit/lighting/f415_10_noon_control.png`, `assets/audit/lighting/f415_11_blue_hour.png`, `assets/audit/lighting/f415_12_dark_moonlit_night.png`, `assets/audit/lighting/f415_dark_night_render.jsonl`
+
+Commit at time of writing: `27479b0`

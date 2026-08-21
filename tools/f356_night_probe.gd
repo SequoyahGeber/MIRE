@@ -1,17 +1,17 @@
 extends SceneTree
 
-## Fixed-seed rendered proof for F-356. Production values only; every completed shot is appended
+## Fixed-seed rendered proof for F-356/F-415. Production values only; every completed shot is appended
 ## immediately so an interrupted render can resume without losing finished work.
 
 const OUT_DIR: String = "res://assets/audit/lighting"
-const LEDGER_PATH: String = OUT_DIR + "/f356_night_render.jsonl"
+const LEDGER_PATH: String = OUT_DIR + "/f415_dark_night_render.jsonl"
 const FIXED_SEED: int = 4242
 const SETTLE_FRAMES: int = 420
 const PER_SHOT_FRAMES: int = 90
 const SHOTS: Array[Dictionary] = [
-	{"label": "f356_20_noon_control", "hour": 12.0},
-	{"label": "f356_21_blue_hour", "hour": 19.5},
-	{"label": "f356_22_moonlit_night", "hour": 0.0},
+	{"label": "f415_10_noon_control", "hour": 12.0},
+	{"label": "f415_11_blue_hour", "hour": 19.5},
+	{"label": "f415_12_dark_moonlit_night", "hour": 0.0},
 ]
 
 
