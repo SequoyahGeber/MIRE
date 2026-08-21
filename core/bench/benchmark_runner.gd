@@ -48,9 +48,22 @@ const BiomeMap := preload("res://world/gen/biome_map.gd")
 ## The island every benchmark generates. Fixed so that two players comparing numbers, or one player
 ## comparing before and after a driver update, are looking at the same world — an unpinned seed
 ## makes every run a different island and every comparison meaningless (docs/PERFORMANCE.md §1,
-## rule 5). Deliberately the same value `tools/probe_scene.gd` pins, so the developer probe and the
-## shipped benchmark describe the same ground.
-const BENCH_SEED: int = 20260821
+## rule 5).
+##
+## CHOSEN, not arbitrary (F-458). `20260821` was a date, picked because a constant was needed, and
+## nobody had looked at the island it makes. This one is the winner of a 150-candidate survey —
+## `tools/bench_seed_survey.gd`, re-runnable, deterministic — scored on the coverage the suite
+## actually depends on. Its row, so the choice is reviewable and can be re-made when worldgen moves:
+##
+##   seed        score   land  peak  pois  kinds   biome shares (% of land)
+##   20260024    0.989    29%   46m    33   8/8    birc 16 fore 13 gras 24 heat 12 high 14
+##                                                 mars 7 shor 14
+##
+## All seven biomes present with the weakest (marsh) at 7.2% of land, evenness 0.97, 33 POI sites
+## across all eight kinds, an island of median size with better-than-median high ground for the
+## vista scene to stand on. Every destination the suite searches for exists on it, so no scene
+## silently substitutes the shore for something the island does not have.
+const BENCH_SEED: int = 20260024
 
 ## How far out from the island centre destination searches look, and how finely. The island is a
 ## few hundred metres across; 96 rings of 24 angles is dense enough to find any biome that exists
@@ -77,6 +90,15 @@ const CALIBRATION_SETTLE: float = 2.5
 ## was almost certainly noise. Six seconds is what the suite already decided a traversal sample
 ## needs to be worth reading.
 const TRAVEL_CALIBRATION_SECONDS: float = BenchmarkSuite.SAMPLE_SECONDS
+
+## Least distance the flyover keeps above the ground beneath it, in metres, when the terrain rises
+## higher than the nominal altitude.
+const FLY_CLEARANCE_M: float = 45.0
+
+## Seconds spent looking at each destination during the warm-up pass. Long enough to render the
+## view a few hundred times, which is what forces first-sight work to happen; short enough that
+## warming nine destinations costs well under a minute. See `_prewarm()`.
+const PREWARM_SECONDS: float = 1.5
 
 ## The attunement the benchmark picks for itself when the world starts without one. Fixed rather
 ## than random for the same reason the seed is: two runs have to measure the same thing. `warden` is
@@ -176,6 +198,7 @@ func run(world: Node3D, target_fps: int = SettingsAdvisor.DEFAULT_TARGET_FPS,
 
 	var scenes: Array[Dictionary] = scene_override if not scene_override.is_empty() \
 		else BenchmarkSuite.scenes()
+	await _prewarm(scenes)
 	var results: Array = []
 	for index: int in scenes.size():
 		var scene: Dictionary = scenes[index]
@@ -256,18 +279,69 @@ func apply_recommendation(recommendation: Dictionary) -> bool:
 	return true
 
 
+## Visits every destination once, measuring nothing, before the suite starts.
+##
+## Waiting on the chunk streamer is not enough to make a location's first sample honest. Measured on
+## the 18-scene suite: `Deep forest — day` reported a 22 fps 1% low against a 114 fps median, and
+## `Deep forest — NIGHT` — the same trees, the same place, visited later in the same run — reported
+## 74. Marshland did the same thing (39 by day, 73 by night). The pattern is first-visit, not
+## day-versus-night: whatever it costs to show a kind of ground for the first time, it costs once,
+## and the streamer has already reported itself idle by then. Shader and pipeline compilation on
+## first sight of an unseen material is the obvious suspect; this does not diagnose it, it just
+## refuses to charge it to whichever scene happened to go first.
+##
+## Which matters especially here, because the suite pairs every location across day and night to
+## make that comparison possible (F-458). Without a warm-up the day half systematically eats the
+## first-visit cost of every location and the night half never does, so the pairing measures visit
+## order rather than lighting — the exact thing it exists to control for.
+##
+## Warm-up runs in daylight only. The night block is downstream of it and measured clean, and
+## flipping the clock back and forth to warm both would cross the day/night thresholds repeatedly,
+## firing `night_started`/`day_started` and the wave and refill logic that hang off them.
+func _prewarm(scenes: Array[Dictionary]) -> void:
+	var seen: Dictionary = {}
+	var destinations: Array[Dictionary] = []
+	for scene: Dictionary in scenes:
+		var where: String = String(scene.get("where", "spawn"))
+		if seen.has(where):
+			continue
+		seen[where] = true
+		destinations.append(scene)
+	if destinations.is_empty():
+		return
+
+	_set_time_of_day(BenchmarkSuite.DAY_TIME_OF_DAY)
+	for index: int in destinations.size():
+		var scene: Dictionary = destinations[index]
+		phase_changed.emit("warming up — %d of %d" % [index + 1, destinations.size()])
+		var motion: StringName = StringName(scene.get("motion", BenchmarkSuite.MOTION_STILL))
+		_place_player(_resolve_destination(String(scene.get("where", "spawn"))))
+		_set_camera_pitch(BenchmarkSuite.FLY_PITCH_DEGREES
+			if motion == BenchmarkSuite.MOTION_FLY else 0.0)
+		await settle_world(_world, get_tree())
+		await _sleep(PREWARM_SECONDS)
+		if cancelled:
+			return
+
+
 # ── one scene ─────────────────────────────────────────────────────────────────────────────────
 
 
 func _run_scene(scene: Dictionary) -> Dictionary:
 	var tree: SceneTree = get_tree()
 	var destination: Vector3 = _resolve_destination(String(scene.get("where", "spawn")))
+	var motion: StringName = StringName(scene.get("motion", BenchmarkSuite.MOTION_STILL))
 	_place_player(destination)
 	_anchor = destination
 	_travel_heading = 0.0
+	_set_camera_pitch(BenchmarkSuite.FLY_PITCH_DEGREES
+		if motion == BenchmarkSuite.MOTION_FLY else 0.0)
 
-	if bool(scene.get("night", false)):
-		_set_time_of_day(BenchmarkSuite.NIGHT_TIME_OF_DAY)
+	# Day and night are set explicitly on EVERY scene, not only on the night ones. The suite runs
+	# the whole day block and then the whole night block, and a scene that only ever set night
+	# would leave the world dark for anything that came after it.
+	_set_time_of_day(BenchmarkSuite.NIGHT_TIME_OF_DAY if bool(scene.get("night", false))
+		else BenchmarkSuite.DAY_TIME_OF_DAY)
 	var enemies: int = int(scene.get("enemies", 0))
 	if enemies > 0 and _invulnerable:
 		_spawn_enemies(destination, enemies)
@@ -294,15 +368,11 @@ func _run_scene(scene: Dictionary) -> Dictionary:
 	await _sleep(BenchmarkSuite.SETTLE_SECONDS)
 
 	var sampler: FrameSampler = FrameSampler.new()
-	var travelling: bool = bool(scene.get("travel", false))
 	var start: int = Time.get_ticks_usec()
 	var last: int = start
 	while Time.get_ticks_usec() - start < int(BenchmarkSuite.SAMPLE_SECONDS * 1e6):
 		await tree.process_frame
-		if travelling:
-			_travel()
-		else:
-			_hold()
+		_step_motion(motion)
 		var now: int = Time.get_ticks_usec()
 		sampler.record(
 			float(now - last) / 1000.0,
@@ -321,7 +391,15 @@ func _run_scene(scene: Dictionary) -> Dictionary:
 	# Carried into the report because the advisor needs it: a scene whose cost is streaming rather
 	# than fill is not a scene a graphics preset can be chosen with. See `SettingsAdvisor`.
 	result["travel"] = bool(scene.get("travel", false))
+	result["motion"] = String(motion)
 	result["position"] = [destination.x, destination.y, destination.z]
+	result["night"] = bool(scene.get("night", false))
+	# Whatever this scene spawned goes away before the next one starts. Enemies persist and wander,
+	# so a wave left in the world would still be in frame — and still be animating and pathing —
+	# three scenes later, quietly adding its cost to measurements that are supposed to be about
+	# something else.
+	if enemies > 0:
+		_despawn_enemies()
 	return result
 
 
@@ -388,16 +466,14 @@ func _sample_calibration(scene: Dictionary) -> float:
 	await _sleep(CALIBRATION_SETTLE)
 
 	var sampler: FrameSampler = FrameSampler.new()
-	var travelling: bool = bool(scene.get("travel", false))
-	var seconds: float = TRAVEL_CALIBRATION_SECONDS if travelling else CALIBRATION_SECONDS
+	var motion: StringName = StringName(scene.get("motion", BenchmarkSuite.MOTION_STILL))
+	var moving: bool = motion != BenchmarkSuite.MOTION_STILL
+	var seconds: float = TRAVEL_CALIBRATION_SECONDS if moving else CALIBRATION_SECONDS
 	var start: int = Time.get_ticks_usec()
 	var last: int = start
 	while Time.get_ticks_usec() - start < int(seconds * 1e6):
 		await tree.process_frame
-		if travelling:
-			_travel()
-		else:
-			_hold()
+		_step_motion(motion)
 		var now: int = Time.get_ticks_usec()
 		sampler.record(
 			float(now - last) / 1000.0,
@@ -438,6 +514,8 @@ func _resolve_destination(where: String) -> Vector3:
 			return _find_mire()
 		"vista":
 			return _find_vista()
+		"flyover":
+			return _flyover_start()
 		_:
 			return _spawn_position()
 
@@ -553,6 +631,15 @@ func _find_vista() -> Vector3:
 	return _ground(best)
 
 
+## Where the flyover begins: upwind of the island centre along the flight axis, at altitude, so the
+## sample crosses the middle of the map rather than a corner of it. Deterministic from the constants
+## alone — the flight is the same every run on the same seed, which is the whole point of pinning
+## one.
+func _flyover_start() -> Vector3:
+	var half_run: float = BenchmarkSuite.FLY_SPEED * BenchmarkSuite.SAMPLE_SECONDS * 0.5
+	return Vector3(-half_run, BenchmarkSuite.FLY_ALTITUDE_M, 0.0)
+
+
 ## Ground-snaps a point through the world's own standing-position logic when it has one, so the
 ## benchmark stands where a player would rather than inside the terrain or hovering over it.
 func _ground(position: Vector3) -> Vector3:
@@ -570,6 +657,17 @@ func _place_player(position: Vector3) -> void:
 		_player.rotation.y = atan2(-to_centre.x, -to_centre.y)
 
 
+## Aims the view up or down. Pitch lives on the player's camera pivot, not on the body — the body
+## owns yaw (`PlayerCamera._rotate_view()`), so a flyover that only rotated the body would fly over
+## the island looking straight at the horizon. Reset to level for every ground scene, because a
+## pitch left over from the flyover would have the next scene measuring the sky.
+func _set_camera_pitch(degrees: float) -> void:
+	var pivot: Node3D = _player.get_node_or_null(^"CameraPivot") as Node3D
+	if pivot == null:
+		return
+	pivot.rotation.x = deg_to_rad(degrees)
+
+
 ## Walks the anchor body outward at sprint speed, turning a little each frame so the path spirals
 ## rather than leaving the island. Position is written directly rather than driven through the
 ## controller: the benchmark wants a repeatable path through unstreamed ground, not a physics
@@ -585,6 +683,32 @@ func _travel() -> void:
 	_player.rotation.y = atan2(-direction.x, -direction.z)
 
 
+## One frame of whatever this scene's camera is doing.
+func _step_motion(motion: StringName) -> void:
+	match motion:
+		BenchmarkSuite.MOTION_WALK:
+			_travel()
+		BenchmarkSuite.MOTION_FLY:
+			_fly()
+		_:
+			_hold()
+
+
+## Crosses the island in a straight line at altitude. Straight rather than a spiral because this
+## scene is a map flyover — the player should recognise the island they are about to play on — and
+## because a constant heading at 40 m/s walks the streamer's neighbourhood across new ground at a
+## steady rate instead of circling back over chunks it just built.
+func _fly() -> void:
+	var delta: float = get_process_delta_time()
+	var next: Vector3 = _player.global_position + Vector3(BenchmarkSuite.FLY_SPEED * delta, 0.0, 0.0)
+	# Hold the altitude above the TERRAIN, not above sea level, so the camera keeps its distance
+	# from the ground when it passes over the highland rather than skimming it.
+	next.y = maxf(BenchmarkSuite.FLY_ALTITUDE_M,
+		float(_world.call(&"height_at", next.x, next.z)) + FLY_CLEARANCE_M)
+	_player.global_position = next
+	_player.rotation.y = -PI * 0.5
+
+
 ## Pins a stationary scene's camera to where the scene said it should be. Without this the combat
 ## scene measures a moving target: six enemies shoving a character body around is exactly what they
 ## are built to do, and the view drifting mid-sample makes the numbers unrepeatable between runs.
@@ -597,6 +721,12 @@ func _spawn_enemies(position: Vector3, count: int) -> void:
 	var spawner: Node = get_node_or_null(^"/root/WaveSpawner")
 	if spawner != null and spawner.has_method(&"host_spawn_wave_at"):
 		spawner.call(&"host_spawn_wave_at", position, count)
+
+
+func _despawn_enemies() -> void:
+	var world: Node = get_node_or_null(^"/root/EnemyWorld")
+	if world != null and world.has_method(&"host_despawn_all"):
+		world.call(&"host_despawn_all")
 
 
 func _set_time_of_day(fraction: float) -> void:

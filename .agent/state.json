@@ -36,41 +36,11 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "core/bench/benchmark_runner.gd": {
-      "agent": "quill895277",
-      "at": "2026-08-21T21:47:19+00:00",
-      "task": "F-458",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
-    },
-    "core/bench/benchmark_suite.gd": {
-      "agent": "quill895277",
-      "at": "2026-08-21T21:46:32+00:00",
-      "task": "F-458",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
-    },
-    "core/bench/settings_advisor.gd": {
-      "agent": "quill895277",
-      "at": "2026-08-21T21:47:19+00:00",
-      "task": "F-458",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
-    },
     "docs/ASSET_TRACKER.md": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:13:34+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
-    },
-    "tools/bench_seed_survey.gd": {
-      "agent": "quill895277",
-      "at": "2026-08-21T21:43:21+00:00",
-      "task": "F-458",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
-    },
-    "tools/benchmark_check.gd": {
-      "agent": "quill895277",
-      "at": "2026-08-21T21:47:19+00:00",
-      "task": "F-458",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "tools/blender/build_gatherable_plants.py": {
       "agent": "gale43d16e",
@@ -89,12 +59,6 @@
       "at": "2026-08-21T17:52:45+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
-    },
-    "ui/frontend/benchmark_screen.gd": {
-      "agent": "quill895277",
-      "at": "2026-08-21T21:47:19+00:00",
-      "task": "F-458",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     }
   },
   "in_flight": {
@@ -115,20 +79,6 @@
       "notes": [],
       "started": "2026-08-21T17:13:34+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
-    },
-    "F-458": {
-      "agent": "quill895277",
-      "files": [
-        "tools/bench_seed_survey.gd",
-        "core/bench/benchmark_suite.gd",
-        "core/bench/benchmark_runner.gd",
-        "core/bench/settings_advisor.gd",
-        "tools/benchmark_check.gd",
-        "ui/frontend/benchmark_screen.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-21T21:43:21+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     }
   },
   "recent": {
@@ -2367,16 +2317,16 @@
     },
     "core/bench/benchmark_runner.gd": {
       "agent": "quill895277",
-      "at": "2026-08-21T21:36:55+00:00",
-      "hash": "d6ba11da125019ae67e982072e1f509709ee8aa31a0fb2ce010453079a4fd9ce",
-      "task": "F-453",
+      "at": "2026-08-21T21:57:23+00:00",
+      "hash": "df51cd23bf8f09db1581c7eb70fe7a621dc107604663e3fca97e6ee635add761",
+      "task": "F-458",
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "core/bench/benchmark_suite.gd": {
       "agent": "quill895277",
-      "at": "2026-08-21T21:36:55+00:00",
-      "hash": "13a88190e22807df256bb1321d714d36c808e79a00be4646f1e972c3f5ad1774",
-      "task": "F-453",
+      "at": "2026-08-21T21:57:23+00:00",
+      "hash": "a5b39195eb797398255c897ec9c453c861ceea654a1db497dc3a621b42d265d1",
+      "task": "F-458",
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "core/bench/frame_sampler.gd": {
@@ -2395,9 +2345,9 @@
     },
     "core/bench/settings_advisor.gd": {
       "agent": "quill895277",
-      "at": "2026-08-21T21:36:55+00:00",
+      "at": "2026-08-21T21:57:23+00:00",
       "hash": "b64b53079338a5436ee6ce4904b56db35bbf1a468d19722892edcd7189fa31be",
-      "task": "F-453",
+      "task": "F-458",
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "core/net/net_version.gd": {
@@ -2778,11 +2728,18 @@
       "task": "F-347",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
+    "tools/bench_seed_survey.gd": {
+      "agent": "quill895277",
+      "at": "2026-08-21T21:57:23+00:00",
+      "hash": "c1e1226640318050db74c2beebb0d2814c3ffd36649bf9b3db237be45c55726d",
+      "task": "F-458",
+      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
+    },
     "tools/benchmark_check.gd": {
       "agent": "quill895277",
-      "at": "2026-08-21T21:36:55+00:00",
-      "hash": "4c5874f14ba9ec556dfd59c2ceb37fbd4be9fe68e773bb82a3e7341fb042416c",
-      "task": "F-453",
+      "at": "2026-08-21T21:57:23+00:00",
+      "hash": "351472b08b2b033f20d82460020d8cde9077087619e990fc0ab456b40cdbd983",
+      "task": "F-458",
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "tools/biome_region_check.gd": {
@@ -3389,9 +3346,9 @@
     },
     "ui/frontend/benchmark_screen.gd": {
       "agent": "quill895277",
-      "at": "2026-08-21T21:36:55+00:00",
+      "at": "2026-08-21T21:57:23+00:00",
       "hash": "8bff89ad48a7b981d1a271158314ae9f0a7143f3f22d19794d09a58b618b26ac",
-      "task": "F-453",
+      "task": "F-458",
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "ui/frontend/frontend.gd": {
@@ -3682,7 +3639,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     }
   },
-  "rev": 873,
+  "rev": 874,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9072,9 +9029,11 @@
       "title": "Traversal hitches to a 17 fps 1% low on the fastest machine in the project"
     },
     "F-458": {
+      "done_at": "2026-08-21T21:57:23+00:00",
+      "done_by": "quill895277",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "The benchmark seed is arbitrary, its day/night split is 7:2, and nothing flies over the island"
     }

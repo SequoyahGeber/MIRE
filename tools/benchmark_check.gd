@@ -134,7 +134,8 @@ func _check_sampler() -> void:
 func _check_suite() -> void:
 	print("\n-- suite --")
 	var scenes: Array[Dictionary] = BenchmarkSuite.scenes()
-	_expect(scenes.size() >= 5, "the suite has enough scenes to be worth running")
+	_expect(scenes.size() >= 10, "the suite has enough scenes to be worth running (%d)"
+		% scenes.size())
 
 	var ids: Dictionary = {}
 	for scene: Dictionary in scenes:
@@ -146,21 +147,54 @@ func _check_suite() -> void:
 			_expect(not String(scene.get(key, "")).is_empty(),
 				"scene '%s' has a %s" % [id, key])
 
-	# The ordering rule the suite's header states: nothing is measured in a world an earlier scene
-	# permanently changed.
-	var seen_mutating: bool = false
+	# F-458: equal by construction, not by counting rows. Night is when this game is played hard,
+	# and a suite weighted toward daylight recommends settings for the easy half of it.
+	var split: Vector2i = BenchmarkSuite.day_night_counts()
+	_expect(split.x == split.y,
+		"the suite measures as much night as day (%d day, %d night)" % [split.x, split.y])
+	_expect(split.x > 0, "and actually has some of each")
+
+	# The whole day block, then the whole night block. Crossing into darkness fires `night_started`
+	# and is a one-way step, so it must happen exactly once, half way through.
+	var seen_night: bool = false
 	for scene: Dictionary in scenes:
-		if bool(scene.get("mutates", false)):
-			seen_mutating = true
-		elif seen_mutating:
-			_fail("scene '%s' runs after a scene that changed the world" % String(scene["id"]))
-	_expect(seen_mutating, "the suite includes the scenes that change the world (night, a wave)")
+		if bool(scene.get("night", false)):
+			seen_night = true
+		elif seen_night:
+			_fail("scene '%s' runs in daylight after the suite has gone dark"
+				% String(scene["id"]))
+
+	# Every situation appears in both halves, or the pairing is not a pairing.
+	for situation: Dictionary in BenchmarkSuite.situations():
+		var base: String = String(situation["id"])
+		_expect(ids.has("%s_day" % base) and ids.has("%s_night" % base),
+			"'%s' is measured by both day and night" % base)
+
+	var motions: Dictionary = {}
+	for scene: Dictionary in scenes:
+		motions[String(scene.get("motion", ""))] = true
+		_expect(bool(scene.get("travel", false))
+			== (StringName(scene.get("motion", "")) != BenchmarkSuite.MOTION_STILL),
+			"scene '%s' agrees with itself about whether the camera moves" % String(scene["id"]))
+	_expect(motions.has(String(BenchmarkSuite.MOTION_FLY)),
+		"the suite includes a flyover — nothing else shows the island as a whole (F-458)")
+	_expect(motions.has(String(BenchmarkSuite.MOTION_WALK)),
+		"and a ground traversal, which is where the hitches are")
+	_expect(motions.has(String(BenchmarkSuite.MOTION_STILL)),
+		"and stationary scenes, which are the only ones a preset can be chosen on")
+
+	var waves: int = 0
+	for scene: Dictionary in scenes:
+		if int(scene.get("enemies", 0)) > 0:
+			waves += 1
+	_expect(waves == 2, "a wave is measured in each half (%d)" % waves)
 
 	_expect(BenchmarkSuite.estimated_seconds() > 30.0
-		and BenchmarkSuite.estimated_seconds() < 300.0,
+		and BenchmarkSuite.estimated_seconds() < 400.0,
 		"the estimate is a plausible thing to ask a player for (%.0f s)"
 		% BenchmarkSuite.estimated_seconds())
-	_expect(not BenchmarkSuite.scene_by_id(&"shore").is_empty(), "scene_by_id finds a real scene")
+	_expect(not BenchmarkSuite.scene_by_id(&"shore_day").is_empty(),
+		"scene_by_id finds a real scene")
 	_expect(BenchmarkSuite.scene_by_id(&"nonexistent").is_empty(),
 		"scene_by_id returns empty for an unknown id rather than crashing")
 
@@ -480,7 +514,7 @@ func _check_live() -> void:
 	if not full:
 		# One cheap scene, no calibration: enough to prove destination resolution, teleporting,
 		# sampling, the ledger write and the report, without a three-minute check.
-		subset.append(BenchmarkSuite.scene_by_id(&"forest"))
+		subset.append(BenchmarkSuite.scene_by_id(&"forest_day"))
 	runner.run(world, 60, false, subset, full)
 	# Bounded: a runner that dies without emitting either signal must fail the check, not hang it.
 	var waited: int = 0

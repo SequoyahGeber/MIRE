@@ -8632,3 +8632,15 @@ Constructing on a WorkerThreadPool task and handing finished, unparented nodes b
 Files: `tools/traversal_profile.gd`, `world/gen/resource_scatter_field.gd`, `world/chunk/chunk_streamer.gd`, `tools/chunk_stream_check.gd`
 
 Commit at time of writing: `e00eee1`
+
+---
+
+### DONE · F-458 · quill895277 · 2026-08-21T21:57:23+00:00
+
+**The benchmark seed is arbitrary, its day/night split is 7:2, and nothing flies over the island**
+
+Surveyed seed, 18-scene day/night suite, flyover, warm-up pass. 285 assertions, 0 failures.
+
+Files: `tools/bench_seed_survey.gd`, `core/bench/benchmark_suite.gd`, `core/bench/benchmark_runner.gd`, `core/bench/settings_advisor.gd`, `tools/benchmark_check.gd`, `ui/frontend/benchmark_screen.gd`
+
+Commit at time of writing: `c26615a`
