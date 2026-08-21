@@ -3,11 +3,11 @@
     "name": "harvest_tree_intact",
     "family": "tree",
     "state": "intact",
-    "width_m": 3.455,
-    "depth_m": 3.54,
-    "height_m": 5.665,
-    "mesh_parts": 56,
-    "polygons": 838,
+    "width_m": 5.421,
+    "depth_m": 5.536,
+    "height_m": 15.63,
+    "mesh_parts": 81,
+    "polygons": 1228,
     "materials": [
       "MIRE_PineDark",
       "MIRE_PineLight",
@@ -19,11 +19,11 @@
     "name": "harvest_tree_damaged_a",
     "family": "tree",
     "state": "damaged_a",
-    "width_m": 3.455,
-    "depth_m": 3.54,
-    "height_m": 5.665,
-    "mesh_parts": 58,
-    "polygons": 873,
+    "width_m": 5.421,
+    "depth_m": 5.536,
+    "height_m": 15.63,
+    "mesh_parts": 83,
+    "polygons": 1263,
     "materials": [
       "MIRE_PineDark",
       "MIRE_PineLight",
@@ -37,17 +37,33 @@
     "name": "harvest_tree_damaged_b",
     "family": "tree",
     "state": "damaged_b",
-    "width_m": 3.455,
-    "depth_m": 3.423,
-    "height_m": 5.665,
-    "mesh_parts": 59,
-    "polygons": 860,
+    "width_m": 5.421,
+    "depth_m": 5.417,
+    "height_m": 15.579,
+    "mesh_parts": 83,
+    "polygons": 1219,
     "materials": [
       "MIRE_PineDark",
       "MIRE_PineLight",
       "MIRE_WoodBark",
       "MIRE_WoodBarkDark",
-      "MIRE_WoodBarkDark.001",
+      "MIRE_WoodCut"
+    ]
+  },
+  {
+    "name": "harvest_tree_damaged_c",
+    "family": "tree",
+    "state": "damaged_c",
+    "width_m": 4.902,
+    "depth_m": 4.91,
+    "height_m": 15.579,
+    "mesh_parts": 76,
+    "polygons": 1002,
+    "materials": [
+      "MIRE_PineDark",
+      "MIRE_PineLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkDark",
       "MIRE_WoodCut"
     ]
   },
@@ -55,7 +71,7 @@
     "name": "harvest_tree_felled_trunk",
     "family": "tree",
     "state": "felled",
-    "width_m": 5.674,
+    "width_m": 7.802,
     "depth_m": 2.79,
     "height_m": 1.757,
     "mesh_parts": 15,
@@ -72,9 +88,9 @@
     "name": "harvest_tree_fresh_stump",
     "family": "tree",
     "state": "fresh_stump",
-    "width_m": 1.967,
-    "depth_m": 1.967,
-    "height_m": 1.037,
+    "width_m": 2.499,
+    "depth_m": 2.499,
+    "height_m": 1.133,
     "mesh_parts": 11,
     "polygons": 154,
     "materials": [
@@ -88,13 +104,13 @@
     "name": "harvest_tree_depleted_stump",
     "family": "tree",
     "state": "depleted_stump",
-    "width_m": 1.967,
-    "depth_m": 1.967,
-    "height_m": 0.86,
+    "width_m": 2.499,
+    "depth_m": 2.499,
+    "height_m": 0.936,
     "mesh_parts": 12,
     "polygons": 109,
     "materials": [
-      "MIRE_WoodBarkDark.001",
+      "MIRE_WoodBarkDark",
       "MIRE_WoodDead",
       "MIRE_WoodDeadCut"
     ]
@@ -113,17 +129,47 @@
     ]
   },
   {
-    "name": "stone_node_cracked",
+    "name": "stone_node_chipped",
     "family": "stone",
-    "state": "cracked",
+    "state": "chipped",
     "width_m": 2.254,
     "depth_m": 1.787,
     "height_m": 1.77,
     "mesh_parts": 8,
-    "polygons": 121,
+    "polygons": 160,
+    "materials": [
+      "MIRE_Stone",
+      "MIRE_StoneLight"
+    ]
+  },
+  {
+    "name": "stone_node_cracked",
+    "family": "stone",
+    "state": "cracked",
+    "width_m": 2.235,
+    "depth_m": 1.787,
+    "height_m": 1.572,
+    "mesh_parts": 15,
+    "polygons": 261,
     "materials": [
       "MIRE_Coal",
-      "MIRE_Stone"
+      "MIRE_Stone",
+      "MIRE_StoneLight"
+    ]
+  },
+  {
+    "name": "stone_node_shattered",
+    "family": "stone",
+    "state": "shattered",
+    "width_m": 2.175,
+    "depth_m": 1.736,
+    "height_m": 1.382,
+    "mesh_parts": 22,
+    "polygons": 362,
+    "materials": [
+      "MIRE_Coal",
+      "MIRE_Stone",
+      "MIRE_StoneLight"
     ]
   },
   {
@@ -150,22 +196,54 @@
     "polygons": 140,
     "materials": [
       "MIRE_Iron",
-      "MIRE_StoneDark.001"
+      "MIRE_StoneDark"
+    ]
+  },
+  {
+    "name": "iron_node_chipped",
+    "family": "iron",
+    "state": "chipped",
+    "width_m": 2.254,
+    "depth_m": 1.787,
+    "height_m": 1.77,
+    "mesh_parts": 12,
+    "polygons": 240,
+    "materials": [
+      "MIRE_Iron",
+      "MIRE_Stone",
+      "MIRE_StoneDark"
     ]
   },
   {
     "name": "iron_node_cracked",
     "family": "iron",
     "state": "cracked",
-    "width_m": 2.254,
+    "width_m": 2.235,
     "depth_m": 1.787,
-    "height_m": 1.77,
-    "mesh_parts": 12,
-    "polygons": 201,
+    "height_m": 1.572,
+    "mesh_parts": 19,
+    "polygons": 341,
     "materials": [
       "MIRE_Coal",
       "MIRE_Iron",
-      "MIRE_StoneDark.001"
+      "MIRE_Stone",
+      "MIRE_StoneDark"
+    ]
+  },
+  {
+    "name": "iron_node_shattered",
+    "family": "iron",
+    "state": "shattered",
+    "width_m": 2.175,
+    "depth_m": 1.736,
+    "height_m": 1.382,
+    "mesh_parts": 26,
+    "polygons": 442,
+    "materials": [
+      "MIRE_Coal",
+      "MIRE_Iron",
+      "MIRE_Stone",
+      "MIRE_StoneDark"
     ]
   },
   {
