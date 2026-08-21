@@ -75,6 +75,31 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-21 — F-411 resolved: Settings has a runtime God mode toggle; host-owned immunity, owner-controlled flight (flinta92725)
+
+`GodModeService` is the one extension seam for playtesting powers. The Settings menu's PLAYTESTING
+section calls `request_local_enabled()`, which submits the same HOST-scope/op-gated `god
+[on|off]` command the console exposes. There is no privileged UI-only path and the value is
+deliberately not persisted: every new process starts safe/off.
+
+```gdscript
+GodModeService.is_enabled(peer_id: int) -> bool        # canonical on host; health/host consumers
+GodModeService.is_local_enabled() -> bool              # approved owning-client presentation/move
+GodModeService.request_local_enabled(enabled: bool)    # Settings-safe request + completion signal
+GodModeService.host_set_enabled(peer_id, enabled)      # host/solo mutation seam
+```
+
+`PlayerHealth` rejects shared/direct, starvation and Blight damage for the host-approved set.
+Enabling while downed revives and fully heals through its existing host seams. `PlayerController`
+keeps collision and applies flight only on the owning movement authority: camera-relative movement,
+Jump up, Dodge down, Sprint x2. Future God-mode powers query this service rather than adding another
+cheat flag. The one new reliable RPC bumped protocol 21 -> 22 and the recorded manifest 55 -> 56.
+
+Verification: `tools/god_mode_check.gd` covers the Settings checkbox, op refusal, recovery, immunity,
+flight entry/exit and restored ordinary damage/gravity; `tools/god_mode_net_check.gd` proves a real
+client is refused before op, approved after op, immune on the host, and cleanly disabled. Both print
+`failures=0`.
+
 ### 2026-08-20 — F-307 resolved: a terminal run-summary overlay is no longer a dead end when the host quits (lp)
 
 **D-185.** F-243's two terminal overlays (`ui/hud/defeat_hud.gd`, `ui/hud/extraction_hud.gd`) read

@@ -334,6 +334,7 @@ listed are already shipped unless marked *(new seam)*.
 | Inventory | `give`, `inv [list\|clear] [peer]` | `InventoryService.host_add/host_remove/host_slots` |
 | Enemies | `spawn <enemy_id> [count] [vec3]`, `kill <selector>`, `killall`, `enemies` | `EnemyWorld.host_spawn/host_despawn_all` |
 | Health | `damage <selector> <n>`, `heal <selector> [n]`, `down <peer>`, `revive <peer>`, `starve <peer>` | `PlayerHealth.host_apply_damage` + host state *(small new seams for heal/set)* |
+| Playtesting | `god [toggle\|on\|off\|status]` | `GodModeService.host_set_enabled`; Settings uses the same HOST-scope/op-gated command, never a privileged UI-only path |
 | Time | `time set <0..1|dawn|noon|dusk|midnight>`, `time add <sec>`, `time query` | `DayNight.host_advance` (its doc already predicted this caller) |
 | Waves | `wave start [count]`, `wave stop` | `WaveSpawner`/`EnemyWorld.top_up_ambient` *(start/stop seam formalized)* |
 | Powerups | `powerup give <peer> <id> [stacks]`, `powerup clear <peer>`, `stat <peer> <name>` | `PowerupService` host grant seams + `stat()` |
