@@ -17,15 +17,99 @@ extends RefCounted
 ## BiomeDef is accessed by script-equality + `.get()`/`.call()` rather than a typed `BiomeDef`
 ## parameter, for the same F-016 reason registry.gd's untyped Def dictionaries do it: a brand-new
 ## class_name is not bare-resolvable in a fresh headless clone until the editor scans it.
+##
+## ## F-401 — the field below is a REGION field, not a weather gradient
+##
+## Reported from play: "we should have some distinct, unique biomes, not just everything going
+## everywhere." The content was three defs — shore below 1.6 m, and the wet/dry halves of everything
+## above it split at moisture 0.5 — but the reason nothing read as a place was the FIELD, not the
+## row count. Measured at the shipped settings (`tools/biome_region_check.gd`'s sweep):
+##
+##     frequency 0.010, 3 octaves, gain 0.50, no warp, no redistribution
+##       -> land moisture spans p02=0.23 .. p98=0.76 (a bell around 0.5, most of 0..1 unused)
+##       -> 11.4 band changes per island transect
+##       -> 4% of land sits on a plateau
+##
+## Eleven changes across a 590 m island is a ~50 m feature: that is TEXTURE. Whatever bands are
+## authored on top of it, the result is a stipple of every biome everywhere — "everything going
+## everywhere", exactly as reported — and no edge you could cross. The bell shape compounds it: with
+## 96% of land inside 0.23..0.76, any band authored near 0 or 1 covers nothing at all, so the only
+## partition the old field could express WAS a single mid-range threshold.
+##
+## Three changes, all measured in that same sweep:
+##
+##   1. **Lower frequency.** 0.010 -> 0.0035, so the base octave's wavelength is ~285 m against a
+##      590 m island. Transects now change band 6.6 times instead of 11.4: regions ~90 m across,
+##      which is a couple of minutes of walking rather than a stipple.
+##   2. **A domain warp.** Low-frequency fBm on its own draws soft ellipses. The warp (55 m at
+##      0.006) makes region edges finger into each other, so a forest has a coastline rather than a
+##      circumference — the same trick `IslandHeightmap._make_continent_noise()` uses on the
+##      landmass itself, at a different scale.
+##   3. **Redistribution.** `(v - 0.5) * REGION_CONTRAST + 0.5`, clamped. This is what turns a
+##      gradient into regions with interiors: it spreads the bell to very nearly uniform over 0..1
+##      (p10=0.05, p25=0.23, p50=0.51, p75=0.78, p90=0.92), so an authored band's width IS its share
+##      of the island, and it parks 19% of land on a clamped plateau where the field is exactly
+##      constant — a region interior in the literal sense.
+##
+## The clamp is a kink (C0, not C1) rather than a step, so nothing downstream sees a discontinuity —
+## `blend_amplitudes()` and `ChunkMesher.blend_ground_albedo()` both smoothstep across it. A cellular
+## / Voronoi CELL_VALUE field would have given harder region edges and was rejected for exactly that
+## reason: it is piecewise CONSTANT, so the amplitude pair would step by the full authored delta in
+## one vertex — the ~7.7 m wall `AMPLITUDE_BLEND_MOISTURE` below exists to prevent.
+##
+## **The name stays `moisture`.** It is a wetness-flavoured region index and the content still reads
+## as wetness (heath -> meadow -> birchwood -> marsh/forest, dry to wet). Renaming it would touch
+## `world/chunk/chunk_mesher.gd` and six tools that bind `moisture_from_set` by name, which is a
+## bigger and less useful diff than this comment.
+##
+## ## Which axes select a biome, and which deliberately do not (F-401)
+##
+## F-401 lists four unused axes. What the shipped table does with each:
+##
+##   · **Region field** — the primary axis, above. Four of the seven biomes are moisture bands.
+##   · **Continental height** — two cuts, not five. Land spans p05=0.4 m to p95=4.3 m of continent
+##     TODAY, so the height axis simply has no room for more: `shore` takes below 1.7 m, `marsh`
+##     takes 1.7-2.9 m of the wet band (which is what puts marsh on the river terraces), and
+##     `highland` takes above 3.9 m of the mid-to-wet band (pine on the hill crowns). **When F-400's
+##     taller hills land, `highland.height_min` and `forest.height_max` are the pair to re-tune** —
+##     they are the only authored values coupled to `IslandHeightmap.HILL_HEIGHT_*`, they must move
+##     together (they are the same 3.9 m edge), and raising the hills without raising them grows the
+##     pine ridge at the deep forest's expense. `tools/terrain_map_render.gd` prints the per-biome
+##     share of land with every render, which is the number to watch while re-tuning.
+##   · **Distance from the river** — used, and for free: the river carves the CONTINENT (4.14), so
+##     its corridor resolves as low ground and `marsh`'s 1.7-2.9 m band lands on the banks by
+##     construction. No new field, no special case.
+##   · **Slope** — deliberately NOT an axis. `ChunkMesher.blend_ground_albedo()` weights biomes by
+##     `_band_weight()` over (height, moisture) alone, so a third axis would select an id the ground
+##     COLOUR could not follow: two biomes overlapping in (height, moisture) but split by slope
+##     would average their colours everywhere. Adding slope means widening that seam first.
+##
+## For the same reason the seven shipped bands TILE the (height, moisture) domain — disjoint
+## rectangles, no overlap, no gap. Overlap is legal (`BiomeDef.priority` resolves the id) but it
+## costs the loser's colour and amplitudes: both blends are priority-BLIND, so an overlapped biome's
+## authored look is never what the ground actually shows. A gap is worse — `blend_amplitudes()`
+## falls back to (1.0, 1.0), which is the one true discontinuity in the field.
 
 const IslandHeightmap := preload("res://world/gen/island_heightmap.gd")
 const BiomeDefScript := preload("res://world/gen/biome_def.gd")
 
-const MOISTURE_NOISE_FREQUENCY: float = 0.01
+## Region-field shape. See the F-401 section of this file's header for the measurements each of
+## these came from; `tools/biome_region_check.gd` re-measures them and fails if the field drifts
+## back toward texture.
+const MOISTURE_NOISE_FREQUENCY: float = 0.0035
 const MOISTURE_NOISE_OCTAVES: int = 3
 const MOISTURE_NOISE_LACUNARITY: float = 2.0
-const MOISTURE_NOISE_GAIN: float = 0.5
+const MOISTURE_NOISE_GAIN: float = 0.42
 const MOISTURE_NOISE_SALT: int = 0x0C0FFEE1
+## Domain warp, so region edges interlock instead of drawing ellipses (F-401).
+const REGION_WARP_AMPLITUDE: float = 55.0
+const REGION_WARP_FREQUENCY: float = 0.006
+const REGION_WARP_OCTAVES: int = 2
+## Redistribution gain applied about 0.5, then clamped to 0..1 (F-401). 2.0 was picked off the sweep
+## as the largest value that still leaves every band a real share: at 2.6 the field spends 32% of
+## the island clamped at exactly 0 or 1, which hands the two outermost bands a third of the map and
+## squeezes the middle three.
+const REGION_CONTRAST: float = 2.0
 
 
 ## The moisture field plus the `IslandHeightmap.NoiseSet` a continent sample needs, so a caller
@@ -69,11 +153,22 @@ static func _make_moisture_noise(world_seed: int) -> FastNoiseLite:
 	noise.fractal_octaves = MOISTURE_NOISE_OCTAVES
 	noise.fractal_lacunarity = MOISTURE_NOISE_LACUNARITY
 	noise.fractal_gain = MOISTURE_NOISE_GAIN
+	# F-401: the warp is what stops a low-frequency field from drawing ellipses. Configured on the
+	# noise object rather than by pre-warping (x, z) by hand, so the bare and set-backed paths
+	# cannot drift apart — `tools/worldgen_noise_reuse_check.gd` compares them float-for-float.
+	noise.domain_warp_enabled = true
+	noise.domain_warp_type = FastNoiseLite.DOMAIN_WARP_SIMPLEX
+	noise.domain_warp_amplitude = REGION_WARP_AMPLITUDE
+	noise.domain_warp_frequency = REGION_WARP_FREQUENCY
+	noise.domain_warp_fractal_type = FastNoiseLite.DOMAIN_WARP_FRACTAL_PROGRESSIVE
+	noise.domain_warp_fractal_octaves = REGION_WARP_OCTAVES
 	return noise
 
 
-## Normalized 0..1 (FastNoiseLite's native -1..1 rescaled) — a separate noise field from
-## IslandHeightmap's two layers so wet/dry pockets don't just trace the terrain's own shape.
+## Normalized 0..1 — a separate noise field from IslandHeightmap's two layers so wet/dry pockets
+## don't just trace the terrain's own shape. Since F-401 this is the island's REGION index, not a
+## smooth weather gradient: see this file's header for the three changes that made it one, and for
+## why the name did not change with it.
 ##
 ## Builds its noise field per call. A caller sampling many points for one seed wants
 ## `moisture_from_set()` (F-261) — same output, the construction paid once.
@@ -88,9 +183,18 @@ static func moisture_from_set(x: float, z: float, set: NoiseSet) -> float:
 	return _moisture_with(x, z, set.moisture_noise)
 
 
-## The one body both paths funnel through, so the rescale cannot drift between them.
+## The one body both paths funnel through, so the rescale AND the F-401 redistribution cannot drift
+## between them.
+##
+## `clampf` after the gain is deliberate and is half of what makes this a region field: the tails it
+## pins are the region INTERIORS, ~19% of the island where the value is exactly 0.0 or 1.0 and the
+## ground is therefore exactly one biome's authored colour and roughness. Multiplying instead of
+## clamping (or S-curving) would keep a gradient there, which is what the old field had and what
+## F-401 was filed about. Pure arithmetic and a comparison, so it stays inside the D-017 world-gen
+## safe set.
 static func _moisture_with(x: float, z: float, noise: FastNoiseLite) -> float:
-	return (noise.get_noise_2d(x, z) + 1.0) * 0.5
+	var raw: float = (noise.get_noise_2d(x, z) + 1.0) * 0.5
+	return clampf((raw - 0.5) * REGION_CONTRAST + 0.5, 0.0, 1.0)
 
 
 ## Resolution rule: among every BiomeDef whose range contains (height, moisture), the LOWEST
@@ -164,13 +268,40 @@ static func biome_at_from_set(
 ## degree floor limit), and a chunk seam runs straight through it. Blending the pair instead makes
 ## the amplitude field continuous, so the transition is a slope with a width rather than an edge.
 ##
-## Sized against the fields they read, not chosen round. 1.5 m of continental height is ~5 m of
-## ground at a typical coastal slope, over which the shore/grassland detail step (0.35 -> 0.8, at
-## most 0.94 m of relief) spreads to well under a fifth of the floor limit. 0.06 of moisture is a
-## ~0.12-wide band on a field whose fBm crosses its full range over ~100 m, so roughly 10-15 m of
-## ground for the forest/grassland ridge step — the same order, and the largest step there is.
-const AMPLITUDE_BLEND_HEIGHT_M: float = 1.5
-const AMPLITUDE_BLEND_MOISTURE: float = 0.06
+## Sized against the BANDS they blend, not chosen round — and both shrank at F-401, because seven
+## tiled bands are narrower than three overlapping ones and a margin wider than half a band means
+## that band never reaches its own authored values anywhere.
+##
+##   · **Height, 1.5 m -> 0.22 m.** The narrowest authored height bands are now `forest`'s 2.9-3.9 m
+##     and `marsh`'s 1.7-2.9 m, 1.0 and 1.2 m wide, because land only spans ~4 m of continent to
+##     begin with. At the old 1.5 m the crossfade was WIDER THAN EITHER BAND: marsh would have
+##     blended straight from shore into forest and neither one's authored colour would have appeared
+##     on the ground anywhere. 0.22 m leaves both a ~56-63% interior. In metres of walking it is
+##     ~2.4 m at the coastal slope (~0.09 m of continent per metre) and tens of metres across the
+##     flat interior, which is the right shape: a crisp shoreline, a soft inland transition.
+##   · **Moisture, 0.06 -> 0.03.** The narrowest region band is `heath`'s 0.17. At 0.06 the interior
+##     would have been 0.05 of 0.17 — 30% of the band showing its own colour and 70% showing a
+##     smear of its neighbours', which is how you get seven biomes that all look like each other.
+##     0.03 leaves 65%. Against the F-401 field (~0.012 of moisture per metre at a region edge) that
+##     is a ~5 m transition — an edge you cross, which is the point.
+##
+## What bounds them from BELOW is the continuity assertion, and the authored table was tuned to give
+## it room rather than the other way round. `smoothstep` peaks at 1.5/margin, so over
+## `tools/biome_terrain_check.gd`'s domain sweep the step is `delta x 1.5 x sweep_step / margin`:
+##
+##   height axis   worst delta 0.65 (`shore` 0.30 detail -> `heath` 0.95) -> 0.65 x 1.5 x 0.01/0.22
+##                 = 0.044, inside the 0.05 limit
+##   moisture axis worst delta 0.68 (`grassland` 0.62 detail -> `highland` 1.30) ->
+##                 0.68 x 1.5 x 0.001/0.03 = 0.034
+##
+## Keeping the authored amplitudes CLOSE is what buys that room, and it is not a compromise: the art
+## direction is Muck — mostly flat, gentle rolling, no mountains — so nothing in `content/biomes/`
+## exceeds 1.30 detail or 0.80 ridge in the first place. A dramatic amplitude table would have
+## forced these margins back up and taken every narrow band's interior with them. `marsh`'s detail
+## was raised 0.22 -> 0.35 and `forest`'s trimmed 1.05 -> 0.95 for exactly this reason: their shared
+## 2.9 m edge was the one delta that did not fit.
+const AMPLITUDE_BLEND_HEIGHT_M: float = 0.22
+const AMPLITUDE_BLEND_MOISTURE: float = 0.03
 
 
 ## The authored biome table flattened to plain floats, ONCE, so a caller resolving a point's

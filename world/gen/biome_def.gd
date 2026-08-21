@@ -45,6 +45,14 @@ extends Resource
 ## which is arbitrary but deterministic — every peer computes it identically off the same content, so
 ## "arbitrary" costs nothing here. Shore's low priority is what lets it win at sea level even though a
 ## sloppy grassland/forest range reaching down to 0m would otherwise compete for the same band.
+##
+## F-401: since the seven shipped bands TILE the (height, moisture) domain — disjoint rectangles,
+## no overlap and no gap — priority now only ever decides a shared EDGE, never an area. That is a
+## content invariant worth defending rather than an accident: both downstream blends
+## (`BiomeMap.blend_amplitudes()` and `ChunkMesher.blend_ground_albedo()`) are priority-BLIND, so an
+## overlapped biome loses its authored colour and roughness across the whole overlap even where it
+## wins the id, and a gap drops `blend_amplitudes()` onto its (1.0, 1.0) fallback, which is a real
+## discontinuity in an otherwise continuous field. `tools/biome_region_check.gd` asserts both.
 @export var priority: int = 10
 
 @export_group("Terrain")
@@ -73,34 +81,56 @@ extends Resource
 ## yellow-green band and nothing separated from anything else — Sequoyah's "game looks to
 ## green/yellow". The three shipped biomes now differ in HUE and in VALUE, not only in roughness.
 ##
+## **F-397 corrected the VALUES F-379 chose, and kept the mechanism.** Reported from play, hours
+## after F-379 shipped: "i really dislike the gross brown ground thats been added." F-379 had read
+## the original complaint — "game looks to green/yellow" — as a request for LESS green, and
+## desaturated toward mud: `forest` landed on #3B382F, red equal to green and more red than blue.
+##
+## The reasoning error is worth keeping written down, because it is easy to repeat. "Too green" was
+## never a request for less green. Ground, canopy and light all sat in ONE narrow hue band, so
+## nothing separated from anything else; the fix for no separation is to SEPARATE — by hue between
+## biomes and by value between ground and canopy. Desaturating toward brown separates nothing, and
+## it walks away from this project's standing art direction, whose reference is Muck: bright,
+## saturated green ground. The palette below is authored back into the green family, with the two
+## non-greens (sand, wet teal) at the ends of the ladder where they are read as endpoints.
+##
 ## The constraint when authoring a new one: the canopy is `mire_art`'s `leaf`, #59AF65 — a bright,
-## saturated, mid-green — and it is what every ground colour is seen against. A biome that lands at
-## that value with that chroma puts the flat back, however different its roughness is. What the
-## three shipped biomes do about that, and why each is the value it is:
+## saturated, mid-green, sRGB luma 0.59 — and it is what every ground colour is seen against. A
+## biome that lands at that value with that chroma puts the flat back, however different its
+## roughness is. Every ground colour below therefore sits BELOW the canopy in value, so a tree reads
+## as a lighter shape against the ground it stands in rather than as the same colour with a shadow
+## under it. The seven shipped biomes (F-401), darkest last:
 ##
-##   · `shore`     #918A78  pale grey-sand. The lightest ground on the map, so the island has a
-##                          visible EDGE — before this the beach was the same green as the interior
-##                          and the waterline was a shape, not a shore.
-##   · `grassland` #616B4F  muted meadow. Still green, because it is a meadow, but half the chroma
-##                          of the old single value and well below the canopy in brightness, so a
-##                          tree reads as a lighter shape against the field it stands in rather than
-##                          as the same colour with a shadow under it.
-##   · `forest`    #474338  dark neutral humus. Under a closed canopy the ground is leaf litter, not
-##                          grass. It is the darkest ground on the map and the reason a forest reads
-##                          as a forest from outside it.
+##   · `shore`     #968C6D  luma 0.55  pale warm sand. The lightest ground on the map, so the island
+##                                     has a visible EDGE and the waterline is a shore, not a shape.
+##   · `grassland` #5F963C  luma 0.52  THE Muck green — the brightest, most saturated ground here,
+##                                     and the one the art direction is actually about. It is a
+##                                     meadow; it is allowed to be vivid.
+##   · `heath`     #737B3E  luma 0.46  dry olive. Yellow-green rather than green-green, which is the
+##                                     dry end of the same family — not a brown, and not a grey.
+##   · `birchwood` #477336  luma 0.40  mid woodland green, the hinge of the ladder.
+##   · `highland`  #3C6553  luma 0.36  cool blue-green. The only ground that leans away from yellow,
+##                                     which is what makes a pine crown read as a different place
+##                                     from the wood below it.
+##   · `forest`    #2B5429  luma 0.28  deep shade green. Darkest of the true greens: a closed canopy
+##                                     is dark, and this is why a forest reads as a forest from
+##                                     outside it.
+##   · `marsh`     #214437  luma 0.23  the darkest ground on the map, and teal rather than green —
+##                                     standing water and sphagnum, at the wet end of the hue run.
 ##
-## Three VALUES first (0.57 / 0.42 / 0.28 sRGB), hue second, and that ordering is deliberate: the
-## terrain is flat-shaded with no texture and no normal map (D-184), so value is the only thing
-## carrying form at distance, and three biomes at one value is one silhouette however they differ in
-## hue. The green sits in the MIDDLE of that ladder with a neutral at either end, which is what
-## stops the whole ladder reading as one ramp.
+## VALUE first, hue second, and that ordering is deliberate: the terrain is flat-shaded with no
+## texture and no normal map (D-184), so value is the only thing carrying form at distance, and two
+## biomes at one value are one silhouette however they differ in hue. The ladder above steps 0.03 to
+## 0.08 per rung with no plateau in it.
 ##
-## And all three are LOW CHROMA on purpose. The light is warm and the grade multiplies saturation by
-## 1.30 (`playtest_atmosphere.gd`), so whatever chroma the ground has is amplified and then tinted
-## toward the sun — a first cut of this fix used a warm brown forest floor (#4E4534) and golden hour
-## came back a flat orange, which is F-379 again with the hue moved rather than fixed. Warm light
-## needs ground that is not itself warm and saturated, or there is nothing for it to be warm
-## AGAINST.
+## Chroma is where this palette DEPARTS from F-379's, deliberately. F-379 recorded "all three are
+## LOW CHROMA on purpose" because the grade multiplies saturation by 1.30 (`playtest_atmosphere.gd`)
+## and a first cut with a warm brown forest floor (#4E4534) came back a flat orange at golden hour.
+## That observation was right about WARM hues and wrong as a general rule: what goes orange under a
+## warm sun is ground that is already warm and saturated. A saturated GREEN under the same light
+## shifts toward yellow-green, which is the reference look, not a failure of it. So the greens here
+## carry real chroma (`grassland` sits at 0.60 saturation against F-379's 0.26) and the two colours
+## that are allowed to be warm — `shore` and `heath` — are the two held down at ~0.28 and ~0.50.
 ##
 ## Blended, not picked, at the biome boundary: `ChunkMesher` weighs every biome's colour by the same
 ## `BiomeMap._band_weight()` crossfade that `blend_amplitudes()` weighs the roughness by, so the

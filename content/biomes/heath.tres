@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="BiomeDef" format=3]
+
+[ext_resource type="Script" path="res://world/gen/biome_def.gd" id="1_heath"]
+
+[resource]
+script = ExtResource("1_heath")
+id = &"heath"
+display_name = "Heath"
+height_min = 1.7
+height_max = 100.0
+moisture_min = 0.0
+moisture_max = 0.15
+priority = 10
+detail_amplitude = 0.95
+ridge_amplitude = 0.55
+ground_albedo = Color(0.451, 0.482, 0.243, 1)

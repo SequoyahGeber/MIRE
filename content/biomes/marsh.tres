@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="BiomeDef" format=3]
+
+[ext_resource type="Script" path="res://world/gen/biome_def.gd" id="1_marsh"]
+
+[resource]
+script = ExtResource("1_marsh")
+id = &"marsh"
+display_name = "Marsh"
+height_min = 1.7
+height_max = 2.9
+moisture_min = 0.62
+moisture_max = 1.0
+priority = 4
+detail_amplitude = 0.35
+ridge_amplitude = 0.0
+ground_albedo = Color(0.129, 0.267, 0.216, 1)

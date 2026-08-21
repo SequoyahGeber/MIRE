@@ -121,6 +121,8 @@ func _run() -> void:
 		walks[HIGH] as Dictionary)
 	await _check_reapply_does_not_compound(gfx, sun, authored)
 	await _check_unauthored_light(gfx, level)
+	await _check_ssao_gate(gfx, level)
+	await _measure_preset_frame_cost(gfx, level)
 
 	gfx.call(&"apply", HIGH)
 	_finish()
@@ -155,6 +157,15 @@ func _check_preset_table(gfx: Node) -> void:
 			"shadow_bias_scale", "shadow_normal_bias_scale"]:
 		check(not medium.has(key),
 			"MEDIUM names no shadow knob (%s) — it inherits HIGH's consistent set" % key)
+
+	# F-398. SSAO is a per-pixel screen-space pass, so it belongs in the same list glow and
+	# volumetric fog are already in rather than being left on for a machine that cannot afford it.
+	# Asserted on the TABLE as well as on the applied Environment below, because the table is where
+	# a future edit would quietly drop it.
+	check(low.has("ssao") and not bool(low["ssao"]),
+		"LOW turns SSAO off, alongside glow and volumetric fog (F-398)")
+	check(not medium.has("ssao") and not high.has("ssao"),
+		"MEDIUM and HIGH inherit the level's authored SSAO flag rather than restating it")
 
 
 ## ── The geometry the bias scale is derived from ───────────────────────────────────────────────
@@ -387,6 +398,303 @@ func _check_unauthored_light(gfx: Node, level: Node) -> void:
 	# deferred free that never runs shows up as a leaked ObjectDB instance in the exit log.
 	level.remove_child(bare)
 	bare.free()
+
+
+## ── The SSAO gate (F-398) ─────────────────────────────────────────────────────────────────────
+## Contact shading arrived because the scene read as one flat hue band with nothing grounded, and it
+## is a per-pixel screen-space pass on a project whose standing performance goal targets the worst
+## machines available. Both halves of that have to hold at once: the pass must actually be ON at the
+## authored quality, and LOW must actually turn it OFF.
+##
+## Also asserts the split the fix is built on — that the AO TUNING reaches the Environment
+## independently of the flag. `playtest_atmosphere.gd` owns radius/intensity/light-affect (one look
+## decision for the whole game) and never writes `ssao_enabled`; this file owns the flag. If the
+## controller ever started writing the flag it would fight LOW on every re-apply, and the symptom
+## would be exactly this check going red on the LOW leg.
+func _check_ssao_gate(gfx: Node, level: Node) -> void:
+	var environment: Environment = _find_environment(level)
+	check(environment != null, "the level has a WorldEnvironment to gate SSAO on")
+	if environment == null:
+		return
+
+	gfx.call(&"apply", HIGH)
+	await process_frame
+	var high_on: bool = environment.ssao_enabled
+	check(high_on, "HIGH runs the level's authored SSAO, so props have contact shading (F-398)")
+	# The tuning, read while it is on. These are the numbers that decide whether the pass is contact
+	# shading or a grey wash, and they must arrive from the controller rather than from the engine's
+	# defaults — a 1.0 m radius barely reaches off a trunk on facets this size.
+	var atmosphere: Node = _find_atmosphere(level)
+	check(atmosphere != null, "the level has an Atmosphere controller to own the AO look")
+	if atmosphere != null:
+		var script: Script = atmosphere.get_script() as Script
+		var constants: Dictionary = script.get_script_constant_map()
+		check(is_equal_approx(environment.ssao_radius, float(constants["SSAO_RADIUS_M"])),
+			"the controller's AO radius reaches the Environment (%.2f m)" % environment.ssao_radius)
+		check(is_equal_approx(environment.ssao_intensity, float(constants["SSAO_INTENSITY"])),
+			"the controller's AO intensity reaches the Environment (%.2f)"
+				% environment.ssao_intensity)
+		check(environment.ssao_light_affect > 0.0,
+			"AO subtracts from direct light too, so it reads at noon (%.2f)"
+				% environment.ssao_light_affect)
+
+	gfx.call(&"apply", LOW)
+	await process_frame
+	check(not environment.ssao_enabled,
+		"LOW switches the screen-space AO pass off entirely (F-398)")
+	# The AO tuning survives the round trip untouched: LOW owns the flag, never the look, so HIGH has
+	# something correct to come back to rather than a re-derived guess.
+	var low_radius: float = environment.ssao_radius
+
+	gfx.call(&"apply", HIGH)
+	await process_frame
+	check(environment.ssao_enabled == high_on,
+		"HIGH restores the authored SSAO flag after LOW turned it off")
+	check(is_equal_approx(environment.ssao_radius, low_radius),
+		"the AO radius is untouched by the preset round trip (%.2f m)" % environment.ssao_radius)
+
+
+## ── What the presets actually cost per frame (F-398) ──────────────────────────────────────────
+## F-398 required the SSAO cost to be MEASURED rather than assumed, and there was no instrument in
+## the repo that could see it:
+##
+##   · `tools/chunk_stream_check.gd` — the obvious candidate, and it cannot. It builds a bare
+##     `Node3D` with a camera and a directional light and streams chunks into it; it never
+##     instantiates a level, so there is no `WorldEnvironment` for SSAO to be enabled on and
+##     nothing ever calls `GraphicsQuality.apply()`. Its numbers are identical on all three presets
+##     by construction, which is worse than no measurement because it looks like one.
+##   · `tools/perf_probe.gd` — the right shape, but it takes the machine fullscreen for ~40 s, and
+##     this repo runs several agent sessions concurrently (D-074). It is also the file F-090 found
+##     Metal's viewport GPU timer reading 0 in.
+##
+## So the measurement lives here, beside the preset table it is measuring, and it had to get past
+## two instrument failures before it produced a number worth printing. Both are recorded because
+## the next person to measure anything on this machine will hit them:
+##
+##   1. THE GPU TIMER IS STILL DEAD. `viewport_get_measured_render_time_gpu()` returns exactly 0.0
+##      on every viewport under Metal in this build — F-090 found it, and it is still true after the
+##      Xcode 27 toolchain landed. Anything that reads it is reading a constant.
+##   2. WALL-CLOCK FRAME TIME IS PINNED TO THE REFRESH. With `VSYNC_DISABLED` requested AND
+##      `Engine.max_fps = 0`, a 3840x2160 SubViewport still measured 8.334 ms/frame — 120.0 Hz to
+##      three decimals — on all three presets, whose render scales are 1.00/0.77/0.59. macOS paces
+##      the loop regardless of what the DisplayServer was asked for.
+##
+## The way past (2) is to stop trying to make ONE frame slow enough to see and instead make each
+## frame contain N independent renders of the same scene. `COST_VIEWPORT_COUNT` SubViewports, each
+## `UPDATE_ALWAYS` on the same `World3D` from the same camera pose, put N x the scene's GPU work
+## inside one refresh interval; once the total clears the interval, the loop is GPU-bound and the
+## wall clock means something again. Every delta is then divided by N to get back to per-frame cost.
+## The stack doubles itself until it clears the interval, so a faster machine measures the same way
+## rather than silently reporting the refresh rate.
+##
+## It REPORTS the absolute numbers and asserts only the ordering. This is a development Mac and the
+## target is "the worst computers available" (Sequoyah's standing perf directive), so a millisecond
+## budget measured here would be folklore; the ratio between the presets is what transfers.
+const COST_VIEWPORT_SIZE := Vector2i(1920, 1080)
+## Where the stack starts and how far it is allowed to grow. Each viewport is roughly 60 MB of
+## Forward+ attachments at this size, so 16 is about a gigabyte — the ceiling is a memory ceiling.
+const COST_VIEWPORT_COUNT_START: int = 2
+const COST_VIEWPORT_COUNT_MAX: int = 16
+const COST_WARMUP_FRAMES: int = 30
+const COST_SAMPLE_FRAMES: int = 90
+## A frame time this close to the refresh interval is the interval, not a measurement. Derived from
+## the panel rather than hardcoded, because 120 Hz is this machine and not the property being used.
+const COST_VSYNC_MARGIN: float = 1.25
+## Eye height above whatever ground the camera is parked over — the AO is contact shading and its
+## cost scales with how much of the frame is near geometry, so measuring it from an aerial vantage
+## would flatter it.
+const COST_EYE_HEIGHT_M: float = 1.7
+
+
+func _measure_preset_frame_cost(gfx: Node, level: Node) -> void:
+	if DisplayServer.get_name() == "headless":
+		print("\n-- preset frame cost: SKIPPED (headless has no real rasteriser; "
+			+ "re-run with --windowed for the F-398 numbers) --")
+		return
+	var environment: Environment = _find_environment(level)
+	if environment == null:
+		return
+
+	# Both requested, neither trusted — see (2) in the header block.
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	var saved_max_fps: int = Engine.max_fps
+	Engine.max_fps = 0
+
+	var refresh: float = DisplayServer.screen_get_refresh_rate()
+	var interval_ms: float = 1000.0 / (refresh if refresh > 0.0 else 60.0)
+	var eye: Vector3 = _ground_eye(level, Vector3.ZERO)
+	var world: World3D = (level as Node3D).get_viewport().world_3d
+
+	print("\n-- preset frame cost: %dx%d stacks, vsync=%d, refresh %.1f Hz (%.3f ms) (F-398) --" % [
+		COST_VIEWPORT_SIZE.x, COST_VIEWPORT_SIZE.y, DisplayServer.window_get_vsync_mode(),
+		refresh, interval_ms])
+
+	# Grow the stack until one frame's worth of renders no longer fits inside a refresh interval.
+	var viewports: Array[SubViewport] = []
+	var count: int = 0
+	var probe: Dictionary = {}
+	while count < COST_VIEWPORT_COUNT_MAX:
+		var want: int = COST_VIEWPORT_COUNT_START if count == 0 else count * 2
+		while count < want:
+			viewports.append(_add_cost_viewport(world, eye))
+			count += 1
+		# Twice, and only the second counts. The first sample after growing the stack includes the
+		# new viewports' first allocations and their volumetric-fog reprojection filling from
+		# nothing — the first version of this took that transient (11.2 ms at two viewports) as
+		# proof the loop was GPU-bound, and every measurement after it came back at exactly the
+		# refresh interval.
+		probe = await _time_frames(viewports)
+		probe = await _time_frames(viewports)
+		if float(probe["wall"]) > interval_ms * COST_VSYNC_MARGIN:
+			break
+	print("  stack of %d viewport(s) -> %.3f ms/frame (%.2fx the refresh interval)" % [
+		count, float(probe["wall"]), float(probe["wall"]) / interval_ms])
+	var trustworthy: bool = float(probe["wall"]) > interval_ms * COST_VSYNC_MARGIN
+	if not trustworthy:
+		push_warning(("frame time is still pinned to the %.3f ms refresh interval at %d "
+			+ "viewports — the numbers below are the panel, not the GPU") % [interval_ms, count])
+
+	var by_preset: Dictionary = {}
+	for preset: int in [HIGH, MEDIUM, LOW]:
+		gfx.call(&"apply", preset)
+		# The preset's render scale lands on the MAIN viewport; these SubViewports are where the
+		# pixels being timed actually are, so they have to carry the same scale or the cheapest knob
+		# in the table would measure as free.
+		for viewport: SubViewport in viewports:
+			viewport.scaling_3d_scale = root.scaling_3d_scale
+		var sample: Dictionary = await _time_frames(viewports)
+		by_preset[preset] = sample
+		# A row can land back ON the refresh interval even though the stack was sized to clear it —
+		# LOW is cheap enough that eight of its renders nearly fit inside one. Such a row is an
+		# UPPER BOUND on that preset's cost, not a measurement of it, and saying so is the
+		# difference between a number and a claim.
+		var floored: bool = float(sample["wall"]) <= interval_ms * COST_VSYNC_MARGIN
+		print("  %-6s ssao=%-5s scale=%.2f -> %.3f ms/frame for %d renders = %.3f ms each%s" % [
+			PRESET_NAMES[preset], str(environment.ssao_enabled), root.scaling_3d_scale,
+			float(sample["wall"]), count, float(sample["wall"]) / float(count),
+			"  (at the vsync floor — an upper bound)" if floored else ""])
+
+	# The isolated A/B. Same preset, same render scale, one flag — everything F-398 is responsible
+	# for and nothing it is not. Run twice in A/B/A order so a thermal or scheduling drift across
+	# the run shows up as disagreement between the two A legs instead of as SSAO's cost.
+	gfx.call(&"apply", HIGH)
+	for viewport: SubViewport in viewports:
+		viewport.scaling_3d_scale = root.scaling_3d_scale
+	environment.ssao_enabled = true
+	var on_first: float = float((await _time_frames(viewports))["wall"]) / float(count)
+	environment.ssao_enabled = false
+	var off_leg: float = float((await _time_frames(viewports))["wall"]) / float(count)
+	environment.ssao_enabled = true
+	var on_second: float = float((await _time_frames(viewports))["wall"]) / float(count)
+	var on_leg: float = (on_first + on_second) * 0.5
+	var ssao_ms: float = on_leg - off_leg
+	print("  SSAO alone on HIGH: on %.3f / %.3f ms, off %.3f ms -> %+.3f ms per frame (%.1f%%)" % [
+		on_first, on_second, off_leg, ssao_ms,
+		0.0 if off_leg <= 0.0 else ssao_ms / off_leg * 100.0])
+	print("SSAO_COST_MS=%.4f HIGH_MS=%.4f MEDIUM_MS=%.4f LOW_MS=%.4f STACK=%d TRUSTED=%s" % [
+		ssao_ms,
+		float((by_preset[HIGH] as Dictionary)["wall"]) / float(count),
+		float((by_preset[MEDIUM] as Dictionary)["wall"]) / float(count),
+		float((by_preset[LOW] as Dictionary)["wall"]) / float(count),
+		count, str(trustworthy)])
+
+	# The one thing worth asserting rather than reporting: LOW must still be the cheapest preset.
+	# If turning SSAO off did not buy anything the gate is theatre, and if LOW came out ABOVE MEDIUM
+	# something in the table is wrong in a way no per-knob check would catch. Only asserted when the
+	# instrument is actually measuring the GPU — an assertion against a pinned frame time compares
+	# the refresh rate with itself and passes forever.
+	var low_ms: float = float((by_preset[LOW] as Dictionary)["wall"])
+	var medium_ms: float = float((by_preset[MEDIUM] as Dictionary)["wall"])
+	if trustworthy:
+		check(low_ms <= medium_ms,
+			"LOW still renders no slower than MEDIUM with SSAO gated off (%.3f <= %.3f ms)"
+				% [low_ms, medium_ms])
+	else:
+		print("  note  the frame loop could not be taken off vsync on this machine, so the preset "
+			+ "ordering is reported rather than asserted")
+
+	for viewport: SubViewport in viewports:
+		root.remove_child(viewport)
+		viewport.queue_free()
+	Engine.max_fps = saved_max_fps
+	gfx.call(&"apply", HIGH)
+	await process_frame
+
+
+## One more independent render of the same world from the same pose. `own_world_3d = false` plus an
+## explicit `world_3d` is what makes these renders of the REAL level rather than of an empty scene —
+## the whole measurement depends on each viewport drawing the same terrain, props and environment.
+func _add_cost_viewport(world: World3D, eye: Vector3) -> SubViewport:
+	var viewport := SubViewport.new()
+	viewport.size = COST_VIEWPORT_SIZE
+	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	viewport.own_world_3d = false
+	viewport.world_3d = world
+	root.add_child(viewport)
+	var camera := Camera3D.new()
+	camera.fov = 72.0
+	camera.far = 400.0
+	viewport.add_child(camera)
+	camera.global_position = eye
+	camera.look_at(eye + Vector3(1.0, -0.18, 1.0), Vector3.UP)
+	# Each SubViewport needs its OWN current camera; `make_current()` is per-viewport, so this does
+	# not steal the pose from the ones already built.
+	camera.make_current()
+	return viewport
+
+
+## Mean wall-clock milliseconds per frame over [constant COST_SAMPLE_FRAMES], after a warm-up long
+## enough for the volumetric fog's temporal reprojection and the shadow atlas to settle — the first
+## frames after a preset change are re-uploading and would otherwise be timed as steady state.
+##
+## The GPU column is collected and returned but is 0.0 on this driver; see (1) in the header block.
+func _time_frames(viewports: Array[SubViewport]) -> Dictionary:
+	for viewport: SubViewport in viewports:
+		RenderingServer.viewport_set_measure_render_time(viewport.get_viewport_rid(), true)
+	for _frame: int in COST_WARMUP_FRAMES:
+		await process_frame
+	var started: int = Time.get_ticks_usec()
+	var gpu_total: float = 0.0
+	for _frame: int in COST_SAMPLE_FRAMES:
+		await process_frame
+		for viewport: SubViewport in viewports:
+			gpu_total += RenderingServer.viewport_get_measured_render_time_gpu(
+				viewport.get_viewport_rid())
+	var elapsed: float = float(Time.get_ticks_usec() - started) / 1000.0
+	var frames: float = float(COST_SAMPLE_FRAMES)
+	return {"wall": elapsed / frames, "gpu": gpu_total / frames}
+
+
+## Eye height over the world's own ground at [param around], so the cost is measured from where a
+## player stands rather than from inside a hill. Duck-typed on `height_at()` — a fixture without one
+## gets a sane fallback rather than an error.
+func _ground_eye(level: Node, around: Vector3) -> Vector3:
+	var ground: float = 0.0
+	if level.has_method(&"height_at"):
+		ground = float(level.call(&"height_at", around.x, around.z))
+	return Vector3(around.x, maxf(ground, 0.0) + COST_EYE_HEIGHT_M, around.z)
+
+
+func _find_environment(node: Node) -> Environment:
+	if node == null:
+		return null
+	var holder := node as WorldEnvironment
+	if holder != null and holder.environment != null:
+		return holder.environment
+	for child: Node in node.get_children():
+		var found: Environment = _find_environment(child)
+		if found != null:
+			return found
+	return null
+
+
+## Duck-typed on the method the controller is defined by, like `_set_anchor` above — the node is
+## called "Atmosphere" in the shipped levels but a fixture is free to name it anything.
+func _find_atmosphere(node: Node) -> Node:
+	for candidate: Node in node.find_children("*", "Node", true, false):
+		if candidate.has_method(&"apply_atmosphere"):
+			return candidate
+	return null
 
 
 ## ── Helpers ───────────────────────────────────────────────────────────────────────────────────

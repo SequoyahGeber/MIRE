@@ -5,11 +5,12 @@
 [resource]
 script = ExtResource("1_forest")
 id = &"forest"
-display_name = "Forest"
-height_min = 1.6
-height_max = 100.0
-moisture_min = 0.5
+display_name = "Deep Forest"
+height_min = 2.9
+height_max = 3.9
+moisture_min = 0.62
 moisture_max = 1.0
-priority = 10
-detail_amplitude = 1.15
-ridge_amplitude = 0.9
+priority = 6
+detail_amplitude = 0.95
+ridge_amplitude = 0.3
+ground_albedo = Color(0.169, 0.329, 0.161, 1)

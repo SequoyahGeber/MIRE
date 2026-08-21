@@ -3,35 +3,75 @@
 [ext_resource type="Script" path="res://world/gen/scatter_entry.gd" id="1_entry"]
 [ext_resource type="Script" path="res://world/gen/scatter_def.gd" id="2_def"]
 
-[sub_resource type="Resource" id="Resource_willow"]
+[sub_resource type="Resource" id="Resource_00_tree_willow_a"]
 script = ExtResource("1_entry")
 asset = &"tree_willow_a"
 kit = "flora"
-weight = 1.0
+weight = 1.2
 min_scale = 0.85
-max_scale = 1.2
+max_scale = 1.25
 
-[sub_resource type="Resource" id="Resource_willow_b"]
+[sub_resource type="Resource" id="Resource_01_tree_willow_b"]
 script = ExtResource("1_entry")
 asset = &"tree_willow_b"
 kit = "flora"
-weight = 1.0
+weight = 1.2
 min_scale = 0.85
-max_scale = 1.2
+max_scale = 1.25
 
-[sub_resource type="Resource" id="Resource_willow_c"]
+[sub_resource type="Resource" id="Resource_02_tree_willow_c"]
 script = ExtResource("1_entry")
 asset = &"tree_willow_c"
 kit = "flora"
+weight = 1.2
+min_scale = 0.85
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_03_mire_broadleaf_tree"]
+script = ExtResource("1_entry")
+asset = &"mire_broadleaf_tree"
+kit = "environment_additions"
+weight = 1.3
+min_scale = 0.85
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_04_tree_pine_a"]
+script = ExtResource("1_entry")
+asset = &"tree_pine_a"
+kit = "environment"
 weight = 0.8
 min_scale = 0.85
 max_scale = 1.2
 
-[sub_resource type="Resource" id="Resource_snag_a"]
+[sub_resource type="Resource" id="Resource_05_tree_pine_b"]
+script = ExtResource("1_entry")
+asset = &"tree_pine_b"
+kit = "environment"
+weight = 0.8
+min_scale = 0.85
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_06_tree_pine_c"]
+script = ExtResource("1_entry")
+asset = &"tree_pine_c"
+kit = "environment"
+weight = 0.8
+min_scale = 0.85
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_07_tree_birch_d"]
+script = ExtResource("1_entry")
+asset = &"tree_birch_d"
+kit = "environment"
+weight = 0.5
+min_scale = 0.85
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_08_tree_snag_a"]
 script = ExtResource("1_entry")
 asset = &"tree_snag_a"
 kit = "flora"
-weight = 0.2
+weight = 0.25
 min_scale = 0.85
 max_scale = 1.15
 
@@ -39,9 +79,9 @@ max_scale = 1.15
 script = ExtResource("2_def")
 id = &"forest_canopy"
 biome_id = &"forest"
-cell_size_m = 10.0
-jitter_fraction = 0.7
-coverage = 0.26
+cell_size_m = 7.5
+jitter_fraction = 0.72
+coverage = 0.46
 min_height = 0.8
-max_height = 1000.0
-entries = Array[ExtResource("1_entry")]([SubResource("Resource_willow"), SubResource("Resource_willow_b"), SubResource("Resource_willow_c"), SubResource("Resource_snag_a")])
+max_height = 1000
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_tree_willow_a"), SubResource("Resource_01_tree_willow_b"), SubResource("Resource_02_tree_willow_c"), SubResource("Resource_03_mire_broadleaf_tree"), SubResource("Resource_04_tree_pine_a"), SubResource("Resource_05_tree_pine_b"), SubResource("Resource_06_tree_pine_c"), SubResource("Resource_07_tree_birch_d"), SubResource("Resource_08_tree_snag_a")])

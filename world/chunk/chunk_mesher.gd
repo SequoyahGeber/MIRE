@@ -344,8 +344,11 @@ static func _vertex_jitter(ix: int, iz: int, world_seed: int) -> Vector2:
 
 ## Winding note (F-133): Godot's front face is the one whose vertices run CLOCKWISE as seen from
 ## the front, which is the opposite of the (v1-v0) x (v2-v0) right-hand rule it is easy to reach
-## for. `a, b, c` / `b, d, c` below is what makes this surface face UP; the mirror of it renders
-## and collides as a floor you can only see and stand on from underneath.
+## for. `a, b, c` / `d, c, b` below is what makes this surface face UP; the mirror of it renders
+## and collides as a floor you can only see and stand on from underneath. (The second triangle was
+## written `b, d, c` until F-399 rotated it; a cyclic rotation is the same triangle, the same
+## winding and the same normal — only the provoking vertex moves. The reason it had to move is at
+## the rotation itself.)
 ## `tools/chunk_stream_check.gd` pins this down with `SurfaceTool.generate_normals()`, which
 ## applies the engine's own convention rather than anyone's recollection of it.
 static func _build_indices(lod: int) -> PackedInt32Array:
@@ -363,9 +366,20 @@ static func _build_indices(lod: int) -> PackedInt32Array:
 			indices[i] = a
 			indices[i + 1] = b
 			indices[i + 2] = c
-			indices[i + 3] = b
-			indices[i + 4] = d
-			indices[i + 5] = c
+			# F-399: `d, c, b` — a CYCLIC rotation of the `b, d, c` this shipped with, so the
+			# triangle, its winding and its normal are all unchanged and only its FIRST index moves.
+			# That index is the provoking vertex, which is what a `flat` varying reads, and
+			# `terrain_flat.gdshader` now hangs a per-facet tint jitter off one. Under `b, d, c` the
+			# provoking vertex of this triangle was `b` — which is also the provoking vertex of the
+			# NEXT quad's first triangle, an edge-adjacent neighbour, so every facet on the island
+			# came in a matched pair and the jitter read as a rhombus grid instead of as variation.
+			# With `d`, the two triangles that share a provoking vertex (this one and the first
+			# triangle of the quad up-and-right of it) meet at a single point, never along an edge —
+			# and that holds under either provoking-vertex convention, so it does not quietly depend
+			# on Vulkan's first-vertex default.
+			indices[i + 3] = d
+			indices[i + 4] = c
+			indices[i + 5] = b
 			i += 6
 	return indices
 

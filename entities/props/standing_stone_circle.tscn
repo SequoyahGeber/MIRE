@@ -1,0 +1,122 @@
+[gd_scene load_steps=19 format=3]
+
+[ext_resource type="Script" path="res://entities/props/prop_group.gd" id="0_prop_group"]
+[ext_resource type="PackedScene" uid="uid://bf7gpv517eyo7" path="res://assets/environment/exports/boulder_b.glb" id="1_boulder_b"]
+[ext_resource type="PackedScene" uid="uid://cw7oc3aw8txp7" path="res://assets/environment/exports/rock_cluster_a.glb" id="2_rock_cluster_a"]
+[ext_resource type="PackedScene" uid="uid://c0227i3p0b861" path="res://assets/environment/exports/rock_cluster_c.glb" id="3_rock_cluster_c"]
+[ext_resource type="PackedScene" uid="uid://dhuyo6032c8k7" path="res://assets/environment/exports/standing_stone_a.glb" id="4_standing_stone_a"]
+[ext_resource type="PackedScene" uid="uid://bkdd2xvnni0fk" path="res://assets/environment/exports/standing_stone_b.glb" id="5_standing_stone_b"]
+[ext_resource type="PackedScene" uid="uid://dlh0jtpacf4sw" path="res://assets/environment/exports/standing_stone_c.glb" id="6_standing_stone_c"]
+[ext_resource type="PackedScene" uid="uid://chpofmyud1u1v" path="res://assets/environment/exports/standing_stone_d.glb" id="7_standing_stone_d"]
+[ext_resource type="PackedScene" uid="uid://bhl0mini0sbrr" path="res://assets/environment/exports/stone_marker_a.glb" id="8_stone_marker_a"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1"]
+size = Vector3(1.62, 4.050000000000001, 1.4850000000000003)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_2"]
+size = Vector3(1.32, 3.3000000000000003, 1.2100000000000002)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_3"]
+size = Vector3(1.5, 3.75, 1.375)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_4"]
+size = Vector3(1.74, 4.35, 1.595)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_5"]
+size = Vector3(1.38, 3.4499999999999997, 1.265)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_6"]
+size = Vector3(1.56, 3.9000000000000004, 1.4300000000000002)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_7"]
+size = Vector3(1.7999999999999998, 4.5, 1.6500000000000001)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_8"]
+size = Vector3(1.44, 3.5999999999999996, 1.32)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_9"]
+size = Vector3(1.7550000000000001, 3.6399999999999997, 1.105)
+
+[node name="StandingStoneCircle" type="Node3D"]
+script = ExtResource("0_prop_group")
+
+; F-402: the standing_stones POI, which placed NOTHING at all before this (scene_path was empty) and merely reserved ground.
+
+[node name="standing_stone_a" parent="." instance=ExtResource("4_standing_stone_a")]
+transform = Transform3D(1.35000, 0.00000, -0.00000, 0.00000, 1.35000, 0.00000, 0.00000, 0.00000, 1.35000, 6.75000, 0.00000, 0.00000)
+
+[node name="standing_stone_c" parent="." instance=ExtResource("6_standing_stone_c")]
+transform = Transform3D(0.84133, 0.09889, -0.70171, 0.00000, 1.08924, 0.15350, 0.70864, -0.11740, 0.83309, 4.48136, 0.00000, 3.76031)
+
+[node name="standing_stone_b" parent="." instance=ExtResource("5_standing_stone_b")]
+transform = Transform3D(0.21246, 0.00000, -1.23181, 0.00000, 1.25000, 0.00000, 1.23181, 0.00000, 0.21246, 1.01584, 0.00000, 5.76113)
+
+[node name="standing_stone_d" parent="." instance=ExtResource("7_standing_stone_d")]
+transform = Transform3D(-0.73203, -0.11250, -1.24659, 0.00000, 1.44413, -0.13032, 1.25165, -0.06579, -0.72906, -3.37500, 0.00000, 5.84567)
+
+[node name="standing_stone_a_2" parent="." instance=ExtResource("4_standing_stone_a")]
+transform = Transform3D(-1.08356, 0.00000, -0.38524, 0.00000, 1.15000, 0.00000, 0.38524, 0.00000, -1.08356, -5.49720, 0.00000, 2.00082)
+
+[node name="standing_stone_c_2" parent="." instance=ExtResource("6_standing_stone_c")]
+transform = Transform3D(-1.21739, 0.00000, 0.45602, 0.00000, 1.30000, 0.00000, -0.45602, 0.00000, -1.21739, -5.49720, 0.00000, -2.00082)
+
+[node name="standing_stone_b_2" parent="." instance=ExtResource("5_standing_stone_b")]
+transform = Transform3D(-0.73539, -0.23406, 1.28624, 0.00000, 1.47577, 0.26854, -1.30736, 0.13166, -0.72351, -3.37500, 0.00000, -5.84567)
+
+[node name="standing_stone_d_2" parent="." instance=ExtResource("7_standing_stone_d")]
+transform = Transform3D(0.22381, 0.00000, 1.17894, 0.00000, 1.20000, 0.00000, -1.17894, 0.00000, 0.22381, 1.01584, 0.00000, -5.76113)
+
+[node name="standing_stone_c_3" parent="." instance=ExtResource("6_standing_stone_c")]
+transform = Transform3D(0.81434, -0.65800, 0.07987, 0.00000, 0.12653, 1.04235, -0.66283, -0.80841, 0.09813, 4.48136, 0.00000, -3.76031)
+
+[node name="stone_marker_a" parent="." instance=ExtResource("8_stone_marker_a")]
+transform = Transform3D(1.10828, 0.00000, -0.67949, 0.00000, 1.30000, 0.00000, 0.67949, 0.00000, 1.10828, 0.00000, 0.00000, 0.00000)
+; the altar the ring is drawn around
+
+[node name="rock_cluster_a" parent="." instance=ExtResource("2_rock_cluster_a")]
+transform = Transform3D(0.36236, 0.00000, -0.93204, 0.00000, 1.00000, 0.00000, 0.93204, 0.00000, 0.36236, 4.10000, 0.00000, -4.30000)
+
+[node name="rock_cluster_c" parent="." instance=ExtResource("3_rock_cluster_c")]
+transform = Transform3D(-0.73739, 0.00000, -0.67546, 0.00000, 1.00000, 0.00000, 0.67546, 0.00000, -0.73739, -5.20000, 0.00000, 2.60000)
+
+[node name="boulder_b" parent="." instance=ExtResource("1_boulder_b")]
+transform = Transform3D(0.69671, 0.00000, -0.71736, 0.00000, 1.00000, 0.00000, 0.71736, 0.00000, 0.69671, -3.40000, 0.00000, -6.60000)
+; the ring is not a clean circle
+
+[node name="Collision" type="StaticBody3D" parent="."]
+
+[node name="Stone1" type="CollisionShape3D" parent="Collision"]
+transform = Transform3D(1.00000, 0.00000, -0.00000, 0.00000, 1.00000, 0.00000, 0.00000, 0.00000, 1.00000, 6.75000, 2.02500, 0.00000)
+shape = SubResource("BoxShape3D_1")
+
+[node name="Stone2" type="CollisionShape3D" parent="Collision"]
+transform = Transform3D(0.76484, 0.00000, -0.64422, 0.00000, 1.00000, 0.00000, 0.64422, 0.00000, 0.76484, 4.48136, 1.65000, 3.76031)
+shape = SubResource("BoxShape3D_2")
+
+[node name="Stone3" type="CollisionShape3D" parent="Collision"]
+transform = Transform3D(0.16997, 0.00000, -0.98545, 0.00000, 1.00000, 0.00000, 0.98545, 0.00000, 0.16997, 1.01584, 1.87500, 5.76113)
+shape = SubResource("BoxShape3D_3")
+
+[node name="Stone4" type="CollisionShape3D" parent="Collision"]
+transform = Transform3D(-0.50485, 0.00000, -0.86321, 0.00000, 1.00000, 0.00000, 0.86321, 0.00000, -0.50485, -3.37500, 2.17500, 5.84567)
+shape = SubResource("BoxShape3D_4")
+
+[node name="Stone5" type="CollisionShape3D" parent="Collision"]
+transform = Transform3D(-0.94222, 0.00000, -0.33499, 0.00000, 1.00000, 0.00000, 0.33499, 0.00000, -0.94222, -5.49720, 1.72500, 2.00082)
+shape = SubResource("BoxShape3D_5")
+
+[node name="Stone6" type="CollisionShape3D" parent="Collision"]
+transform = Transform3D(-0.93646, 0.00000, 0.35078, 0.00000, 1.00000, 0.00000, -0.35078, 0.00000, -0.93646, -5.49720, 1.95000, -2.00082)
+shape = SubResource("BoxShape3D_6")
+
+[node name="Stone7" type="CollisionShape3D" parent="Collision"]
+transform = Transform3D(-0.49026, 0.00000, 0.87158, 0.00000, 1.00000, 0.00000, -0.87158, 0.00000, -0.49026, -3.37500, 2.25000, -5.84567)
+shape = SubResource("BoxShape3D_7")
+
+[node name="Stone8" type="CollisionShape3D" parent="Collision"]
+transform = Transform3D(0.18651, 0.00000, 0.98245, 0.00000, 1.00000, 0.00000, -0.98245, 0.00000, 0.18651, 1.01584, 1.80000, -5.76113)
+shape = SubResource("BoxShape3D_8")
+
+[node name="Altar" type="CollisionShape3D" parent="Collision"]
+transform = Transform3D(0.85252, 0.00000, -0.52269, 0.00000, 1.00000, 0.00000, 0.52269, 0.00000, 0.85252, 0.00000, 1.82000, 0.00000)
+shape = SubResource("BoxShape3D_9")

@@ -110,6 +110,26 @@ func _check_level(level_path: String) -> void:
 	check(noon.fog_density > 0.0,
 		"distant geometry still hazes (fog_density=%.5f)" % noon.fog_density)
 
+	# CONTACT SHADING (F-398). The grade and the occlusion term are the same complaint — "the game
+	# lighting/color grading looks really bad" — and they fail the same way: with no AO the only
+	# thing separating a trunk from the ground behind it is its albedo, which is what makes the
+	# frame read as one flat hue band no matter how the tonemap is tuned. Guarded HERE, next to the
+	# grade, because that is the relationship, and because the flag is one line in a .tscn that
+	# anybody can drop without noticing.
+	check(noon.ssao_enabled, "the level authors contact shading (ssao_enabled)")
+	# Radius is the number that decides whether this is contact shading or a grey wash over the
+	# whole hillside. The controller owns it; the assertion is that it ARRIVED, not what it is.
+	check(is_equal_approx(noon.ssao_radius, ATMOSPHERE.SSAO_RADIUS_M),
+		"the controller's AO radius reaches the Environment (%.2f m)" % noon.ssao_radius)
+	check(is_equal_approx(noon.ssao_intensity, ATMOSPHERE.SSAO_INTENSITY),
+		"the controller's AO intensity reaches the Environment (%.2f)" % noon.ssao_intensity)
+	# Ambient is held down to DAY_AMBIENT_ENERGY so the flat-shaded facets separate, which leaves
+	# ambient-only AO with almost nothing to subtract from in full sun. A direct-light term is what
+	# makes the occlusion visible at noon at all.
+	check(noon.ssao_light_affect > 0.0,
+		"AO subtracts from direct light too, so it reads in full sun (%.2f)"
+			% noon.ssao_light_affect)
+
 	# MIDNIGHT — the varnish is off, and every value is back where the scene author put it.
 	var night := await _environment_at(packed, MIDNIGHT)
 	if night == null:

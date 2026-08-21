@@ -16,6 +16,7 @@ sky = SubResource("Sky_8ak6r")
 ambient_light_source = 3
 ambient_light_energy = 0.6
 tonemap_mode = 2
+ssao_enabled = true
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qr5pp"]
 albedo_color = Color(0.32, 0.34, 0.3, 1)

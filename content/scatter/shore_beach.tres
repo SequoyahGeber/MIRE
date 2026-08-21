@@ -3,23 +3,31 @@
 [ext_resource type="Script" path="res://world/gen/scatter_entry.gd" id="1_entry"]
 [ext_resource type="Script" path="res://world/gen/scatter_def.gd" id="2_def"]
 
-[sub_resource type="Resource" id="Resource_marsh_grass_a"]
+[sub_resource type="Resource" id="Resource_00_marsh_grass_a"]
 script = ExtResource("1_entry")
 asset = &"marsh_grass_a"
 kit = "flora"
-weight = 1.0
+weight = 1
 min_scale = 0.8
 max_scale = 1.25
 
-[sub_resource type="Resource" id="Resource_marsh_grass_b"]
+[sub_resource type="Resource" id="Resource_01_marsh_grass_b"]
 script = ExtResource("1_entry")
 asset = &"marsh_grass_b"
 kit = "flora"
-weight = 1.0
+weight = 1
 min_scale = 0.8
 max_scale = 1.25
 
-[sub_resource type="Resource" id="Resource_sedge_a"]
+[sub_resource type="Resource" id="Resource_02_marsh_grass_c"]
+script = ExtResource("1_entry")
+asset = &"marsh_grass_c"
+kit = "flora"
+weight = 1
+min_scale = 0.8
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_03_sedge_a"]
 script = ExtResource("1_entry")
 asset = &"sedge_a"
 kit = "flora"
@@ -27,7 +35,7 @@ weight = 0.9
 min_scale = 0.8
 max_scale = 1.2
 
-[sub_resource type="Resource" id="Resource_sedge_b"]
+[sub_resource type="Resource" id="Resource_04_sedge_b"]
 script = ExtResource("1_entry")
 asset = &"sedge_b"
 kit = "flora"
@@ -35,19 +43,99 @@ weight = 0.9
 min_scale = 0.8
 max_scale = 1.2
 
-[sub_resource type="Resource" id="Resource_grass_dry_a"]
+[sub_resource type="Resource" id="Resource_05_sedge_c"]
 script = ExtResource("1_entry")
-asset = &"grass_dry_a"
+asset = &"sedge_c"
 kit = "flora"
-weight = 0.7
+weight = 0.9
 min_scale = 0.8
 max_scale = 1.2
 
-[sub_resource type="Resource" id="Resource_flowers_bog_a"]
+[sub_resource type="Resource" id="Resource_06_grass_dry_a"]
+script = ExtResource("1_entry")
+asset = &"grass_dry_a"
+kit = "flora"
+weight = 0.8
+min_scale = 0.8
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_07_grass_dry_b"]
+script = ExtResource("1_entry")
+asset = &"grass_dry_b"
+kit = "flora"
+weight = 0.8
+min_scale = 0.8
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_08_grass_dry_c"]
+script = ExtResource("1_entry")
+asset = &"grass_dry_c"
+kit = "flora"
+weight = 0.8
+min_scale = 0.8
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_09_grass_dry_d"]
+script = ExtResource("1_entry")
+asset = &"grass_dry_d"
+kit = "flora"
+weight = 0.8
+min_scale = 0.8
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_10_grass_tuft_a"]
+script = ExtResource("1_entry")
+asset = &"grass_tuft_a"
+kit = "environment"
+weight = 0.9
+min_scale = 0.8
+max_scale = 1.3
+
+[sub_resource type="Resource" id="Resource_11_grass_tuft_b"]
+script = ExtResource("1_entry")
+asset = &"grass_tuft_b"
+kit = "environment"
+weight = 0.9
+min_scale = 0.8
+max_scale = 1.3
+
+[sub_resource type="Resource" id="Resource_12_grass_tuft_c"]
+script = ExtResource("1_entry")
+asset = &"grass_tuft_c"
+kit = "environment"
+weight = 0.9
+min_scale = 0.8
+max_scale = 1.3
+
+[sub_resource type="Resource" id="Resource_13_grass_tuft_d"]
+script = ExtResource("1_entry")
+asset = &"grass_tuft_d"
+kit = "environment"
+weight = 0.9
+min_scale = 0.8
+max_scale = 1.3
+
+[sub_resource type="Resource" id="Resource_14_flowers_bog_a"]
 script = ExtResource("1_entry")
 asset = &"flowers_bog_a"
 kit = "flora"
-weight = 0.3
+weight = 0.25
+min_scale = 0.85
+max_scale = 1.1
+
+[sub_resource type="Resource" id="Resource_15_flowers_bog_b"]
+script = ExtResource("1_entry")
+asset = &"flowers_bog_b"
+kit = "flora"
+weight = 0.25
+min_scale = 0.85
+max_scale = 1.1
+
+[sub_resource type="Resource" id="Resource_16_flowers_bog_c"]
+script = ExtResource("1_entry")
+asset = &"flowers_bog_c"
+kit = "flora"
+weight = 0.25
 min_scale = 0.85
 max_scale = 1.1
 
@@ -55,9 +143,9 @@ max_scale = 1.1
 script = ExtResource("2_def")
 id = &"shore_beach"
 biome_id = &"shore"
-cell_size_m = 4.5
-jitter_fraction = 0.75
-coverage = 0.28
-min_height = 0.3
-max_height = 1.6
-entries = Array[ExtResource("1_entry")]([SubResource("Resource_marsh_grass_a"), SubResource("Resource_marsh_grass_b"), SubResource("Resource_sedge_a"), SubResource("Resource_sedge_b"), SubResource("Resource_grass_dry_a"), SubResource("Resource_flowers_bog_a")])
+cell_size_m = 3.4
+jitter_fraction = 0.78
+coverage = 0.42
+min_height = 0.25
+max_height = 2.4
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_marsh_grass_a"), SubResource("Resource_01_marsh_grass_b"), SubResource("Resource_02_marsh_grass_c"), SubResource("Resource_03_sedge_a"), SubResource("Resource_04_sedge_b"), SubResource("Resource_05_sedge_c"), SubResource("Resource_06_grass_dry_a"), SubResource("Resource_07_grass_dry_b"), SubResource("Resource_08_grass_dry_c"), SubResource("Resource_09_grass_dry_d"), SubResource("Resource_10_grass_tuft_a"), SubResource("Resource_11_grass_tuft_b"), SubResource("Resource_12_grass_tuft_c"), SubResource("Resource_13_grass_tuft_d"), SubResource("Resource_14_flowers_bog_a"), SubResource("Resource_15_flowers_bog_b"), SubResource("Resource_16_flowers_bog_c")])

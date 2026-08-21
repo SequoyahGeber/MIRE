@@ -3,23 +3,39 @@
 [ext_resource type="Script" path="res://world/gen/scatter_entry.gd" id="1_entry"]
 [ext_resource type="Script" path="res://world/gen/scatter_def.gd" id="2_def"]
 
-[sub_resource type="Resource" id="Resource_bush_round_b"]
+[sub_resource type="Resource" id="Resource_00_bush_round_a"]
+script = ExtResource("1_entry")
+asset = &"bush_round_a"
+kit = "flora"
+weight = 1
+min_scale = 0.8
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_01_bush_round_b"]
 script = ExtResource("1_entry")
 asset = &"bush_round_b"
 kit = "flora"
-weight = 1.0
+weight = 1
 min_scale = 0.8
 max_scale = 1.2
 
-[sub_resource type="Resource" id="Resource_bush_round_c"]
+[sub_resource type="Resource" id="Resource_02_bush_round_c"]
 script = ExtResource("1_entry")
 asset = &"bush_round_c"
 kit = "flora"
-weight = 1.0
+weight = 1
 min_scale = 0.8
 max_scale = 1.2
 
-[sub_resource type="Resource" id="Resource_bush_broadleaf_a"]
+[sub_resource type="Resource" id="Resource_03_bush_round_d"]
+script = ExtResource("1_entry")
+asset = &"bush_round_d"
+kit = "flora"
+weight = 1
+min_scale = 0.8
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_04_bush_broadleaf_a"]
 script = ExtResource("1_entry")
 asset = &"bush_broadleaf_a"
 kit = "flora"
@@ -27,7 +43,7 @@ weight = 0.8
 min_scale = 0.8
 max_scale = 1.2
 
-[sub_resource type="Resource" id="Resource_bush_thorn_a"]
+[sub_resource type="Resource" id="Resource_05_bush_thorn_a"]
 script = ExtResource("1_entry")
 asset = &"bush_thorn_a"
 kit = "flora"
@@ -35,29 +51,45 @@ weight = 0.4
 min_scale = 0.8
 max_scale = 1.15
 
-[sub_resource type="Resource" id="Resource_sapling_a"]
+[sub_resource type="Resource" id="Resource_06_sapling_a"]
 script = ExtResource("1_entry")
 asset = &"sapling_a"
 kit = "flora"
-weight = 0.5
+weight = 0.6
 min_scale = 0.85
-max_scale = 1.25
+max_scale = 1.3
 
-[sub_resource type="Resource" id="Resource_sapling_c"]
+[sub_resource type="Resource" id="Resource_07_sapling_b"]
+script = ExtResource("1_entry")
+asset = &"sapling_b"
+kit = "flora"
+weight = 0.6
+min_scale = 0.85
+max_scale = 1.3
+
+[sub_resource type="Resource" id="Resource_08_sapling_c"]
 script = ExtResource("1_entry")
 asset = &"sapling_c"
 kit = "flora"
-weight = 0.5
+weight = 0.6
 min_scale = 0.85
-max_scale = 1.25
+max_scale = 1.3
+
+[sub_resource type="Resource" id="Resource_09_sapling_d"]
+script = ExtResource("1_entry")
+asset = &"sapling_d"
+kit = "flora"
+weight = 0.6
+min_scale = 0.85
+max_scale = 1.3
 
 [resource]
 script = ExtResource("2_def")
 id = &"grassland_shrubs"
 biome_id = &"grassland"
-cell_size_m = 11.0
-jitter_fraction = 0.7
+cell_size_m = 9
+jitter_fraction = 0.72
 coverage = 0.3
-min_height = 0.8
-max_height = 1000.0
-entries = Array[ExtResource("1_entry")]([SubResource("Resource_bush_round_b"), SubResource("Resource_bush_round_c"), SubResource("Resource_bush_broadleaf_a"), SubResource("Resource_bush_thorn_a"), SubResource("Resource_sapling_a"), SubResource("Resource_sapling_c")])
+min_height = 0.7
+max_height = 1000
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_bush_round_a"), SubResource("Resource_01_bush_round_b"), SubResource("Resource_02_bush_round_c"), SubResource("Resource_03_bush_round_d"), SubResource("Resource_04_bush_broadleaf_a"), SubResource("Resource_05_bush_thorn_a"), SubResource("Resource_06_sapling_a"), SubResource("Resource_07_sapling_b"), SubResource("Resource_08_sapling_c"), SubResource("Resource_09_sapling_d")])

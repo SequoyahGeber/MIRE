@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="BiomeDef" format=3]
+
+[ext_resource type="Script" path="res://world/gen/biome_def.gd" id="1_highland"]
+
+[resource]
+script = ExtResource("1_highland")
+id = &"highland"
+display_name = "Pine Highland"
+height_min = 3.9
+height_max = 100.0
+moisture_min = 0.4
+moisture_max = 1.0
+priority = 6
+detail_amplitude = 1.3
+ridge_amplitude = 0.8
+ground_albedo = Color(0.235, 0.396, 0.325, 1)

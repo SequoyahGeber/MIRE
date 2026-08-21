@@ -20,29 +20,55 @@ const IslandHeightmap := preload("res://world/gen/island_heightmap.gd")
 const BiomeMap := preload("res://world/gen/biome_map.gd")
 
 const SEA_LEVEL: float = 0.0
-const BIOME_TINT: Dictionary = {
-	&"shore": Color(0.86, 0.80, 0.58),
-	&"grassland": Color(0.42, 0.62, 0.34),
-	&"forest": Color(0.20, 0.42, 0.26),
-}
+
+## F-401: the land tint is each biome's OWN `ground_albedo`, read off the def, lifted toward white so
+## it survives being seen at map scale. It used to be a hard-coded three-entry Dictionary, which had
+## two problems the moment the table grew past three rows: a new biome rendered as the fallback grey
+## (so the one thing this tool exists to show — where the regions are — was invisible for exactly
+## the biomes you added it to look at), and the tints were nobody's authored colour, so a palette
+## pass like F-397 could not be judged from the picture it produced. Sourcing the def means adding a
+## `.tres` is enough, the same rule `Registry` already follows.
+##
+## `--mode biomes` drops the height shading entirely and paints flat regions, which is the view that
+## answers "is this a region or a stipple" without relief confusing the eye.
+const TINT_LIFT: float = 0.34
 
 
+const BiomeDefsLib := preload("res://tools/biome_defs_lib.gd")
+
+
+## Deferred one frame before it reads anything (F-401). `_initialize()` runs BEFORE the autoload
+## tree exists, so `get_node_or_null(^"Registry")` returned null here and `defs` was ALWAYS empty:
+## every render this tool has produced took the `defs.is_empty()` branch, which is
+## `IslandHeightmap.height_from_set()` — the biome-BLIND 1.0/1.0 surface — and painted it with the
+## hard-coded fallback tint. That is F-274's bug wearing this tool's clothes: the header promised
+## "what this renders is what the game builds" and the picture was of a surface the mesher never
+## makes. `BiomeDefsLib.load_defs()` is the same accessor every other terrain tool uses, and it
+## falls back to a direct `content/biomes/` scan when no Registry is present at all.
 func _initialize() -> void:
+	_run.call_deferred()
+
+
+func _run() -> void:
+	await process_frame
 	var args := OS.get_cmdline_user_args()
 	var seed_value: int = _arg_int(args, "--seed", 20260819)
 	var size: int = _arg_int(args, "--size", 600)
 	var span: float = float(_arg_int(args, "--span", 340))
 	var out: String = _arg_str(args, "--out", "res://assets/audit/terrain/island_%d.png" % seed_value)
+	var mode: String = _arg_str(args, "--mode", "relief")
 
-	var defs: Array = []
-	var registry: Node = root.get_node_or_null(^"Registry")
-	if registry != null and registry.has_method("biome_list"):
-		defs = registry.call("biome_list")
-	elif registry != null:
-		var table: Dictionary = registry.get(&"biomes")
-		if table != null:
-			for key: Variant in table.keys():
-				defs.append(table[key])
+	var defs: Array = BiomeDefsLib.load_defs(self)
+	# F-401: id -> the def's own authored ground colour, lifted so it reads at map scale.
+	var tints: Dictionary = {}
+	var area: Dictionary = {}
+	for def_value: Variant in defs:
+		var def: Resource = def_value as Resource
+		if def == null:
+			continue
+		var id_value: StringName = StringName(String(def.get(&"id")))
+		tints[id_value] = (def.get(&"ground_albedo") as Color).lerp(Color.WHITE, TINT_LIFT)
+		area[id_value] = 0
 
 	var image := Image.create(size, size, false, Image.FORMAT_RGB8)
 	var lowest: float = INF
@@ -83,24 +109,37 @@ func _initialize() -> void:
 				colour = Color(0.09, 0.16, 0.24).lerp(Color(0.03, 0.06, 0.11), depth)
 			else:
 				land += 1
-				var tint := Color(0.45, 0.52, 0.38)
-				if not defs.is_empty():
-					tint = BIOME_TINT.get(id, tint)
-				# Height shading on top of the biome tint: dark in the valleys,
-				# pale on the crests, so ridges are visible as ridges.
-				var lift: float = clampf(h / 30.0, 0.0, 1.0)
-				colour = tint.lerp(Color(0.94, 0.94, 0.90), lift * 0.75)
-				if h < 1.6:
-					colour = colour.lerp(Color(0.88, 0.83, 0.62), 0.65)   # the beach line
+				if area.has(id):
+					area[id] = int(area[id]) + 1
+				var tint: Color = tints.get(id, Color(0.45, 0.52, 0.38))
+				if mode == "biomes":
+					# Flat regions, no relief: the view that answers "region or stipple".
+					colour = tint
+				else:
+					# Height shading on top of the biome tint: dark in the valleys,
+					# pale on the crests, so ridges are visible as ridges. Scaled to the
+					# island's own relief (a few metres) rather than to a fixed 30 m, which
+					# on this terrain flattened every crest into the same tone.
+					var lift: float = clampf(h / 8.0, 0.0, 1.0)
+					colour = tint.lerp(Color(0.96, 0.96, 0.92), lift * 0.55)
 			image.set_pixel(px, py, colour)
 
 	var absolute := ProjectSettings.globalize_path(out)
 	DirAccess.make_dir_recursive_absolute(absolute.get_base_dir())
 	var error := image.save_png(absolute)
-	print("TERRAIN_MAP seed=%d size=%d span=%.0f land=%.1f%% low=%.1f high=%.1f -> %s (%s)" % [
-		seed_value, size, span, 100.0 * float(land) / float(size * size), lowest, highest,
+	print("TERRAIN_MAP seed=%d size=%d span=%.0f mode=%s land=%.1f%% low=%.1f high=%.1f -> %s (%s)" % [
+		seed_value, size, span, mode, 100.0 * float(land) / float(size * size), lowest, highest,
 		out, "ok" if error == OK else str(error)
 	])
+	# F-401: the per-biome share of LAND, printed with every render, so "are the regions real and is
+	# any of them rare enough that a run never sees it" is a number under the picture rather than an
+	# impression of it. Sorted by share so the rare tail is the last thing on the line.
+	var ordered: Array = area.keys()
+	ordered.sort_custom(func(a: StringName, b: StringName) -> bool: return int(area[a]) > int(area[b]))
+	var shares: PackedStringArray = []
+	for id_value: StringName in ordered:
+		shares.append("%s=%.1f%%" % [id_value, 100.0 * float(area[id_value]) / maxf(float(land), 1.0)])
+	print("TERRAIN_MAP_BIOMES seed=%d %s" % [seed_value, " ".join(shares)])
 	quit(0 if error == OK else 1)
 
 

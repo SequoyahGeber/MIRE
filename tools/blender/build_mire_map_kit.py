@@ -20,9 +20,9 @@ from typing import Callable
 import bpy
 
 sys.path.append(str(Path(__file__).resolve().parent))
-from mire_art import mat, radial, around, reset_materials  # noqa: E402
+from mire_art import mat, radial, around, reset_materials, hull, fork  # noqa: E402
 from godot_import_lock import import_cache_guard  # noqa: E402
-from mathutils import Vector
+from mathutils import Quaternion, Vector
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -103,6 +103,79 @@ def tapered_between(name: str, start: tuple[float, float, float], end: tuple[flo
     return obj
 
 
+def rolled_frustum(name: str, start: tuple[float, float, float], end: tuple[float, float, float], radius_start: float, radius_end: float, mat: bpy.types.Material, vertices: int = 7, roll: float = 0.0) -> bpy.types.Object:
+    """`tapered_between` with control over the roll about the segment's own axis.
+
+    F-396 ("the trunks look really bad"): a trunk built as a stack of frusta that
+    all share the same roll is a smooth extruded polygon with a seam — every
+    facet lines up with the one below it, so the whole column shades as one flat
+    band and reads as a pipe. Rolling each segment by its own amount breaks the
+    facets into plates that catch light separately, which is most of what makes a
+    low-poly trunk read as bark at all. Costs nothing: same vertices, different
+    rotation.
+    """
+    first, second = Vector(start), Vector(end)
+    direction = second - first
+    obj = cone(name, radius_start, radius_end, direction.length, tuple((first + second) * 0.5), mat, vertices)
+    obj.rotation_mode = "QUATERNION"
+    obj.rotation_quaternion = direction.to_track_quat("Z", "Y") @ Quaternion(Vector((0.0, 0.0, 1.0)), roll)
+    return obj
+
+
+def spine_point(points: list[Vector], fraction: float) -> Vector:
+    """Point at `fraction` of the way up a trunk spine, interpolated between the
+    two nearest control points. Branches want to leave the trunk WHERE THE TRUNK
+    IS — anchoring them to the axis instead is why the old crooked tree had
+    branches starting in mid-air on the lean side."""
+    span = len(points) - 1
+    position = max(0.0, min(1.0, fraction)) * span
+    low = min(span - 1, int(position))
+    return points[low].lerp(points[low + 1], position - low)
+
+
+def join_by_material(name: str, made: list[bpy.types.Object]) -> list[bpy.types.Object]:
+    """Collapse an asset to ONE mesh carrying one material slot per colour.
+
+    F-396: `ResourceScatterField` builds one `MultiMeshInstance3D` per MESH PART
+    (`_load_mesh_parts` -> the `slots` loop), so a pine that exports as 63 loose
+    cones costs 63 nodes and 63 draw calls in every chunk it appears in — and
+    F-395's scatter work is about to place all eighteen of these trees rather
+    than the three willows the island had. Joining first takes that to one node
+    per asset and as many draw calls as the tree has colours.
+
+    Safe for the collider fit: `_collider_for`/`_cross_section_radius` walk mesh
+    SURFACES and skip the foliage materials by name, so a joined tree still
+    collides on its trunk only (F-390) — the surfaces are all still there, they
+    just live on one mesh now.
+
+    `build_flora_set.py` reached the same conclusion for the same reason
+    (`_join_into_one`); this is the map kit's copy because the two kits
+    deliberately do not share their geometry helpers (see `main`'s palette note).
+    """
+    meshes = [obj for obj in made if obj.type == "MESH"]
+    if not meshes:
+        raise RuntimeError(f"{name} produced no mesh objects")
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in meshes:
+        obj.select_set(True)
+    target = meshes[0]
+    bpy.context.view_layer.objects.active = target
+    if len(meshes) > 1:
+        bpy.ops.object.join()
+    # Bake the transform away. The join keeps whichever rotation the first
+    # component happened to carry — every cone built by `tapered_between` has one
+    # — and that rotation rides out on the glTF node, where Godot's local
+    # `get_aabb()` then has to enclose a rotated box and answers too large. An
+    # identity node transform removes the question, and makes the scatter's
+    # per-instance maths trivial.
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    bpy.ops.object.select_all(action="DESELECT")
+    target.name = name.title().replace("_", "")
+    for polygon in target.data.polygons:
+        polygon.use_smooth = False
+    return [target]
+
+
 def mesh_object(name: str, vertices: list[tuple[float, float, float]], faces: list[tuple[int, ...]], mat: bpy.types.Material) -> bpy.types.Object:
     mesh = bpy.data.meshes.new(f"{name}_Mesh")
     mesh.from_pydata(vertices, [], faces)
@@ -132,7 +205,7 @@ def seed_for(name: str) -> int:
     return sum((index + 1) * ord(char) for index, char in enumerate(name))
 
 
-def create_asset(name: str, category: str, build_fn: Callable[[], None], display_location: tuple[float, float, float]) -> dict:
+def create_asset(name: str, category: str, build_fn: Callable[[], None], display_location: tuple[float, float, float], join: bool = False) -> dict:
     collection = bpy.data.collections.new(name)
     bpy.context.scene.collection.children.link(collection)
     root = bpy.data.objects.new(name, None)
@@ -141,6 +214,8 @@ def create_asset(name: str, category: str, build_fn: Callable[[], None], display
     before_names = {obj.name for obj in bpy.data.objects}
     build_fn()
     made = sorted((obj for obj in bpy.data.objects if obj.name not in before_names), key=lambda obj: obj.name)
+    if join:
+        made = join_by_material(name, made)
     for obj in made:
         for old_collection in list(obj.users_collection):
             old_collection.objects.unlink(obj)
@@ -149,7 +224,16 @@ def create_asset(name: str, category: str, build_fn: Callable[[], None], display
     bpy.context.view_layer.update()
     corners: list[Vector] = []
     for obj in made:
-        if obj.type == "MESH":
+        if obj.type != "MESH":
+            continue
+        if join:
+            # F-094: `obj.bound_box` is not refreshed after `bpy.ops.object.join()`
+            # even through a depsgraph update, so a joined asset would measure as
+            # whatever its first component happened to be — that is the bug that
+            # put a willow in the catalog at 6.97 m. Vertices are never stale, and
+            # after the join's `transform_apply` they are already world-space.
+            corners.extend(obj.matrix_world @ vertex.co for vertex in obj.data.vertices)
+        else:
             corners.extend(obj.matrix_world @ Vector(corner) for corner in obj.bound_box)
     minimum = Vector((min(v.x for v in corners), min(v.y for v in corners), min(v.z for v in corners)))
     maximum = Vector((max(v.x for v in corners), max(v.y for v in corners), max(v.z for v in corners)))
@@ -184,6 +268,10 @@ def main() -> None:
     mats = {
         "bark": mat("wood_bark"),
         "bark_light": mat("wood_bark_light"),
+        # F-396: the trunks were one flat colour top to bottom, which is the other
+        # half of why they read as pipes. `wood_bark_dark` was already in the
+        # palette ("shadowed bark, trunk undersides") and used only by roofs.
+        "bark_dark": mat("wood_bark_dark"),
         "cut": mat("wood_cut"),
         "birch": mat("wood_birch"),
         "birch_dark": mat("wood_birch_mark"),
@@ -220,128 +308,401 @@ def main() -> None:
         "ground": mat("preview_ground"),
     }
 
-    def build_pine(seed: int) -> None:
-        rng = random.Random(seed)
-        height = rng.uniform(4.8, 6.5)
-        lean = Vector((rng.uniform(-0.34, 0.34), rng.uniform(-0.28, 0.28), 0.0))
-        lower_top = lean * 0.38 + Vector((0.0, 0.0, height * 0.48))
-        upper_top = lean + Vector((0.0, 0.0, height * 0.95))
-        base_radius = rng.uniform(0.34, 0.46)
-        tapered_between("Trunk_Lower", (0.0, 0.0, 0.0), tuple(lower_top), base_radius, base_radius * 0.70, mats["bark"], 8)
-        tapered_between("Trunk_Upper", tuple(lower_top), tuple(upper_top), base_radius * 0.70, 0.10, mats["bark_light"], 8)
-        root_count = 4
-        for index in range(root_count):
-            angle = index * math.tau / root_count + rng.uniform(-0.20, 0.20)
+    # ── trees ─────────────────────────────────────────────────────────────────
+    #
+    # F-396. Every tree in the repo used to top out between 4.5 m and 7.4 m
+    # against a 1.7 m player eye — 3.3x eye height at the median, where a real
+    # forest tree reads at 6-15x — so the island looked like scrub and the canopy
+    # never once broke the horizon. Reported from play twice ("tree assets should
+    # be significantly taller", then "we didn't do anything about the trees being
+    # way too short still") before the finding measured it.
+    #
+    # **Why the fix is here and not on a scatter def.** `ScatterEntry.min_scale`/
+    # `max_scale` multiply the whole prop, so a 1.6x tree gets a 1.6x-thick trunk
+    # and reads as the same tree seen from closer — bigger, not taller. Height has
+    # to be built in, where the trunk radius is a separate number that grows far
+    # slower than the height does (a 17 m pine here carries a ~0.5 m base radius
+    # against the ~0.45 m the old 5.8 m one had). That ratio IS the read.
+    #
+    # **The trunks themselves** were called out separately — "the trunks look
+    # really bad": two untapered cylinders in one flat colour, ending dead flat at
+    # z=0, with branches that never joined anything. All four species now share
+    # `tree_trunk()`, which gives them a continuous taper over 6-8 rolled
+    # segments, a root flare with buttress roots running out of it, bark ridges,
+    # and two bark tones so the facets catch light the way the canopy already did.
+    #
+    # **And the silhouettes stop being the same tree in three colours** ("some
+    # diversity going, some variety"):
+    #
+    #   pine     tallest and narrowest — a spire of tiered skirts, no live branch
+    #            below head height, crown width about a third of its height
+    #   birch    slim pale trunk carried high and clean, small high crown, the
+    #            most trunk visible of any of them
+    #   bare     dead: the recursive branching IS the silhouette, wide and open,
+    #            nothing to hide structure behind
+    #   crooked  shortest, heaviest, leaning hard, one broad lopsided low crown
+    #
+    # Everything below is joined to a single mesh on export (`join_by_material`) —
+    # see that function for the node-count reason.
+
+    def tree_trunk(
+        height: float,
+        base_radius: float,
+        tip_radius: float,
+        lean: Vector,
+        sway: float,
+        segments: int,
+        tone: tuple[bpy.types.Material, bpy.types.Material, bpy.types.Material],
+        rng: random.Random,
+        seed: int,
+        vertices: int = 7,
+        ridges: int = 3,
+        flare: float = 1.9,
+        flare_top: float = 0.44,
+        roots: int = 5,
+        root_reach: tuple[float, float] = (1.0, 1.7),
+        taper_power: float = 1.35,
+        roll_spread: float = math.pi,
+    ) -> tuple[list[Vector], list[float]]:
+        """The shared standing trunk of this kit's four trees (F-396).
+
+        `tone` is (shadow, bark, lit) — three tones from the same wood, because
+        one flat colour is what made the old trunks read as plastic pipe.
+
+        Returns the spine points and the radius at each, so a caller can hang
+        limbs on the trunk WHERE THE TRUNK IS rather than on the vertical axis.
+
+        Three things here are load-bearing and easy to undo by accident:
+
+        * **The taper is a curve, not a line.** `taper_power` > 1 sheds radius
+          fast at the base and slowly near the top, which is the profile a trunk
+          actually has; a linear taper is a traffic cone and looks like one.
+        * **The flare stops at 0.44 m on purpose.** `ResourceScatterField.
+          COLLIDER_TRUNK_BAND_MIN_M` is 0.5 m — F-390 lifted the collider's
+          measuring band off the floor precisely because the flare, not the
+          trunk, was setting the radius and holding the player a metre off the
+          bark they were walking at. Keeping the flare under that line means a
+          wide, well-planted base costs nothing in collision.
+        * **The lean accumulates as t².** A trunk that leans linearly is a
+          leaning pole — the base has to stay planted and the crown carry the
+          offset, or the tree looks knocked over rather than grown crooked.
+        """
+        shadow, bark, lit = tone
+
+        points = [Vector((0.0, 0.0, 0.0))]
+        drift = Vector((0.0, 0.0, 0.0))
+        for index in range(1, segments + 1):
+            t = index / segments
+            drift = drift + Vector((rng.uniform(-sway, sway), rng.uniform(-sway, sway), 0.0))
+            points.append(lean * (t * t) + drift + Vector((0.0, 0.0, height * t)))
+        radii = [
+            tip_radius + (base_radius - tip_radius) * ((1.0 - index / segments) ** taper_power)
+            for index in range(segments + 1)
+        ]
+
+        # Root flare, and the buttresses that ARCH out of it. A cylinder that stops
+        # dead at z=0 is the single clearest tell that a tree was generated — but
+        # the first pass over-corrected into the opposite tell: long thin roots
+        # running straight from the flare to the ground read as a spider standing
+        # on the tree. A real buttress is SHORT, THICK and mostly buried, so these
+        # go up over a knee at flare height and dive back down inside about half a
+        # metre past the flare.
+        tapered_between("Flare", (0.0, 0.0, 0.0), (0.0, 0.0, flare_top),
+                        base_radius * flare, base_radius * 1.06, shadow, 8)
+        for index, (angle, rad) in enumerate(radial(roots, base_radius * 1.05, seed=seed + 311,
+                                                    jitter=0.34, radius_jitter=0.20)):
+            toe = rad + rng.uniform(*root_reach)
+            knee = around((0.0, 0.0, flare_top * 0.62), angle, (rad + toe) * 0.48)
             tapered_between(
-                f"Root_{index + 1}",
-                (math.cos(angle) * 0.10, math.sin(angle) * 0.10, 0.14),
-                (math.cos(angle) * rng.uniform(0.72, 1.05), math.sin(angle) * rng.uniform(0.72, 1.05), 0.025),
-                0.15,
-                0.045,
-                mats["bark"],
-                7,
+                f"Root_{index + 1}_A",
+                around((0.0, 0.0, flare_top * 0.95), angle, rad * 0.45), knee,
+                base_radius * 0.54, base_radius * 0.36, bark if index % 2 else lit, 5,
             )
-        tiers = 4 if height > 5.3 else 3
-        foliage_mats = (mats["pine_dark"], mats["pine_mid"], mats["pine_tip"])
+            tapered_between(
+                f"Root_{index + 1}_B", knee, around((0.0, 0.0, 0.02), angle, toe),
+                base_radius * 0.36, base_radius * 0.11, bark if index % 2 else lit, 5,
+            )
+
+        # The column. Each segment rolls by its own amount (see `rolled_frustum`),
+        # `roll_spread` controlling how much — full freedom on rough bark, nearly
+        # none on a smooth pale birch, where visible facet twist at every joint
+        # turns the trunk into a bamboo pole.
+        #
+        # ONE tone for the whole column, and the foot in shadow. Two earlier
+        # passes varied the tone per segment — first seeded, then by height — and
+        # both read as painted rings, because a trunk's segment boundaries are
+        # horizontal, so anything that varies per segment varies horizontally,
+        # which is the one direction bark never does. The second tone earns its
+        # keep on the RIDGES below and on the flare, where it runs vertically or
+        # sits where a shadow genuinely would.
+        for index in range(segments):
+            material = shadow if index == 0 else bark
+            rolled_frustum(f"Trunk_{index + 1}", tuple(points[index]), tuple(points[index + 1]),
+                           radii[index], radii[index + 1], material, vertices,
+                           roll=rng.uniform(-roll_spread, roll_spread))
+
+        # Bark ridges: slivers of the shadow tone laid up the trunk. Thirty
+        # triangles, and the difference between a cone and something with grain.
+        for index, (angle, _rad) in enumerate(radial(ridges, 1.0, seed=seed + 313, jitter=0.55)):
+            stop = max(2, min(segments, int(segments * rng.uniform(0.40, 0.80))))
+            tapered_between(
+                f"Bark_Ridge_{index + 1}",
+                around(tuple(points[0] + Vector((0.0, 0.0, flare_top * 0.45))), angle, radii[0] * 0.86),
+                around(tuple(points[stop]), angle, radii[stop] * 0.78),
+                base_radius * 0.26, base_radius * 0.07, shadow, 4,
+            )
+        return points, radii
+
+    def tree_limb(name: str, start: Vector, heading: Vector, length: float, radius: float,
+                  material: bpy.types.Material, rng: random.Random, segments: int = 3,
+                  rise: float = 0.55, shrink: float = 0.62, vertices: int = 5) -> Vector:
+        """One limb, in a few tapering segments that bend as they go; returns the
+        tip so the caller can hang a crown mass on it.
+
+        A limb built as one straight cone is a stick, and a crown hung off sticks
+        is what made the old birch read as lollipops on wires. Three segments with
+        accumulated curve costs 14 more triangles and reads as wood."""
+        point = Vector(start)
+        direction = Vector(heading).normalized()
+        current = radius
+        for index in range(segments):
+            direction = (direction + Vector((rng.uniform(-0.24, 0.24), rng.uniform(-0.24, 0.24),
+                                             rise / segments))).normalized()
+            nxt = point + direction * (length / segments)
+            tapered_between(f"{name}_{index + 1}", tuple(point), tuple(nxt),
+                            current, current * shrink, material, vertices)
+            current *= shrink
+            point = nxt
+        return point
+
+    def build_pine(seed: int) -> None:
+        """The tall one: 15-20 m, and deliberately the narrowest thing in the kit.
+
+        Conifer mass is stacked skirts rather than an ellipsoid per branch. Eight
+        cones read as a conifer from sixty metres where twenty-four ellipsoids
+        read as a green cloud, and they cost a quarter of the triangles — which
+        matters now that F-395's scatter work places all eighteen of these instead
+        of three willows, out to F-369's 160 m visual band.
+        """
+        rng = random.Random(seed)
+        height = rng.uniform(15.0, 20.5)
+        base_radius = 0.30 + height * 0.0110
+        lean = Vector((rng.uniform(-0.60, 0.60), rng.uniform(-0.50, 0.50), 0.0))
+        points, _radii = tree_trunk(
+            height * 0.97, base_radius, 0.075, lean, height * 0.011, 7,
+            (mats["bark_dark"], mats["bark"], mats["bark_light"]), rng, seed,
+            vertices=7, ridges=3, flare=1.95, roots=5, root_reach=(0.75, 1.30),
+        )
+
+        needles = (mats["pine_dark"], mats["pine_mid"], mats["pine_tip"])
+        # Lowest live branch well above head height: a conifer whose skirts start
+        # at your knees is a bush, and it is also what hid the trunk entirely.
+        crown_start = 0.32 + rng.uniform(-0.03, 0.07)
+        tiers = 8 + (seed % 3)
+        widest = height * 0.150
         for tier in range(tiers):
-            t = tier / max(1, tiers - 1)
-            z = height * (0.34 + t * 0.42)
-            center = lean * (z / height) + Vector((0.0, 0.0, z))
-            branch_count = 5 + ((seed + tier) % 2)
-            branch_length = (1.55 - t * 0.58) * rng.uniform(0.90, 1.10)
-            for branch in range(branch_count):
-                angle = branch * math.tau / branch_count + tier * 0.58 + rng.uniform(-0.16, 0.16)
-                radial = Vector((math.cos(angle), math.sin(angle), 0.0))
-                end = center + radial * branch_length + Vector((0.0, 0.0, rng.uniform(-0.28, 0.10)))
-                tapered_between(
-                    f"Branch_{tier + 1}_{branch + 1}",
-                    tuple(center),
-                    tuple(end),
-                    0.11 - t * 0.025,
-                    0.035,
-                    mats["bark"],
-                    7,
-                )
-                foliage_scale = 0.58 - t * 0.12
-                ico(
-                    f"Needles_{tier + 1}_{branch + 1}",
-                    tuple(center.lerp(end, 0.82)),
-                    (foliage_scale * 1.18, foliage_scale * 0.66, foliage_scale * 0.62),
-                    foliage_mats[min(2, tier)],
-                    (rng.uniform(-0.16, 0.16), rng.uniform(-0.16, 0.16), angle),
-                )
-                if branch % 2 == 0:
-                    ico(
-                        f"Needle_Tip_{tier + 1}_{branch + 1}",
-                        tuple(end),
-                        (foliage_scale * 0.72, foliage_scale * 0.48, foliage_scale * 0.52),
-                        foliage_mats[min(2, tier + 1)],
-                        (rng.uniform(-0.2, 0.2), rng.uniform(-0.2, 0.2), angle + 0.35),
+            t = tier / (tiers - 1)
+            centre = spine_point(points, crown_start + (0.94 - crown_start) * t)
+            spread = (1.0 - t) ** 0.80
+            radius = widest * (0.22 + 0.78 * spread) * rng.uniform(0.90, 1.10)
+            depth = height * 0.075 * (0.55 + 0.70 * spread)
+            skirt = cone(f"Skirt_{tier + 1}", radius, radius * 0.17, depth,
+                         tuple(centre + Vector((0.0, 0.0, depth * 0.20))),
+                         needles[min(2, (tier * 3) // tiers)], 8)
+            skirt.rotation_euler = (rng.uniform(-0.08, 0.08), rng.uniform(-0.08, 0.08),
+                                    tier * 0.79 + rng.uniform(-0.22, 0.22))
+            # Every other tier grows a real branch past the skirt edge with a
+            # needle SPRAY on the end, so the silhouette is ragged rather than a
+            # stack of clean circles.
+            #
+            # The spray has to be flat and it has to overlap the skirt: the first
+            # pass hung a near-spherical tuft at the branch tip and it read as a
+            # green boulder orbiting the tree, because a mass that touches nothing
+            # is a separate object however close it sits. Wide, thin, and anchored
+            # back at 0.72 of the branch fixes both.
+            if tier % 2 == 0 and t < 0.86:
+                for index, (angle, rad) in enumerate(radial(3, radius * 0.45, seed=seed + tier * 29,
+                                                            jitter=0.4, radius_jitter=0.2)):
+                    tip = tree_limb(
+                        f"Branch_{tier + 1}_{index + 1}", centre,
+                        Vector((math.cos(angle), math.sin(angle), -0.16)),
+                        radius * rng.uniform(0.95, 1.20), base_radius * 0.22,
+                        mats["bark_dark"], rng, segments=2, rise=-0.10, shrink=0.55, vertices=4,
                     )
-        cone("Leader_Needles", 0.62, 0.04, height * 0.24, tuple(lean * 0.88 + Vector((0.0, 0.0, height * 0.85))), mats["pine_tip"], 8)
+                    spray = hull(f"Needle_Spray_{tier + 1}_{index + 1}",
+                                 tuple(centre.lerp(tip, 0.72)),
+                                 (radius * 0.52, radius * 0.30, depth * 0.20),
+                                 needles[min(2, (tier * 3) // tiers)], seed + tier * 13 + index,
+                                 subdivisions=0, lumps=3, lump=0.44, sharpness=2.0)
+                    spray.rotation_euler = (0.0, rng.uniform(-0.18, 0.05), angle)
+        cone("Leader", widest * 0.30, 0.02, height * 0.13,
+             tuple(spine_point(points, 0.955) + Vector((0.0, 0.0, height * 0.055))),
+             mats["pine_tip"], 7)
 
     def build_bare(seed: int) -> None:
+        """Dead, 12-17 m, and the one tree with nowhere to hide: with no leaves,
+        the branch structure IS the silhouette.
+
+        So it is the one that gets real recursion (`mire_art.fork`) instead of
+        "six branches, each with two twigs" — a fixed two-level shape that looks
+        like a fixed two-level shape from any distance. Two or three leaders come
+        out of the crotch and each one branches three levels down."""
         rng = random.Random(seed)
-        height = rng.uniform(4.5, 6.2)
-        bend = Vector((rng.uniform(-0.42, 0.42), rng.uniform(-0.30, 0.30), height * 0.55))
-        top = bend + Vector((rng.uniform(-0.40, 0.40), rng.uniform(-0.30, 0.30), height * 0.45))
-        tapered_between("Trunk_Lower", (0.0, 0.0, 0.0), tuple(bend), 0.46, 0.29, mats["bark"], 8)
-        tapered_between("Trunk_Upper", tuple(bend), tuple(top), 0.29, 0.10, mats["bark_light"], 7)
-        for index in range(4):
-            angle = index * math.tau / 4.0 + rng.uniform(-0.25, 0.25)
-            tapered_between(f"Root_{index + 1}", (0.0, 0.0, 0.14), (math.cos(angle) * 0.92, math.sin(angle) * 0.92, 0.025), 0.14, 0.035, mats["bark"], 7)
-        for index in range(6):
-            start_z = height * (0.40 + index * 0.075)
-            trunk_point = bend.lerp(top, max(0.0, min(1.0, (start_z - bend.z) / max(0.01, top.z - bend.z))))
-            angle = index * 2.37 + rng.uniform(-0.32, 0.32)
-            length = rng.uniform(1.10, 1.75) * (1.0 - index * 0.035)
-            end = trunk_point + Vector((math.cos(angle) * length, math.sin(angle) * length, rng.uniform(0.55, 1.10)))
-            tapered_between(f"Branch_{index + 1}", tuple(trunk_point), tuple(end), 0.14 - index * 0.009, 0.045, mats["bark_light"], 7)
-            for twig in (-1, 1):
-                twig_end = end + Vector((math.cos(angle + twig * 0.68) * 0.58, math.sin(angle + twig * 0.68) * 0.58, rng.uniform(0.28, 0.62)))
-                tapered_between(f"Twig_{index + 1}_{twig + 2}", tuple(end), tuple(twig_end), 0.050, 0.018, mats["bark_light"], 6)
+        height = rng.uniform(12.0, 17.0)
+        base_radius = 0.30 + height * 0.0145
+        lean = Vector((rng.uniform(-0.85, 0.85), rng.uniform(-0.70, 0.70), 0.0))
+        crotch_fraction = rng.uniform(0.40, 0.52)
+        points, radii = tree_trunk(
+            height * crotch_fraction, base_radius, base_radius * 0.52, lean * crotch_fraction,
+            height * 0.014, 5, (mats["bark_dark"], mats["bark"], mats["bark_light"]), rng, seed,
+            vertices=7, ridges=4, flare=2.05, roots=6, root_reach=(0.85, 1.45), taper_power=1.15,
+        )
+
+        crotch = points[-1]
+        leaders = 2 + (seed % 2)
+        remaining = height * (1.0 - crotch_fraction)
+        for index, (angle, _rad) in enumerate(radial(leaders, 1.0, seed=seed + 401, jitter=0.42)):
+            tilt = rng.uniform(0.28, 0.52)
+            fork(
+                f"Limb_{index + 1}", tuple(crotch),
+                (math.cos(angle) * math.sin(tilt), math.sin(angle) * math.sin(tilt), math.cos(tilt)),
+                remaining * rng.uniform(0.42, 0.56), radii[-1] * rng.uniform(0.72, 0.94),
+                mats["bark"], seed + index * 97, depth=3, splits=(2, 2), spread=0.52,
+                shrink=0.64, curve=0.20, vertices=5, tip_material=mats["bark_light"],
+            )
+        # A dead tree is a fungus habitat, and it is the cheapest way to say the
+        # trunk has been standing dead for years rather than being an unfinished
+        # asset. Two shelves, one flat mass each.
+        #
+        # `wood_cut` and not `fungus_cap`: the palette's toadstool pink is a
+        # deliberate mire-growth signal colour, and on a trunk at 40 m it reads as
+        # two magenta pixels stuck to the bark — it looked like a rendering bug in
+        # the first kit render. A bracket fungus is pale dead wood, which is what
+        # `wood_cut` already is.
+        for index, (angle, rad) in enumerate(radial(2, base_radius * 0.95, seed=seed + 409, jitter=0.6)):
+            shelf_z = height * rng.uniform(0.14, 0.34)
+            hull(f"Bracket_{index + 1}",
+                 around(tuple(spine_point(points, shelf_z / (height * crotch_fraction))), angle, rad),
+                 (base_radius * 0.70, base_radius * 0.62, base_radius * 0.16),
+                 mats["cut"], seed + 411 + index, subdivisions=0, lumps=3, lump=0.40,
+                 flat_base=0.5)
 
     def build_birch(seed: int) -> None:
+        """13-18 m of slim pale trunk with the crown held high and clean.
+
+        The birch is the kit's contrast tree: it is the only pale trunk, so it is
+        the one asset where showing MORE trunk is the point. Nothing branches
+        below 58% of its height, and its crown is deliberately the smallest
+        relative to its height of the four."""
         rng = random.Random(seed)
-        height = rng.uniform(5.0, 6.7)
-        lean = Vector((rng.uniform(-0.38, 0.38), rng.uniform(-0.20, 0.20), 0.0))
-        mid = lean * 0.35 + Vector((0.0, 0.0, height * 0.52))
-        top = lean + Vector((0.0, 0.0, height))
-        tapered_between("Trunk_Lower", (0.0, 0.0, 0.0), tuple(mid), 0.30, 0.22, mats["birch"], 8)
-        tapered_between("Trunk_Upper", tuple(mid), tuple(top), 0.22, 0.075, mats["birch"], 8)
-        for index in range(5):
-            z = height * (0.16 + index * 0.14)
-            center = lean * (z / height) + Vector((0.0, 0.0, z))
-            cylinder(f"Bark_Mark_{index + 1}", 0.27 - index * 0.018, 0.045, tuple(center), mats["birch_dark"], 8)
-        for index in range(6):
-            z = height * (0.48 + index * 0.07)
-            center = lean * (z / height) + Vector((0.0, 0.0, z))
-            angle = index * 2.18 + rng.uniform(-0.28, 0.28)
-            length = rng.uniform(0.95, 1.48)
-            end = center + Vector((math.cos(angle) * length, math.sin(angle) * length, rng.uniform(0.32, 0.86)))
-            tapered_between(f"Branch_{index + 1}", tuple(center), tuple(end), 0.10, 0.028, mats["birch"], 7)
-            crown_mat = (mats["leaf"], mats["leaf_light"], mats["leaf_gold"])[(seed + index) % 3]
-            ico(f"Crown_{index + 1}", tuple(end), (rng.uniform(0.62, 0.92), rng.uniform(0.48, 0.72), rng.uniform(0.52, 0.82)), crown_mat, (rng.random(), rng.random(), angle))
-        ico("Crown_Top", tuple(top + Vector((0.0, 0.0, -0.10))), (0.68, 0.58, 0.82), mats["leaf_light"], (rng.random(), rng.random(), rng.random()))
+        height = rng.uniform(12.5, 16.5)
+        base_radius = 0.20 + height * 0.0088
+        lean = Vector((rng.uniform(-0.70, 0.70), rng.uniform(-0.40, 0.40), 0.0))
+        points, radii = tree_trunk(
+            height, base_radius, 0.055, lean, height * 0.010, 8,
+            # Birch inverts the usual tone order: the trunk is the pale one and
+            # `wood_birch_mark` is the scar. Which makes the bark ridges the
+            # lenticel bands, at no extra cost — the right answer for this species
+            # happens to be the same geometry as everyone else's.
+            (mats["birch_dark"], mats["birch"], mats["birch"]), rng, seed,
+            vertices=7, ridges=4, flare=1.75, roots=5, root_reach=(0.55, 0.95), taper_power=1.55,
+            # Birch bark is smooth. A big per-segment roll on a slim pale trunk
+            # makes every joint a visible twist and the tree reads as bamboo.
+            roll_spread=0.18,
+        )
+        # Three scars, not six. Six evenly spaced discs down a pale trunk read as
+        # a measuring stick — the regularity is the tell, and birch lenticels are
+        # not regular. Wide gaps, mixed sizes.
+        for index, fraction in enumerate((0.13, 0.29, 0.47)):
+            centre = spine_point(points, fraction + rng.uniform(-0.03, 0.03))
+            band = cylinder(f"Bark_Mark_{index + 1}",
+                            base_radius * rng.uniform(0.94, 1.12) * (1.0 - fraction * 0.5),
+                            0.045 + rng.uniform(0.0, 0.055),
+                            tuple(centre), mats["birch_dark"], 7)
+            band.rotation_euler = (rng.uniform(-0.05, 0.05), rng.uniform(-0.05, 0.05), rng.random())
+
+        # Crown: one dense mass in the top third, not a ladder of blobs up the
+        # whole trunk. A birch's read is a long clean bole and then all the leaves
+        # at once; the first pass spread five small masses from 58% upward and got
+        # lollipops on wires instead.
+        leaf_palette = (mats["leaf"], mats["leaf_light"], mats["leaf"], mats["leaf_gold"])
+        crown_radius = height * 0.175
+        for index, (angle, rad) in enumerate(radial(7, crown_radius * 0.50, seed=seed + 503,
+                                                    jitter=0.34, radius_jitter=0.30)):
+            fraction = 0.66 + (index % 4) * 0.075
+            anchor = spine_point(points, fraction)
+            tip = tree_limb(
+                f"Branch_{index + 1}", anchor,
+                Vector((math.cos(angle), math.sin(angle), 0.85)),
+                crown_radius * rng.uniform(0.42, 0.68),
+                radii[min(len(radii) - 1, int(fraction * 8))] * 0.62,
+                mats["birch"], rng, segments=2, rise=0.95, shrink=0.62, vertices=4,
+            )
+            hull(f"Crown_{index + 1}", tuple(tip),
+                 (crown_radius * rng.uniform(0.50, 0.70), crown_radius * rng.uniform(0.46, 0.64),
+                  crown_radius * rng.uniform(0.38, 0.54)),
+                 leaf_palette[(seed + index) % 4], seed + index * 37,
+                 subdivisions=0, lumps=4, lump=0.38, sharpness=2.2, droop=0.26, droop_lobes=2)
+        hull("Crown_Top", tuple(points[-1] + Vector((0.0, 0.0, crown_radius * 0.18))),
+             (crown_radius * 0.78, crown_radius * 0.72, crown_radius * 0.62),
+             mats["leaf_light"], seed + 521, subdivisions=0, lumps=4, lump=0.34, taper=0.28,
+             droop=0.30, droop_lobes=3)
 
     def build_crooked(seed: int) -> None:
+        """The short heavy one: 9.5-13.5 m, leaning hard, with one broad lopsided
+        crown sitting low.
+
+        Deliberately the opposite end of the range from the pine — this is the
+        tree that reads as an obstacle and a landmark rather than as canopy, and
+        it is the only one whose crown is wider than it is tall."""
         rng = random.Random(seed)
-        points = [Vector((0.0, 0.0, 0.0))]
-        for index in range(1, 5):
-            points.append(points[-1] + Vector((rng.uniform(-0.68, 0.68), rng.uniform(-0.38, 0.38), rng.uniform(1.05, 1.42))))
-        for index in range(4):
-            tapered_between(f"Trunk_{index + 1}", tuple(points[index]), tuple(points[index + 1]), 0.40 - index * 0.07, 0.33 - index * 0.07, mats["bark" if index < 2 else "bark_light"], 7)
-        for index in range(4):
-            angle = index * math.tau / 4.0 + rng.uniform(-0.25, 0.25)
-            tapered_between(f"Root_{index + 1}", (0.0, 0.0, 0.14), (math.cos(angle) * 0.94, math.sin(angle) * 0.94, 0.025), 0.15, 0.04, mats["bark"], 7)
-        leaf_palette = (mats["leaf"], mats["leaf_light"], mats["leaf_gold"])
-        for index in range(6):
-            anchor = points[2 + index % 3]
-            angle = index * 2.31 + rng.uniform(-0.28, 0.28)
-            length = rng.uniform(0.85, 1.38)
-            end = anchor + Vector((math.cos(angle) * length, math.sin(angle) * length, rng.uniform(0.20, 0.78)))
-            tapered_between(f"Branch_{index + 1}", tuple(anchor), tuple(end), 0.12, 0.03, mats["bark_light"], 7)
-            ico(f"Crown_{index + 1}", tuple(end), (rng.uniform(0.62, 1.00), rng.uniform(0.50, 0.82), rng.uniform(0.55, 0.88)), leaf_palette[(seed + index) % 3], (rng.random(), rng.random(), angle))
+        height = rng.uniform(9.5, 13.5)
+        base_radius = 0.32 + height * 0.0180
+        # A big deliberate lean plus heavy sway: this is the one tree allowed to
+        # look like it grew around something.
+        lean = Vector((rng.uniform(-1.7, 1.7), rng.uniform(-1.4, 1.4), 0.0))
+        points, radii = tree_trunk(
+            height * 0.80, base_radius, base_radius * 0.34, lean, height * 0.028, 6,
+            (mats["bark_dark"], mats["bark"], mats["bark_light"]), rng, seed,
+            vertices=6, ridges=4, flare=2.15, flare_top=0.48, roots=6, root_reach=(0.95, 1.65),
+            taper_power=1.05,
+        )
+
+        # `leaf_gold` one time in five, never on the biggest mass: the palette
+        # says "autumn accent; use sparingly", and picking it one time in three
+        # for a full-size crown mass gave the tree a giant mustard boulder on one
+        # side that read as a different object entirely.
+        leaf_palette = (mats["leaf"], mats["leaf_light"], mats["leaf"], mats["leaf_light"],
+                        mats["leaf_gold"])
+        crown_radius = height * 0.26
+        # One lopsided crown, offset toward the lean, built from four overlapping
+        # masses rather than one ball — the offset is what makes it read as a tree
+        # that has been reaching for light for a century.
+        bias = Vector((lean.x, lean.y, 0.0)) * 0.55
+        for index, (angle, rad) in enumerate(radial(4, crown_radius * 0.62, seed=seed + 601,
+                                                    jitter=0.4, radius_jitter=0.28)):
+            anchor = spine_point(points, 0.62 + 0.11 * (index % 3))
+            tip = tree_limb(
+                f"Branch_{index + 1}", anchor,
+                Vector((math.cos(angle), math.sin(angle), 0.45)),
+                crown_radius * rng.uniform(0.55, 0.85),
+                radii[min(len(radii) - 1, 3 + index % 2)] * 0.62,
+                mats["bark_light"], rng, segments=3, rise=0.60, shrink=0.66, vertices=5,
+            )
+            hull(f"Crown_{index + 1}", tuple(tip + bias * 0.35),
+                 (crown_radius * rng.uniform(0.58, 0.80), crown_radius * rng.uniform(0.52, 0.74),
+                  crown_radius * rng.uniform(0.36, 0.52)),
+                 leaf_palette[(seed + index) % 5], seed + index * 43,
+                 subdivisions=0, lumps=4, lump=0.40, sharpness=2.0, droop=0.42, droop_lobes=3)
+        hull("Crown_Core", tuple(points[-1] + bias + Vector((0.0, 0.0, crown_radius * 0.30))),
+             (crown_radius * 0.86, crown_radius * 0.78, crown_radius * 0.50),
+             mats["leaf"], seed + 617, subdivisions=1, lumps=5, lump=0.34, taper=0.22,
+             droop=0.50, droop_lobes=4)
+        for index, (angle, rad) in enumerate(radial(2, base_radius * 1.05, seed=seed + 619, jitter=0.7)):
+            hull(f"Moss_{index + 1}",
+                 around(tuple(spine_point(points, rng.uniform(0.10, 0.30))), angle, rad * 0.92),
+                 (base_radius * 0.62, base_radius * 0.30, base_radius * 0.58),
+                 mats["moss"], seed + 623 + index, subdivisions=0, lumps=3, lump=0.44)
 
     def build_boulder(seed: int) -> None:
         rng = random.Random(seed); sx, sy, sz = rng.uniform(0.9, 1.8), rng.uniform(0.75, 1.5), rng.uniform(0.65, 1.4)
@@ -664,8 +1025,15 @@ def main() -> None:
 
     counters = {category: 0 for category in CATEGORY_ORDER}; records: list[dict] = []
     for name, category, builder in specs:
-        index = counters[category]; counters[category] += 1; columns = 6; rows = math.ceil(CATEGORY_TOTALS[category] / columns); column = index % columns; row = index // columns; category_y = CATEGORY_ORDER.index(category) * 38.0; location = ((column - 2.5) * 5.5, category_y + (row - (rows - 1) * 0.5) * 6.0, 0.0)
-        records.append(create_asset(name, category, builder, location))
+        index = counters[category]; counters[category] += 1; columns = 6; rows = math.ceil(CATEGORY_TOTALS[category] / columns); column = index % columns; row = index // columns; category_y = CATEGORY_ORDER.index(category) * 38.0
+        # F-396: the trees are now 12-20 m with crowns 5-7 m across, so the flat
+        # 5.5 m grid the preview used to lay them out on packed them into one
+        # continuous hedge. Spacing is per category now; every other row is
+        # unchanged. This only moves `display_location`, which is applied AFTER
+        # export — no GLB is affected by it.
+        spacing_x, spacing_y = (11.0, 12.0) if category == "trees" else (5.5, 6.0)
+        location = ((column - 2.5) * spacing_x, category_y + (row - (rows - 1) * 0.5) * spacing_y, 0.0)
+        records.append(create_asset(name, category, builder, location, join=(category == "trees")))
     catalog = [{"name": r["name"], "category": r["category"], "width_m": round(r["width"], 3), "depth_m": round(r["depth"], 3), "height_m": round(r["height"], 3), "mesh_parts": r["parts"], "polygons": r["polygons"], "materials": r["materials"]} for r in records]
     with (ASSET_DIR / "catalog.json").open("w", encoding="utf-8") as handle:
         json.dump(catalog, handle, indent=2)
@@ -683,19 +1051,25 @@ def main() -> None:
         for child in record["root"].children_recursive:
             child.hide_render = not visible
 
-    preview_scales = {"trees": 43.0, "rocks": 36.0, "forest_debris": 34.0, "ground_cover": 42.0, "mire_growth": 34.0, "ruins": 34.0, "building_pieces": 40.0}
-    preview_heights = {"trees": 2.7, "rocks": 1.2, "forest_debris": 0.8, "ground_cover": 0.5, "mire_growth": 0.9, "ruins": 1.6, "building_pieces": 1.5}
+    # F-396: the trees grew 3x, so their frame has to. Everything else is untouched.
+    preview_scales = {"trees": 86.0, "rocks": 36.0, "forest_debris": 34.0, "ground_cover": 42.0, "mire_growth": 34.0, "ruins": 34.0, "building_pieces": 40.0}
+    preview_heights = {"trees": 8.5, "rocks": 1.2, "forest_debris": 0.8, "ground_cover": 0.5, "mire_growth": 0.9, "ruins": 1.6, "building_pieces": 1.5}
     for category in CATEGORY_ORDER:
         category_y = CATEGORY_ORDER.index(category) * 38.0
         for r in records: set_visible(r, r["category"] == category)
         target_height = preview_heights[category]
         camera.location = (22, category_y - 29, 22 + target_height); camera.data.ortho_scale = preview_scales[category]; look_at(camera, (0, category_y, target_height)); scene.render.filepath = str(PREVIEW_DIR / CATEGORY_PREVIEWS[category]); bpy.ops.render.render(write_still=True)
 
+    # F-396: re-laid out for trees that are now 12-20 m rather than 5-7 m. The
+    # trees move to the back and spread out; the ground-scale props stay forward
+    # where they are still legible against them. The point of this frame is
+    # precisely the comparison the finding is about, so it has to hold both.
     hero_positions = {
-        "tree_pine_c": (-10.0, 3.0, 0.0), "tree_birch_b": (-6.0, 3.0, 0.0), "tree_crooked_b": (-2.0, 3.0, 0.0),
-        "boulder_d": (3.0, 3.0, 0.0), "standing_stone_b": (7.0, 3.0, 0.0),
-        "fallen_log_c": (-9.0, -3.0, 0.0), "fern_c": (-5.0, -3.0, 0.0), "mire_crystal_c": (-1.0, -3.0, 0.0),
-        "ruin_arch_a": (3.5, -3.0, 0.0), "wood_wall_window": (6.7, -3.0, 0.0),
+        "tree_pine_c": (-15.0, 12.0, 0.0), "tree_birch_b": (-6.5, 14.0, 0.0),
+        "tree_crooked_b": (2.0, 11.0, 0.0), "tree_bare_b": (11.0, 14.5, 0.0),
+        "boulder_d": (7.0, 2.0, 0.0), "standing_stone_b": (11.5, 2.5, 0.0),
+        "fallen_log_c": (-9.0, -1.0, 0.0), "fern_c": (-4.5, -2.0, 0.0), "mire_crystal_c": (-0.5, -2.0, 0.0),
+        "ruin_arch_a": (3.5, -1.5, 0.0), "wood_wall_window": (-14.0, 1.0, 0.0),
     }
     original_locations: dict[str, Vector] = {}
     for r in records:
@@ -703,7 +1077,7 @@ def main() -> None:
         if r["name"] in hero_positions:
             original_locations[r["name"]] = r["root"].location.copy()
             r["root"].location = hero_positions[r["name"]]
-    camera.data.type = "PERSP"; camera.data.lens = 56.0; camera.location = (18.0, -25.0, 12.5); look_at(camera, (-0.5, 0.0, 2.0))
+    camera.data.type = "PERSP"; camera.data.lens = 48.0; camera.location = (24.0, -46.0, 11.0); look_at(camera, (-1.0, 4.0, 7.5))
     scene.render.resolution_x = 1600; scene.render.resolution_y = 900; scene.render.filepath = str(PREVIEW_DIR / "mire_map_kit_preview.png"); bpy.ops.render.render(write_still=True)
     for r in records:
         if r["name"] in original_locations: r["root"].location = original_locations[r["name"]]

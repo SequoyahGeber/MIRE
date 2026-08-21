@@ -1,0 +1,135 @@
+[gd_resource type="Resource" script_class="ScatterDef" format=3]
+
+[ext_resource type="Script" path="res://world/gen/scatter_entry.gd" id="1_entry"]
+[ext_resource type="Script" path="res://world/gen/scatter_def.gd" id="2_def"]
+
+[sub_resource type="Resource" id="Resource_00_moss_patch_a"]
+script = ExtResource("1_entry")
+asset = &"moss_patch_a"
+kit = "flora"
+weight = 1
+min_scale = 0.9
+max_scale = 1.4
+
+[sub_resource type="Resource" id="Resource_01_moss_patch_b"]
+script = ExtResource("1_entry")
+asset = &"moss_patch_b"
+kit = "flora"
+weight = 1
+min_scale = 0.9
+max_scale = 1.4
+
+[sub_resource type="Resource" id="Resource_02_moss_patch_c"]
+script = ExtResource("1_entry")
+asset = &"moss_patch_c"
+kit = "flora"
+weight = 1
+min_scale = 0.9
+max_scale = 1.4
+
+[sub_resource type="Resource" id="Resource_03_moss_patch_d"]
+script = ExtResource("1_entry")
+asset = &"moss_patch_d"
+kit = "flora"
+weight = 1
+min_scale = 0.9
+max_scale = 1.4
+
+[sub_resource type="Resource" id="Resource_04_duckweed"]
+script = ExtResource("1_entry")
+asset = &"duckweed"
+kit = "wetland_nature"
+weight = 0.5
+min_scale = 0.9
+max_scale = 1.3
+
+[sub_resource type="Resource" id="Resource_05_lily_pad_a"]
+script = ExtResource("1_entry")
+asset = &"lily_pad_a"
+kit = "flora"
+weight = 0.35
+min_scale = 0.9
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_06_lily_pad_b"]
+script = ExtResource("1_entry")
+asset = &"lily_pad_b"
+kit = "flora"
+weight = 0.35
+min_scale = 0.9
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_07_lily_pad_c"]
+script = ExtResource("1_entry")
+asset = &"lily_pad_c"
+kit = "flora"
+weight = 0.35
+min_scale = 0.9
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_08_flowers_bog_a"]
+script = ExtResource("1_entry")
+asset = &"flowers_bog_a"
+kit = "flora"
+weight = 0.5
+min_scale = 0.85
+max_scale = 1.15
+
+[sub_resource type="Resource" id="Resource_09_flowers_bog_b"]
+script = ExtResource("1_entry")
+asset = &"flowers_bog_b"
+kit = "flora"
+weight = 0.5
+min_scale = 0.85
+max_scale = 1.15
+
+[sub_resource type="Resource" id="Resource_10_flowers_bog_c"]
+script = ExtResource("1_entry")
+asset = &"flowers_bog_c"
+kit = "flora"
+weight = 0.5
+min_scale = 0.85
+max_scale = 1.15
+
+[sub_resource type="Resource" id="Resource_11_plant_dock_a"]
+script = ExtResource("1_entry")
+asset = &"plant_dock_a"
+kit = "flora"
+weight = 0.6
+min_scale = 0.85
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_12_plant_dock_b"]
+script = ExtResource("1_entry")
+asset = &"plant_dock_b"
+kit = "flora"
+weight = 0.6
+min_scale = 0.85
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_13_plant_dock_c"]
+script = ExtResource("1_entry")
+asset = &"plant_dock_c"
+kit = "flora"
+weight = 0.6
+min_scale = 0.85
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_14_glowcap_mushroom"]
+script = ExtResource("1_entry")
+asset = &"glowcap_mushroom"
+kit = "wetland"
+weight = 0.3
+min_scale = 0.9
+max_scale = 1.2
+
+[resource]
+script = ExtResource("2_def")
+id = &"marsh_floor"
+biome_id = &"marsh"
+cell_size_m = 3.6
+jitter_fraction = 0.8
+coverage = 0.5
+min_height = 0.4
+max_height = 1000
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_moss_patch_a"), SubResource("Resource_01_moss_patch_b"), SubResource("Resource_02_moss_patch_c"), SubResource("Resource_03_moss_patch_d"), SubResource("Resource_04_duckweed"), SubResource("Resource_05_lily_pad_a"), SubResource("Resource_06_lily_pad_b"), SubResource("Resource_07_lily_pad_c"), SubResource("Resource_08_flowers_bog_a"), SubResource("Resource_09_flowers_bog_b"), SubResource("Resource_10_flowers_bog_c"), SubResource("Resource_11_plant_dock_a"), SubResource("Resource_12_plant_dock_b"), SubResource("Resource_13_plant_dock_c"), SubResource("Resource_14_glowcap_mushroom")])

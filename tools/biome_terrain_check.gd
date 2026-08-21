@@ -125,12 +125,31 @@ func _finish() -> void:
 func _check_amplitudes_reach_content() -> void:
 	print("\n== a biome's interior gets that biome's AUTHORED amplitudes ==")
 	var table: BiomeMap.TerrainTable = BiomeMap.make_terrain_table(biome_defs)
-	# Well inside each shipped band, by more than AMPLITUDE_BLEND_HEIGHT_M / _MOISTURE on both axes.
+	# Well inside each shipped band, by more than AMPLITUDE_BLEND_HEIGHT_M (0.22 m) and
+	# AMPLITUDE_BLEND_MOISTURE (0.03) on both axes. Coordinates are (height_m, moisture).
+	#
+	# F-401 rebuilt the biome set from three rows to seven, and BOTH halves of that broke this
+	# block. The forest probe sat at height 14.0, which was correct when forest's band was
+	# `height 1.6 - 100` — the wet half of the island at any elevation. Forest is now a narrow
+	# `2.9 - 3.9` belt with `highland` above it, so height 14 resolves to highland and the probe was
+	# asserting forest's amplitudes against highland's numbers. And four of the seven biomes had no
+	# probe at all, so a check whose whole job is "authored numbers mean something" was covering
+	# under half the content that carries them.
+	#
+	# Every entry below is re-derived from the shipped bands rather than carried over, so this stays
+	# a real assertion instead of one that happens to still pass.
 	var probes: Dictionary = {
-		&"shore": Vector2(0.0, 0.5),
-		&"grassland": Vector2(14.0, 0.25),
-		&"forest": Vector2(14.0, 0.75),
+		&"shore": Vector2(0.0, 0.5),        # height < 1.7, any moisture
+		&"marsh": Vector2(2.3, 0.8),        # 1.7 - 2.9,  wet
+		&"forest": Vector2(3.4, 0.8),       # 2.9 - 3.9,  wet
+		&"birchwood": Vector2(2.8, 0.51),   # 1.7 - 3.9,  mid moisture
+		&"highland": Vector2(14.0, 0.7),    # 3.9+,       mid-wet
+		&"grassland": Vector2(14.0, 0.25),  # 1.7+,       dry
+		&"heath": Vector2(14.0, 0.07),      # 1.7+,       driest
 	}
+	_check(probes.size() == biome_defs.size(),
+		"every shipped biome has a probe (%d biomes, %d probes)" % [biome_defs.size(), probes.size()],
+		"a biome with no probe is a biome whose authored amplitudes nothing checks")
 	for id: StringName in probes:
 		var probe: Vector2 = probes[id]
 		var authored: Vector2 = BiomeMap.amplitudes_for(id, biome_defs)
