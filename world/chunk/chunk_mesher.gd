@@ -178,6 +178,41 @@ static func _sample_heights(
 	return heights
 
 
+## Area-weighted vertex normals accumulated from the emitted triangles.
+##
+## Called with the TERRAIN indices only, before the skirt is appended: the skirt's walls are vertical,
+## and letting them contribute would drag every border vertex's normal sideways. The skirt keeps
+## inheriting its top vertex's normal, which is the deliberate choice documented at that loop.
+##
+## The cross product is left unnormalised on purpose — its magnitude is twice the triangle's area,
+## which is exactly the weighting wanted here. Jitter makes neighbouring triangles genuinely unequal,
+## so a large facet should pull a shared vertex more than a sliver does.
+static func _accumulate_normals(
+	vertices: PackedVector3Array, indices: PackedInt32Array, normals: PackedVector3Array, count: int
+) -> void:
+	for i: int in count:
+		normals[i] = Vector3.ZERO
+	var tri: int = 0
+	while tri + 2 < indices.size():
+		var ia: int = indices[tri]
+		var ib: int = indices[tri + 1]
+		var ic: int = indices[tri + 2]
+		var a: Vector3 = vertices[ia]
+		# (c - a) x (b - a), not the other order: `_build_indices()` winds a quad as
+		# (a, b, c) = (x,z), (x+1,z), (x,z+1), and this order is the one that comes out +Y on a flat
+		# quad. The other way lights the whole island from underneath.
+		var face: Vector3 = (vertices[ic] - a).cross(vertices[ib] - a)
+		normals[ia] += face
+		normals[ib] += face
+		normals[ic] += face
+		tri += 3
+	for i: int in count:
+		var n: Vector3 = normals[i]
+		# A zero-area fan is only reachable if jitter collapsed a quad, which VERTEX_JITTER_FRACTION
+		# < 0.5 forbids — but a zero normal is a black facet, so it falls back to straight up.
+		normals[i] = n.normalized() if n.length_squared() > 0.0 else Vector3.UP
+
+
 ## Unit-range jitter for the vertex at integer WORLD metres (ix, iz) — the same offset whichever
 ## chunk or LOD asks, and identical on every platform: integer mixing and one division by a
 ## constant, the D-017 discipline `IslandHeightmap.lobes()` set. Components in [-1, 1]; the caller
@@ -239,12 +274,9 @@ static func build_mesh(
 ) -> ArrayMesh:
 	var step: int = LOD_STEPS[lod]
 	var side: int = verts_per_side(lod)
-	var apron_side: int = side + 2
 	var noise_set: BiomeMapScript.NoiseSet = BiomeMapScript.make_noise_set(world_seed)
 	var table: BiomeMapScript.TerrainTable = BiomeMapScript.make_terrain_table(biome_defs)
 	var shape := Heightmap.Shape.new()
-	var heights: PackedFloat32Array = _sample_heights(
-		chunk_x, chunk_z, world_seed, lod, noise_set, table, shape)
 
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
@@ -255,19 +287,17 @@ static func build_mesh(
 	uvs.resize(count)
 
 	var inv_size: float = 1.0 / float(CHUNK_SIZE)
-	# Central-difference slope per metre. The apron samples are `step` metres apart, so the raw
-	# difference must be halved AND divided by `step` to stay a per-metre slope regardless of LOD —
-	# at step=1 this reduces to the original R2 formula (`diff * 0.5`).
-	var slope_scale: float = 0.5 / float(step)
+	# F-339 removed the one-ring apron this function used to sample. Its only consumer was the
+	# central-difference normal below, which is gone; keeping it would have cost `(side + 2)^2` noise
+	# samples per chunk — 1,225 at LOD0, more than the 1,089 the vertices themselves need — for a
+	# result nothing read. `_sample_heights()` itself stays: the reference-mesh builder below is a
+	# second, unjittered consumer.
 	var origin_x: float = float(chunk_x * CHUNK_SIZE)
 	var origin_z: float = float(chunk_z * CHUNK_SIZE)
 	var jitter_amp: float = VERTEX_JITTER_FRACTION * float(step)
 	var v: int = 0
 	for z: int in side:
-		var arow: int = (z + 1) * apron_side
 		for x: int in side:
-			var ai: int = arow + x + 1
-			var h: float = heights[ai]
 			var local_x: float = float(x * step)
 			var local_z: float = float(z * step)
 			# Every vertex jitters — the first cut exempted the border entirely, and the playtest
@@ -290,16 +320,22 @@ static func build_mesh(
 			var snapped := Vector2(local_x + jitter.x * amp, local_z + jitter.y * amp)
 			local_x = snapped.x
 			local_z = snapped.y
-			h = BiomeMapScript.surface_from_set(
+			var h: float = BiomeMapScript.surface_from_set(
 				origin_x + local_x, origin_z + local_z, noise_set, world_seed, table, shape)
 			vertices[v] = Vector3(local_x, h, local_z)
-			var dx: float = (heights[ai + 1] - heights[ai - 1]) * slope_scale
-			var dz: float = (heights[ai + apron_side] - heights[ai - apron_side]) * slope_scale
-			normals[v] = Vector3(-dx, 1.0, -dz).normalized()
 			uvs[v] = Vector2(local_x * inv_size, local_z * inv_size)
 			v += 1
 
 	var indices: PackedInt32Array = _build_indices(lod)
+	# F-339: normals derived from the geometry that is actually EMITTED.
+	#
+	# They used to come from a central difference across the unjittered apron, at `ai +/- 1`, while
+	# the vertex itself had been moved in XZ and re-sampled at its new coordinate — so the stored
+	# normal described a surface the triangles do not form. `terrain_flat.gdshader` computes its
+	# facet normal from screen-space derivatives, so shipped LIGHTING was never wrong; what was wrong
+	# is the mesh's own data, which is a trap for anything that reads it (a check, a tool, any future
+	# material without the derivative trick) and was wrong for no reason.
+	_accumulate_normals(vertices, indices, normals, count)
 
 	# Skirt: a thin wall hanging SKIRT_DEPTH metres straight down from the chunk's outer border,
 	# appended AFTER the terrain so `collision_faces()` can slice the terrain off the front. Both

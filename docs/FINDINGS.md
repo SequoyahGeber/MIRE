@@ -1579,14 +1579,6 @@ Two smaller gaps found alongside, worth folding into the same task:
 
 ---
 
-### F-339 · Jittered terrain vertices keep normals derived from the unjittered height grid
-
-**Area:** rendering/worldgen · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
-
-`world/chunk/chunk_mesher.gd:268-299` moves each X/Z vertex by deterministic jitter and re-samples its Y at that new coordinate, but computes `dx`/`dz` from the original unjittered apron at `ai +/- 1`. Lighting normals therefore describe a different surface than the triangles actually rendered, most visibly on the deliberately faceted 4.18 terrain. Recompute normals from the emitted triangle geometry (or sample the analytic field around each jittered coordinate) and add an assertion comparing stored normals to generated face normals within a chosen smoothing tolerance.
-
----
-
 ### F-340 · Terrain retuning landed without refreshing its deterministic and structural checks
 
 **Area:** worldgen/testing · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
@@ -1815,7 +1807,144 @@ scatter finding is the one worth keeping.
 
 ---
 
+### F-353 · Daytime lighting reads washed out: the frame lives in a 0.48-0.71 luminance band with no blacks and no saturation
+
+**Area:** render · **Severity:** high · **Found:** 2026-08-21 by gale47f1fe
+
+Sequoyah, 2026-08-20, on the shipped procedural island: "im not happy with the lighting of the game
+during the day, it looks super washed out and looks like it needs a coat of varnish to make
+everything clear and saturated."
+
+Measured on `assets/audit/terrain/island_spawn_view.png` (the 4.19 look probe's own spawn shot, the
+current shipped grade):
+
+  whole frame   luminance p05 0.477  median 0.575  p95 0.710   (min 0.195, max 0.972)
+                saturation p10 0.188 median 0.272  p90 0.314
+  ground near   rgb(155,182,133)
+  ground mid    rgb(155,181,134)
+
+The two ground samples are one 1/255 step apart across ~150 px of depth and a change of facet
+angle. That is the finding in one line: the flat-shaded terrain D-184 shipped is not being shaded
+at all, because everything that should have produced tonal separation has been cancelled out.
+
+Four contributors, all in the day half of the grade:
+
+1. HEIGHT FOG PAINTS A CONSTANT GREY VEIL OVER THE GROUND. `levels/procedural_island.tscn` sets
+   `fog_height = 6.0` / `fog_height_density = 0.06`, and Godot's exponential fog computes the
+   height term independently of `fog_density` and `max`es it in — so
+   `playtest_atmosphere.gd`'s `_environment.fog_density = 0.0` (F-115's "keep the open routes
+   clear") does NOT disable it. Everything below y=6 — which is the ground, the props on it and
+   the player's whole field of view — is blended toward `fog_light_color` at ALL distances,
+   including zero. A distance-independent grey blend is a coat of paint, not fog.
+
+2. `tonemap_white = 3.0` under ACES. A white point of 3 compresses the scene's real 0..1 range into
+   the toe of the curve: blacks lift, highlights never reach white, and contrast dies everywhere.
+   The measured 0.195 floor with a lit noon sun is that.
+
+3. AMBIENT FILL ERASES THE FACETS. `ambient_light_energy` runs to 0.62 by day against
+   `ambient_light_sky_contribution = 0.68` off a bright sky. Flat shading has no texture and no
+   normal map — facet-to-facet radiance difference is the ONLY thing that gives the terrain form,
+   and a fill that strong makes a facet turned 30 deg away read the same as one facing the sun.
+
+4. Albedo and grade are both slightly greyed: terrain base is `Color(0.35, 0.45, 0.3)` (sRGB
+   saturation ~0.20) and `adjustment_saturation = 1.14` is not enough to recover it after 1-3.
+
+Contributors 1 and 2 are the ones worth fixing first; they are global, they cost nothing, and each
+removes a flat multiply rather than adding a pass.
+
+---
+
+### F-354 · enemy_check's 'it starts idle' races the engine's own physics tick
+
+**Area:** tools · **Severity:** low · **Found:** 2026-08-21 by ivycc0920
+
+`tools/enemy_check.gd` drives the state machine by calling `enemy.call("_physics_process", delta)`
+by hand (`_step()`, `_step_until_state()`), but the enemy it spawns is a REAL node living in the
+tree, so Godot's own physics tick calls `_physics_process` as well. The check is not the only thing
+stepping the enemy it is measuring.
+
+That is latent for most assertions, which step until a state is reached. It is not latent for line
+66:
+
+    await process_frame
+    ...
+    check(int(enemy.get("state")) == 0, "it starts idle")
+
+`await process_frame` yields one IDLE frame, which says nothing about whether a 60 Hz physics frame
+landed in the same window. If one did, `_tick_pursuit()` has already acquired the player standing
+8 m away and moved the enemy to CHASE, and "it starts idle" fails.
+
+Observed while verifying F-351: 2 failures in 14 runs on a working tree, 0 in 9 on a clean baseline
+at HEAD, and both failures were the FIRST run after a real content change to `systems/enemies/`.
+That is the tell — a first run with freshly compiled bytecode has a slower startup frame, which is
+exactly when the extra physics tick fits. `touch`ing the files does not reproduce it, because
+Godot's script cache keys on content rather than mtime, so a touch-only run never recompiles.
+
+Nothing about enemy behaviour is wrong here and no production code needs a change; the check is
+measuring through a seam it does not control. Fix direction: assert the initial state BEFORE the
+node can be ticked — read it on the frame it spawns, with no `await` between — or take the enemy out
+of `_physics_process`'s way for the duration (`enemy.set_physics_process(false)`) so the hand-driven
+stepping the rest of the file relies on is genuinely the only stepping happening. The second is the
+more complete fix, since it also removes the double-stepping every other assertion silently absorbs.
+
+---
+
 ## Resolved
+
+### F-339 · Jittered terrain vertices keep normals derived from the unjittered height grid — **fixed**
+
+**Area:** rendering/worldgen · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
+
+`world/chunk/chunk_mesher.gd:268-299` moves each X/Z vertex by deterministic jitter and re-samples its Y at that new coordinate, but computes `dx`/`dz` from the original unjittered apron at `ai +/- 1`. Lighting normals therefore describe a different surface than the triangles actually rendered, most visibly on the deliberately faceted 4.18 terrain. Recompute normals from the emitted triangle geometry (or sample the analytic field around each jittered coordinate) and add an assertion comparing stored normals to generated face normals within a chosen smoothing tolerance.
+
+---
+
+**Resolved 2026-08-21 by ivy1bcae0.** **Fixed 2026-08-20 by ivy1bcae0 — with a correction to the finding and an unexpected 1.98x win.**
+
+`ChunkMesher.build_mesh()` now derives normals from the geometry it actually emits: a single pass
+over the terrain indices accumulating area-weighted face normals (`_accumulate_normals()`). The
+cross product is left unnormalised so its magnitude weights each facet by area, which matters
+because jitter makes neighbouring triangles genuinely unequal. Skirt triangles are excluded — their
+walls are vertical, and the skirt keeps deliberately inheriting its top vertex's normal.
+
+**Correction to the finding: shipped lighting was never wrong.** `world/chunk/terrain_flat.gdshader`
+computes its facet normal per fragment from screen-space derivatives
+(`cross(dFdy(VERTEX), dFdx(VERTEX))`) and never reads the mesh's normals at all — that is the whole
+4.18/D-184 flat-shading approach. So "most visibly on the deliberately faceted 4.18 terrain" is not
+right, and someone reading the original finding would have gone hunting for a visual bug that does
+not exist. What WAS wrong is the mesh's own data, which is a trap for anything that reads it: a
+check, a tool, the skirt, or any future material without the derivative trick.
+
+**How wrong, measured** (`tools/terrain_normal_check.gd`, new, `failures=0`): the old unjittered
+central difference sat up to **40.27 deg** from the emitted faces' own normals at the worst vertex,
+but only **0.16 deg** worse than the new normals on average (mean 4.31 vs 4.16). Badly wrong in
+places, close enough almost everywhere — which is exactly why it survived. The check asserts the
+stored normals are reproduced by re-deriving them from the emitted arrays (worst 0.006 deg), that
+they are unit and upward (a negative Y is the reversed-cross-product signature), and keeps both
+numbers above as negative controls, so a revert fails the derivation gate by 40 deg against 0.5.
+
+**The win.** The normals were the apron's only consumer, so `build_mesh()` no longer samples it.
+That removed `(side + 2)^2` = 1,225 noise samples per chunk — more than the 1,089 the vertices
+themselves need — and it is where the audit's chunk-cost regression came from: before 4.18 the apron
+WAS the vertex heights, and jitter made the loop re-sample at the jittered coordinate while the apron
+stayed for the normals, silently doubling the sampling. Measured against a clean HEAD worktree
+(`agent baseline`):
+
+| path | HEAD `4a85992` | after |
+|---|---:|---:|
+| ArrayMesh direct (shipped) | 17.282 ms/chunk | **8.715 ms/chunk** |
+| WorkerThreadPool | 17.328 ms/chunk amortized | **8.376 ms/chunk** |
+| SurfaceTool | 9.106 ms/chunk | 9.251 ms/chunk |
+
+SurfaceTool is unchanged because that path always used one sample set for both height and normal —
+which, in hindsight, is what the audit's own "SurfaceTool 8.812 vs ArrayMesh 16.638" line was
+telling us. This puts the shipped path back at the documented 8.077 ms/chunk figure and bears
+directly on F-294 and the low-end target.
+
+Regression: `biome_terrain_check failures=0`, `procedural_world_check failures=0`,
+`spawn_ground_check` all passed, `nav_bake_check failures=1` — identical at baseline, pre-existing
+(F-285). `terrain_look_check failures=2` and `worldgen_noise_reuse failures=20` are also identical
+at baseline: those are F-340's stale goldens, which this change adds to and which is the next task.
 
 ### F-335 · Two verification checks no longer test the shipped contracts they claim — **fixed**
 
