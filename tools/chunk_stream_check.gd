@@ -59,12 +59,17 @@ const BENCH_SEED: int = 20260818
 ##
 ## Re-measured once more for the sea-level rebase later the same day (HEIGHT_SCALE 6, gentler
 ## hills, stream-depth river, ocean floor): 1.2134 m here, 2.5775 m island-wide worst on the bench
-## seed. `SKIRT_DEPTH` (10.2 m via the smaller MAX_HEIGHT) clears the worst by ~4x, so no skirt
-## retune. The island-wide "skirt deeper than the worst anywhere" assertion above is what carries
-## the guarantee; this recorded spot only exists to catch silent drift.
+## seed.
+##
+## Re-measured again for the gradual-coast pass (smoothstep falloff, minimum beach band, cubed
+## sea-floor shelf, slower coast jitter): **0.2196 m** here, 1.7604 m island-wide. The recorded
+## spot is a COAST chunk, and gentling the coast is precisely what this pass did, so the collapse
+## is the intended effect rather than drift. `SKIRT_DEPTH` (10.2 m) now clears the island-wide
+## worst by ~6x. That assertion — skirt deeper than the worst anywhere — is what carries the
+## guarantee; this recorded spot only exists to catch silent drift.
 const WORST_KNOWN_SEED: int = 4242
 const WORST_KNOWN_CHUNK := Vector2i(3, -4)
-const WORST_KNOWN_DIVERGENCE_M: float = 1.2134
+const WORST_KNOWN_DIVERGENCE_M: float = 0.2196
 ## Chunk radius the seam/harvestable sweeps scan. `IslandHeightmap.ISLAND_RADIUS` is 118 m
 ## (CHUNK_SIZE 32 m -> ~4 chunks), so 10 chunks (320 m) is a wide margin past the falloff shoulder
 ## into open water — cheap because water contributes ~0 divergence and no harvestable placements,

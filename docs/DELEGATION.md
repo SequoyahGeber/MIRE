@@ -124,6 +124,55 @@ no notice and costs the client ~19 s of rejoin attempts (that is F-322).
 54 PASS.
 
 
+### 2026-08-20 — 4.18: the coast is a beach, not a cliff — and WHY a gentle falloff curve is not enough on its own (quill5fa5c7)
+
+Sequoyah, after walking the sea-level island: "make the slope down to the water much more
+gradual, it's way too steep." Measured before touching anything, across 5 seeds: the whole
+transition from +2 m to −1 m happened in **under 4 m** of ground, at up to **71 degrees** — past
+the player's own 46-degree walkable limit (F-136), so stretches of coast could not be walked at
+all. After: worst 48 degrees, typical coast 32–37, and the shore run widened to ~12 m.
+
+**Four things were stacking, and only one of them was the obvious one.** If you ever retune a
+coast, this is the list to check, because fixing the curve alone got barely a third of the way:
+
+1. **The falloff CURVE.** `_radial_mask` returned `inv^3`, which leaves the plateau at three times
+   the average gradient and then flattens — every metre of relief was spent in the first stride of
+   the band. It is an S-curve now (`inv*inv*(3-2*inv)`, hand-written per this file's no-`pow()`
+   rule): flat leaving the plateau, flat arriving at the water.
+2. **The falloff WIDTH.** `FALLOFF_START_FRACTION` 0.70 → 0.48. Widening it does not shrink the
+   island — land ends where the surface crosses sea level, and the curve change moves that point
+   outward (~0.75 → ~0.79 of each lobe's radius) even though the taper starts earlier.
+3. **The SEA FLOOR term.** `OCEAN_FLOOR_DEPTH * (1 - mask)` is linear, so the seabed fell away at
+   full rate at the same place the land was already falling, and the two summed into the wall. It
+   is CUBED now — a shelf: shallow wade near shore, deep water offshore where depth is scenery.
+4. **The coast JITTER's frequency** (`COAST_FREQUENCY` halved, `SHAPE_WARP_FREQUENCY` eased). This
+   is the non-obvious one and it was worth ~20 degrees on its own: the jitter displaces the
+   shoreline radially, so where that field changes fast it COMPRESSES the taper into less ground.
+   A perfectly gentle curve still stands a wall up inside a fast-wobbling jitter. Amplitudes are
+   untouched, so the coastline is exactly as ragged — the wobbles are just longer.
+
+**And one structural rule replaced two special cases.** `_radial_mask`'s band is a fraction of the
+landmass's own radius, but now never narrower than `MIN_FALLOFF_BAND_M` (30 m) of real ground,
+capped at `MAX_FALLOFF_RADIUS_FRACTION` of it. Without that floor a small lobe or an islet gets a
+proportionally small horizontal budget while owing the same absolute relief — which is why, after
+the curve fix, every remaining steep shore the probe found was on an islet or the smallest lobe. A
+beach is a distance a player walks, not a percentage. (This subsumed a short-lived
+`ISLET_FALLOFF_FRACTION`; do not reintroduce per-landmass constants for this.)
+
+**How to re-measure.** The throwaway probe is not committed (deliberately — it is 60 lines and the
+numbers are here), but its shape is worth repeating: walk radial transects on several seeds, find
+the +2 m and −1 m crossings, report the worst per-metre gradient and the run width between them,
+and flag whether the worst sample sits inside `_river_channel()`'s corridor — a stream bank at 45
+degrees is terrain doing its job, a beach at 45 degrees is the bug, and without that flag you will
+chase the wrong one.
+
+**Knock-on, already handled:** `chunk_stream_check`'s recorded seam divergence collapsed 1.2134 →
+0.2196 m (its recorded chunk is a coast chunk, so this is the intended effect, not drift);
+island-wide worst 1.76 m against a 10.2 m skirt. Everything else green: terrain, biome, poi,
+resource_scatter, procedural_world, noise_reuse, biome_terrain all 0, world_contract PASS both
+arms.
+
+
 ### 2026-08-20 — 4.18 playtest round: sea-level island, a real ocean, streams not gorges, dressed biomes (quill5fa5c7)
 
 Sequoyah's first real playtest verdicts, all landed in one pass. If you touch terrain or scatter,

@@ -83,9 +83,26 @@ const HILL_SALT: int = 0x48C3D1
 ## shore should be tens of metres of sand, and the drop into water should be
 ## something a player can see happening.
 ##
-## Eased back to 0.70 with the sea-level rebase: land is only ~3.3 m up now, and the 0.78 band
-## made the last metres to the water a bank. A slightly wider taper is a beach again.
-const FALLOFF_START_FRACTION: float = 0.70
+## Eased back to 0.70 with the sea-level rebase, then to 0.48 at the playtest verdict "make the
+## slope down to the water much more gradual, it's way too steep". Measured before that change
+## (`tools/_tmp_shore_slope_probe.gd`, 5 seeds): the whole transition from +2 m to -1 m happened
+## in under 4 m of ground, at up to **71 degrees** — past the player's own 46-degree walkable
+## floor limit (F-136), so stretches of coast could not be walked at all. The band is the
+## horizontal budget the drop is spent over, and it was far too small to spend ~8 m of relief in.
+##
+## Widening it does NOT shrink the island: land ends where the surface crosses sea level, which
+## the two curve changes below move OUTWARD (~0.75 -> ~0.79 of each lobe's radius) even as the
+## taper starts earlier.
+const FALLOFF_START_FRACTION: float = 0.48
+
+## The floor under that band, in METRES of ground, applied per landmass by `_radial_mask()`. A
+## lobe or islet small enough that its proportional band is narrower than this takes this instead,
+## so every shore on the map is walked down over a comparable distance no matter how big the thing
+## it belongs to. 30 m spends the ~8 m of coastal relief at roughly one in four.
+const MIN_FALLOFF_BAND_M: float = 30.0
+## ...but never so wide that a landmass is nothing but taper — this much of its radius, at most.
+## An islet ends up close to this: a low dome you wade onto, which is the right read at that size.
+const MAX_FALLOFF_RADIUS_FRACTION: float = 0.85
 ## Continental layer: low frequency, several octaves, decides the island's overall landmass shape.
 const BASE_NOISE_FREQUENCY: float = 0.006 * FREQUENCY_SCALE
 const BASE_NOISE_OCTAVES: int = 5
@@ -174,8 +191,15 @@ const OCEAN_FLOOR_DEPTH: float = 5.0
 ## a sand rim — geometrically an island, visually a token. The mask reads a
 ## jittered radius instead of the true one, so the shore is ragged for the same
 ## reason a real one is: the land does not end at a constant distance.
+##
+## The FREQUENCY is a slope control, not just a shape control, and that is why it dropped with the
+## gradual-coast pass. This jitter displaces the shoreline radially, so where the jitter field
+## changes fast the coast's own taper is compressed into less ground — the falloff curve can be as
+## gentle as it likes and a fast-wobbling jitter will still stand a wall up inside it. Halving the
+## frequency doubles the wobble's wavelength and halves that compression, while the amplitude (how
+## far the coast wanders in and out, which is what makes it ragged) is untouched.
 const COAST_JITTER: float = 74.0 / FREQUENCY_SCALE
-const COAST_FREQUENCY: float = 0.0042 * FREQUENCY_SCALE
+const COAST_FREQUENCY: float = 0.0021 * FREQUENCY_SCALE
 const COAST_NOISE_SALT: int = 0x7A11C0
 
 ## The island's gross form: a union of overlapping LOBES, not a disc.
@@ -214,8 +238,11 @@ const LOBE_SALT: int = 0x3C0A57
 ## island, lobes and islets alike — is measured in bent space. Scalar radial jitter can only push a
 ## coastline in and out along its own radius, which keeps arcs as arcs; bending the plane turns them
 ## into inlets and spits.
+## Same slope caveat as `COAST_FREQUENCY`: bending space fast compresses the coastal taper into
+## less ground. Eased from 0.0055 for the gradual-coast pass; the amplitude — the actual bays and
+## spits — is unchanged, they are simply broader sweeps now instead of tight kinks.
 const SHAPE_WARP_AMPLITUDE: float = 58.0 / FREQUENCY_SCALE
-const SHAPE_WARP_FREQUENCY: float = 0.0055 * FREQUENCY_SCALE
+const SHAPE_WARP_FREQUENCY: float = 0.0036 * FREQUENCY_SCALE
 const SHAPE_WARP_SALT_X: int = 0x51A9E
 const SHAPE_WARP_SALT_Z: int = 0x62B7F
 
@@ -499,16 +526,31 @@ static func _carve(channel: float, surface: float, mask: float) -> float:
 	return surface + (channel - surface) * carve_strength
 
 
-## Falloff for one circular landmass. Cubic, so the shore drops away rather than ending at a line.
+## Falloff for one circular landmass.
+##
+## An S-curve (smoothstep's own polynomial, hand-written per this file's `t*t*t, never pow()`
+## rule), NOT the cubic `inv^3` this used before. The shape of the curve is what a walker feels:
+## `inv^3` leaves the plateau at three times the average gradient and then flattens, so all the
+## relief was spent in the first few metres of the band and the coast came out as a wall with a
+## gentle apron below it. An S-curve leaves the plateau flat, does its steepest work in the middle
+## of the band, and arrives at the waterline flat again — a beach at both ends.
+## The taper band is a FRACTION of the landmass's own radius, but never narrower than
+## [constant MIN_FALLOFF_BAND_M] of actual ground. Without that floor a small landmass gets a
+## proportionally small horizontal budget while still having to spend the same absolute relief
+## (plateau above water plus sea floor below it) — which is why the steepest coasts left on the
+## map after the curve fix were all on islets and on the smallest lobes, exactly where the probe
+## found them. A beach is an absolute distance a player walks, not a percentage.
 static func _radial_mask(distance: float, radius: float) -> float:
-	var falloff_start: float = radius * FALLOFF_START_FRACTION
+	var band: float = maxf(radius * (1.0 - FALLOFF_START_FRACTION),
+		minf(MIN_FALLOFF_BAND_M, radius * MAX_FALLOFF_RADIUS_FRACTION))
+	var falloff_start: float = radius - band
 	if distance <= falloff_start:
 		return 1.0
 	if distance >= radius:
 		return 0.0
 	var t: float = (distance - falloff_start) / (radius - falloff_start)
 	var inv: float = 1.0 - t
-	return inv * inv * inv
+	return inv * inv * (3.0 - 2.0 * inv)
 
 
 static func _island_mask(x: float, z: float, world_seed: int, jitter: float = 0.0) -> float:
@@ -646,9 +688,16 @@ static func shape_into(x: float, z: float, set: NoiseSet, world_seed: int, out: 
 	# coast still tapers into the sea wherever this seed put it. Where the mask runs out the
 	# ground settles onto the OCEAN FLOOR below the waterline instead of a plain at exactly 0 —
 	# one continuous surface, land above the sea and seabed under it.
+	# CUBED, not linear: the seabed term is what the water column is made of, and a linear
+	# `(1 - mask)` spends it at full rate the instant the mask leaves 1.0 — so the sea floor fell
+	# away at the same place the land was already falling, and the two stacked into the coastal
+	# wall the playtest hit. Cubing gives a SHELF: near shore `1 - mask` is small and its cube is
+	# far smaller, so the water stays ankle-to-knee deep for a long wade out, then deepens toward
+	# the full OCEAN_FLOOR_DEPTH offshore where depth is scenery rather than something you cross.
+	var offshore: float = 1.0 - out.mask
 	out.raw_continent = ((set.base_noise.get_noise_2d(x, z) * BASE_NOISE_WEIGHT + LAND_BIAS)
 		* HEIGHT_SCALE + _hill_lift(out.bent, world_seed)) * out.mask \
-		- OCEAN_FLOOR_DEPTH * (1.0 - out.mask)
+		- OCEAN_FLOOR_DEPTH * offshore * offshore * offshore
 	out.channel = _river_channel(out.bent, world_seed)
 
 
