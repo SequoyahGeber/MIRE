@@ -6082,3 +6082,31 @@ Proven headless by `tools/theme_music_check.gd` (registration, all three streams
 composed lengths, landfall-at-boot, the bounded fade and hand-back, Cycle 1 vs Cycle 2, the duck
 depth and its floor, and a run restart dropping a live cycle cue). `tools/audio_import_check.gd`
 knows the three lengths; `tools/ambient_music_check.gd` still passes unchanged.
+
+## D-186 — a leading underscore does not make a method private; the engine owns some of those names
+
+**F-421.** `ui/frontend/frontend.gd` had a helper called `_enter_world()`, meaning "leave the menu
+and go into the game world". `Node3D` has an engine virtual of exactly that name, fired on
+`NOTIFICATION_ENTER_WORLD` — **before `_enter_tree()`, long before `_ready()`**. So the method was
+never private: Godot called it the instant the node entered the 3D world.
+
+QUIT TO TITLE is the only path that enters `levels/frontend.tscn`. Taking it put the incoming
+Frontend into the world inside `SceneTree::_flush_scene_change()`, the engine called
+`_enter_world()`, and the body asked for **another scene change from inside the one already
+running**. The process died with SIGSEGV every single time, before `_ready()` ever ran — which is
+also why nobody in this project had ever seen the title screen.
+
+It cost a long investigation because every signal pointed away from our code: the crash carried
+**no GDScript frames at all**, the shipped Godot binary is stripped so the `.ips` symbolicated to
+nonsense, and it never reproduced from `--quit-after` (a different path entirely — `SceneTree::quit()`,
+not a scene change).
+
+**The rule: never name a method after an engine virtual, and do not trust reflection to tell you
+which names those are.** `ClassDB.class_has_method("Node3D", "_enter_world")` returns **false** and
+the name is absent from `class_get_method_list`, so neither the editor's autocomplete nor a
+ClassDB-based lint can see the collision. The only reliable test is to ask the engine: declare the
+name on the base class, put it in a tree, and see whether it fires on its own.
+
+`tools/virtual_shadow_check.gd` does exactly that for every `extends <EngineClass>` script in the
+project, and carries a self-test so it cannot silently degrade into a check that passes for the
+wrong reason. Run it when adding lifecycle-shaped methods.

@@ -139,6 +139,71 @@ func _run() -> void:
 		quit(1)
 		return
 
+	# `-- --to-title` drives QUIT TO TITLE instead of QUIT. These are not variations on one path:
+	# QUIT calls `SceneTree::quit()`, while QUIT TO TITLE calls `change_scene_to_file()`, which frees
+	# the entire streamed world — 289 chunks, their colliders, the scatter multimeshes, the nav
+	# regions — from inside `SceneTree::process` on the following frame. That is exactly where the
+	# crash sits, and no amount of testing the QUIT button was ever going to reach it.
+	if OS.get_cmdline_user_args().has("--to-title"):
+		# `-- --drop NavBaker` frees one world subsystem and lets it settle BEFORE the scene change,
+		# so the bisect is "does the crash survive without this one". Cumulative: pass it twice for
+		# two subsystems.
+		for dropped: String in _string_args("--drop"):
+			var victim: Node = world.get_node_or_null(NodePath(dropped))
+			if victim == null:
+				print("drop: no such node %s" % dropped)
+				continue
+			print("dropping %s before the scene change" % dropped)
+			victim.queue_free()
+			for _i: int in 20:
+				await process_frame
+
+		# `-- --to-empty` performs the SAME scene change to a bare Node3D instead of
+		# res://levels/frontend.tscn. It is the one test that separates "freeing the world crashes"
+		# from "arriving at the front end crashes", and the two want completely different fixes.
+		if OS.get_cmdline_user_args().has("--to-empty"):
+			var bare := Node3D.new()
+			bare.name = "BareScene"
+			# `-- --with-camera` adds the one thing the front end's backdrop adds that a bare scene
+			# does not: a Camera3D that makes itself current as it enters the tree, in the same frame
+			# the world's own camera was destroyed. If the bare change is clean and this one is not,
+			# the viewport's `camera_3d` pointer is the bug.
+			if OS.get_cmdline_user_args().has("--with-camera"):
+				var cam := Camera3D.new()
+				cam.name = "BackdropCamera"
+				cam.current = true
+				bare.add_child(cam)
+				cam.owner = bare
+				print("bare scene carries a current Camera3D")
+			var packed_bare := PackedScene.new()
+			packed_bare.pack(bare)
+			# `-- --pop-all` reproduces the two things `_quit_to_title_now()` does BEFORE the scene
+			# change, which the plain --to-empty comparison silently skipped. Without this the bare
+			# transition is not the same transition.
+			if OS.get_cmdline_user_args().has("--pop-all"):
+				var ms: Node = root.get_node_or_null(^"MenuStack")
+				if ms != null:
+					print("pop_all() on MenuStack first, as _quit_to_title_now does")
+					ms.call("pop_all")
+			print("--- change_scene_to_packed(bare Node3D) — same transition, no front end ---")
+			change_scene_to_packed(packed_bare)
+		else:
+			var pause: Node = root.get_node_or_null(^"PauseMenu")
+			if pause == null:
+				print("FAIL: no /root/PauseMenu")
+				quit(1)
+				return
+			print("--- calling _quit_to_title_now() (what QUIT TO TITLE confirms into) ---")
+			pause.call("_quit_to_title_now")
+		for i: int in 90:
+			await process_frame
+			if i % 10 == 0:
+				print("survived frame %d after the scene change (current_scene=%s)"
+					% [i + 1, str(current_scene)])
+		print("--- scene change completed without crashing ---")
+		quit(0)
+		return
+
 	# The QUIT button is pressed with a real mouse, and that is not a detail: clicking leaves the
 	# viewport's GUI state (`gui.mouse_focus`, `mouse_over`, the focus owner) pointing at a Control
 	# that the quit is about to tear down. Calling `request_quit()` straight from code leaves all of
@@ -189,3 +254,13 @@ func _int_arg(name: String, fallback: int) -> int:
 		if args[i] == name and i + 1 < args.size() and args[i + 1].is_valid_int():
 			return int(args[i + 1])
 	return fallback
+
+
+## Every value passed as `-- <name> <value>`, in order. Repeatable, unlike `_int_arg`.
+func _string_args(name: String) -> PackedStringArray:
+	var found := PackedStringArray()
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	for i: int in args.size():
+		if args[i] == name and i + 1 < args.size():
+			found.append(args[i + 1])
+	return found

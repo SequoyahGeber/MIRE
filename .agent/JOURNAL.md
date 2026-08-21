@@ -8296,3 +8296,15 @@ Commit at time of writing: `bca3e7a`
 Evidence is complete; the remaining step is a two-click editor test only Sequoyah can run (Debug -> untick 'Synchronize Scene Changes', run, quit from the F1 menu). Everything else is recorded in the notes: the crash is engine-internal with an empty GDScript stack, editor-launched only, and the exported release build quits clean. tools/quit_crash_probe.gd drives the whole shipped quit path correctly — reuse it.
 
 Commit at time of writing: `152ee12`
+
+---
+
+### DONE · F-421 · mossb81aeb · 2026-08-21T08:29:38+00:00
+
+**Quitting from the in-game menu crashes the process on shutdown (macOS)**
+
+Root cause: frontend.gd's _enter_world() shadowed a Node3D engine virtual, so entering the front-end scene triggered a scene change from inside a scene change. Renamed to _begin_run(); added tools/virtual_shadow_check.gd as the guard; recorded as D-186.
+
+Files: `ui/frontend/frontend.gd`, `tools/quit_crash_probe.gd`, `tools/_f421_frontend_stage.gd`, `tools/virtual_shadow_check.gd`
+
+Commit at time of writing: `a79c31c`

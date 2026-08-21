@@ -61,7 +61,7 @@ var _bypassed: bool = false
 func _ready() -> void:
 	if _launch_bypasses_frontend():
 		_bypassed = true
-		_enter_world()
+		_begin_run()
 		return
 
 	# The marker the pause menu reads to know a run is NOT on screen (see `ui/menu/pause_menu.gd`).
@@ -110,7 +110,7 @@ func request_play() -> void:
 	if ResourceLoader.exists(EXPEDITION_SCREEN_PATH):
 		_push_screen(EXPEDITION_SCREEN_PATH, "the dock")
 		return
-	_enter_world()
+	_begin_run()
 
 
 func request_unlocks() -> void:
@@ -147,7 +147,7 @@ func request_quit() -> void:
 ## autoload, so its screens outlive a scene change and would otherwise still be sitting over the
 ## island — holding the cursor and the gameplay-input gate — once the run started.
 func enter_world() -> void:
-	_enter_world()
+	_begin_run()
 
 
 # ── Internals ─────────────────────────────────────────────────────────────────────────────────────
@@ -188,7 +188,16 @@ static func restore_gameplay_overlays() -> void:
 static var _suspended: Array[CanvasLayer] = []
 
 
-func _enter_world() -> void:
+## NEVER call this `_enter_world()`. `Node3D` has an engine virtual of exactly that name, fired on
+## NOTIFICATION_ENTER_WORLD — before `_enter_tree()` and long before `_ready()` — so a method named
+## that is not private at all: Godot calls it the instant this node enters the 3D world. This file
+## used to be named that way, and the result was F-421: QUIT TO TITLE reaches
+## `SceneTree::_flush_scene_change()`, the incoming Frontend enters the world, the engine calls
+## `_enter_world()`, and this body requests ANOTHER scene change from inside the one in progress.
+## The process died with SIGSEGV every single time, before `_ready()` ever ran — which is also why
+## nobody had ever seen the title screen. `tools/virtual_shadow_check.gd` now fails the build on any
+## recurrence.
+func _begin_run() -> void:
 	restore_gameplay_overlays()
 	var stack: Node = _stack()
 	if stack != null:

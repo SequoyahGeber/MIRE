@@ -2160,14 +2160,6 @@ question; only which of the two layouts it should implement.
 
 ---
 
-### F-421 · Quitting from the in-game menu crashes the process on shutdown (macOS)
-
-**Area:** ui · **Severity:** high · **Found:** 2026-08-21 by mossb81aeb
-
-Quitting the game from the in-game menu (F1 -> QUIT, ui/menu/main_menu.gd request_quit) crashes the process on macOS: EXC_BAD_ACCESS at 0x0 on the main thread, inside SceneTree processing under Main::iteration, so macOS raises "Godot quit unexpectedly" every time. Four reports in one evening share an identical stack; every one of them is an editor-launched (F5) run. Headless and --windowed --quit-after runs through `agent godot` shut down cleanly, so the reproduction needs the editor-launched debug build. Investigating.
-
----
-
 ### F-422 · Kit tree trunks were a stack of frusta, and every trunk defect followed from the stack
 
 **Area:** art · **Severity:** medium · **Found:** 2026-08-21 by gale43d16e
@@ -2406,6 +2398,37 @@ Suggested fixes, cheapest first:
 ---
 
 ## Resolved
+
+### F-421 · Quitting from the in-game menu crashes the process on shutdown (macOS) — **fixed**
+
+**Area:** ui · **Severity:** high · **Found:** 2026-08-21 by mossb81aeb
+
+Quitting the game from the in-game menu (F1 -> QUIT, ui/menu/main_menu.gd request_quit) crashes the process on macOS: EXC_BAD_ACCESS at 0x0 on the main thread, inside SceneTree processing under Main::iteration, so macOS raises "Godot quit unexpectedly" every time. Four reports in one evening share an identical stack; every one of them is an editor-launched (F5) run. Headless and --windowed --quit-after runs through `agent godot` shut down cleanly, so the reproduction needs the editor-launched debug build. Investigating.
+
+---
+
+**Resolved 2026-08-21 by mossb81aeb.** ROOT CAUSE: ui/frontend/frontend.gd defined `_enter_world()`, which collides with a Node3D engine
+virtual fired on NOTIFICATION_ENTER_WORLD — before _enter_tree() and long before _ready(). QUIT TO
+TITLE is the only path that enters levels/frontend.tscn; doing so put the incoming Frontend into the
+3D world inside SceneTree::_flush_scene_change(), the engine called `_enter_world()` uninvited, and
+its body called change_scene_to_file() — a scene change from inside a scene change. SIGSEGV, every
+time, before _ready() ran. That is also why the title screen had never been seen: the front end
+killed the process on arrival.
+
+FIX: renamed to `_begin_run()`, with a comment at the definition explaining the trap. QUIT TO TITLE
+now completes and lands on the title screen (verified twice through tools/quit_crash_probe.gd, which
+drives the real path: settled world, attunement answered, gameplay soak, PauseMenu's own
+_quit_to_title_now()).
+
+GUARD: tools/virtual_shadow_check.gd. ClassDB cannot see this class of collision —
+class_has_method("Node3D", "_enter_world") is false and the name is absent from
+class_get_method_list — so the check asks the engine instead: it declares each of our zero-argument
+`func _name()` definitions on the script's own engine base, adds it to the tree, and fails if the
+engine calls it uninvited. Validated both ways: passes on the fixed tree, and fails with
+"res://ui/frontend/frontend.gd defines _enter_world(), which Node3D calls on its own" when the old
+name is put back. It carries a self-test so it cannot degrade into a pass for the wrong reason.
+
+Recorded as D-186.
 
 ### F-423 · The procedural island has never had ground shadows — shadow_normal_bias is 2.4, roughly double the authored maps, and the flat-shaded terrain cannot afford it — **fixed**
 
