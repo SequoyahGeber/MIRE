@@ -8061,3 +8061,15 @@ Commit at time of writing: `9446c23`
 Visual radius 64m -> 160m with DrawPolicy per-prop culling; scattered props 1876 -> 7093.
 
 Commit at time of writing: `42f1a09`
+
+---
+
+### DONE · F-380 · kilnd3a089 · 2026-08-21T04:09:56+00:00
+
+**The crafting menu is one unscrollable vertical column, so recipes past the panel height are unreachable**
+
+Recipe grid ships; fixed the subagent's two remaining failures (disabled-button focus, wheel eaten by row containers and by AttunementUI).
+
+Files: `ui/crafting/crafting_ui.gd`, `tools/crafting_ui_check.gd`, `tools/crafting_ui_render_check.gd`
+
+Commit at time of writing: `420b83e`

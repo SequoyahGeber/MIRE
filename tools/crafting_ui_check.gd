@@ -169,8 +169,127 @@ func _run() -> void:
 	check(int(inventory.call("local_count", &"iron_ingot")) == 1, "furnace craft grants one iron ingot")
 	ui.call("set_open", false)
 
+	# --- F-380: the recipe list is a width-derived grid inside a scroll that actually scrolls ---
+	# Before the fix this was a bare VBoxContainer with no ScrollContainer anywhere in the file: the
+	# workbench's 11 recipes stacked into one column that ran off the bottom of a 720p window, and
+	# the rows past the fold were drawn outside the screen with no way to reach them. These assert
+	# the shape at the resolutions that are actually played — 1280x720, the Steam Deck's 1280x800 —
+	# plus phone width, where the grid has to collapse rather than overflow sideways.
+	player.position = Vector3.ZERO
+	ui.call("poll_station")
+	check(ui.call("current_station_id") == &"workbench", "walking back re-identifies the workbench")
+	var recipe_count: int = int(ui.call("recipe_row_count"))
+	check(recipe_count >= 8, "the workbench carries enough recipes to have overflowed one column")
+
+	var scroll_node: Node = ui.find_child("RecipeScroll", true, false)
+	check(scroll_node is ScrollContainer,
+		"the recipe list sits inside a ScrollContainer (before F-380 there was none in the file at all)")
+	check(ui.find_child("RecipeRows", true, false) is GridContainer,
+		"the list itself is a GridContainer, not the single VBoxContainer column it used to be")
+
+	# set_open() instead of try_open_station(): by this point in the run AttunementUI has put itself
+	# in the blocking-UI group and never leaves (F-321), so the interact gate legitimately refuses.
+	# That gate is already proven at the top of this file; what is under test here is the layout.
+	ui.call("set_open", true)
+	# The window is deliberately left at its real size. This is a headless run against a stretch-mode
+	# viewport, so assigning root.size does not give the panel a phone-sized rect to lay out in — a
+	# 375x667 assignment resolves to a visible rect of 1280x2276. _apply_layout_for_width() takes the
+	# resolution as arguments precisely so a check can drive one without a window, and the panel's
+	# combined *minimum* size is the footprint that resolution would produce on screen.
+	ui.call("_apply_layout_for_width", 1280.0, 720.0)
+	await process_frame
+	await process_frame
+	var columns_720p: int = int(ui.call("recipe_columns"))
+	check(columns_720p > 1, "1280x720 lays the recipes out sideways in multiple columns, not one")
+	var grid_rows: int = int(ceil(float(recipe_count) / float(maxi(columns_720p, 1))))
+	check(grid_rows < recipe_count, "the grid is fewer rows tall than the column it replaced")
+	var footprint: Vector2 = panel.get_combined_minimum_size()
+	check(footprint.x <= 1280.0, "the 1280x720 panel is no wider than the window")
+	check(footprint.y <= 720.0, "the 1280x720 panel fits inside the window height")
+
+	# The Deck is 1280x800: same width, 80 px more height. Its taller scroll viewport is the one that
+	# would push a panel that only just fits at 720p back off the bottom of the screen.
+	ui.call("_apply_layout_for_width", 1280.0, 800.0)
+	await process_frame
+	await process_frame
+	check(int(ui.call("recipe_columns")) > 1, "the Steam Deck's 1280x800 keeps the multi-column grid")
+	footprint = panel.get_combined_minimum_size()
+	check(footprint.x <= 1280.0, "the Steam Deck panel is no wider than the window")
+	check(footprint.y <= 800.0, "the Steam Deck panel fits inside the window height")
+
+	ui.call("_apply_layout_for_width", 375.0, 667.0)
+	await process_frame
+	await process_frame
+	check(int(ui.call("recipe_columns")) == 1, "phone width collapses the grid to one column")
+	footprint = panel.get_combined_minimum_size()
+	check(footprint.x <= 375.0, "the phone-width panel is still no wider than the window")
+	check(footprint.y <= 667.0, "the phone-width panel fits inside the window height")
+	check(bool(ui.call("recipe_scroll_overflows")),
+		"one column of 11 recipes overflows at phone height, so the scroll backstop is under test")
+
+	# follow_focus: arrow/gamepad navigation onto a row below the fold has to bring it into view, or
+	# the focus ring vanishes off the bottom edge (F-209 wired the chain; F-380 made the list taller).
+	check(int(ui.call("recipe_scroll_offset")) == 0, "the reopened panel starts at the top of the list")
+	check(bool(ui.call("focus_recipe_row", recipe_count - 1)), "focus can move onto the last recipe row")
+	await process_frame
+	check(int(ui.call("recipe_scroll_offset")) > 0, "focusing an off-screen row scrolls it into view")
+	check(bool(ui.call("focus_recipe_row", 0)), "focus can move back to the first recipe row")
+	await process_frame
+	check(int(ui.call("recipe_scroll_offset")) == 0, "focusing the first row scrolls back to the top")
+
+	# The wheel, driven as a real InputEvent through the viewport rather than by poking the
+	# ScrollContainer directly (F-291): the failure this guards against is a child control eating the
+	# event before it ever reaches the scroll, which is exactly what F-387's sliders do in settings.
+	var motion := InputEventMouseMotion.new()
+	motion.position = Rect2(ui.call("recipe_scroll_rect")).get_center()
+	motion.global_position = motion.position
+	root.push_input(motion, true)
+	await process_frame
+	# F-320: AttunementUI builds and shows itself unconditionally, so in a headless boot it sits on
+	# top of this panel and eats the pointer before the crafting scroll ever sees it — the hover
+	# chain under the cursor came back
+	# `VBoxContainer < HBoxContainer < MarginContainer < PanelContainer < RolesBox < ... <
+	# AttunementUiRoot`, none of it crafting's. Hiding it here keeps this check about crafting; the
+	# fact that it needs hiding at all is F-320's, not this check's.
+	_dismiss_overlays()
+	await process_frame
+	_wheel_at(Rect2(ui.call("recipe_scroll_rect")).get_center(), MOUSE_BUTTON_WHEEL_DOWN)
+	await process_frame
+	var scrolled_offset: int = int(ui.call("recipe_scroll_offset"))
+	check(scrolled_offset > 0, "the mouse wheel over a recipe row scrolls the list instead of being eaten")
+	_wheel_at(Rect2(ui.call("recipe_scroll_rect")).get_center(), MOUSE_BUTTON_WHEEL_UP)
+	await process_frame
+	check(int(ui.call("recipe_scroll_offset")) < scrolled_offset, "wheeling back up scrolls the list back")
+	ui.call("set_open", false)
+
 	print("CRAFTING_UI_CHECK confirmations=%d failures=%d" % [confirmations.size(), failures])
 	finish()
+
+
+## Pushes one real mouse-wheel click through the viewport's GUI stack at `at`, so the event has to
+## survive the same child-to-parent propagation a player's wheel does (F-380).
+## Any autoload panel that has put itself on screen over the one under test.
+func _dismiss_overlays() -> void:
+	for path: String in ["AttunementUI", "InventoryUI", "ChestUI", "LobbyMenu", "MainMenu"]:
+		var node: Node = root.get_node_or_null(NodePath(path))
+		if node == null:
+			continue
+		if node.has_method(&"set_open"):
+			node.call(&"set_open", false)
+		var control := node.get_node_or_null(^".") as CanvasLayer
+		if control != null:
+			control.visible = false
+
+
+func _wheel_at(at: Vector2, button: MouseButton) -> void:
+	for pressed: bool in [true, false]:
+		var event := InputEventMouseButton.new()
+		event.button_index = button
+		event.pressed = pressed
+		event.factor = 1.0
+		event.position = at
+		event.global_position = at
+		root.push_input(event, true)
 
 
 func _on_craft_confirmed(request_id: int, accepted: bool, detail: String) -> void:

@@ -11,10 +11,42 @@ extends CanvasLayer
 ## that is, and a timed recipe (the furnace worked example) shows a live percentage instead of a bare
 ## "Waiting for the host…" — CraftingService.craft_progress() is a client-side estimate from the
 ## identical RecipeDef every peer already has, not something the host pushed.
+##
+## F-380: the recipe list is a `GridContainer` inside a `ScrollContainer`, not the bare
+## `VBoxContainer` it used to be. The old single column grew straight past the panel and off the
+## bottom of the window — with the workbench's 11 recipes at 1280x720 the last four rows were drawn
+## outside the screen with no scrollbar and no way to reach them. It now grows *sideways* first
+## (Sequoyah, 2026-08-20: "id rather it expand horizontally and have multiple rows rather than
+## vertically"), which is what a first-person game wants: the panel stays short and wide instead of
+## becoming a column that covers the view. The scroll is only the backstop for the case where even
+## the grid overflows the window.
 
 const BLOCKING_UI_GROUP: StringName = &"blocks_gameplay_input"
 const RANGE_POLL_SEC: float = 0.15
 const NARROW_BREAKPOINT_PX: float = 700.0
+
+## F-380 layout budget. Widths are all "how much can this window spare", never a hardcoded column
+## count: `_cell_width()` measures the widest row the current station actually built, so a station
+## whose requirement strings are long gets fewer, wider cells instead of clipped text.
+const PANEL_SIDE_MARGIN_PX: float = 32.0
+## `panel_margin`'s left+right (18+18) plus room for the vertical scrollbar, i.e. everything between
+## the panel's outer edge and the width the grid itself gets to use.
+const PANEL_CHROME_PX: float = 36.0 + 18.0
+const PANEL_MIN_WIDTH_PX: float = 280.0
+## A crafting panel that eats a 4K screen edge to edge is worse than one that stops. 1440 lands on 4
+## columns at 1080p and wider, which is as many as the rows stay readable at.
+const PANEL_MAX_WIDTH_PX: float = 1440.0
+const MAX_GRID_COLUMNS: int = 4
+const GRID_H_SEPARATION: int = 8
+const GRID_V_SEPARATION: int = 6
+## Floors, not targets — the measured row width wins whenever it is larger.
+const MIN_CELL_WIDTH_PX: float = 300.0
+const MIN_CELL_WIDTH_COMPACT_PX: float = 220.0
+## The scroll viewport is a fraction of the window, not a fixed number: a fixed one is exactly what
+## made F-387's settings panel overflow the window it was supposed to be scrolling inside.
+const SCROLL_HEIGHT_FRACTION: float = 0.55
+const MIN_SCROLL_HEIGHT_PX: float = 180.0
+const MAX_SCROLL_HEIGHT_PX: float = 620.0
 
 const COLOUR_SCREEN_SHADE := Color(0.018, 0.035, 0.028, 0.78)
 const COLOUR_PANEL := Color(0.055, 0.086, 0.070, 0.97)
@@ -48,8 +80,46 @@ class RecipeRow extends PanelContainer:
 		recipe_id = recipe.id
 		craft_requested = craft_callback
 		name = "RecipeRow_%s" % String(recipe_id)
+		# F-380: rows are grid cells now, so they share the column width evenly rather than each
+		# shrinking to its own text. Without this a short recipe name renders a stub cell next to a
+		# long one and the grid looks ragged.
+		size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		# F-380: the ROW takes focus, not only its craft button.
+		#
+		# `present()` disables the button whenever the recipe is not craftable, and a disabled Button
+		# in Godot cannot be focused — so keyboard and gamepad navigation could reach only the
+		# recipes you could already afford. Every other one was unreachable, which means its
+		# requirement line ("MISSING MATERIALS", and WHICH materials) was unreadable to anyone not
+		# using a mouse. That is backwards: the recipes you cannot craft yet are precisely the ones
+		# whose requirements you need to read.
+		#
+		# It also silently broke the ScrollContainer's `follow_focus`, since a `grab_focus()` that
+		# does nothing changes no focus and therefore scrolls nothing.
+		focus_mode = Control.FOCUS_ALL
 		_build_contents(recipe)
 		_build_styles()
+		_let_the_wheel_through()
+
+
+	## F-380: every non-interactive part of the row passes the mouse event on instead of swallowing
+	## it, so a wheel over a recipe reaches the ScrollContainer that wraps the grid.
+	##
+	## Control defaults to MOUSE_FILTER_STOP, and the row is several containers deep, so the wheel
+	## landed on whichever VBoxContainer happened to be under the cursor and stopped dead there —
+	## the list simply would not scroll under the pointer, which is the same class of defect F-387
+	## describes for the settings sliders. Buttons keep STOP: they are the one thing in the row that
+	## genuinely wants the event.
+	func _let_the_wheel_through() -> void:
+		mouse_filter = Control.MOUSE_FILTER_PASS
+		var stack: Array[Node] = [self]
+		while not stack.is_empty():
+			var node: Node = stack.pop_back()
+			for child: Node in node.get_children():
+				stack.append(child)
+				var control := child as Control
+				if control == null or control is Button:
+					continue
+				control.mouse_filter = Control.MOUSE_FILTER_PASS
 
 
 	func present(status: Dictionary, requirements: String) -> void:
@@ -152,6 +222,11 @@ class RecipeRow extends PanelContainer:
 		_craft_button.custom_minimum_size = Vector2(104.0, 36.0)
 		_craft_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		_craft_button.add_theme_stylebox_override("focus", _focus_style())
+		# F-380: the wheel has to reach the ScrollContainer that now wraps the grid. This is Godot's
+		# default, but F-387 is the same panel-with-a-scroll-that-does-not-scroll bug in the settings
+		# menu (its HSliders swallow the wheel to change their own value), so state it rather than
+		# inherit it — a row that silently ate the wheel would read as "the menu doesn't scroll".
+		_craft_button.mouse_force_pass_scroll_events = true
 		_craft_button.pressed.connect(_on_pressed)
 		button_center.add_child(_craft_button)
 
@@ -185,7 +260,10 @@ var _shade: ColorRect
 var _panel_center: CenterContainer
 var _panel: PanelContainer
 var _title_label: Label
-var _row_box: VBoxContainer
+## F-380: `_row_grid` replaces the old `_row_box: VBoxContainer`. `_row_scroll` wraps it and is the
+## only thing between the recipe list and the panel's own height.
+var _row_scroll: ScrollContainer
+var _row_grid: GridContainer
 var _empty_label: Label
 var _status_label: Label
 var _prompt_center: CenterContainer
@@ -302,6 +380,9 @@ func set_open(open: bool) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		_show_status("Craft from the workbench. The host confirms every craft.", false)
 		_refresh_rows()
+		# F-380: a reopened panel starts at the top, next to the row focus lands on — not wherever
+		# the player left the scroll last time they were at this station.
+		_row_scroll.scroll_vertical = 0
 		if not _rows.is_empty():
 			_rows[0].craft_button().grab_focus()
 	else:
@@ -328,6 +409,30 @@ func recipe_row_count() -> int:
 	return _rows.size()
 
 
+## F-380 harness reads. The grid shape and the scroll state are the whole fix, so they are readable
+## from a headless check the same way `recipe_row_count()` and friends already are — a screenshot
+## alone cannot prove the wheel reaches the ScrollContainer instead of a row eating it (F-387).
+func recipe_columns() -> int:
+	return _row_grid.columns if _row_grid != null else 0
+
+
+func recipe_scroll_offset() -> int:
+	return _row_scroll.scroll_vertical if _row_scroll != null else 0
+
+
+## Whether the grid is taller than the viewport it sits in, i.e. whether the scroll backstop is
+## actually load-bearing right now rather than idle.
+func recipe_scroll_overflows() -> bool:
+	if _row_scroll == null:
+		return false
+	return _row_grid.get_combined_minimum_size().y > _row_scroll.size.y
+
+
+## Where the scrollable region is on screen, so a check can aim a real wheel event at it.
+func recipe_scroll_rect() -> Rect2:
+	return _row_scroll.get_global_rect() if _row_scroll != null else Rect2()
+
+
 func displayed_recipe_id(index: int) -> StringName:
 	return _rows[index].recipe_id if index >= 0 and index < _rows.size() else &""
 
@@ -342,6 +447,23 @@ func recipe_requirement_text(index: int) -> String:
 
 func craft_button_disabled(index: int) -> bool:
 	return _rows[index].craft_button().disabled if index >= 0 and index < _rows.size() else true
+
+
+## Moves keyboard/gamepad focus onto a row exactly as arrow-key navigation would, so a harness can
+## prove the ScrollContainer's follow_focus brings an off-screen row into view (F-380) rather than
+## leaving the focus ring somewhere the player cannot see.
+func focus_recipe_row(index: int) -> bool:
+	if index < 0 or index >= _rows.size():
+		return false
+	var row: RecipeRow = _rows[index]
+	# Prefer the craft button when it can actually take focus — that is where a player wants to land
+	# on a recipe they can make. Otherwise focus the row itself, which is reachable either way.
+	var target: Control = row.craft_button() if not row.craft_button().disabled else row
+	target.grab_focus()
+	# Report what ACTUALLY happened. Returning a bare `true` here is what let the disabled-button
+	# defect above pass this seam unnoticed: the caller was told focus had moved when it had not,
+	# and the follow_focus assertion downstream failed with no explanation of why.
+	return get_viewport().gui_get_focus_owner() == target
 
 
 ## Presses the row's craft button exactly as a click would, so the harness exercises the real seam.
@@ -385,6 +507,7 @@ func _build_ui() -> void:
 	_panel_center.add_child(_panel)
 
 	var panel_margin := MarginContainer.new()
+	panel_margin.name = "CraftingPanelMargin"
 	panel_margin.add_theme_constant_override("margin_left", 18)
 	panel_margin.add_theme_constant_override("margin_top", 16)
 	panel_margin.add_theme_constant_override("margin_right", 18)
@@ -392,6 +515,7 @@ func _build_ui() -> void:
 	_panel.add_child(panel_margin)
 
 	var stack := VBoxContainer.new()
+	stack.name = "CraftingStack"
 	stack.add_theme_constant_override("separation", 10)
 	panel_margin.add_child(stack)
 
@@ -410,10 +534,33 @@ func _build_ui() -> void:
 	subtitle.add_theme_color_override("font_color", COLOUR_MUTED)
 	stack.add_child(subtitle)
 
-	_row_box = VBoxContainer.new()
-	_row_box.name = "RecipeRows"
-	_row_box.add_theme_constant_override("separation", 6)
-	stack.add_child(_row_box)
+	# F-380: scroll wraps grid. Both scroll axes are AUTO on purpose — with the vertical axis
+	# DISABLED the container's minimum height would be the full content height again, which is
+	# precisely the overflow this finding is about, and with the horizontal axis DISABLED its minimum
+	# *width* would be a whole cell, which would push the panel wider than a phone-width viewport
+	# instead of letting `_apply_layout_for_width()` decide. AUTO collapses both minimums to the
+	# scrollbars, so the panel size is ours to set and a bar only appears when something really does
+	# not fit.
+	_row_scroll = ScrollContainer.new()
+	_row_scroll.name = "RecipeScroll"
+	_row_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	_row_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	# Gamepad and keyboard focus can now land on a row below the fold (F-209 wired the chain, F-380
+	# made the list taller than the viewport), so the scroll has to chase the focus or the ring
+	# disappears off the bottom edge with nothing to tell the player where it went.
+	_row_scroll.follow_focus = true
+	_row_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stack.add_child(_row_scroll)
+
+	_row_grid = GridContainer.new()
+	_row_grid.name = "RecipeRows"
+	_row_grid.columns = 1
+	_row_grid.add_theme_constant_override("h_separation", GRID_H_SEPARATION)
+	_row_grid.add_theme_constant_override("v_separation", GRID_V_SEPARATION)
+	# EXPAND is what lets the grid fill the scroll's width; without it ScrollContainer sizes a child
+	# to its bare minimum and the cells huddle against the left edge of the panel.
+	_row_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_row_scroll.add_child(_row_grid)
 
 	_status_label = Label.new()
 	_status_label.name = "Status"
@@ -459,14 +606,33 @@ func _build_ui() -> void:
 	prompt_margin.add_child(_prompt_label)
 
 
-func _wire_vertical_chain(controls: Array) -> void:
-	var count: int = controls.size()
+## F-380 replaced this file's `_wire_vertical_chain()` (the per-file helper the other menus still
+## carry — unlock_menu.gd, attunement_ui.gd, settings_menu.gd) with two-dimensional wiring, because
+## the rows are no longer a column: a chain that only knows top/bottom would step the focus ring
+## down the grid in reading order and skip every cell to the side of it. Same shape as
+## `InventoryUI._wire_focus_neighbors()` (F-209), with one difference that matters here — the
+## recipe count is whatever content registered for the station and does *not* divide evenly by the
+## column count, so the last row is ragged and every wrap is computed against the real row length
+## rather than assuming a full one. Re-run on every column change, not once at build time.
+func _wire_focus_grid(columns: int) -> void:
+	var count: int = _rows.size()
+	if count == 0 or columns <= 0:
+		return
 	for i: int in count:
-		var current: Control = controls[i]
-		var prev: Control = controls[(i - 1 + count) % count]
-		var next: Control = controls[(i + 1) % count]
-		current.focus_neighbor_top = current.get_path_to(prev)
-		current.focus_neighbor_bottom = current.get_path_to(next)
+		var button: Button = _rows[i].craft_button()
+		var col: int = i % columns
+		var row_start: int = i - col
+		var row_length: int = mini(columns, count - row_start)
+		var left: int = row_start + (col - 1 + row_length) % row_length
+		var right: int = row_start + (col + 1) % row_length
+		# Wrapping up from the top row lands on the last cell that column actually has, which is not
+		# the bottom row when the bottom row is short.
+		var up: int = i - columns if i >= columns else col + ((count - 1 - col) / columns) * columns
+		var down: int = i + columns if i + columns < count else col
+		button.focus_neighbor_left = button.get_path_to(_rows[left].craft_button())
+		button.focus_neighbor_right = button.get_path_to(_rows[right].craft_button())
+		button.focus_neighbor_top = button.get_path_to(_rows[up].craft_button())
+		button.focus_neighbor_bottom = button.get_path_to(_rows[down].craft_button())
 
 
 func _panel_style() -> StyleBoxFlat:
@@ -508,28 +674,30 @@ func _rebuild_rows(station_id: StringName) -> void:
 			var row := RecipeRow.new()
 			row.setup(recipe, _on_craft_requested)
 			_rows.append(row)
-			_row_box.add_child(row)
+			_row_grid.add_child(row)
 
 	if station_id != &"" and _rows.is_empty():
 		_empty_label = Label.new()
 		_empty_label.name = "NoRecipes"
 		_empty_label.text = "No recipes are registered here."
 		_empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_empty_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_empty_label.add_theme_color_override("font_color", COLOUR_MUTED)
-		_row_box.add_child(_empty_label)
+		_row_grid.add_child(_empty_label)
+
+	# F-380: a station switch can shorten the list, so the previous station's scroll offset would
+	# otherwise leave the new panel opened part-way down (or past its end).
+	_row_scroll.scroll_vertical = 0
 
 	# F-209: rows are torn down and rebuilt whenever the station identity changes (a fresh RecipeRow
 	# per recipe, never reused — see this function's own doc comment above), so the focus chain has
 	# to be rewired every time too, not just once at _build_ui() time. Re-grabbing focus only when
 	# already open covers the "walked straight from one station into another's range" case
-	# poll_station() describes, where the panel never closes across the switch.
-	if not _rows.is_empty():
-		var buttons: Array = []
-		for row: RecipeRow in _rows:
-			buttons.append(row.craft_button())
-		_wire_vertical_chain(buttons)
-		if _open:
-			_rows[0].craft_button().grab_focus()
+	# poll_station() describes, where the panel never closes across the switch. The wiring itself now
+	# happens inside _apply_responsive_layout() below (F-380) — it depends on the column count, which
+	# the width decides, so it has to be redone on a resize too and not only on a rebuild.
+	if not _rows.is_empty() and _open:
+		_rows[0].craft_button().grab_focus()
 
 	_apply_responsive_layout()
 
@@ -612,14 +780,75 @@ func _show_status(message: String, error: bool) -> void:
 func _apply_responsive_layout() -> void:
 	if _panel == null:
 		return
-	_apply_layout_for_width(get_viewport().get_visible_rect().size.x)
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	_apply_layout_for_width(viewport_size.x, viewport_size.y)
 
 
-func _apply_layout_for_width(viewport_width: float) -> void:
+## F-380: the panel grows sideways before it grows down. `columns` is derived from the width the
+## window can actually spare against a *measured* cell width — never a hardcoded column count — so
+## one function resolves to 1 column at phone width, 3 at 1280x720 and on the Steam Deck's 1280x800,
+## and 4 on a 1080p desktop, and at none of them is the panel wider than the viewport. The old code
+## clamped the panel to 560 px and stacked every recipe in one column below it, which is how 11
+## workbench recipes ran off the bottom of a 720p screen with nothing to scroll.
+##
+## The ScrollContainer is the backstop, not the answer: its height is a fraction of the window
+## instead of a fixed number, so a short window clamps the list and scrolls inside it rather than
+## pushing the panel's status line and close hint off the screen. A fixed height is exactly what
+## leaves F-387's settings panel taller than the window it is supposed to scroll inside.
+##
+## `viewport_height` is optional so the existing single-argument call sites — and the harnesses,
+## which drive this directly to test a width without resizing the window — keep working.
+func _apply_layout_for_width(viewport_width: float, viewport_height: float = -1.0) -> void:
+	if viewport_height <= 0.0:
+		viewport_height = get_viewport().get_visible_rect().size.y
 	var narrow: bool = viewport_width < NARROW_BREAKPOINT_PX
-	_panel.custom_minimum_size = Vector2(
-		clampf(viewport_width - 32.0, 280.0, 560.0 if not narrow else 360.0), 0.0
-	)
+	# Compaction first: it changes every font size in the row, so the cell measurement below has to
+	# happen against the variant that will actually be on screen.
 	for row: RecipeRow in _rows:
 		row.set_compact(narrow)
 	_prompt_label.add_theme_font_size_override("font_size", 12 if narrow else 14)
+
+	var cell_width: float = _cell_width(narrow)
+	var panel_budget: float = clampf(
+		viewport_width - PANEL_SIDE_MARGIN_PX, PANEL_MIN_WIDTH_PX, PANEL_MAX_WIDTH_PX
+	)
+	var grid_budget: float = maxf(cell_width, panel_budget - PANEL_CHROME_PX)
+	# Never more columns than there are recipes: two furnace recipes in a four-column grid would size
+	# the panel for four and leave half of it empty.
+	var column_cap: int = mini(MAX_GRID_COLUMNS, maxi(1, _rows.size()))
+	var columns: int = clampi(
+		int(floorf((grid_budget + GRID_H_SEPARATION) / (cell_width + GRID_H_SEPARATION))), 1, column_cap
+	)
+	_row_grid.columns = columns
+
+	var grid_width: float = cell_width * columns + GRID_H_SEPARATION * (columns - 1)
+	_panel.custom_minimum_size = Vector2(
+		clampf(
+			grid_width + PANEL_CHROME_PX,
+			PANEL_MIN_WIDTH_PX,
+			maxf(PANEL_MIN_WIDTH_PX, viewport_width - PANEL_SIDE_MARGIN_PX)
+		),
+		0.0
+	)
+
+	# minf() so a list that already fits shows no scrollbar and no empty space under the last row —
+	# the scroll only takes over once the grid is genuinely taller than its share of the window.
+	var scroll_height: float = clampf(
+		viewport_height * SCROLL_HEIGHT_FRACTION, MIN_SCROLL_HEIGHT_PX, MAX_SCROLL_HEIGHT_PX
+	)
+	_row_scroll.custom_minimum_size = Vector2(
+		0.0, minf(_row_grid.get_combined_minimum_size().y, scroll_height)
+	)
+
+	_wire_focus_grid(columns)
+
+
+## The widest row this station actually built, floored at a readable minimum. Measuring beats a
+## constant because the cell has to hold a whole requirement line ("0/3 Branch · 0/2 Fibre Bundle")
+## next to a 104 px CRAFT button, and content decides how long that line is — F-236 is about adding
+## recipes, and a hardcoded cell width would start clipping the first time one of them was wordy.
+func _cell_width(compact: bool) -> float:
+	var widest: float = MIN_CELL_WIDTH_COMPACT_PX if compact else MIN_CELL_WIDTH_PX
+	for row: RecipeRow in _rows:
+		widest = maxf(widest, row.get_combined_minimum_size().x)
+	return widest

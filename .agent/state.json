@@ -793,6 +793,20 @@
       "task": "F-286",
       "token": null
     },
+    "tools/crafting_ui_check.gd": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T04:09:56+00:00",
+      "hash": "e005612762020fdf17016cd094dc0d38fc3b8918f5471f34ac405729f76994ca",
+      "task": "F-380",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "tools/crafting_ui_render_check.gd": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T04:09:56+00:00",
+      "hash": "5ddb51927a1bee3eee23e3f5df34981958eee33d571e9d421ff95f019983e69e",
+      "task": "F-380",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
     "tools/cycle_advanced_net_check.gd": {
       "agent": "lp",
       "at": "2026-08-20T11:15:17+00:00",
@@ -1339,6 +1353,13 @@
       "task": "F-277",
       "token": null
     },
+    "ui/crafting/crafting_ui.gd": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T04:09:56+00:00",
+      "hash": "0a0d29deacfc7b26f54f369de20510c714becedbd2134705c09fdb818e22c329",
+      "task": "F-380",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
     "ui/frontend/backdrop.gd": {
       "agent": "reed31c598",
       "at": "2026-08-20T21:19:06+00:00",
@@ -1599,7 +1620,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 291,
+  "rev": 293,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -6409,9 +6430,11 @@
       "title": "The whole scene grades green and yellow \u2014 one hue dominates ground, foliage and light together"
     },
     "F-380": {
+      "done_at": "2026-08-21T04:09:56+00:00",
+      "done_by": "kilnd3a089",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "The crafting menu is one unscrollable vertical column, so recipes past the panel height are unreachable"
     },

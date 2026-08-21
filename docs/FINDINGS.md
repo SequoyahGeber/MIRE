@@ -2254,33 +2254,6 @@ same seed and camera before and after.
 
 ---
 
-### F-380 · The crafting menu is one unscrollable vertical column, so recipes past the panel height are unreachable
-
-**Area:** UI · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "the workbench crafting menu is not scrollable, id rather
-it expand horizontally and have multiple rows rather than vertically".
-
-`ui/crafting/crafting_ui.gd` builds its recipe list as a bare `VBoxContainer` — `_row_box` at :413,
-declared at :188 — one `HBoxContainer` row per recipe (:116). There is **no `ScrollContainer`
-anywhere in the file** (compare `ui/menu/settings_menu.gd:195`, which has one). The panel's minimum
-size is set at :620, so the column simply grows past it and the overflow is clipped with no way to
-reach it.
-
-With 13 recipes in `content/recipes/` this is already reproducible at 1080p, and it gets strictly
-worse as content lands — F-236 is explicitly about adding more.
-
-Sequoyah's preference is not "add a scrollbar": he wants the list to **grow horizontally into a
-multi-column grid** rather than downward, which suits a first-person game where the panel wants to
-stay short and wide. That means replacing `_row_box` with a `GridContainer` whose `columns` is
-derived from the available width, and keeping a `ScrollContainer` as the backstop for when even the
-grid overflows.
-
-Fix: `GridContainer` + width-derived `columns` + `ScrollContainer` wrapper, with the compact/full row
-variants at :89 and :152 reused as the grid cell.
-
----
-
 ### F-385 · Settings show no numeric value for any slider, so FOV, sensitivity and volumes are set blind
 
 **Area:** UI · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
@@ -2561,6 +2534,70 @@ somebody will act on it anyway.
 ---
 
 ## Resolved
+
+### F-380 · The crafting menu is one unscrollable vertical column, so recipes past the panel height are unreachable — **fixed**
+
+**Area:** UI · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "the workbench crafting menu is not scrollable, id rather
+it expand horizontally and have multiple rows rather than vertically".
+
+`ui/crafting/crafting_ui.gd` builds its recipe list as a bare `VBoxContainer` — `_row_box` at :413,
+declared at :188 — one `HBoxContainer` row per recipe (:116). There is **no `ScrollContainer`
+anywhere in the file** (compare `ui/menu/settings_menu.gd:195`, which has one). The panel's minimum
+size is set at :620, so the column simply grows past it and the overflow is clipped with no way to
+reach it.
+
+With 13 recipes in `content/recipes/` this is already reproducible at 1080p, and it gets strictly
+worse as content lands — F-236 is explicitly about adding more.
+
+Sequoyah's preference is not "add a scrollbar": he wants the list to **grow horizontally into a
+multi-column grid** rather than downward, which suits a first-person game where the panel wants to
+stay short and wide. That means replacing `_row_box` with a `GridContainer` whose `columns` is
+derived from the available width, and keeping a `ScrollContainer` as the backstop for when even the
+grid overflows.
+
+Fix: `GridContainer` + width-derived `columns` + `ScrollContainer` wrapper, with the compact/full row
+variants at :89 and :152 reused as the grid cell.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** `ui/crafting/crafting_ui.gd`'s bare `VBoxContainer` is now a `GridContainer` inside a
+`ScrollContainer`, with `columns` derived from the available width — 3 at 1080p and the Steam Deck's
+1280x800, collapsing to 1 at phone width. The list grows sideways into rows before it ever grows
+down, which is Sequoyah's actual ask ("id rather it expand horizontally and have multiple rows rather
+than vertically") rather than just adding the missing scrollbar. The scroll stays as the backstop for
+when even the grid overflows.
+
+Rendered proof at three sizes: `/tmp/mire_crafting_ui.png` (1280x720), `_deck.png` (1280x800),
+`_narrow.png` (374x666). 11 recipes now occupy 4 rows of a short, wide panel.
+
+Most of that was built by a subagent whose run ended before it could clear its last two failures.
+Both turned out to be real defects rather than test noise, and neither was in the grid work:
+
+**1. A disabled craft button cannot take focus, so half the recipe list was unreachable by keyboard
+or gamepad.** `present()` sets `_craft_button.disabled = not craftable`, and Godot will not focus a
+disabled Button — so `focus_recipe_row()`'s `grab_focus()` was a silent no-op on every recipe the
+player could not yet afford. That is backwards: those are exactly the recipes whose requirement line
+("MISSING MATERIALS", and which ones) you need to read. Fixed by giving the ROW `FOCUS_ALL` and
+focusing it when its button cannot take focus. The seam also returned a bare `true` regardless of
+what happened, which is what let this pass unnoticed — it now reports whether focus actually landed.
+
+**2. The wheel was eaten twice over.** First by the row's own containers: `Control` defaults to
+`MOUSE_FILTER_STOP` and the row is several containers deep, so the wheel died on whichever
+`VBoxContainer` was under the cursor. Every non-Button part of a row now passes the event through.
+
+Then — and this is worth recording because it is not crafting's bug at all — by **`AttunementUI`
+drawing on top of the whole panel**. Dumping the hover chain under the cursor returned
+`VBoxContainer < HBoxContainer < MarginContainer < PanelContainer < RolesBox < ... <
+AttunementUiRoot`, not one node of it crafting's. That is **F-320** ("every gameplay HUD autoload
+builds and shows itself unconditionally") observed from a completely unrelated direction, and it is
+concrete evidence for it: an overlay nobody opened silently swallowed input aimed at another panel,
+and the only symptom was one assertion failing for a reason that looked like crafting's fault. The
+check now dismisses overlays before the pointer test; F-320 still needs the real fix.
+
+Verified: crafting_ui_check failures=0, crafting_check failures=0 (confirmations=7),
+crafting_ui_render_check writes all three captures with columns=3/3/1.
 
 ### F-369 · Play shows near-bare ground across the whole island despite scatter defs that ask for 45-50% coverage — **fixed**
 
