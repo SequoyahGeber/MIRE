@@ -2262,6 +2262,107 @@ with its siblings and still be wrong, which is exactly how a willow ended up wit
 
 ---
 
+### F-425 · Harvestables had two damage states across six to nine swings, and the harvest tree — the one the player stands under — was 5.35 m
+
+**Area:** art · **Severity:** medium · **Found:** 2026-08-21 by gale43d16e
+
+Sequoyah: *"we also need proper destroyed versions of the resources, like 3 partially broken assets
+before they are fully harvested, so like default and then 3 partials and then fully
+harvested/destroyed"*, and separately *"keep those trees tall, trees ain't short."* Both land on the
+same kit, and the second is the more serious of the two.
+
+**Two problems, one file.**
+
+**1. The chains were too short to read as progress.** `HarvestableDef.active_state_scenes` divides a
+prop's health evenly across however many states it is given, so the count is purely an art decision —
+and the kit had three active states for the tree (six health) and two for each node (six and nine).
+On a nine-health iron node that is four or five consecutive swings landing with nothing changing on
+screen, which is the same feedback as hitting a rock that is not a harvestable at all. Now four
+active states plus depleted for all three, and each stage is modelled on what the real job does to
+the material rather than on "the same mesh, smaller":
+
+* tree — face cut opened, notch most of the way in with branches knocked off and a chip pile, then
+  the hinge nearly through so **the tree is visibly leaning into its own notch** and shedding. The
+  lean is the important one: it reads at a distance where a notch is four pixels wide, and it comes
+  out of the trunk bending above the cut, never out of tilting the whole prop, because the collider
+  and the harvest proxy are authored against the shared footprint.
+* nodes — **chipped** (pale angular scars where flakes have come off, and two flakes on the ground;
+  nothing has changed shape yet, which is right — the first thirty seconds of breaking a rock changes
+  its colour, not its outline), **cracked**, **shattered** (top mass gone, jagged stub in a skirt of
+  its own rubble). On iron the seams widen as it comes apart, so the closer it is to spent the more
+  ore is showing.
+
+**2. The harvest tree was 5.35 m.** F-396 raised every tree in the environment and flora kits and
+missed this one, because it lives in the harvestable kit and nobody auditing "the trees" looked here.
+So the single tree a player walks up to, stands under and swings an axe at was the shortest in the
+game — 3.1x a 1.7 m eye, where a real conifer reads at 6-15x. It is now 15.4 m, with the height
+authored in rather than scaled: the base radius goes 0.48 -> 0.62 while the height goes 5.35 -> 15.4,
+so the trunk is 1.3x thicker on a tree 2.9x taller. The notch stays at 0.80-1.48 m — it is cut where
+a person can swing, which does not change with the size of the tree. The stump and the felled trunk
+grew with it, because a stump is the bottom of the trunk it came from and a 0.52 m stump under a
+0.62 m tree reads as a different, thinner tree having been cut.
+
+**The general point is where it was hiding.** An asset filed under a *system's* name rather than its
+own kind does not get audited with its own kind. "Trees" got fixed twice and this one was never in
+the sweep either time. Worth checking whether the same is true of anything else the harvestable,
+loot, camp or construction kits own that is really a tree, a rock or a plant.
+
+New instrument: `tools/harvest_state_chain_check.gd`. Adding a state does not guarantee anyone ever
+SEES it — with the wrong ratio of health to states `_state_for_health()` can skip an index entirely,
+and a state you never reach looks exactly like a state that does not exist. The check walks each
+definition's health from full to 1 and asserts every index is visited, that the sequence never goes
+backwards (a prop must not visibly heal as it is hit), and that every named scene loads. All three
+chains pass; ten definitions correctly skip as F-114 authored-visual props.
+
+---
+
+### F-426 · Every colour on a scattered prop is its own MultiMesh node and draw call — a palette atlas would make it one, but _is_foliage() reads material names
+
+**Area:** performance · **Severity:** medium · **Found:** 2026-08-21 by gale43d16e
+
+Found during the low-poly technique research pass Sequoyah asked for (2026-08-21). It is the one
+thing the wider craft does that MIRE's pipeline structurally cannot, and it is worth writing down
+before someone reads the same tutorials and "fixes" it into a collision bug.
+
+**The measurement.** `ResourceScatterField._load_mesh_parts()` builds one `MultiMeshInstance3D` per
+mesh PART, and `join_by_material()`/`_join_into_one()` leave one part per COLOUR. Across the 128
+environment-kit assets that is **369 surfaces** — 11 assets on one material, 45 on two, 40 on three,
+22 on four, and 10 (every pine, and the crooked trees) on six. So a chunk dressed with pines pays six
+nodes and six draw calls per pine asset, not one.
+
+**What the craft does instead.** The standard stylized/low-poly answer is a *palette texture*: a tiny
+image of flat colour blocks, with each face's UV island parked on the colour it should be. Shading
+comes from lighting and silhouette, not from the texture. The prize is that the whole scene shares
+ONE material, so an asset is one surface, one node, one draw call regardless of how many colours it
+appears to have. It is the reason that workflow dominates on mobile and low-end targets — which is
+exactly the hardware MIRE's standing performance goal names.
+
+**Why MIRE cannot just take it.** `ResourceScatterField._is_foliage()` decides which surfaces a prop
+COLLIDES on by matching `FOLIAGE_MATERIAL_PREFIXES` against the material's resource name — that is
+what makes "collide the trunk, not the leaves" answerable without hand-authored shapes (F-348,
+F-390). Collapse the palette to one material and every tree collides on its crown, putting an
+invisible wall metres out from the bark: the precise defect F-390 was filed to remove. The same name
+matching is load-bearing in `tools/tree_collider_check.gd` and in the flora build contract's colour
+cap.
+
+**So the fix has a shape, and it is a pipeline change rather than an art change.** The collider filter
+needs a channel that survives material collapse. Options, cheapest first:
+
+1. **Two materials, not one** — `MIRE_Solid` and `MIRE_Foliage`, both palette-atlas'd. Keeps
+   `_is_foliage()` exactly as it is (it already matches on a prefix), takes 369 surfaces to at most
+   256, and needs no engine-side change at all. Almost all of the win for almost none of the risk.
+2. One material plus a per-vertex flag (UV2 or vertex colour alpha) read by the collider fitter —
+   maximal win, but `_cross_section_radius()` would have to read a second attribute per triangle.
+3. Author the collider shape per asset and stop deriving it from geometry — rejected upstream already
+   (F-348 chose derivation on purpose).
+
+Option 1 is the one to cost first. It is not free: every generator's material assignment becomes an
+atlas UV assignment, `PALETTE` grows a UV coordinate per token, and every one of the ~370 exports is
+rebuilt and re-verified. Filed rather than done because it touches all eleven generators, the scatter
+field and both collider checks, and none of that belongs inside an asset batch.
+
+---
+
 ## Resolved
 
 ### F-423 · The procedural island has never had ground shadows — shadow_normal_bias is 2.4, roughly double the authored maps, and the flat-shaded terrain cannot afford it — **fixed**

@@ -8274,3 +8274,25 @@ Cause not yet proven. Thirteen reproductions from agent godot are all clean, inc
 Files: `tools/quit_crash_probe.gd`
 
 Commit at time of writing: `a6567cd`
+
+---
+
+### HANDOFF · 7.2 · ash843af8 · 2026-08-21T07:49:42+00:00
+
+**Music: 4–6 tracks (act themes, boss, menu). CC0/licensed or commissioned.**
+
+Three themes shipped and wired (D-187): menu_theme.ogg = Hollowmere Hymn on the front end, theme_landfall.ogg = Wake the Deep at run start, theme_cycle.ogg = Mire Rites on cycle_advanced at Cycle 2+. All green headless (tools/theme_music_check.gd). Two things left on 7.2: (1) the SFX v2 picks — render_sfx_options.py has A/B/C for all 11 families and Sequoyah has not chosen yet, so assets/audio/sfx/ still holds v1; one --ship per pick. (2) the menu cue has no moment until task 4.19 flips run/main_scene to the front end — ThemeMusicDirector already handles that transition, nothing to change when it lands. the_long_sink and still_water are rendered and held as act/boss bed candidates.
+
+Files: `tools/audio/render_theme.py`, `docs/AUDIO.md`, `autoload/ambient_music_director.gd`, `autoload/theme_music_director.gd`, `tools/theme_music_check.gd`, `assets/audio/music/menu_theme.ogg`, `assets/audio/music/theme_landfall.ogg`, `assets/audio/music/theme_cycle.ogg`, `tools/audio_import_check.gd`, `docs/DECISIONS.md`
+
+Commit at time of writing: `bca3e7a`
+
+---
+
+### HANDOFF · F-421 · mossb81aeb · 2026-08-21T07:51:25+00:00
+
+**Quitting from the in-game menu crashes the process on shutdown (macOS)**
+
+Evidence is complete; the remaining step is a two-click editor test only Sequoyah can run (Debug -> untick 'Synchronize Scene Changes', run, quit from the F1 menu). Everything else is recorded in the notes: the crash is engine-internal with an empty GDScript stack, editor-launched only, and the exported release build quits clean. tools/quit_crash_probe.gd drives the whole shipped quit path correctly — reuse it.
+
+Commit at time of writing: `152ee12`
