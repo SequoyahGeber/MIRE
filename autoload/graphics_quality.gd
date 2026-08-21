@@ -139,6 +139,9 @@ var undergrowth_density_scale: float = 1.0
 ## nothing in the opaque pass AND nothing in any of the shadow cascades — one cut is worth five
 ## draw calls at the shipped four splits (F-144).
 var prop_draw_distance_scale: float = 1.0
+## Player overrides layered after the preset. -1 follows the preset/level; 0 forces off; 1 forces on.
+var ssao_override: int = -1
+var brightness: float = 1.0
 
 # Authored values captured the first time a preset touches a node, keyed by instance id, so
 # `high` restores rather than guesses. Ids from freed levels are never read again — an apply
@@ -190,6 +193,12 @@ func set_dynamic_scale(enabled: bool, target_fps: float = 0.0) -> void:
 	if not enabled:
 		get_viewport().scaling_3d_scale = _preset_render_scale()
 	_update_processing()
+
+
+func set_player_overrides(new_ssao_override: int, new_brightness: float) -> void:
+	ssao_override = clampi(new_ssao_override, -1, 1)
+	brightness = clampf(new_brightness, 0.5, 1.5)
+	apply(preset)
 
 
 func _dynamic_step(delta: float) -> void:
@@ -272,10 +281,15 @@ func apply(new_preset: Preset) -> void:
 				# own `_ready()` and deliberately never writes this flag, so it is still the LEVEL's
 				# value being captured here and HIGH is still an exact restore.
 				"ssao": environment.ssao_enabled,
+				"adjustment_enabled": environment.adjustment_enabled,
+				"brightness": environment.adjustment_brightness,
 			}) as Dictionary
 		environment.glow_enabled = bool(spec.get("glow", authored["glow"]))
 		environment.volumetric_fog_enabled = bool(spec.get("volumetric", authored["volumetric"]))
-		environment.ssao_enabled = bool(spec.get("ssao", authored["ssao"]))
+		var preset_ssao: bool = bool(spec.get("ssao", authored["ssao"]))
+		environment.ssao_enabled = preset_ssao if ssao_override < 0 else ssao_override > 0
+		environment.adjustment_enabled = bool(authored["adjustment_enabled"]) or not is_equal_approx(brightness, 1.0)
+		environment.adjustment_brightness = float(authored["brightness"]) * brightness
 
 	prop_draw_distance_scale = float(spec.get("draw_distance", 1.0))
 	DrawPolicy.rescale(get_tree())

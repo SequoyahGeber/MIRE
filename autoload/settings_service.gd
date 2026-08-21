@@ -68,6 +68,13 @@ const MIN_SENSITIVITY: float = 0.01
 const MAX_SENSITIVITY: float = 1.0
 const MIN_GAMEPAD_SENSITIVITY: float = 30.0
 const MAX_GAMEPAD_SENSITIVITY: float = 720.0
+const WINDOW_MODES: PackedStringArray = ["WINDOWED", "BORDERLESS", "FULLSCREEN"]
+const RESOLUTIONS: Array[Vector2i] = [
+	Vector2i(1152, 648), Vector2i(1280, 720), Vector2i(1600, 900),
+	Vector2i(1920, 1080), Vector2i(2560, 1440), Vector2i(3840, 2160),
+]
+const FPS_CAPS: PackedInt32Array = [0, 30, 60, 90, 120, 144, 165, 240]
+const ANTI_ALIASING_MODES: PackedStringArray = ["OFF", "FXAA", "TAA", "MSAA 2X", "MSAA 4X"]
 
 ## Every value's factory default, in one place. These were three copies before F-386 — the field
 ## initialisers below, `_load()`'s `data.get()` fallbacks, and `core/save/settings_save.gd`'s
@@ -77,6 +84,14 @@ const MAX_GAMEPAD_SENSITIVITY: float = 720.0
 ## without this autoload, and `tools/settings_check.gd` asserts the two agree.
 const DEFAULTS: Dictionary = {
 	&"graphics_preset": 2,
+	&"window_mode": 0,
+	&"resolution_index": 1,
+	&"vsync_enabled": true,
+	&"fps_cap": 0,
+	&"ssao_override": -1,
+	&"anti_aliasing": 2,
+	&"dynamic_resolution": false,
+	&"brightness": 1.0,
 	&"master_volume": 1.0,
 	&"music_volume": 1.0,
 	&"sfx_volume": 1.0,
@@ -106,6 +121,14 @@ var _persistence_holds: int = 0
 var _persistence_pending: bool = false
 
 var _graphics_preset: int = 2
+var _window_mode: int = 0
+var _resolution_index: int = 1
+var _vsync_enabled: bool = true
+var _fps_cap: int = 0
+var _ssao_override: int = -1
+var _anti_aliasing: int = 2
+var _dynamic_resolution: bool = false
+var _brightness: float = 1.0
 var _master_volume: float = 1.0
 var _music_volume: float = 1.0
 var _sfx_volume: float = 1.0
@@ -133,6 +156,94 @@ func graphics_preset() -> int:
 
 func set_graphics_preset(preset: int) -> void:
 	_graphics_preset = clampi(preset, 0, 2)
+	_apply_graphics()
+	_save()
+	settings_changed.emit()
+
+
+func window_mode() -> int:
+	return _window_mode
+
+
+func set_window_mode(mode: int) -> void:
+	_window_mode = clampi(mode, 0, WINDOW_MODES.size() - 1)
+	_apply_display()
+	_save()
+	settings_changed.emit()
+
+
+func resolution_index() -> int:
+	return _resolution_index
+
+
+func set_resolution_index(index: int) -> void:
+	_resolution_index = clampi(index, 0, RESOLUTIONS.size() - 1)
+	_apply_display()
+	_save()
+	settings_changed.emit()
+
+
+func vsync_enabled() -> bool:
+	return _vsync_enabled
+
+
+func set_vsync_enabled(enabled: bool) -> void:
+	_vsync_enabled = enabled
+	_apply_display()
+	_save()
+	settings_changed.emit()
+
+
+func fps_cap() -> int:
+	return _fps_cap
+
+
+func set_fps_cap(cap: int) -> void:
+	_fps_cap = cap if FPS_CAPS.has(cap) else 0
+	_apply_display()
+	_save()
+	settings_changed.emit()
+
+
+func ssao_override() -> int:
+	return _ssao_override
+
+
+func set_ssao_override(value: int) -> void:
+	_ssao_override = clampi(value, -1, 1)
+	_apply_graphics()
+	_save()
+	settings_changed.emit()
+
+
+func anti_aliasing() -> int:
+	return _anti_aliasing
+
+
+func set_anti_aliasing(value: int) -> void:
+	_anti_aliasing = clampi(value, 0, ANTI_ALIASING_MODES.size() - 1)
+	_apply_display()
+	_save()
+	settings_changed.emit()
+
+
+func dynamic_resolution() -> bool:
+	return _dynamic_resolution
+
+
+func set_dynamic_resolution(enabled: bool) -> void:
+	_dynamic_resolution = enabled
+	_apply_graphics()
+	_save()
+	settings_changed.emit()
+
+
+func brightness() -> float:
+	return _brightness
+
+
+func set_brightness(value: float) -> void:
+	_brightness = clampf(value, 0.5, 1.5)
 	_apply_graphics()
 	_save()
 	settings_changed.emit()
@@ -377,6 +488,14 @@ func is_persistence_held() -> bool:
 func capture_state() -> Dictionary:
 	return {
 		&"graphics_preset": _graphics_preset,
+		&"window_mode": _window_mode,
+		&"resolution_index": _resolution_index,
+		&"vsync_enabled": _vsync_enabled,
+		&"fps_cap": _fps_cap,
+		&"ssao_override": _ssao_override,
+		&"anti_aliasing": _anti_aliasing,
+		&"dynamic_resolution": _dynamic_resolution,
+		&"brightness": _brightness,
 		&"master_volume": _master_volume,
 		&"music_volume": _music_volume,
 		&"sfx_volume": _sfx_volume,
@@ -406,6 +525,17 @@ func default_state() -> Dictionary:
 ## rather than eleven. Writes to disk only if nothing is holding persistence.
 func apply_state(state: Dictionary) -> void:
 	_graphics_preset = clampi(int(state.get(&"graphics_preset", _graphics_preset)), 0, 2)
+	_window_mode = clampi(int(state.get(&"window_mode", _window_mode)), 0, WINDOW_MODES.size() - 1)
+	_resolution_index = clampi(
+		int(state.get(&"resolution_index", _resolution_index)), 0, RESOLUTIONS.size() - 1)
+	_vsync_enabled = bool(state.get(&"vsync_enabled", _vsync_enabled))
+	var requested_cap: int = int(state.get(&"fps_cap", _fps_cap))
+	_fps_cap = requested_cap if FPS_CAPS.has(requested_cap) else 0
+	_ssao_override = clampi(int(state.get(&"ssao_override", _ssao_override)), -1, 1)
+	_anti_aliasing = clampi(
+		int(state.get(&"anti_aliasing", _anti_aliasing)), 0, ANTI_ALIASING_MODES.size() - 1)
+	_dynamic_resolution = bool(state.get(&"dynamic_resolution", _dynamic_resolution))
+	_brightness = clampf(float(state.get(&"brightness", _brightness)), 0.5, 1.5)
 	_master_volume = clampf(float(state.get(&"master_volume", _master_volume)), 0.0, 1.0)
 	_music_volume = clampf(float(state.get(&"music_volume", _music_volume)), 0.0, 1.0)
 	_sfx_volume = clampf(float(state.get(&"sfx_volume", _sfx_volume)), 0.0, 1.0)
@@ -466,6 +596,33 @@ func _apply_graphics() -> void:
 	var gfx: Node = get_node_or_null(^"/root/GraphicsQuality")
 	if gfx != null and gfx.has_method("apply"):
 		gfx.call("apply", _graphics_preset)
+		gfx.call("set_player_overrides", _ssao_override, _brightness)
+		gfx.call("set_dynamic_scale", _dynamic_resolution, float(_fps_cap))
+
+
+func _apply_display() -> void:
+	Engine.max_fps = _fps_cap
+	if DisplayServer.get_name() == "headless":
+		return
+	DisplayServer.window_set_vsync_mode(
+		DisplayServer.VSYNC_ENABLED if _vsync_enabled else DisplayServer.VSYNC_DISABLED)
+	var viewport: Viewport = get_viewport()
+	viewport.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
+	viewport.use_taa = false
+	viewport.msaa_3d = Viewport.MSAA_DISABLED
+	match _anti_aliasing:
+		1: viewport.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
+		2: viewport.use_taa = true
+		3: viewport.msaa_3d = Viewport.MSAA_2X
+		4: viewport.msaa_3d = Viewport.MSAA_4X
+	match _window_mode:
+		0:
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+			DisplayServer.window_set_size(RESOLUTIONS[_resolution_index])
+		1:
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+		2:
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN)
 
 
 func _apply_bus_volume(bus_name: StringName, linear: float) -> void:
@@ -480,6 +637,18 @@ func _apply_bus_volume(bus_name: StringName, linear: float) -> void:
 func _load() -> void:
 	var data: Dictionary = SETTINGS_SAVE.load_data(save_path)
 	_graphics_preset = clampi(int(data.get(&"graphics_preset", DEFAULTS[&"graphics_preset"])), 0, 2)
+	_window_mode = clampi(
+		int(data.get(&"window_mode", DEFAULTS[&"window_mode"])), 0, WINDOW_MODES.size() - 1)
+	_resolution_index = clampi(
+		int(data.get(&"resolution_index", DEFAULTS[&"resolution_index"])), 0, RESOLUTIONS.size() - 1)
+	_vsync_enabled = bool(data.get(&"vsync_enabled", DEFAULTS[&"vsync_enabled"]))
+	var loaded_cap: int = int(data.get(&"fps_cap", DEFAULTS[&"fps_cap"]))
+	_fps_cap = loaded_cap if FPS_CAPS.has(loaded_cap) else 0
+	_ssao_override = clampi(int(data.get(&"ssao_override", DEFAULTS[&"ssao_override"])), -1, 1)
+	_anti_aliasing = clampi(int(data.get(&"anti_aliasing", DEFAULTS[&"anti_aliasing"])),
+		0, ANTI_ALIASING_MODES.size() - 1)
+	_dynamic_resolution = bool(data.get(&"dynamic_resolution", DEFAULTS[&"dynamic_resolution"]))
+	_brightness = clampf(float(data.get(&"brightness", DEFAULTS[&"brightness"])), 0.5, 1.5)
 	_master_volume = clampf(float(data.get(&"master_volume", DEFAULTS[&"master_volume"])), 0.0, 1.0)
 	_music_volume = clampf(float(data.get(&"music_volume", DEFAULTS[&"music_volume"])), 0.0, 1.0)
 	_sfx_volume = clampf(float(data.get(&"sfx_volume", DEFAULTS[&"sfx_volume"])), 0.0, 1.0)
@@ -520,6 +689,7 @@ func _load() -> void:
 ## way a hand-written second copy would.
 func _apply_values() -> void:
 	_apply_graphics()
+	_apply_display()
 	_apply_bus_volume(&"Master", _master_volume)
 	_apply_bus_volume(MUSIC_BUS, _music_volume)
 	_apply_bus_volume(SFX_BUS, _sfx_volume)
@@ -542,6 +712,14 @@ func _save() -> void:
 		raw_joypad_binds[String(action)] = _joypad_binds[action]
 	SETTINGS_SAVE.save_data({
 		"graphics_preset": _graphics_preset,
+		"window_mode": _window_mode,
+		"resolution_index": _resolution_index,
+		"vsync_enabled": _vsync_enabled,
+		"fps_cap": _fps_cap,
+		"ssao_override": _ssao_override,
+		"anti_aliasing": _anti_aliasing,
+		"dynamic_resolution": _dynamic_resolution,
+		"brightness": _brightness,
 		"master_volume": _master_volume,
 		"music_volume": _music_volume,
 		"sfx_volume": _sfx_volume,

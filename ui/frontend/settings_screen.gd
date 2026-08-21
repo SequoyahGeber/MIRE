@@ -7,9 +7,9 @@ extends Control
 ## values, the `InputMap` writes and the persistence. The only state here is which tab is showing
 ## and which rebind capture is armed.
 ##
-## ## Why a rebuild rather than a re-skin of `ui/menu/settings_menu.gd`
+## ## Why this is the single settings surface
 ##
-## The shipped panel puts graphics, five sliders, two checkboxes, twelve keyboard rebind rows and
+## The retired vertical panel put graphics, five sliders, two checkboxes, twelve keyboard rebind rows and
 ## ten gamepad rebind rows in one column. That is around thirty controls in a single vertical focus
 ## chain: on a gamepad, reaching "gamepad rebind: hotbar next" is roughly thirty D-pad presses from
 ## the top, and there is no way to skip. Tabs turn that into one bumper press plus a short chain,
@@ -41,6 +41,7 @@ extends Control
 
 const MireTheme := preload("res://ui/theme/mire_theme.gd")
 const FocusRingSlider := preload("res://ui/menu/focus_ring_slider.gd")
+const GraphicsSettingsPage := preload("res://ui/frontend/graphics_settings_page.gd")
 
 ## Fixed width of a slider's numeric readout, in pixels at `MireTheme.BODY`. Wide enough for the
 ## longest string any row produces ("720°/s") so the row cannot reflow while the handle moves.
@@ -48,9 +49,7 @@ const READOUT_WIDTH: float = 96.0
 
 ## Tab order is deliberate: the things a player changes most often first, the long rebind tables
 ## last. GAME is present but currently empty — see the scope note above.
-const TABS: Array[String] = ["DISPLAY", "AUDIO", "CONTROLS", "GAMEPAD", "ACCESSIBILITY"]
-
-const GRAPHICS_PRESETS: Array[String] = ["LOW", "MEDIUM", "HIGH"]
+const TABS: Array[String] = ["DISPLAY", "AUDIO", "CONTROLS", "GAMEPAD", "ACCESSIBILITY", "PLAYTESTING"]
 
 var _tab_buttons: Array[Button] = []
 var _pages: Array[Control] = []
@@ -61,6 +60,7 @@ var _back_button: Button
 var _save_button: Button
 var _restore_button: Button
 var _first_focus: Control
+var _god_mode_toggle: CheckBox
 
 ## F-386: what every setting was when this screen was shown, from `SettingsService.capture_state()`.
 ## Handed back on the way out, re-taken on SAVE so leaving after a save keeps the save.
@@ -258,6 +258,7 @@ func _build() -> void:
 	_pages.append(_build_controls_page())
 	_pages.append(_build_gamepad_page())
 	_pages.append(_build_accessibility_page())
+	_pages.append(_build_playtesting_page())
 	for entry: Control in _pages:
 		entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_page_host.add_child(entry)
@@ -306,9 +307,8 @@ func _row(label_text: String, control: Control, hint: String = "") -> Control:
 ## A slider row: `_row()`, plus the number the slider was missing (F-385). Every slider on this
 ## screen shipped with a bare handle and no readout — field of view spans 60-110 in steps of 1, so
 ## once you moved it, the value you had was gone. `FocusRingSlider.bind_readout()` owns the format
-## and pins the label's width so the row cannot reflow mid-drag; the same call is what
-## `ui/menu/settings_menu.gd` uses, so the two settings surfaces cannot disagree about how a
-## percentage or a degree is written.
+## and pins the label's width so the row cannot reflow mid-drag and every tab uses one
+## percentage/degree format.
 func _slider_row(label_text: String, slider: HSlider, readout: int, hint: String = "") -> Control:
 	var holder: HBoxContainer = MireTheme.row()
 	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -323,30 +323,12 @@ func _slider_row(label_text: String, slider: HSlider, readout: int, hint: String
 
 
 func _build_display_page() -> Control:
-	var column: VBoxContainer = _page()
 	var settings: Node = _settings()
-
-	var preset: OptionButton = MireTheme.dropdown()
-	for name_text: String in GRAPHICS_PRESETS:
-		preset.add_item(name_text)
-	if settings != null:
-		preset.selected = clampi(int(settings.call("graphics_preset")), 0, GRAPHICS_PRESETS.size() - 1)
-		preset.item_selected.connect(func(index: int) -> void:
-			_write("set_graphics_preset", index)
-			_note("Graphics set to %s." % GRAPHICS_PRESETS[index]))
-		_bind(preset, "graphics_preset")
-	column.add_child(_row("Graphics quality", preset,
-		"Lower presets cut shadows and draw distance first — the settings that cost the most on a weak machine."))
-
-	if settings != null:
-		var fov: HSlider = MireTheme.slider(
-			float(settings.get("MIN_FOV")), float(settings.get("MAX_FOV")), 1.0
-		)
-		fov.value = float(settings.call("fov_degrees"))
-		fov.value_changed.connect(func(value: float) -> void: _write("set_fov_degrees", value))
-		_bind(fov, "fov_degrees")
-		column.add_child(_slider_row("Field of view", fov, FocusRingSlider.Readout.DEGREES))
-	return column
+	var graphics_page := GraphicsSettingsPage.new(settings)
+	graphics_page.setting_requested.connect(func(setter: String, value: Variant) -> void:
+		_write(setter, value))
+	graphics_page.note_requested.connect(_note)
+	return graphics_page
 
 
 func _build_audio_page() -> Control:
@@ -442,6 +424,64 @@ func _build_accessibility_page() -> Control:
 	column.add_child(_row("Reduce motion", reduce,
 		"Stops camera shake, menu fades and the title screen's drift. Everything cuts instantly instead."))
 	return column
+
+
+## God mode is deliberately runtime-only, so this control does not participate in the
+## SettingsService preview/save registry. It uses GodModeService's ordinary HOST command front door;
+## a multiplayer client without operator permission gets the same refusal as the developer console.
+func _build_playtesting_page() -> Control:
+	var column: VBoxContainer = _page()
+	var service: Node = _god_mode()
+
+	_god_mode_toggle = MireTheme.toggle()
+	_god_mode_toggle.name = "GodModeToggle"
+	_god_mode_toggle.button_pressed = service != null and bool(service.call(&"is_local_enabled"))
+	_god_mode_toggle.toggled.connect(_on_god_mode_toggled)
+	column.add_child(_row(
+		"God Mode",
+		_god_mode_toggle,
+		"Invulnerability and collision-preserving flight. Jump rises, Dodge descends, and Sprint flies faster. Resets when the game closes."
+	))
+
+	if service != null:
+		if service.has_signal(&"god_mode_changed"):
+			service.connect(&"god_mode_changed", _on_god_mode_changed)
+		if service.has_signal(&"god_mode_request_completed"):
+			service.connect(&"god_mode_request_completed", _on_god_mode_request_completed)
+	return column
+
+
+func _on_god_mode_toggled(enabled: bool) -> void:
+	var service: Node = _god_mode()
+	if service == null or not bool(service.call(&"request_local_enabled", enabled)):
+		_set_god_mode_toggle(service != null and bool(service.call(&"is_local_enabled")))
+		_note("God Mode is unavailable.")
+
+
+func _on_god_mode_changed(peer_id: int, enabled: bool) -> void:
+	var service: Node = _god_mode()
+	if service == null:
+		return
+	var transport: Node = get_node_or_null(^"/root/NetTransport")
+	var local_peer_id: int = int(transport.call(&"local_peer_id")) if transport != null else 1
+	if local_peer_id <= 0:
+		local_peer_id = 1
+	if peer_id == local_peer_id:
+		_set_god_mode_toggle(enabled)
+
+
+func _on_god_mode_request_completed(_requested: bool, accepted: bool, detail: String) -> void:
+	var service: Node = _god_mode()
+	_set_god_mode_toggle(service != null and bool(service.call(&"is_local_enabled")))
+	_note(detail if not detail.is_empty() else ("God Mode updated." if accepted else "God Mode refused."))
+
+
+func _set_god_mode_toggle(enabled: bool) -> void:
+	if not is_instance_valid(_god_mode_toggle):
+		return
+	_god_mode_toggle.set_block_signals(true)
+	_god_mode_toggle.button_pressed = enabled
+	_god_mode_toggle.set_block_signals(false)
 
 
 ## A rebind row's button shows the current binding and, when pressed, listens for the next key or
@@ -663,6 +703,10 @@ func _spacer() -> Control:
 
 func _settings() -> Node:
 	return get_node_or_null(^"/root/SettingsService")
+
+
+func _god_mode() -> Node:
+	return get_node_or_null(^"/root/GodModeService")
 
 
 ## Backing out means "leave it as I found it" (F-386) — the pop reaches `menu_hidden()`, which hands

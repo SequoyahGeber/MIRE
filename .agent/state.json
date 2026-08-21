@@ -1,17 +1,5 @@
 {
   "claims": {
-    "autoload/graphics_quality.gd": {
-      "agent": "quill5df327",
-      "at": "2026-08-21T06:08:40+00:00",
-      "task": "F-414",
-      "token": "CODEX_SESSION_ID:01a022ed-4e2f-70e3-9184-2c2ffa7d6d13"
-    },
-    "autoload/settings_service.gd": {
-      "agent": "quill5df327",
-      "at": "2026-08-21T06:07:12+00:00",
-      "task": "F-414",
-      "token": "CODEX_SESSION_ID:01a022ed-4e2f-70e3-9184-2c2ffa7d6d13"
-    },
     "content/biomes/birchwood.tres": {
       "agent": "kilnd3a089",
       "at": "2026-08-21T05:26:35+00:00",
@@ -54,101 +42,11 @@
       "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
-    "core/save/settings_save.gd": {
-      "agent": "quill5df327",
-      "at": "2026-08-21T06:07:12+00:00",
-      "task": "F-414",
-      "token": "CODEX_SESSION_ID:01a022ed-4e2f-70e3-9184-2c2ffa7d6d13"
-    },
-    "project.godot": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T06:06:36+00:00",
-      "task": "F-413",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
-    },
     "tools/biome_terrain_check.gd": {
       "agent": "kilnd3a089",
       "at": "2026-08-21T05:28:01+00:00",
       "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
-    },
-    "tools/god_mode_check.gd": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T06:07:00+00:00",
-      "task": "F-413",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
-    },
-    "tools/main_menu_check.gd": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T06:07:49+00:00",
-      "task": "F-413",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
-    },
-    "tools/menu_focus_check.gd": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T06:08:14+00:00",
-      "task": "F-413",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
-    },
-    "tools/run_scope_audit_check.gd": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T06:09:40+00:00",
-      "task": "F-413",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
-    },
-    "tools/settings_check.gd": {
-      "agent": "quill5df327",
-      "at": "2026-08-21T06:07:12+00:00",
-      "task": "F-414",
-      "token": "CODEX_SESSION_ID:01a022ed-4e2f-70e3-9184-2c2ffa7d6d13"
-    },
-    "tools/settings_screen_check.gd": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T06:07:27+00:00",
-      "task": "F-413",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
-    },
-    "ui/frontend/graphics_settings_page.gd": {
-      "agent": "quill5df327",
-      "at": "2026-08-21T06:16:17+00:00",
-      "task": "F-414",
-      "token": "CODEX_SESSION_ID:01a022ed-4e2f-70e3-9184-2c2ffa7d6d13"
-    },
-    "ui/frontend/settings_screen.gd": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T06:05:50+00:00",
-      "task": "F-413",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
-    },
-    "ui/menu/focus_ring_slider.gd": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T06:10:04+00:00",
-      "task": "F-413",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
-    },
-    "ui/menu/main_menu.gd": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T06:06:20+00:00",
-      "task": "F-413",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
-    },
-    "ui/menu/settings_menu.gd": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T06:06:48+00:00",
-      "task": "F-413",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
-    },
-    "ui/menu/settings_menu.gd.uid": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T06:06:55+00:00",
-      "task": "F-413",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
-    },
-    "ui/menu_stack.gd": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T06:09:53+00:00",
-      "task": "F-413",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
     "world/gen/island_heightmap.gd": {
       "agent": "kilnd3a089",
@@ -174,56 +72,6 @@
       "notes": [],
       "started": "2026-08-21T05:25:41+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
-    },
-    "F-413": {
-      "agent": "flinta92725",
-      "files": [
-        "ui/frontend/settings_screen.gd",
-        "ui/menu/main_menu.gd",
-        "project.godot",
-        "ui/menu/settings_menu.gd",
-        "ui/menu/settings_menu.gd.uid",
-        "tools/god_mode_check.gd",
-        "tools/settings_screen_check.gd",
-        "tools/main_menu_check.gd",
-        "tools/menu_focus_check.gd",
-        "tools/run_scope_audit_check.gd",
-        "ui/menu_stack.gd",
-        "ui/menu/focus_ring_slider.gd"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-21T06:15:19+00:00",
-          "by": "flinta92725",
-          "text": "Confirmed ui/menu/settings_menu.gd was a duplicate UI: title and pause already instantiate ui/frontend/settings_screen.gd; only the remaining seed/post-run MainMenu referenced the old autoload. Removed the SettingsMenu autoload/script and routed MainMenu SETTINGS through MenuStack to the same live screen. Live screen now has PLAYTESTING/GodModeToggle; focused settings, God-mode, MainMenu and setup checks pass. tools/settings_check.gd cleanup is coordinated with active F-414 owner because that file is claimed there."
-        }
-      ],
-      "started": "2026-08-21T06:05:50+00:00",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
-    },
-    "F-414": {
-      "agent": "quill5df327",
-      "files": [
-        "core/save/settings_save.gd",
-        "autoload/settings_service.gd",
-        "tools/settings_check.gd",
-        "autoload/graphics_quality.gd",
-        "ui/frontend/graphics_settings_page.gd"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-21T06:10:33+00:00",
-          "by": "quill5df327",
-          "text": "Display customization scope: windowed/borderless/exclusive fullscreen, six resolutions, VSync, standard FPS caps, quality preset, Auto/Off/On SSAO, Off/FXAA/TAA/MSAA2x/MSAA4x anti-aliasing, dynamic resolution, brightness, and existing FOV. All are LOCAL presentation settings and participate in preview/save/cancel/default state."
-        },
-        {
-          "at": "2026-08-21T06:15:00+00:00",
-          "by": "flinta92725",
-          "text": "F-413 is removing the dead SettingsMenu autoload/script and migrating God Mode to ui/frontend/settings_screen.gd. tools/settings_check.gd still asserts /root/SettingsMenu and will need its legacy UI sections removed or migrated to settings_screen_check.gd before F-414 closes; I am respecting your claim and will not edit it while held."
-        }
-      ],
-      "started": "2026-08-21T06:07:12+00:00",
-      "token": "CODEX_SESSION_ID:01a022ed-4e2f-70e3-9184-2c2ffa7d6d13"
     }
   },
   "recent": {
@@ -864,13 +712,6 @@
       "task": "F-401",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
-    "assets/audit/terrain/island_f274_20260819.png": {
-      "agent": "lm",
-      "at": "2026-08-20T06:20:25+00:00",
-      "hash": "f9c5b0cdf5fb5ccbf127e1e86c6851b4483221f142f1f346cbd57f8b871da4f0",
-      "task": "F-274",
-      "token": null
-    },
     "assets/audit/terrain/island_orbit.png": {
       "agent": "quill5fa5c7",
       "at": "2026-08-21T00:25:01+00:00",
@@ -1215,18 +1056,11 @@
       "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
     "autoload/graphics_quality.gd": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T05:34:42+00:00",
-      "hash": "5617be3a6d30f5ddb2c1d873e1d885c55f8312c9255a62018704db9efd6933c4",
-      "task": "F-401",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
-    },
-    "autoload/harvest_world.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T06:20:00+00:00",
-      "hash": "632cd6f35d27a2c637c5e3b3bd4902b00fca6842d9782fe487d6565d99391202",
-      "task": "F-276",
-      "token": null
+      "agent": "flinta92725",
+      "at": "2026-08-21T06:29:30+00:00",
+      "hash": "b9eb067138d8956c52f230cf8ef02831b0433cca94d792d7e2d7ce0ac2798ad2",
+      "task": "F-414",
+      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
     "autoload/inventory_service.gd": {
       "agent": "lp",
@@ -1269,6 +1103,13 @@
       "hash": "556cbd4b0ced32fcf4e881ad2d0a353c91a07f2f68479813661dd97ab044d450",
       "task": "F-273",
       "token": null
+    },
+    "autoload/settings_service.gd": {
+      "agent": "flinta92725",
+      "at": "2026-08-21T06:29:30+00:00",
+      "hash": "e418a664ea0c5595ec364b32540e7d35f92c9a0dd1baa4bef4ca5b9aaee975a7",
+      "task": "F-414",
+      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
     "autoload/world_delta_log.gd": {
       "agent": "ivy1bcae0",
@@ -1642,11 +1483,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "core/save/settings_save.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:31:57+00:00",
-      "hash": "fd57cda3dfd132847edff4f6664e573d3f0ff45b7493a429c5dab37a36fdc21b",
-      "task": "F-326",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+      "agent": "flinta92725",
+      "at": "2026-08-21T06:29:30+00:00",
+      "hash": "0f48428037f483f6babaa59af072a65ddfbefe1302865f7e2c37f952fd35f23d",
+      "task": "F-414",
+      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
     "core/save/steam_stats_save.gd": {
       "agent": "ivy1bcae0",
@@ -1818,9 +1659,9 @@
     },
     "project.godot": {
       "agent": "flinta92725",
-      "at": "2026-08-21T05:51:07+00:00",
-      "hash": "dc62cc665875e9c6077bb2b3bad80e5ecb41bb1c15da2b5d85aabfaf4e5de4df",
-      "task": "F-411",
+      "at": "2026-08-21T06:17:58+00:00",
+      "hash": "710cf8347a9ce2bcdf78b8023dc728f8b96dedc38f9a6826c7a90b7a81475b77",
+      "task": "F-413",
       "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
     "systems/cycle/cycle_service.gd": {
@@ -1914,20 +1755,6 @@
       "task": "F-277",
       "token": null
     },
-    "tools/bench_chunk_gpu.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T06:20:25+00:00",
-      "hash": "972c7abde393044ac485050cbb5133529ad5f13dd57593dfecca8e82e6f7dc1a",
-      "task": "F-274",
-      "token": null
-    },
-    "tools/bench_chunks.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T06:20:25+00:00",
-      "hash": "77c7784c35824fac6771cc0f62cfe514c76d5ea9710bf44bf779bf26b9a17823",
-      "task": "F-274",
-      "token": null
-    },
     "tools/bench_mire.gd": {
       "agent": "ivy1bcae0",
       "at": "2026-08-21T02:16:00+00:00",
@@ -1941,13 +1768,6 @@
       "hash": "a4a7e4b21bc9aa05e02bd7afbce8ef19db61dd8cd7dc80bdb870d97f23dfe517",
       "task": "F-347",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "tools/biome_defs_lib.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T06:20:25+00:00",
-      "hash": "f00a573b005746064cbbff27109c27766a8137cc53c5ed654e07898826154045",
-      "task": "F-274",
-      "token": null
     },
     "tools/biome_region_check.gd": {
       "agent": "kilnd3a089",
@@ -2012,26 +1832,12 @@
       "task": "F-349",
       "token": "CLAUDE_CODE_SESSION_ID:34f19dd1-60f4-4279-b7ba-e40ce133b27f"
     },
-    "tools/check_determinism.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T06:20:25+00:00",
-      "hash": "f4afb14fab8b5b13f689b065e70c68ac718d1cae730de31b4c8664e4f380dfd7",
-      "task": "F-274",
-      "token": null
-    },
     "tools/chest_placement_check.gd": {
       "agent": "quill5fa5c7",
       "at": "2026-08-20T20:41:46+00:00",
       "hash": "47685641dda62c5df4c676869acb0fbbd9b8d436f24851fd4e20bd5eb431f9cf",
       "task": "4.19",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
-    },
-    "tools/chunk_seam_shot.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T06:20:25+00:00",
-      "hash": "59580ff99e6f53c8531b288d5f91cc59d2cc5a2e78e5ebe7e59f70423f2094ba",
-      "task": "F-274",
-      "token": null
     },
     "tools/chunk_stream_check.gd": {
       "agent": "ivy1bcae0",
@@ -2224,9 +2030,9 @@
     },
     "tools/god_mode_check.gd": {
       "agent": "flinta92725",
-      "at": "2026-08-21T05:51:07+00:00",
-      "hash": "4e39e32d3dbb94e5bf15456e93f737e7a556436f659786b6d19ebb3971c13657",
-      "task": "F-411",
+      "at": "2026-08-21T06:17:58+00:00",
+      "hash": "b3af2cedad7c3880a7612f3d05d11a5c33ae80809848bdc5487525bb937fe14e",
+      "task": "F-413",
       "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
     "tools/god_mode_net_check.gd": {
@@ -2277,13 +2083,6 @@
       "hash": "2ca132855a7226986ddc6b31dec99a92558f51d3d8608ca00506ab408dce5699",
       "task": "4.19",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
-    },
-    "tools/harvest_restart_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T06:20:00+00:00",
-      "hash": "7762da1d32e3ff530eeffa25e1876ae141b2b645fa9dc3d595df51b0ab8ede62",
-      "task": "F-276",
-      "token": null
     },
     "tools/harvest_world_check.gd": {
       "agent": "ivy1bcae0",
@@ -2348,6 +2147,20 @@
       "task": "F-334",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
+    "tools/main_menu_check.gd": {
+      "agent": "flinta92725",
+      "at": "2026-08-21T06:17:58+00:00",
+      "hash": "fc9d01aa74448beb6af23cb95de92fff4afdd5d14d93d2fdc45a9374d1dff767",
+      "task": "F-413",
+      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
+    },
+    "tools/menu_focus_check.gd": {
+      "agent": "flinta92725",
+      "at": "2026-08-21T06:17:58+00:00",
+      "hash": "7a95a4f024807e5689f37c94a75840391ae4f08d602b07c5ba0682b8e33b4aaa",
+      "task": "F-413",
+      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
+    },
     "tools/menu_kit_check.gd": {
       "agent": "reed31c598",
       "at": "2026-08-20T21:19:06+00:00",
@@ -2395,13 +2208,6 @@
       "at": "2026-08-20T10:34:51+00:00",
       "hash": "a8ee6815ba71c7fd3725d0d627633a7ae48aee762b31ed4ba9375e08aa62ee86",
       "task": "F-284",
-      "token": null
-    },
-    "tools/poi_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T06:20:25+00:00",
-      "hash": "54669a3e8a3b0cdce2c2725b5e42472dbeca81bf94c333422c8466ed26c31446",
-      "task": "F-274",
       "token": null
     },
     "tools/poi_required_station_check.gd": {
@@ -2482,11 +2288,11 @@
       "token": null
     },
     "tools/run_scope_audit_check.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T01:08:41+00:00",
-      "hash": "9200a2a4446943945e43936da5da211d753dafcfe68773e4fb2467e246ff8ec9",
-      "task": "F-328",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+      "agent": "flinta92725",
+      "at": "2026-08-21T06:17:58+00:00",
+      "hash": "99a1fa8914616d0aba7265fc9f60157cc0d601c276c1ffe8eb3c27193bd096a6",
+      "task": "F-413",
+      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
     "tools/run_scope_audit_check.gd.uid": {
       "agent": "lp",
@@ -2530,12 +2336,19 @@
       "task": "F-273",
       "token": null
     },
+    "tools/settings_check.gd": {
+      "agent": "flinta92725",
+      "at": "2026-08-21T06:29:30+00:00",
+      "hash": "24347b32d35be7496e9f8aab39e0dfe1b84c098d11e9340105bcf745699b20ba",
+      "task": "F-414",
+      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
+    },
     "tools/settings_screen_check.gd": {
-      "agent": "reed31c598",
-      "at": "2026-08-20T21:19:06+00:00",
-      "hash": "ad93d2574254553510bd2c1a429e7f7e434a57e9affc81664cf3eddc23f97a71",
-      "task": "7.4",
-      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
+      "agent": "flinta92725",
+      "at": "2026-08-21T06:29:30+00:00",
+      "hash": "df2a9e4b1c9f885a4d46d55eba3ad1c0cb74c9063e41932223a06c5009108d83",
+      "task": "F-414",
+      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
     "tools/spawn_ground_check.gd": {
       "agent": "ivy1bcae0",
@@ -2684,6 +2497,20 @@
       "task": "7.4",
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
+    "ui/frontend/graphics_settings_page.gd": {
+      "agent": "flinta92725",
+      "at": "2026-08-21T06:29:30+00:00",
+      "hash": "c5411adc7eecd2df485f254634110991a09ba72c081fcf4143f92ffc64baeea2",
+      "task": "F-414",
+      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
+    },
+    "ui/frontend/graphics_settings_page.gd.uid": {
+      "agent": "flinta92725",
+      "at": "2026-08-21T06:29:30+00:00",
+      "hash": "36a13b6e496dcb39d48516c8f3dda23efdf3bcde6bd7437e8061b829d0e937f9",
+      "task": "F-414",
+      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
+    },
     "ui/frontend/island_minimap.gd": {
       "agent": "reed31c598",
       "at": "2026-08-20T21:19:06+00:00",
@@ -2706,11 +2533,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
     "ui/frontend/settings_screen.gd": {
-      "agent": "reed31c598",
-      "at": "2026-08-20T21:19:06+00:00",
-      "hash": "0f715c0df7d0a311e22678fc89b945a000bf85746aaacbfb183b3d1ddef93399",
-      "task": "7.4",
-      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
+      "agent": "flinta92725",
+      "at": "2026-08-21T06:29:30+00:00",
+      "hash": "2378fcd1ff916308699851d77ab71dd0eb0afacc4de66998d598ffb74379745c",
+      "task": "F-414",
+      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
     "ui/frontend/title_screen.gd": {
       "agent": "reed31c598",
@@ -2761,12 +2588,19 @@
       "task": "F-384",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
+    "ui/menu/focus_ring_slider.gd": {
+      "agent": "flinta92725",
+      "at": "2026-08-21T06:17:58+00:00",
+      "hash": "1f5e072c90419204d6871dd528302c11e73a4a38e3af38487135745f1ed745ec",
+      "task": "F-413",
+      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
+    },
     "ui/menu/main_menu.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T16:38:19+00:00",
-      "hash": "fb1e629693860487f0a3b9d65e849f50623fd3ba37444e3fef5f536e8a3ebb64",
-      "task": "F-273",
-      "token": null
+      "agent": "flinta92725",
+      "at": "2026-08-21T06:17:58+00:00",
+      "hash": "273c9da54c862c6c43b384da7fb904d257ec9c5e0710ab7a0ac08f06846572c5",
+      "task": "F-413",
+      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
     "ui/menu/pause_menu.gd": {
       "agent": "reed31c598",
@@ -2777,17 +2611,24 @@
     },
     "ui/menu/settings_menu.gd": {
       "agent": "flinta92725",
-      "at": "2026-08-21T05:51:07+00:00",
-      "hash": "bf7b64d31074020bf4a48a1f2fed97a7cc3c9505b69507416b7abab4b08ea345",
-      "task": "F-411",
+      "at": "2026-08-21T06:17:58+00:00",
+      "hash": null,
+      "task": "F-413",
+      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
+    },
+    "ui/menu/settings_menu.gd.uid": {
+      "agent": "flinta92725",
+      "at": "2026-08-21T06:17:58+00:00",
+      "hash": null,
+      "task": "F-413",
       "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
     "ui/menu_stack.gd": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T03:07:34+00:00",
-      "hash": "6e61b7019e46a0ef3eba521bd3f640426b0feb41cc969177065ce0a22532d027",
-      "task": "F-384",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "flinta92725",
+      "at": "2026-08-21T06:17:58+00:00",
+      "hash": "ceee1ae506822d3336ce50c175663646644f780ed4370dd645490480c7cdf225",
+      "task": "F-413",
+      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
     "ui/theme/mire_theme.gd": {
       "agent": "reed31c598",
@@ -2873,13 +2714,6 @@
       "task": "F-372",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
-    "world/gen/poi_map.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T06:20:25+00:00",
-      "hash": "bd7c243b26959a4dcf443f3e36a2d24963d8dbe4dcc303d78d7538e1c376680d",
-      "task": "F-274",
-      "token": null
-    },
     "world/gen/procedural_world.gd": {
       "agent": "ivy1bcae0",
       "at": "2026-08-21T01:08:42+00:00",
@@ -2923,7 +2757,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 639,
+  "rev": 667,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -7966,16 +7800,20 @@
       "title": "The command system does not yet meet the Minecraft-like capability bar"
     },
     "F-413": {
+      "done_at": "2026-08-21T06:17:58+00:00",
+      "done_by": "flinta92725",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "God Mode is wired only to the obsolete SettingsMenu autoload"
     },
     "F-414": {
+      "done_at": "2026-08-21T06:29:30+00:00",
+      "done_by": "flinta92725",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Graphics settings menu is incomplete"
     },

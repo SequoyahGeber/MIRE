@@ -29,9 +29,11 @@ func _run() -> void:
 
 	var stack: Node = root.get_node_or_null(^"/root/MenuStack")
 	var settings: Node = root.get_node_or_null(^"/root/SettingsService")
+	var god_mode: Node = root.get_node_or_null(^"/root/GodModeService")
 	check(stack != null, "MenuStack autoload exists")
 	check(settings != null, "SettingsService autoload exists")
-	if stack == null or settings == null:
+	check(god_mode != null, "GodModeService autoload exists")
+	if stack == null or settings == null or god_mode == null:
 		finish()
 		return
 	stack.call("pop_all")
@@ -61,6 +63,12 @@ func _run() -> void:
 	check(int(screen.call("active_tab")) == SettingsScreen.TABS.size() - 1, "an over-range tab clamps")
 	screen.call("show_tab", -5)
 	check(int(screen.call("active_tab")) == 0, "an under-range tab clamps")
+	var playtesting_index: int = SettingsScreen.TABS.find("PLAYTESTING")
+	check(playtesting_index >= 0, "the live Settings screen declares a PLAYTESTING tab")
+	if playtesting_index >= 0:
+		screen.call("show_tab", playtesting_index)
+		var god_toggle: CheckBox = screen.find_child("GodModeToggle", true, false) as CheckBox
+		check(god_toggle != null, "PLAYTESTING exposes the runtime God Mode toggle")
 
 	# ── the screen holds no state of its own: it writes through ──────────────────────────────────
 	var restore_fov: float = float(settings.call("fov_degrees"))
@@ -148,9 +156,10 @@ func _run() -> void:
 	await process_frame
 	for entry: Array in [
 		[0, 90.0, "90°", "field of view"],
-		[1, 0.5, "50%", "master volume"],
-		[4, 0.35, "0.35", "mouse sensitivity"],
-		[5, 245.0, "245°/s", "gamepad look sensitivity"],
+		[1, 1.25, "125%", "brightness"],
+		[2, 0.5, "50%", "master volume"],
+		[5, 0.35, "0.35", "mouse sensitivity"],
+		[6, 245.0, "245°/s", "gamepad look sensitivity"],
 	]:
 		var slider: HSlider = _find_slider(screen, int(entry[0]))
 		check(slider is FOCUS_RING_SLIDER, "the %s row is a FocusRingSlider" % entry[3])
@@ -207,7 +216,7 @@ func _run() -> void:
 	for slider: HSlider in all_sliders:
 		if not slider.scrollable and slider.mouse_force_pass_scroll_events:
 			wheel_safe += 1
-	check(wheel_safe == all_sliders.size() and all_sliders.size() == 6,
+	check(wheel_safe == all_sliders.size() and all_sliders.size() == 7,
 		"every slider declines the wheel and lets it climb to the scroll container (%d/%d)"
 			% [wheel_safe, all_sliders.size()])
 

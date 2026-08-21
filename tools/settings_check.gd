@@ -36,12 +36,10 @@ func _run() -> void:
 	_check_settings_save()
 
 	var settings: Node = root.get_node_or_null(^"SettingsService")
-	var menu: Node = root.get_node_or_null(^"SettingsMenu")
 	var gfx: Node = root.get_node_or_null(^"GraphicsQuality")
 	check(settings != null, "SettingsService autoload exists")
-	check(menu != null, "SettingsMenu autoload exists")
 	check(gfx != null, "GraphicsQuality autoload exists")
-	if settings == null or menu == null or gfx == null:
+	if settings == null or gfx == null:
 		_cleanup_test_paths()
 		finish()
 		return
@@ -55,10 +53,8 @@ func _run() -> void:
 	_check_joypad_keybinds(settings)
 	await _check_player_camera(settings)
 	_check_defaults(settings)
-	_check_menu(settings, menu)
-	_check_slider_readouts(menu)
-	_check_scroll_reachability(menu)
-	_check_preview_commit(settings, menu)
+	# The obsolete SettingsMenu autoload was removed by F-413. The live tabbed screen and its
+	# preview/readout/scroll contract are covered by tools/settings_screen_check.gd.
 
 	var on_disk: Dictionary = SETTINGS_SAVE.load_data(TEST_PATH)
 	check(int(on_disk.get(&"graphics_preset", -1)) == int(settings.call("graphics_preset")),
@@ -75,6 +71,8 @@ func _check_settings_save() -> void:
 	print("\n== SettingsSave ==")
 	var missing: Dictionary = SETTINGS_SAVE.load_data(TEST_MISSING_PATH)
 	check(int(missing.get(&"graphics_preset", -1)) == 2, "a missing file resolves to the default preset (high)")
+	check(bool(missing.get(&"vsync_enabled", false)), "a missing file defaults VSync on")
+	check(int(missing.get(&"fps_cap", -1)) == 0, "a missing file defaults to an uncapped frame rate")
 	check(is_equal_approx(float(missing.get(&"look_sensitivity", -1.0)), 0.12),
 		"a missing file resolves to the default sensitivity")
 
@@ -82,7 +80,7 @@ func _check_settings_save() -> void:
 	corrupt_file.store_string("{ not json")
 	corrupt_file.close()
 	var corrupt: Dictionary = SETTINGS_SAVE.load_data(TEST_CORRUPT_PATH)
-	check(int(corrupt.get(&"schema_version", -1)) == 1, "a corrupt file falls back to fresh defaults, not a crash")
+	check(int(corrupt.get(&"schema_version", -1)) == 2, "a corrupt file falls back to fresh defaults, not a crash")
 
 	var missing_version_file: FileAccess = FileAccess.open(TEST_MISSING_VERSION_PATH, FileAccess.WRITE)
 	missing_version_file.store_string(JSON.stringify({"graphics_preset": 0}))
@@ -91,15 +89,27 @@ func _check_settings_save() -> void:
 	check(int(migrated.get(&"graphics_preset", -1)) == 0, "migration preserves a field the old file already had")
 	check(is_equal_approx(float(migrated.get(&"master_volume", -1.0)), 1.0),
 		"migration backfills a field the old file never had")
-	check(int(migrated.get(&"schema_version", -1)) == 1, "migration stamps the current schema version")
+	check(int(migrated.get(&"schema_version", -1)) == 2, "migration stamps the current schema version")
+	check(int(migrated.get(&"resolution_index", -1)) == 1,
+		"migration backfills the default display resolution")
 
 	SETTINGS_SAVE.save_data({
 		"graphics_preset": 1, "master_volume": 0.3, "music_volume": 0.4, "sfx_volume": 0.5,
+		"window_mode": 1, "resolution_index": 3, "vsync_enabled": false, "fps_cap": 120,
+		"ssao_override": 0, "anti_aliasing": 4, "dynamic_resolution": true, "brightness": 1.2,
 		"look_sensitivity": 0.2, "gamepad_look_sensitivity": 240.0, "invert_y": true, "fov_degrees": 95.0,
 		"reduce_camera_motion": true, "keybinds": {"jump": 74}, "joypad_binds": {"jump": 2},
 	}, TEST_ROUNDTRIP_PATH)
 	var round_trip: Dictionary = SETTINGS_SAVE.load_data(TEST_ROUNDTRIP_PATH)
 	check(int(round_trip.get(&"graphics_preset", -1)) == 1, "round trip: graphics preset")
+	check(int(round_trip.get(&"window_mode", -1)) == 1, "round trip: window mode")
+	check(int(round_trip.get(&"resolution_index", -1)) == 3, "round trip: resolution")
+	check(not bool(round_trip.get(&"vsync_enabled", true)), "round trip: VSync")
+	check(int(round_trip.get(&"fps_cap", -1)) == 120, "round trip: FPS cap")
+	check(int(round_trip.get(&"ssao_override", -2)) == 0, "round trip: SSAO override")
+	check(int(round_trip.get(&"anti_aliasing", -1)) == 4, "round trip: anti-aliasing")
+	check(bool(round_trip.get(&"dynamic_resolution", false)), "round trip: dynamic resolution")
+	check(is_equal_approx(float(round_trip.get(&"brightness", 0.0)), 1.2), "round trip: brightness")
 	check(is_equal_approx(float(round_trip.get(&"sfx_volume", -1.0)), 0.5), "round trip: sfx volume")
 	check(bool(round_trip.get(&"invert_y", false)) == true, "round trip: invert_y")
 	check(bool(round_trip.get(&"reduce_camera_motion", false)) == true, "round trip: reduce_camera_motion")
@@ -118,6 +128,35 @@ func _check_graphics(settings: Node, gfx: Node) -> void:
 	check(int(gfx.get(&"preset")) == 0, "set_graphics_preset delegates to GraphicsQuality.apply()")
 	settings.call("set_graphics_preset", 2)
 	check(int(gfx.get(&"preset")) == 2, "restoring HIGH re-applies through the same seam")
+	settings.call("set_window_mode", 0)
+	settings.call("set_resolution_index", 3)
+	settings.call("set_vsync_enabled", false)
+	settings.call("set_fps_cap", 120)
+	check(int(settings.call("window_mode")) == 0, "window mode is read back")
+	check(int(settings.call("resolution_index")) == 3, "resolution index is read back")
+	check(not bool(settings.call("vsync_enabled")), "VSync is read back")
+	check(int(settings.call("fps_cap")) == 120 and Engine.max_fps == 120,
+		"FPS cap reaches Engine.max_fps")
+	settings.call("set_fps_cap", 61)
+	check(int(settings.call("fps_cap")) == 0 and Engine.max_fps == 0,
+		"unsupported FPS caps safely resolve to uncapped")
+	settings.call("set_vsync_enabled", true)
+	settings.call("set_ssao_override", 0)
+	settings.call("set_anti_aliasing", 4)
+	settings.call("set_dynamic_resolution", true)
+	settings.call("set_brightness", 1.2)
+	check(int(settings.call("ssao_override")) == 0, "SSAO override is read back")
+	check(int(settings.call("anti_aliasing")) == 4, "anti-aliasing mode is read back")
+	if DisplayServer.get_name() != "headless":
+		check(root.msaa_3d == Viewport.MSAA_4X and not root.use_taa,
+			"MSAA 4x reaches the live viewport and disables competing AA modes")
+	check(bool(settings.call("dynamic_resolution")), "dynamic resolution is read back")
+	check(bool(gfx.get(&"dynamic_scale_enabled")), "dynamic resolution reaches GraphicsQuality")
+	check(is_equal_approx(float(settings.call("brightness")), 1.2), "brightness is read back")
+	check(is_equal_approx(float(gfx.get(&"brightness")), 1.2), "brightness reaches GraphicsQuality")
+	settings.call("set_dynamic_resolution", false)
+	settings.call("set_ssao_override", -1)
+	settings.call("set_brightness", 1.0)
 
 
 func _check_audio_buses(settings: Node) -> void:

@@ -8175,3 +8175,42 @@ Notes along the way:
 Files: `world/environment/playtest_atmosphere.gd`, `tools/f356_night_probe.gd`, `tools/atmosphere_night_check.gd`, `tools/grade_check.gd`, `tools/f356_night_probe.gd.uid`, `assets/audit/lighting/f415_10_noon_control.png`, `assets/audit/lighting/f415_11_blue_hour.png`, `assets/audit/lighting/f415_12_dark_moonlit_night.png`, `assets/audit/lighting/f415_dark_night_render.jsonl`
 
 Commit at time of writing: `27479b0`
+
+---
+
+### DONE · F-413 · flinta92725 · 2026-08-21T06:17:58+00:00
+
+**God Mode is wired only to the obsolete SettingsMenu autoload**
+
+Removed the duplicate SettingsMenu autoload/script, moved God Mode to the one live tabbed SettingsScreen, routed MainMenu there, and updated focused checks. Live settings/God/MainMenu/setup checks all pass; F-414 owns the remaining legacy assertions in tools/settings_check.gd and was explicitly notified before release.
+
+Notes along the way:
+- Confirmed ui/menu/settings_menu.gd was a duplicate UI: title and pause already instantiate ui/frontend/settings_screen.gd; only the remaining seed/post-run MainMenu referenced the old autoload. Removed the SettingsMenu autoload/script and routed MainMenu SETTINGS through MenuStack to the same live screen. Live screen now has PLAYTESTING/GodModeToggle; focused settings, God-mode, MainMenu and setup checks pass. tools/settings_check.gd cleanup is coordinated with active F-414 owner because that file is claimed there.
+
+Files: `ui/frontend/settings_screen.gd`, `ui/menu/main_menu.gd`, `project.godot`, `ui/menu/settings_menu.gd`, `ui/menu/settings_menu.gd.uid`, `tools/god_mode_check.gd`, `tools/settings_screen_check.gd`, `tools/main_menu_check.gd`, `tools/menu_focus_check.gd`, `tools/run_scope_audit_check.gd`, `ui/menu_stack.gd`, `ui/menu/focus_ring_slider.gd`
+
+Commit at time of writing: `b732403`
+
+---
+
+### HANDOFF · F-414 · quill5df327 · 2026-08-21T06:25:34+00:00
+
+**Graphics settings menu is incomplete**
+
+Implementation is complete in the shared worktree and both checks are green. Added SettingsService/settings_save schema-v2 state and live application for window mode, resolution, VSync, FPS cap, SSAO Auto/Off/On, anti-aliasing Off/FXAA/TAA/MSAA2x/MSAA4x, dynamic resolution, and brightness; added GraphicsSettingsPage and integrated it into the live SettingsScreen DISPLAY tab. Verification: agent godot --script tools/settings_screen_check.gd -> failures=0; agent godot --script tools/settings_check.gd -> failures=0; agent godot --windowed --script tools/settings_check.gd -> failures=0 and proved MSAA4x on the live Metal viewport; graphics_quality_check -> failures=0. Do NOT ship yet: F-413 released ui/frontend/settings_screen.gd after leaving its God Mode migration uncommitted in the same shared file (plus many other files). agent ship would sweep F-413's uncommitted hunks, the exact F-267 hazard. Next: once F-413 is committed or Sequoyah authorizes takeover, re-claim F-414's listed files, rerun the three checks, agent resolve F-414 with this evidence, then ship.
+
+Files: `core/save/settings_save.gd`, `autoload/settings_service.gd`, `tools/settings_check.gd`, `autoload/graphics_quality.gd`, `ui/frontend/graphics_settings_page.gd`, `ui/frontend/settings_screen.gd`, `tools/settings_screen_check.gd`, `ui/frontend/graphics_settings_page.gd.uid`
+
+Commit at time of writing: `28f5c5d`
+
+---
+
+### DONE · F-414 · flinta92725 · 2026-08-21T06:29:30+00:00
+
+**Graphics settings menu is incomplete**
+
+Took over quill5df327's completed handoff, reran settings service/screen and God-mode integration checks with zero failures, preserved PLAYTESTING while integrating the expanded graphics page, and resolved the finding.
+
+Files: `core/save/settings_save.gd`, `autoload/settings_service.gd`, `tools/settings_check.gd`, `autoload/graphics_quality.gd`, `ui/frontend/graphics_settings_page.gd`, `ui/frontend/settings_screen.gd`, `tools/settings_screen_check.gd`, `ui/frontend/graphics_settings_page.gd.uid`
+
+Commit at time of writing: `28f5c5d`

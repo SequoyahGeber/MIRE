@@ -15,7 +15,7 @@ extends RefCounted
 ## on and off disk.
 
 const SAVE_PATH: String = "user://settings.json"
-const SCHEMA_VERSION: int = 1
+const SCHEMA_VERSION: int = 2
 
 
 ## Reads `path` (defaults to `SAVE_PATH`) and returns an always-valid, always-current-schema
@@ -55,6 +55,14 @@ static func _default_data() -> Dictionary:
 	return {
 		&"schema_version": SCHEMA_VERSION,
 		&"graphics_preset": 2,
+		&"window_mode": 0,
+		&"resolution_index": 1,
+		&"vsync_enabled": true,
+		&"fps_cap": 0,
+		&"ssao_override": -1,
+		&"anti_aliasing": 2,
+		&"dynamic_resolution": false,
+		&"brightness": 1.0,
 		&"master_volume": 1.0,
 		&"music_volume": 1.0,
 		&"sfx_volume": 1.0,
@@ -81,5 +89,12 @@ static func _migrate(data: Dictionary) -> Dictionary:
 			if not data.has(String(key)):
 				data[String(key)] = defaults[key]
 		version = 1
+	if version < 2:
+		var defaults: Dictionary = _default_data()
+		for key: StringName in [&"window_mode", &"resolution_index", &"vsync_enabled", &"fps_cap",
+				&"ssao_override", &"anti_aliasing", &"dynamic_resolution", &"brightness"]:
+			if not data.has(String(key)):
+				data[String(key)] = defaults[key]
+		version = 2
 	data["schema_version"] = version
 	return data
