@@ -15,11 +15,12 @@ store-page time.
 | Menu theme | `assets/audio/music/menu_theme.ogg` | "Hollowmere Hymn", 1:41 loop. Folk lament: bowed viol over a hammered-dulcimer ostinato, D Dorian. Plays while the front end is on screen (`ThemeMusicDirector`, cue `menu`) |
 | Landfall theme | `assets/audio/music/theme_landfall.ogg` | "Wake the Deep", 1:57 loop. Heroic A-B-A: horns take the tune from the strings over choir and drums. One pass at run start, then an 8 s fade (cue `landfall`) |
 | Cycle theme | `assets/audio/music/theme_cycle.ogg` | "Mire Rites", 1:11 loop. Percussive 6/8 building across four stages to a hard stop. One pass on `cycle_advanced` at Cycle 2+ (cue `cycle`) |
+| Dawn theme | `assets/audio/music/theme_dawn.ogg` | "First Light", 2:12 loop. A two-tune jig set: double jig in 6/8 at session tempo, D Dorian into G Mixolydian and home again, whistle/fiddle/bodhrán/dulcimer. One pass on the night→day crossing after a night survived, then a 3 s fade (cue `dawn`) |
 | Boss stinger | `assets/audio/music/boss_stinger.ogg` | ~7.2s non-looping one-shot (task 5.5), NIGHT's own palette — a low FM groan rises into a sub thump and a dissonant pair of detuned FM bells, then rings out on the same reverb IR shape. Played by `BossMusicDirector` (client-local autoload) on `EventBus.boss_engaged`/`boss_phase_changed`/`boss_defeated` |
 | 131 SFX | `assets/audio/sfx/*.wav` | mono 16-bit 44.1 kHz, 266 files. Twelve systems: harvesting, movement, melee, ranged, creatures, the player, building, crafting, items and loot, UI, progression, ambient spot effects. `python3 tools/audio/render_sfx.py --list` prints the catalogue with a one-line intent per sound |
 
 All of it is played by three client-local autoloads — `AmbientMusicDirector` (the day/night bed),
-`ThemeMusicDirector` (the three authored themes, D-187), and `SfxDirector` (every sound effect) —
+`ThemeMusicDirector` (the four authored themes, D-187/D-196), and `SfxDirector` (every sound effect) —
 routed to the Master/Music/SFX buses `SettingsService` creates at runtime.
 
 Palette rules that keep it one game: both tracks share the same pad/pluck/bell voices; reward
@@ -77,16 +78,18 @@ python3 tools/audio/audio_check.py --theme-dir <build>/themes
 python3 tools/audio/audio_check.py --sfx-dir <build>/sfx_options/wav
 ```
 
-**Themes.** Five candidates in five styles, all loop-folded (`wrap_loop`, same as the ambient beds)
-because a menu is somewhere a player can sit. **Three of the five shipped** — Sequoyah picked
-`hollowmere_hymn`, `wake_the_deep` and `mire_rites` on 2026-08-21; D-187 records which moment each
-one was bound to and why the intuitive pairing was rejected:
+**Themes.** Six candidates, all loop-folded (`wrap_loop`, same as the ambient beds) because a menu is
+somewhere a player can sit. **Four of the six shipped** — Sequoyah picked `hollowmere_hymn`,
+`wake_the_deep` and `mire_rites` on 2026-08-21; D-187 records which moment each one was bound to and
+why the intuitive pairing was rejected. `first_light_jig` came later the same day and was written
+*to* a moment rather than picked for one — see D-196:
 
 | Candidate | Style | Carried by | Key | Status |
 |---|---|---|---|---|
 | `hollowmere_hymn` | folk lament | bowed viol over a hammered-dulcimer ostinato | D Dorian | **shipped** as `menu_theme.ogg` |
 | `wake_the_deep` | heroic adventure | horns + strings + choir, A-B-A, full arrangement | D Dorian | **shipped** as `theme_landfall.ogg` |
 | `mire_rites` | percussive 6/8 | frame drums, bone flute, chanted choir, four-stage build | D Dorian | **shipped** as `theme_cycle.ogg` |
+| `first_light_jig` | celebratory folk dance | bone whistle + fiddle over bodhrán and dulcimer, two-tune set | D Dorian → G Mixolydian | **shipped** as `theme_dawn.ogg` |
 | `the_long_sink` | dark cinematic | low horns, sub swells, the bII dread chord | A Aeolian | held — a natural act/boss bed |
 | `still_water` | eerie minimal | music box through tape warble, no pulse | D Dorian | held — shares the hymn's melody |
 
@@ -97,9 +100,20 @@ late-game or diegetic variant. Percussion in three of them does **not** break th
 above: that rule protects *ambience* from imposing a tempo on a procedurally-paced world, and a menu
 has no world to pace.
 
+`first_light_jig` is the one that is not about the mire. It is written to the form rather than to a
+guess at it — 6/8, eight-bar parts played AABB, the accent on quavers 1 and 4, and every group of
+three lilted long-short-short (`jig_bars()`'s LILT table; a flat 6/8 is not a jig). Two minutes is
+too long for one tune repeated, so it is a **set**, which is how the music is actually played: tune
+one twice, change of tune, tune two twice, then the head of tune one to finish. The second tune is G
+Mixolydian — the *same seven notes* as everything else MIRE is written in, tonic moved to G — so the
+change lifts without leaving the game's modal world, and the drone follows it D→G→D. Every change of
+intensity in it is a change of who is playing, never a fade or a filter: the sixteen bars at 0:32
+are the fiddle taking the tune with the whistle out entirely, and the four bars at 2:04 are
+everything dropping away before the band comes back for the button.
+
 ```bash
 python3 tools/audio/render_theme.py --ship menu_theme=hollowmere_hymn \
-    theme_landfall=wake_the_deep theme_cycle=mire_rites
+    theme_landfall=wake_the_deep theme_cycle=mire_rites theme_dawn=first_light_jig
 .agent/bin/agent godot --script tools/theme_music_check.gd    # proves they play, at their moments
 ```
 
@@ -306,7 +320,7 @@ governs all of them:
 | Autoload | Owns | Ducked by |
 |---|---|---|
 | `AmbientMusicDirector` (F-373) | the day/night bed, 8 s crossfade at dusk | a boss stinger (to 0.28) or any theme (to 0.10) |
-| `ThemeMusicDirector` (D-187) | the three authored themes | nothing — a theme owns the mix |
+| `ThemeMusicDirector` (D-187, D-196) | the four authored themes | nothing — a theme owns the mix |
 | `BossMusicDirector` (5.5) | the boss stinger | nothing |
 | `SfxDirector` | all 113 sound effects, on the SFX bus | nothing |
 

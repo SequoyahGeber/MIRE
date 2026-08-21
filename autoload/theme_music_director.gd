@@ -1,6 +1,6 @@
 extends Node
 
-## ThemeMusicDirector — task 7.2's three authored themes, and the only thing that plays them.
+## ThemeMusicDirector — task 7.2's authored themes, and the only thing that plays them.
 ##
 ## `AmbientMusicDirector` owns the *bed* (day/night, always on, tempo-free); `BossMusicDirector`
 ## owns the 7-second boss hit. Neither is a home for a two-minute composed piece with a tune, and
@@ -13,6 +13,7 @@ extends Node
 ## | `menu` | `menu_theme.ogg` ("Hollowmere Hymn") | the front end is on screen | it leaves |
 ## | `landfall` | `theme_landfall.ogg` ("Wake the Deep") | a run starts | one pass, then fades |
 ## | `cycle` | `theme_cycle.ogg` ("Mire Rites") | `cycle_advanced` past Cycle 1 | one pass, then fades |
+## | `dawn` | `theme_dawn.ogg` ("First Light") | night->day, after a night survived | one pass, then fades |
 ##
 ## WHY THOSE THREE PAIRINGS. The hymn is the calm one, and a title screen is the one place in this
 ## game a track can be left running for twenty minutes — fatigue is the deciding constraint there,
@@ -20,7 +21,13 @@ extends Node
 ## horns/strings/choir arrangement, which is what landfall wants and is exactly wrong as something
 ## you loop forever behind a menu. "Mire Rites" builds across four stages and ends on a hard stop:
 ## that is the shape of an escalation cue, and it is why it fires on the cycle turning rather than
-## on a timer. Swapping any of them is one line in `CUE_PATHS` plus a re-`--ship`.
+## on a timer. "First Light" is the odd one out and deliberately so: it is the only cue that is not
+## about the mire at all. Two of every three mornings (`CycleService.DAYS_PER_CYCLE` is 3) nothing
+## has escalated and the players have simply lived through a night, and a 6/8 jig is the one thing in
+## the palette that reads as *people* rather than as place — which is why it gets the whistle and the
+## bodhran and the Cycle cue keeps the frame drums and the chant. On the third morning the escalation
+## wins the slot; see `_poll_dawn()`. Swapping any of them is one line in `CUE_PATHS` plus a
+## re-`--ship`.
 ##
 ## NETWORK AUTHORITY (docs/ARCHITECTURE.md §2.2, "VFX, audio, camera, UI"): **none.** Client-local
 ## presentation, the same row the other two directors sit in. Every peer runs its own copy against
@@ -53,11 +60,16 @@ const EVENT_BUS := preload("res://core/events/event_bus.gd")
 const CUE_MENU: StringName = &"menu"
 const CUE_LANDFALL: StringName = &"landfall"
 const CUE_CYCLE: StringName = &"cycle"
+## The morning tune — "First Light", a 6/8 double jig. One pass on the night->day crossing, on every
+## morning the Cycle theme does not already own. Sequoyah asked for it in exactly those words: a
+## happy jig to celebrate surviving another night.
+const CUE_DAWN: StringName = &"dawn"
 
 const CUE_PATHS: Dictionary[StringName, String] = {
 	CUE_MENU: "res://assets/audio/music/menu_theme.ogg",
 	CUE_LANDFALL: "res://assets/audio/music/theme_landfall.ogg",
 	CUE_CYCLE: "res://assets/audio/music/theme_cycle.ogg",
+	CUE_DAWN: "res://assets/audio/music/theme_dawn.ogg",
 }
 
 ## Cues that hold for as long as their condition does. Anything not listed here plays exactly one
@@ -79,6 +91,27 @@ const FADE_IN_SEC: float = 1.5
 ## uses for the dusk crossing.
 const FADE_OUT_SEC: float = 8.0
 
+## Per-cue override of the fade-out above. `dawn` is the one cue that ENDS — the jig plays its own
+## button and lets the room ring, and an 8 s fade would start pulling the volume down four bars
+## before the end — over the band's last entry, which is the loudest and most deliberate part of the
+## whole set (see the arrangement map in `render_theme.py`'s `first_light_jig()`). 3 s
+## rides the composed ring-out instead of cutting into the music, and is still long enough that a
+## `cycle` cue landing on top of it (see `_poll_dawn()`) is a crossfade rather than a cut.
+const CUE_FADE_OUT: Dictionary[StringName, float] = {
+	CUE_DAWN: 3.0,
+}
+
+## How long after the day threshold the jig starts. Two things want this delay. Musically the sun
+## should crest before the tune does, and mechanically it is the window in which a `cycle_advanced`
+## can still arrive and claim the morning: `CycleService` reacts to the HOST's `day_started` signal
+## and a client only learns the new Cycle when the WorldDeltaLog record replicates, both of which
+## land after this file's own poll has already seen the crossing.
+const DAWN_DELAY_SEC: float = 2.0
+
+## The same fallbacks `AmbientMusicDirector` carries, for a harness with no `DayNight` autoload.
+const FALLBACK_NIGHT_AT: float = 0.75
+const FALLBACK_DAY_AT: float = 0.25
+
 ## Cycle 1 is the start of the run, which landfall already covers — an escalation cue on the cycle
 ## the player has been in since the first frame would fire on top of it and mean nothing.
 const FIRST_CUE_CYCLE: int = 2
@@ -97,6 +130,15 @@ var _active: StringName = &""
 var _elapsed: float = 0.0
 var _frontend_up: bool = false
 
+## Dawn-trigger state. `_was_night` is the previous poll's answer, so the trigger is the EDGE and not
+## the phase; `_seen_night` gates the very first morning of a run — a run that starts in daylight has
+## not survived anything yet, and the jig would be celebrating nothing. `_dawn_pending` counts down
+## `DAWN_DELAY_SEC` and is negative when nothing is armed.
+var _day_night_node: Node
+var _was_night: bool = false
+var _seen_night: bool = false
+var _dawn_pending: float = -1.0
+
 
 func _ready() -> void:
 	# Music is not simulation: it must survive the pause menu and `DebugConsole`'s
@@ -108,6 +150,10 @@ func _ready() -> void:
 		_gain[cue] = 0.0
 
 	_frontend_up = _frontend_visible()
+	# Seed the edge detector with the phase we booted into, so loading straight into a night run does
+	# not read as a night->day crossing on the first frame of the first poll.
+	_was_night = _clock_is_night()
+	_seen_night = _was_night
 	if _frontend_up:
 		_active = CUE_MENU
 	else:
@@ -137,6 +183,7 @@ func _process(delta: float) -> void:
 ## exactly one caller, `_process` above.
 func advance(delta: float) -> void:
 	_poll_frontend()
+	_poll_dawn(delta)
 	_step_active(delta)
 	_step_gains(delta)
 	_apply()
@@ -228,10 +275,15 @@ func _step_active(delta: float) -> void:
 func _active_target() -> float:
 	if _active == &"" or HOLDING_CUES.has(_active):
 		return 1.0
+	var fade: float = _fade_out_for(_active)
 	var remaining: float = _cue_length(_active) - _elapsed
-	if remaining >= FADE_OUT_SEC:
+	if remaining >= fade:
 		return 1.0
-	return clampf(remaining / maxf(FADE_OUT_SEC, 0.001), 0.0, 1.0)
+	return clampf(remaining / maxf(fade, 0.001), 0.0, 1.0)
+
+
+func _fade_out_for(cue: StringName) -> float:
+	return float(CUE_FADE_OUT.get(cue, FADE_OUT_SEC))
 
 
 func _cue_length(cue: StringName) -> float:
@@ -249,7 +301,7 @@ func _step_gains(delta: float) -> void:
 	for cue: StringName in _players:
 		var target: float = wanted if cue == _active else 0.0
 		var current: float = float(_gain.get(cue, 0.0))
-		var span: float = FADE_IN_SEC if target > current else FADE_OUT_SEC
+		var span: float = FADE_IN_SEC if target > current else _fade_out_for(cue)
 		_gain[cue] = move_toward(current, target, delta / maxf(span, 0.001))
 
 
@@ -290,6 +342,10 @@ func _on_cycle_advanced(cycle: int) -> void:
 		return
 	if _frontend_up:
 		return
+	# This morning belongs to the escalation, not the celebration. Disarming rather than letting
+	# `_start_bounded()` overwrite matters because the Cycle cue usually wins the race by a frame or
+	# two and the jig would otherwise be armed to interrupt it two seconds in.
+	_dawn_pending = -1.0
 	_start_bounded(CUE_CYCLE)
 
 
@@ -297,6 +353,9 @@ func _on_cycle_advanced(cycle: int) -> void:
 ## dead run left running — including a cycle cue from Cycle 9 of the run that just ended, which is
 ## the one combination that would otherwise survive across the boundary and score the wrong moment.
 func _on_run_restarted() -> void:
+	_dawn_pending = -1.0
+	_was_night = _clock_is_night()
+	_seen_night = _was_night
 	if _frontend_up:
 		_active = CUE_MENU
 		_elapsed = 0.0
@@ -312,6 +371,67 @@ func _on_run_restarted() -> void:
 	# boot does (F-430).
 	_snap_active_gain()
 	_apply()
+
+
+# ── Dawn ─────────────────────────────────────────────────────────────────────────────────────────
+
+
+## The morning trigger, and it is a POLL for the same reason `AmbientMusicDirector` polls: DayNight's
+## `day_started`/`night_started` are documented HOST ONLY and the code means it — `_advance_client()`
+## never calls `_check_thresholds()`, so a connected client would never hear the jig at all if this
+## were wired to the signal. Every peer reads its own local copy of the replicated clock and arrives
+## at the same crossing within a frame of the others.
+##
+## NETWORK AUTHORITY (docs/ARCHITECTURE.md §2.2, "VFX, audio, camera, UI"): none. Client-local
+## presentation, no RPC, same row the rest of this file sits in.
+func _poll_dawn(delta: float) -> void:
+	var night: bool = _clock_is_night()
+	if night:
+		_seen_night = true
+		# A clock that jumps backwards into night (`time set`, a restart) disarms anything pending
+		# rather than firing the jig into the dark a moment later.
+		_dawn_pending = -1.0
+	elif _was_night and _seen_night:
+		_dawn_pending = DAWN_DELAY_SEC
+	_was_night = night
+
+	if _dawn_pending < 0.0:
+		return
+	_dawn_pending -= delta
+	if _dawn_pending > 0.0:
+		return
+	_dawn_pending = -1.0
+	if _frontend_up:
+		return
+	if _active == CUE_CYCLE:
+		return
+	_start_bounded(CUE_DAWN)
+
+
+func _clock_is_night() -> bool:
+	var clock: Node = _day_night()
+	if clock == null:
+		return _was_night
+	var fraction: float = _clock_float(clock, &"time_of_day", 0.348)
+	var night_at: float = _clock_float(clock, &"night_started_at", FALLBACK_NIGHT_AT)
+	var day_at: float = _clock_float(clock, &"day_started_at", FALLBACK_DAY_AT)
+	return fraction >= night_at or fraction < day_at
+
+
+func _clock_float(clock: Node, property: StringName, fallback: float) -> float:
+	var raw: Variant = clock.get(property)
+	if typeof(raw) == TYPE_FLOAT or typeof(raw) == TYPE_INT:
+		return float(raw)
+	return fallback
+
+
+## Re-resolved on loss rather than cached once, exactly as `AmbientMusicDirector._day_night()` does:
+## a harness scene can come up without the autoload and a check can free it mid-run.
+func _day_night() -> Node:
+	if _day_night_node != null and is_instance_valid(_day_night_node):
+		return _day_night_node
+	_day_night_node = get_node_or_null(^"/root/DayNight")
+	return _day_night_node
 
 
 # ── Construction / plumbing ──────────────────────────────────────────────────────────────────────

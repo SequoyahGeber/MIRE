@@ -6083,6 +6083,51 @@ composed lengths, landfall-at-boot, the bounded fade and hand-back, Cycle 1 vs C
 depth and its floor, and a run restart dropping a live cycle cue). `tools/audio_import_check.gd`
 knows the three lengths; `tools/ambient_music_check.gd` still passes unchanged.
 
+## D-196 — the dawn cue is a JIG SET, and the escalation keeps every third morning
+
+**Sequoyah:** *"im thinking it would be fun to have a happy jig typa theme song play when morning
+starts to kinda celebrate surviving another day"* — then, on hearing the first 32-second pass,
+*"thats really good, we should make it longer though like maybe 2 mintues"*.
+
+**It is the only cue in the game that is not about the mire.** Every other piece of music here scores
+a place: the beds are the standing water, the Cycle theme is the escalation, the stinger is the thing
+that found you. A morning cue scores the *players* — six people who were alive at dusk and still are.
+So it gets the whistle, the fiddle, the bodhrán and the dulcimer, and the Cycle theme keeps the frame
+drums and the chant. Nothing else in the palette reads as people rather than as weather.
+
+**It is written to the form, not to a vibe.** A double jig is 6/8, eight-bar parts played AABB, the
+accent on quavers 1 and 4, and each group of three lilted long-short-short. That last one is not
+decoration — a flat 6/8 with notes in it is a march, and the LILT table in `render_theme.py`'s
+`jig_bars()` is the entire difference. The reference work went in before a note was written; the tune
+itself is ours.
+
+**Two minutes is a SET, not a longer tune.** Four repeats of one 32-bar jig is a minute of music
+heard twice, and the second minute is where a daily cue starts to grate. A set is how this music is
+actually played — tune one twice, change of tune, tune two twice — so that is the form: T1 T1 / T2 T2
+/ the head of T1 to finish, 138 bars. The second tune is **G Mixolydian, the same seven notes as the
+D Dorian everything else in MIRE is written in**, tonic moved to G. That is what makes the change of
+tune a lift rather than a departure: the drone can follow it D→G→D and the cue never stops sounding
+like Hollowmere. And every change of intensity is a change of *who is playing* — the sixteen bars
+where the fiddle has the tune and the whistle is out, the four bars near the end where everything
+drops — because a session has no other kind.
+
+**The third morning belongs to the escalation.** `CycleService.DAYS_PER_CYCLE` is 3, so two mornings
+in three are ordinary and get the jig; on the third the Cycle theme fires and the jig is disarmed
+outright rather than interrupted by it (`ThemeMusicDirector._poll_dawn()`). Celebrating survival on
+the morning the mire just got worse is the wrong reading of the same event, and playing both is worse
+than either.
+
+**The trigger is a poll, not `DayNight.day_started`.** That signal is HOST-only and the code means it
+— `_advance_client()` never calls `_check_thresholds()` — so a cue wired to it would pass a
+single-process check and be silent for four players out of five. Same trap, same fix as
+`AmbientMusicDirector`. And the cue is gated on having actually *seen* a night: a run that opens in
+daylight has survived nothing yet.
+
+**Would change my mind:** hearing it land often enough to grate. The dial is the arrangement, not the
+length — dropping the second tune's repeat takes it to ~1:40 without breaking the form, and moving it
+to every *second* Cycle is one condition in `_poll_dawn()`. If two minutes turns out to be too much
+music for a daily event, shorten the set before shortening the tune.
+
 ## D-190 — high ground is a flat top plus a ramp, and the two are sized independently
 
 **F-450.** Sequoyah: *"taller hills please the map is wayy too flat, i do like big flat areas but i

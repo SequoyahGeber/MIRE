@@ -16,13 +16,14 @@ const SFX_DIR := "res://assets/audio/sfx"
 const MUSIC_LEN_S := 224.0
 ## Task 7.2's authored themes (`tools/audio/render_theme.py`). Unlike the two beds these are not one
 ## fixed length — each is as long as its own composition — so they are checked by name against their
-## rendered length rather than against a shared constant. All three loop: they are rendered
+## rendered length rather than against a shared constant. All four loop: they are rendered
 ## circularly like the beds (`finish()` folds the decay onto the head), and `ThemeMusicDirector` ends
 ## the two bounded cues with a timed fade rather than by letting the stream run out.
 const THEME_LEN_S: Dictionary[String, float] = {
 	"menu_theme.ogg": 101.3,
 	"theme_landfall.ogg": 117.4,
 	"theme_cycle.ogg": 71.3,
+	"theme_dawn.ogg": 132.5,
 }
 ## `tools/audio/render_music.py`'s `BOSS_STINGER` (task 5.5) — a one-shot cue, not a bed, so it is
 ## checked on its own rather than folded into the looped-ambience assertions below. The rendered
@@ -62,8 +63,8 @@ func _run() -> void:
 		var looped: bool = bool(stream.get("loop"))
 		check(looped, "%s has loop enabled" % name)
 
-	print("\n== music: the three authored themes ==")
-	check(THEME_LEN_S.size() == 3, "3 themes expected (%d)" % THEME_LEN_S.size())
+	print("\n== music: the four authored themes ==")
+	check(THEME_LEN_S.size() == 4, "4 themes expected (%d)" % THEME_LEN_S.size())
 	for name: String in THEME_LEN_S:
 		var theme: AudioStream = load(MUSIC_DIR + "/" + name)
 		if theme == null:

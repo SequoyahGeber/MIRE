@@ -518,6 +518,313 @@ def still_water() -> np.ndarray:
 # ---------------------------------------------------------------------------
 # 5. wake_the_deep — heroic adventure
 # ---------------------------------------------------------------------------
+# 6. first_light_jig — the morning tune
+# ---------------------------------------------------------------------------
+
+# A double jig, and it is built to the form rather than to a guess at it: 6/8,
+# two eight-bar parts each played twice (AABB), the bar felt as two groups of
+# three quavers with the accent on quavers 1 and 4, and each group lilted
+# long-short-short rather than played flat. That last one is the difference
+# between a jig and 6/8 with notes in it — see `jig_bars()`'s LILT below.
+# Session tempo for a double jig is around 125 dotted-crotchets a minute, which
+# is the 0.16 s quaver here (bar = 0.96 s).
+#
+# It stays in D Dorian with the rest of MIRE — same mode as the day ambience,
+# the menu hymn and the Cycle theme — so "survived the night" sounds like the
+# same place waking up, not like a different game's victory fanfare. The tune
+# is ours; the form is the tradition's.
+
+# D Dorian, one octave of it, used for the diatonic-third harmony line.
+DORIAN = ["D", "E", "F", "G", "A", "B", "C"]
+
+
+def third_up(name: str) -> str:
+    """'A4' -> 'C5'. A diatonic third up inside D Dorian, octave-correct: the
+    scale runs D..C so C belongs to the octave number ABOVE its own degree."""
+    letter, octave = name[:-1], int(name[-1])
+    degree = (octave - (1 if letter == "C" else 0)) * 7 + DORIAN.index(letter) + 2
+    up = DORIAN[degree % 7]
+    return up + str(degree // 7 + (1 if up == "C" else 0))
+
+
+def jig_bars(bars, start_s: float, beat_s: float, legato: float = 0.92):
+    """Bars of six quaver slots -> [(note, at_s, dur_s)].
+
+    A slot is a note name, `None` for a rest, or `"-"` to tie into the previous
+    note (ties cross bar lines). Every note is nudged by LILT, in quavers: the
+    second of each group of three lands late, which lengthens the first into
+    the dotted-quaver/semiquaver/quaver swing that makes this a jig and not a
+    march in 6/8. The accented slots (0 and 3) stay dead on the grid — the
+    pulse must not move, only the notes between the pulses."""
+    LILT = (0.0, 0.11, 0.04, 0.0, 0.11, 0.04)
+    slots = [s for bar in bars for s in bar]
+    out = []
+    for i, slot in enumerate(slots):
+        if slot is None or slot == "-":
+            continue
+        span = 1
+        while i + span < len(slots) and slots[i + span] == "-":
+            span += 1
+        at = start_s + (i + LILT[i % 6]) * beat_s
+        end = start_s + (i + span) * beat_s
+        out.append((slot, at, max((end - at) * legato, 0.06)))
+    return out
+
+
+# The A part: low, rolling, the tune someone hums first. Bar 8 has two endings —
+# [0] turns back for the repeat, [1] climbs to the high D that opens the B part.
+JIG_A = [
+    ["D4", "F4", "A4", "A4", "G4", "A4"],
+    ["B4", "A4", "G4", "F4", "G4", "E4"],
+    ["D4", "F4", "A4", "A4", "B4", "C5"],
+    ["D5", "-", "-", "A4", "-", "-"],
+    ["D4", "F4", "A4", "A4", "G4", "A4"],
+    ["B4", "A4", "G4", "F4", "G4", "E4"],
+    ["D4", "E4", "F4", "G4", "A4", "B4"],
+]
+JIG_A_ENDINGS = [["A4", "-", "-", "G4", "F4", "E4"],
+                 ["A4", "B4", "C5", "D5", "-", "-"]]
+
+# The B part: the turn. Up an octave, driving, and it is where the band is all
+# the way in. Ending [1] falls back onto the tonic for the coda.
+JIG_B = [
+    ["D5", "-", "A4", "D5", "E5", "D5"],
+    ["C5", "D5", "E5", "D5", "C5", "A4"],
+    ["G4", "B4", "D5", "C5", "B4", "A4"],
+    ["B4", "-", "-", "G4", "A4", "B4"],
+    ["D5", "-", "A4", "D5", "F5", "D5"],
+    ["E5", "D5", "C5", "A4", "C5", "E5"],
+    ["F5", "E5", "D5", "C5", "B4", "A4"],
+]
+JIG_B_ENDINGS = [["G4", "A4", "B4", "C5", "D5", "-"],
+                 ["E5", "D5", "C5", "D5", "-", "-"]]
+
+
+# The second tune of the set. G Mixolydian — which is the SAME seven notes as the
+# D Dorian everything else in MIRE is written in, with the tonic moved to G. That
+# is the trick a real jig set turns: the change of tune lifts without changing the
+# pitch collection, so the drone can move D -> G and back and nothing sounds like
+# it left the game. The F naturals in the B part are the mixolydian flat 7 and are
+# the whole character of it.
+JIG_C = [
+    ["G4", "A4", "B4", "D5", "B4", "G4"],
+    ["A4", "B4", "C5", "B4", "A4", "G4"],
+    ["G4", "A4", "B4", "D5", "E5", "D5"],
+    ["C5", "-", "-", "A4", "-", "-"],
+    ["G4", "A4", "B4", "D5", "B4", "G4"],
+    ["A4", "B4", "C5", "B4", "A4", "G4"],
+    ["E5", "D5", "C5", "B4", "A4", "G4"],
+]
+JIG_C_ENDINGS = [["A4", "-", "-", "B4", "A4", "G4"],
+                 ["A4", "B4", "C5", "D5", "-", "-"]]
+
+JIG_D = [
+    ["G5", "-", "D5", "G5", "F5", "D5"],
+    ["E5", "D5", "C5", "D5", "E5", "D5"],
+    ["C5", "D5", "E5", "F5", "E5", "D5"],
+    ["B4", "-", "-", "D5", "C5", "B4"],
+    ["G5", "-", "D5", "G5", "F5", "D5"],
+    ["E5", "D5", "C5", "A4", "C5", "E5"],
+    ["D5", "C5", "B4", "A4", "B4", "C5"],
+]
+JIG_D_ENDINGS = [["D5", "-", "-", "E5", "D5", "C5"],
+                 ["D5", "-", "-", "G4", "-", "-"]]
+
+
+def part(bars, ending):
+    return bars + [ending]
+
+
+def first_light_jig() -> np.ndarray:
+    """The morning tune: a two-tune jig set, 2:12, D Dorian into G Mixolydian
+    and home again.
+
+    A set is how this music is actually played — nobody plays one jig once and
+    stops, they play it through twice, shout the change, and go into a second
+    tune. So the form here is T1 T1 / T2 T2 / the head of T1 again, 138 bars at
+    session tempo, and the arrangement is what keeps two minutes from becoming
+    one minute heard twice:
+
+      bars   1-8    whistle alone
+             9-16   + bodhran, dulcimer chords on the two pulses
+            17-24   + fiddle an octave under the tune, dulcimer in quavers
+            25-32   + shaker, log drum — the first full-band eight
+            33-48   the drop: the FIDDLE has the tune, no whistle at all
+            49-64   whistle back on the harmony, everything in
+            65-96   the change: tune 2, drone moves to G, whistle leads
+            97-128  tune 2 again, whistle and fiddle in thirds, the peak
+           129-132  everything out but whistle and drone — the last breath
+           133-138  the band slams back for the head of tune 1 and the button
+
+    Nothing in there is a fade or a filter sweep; every change of intensity is a
+    change of WHO IS PLAYING, which is the only kind a session has."""
+    rng = np.random.default_rng(4210_006)
+    beat = 0.16               # quaver
+    bar = 6 * beat            # 6/8 -> 0.96 s
+
+    def at_bar(n: int) -> float:
+        return n * bar
+
+    tune1 = (part(JIG_A, JIG_A_ENDINGS[0]) + part(JIG_A, JIG_A_ENDINGS[1])
+             + part(JIG_B, JIG_B_ENDINGS[0]) + part(JIG_B, JIG_B_ENDINGS[1]))
+    tune2 = (part(JIG_C, JIG_C_ENDINGS[0]) + part(JIG_C, JIG_C_ENDINGS[1])
+             + part(JIG_D, JIG_D_ENDINGS[0]) + part(JIG_D, JIG_D_ENDINGS[1]))
+    home = part(JIG_A, JIG_A_ENDINGS[1])
+    all_bars = tune1 + tune1 + tune2 + tune2 + home    # 32+32+32+32+8 = 136
+
+    T1B, T2A, T2B, HOME = at_bar(32), at_bar(64), at_bar(96), at_bar(128)
+    BAND_BACK = at_bar(132)
+    CODA = at_bar(136)
+    total = CODA + 2 * bar
+    ir = ma.make_ir(3.2, rng, tau_s=0.55, hf_ratio=0.62)
+    mix = ma.Mix(total, tail_s=4.5)
+
+    def spans(*ranges):
+        """-> a predicate on a note's start time. Ranges are in seconds."""
+        return lambda t: any(lo <= t < hi for lo, hi in ranges)
+
+    # -- the drone. D under both passes of tune 1, G under both of tune 2, D
+    #    again for the head at the end: a jig set's change of tune is a change
+    #    of tonic, and the pipes follow it. Segments overlap by a bar so the
+    #    move is a lean, not a cut.
+    for start, end, notes in ((0.0, T2A + bar, ("D2", "A2")),
+                              (T2A, HOME + bar, ("G2", "D3")),
+                              (HOME, total, ("D2", "A2"))):
+        seg = end - start
+        n_seg = ma.samples(seg)
+        for note, gain in zip(notes, (-26.0, -31.0)):
+            tone = ma.additive_pad(ma.note_hz(note), seg, rng, detune_cents=2.0,
+                                   shimmer=0.12, darkness=0.35)
+            mix.add(tone * ma.env_asr(n_seg, 1.2, 1.6), start,
+                    gain_db=gain, send_db=gain - 12.0)
+
+    melody = jig_bars(all_bars, 0.0, beat, legato=0.9)
+
+    # -- the whistle has the tune everywhere except the fiddle's sixteen bars.
+    whistle_out = spans((T1B, T1B + at_bar(16)))
+    for name, at, dur in melody:
+        if whistle_out(at):
+            continue
+        mix.add(mv.flute(ma.note_hz(name), dur + 0.16, rng, breath=0.20,
+                         attack_s=min(0.035, dur * 0.4), release_s=0.12),
+                at, gain_db=-15.0 + rng.uniform(-1.0, 0.8),
+                pan=rng.uniform(-0.12, 0.12), send_db=-21.0)
+
+    # -- second whistle a diatonic third above: the last half of tune 1, all of
+    #    tune 2's second pass, and the final band entry. Held back so it still
+    #    means something at bar 97.
+    thirds = spans((T1B + at_bar(16), T2A), (T2B, HOME), (BAND_BACK, CODA))
+    for name, at, dur in melody:
+        if not thirds(at):
+            continue
+        mix.add(mv.flute(ma.note_hz(third_up(name)), dur + 0.16, rng, breath=0.24,
+                         attack_s=min(0.04, dur * 0.4), release_s=0.12),
+                at + rng.uniform(0.0, 0.008), gain_db=-21.0 + rng.uniform(-1.0, 0.8),
+                pan=rng.uniform(0.18, 0.42), send_db=-25.0)
+
+    # -- the fiddle. An octave under the tune from bar 17, and for sixteen bars
+    #    in the middle it IS the tune — louder there, and up in the whistle's own
+    #    register rather than below it, because nothing else is carrying it.
+    fiddle_lead = spans((T1B, T1B + at_bar(16)))
+    fiddle_on = spans((at_bar(16), HOME), (BAND_BACK, CODA))
+    for name, at, dur in melody:
+        if not fiddle_on(at):
+            continue
+        lead: bool = fiddle_lead(at)
+        note: str = name if lead else shift_octave(name, -1)
+        mix.add(mv.bowed(ma.note_hz(note), dur + 0.22, rng,
+                         bright=0.95 if lead else 0.85, attack_s=0.035,
+                         release_s=0.18, vib_cents=9.0 if lead else 8.0,
+                         bow_noise=0.07),
+                at, gain_db=(-15.5 if lead else -19.0) + rng.uniform(-1.2, 0.8),
+                pan=rng.uniform(-0.30, -0.05) if lead else rng.uniform(-0.4, -0.15),
+                send_db=-22.0 if lead else -24.0)
+
+    # -- bodhran: accent on quavers 1 and 4, ghost taps between. That
+    #    two-groups-of-three accent IS the double jig's pulse. In from bar 9,
+    #    out for the four-bar breath at 129.
+    bodhran = [(0.0, -16.0), (1.0, -29.0), (2.0, -26.0),
+               (3.0, -18.0), (4.0, -29.0), (5.0, -26.0)]
+    for start, bars_n in ((at_bar(8), 120), (BAND_BACK, 4)):
+        for at, gain in pulse(start, bars_n, beat, 6.0, bodhran):
+            f0 = 92.0 if gain < -24.0 else 78.0
+            mix.add(mv.membrane(f0, f0 * 0.62, 0.34, rng, skin=0.42, fc=2800.0,
+                                tau_ratio=0.26),
+                    at + rng.uniform(-0.006, 0.006), gain_db=gain + rng.uniform(-1.5, 1.5),
+                    pan=rng.uniform(-0.25, -0.05), send_db=gain - 14.0)
+
+    # -- dulcimer, two jobs. Chords on the two pulses for the eight bars where
+    #    the band is still assembling, then running quavers as the backing —
+    #    D-rooted under tune 1, G-rooted under tune 2 (the bVII F major in the
+    #    last bar of that riff is the mixolydian colour the tune trades on).
+    for at, gain in pulse(at_bar(8), 8, beat, 6.0, [(0.0, -22.0), (3.0, -24.0)]):
+        for note in ("D3", "A3", "D4"):
+            mix.add(mv.dulcimer(ma.note_hz(note), 0.9, rng, courses=2, damp=0.9965),
+                    at + rng.uniform(-0.008, 0.008), gain_db=gain + rng.uniform(-2.0, 1.0),
+                    pan=rng.uniform(-0.45, -0.1), send_db=gain - 9.0)
+    riff_d = ["D3", "A3", "D4", "F4", "E4", "A3",
+              "D3", "A3", "D4", "A4", "G4", "A3",
+              "G3", "D4", "G4", "C4", "G3", "E4",
+              "D3", "A3", "D4", "F4", "E4", "D4"]
+    riff_g = ["G3", "D4", "G4", "B4", "A4", "D4",
+              "C4", "G3", "C4", "E4", "D4", "G3",
+              "G3", "D4", "G4", "B4", "A4", "G4",
+              "F3", "C4", "F4", "A4", "G4", "D4"]
+    for start, end, riff in ((at_bar(16), T1B, riff_d),
+                             (T1B + at_bar(16), T2A, riff_d),
+                             (T2A, HOME, riff_g),
+                             (BAND_BACK, CODA, riff_d)):
+        t, i = start, 0
+        while t < end - beat * 0.5:
+            gain = -23.0 if t < T1B + at_bar(16) else -20.5
+            mix.add(mv.dulcimer(ma.note_hz(riff[i % len(riff)]), 0.8, rng,
+                                courses=2, damp=0.9962),
+                    t + rng.uniform(-0.007, 0.007), gain_db=gain + rng.uniform(-2.0, 1.2),
+                    pan=rng.uniform(0.05, 0.45), send_db=gain - 9.0)
+            t += beat
+            i += 1
+
+    # -- shaker: quavers where the band is still building, semiquavers once it
+    #    is all in. The one voice that can get busier without muddying anything.
+    for start, bars_n in ((at_bar(24), 8), (T2A, 32)):
+        for at, gain in pulse(start, bars_n, beat, 6.0, [(o, -32.0) for o in range(6)]):
+            mix.add(mv.shaker(0.055, rng, sharp=0.014),
+                    at + rng.uniform(-0.006, 0.006), gain_db=gain + rng.uniform(-3.0, 2.0),
+                    pan=rng.uniform(0.2, 0.55))
+    for start, bars_n in ((T1B + at_bar(16), 16), (T2B, 32), (BAND_BACK, 4)):
+        for at, gain in pulse(start, bars_n, beat, 6.0, [(o / 2.0, -33.0) for o in range(12)]):
+            mix.add(mv.shaker(0.045, rng, sharp=0.011),
+                    at + rng.uniform(-0.005, 0.005), gain_db=gain + rng.uniform(-3.0, 2.0),
+                    pan=rng.uniform(0.2, 0.6))
+
+    # -- log drum on the second pulse of the loudest eights, the way a session
+    #    picks up a bones player halfway through.
+    for start, bars_n in ((at_bar(24), 8), (T2A + at_bar(16), 16),
+                          (T2B + at_bar(16), 16), (BAND_BACK, 4)):
+        for at, gain in pulse(start, bars_n, beat, 6.0, [(3.0, -25.0)]):
+            mix.add(mv.log_drum(rng.choice([294.0, 349.0, 392.0]), 0.28, rng),
+                    at + rng.uniform(-0.01, 0.01), gain_db=gain + rng.uniform(-2.0, 1.0),
+                    pan=rng.uniform(0.15, 0.5), send_db=gain - 11.0)
+
+    # -- the button: everyone lands together on the D, and one bell over the top
+    #    of it. The bell is the day bed's own voice — this is the sun coming up,
+    #    not a scoreboard.
+    mix.add(mv.membrane(66.0, 42.0, 1.6, rng, skin=0.32, fc=1600.0, tau_ratio=0.22),
+            CODA, gain_db=-13.0, send_db=-19.0)
+    for note in ("D3", "A3", "D4", "F4", "A4"):
+        mix.add(mv.dulcimer(ma.note_hz(note), 2.6, rng, courses=3, damp=0.9982),
+                CODA + rng.uniform(0.0, 0.012), gain_db=-19.0,
+                pan=rng.uniform(-0.4, 0.4), send_db=-21.0)
+    mix.add(mv.flute(ma.note_hz("D5"), 2.2, rng, breath=0.18, attack_s=0.03, release_s=1.1),
+            CODA, gain_db=-16.0, send_db=-20.0)
+    mix.add(mv.bowed(ma.note_hz("D4"), 2.4, rng, bright=0.9, attack_s=0.02, release_s=1.2),
+            CODA, gain_db=-19.0, pan=-0.25, send_db=-23.0)
+    mix.add(ma.fm_bell(ma.note_hz("D6"), 3.6, rng), CODA + 0.08, gain_db=-26.0, send_db=-22.0)
+
+    return finish(mix, ir, -12.0, "first_light_jig", -16.5)
+
+
+# ---------------------------------------------------------------------------
 
 def wake_the_deep() -> np.ndarray:
     """The big one: an A-B-A theme with horns on the tune, strings doubling,
@@ -640,6 +947,7 @@ THEMES = {
     "mire_rites": (mire_rites, "percussive 6/8 — frame drums, bone flute, chanted choir"),
     "still_water": (still_water, "eerie minimal — music box through tape warble, no pulse"),
     "wake_the_deep": (wake_the_deep, "heroic adventure — horns + strings + choir, full arrangement"),
+    "first_light_jig": (first_light_jig, "morning jig — 6/8 whistle, bodhran, fiddle, dulcimer"),
 }
 
 

@@ -8656,3 +8656,15 @@ BENCHMARK on the title screen, routed through Frontend, asserted by title_check.
 Files: `ui/frontend/title_screen.gd`, `ui/frontend/frontend.gd`, `tools/title_check.gd`
 
 Commit at time of writing: `5e78e26`
+
+---
+
+### HANDOFF · 7.2 · slate977821 · 2026-08-21T22:28:24+00:00
+
+**Music: 4–6 tracks (act themes, boss, menu). CC0/licensed or commissioned.**
+
+Shipped a fourth authored theme: 'First Light' (theme_dawn.ogg), a 2:12 two-tune jig set that plays on the night->day crossing after a night survived — Sequoyah's ask, recorded as D-196. Candidate lives in tools/audio/render_theme.py as first_light_jig; ThemeMusicDirector gained the 'dawn' cue, a per-cue fade-out override (CUE_FADE_OUT) and a client-safe clock POLL for the crossing (day_started is host-only). tools/theme_music_check.gd covers all four not-firing/firing cases, 47 PASS 0 FAIL; audio_import_check.gd knows the new length. STILL OPEN on 7.2: the combat-intensity stems in docs/AUDIO.md's 'Not done yet' — 'the_long_sink' is already rendered and is the obvious act/boss bed. WATCH OUT: assets/audio/music/*.ogg.import are gitignored but force-added (git add -f) because the loop=true flag lives in them; a new music asset needs the same or the import check fails on a fresh clone.
+
+Files: `tools/audio/render_theme.py`, `autoload/theme_music_director.gd`, `docs/AUDIO.md`, `tools/theme_music_check.gd`, `tools/audio_import_check.gd`, `assets/audio/music/theme_dawn.ogg`, `assets/audio/music/theme_dawn.ogg.import`, `docs/DECISIONS.md`
+
+Commit at time of writing: `30e9d37`

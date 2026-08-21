@@ -26,6 +26,7 @@ const EVENT_BUS := preload("res://core/events/event_bus.gd")
 ## Each theme is a composed piece, not a sting: anything under a minute means a truncated import.
 const MIN_THEME_LEN_S: float = 60.0
 
+
 var failures: int = 0
 var director: Node
 var ambient: Node
@@ -52,6 +53,7 @@ func _run() -> void:
 	_check_landfall_at_boot()
 	_check_bounded_cue_hands_back()
 	_check_cycle_cue()
+	_check_dawn_cue()
 	_check_ambient_duck()
 	_check_run_restart()
 	_check_hard_boundary_is_a_snap()
@@ -153,6 +155,82 @@ func _check_cycle_cue() -> void:
 	director.advance(THEME_SCRIPT.FADE_IN_SEC)
 	var player: AudioStreamPlayer = _player(THEME_SCRIPT.CUE_CYCLE)
 	check(player != null and player.playing, "cycle player is playing")
+
+
+## The morning jig. Four things have to hold, and three of them are about the cue NOT firing:
+##
+##   · a run that has not been through a night yet gets no jig — there is nothing to celebrate, and
+##     "the clock says day" is true from the first frame of every run that starts in daylight
+##   · it waits `DAWN_DELAY_SEC` after the crossing, which is also the window a `cycle_advanced` has
+##     to claim the morning for the escalation cue instead
+##   · a `cycle_advanced` inside that window cancels it outright rather than being interrupted by it
+##   · and its fade-out is the 3 s override, not the shared 8 s — at five seconds from the end the
+##     jig is still at full gain, which is the whole point of `CUE_FADE_OUT`
+##
+## The trigger is a poll of `DayNight.time_of_day`, so the harness drives the clock directly. That is
+## also the only way to test it: `DayNight.day_started` is HOST-only and never fires on a client, and
+## a cue wired to it would pass a single-process check and be silent for four players out of five.
+func _check_dawn_cue() -> void:
+	print("\n== dawn cue ==")
+	var clock: Node = root.get_node_or_null(^"DayNight")
+	check(clock != null, "DayNight is a registered autoload")
+	if clock == null:
+		return
+	var player: AudioStreamPlayer = _player(THEME_SCRIPT.CUE_DAWN)
+	check(player != null, "dawn has a player")
+	if player == null:
+		return
+
+	# A fresh run that opens in daylight: no night behind it, so no jig no matter how long it runs.
+	clock.set(&"time_of_day", 0.40)
+	EVENT_BUS.emit_run_restarted()
+	for i: int in 10:
+		director.advance(1.0 / 60.0)
+	check(director.active_cue() == THEME_SCRIPT.CUE_LANDFALL,
+		"a run that has not seen a night gets no jig (got %s)" % director.active_cue())
+
+	# Now survive one.
+	clock.set(&"time_of_day", 0.85)
+	director.advance(1.0 / 60.0)
+	clock.set(&"time_of_day", 0.30)
+	director.advance(1.0 / 60.0)
+	check(director.active_cue() != THEME_SCRIPT.CUE_DAWN,
+		"the jig waits out DAWN_DELAY_SEC rather than firing on the crossing frame")
+	director.advance(THEME_SCRIPT.DAWN_DELAY_SEC)
+	check(director.active_cue() == THEME_SCRIPT.CUE_DAWN,
+		"morning starts the jig (got %s)" % director.active_cue())
+	director.advance(THEME_SCRIPT.FADE_IN_SEC)
+	check(player.playing, "dawn player is playing")
+
+	# The 3 s override: five seconds out it is still full, and it does fade before the end.
+	var length: float = player.stream.get_length()
+	director.advance(maxf(length - 5.0 - director._elapsed, 0.0))
+	check(player.volume_db > -1.0,
+		"5 s from the end the jig is still at full gain (%.1f dB) — the 8 s fade would have it at -4"
+			% player.volume_db)
+	director.advance(3.5)
+	check(player.volume_db < -3.0, "and it does fade out over its last seconds (%.1f dB)"
+		% player.volume_db)
+	director.advance(THEME_SCRIPT.FADE_OUT_SEC)
+	check(director.active_cue() == &"", "jig retires (got %s)" % director.active_cue())
+
+	# The third morning belongs to the escalation. A `cycle_advanced` inside the delay window must
+	# cancel the jig, not be cut into by it two seconds later.
+	clock.set(&"time_of_day", 0.85)
+	director.advance(1.0 / 60.0)
+	clock.set(&"time_of_day", 0.30)
+	director.advance(1.0 / 60.0)
+	EVENT_BUS.emit_cycle_advanced(3)
+	check(director.active_cue() == THEME_SCRIPT.CUE_CYCLE, "cycle cue takes the morning")
+	director.advance(THEME_SCRIPT.DAWN_DELAY_SEC + 1.0)
+	check(director.active_cue() == THEME_SCRIPT.CUE_CYCLE,
+		"and the jig does not interrupt it (got %s)" % director.active_cue())
+	check(not player.playing, "the dawn player never started")
+
+	# Leave the clock and the director where the rest of the checks expect them.
+	clock.set(&"time_of_day", 0.348)
+	EVENT_BUS.emit_run_restarted()
+	director.advance(1.0 / 60.0)
 
 
 ## The bed must get out of a theme's way harder than it does for a stinger — and must never be taken

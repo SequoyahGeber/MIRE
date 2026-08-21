@@ -9,12 +9,14 @@
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
 | **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | gale43d16e | 2026-08-21 17:13 | `docs/ASSET_TRACKER.md`, `tools/blender/build_gatherable_plants.py`, `assets/gatherables/catalog.json`, `tools/blender/build_pickup_kit.py`, `assets/pickups/catalog.json`, `content/items/apple.tres`, `content/harvestables/berry_bush.tres`, `content/harvestables/apple_tree.tres`, `content/harvestables/mushroom_patch.tres`, `tools/item_icons_check.gd` |
+| **F-461** Chunk LOD transitions rebuild every prop in already-dressed chunks, and each holder re-sweeps HarvestWorld | quillcfd8d7 | 2026-08-21 22:13 | `world/gen/resource_scatter_field.gd`, `autoload/harvest_world.gd`, `world/chunk/chunk_streamer.gd`, `tools/traversal_profile.gd`, `world/gen/resource_scatter.gd`, `world/chunk/nav_baker.gd` |
+| **F-462** The benchmark shows a progress bar and no numbers, and never says how long is left | quill895277 | 2026-08-21 22:20 | `core/bench/frame_sampler.gd`, `core/bench/benchmark_runner.gd`, `ui/frontend/benchmark_screen.gd`, `tools/benchmark_check.gd` |
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `████████░░` 389/464 | 75 |
+| Findings | `████████░░` 389/466 | 77 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -123,6 +125,8 @@
 | ⬜ | **F-456** ChunkStreamer overruns its own 4 ms FRAME_BUDGET_MS by 10x under motion — 39 to 55 ms frames observed | todo |
 | ⬜ | **F-457** Traversal hitches to a 17 fps 1% low on the fastest machine in the project | todo |
 | ⬜ | **F-459** First visit to a location hitches; the second visit to the same place does not | todo |
+| 🔵 | **F-461** Chunk LOD transitions rebuild every prop in already-dressed chunks, and each holder re-sweeps HarvestWorld | in_flight |
+| 🔵 | **F-462** The benchmark shows a progress bar and no numbers, and never says how long is left | in_flight |
 
 ## Done
 
