@@ -143,6 +143,55 @@ const MOON_SHADOW_OPACITY: float = 0.55
 ## cheap" half of the trade that lets the sun's own shadows switch off at the same time.
 const MOON_SHADOW_DISTANCE_M: float = 48.0
 
+## ── Contact shading (F-398) ───────────────────────────────────────────────────────────────────
+## Sequoyah, from play: "can we add ambient occulusion to the game maybe? the game lighting/color
+## grading looks really bad."
+##
+## Nothing in the project configured SSAO at all, so a trunk, a rock or a workbench met the terrain
+## with no contact darkening whatever — every prop read as sitting ON the ground rather than IN it,
+## and the only thing separating a silhouette from the surface behind it was its albedo. That is
+## also a real part of why the frame reads as one flat hue band (F-397/F-379): an occlusion term is
+## the cheapest source of value difference a scene of untextured flat-shaded forms has.
+##
+## **The split is deliberate and matches how glow and volumetric fog already work.** The numbers
+## below — the LOOK of the occlusion — live here, because AO radius and strength are one decision
+## for the whole game and four level scenes each authoring their own would drift the same way
+## F-378 found the sun's size drifting. The `ssao_enabled` FLAG lives in each level's authored
+## Environment instead, and this file never writes it, because that flag is what
+## `autoload/graphics_quality.gd` captures and overrides: LOW turns SSAO off for the worst machines
+## we target, HIGH restores the level's authored value exactly. If this file forced the flag on it
+## would fight LOW every time the controller re-applied, and the preset would silently stop being
+## an override.
+##
+## What each number is, and why it is not the engine default:
+##
+##   · RADIUS is world-space metres, and it is the one that decides whether this is contact shading
+##     or a grey wash. The terrain is flat-shaded with facets metres across (D-184), so the engine's
+##     1.0 m barely reaches off a trunk before it runs out — but anything past ~2 m starts sampling
+##     the far side of a facet and darkens whole hillsides, which is the flat hue band again with
+##     extra steps. 1.5 m is a trunk-base radius at eye height.
+##   · LIGHT AFFECT is how much the occlusion multiplies DIRECT light as well as ambient. Zero is
+##     the physically honest answer and it is the wrong one here: F-353 deliberately holds ambient
+##     down to DAY_AMBIENT_ENERGY so the flat-shaded facets can separate, which leaves ambient-only
+##     AO with almost nothing to subtract from in full sun. A small direct term is the standard
+##     cheat and it is what makes the shading read at noon; kept low because at high values the
+##     shadow side of every object develops a dark rim that no light source explains.
+##   · HORIZON is the self-occlusion bias, and flat shading is exactly the case it exists for: with
+##     hard per-facet normals a lower bias draws a dark seam along every facet edge on open ground.
+##     The engine default holds, stated here so a future radius change knows it is load-bearing.
+##   · POWER, DETAIL and SHARPNESS are the engine defaults, stated for the same reason — this block
+##     is the whole AO configuration in one place rather than three defaults and four overrides.
+const SSAO_RADIUS_M: float = 3.0
+const SSAO_INTENSITY: float = 8.0
+const SSAO_POWER: float = 1.0
+const SSAO_DETAIL: float = 0.5
+const SSAO_HORIZON: float = 0.06
+const SSAO_SHARPNESS: float = 0.98
+const SSAO_LIGHT_AFFECT: float = 1.0
+## Zero, and it stays zero until something in the project ships a baked AO map: this is the weight
+## of a material's own red-channel AO texture, and every mesh here is untextured flat colour.
+const SSAO_AO_CHANNEL_AFFECT: float = 0.0
+
 ## ── The daytime varnish (F-353) ────────────────────────────────────────────────────────────────
 ## Sequoyah, on the shipped island: "it looks super washed out and looks like it needs a coat of
 ## varnish to make everything clear and saturated." Measured, the frame lived in a 0.48-0.71
@@ -274,6 +323,7 @@ func _ready() -> void:
 		return
 	_environment = world_environment.environment
 	_day_ambient_color = _environment.ambient_light_color
+	_apply_ssao_look()
 	if _environment.sky != null:
 		_sky_material = _environment.sky.sky_material as PhysicalSkyMaterial
 	if _sky_material != null:
@@ -305,6 +355,25 @@ func _ready() -> void:
 	_ground_fog = _resolve_ground_fog()
 	apply_atmosphere()
 	set_process(cycle_enabled)
+
+
+## F-398: writes the SSAO LOOK and nothing else. Once, in `_ready()`, because none of it moves with
+## the hour — an occlusion term is a property of the geometry, and a radius that changed at dusk
+## would be a bug, not a feature.
+##
+## `ssao_enabled` is conspicuously absent and must stay absent: it is the level's authored value and
+## `autoload/graphics_quality.gd`'s to override (off on LOW, restored on HIGH). See the SSAO_* block
+## for the full reasoning. A level that authors the flag off keeps a correctly-tuned AO pass that is
+## simply switched off, which costs nothing and is exactly what a preset restore needs to find.
+func _apply_ssao_look() -> void:
+	_environment.ssao_radius = SSAO_RADIUS_M
+	_environment.ssao_intensity = SSAO_INTENSITY
+	_environment.ssao_power = SSAO_POWER
+	_environment.ssao_detail = SSAO_DETAIL
+	_environment.ssao_horizon = SSAO_HORIZON
+	_environment.ssao_sharpness = SSAO_SHARPNESS
+	_environment.ssao_light_affect = SSAO_LIGHT_AFFECT
+	_environment.ssao_ao_channel_affect = SSAO_AO_CHANNEL_AFFECT
 
 
 ## The cloud deck is a sibling, but it is named differently in different levels ("CloudDeck" today),

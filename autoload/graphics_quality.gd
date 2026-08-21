@@ -15,6 +15,9 @@ extends Node
 ##   blend splits      — NOT a cost lever; the stability partner of the two above (F-377)
 ##   shadow bias scale — NOT a cost lever either; keeps bias proportional to texel size (F-377)
 ##   glow, volumetric  — post/froxel passes that touch the whole frame
+##   ssao              — a per-pixel screen-space occlusion pass, plus a global quality tier
+##                       (samples, half-resolution, blur passes, fade distance) that costs as much
+##                       as the on/off flag does. Off entirely on LOW (F-398)
 ##   undergrowth scale — instance budget of the densest scatter; a lower budget is a strict
 ##                       prefix of the full placement sequence, so it rescatters deterministically
 ##   draw distance     — how far props and harvestables are drawn at all; the only knob that
@@ -100,6 +103,10 @@ const PRESETS: Dictionary = {
 		"shadow_bias_scale": 1.25,
 		"glow": false,
 		"volumetric": false,
+		# F-398. SSAO is a per-pixel screen-space pass and LOW exists for the worst machine we
+		# target, so it goes in the same list glow and volumetric are already in. Off means the
+		# pass does not run at all — `ssao_quality` below is not consulted on this preset.
+		"ssao": false,
 		"undergrowth": 0.45,
 		"draw_distance": 0.55,
 		"lod_threshold": 4.0,
@@ -259,9 +266,16 @@ func apply(new_preset: Preset) -> void:
 			environment.get_instance_id(), {
 				"glow": environment.glow_enabled,
 				"volumetric": environment.volumetric_fog_enabled,
+				# F-398. Captured exactly like the two above and for the same reason: the level owns
+				# whether it has contact shading, the preset only owns whether this machine can
+				# afford it. `world/environment/playtest_atmosphere.gd` writes the AO tuning in its
+				# own `_ready()` and deliberately never writes this flag, so it is still the LEVEL's
+				# value being captured here and HIGH is still an exact restore.
+				"ssao": environment.ssao_enabled,
 			}) as Dictionary
 		environment.glow_enabled = bool(spec.get("glow", authored["glow"]))
 		environment.volumetric_fog_enabled = bool(spec.get("volumetric", authored["volumetric"]))
+		environment.ssao_enabled = bool(spec.get("ssao", authored["ssao"]))
 
 	prop_draw_distance_scale = float(spec.get("draw_distance", 1.0))
 	DrawPolicy.rescale(get_tree())

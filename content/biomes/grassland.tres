@@ -5,11 +5,12 @@
 [resource]
 script = ExtResource("1_grassland")
 id = &"grassland"
-display_name = "Grassland"
-height_min = 1.6
+display_name = "Meadow"
+height_min = 1.7
 height_max = 100.0
-moisture_min = 0.0
-moisture_max = 0.5
+moisture_min = 0.15
+moisture_max = 0.4
 priority = 10
-detail_amplitude = 0.8
+detail_amplitude = 0.62
 ridge_amplitude = 0.25
+ground_albedo = Color(0.373, 0.588, 0.235, 1)

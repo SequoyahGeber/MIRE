@@ -62,7 +62,7 @@ from pathlib import Path
 from typing import Callable
 
 import bpy
-from mathutils import Matrix, Vector
+from mathutils import Matrix, Quaternion, Vector
 
 sys.path.append(str(Path(__file__).resolve().parent))
 from mire_art import (  # noqa: E402
@@ -117,8 +117,17 @@ SIZE_BAND: dict[str, tuple[float, float, str, float | None]] = {
     "bush_thorn": (0.80, 1.40, "height", 1.8),
     "bush_dead": (0.85, 1.55, "height", 1.8),
     "sapling": (1.30, 2.55, "height", 1.9),
-    "tree_willow": (4.20, 6.20, "height", 4.2),
-    "tree_snag": (3.10, 5.20, "height", 3.0),
+    #: F-396 raised both of these. They used to sit at 4.2-6.2 m and 3.1-5.2 m
+    #: against a 1.7 m player eye, which put the tallest willow in the kit at 3.4x
+    #: eye height where a real tree reads at 6-15x; the island looked like scrub
+    #: and the canopy never broke the horizon. Note that the band alone is NOT the
+    #: fix — `create_asset` scales the finished asset UNIFORMLY to hit it, so
+    #: raising only these numbers would have fattened the trunks by the same
+    #: factor and produced the same tree seen from closer, which is exactly what
+    #: the finding says not to do. The builders below are authored at the new
+    #: height with trunk radii chosen independently; the band is what CHECKS them.
+    "tree_willow": (10.50, 14.50, "height", 11.0),
+    "tree_snag": (7.00, 11.00, "height", 5.0),
     "plant_broadleaf": (0.42, 0.90, "height", 1.7),
     "plant_dock": (0.60, 1.10, "height", 1.7),
     "plant_creeper": (0.85, 1.60, "spread", None),
@@ -152,7 +161,9 @@ TRIANGLE_BUDGET = {
 #: and the camera derives its framing from it rather than from a hand-tuned number
 #: that silently stops matching when a family gains an asset.
 COLUMNS = 7
-FAMILY_SPACING = {"shrubs": 3.0, "small_trees": 3.8, "leafy_plants": 1.7,
+#: `small_trees` went from 3.8 to 12.0 with F-396: the willows are 12.5 m tall
+#: and 8-9 m across now, so at the old spacing the preview row was one hedge.
+FAMILY_SPACING = {"shrubs": 3.0, "small_trees": 12.0, "leafy_plants": 1.7,
                   "flowers": 1.7, "grasses": 1.7, "ground_cover": 1.7}
 
 #: Colours per asset. The first draft of this kit averaged five per asset and
@@ -163,7 +174,15 @@ FAMILY_SPACING = {"shrubs": 3.0, "small_trees": 3.8, "leafy_plants": 1.7,
 #: three angles. A woody plant therefore legitimately spends four: two bark tones
 #: and a two-stop leaf ramp. Ground cover with no wood in it gets three.
 MAX_MATERIALS = {
-    "shrubs": 4, "small_trees": 4, "leafy_plants": 4,
+    #: `small_trees` went 4 -> 5 with F-396, and only because a real tree needs
+    #: both ramps. The reasoning above allows "two bark tones and a two-stop leaf
+    #: ramp"; the willow's leaf ramp has always had three stops (`leaf`,
+    #: `leaf_deep`, and `leaf_light` painted onto the canopy by `paint_faces`),
+    #: which used up the whole budget and left the trunk on one flat colour —
+    #: exactly what F-396 reports as "the trunks look really bad". Five buys the
+    #: shadow tone that the flare and the bark ridges are drawn in. It is a
+    #: ceiling, not a target: nothing else in the family is near it.
+    "shrubs": 4, "small_trees": 5, "leafy_plants": 4,
     "flowers": 3, "grasses": 3, "ground_cover": 4,
 }
 
@@ -486,6 +505,106 @@ def build_sapling(seed: int) -> None:
                     seed=seed + index)
 
 
+def rolled_between(name: str, start, end, radius_start: float, radius_end: float,
+                   material, vertices: int = 7, roll: float = 0.0):
+    """`tapered_between` with control over the roll about the segment's own axis.
+
+    F-396, "the trunks look really bad": a trunk built as a stack of frusta that
+    all share a roll is a smooth extruded polygon with a seam, so the whole column
+    shades as one flat band and reads as plastic pipe. Rolling each segment
+    separately breaks the facets into plates that catch light on their own. Same
+    vertices, different rotation — it is free.
+    """
+    obj = tapered_between(name, start, end, radius_start, radius_end, material, vertices)
+    direction = Vector(end) - Vector(start)
+    obj.rotation_quaternion = direction.to_track_quat("Z", "Y") @ Quaternion(Vector((0.0, 0.0, 1.0)), roll)
+    return obj
+
+
+def standing_trunk(height: float, base_radius: float, tip_radius: float, lean: Vector,
+                   sway: float, segments: int, tones: tuple, rng: random.Random, seed: int,
+                   vertices: int = 7, ridges: int = 3, flare: float = 1.9,
+                   flare_top: float = 0.42, roots: int = 5,
+                   root_reach: tuple[float, float] = (0.55, 1.0),
+                   taper_power: float = 1.35,
+                   roll_spread: float = math.pi) -> tuple[list[Vector], list[float]]:
+    """The trunk both of this kit's real trees stand on (F-396).
+
+    `tones` is (shadow, bark, lit) — three tones of the same wood, because one
+    flat colour is half of why the old trunks read as pipe; the other half was
+    that they were two untapered cylinders that stopped dead at z=0.
+
+    Returns the spine points and the radius at each, so a caller hangs boughs on
+    the trunk WHERE THE TRUNK IS rather than on the vertical axis.
+
+    **The flare tops out below half a metre on purpose.** `ResourceScatterField.
+    COLLIDER_TRUNK_BAND_MIN_M` is 0.5 m — F-390 lifted the collider's measuring
+    band off the floor precisely because the flare, not the trunk, was setting the
+    radius, which is what put `tree_willow_a` at a 1.29 m collider around a 0.3 m
+    trunk and had the player stopped a metre off the bark. Keeping the flare under
+    that line buys a well-planted base for nothing.
+    """
+    shadow, bark, lit = tones
+    points = [Vector((0.0, 0.0, 0.0))]
+    drift = Vector((0.0, 0.0, 0.0))
+    for index in range(1, segments + 1):
+        t = index / segments
+        drift = drift + Vector((rng.uniform(-sway, sway), rng.uniform(-sway, sway), 0.0))
+        points.append(lean * (t * t) + drift + Vector((0.0, 0.0, height * t)))
+    radii = [
+        tip_radius + (base_radius - tip_radius) * ((1.0 - index / segments) ** taper_power)
+        for index in range(segments + 1)
+    ]
+
+    # The buttresses ARCH: up over a knee at flare height, then back into the
+    # ground about half a metre past the flare. Roots that run straight from the
+    # flare to the floor are long thin spikes and the tree reads as a spider
+    # standing on it — the first pass of this did exactly that.
+    tapered_between("Flare", (0.0, 0.0, 0.0), (0.0, 0.0, flare_top),
+                    base_radius * flare, base_radius * 1.06, shadow, 8)
+    for index, (angle, rad) in enumerate(radial(roots, base_radius * 1.05, seed=seed + 311,
+                                                jitter=0.34, radius_jitter=0.20)):
+        toe = rad + rng.uniform(*root_reach)
+        knee = around((0.0, 0.0, flare_top * 0.62), angle, (rad + toe) * 0.48)
+        tapered_between(
+            f"Root_{index + 1}_A",
+            around((0.0, 0.0, flare_top * 0.95), angle, rad * 0.45), knee,
+            base_radius * 0.54, base_radius * 0.36, bark if index % 2 else lit, 5,
+        )
+        tapered_between(
+            f"Root_{index + 1}_B", knee, around((0.0, 0.0, 0.02), angle, toe),
+            base_radius * 0.36, base_radius * 0.11, bark if index % 2 else lit, 5,
+        )
+    # ONE tone for the column, and the foot in shadow. Varying the tone per
+    # segment reads as painted rings however it is chosen — a trunk's segment
+    # boundaries are horizontal, so anything varying per segment varies
+    # horizontally, which is the one direction bark never does. The second tone
+    # earns its keep on the ridges below, running vertically, and on the flare.
+    for index in range(segments):
+        material = shadow if index == 0 else bark
+        rolled_between(f"Trunk_{index + 1}", tuple(points[index]), tuple(points[index + 1]),
+                       radii[index], radii[index + 1], material, vertices,
+                       roll=rng.uniform(-roll_spread, roll_spread))
+    for index, (angle, _rad) in enumerate(radial(ridges, 1.0, seed=seed + 313, jitter=0.55)):
+        stop = max(2, min(segments, int(segments * rng.uniform(0.40, 0.80))))
+        tapered_between(
+            f"Bark_Ridge_{index + 1}",
+            around(tuple(points[0] + Vector((0.0, 0.0, flare_top * 0.45))), angle, radii[0] * 0.86),
+            around(tuple(points[stop]), angle, radii[stop] * 0.78),
+            base_radius * 0.26, base_radius * 0.07, shadow, 4,
+        )
+    return points, radii
+
+
+def spine_point(points: list[Vector], fraction: float) -> Vector:
+    """Point at `fraction` of the way up a trunk spine, interpolated between the
+    two nearest control points."""
+    span = len(points) - 1
+    position = max(0.0, min(1.0, fraction)) * span
+    low = min(span - 1, int(position))
+    return points[low].lerp(points[low + 1], position - low)
+
+
 def build_tree_willow(seed: int) -> None:
     """A wet-ground tree whose branches fall instead of reaching.
 
@@ -499,33 +618,51 @@ def build_tree_willow(seed: int) -> None:
 
     The result is the fountain silhouette, and it is the opposite of every other
     tree in either kit, which is the entire reason this asset exists.
+
+    F-396 rebuilt it at 12.5 m rather than 5.0 m, on `standing_trunk` — and the
+    curtains are what had to change with it, not just the numbers. A willow's
+    read is that the canopy hangs far below the boughs it grows from, so the
+    boughs now leave a crotch two-thirds of the way UP a much longer trunk and the
+    curtains fall two-thirds of the way back down it — lowest leaves land around
+    3.5 m, a bit over twice eye height. Scaling the old tree by the same factor
+    instead would have put them at nine metres, which is the one thing a willow
+    must never do.
     """
     rng = random.Random(seed)
-    height = 5.0
-    lean = Vector((rng.uniform(-0.26, 0.26), rng.uniform(-0.22, 0.22), 0.0))
-    crotch = lean + Vector((0.0, 0.0, height * 0.56))
-    mid = lean * 0.45 + Vector((0.0, 0.0, height * 0.28))
-    tapered_between("Trunk_Lower", (0.0, 0.0, 0.0), tuple(mid), 0.30, 0.23, mat("wood_bark"), 8)
-    tapered_between("Trunk_Upper", tuple(mid), tuple(crotch), 0.23, 0.15, mat("wood_bark"), 7)
-    for index, (angle, rad) in enumerate(radial(4, 0.68, seed=seed + 41, jitter=0.30)):
-        tapered_between(f"Root_{index + 1}", (0.0, 0.0, 0.15), around((0.0, 0.0, 0.03), angle, rad),
-                        0.12, 0.032, mat("wood_bark"), 5)
+    height = 12.5
+    lean = Vector((rng.uniform(-0.55, 0.55), rng.uniform(-0.45, 0.45), 0.0))
+    crotch_fraction = 0.62
+    points, radii = standing_trunk(
+        height * crotch_fraction, 0.46, 0.24, lean * crotch_fraction, height * 0.010, 5,
+        # Two bark tones, not three: the leaf ramp already spends three of this
+        # family's five (MAX_MATERIALS), and the one that has to exist is the
+        # SHADOW — it is what the flare and the bark ridges are drawn in.
+        (mat("wood_bark_dark"), mat("wood_bark"), mat("wood_bark")), rng, seed,
+        vertices=7, ridges=3, flare=1.95, roots=5, root_reach=(0.75, 1.30), taper_power=1.20,
+    )
+    crotch = points[-1]
 
-    curtains = rng.randint(5, 6)
-    for index, (angle, rad) in enumerate(radial(curtains, 1.02, seed=seed + 43, jitter=0.26,
+    curtains = rng.randint(6, 7)
+    for index, (angle, rad) in enumerate(radial(curtains, 2.55, seed=seed + 43, jitter=0.26,
                                                 radius_jitter=0.22)):
-        arch = Vector(around((crotch.x, crotch.y, crotch.z + rng.uniform(0.42, 0.78)), angle, rad))
-        tapered_between(f"Bough_{index + 1}", tuple(crotch), tuple(arch), 0.085, 0.038,
-                        mat("wood_bark"), 5)
-        fall = rng.uniform(1.5, 2.35)
-        width = rng.uniform(0.26, 0.36)
+        arch = Vector(around((crotch.x, crotch.y, crotch.z + rng.uniform(1.30, 2.20)), angle, rad))
+        # Two segments per bough so it arches instead of spiking straight out —
+        # the arch is what the curtain hangs from and the whole fountain read
+        # depends on it being a curve.
+        knee = crotch.lerp(arch, 0.55) + Vector((0.0, 0.0, rng.uniform(0.45, 0.85)))
+        rolled_between(f"Bough_{index + 1}_1", tuple(crotch), tuple(knee), radii[-1] * 0.42,
+                       radii[-1] * 0.28, mat("wood_bark"), 5, roll=rng.uniform(0.0, math.tau))
+        rolled_between(f"Bough_{index + 1}_2", tuple(knee), tuple(arch), radii[-1] * 0.28,
+                       radii[-1] * 0.14, mat("wood_bark"), 5, roll=rng.uniform(0.0, math.tau))
+        fall = rng.uniform(5.2, 7.4)
+        width = rng.uniform(0.62, 0.88)
         hull(
             f"Curtain_{index + 1}", (arch.x, arch.y, arch.z - fall * 0.42),
             (width, width * rng.uniform(0.84, 1.12), fall * 0.52),
             mat("leaf_deep" if index % 2 else "leaf"), seed + index * 59,
             subdivisions=1, lumps=4, lump=0.30, sharpness=2.2, taper=-0.55,
         )
-    canopy = hull("Canopy", (lean.x, lean.y, crotch.z + 0.86), (1.02, 0.96, 0.44), mat("leaf"),
+    canopy = hull("Canopy", (crotch.x, crotch.y, crotch.z + 2.35), (2.55, 2.40, 1.10), mat("leaf"),
                   seed + 47, subdivisions=2, lumps=6, lump=0.26, taper=0.34,
                   droop=0.55, droop_lobes=5, droop_sharpness=3.0)
     paint_faces(canopy, mat("leaf_light"), min_normal_z=0.30, min_height=0.46, coverage=0.7,
@@ -534,28 +671,41 @@ def build_tree_willow(seed: int) -> None:
 
 def build_tree_snag(seed: int) -> None:
     """A dead trunk snapped off partway up: history, at almost no cost, because
-    there is no crown to build."""
+    there is no crown to build.
+
+    F-396 took it from 3.4 m to 9 m, and it is the one tree in either kit that is
+    *supposed* to be shorter than its neighbours — a snag is what is left of a
+    tree that used to be as tall as the pines around it, so it reads correctly at
+    roughly two-thirds their height and wrong at either extreme. Its trunk gets
+    the same flare and taper as the living ones, because the thing that snapped
+    was a full-grown tree.
+    """
     rng = random.Random(seed)
-    height = 3.4
-    lean = Vector((rng.uniform(-0.22, 0.22), rng.uniform(-0.18, 0.18), 0.0))
-    mid = lean * 0.5 + Vector((0.0, 0.0, height * 0.55))
-    top = lean + Vector((0.0, 0.0, height))
-    tapered_between("Trunk_Lower", (0.0, 0.0, 0.0), tuple(mid), 0.34, 0.26, mat("wood_dead"), 8)
-    tapered_between("Trunk_Upper", tuple(mid), tuple(top), 0.26, 0.17, mat("wood_dead"), 7)
-    for index, (angle, rad) in enumerate(radial(rng.randint(4, 5), 0.15, seed=seed + 61, jitter=0.42)):
-        base = around((top.x, top.y, top.z - 0.04), angle, rad)
+    height = 9.0
+    lean = Vector((rng.uniform(-0.40, 0.40), rng.uniform(-0.34, 0.34), 0.0))
+    points, radii = standing_trunk(
+        height, 0.52, 0.24, lean, height * 0.010, 6,
+        (mat("wood_dead"), mat("wood_dead"), mat("wood_dead_cut")), rng, seed,
+        vertices=7, ridges=4, flare=1.85, roots=5, root_reach=(0.75, 1.30), taper_power=1.10,
+    )
+    top = points[-1]
+
+    for index, (angle, rad) in enumerate(radial(rng.randint(4, 5), radii[-1] * 0.62,
+                                                seed=seed + 61, jitter=0.42)):
+        base = around((top.x, top.y, top.z - 0.10), angle, rad)
         tapered_between(f"Splinter_{index + 1}", base,
-                        (base[0], base[1], base[2] + rng.uniform(0.14, 0.46)),
-                        0.050, 0.010, mat("wood_dead_cut"), 4)
-    for index, (angle, rad) in enumerate(radial(rng.randint(3, 4), 0.26, seed=seed + 67, jitter=0.48)):
-        anchor = around((0.0, 0.0, rng.uniform(height * 0.40, height * 0.88)), angle, rad * 0.6)
+                        (base[0], base[1], base[2] + rng.uniform(0.40, 1.15)),
+                        0.075, 0.014, mat("wood_dead_cut"), 4)
+    for index, (angle, rad) in enumerate(radial(rng.randint(3, 4), 0.30, seed=seed + 67, jitter=0.48)):
+        fraction = rng.uniform(0.42, 0.90)
+        anchor = around(tuple(spine_point(points, fraction)), angle, rad * 0.6)
+        # 1.0 m, not 1.35: three levels of `fork` compound, and at 1.35 the stubs
+        # reached 5.8 m across — wider than the tree is interesting, and wide
+        # props are what make a scatter field read as overlapping soup.
         fork(f"Stub_{index + 1}", anchor, (math.cos(angle), math.sin(angle), rng.uniform(0.10, 0.55)),
-             0.46, 0.062, mat("wood_dead"), seed + index * 71, depth=3, splits=(2, 2), spread=0.55,
+             1.0, 0.13, mat("wood_dead"), seed + index * 71, depth=3, splits=(2, 2), spread=0.55,
              shrink=0.62, curve=0.26, vertices=4)
-    for index, (angle, rad) in enumerate(radial(rng.randint(4, 5), 0.70, seed=seed + 73, jitter=0.30)):
-        tapered_between(f"Root_{index + 1}", (0.0, 0.0, 0.18), around((0.0, 0.0, 0.03), angle, rad),
-                        0.12, 0.030, mat("wood_dead"), 5)
-    skirt = hull("Moss_Skirt", (0.0, 0.0, 0.10), (0.62, 0.58, 0.13), mat("moss_dark"), seed + 79,
+    skirt = hull("Moss_Skirt", (0.0, 0.0, 0.14), (0.96, 0.90, 0.20), mat("moss_dark"), seed + 79,
                  subdivisions=1, lumps=6, lump=0.42, flat_base=0.55)
     paint_faces(skirt, mat("moss"), min_normal_z=0.30, min_height=0.42, coverage=0.7, seed=seed + 4)
 
@@ -1315,12 +1465,20 @@ def main() -> None:
         figure = make_reference(family, (-half - 1.1, family_y, 0.9))
         family_rigs.append((family, family_y, spacing, half, figure))
 
-    hero = ["tree_willow_a", "tree_snag_b", "sapling_c", "sapling_a", "bush_round_b",
+    hero = ["sapling_c", "sapling_a", "bush_round_b",
             "bush_broadleaf_a", "bush_thorn_a", "bush_dead_b", "bracken_b", "plant_dock_a",
             "flowers_tall_b", "flowers_meadow_c", "grass_tussock_a", "moss_patch_b",
             "clover_patch_a", "leaf_litter_a", "lily_pad_a", "sedge_b"]
-    hero_spots = {name: ((index % 9) * 2.5 - 10.0, -3.6 + (index // 9) * 3.4, 0.0)
+    hero_spots = {name: ((index % 8) * 2.5 - 9.0, -3.6 + (index // 8) * 3.4, 0.0)
                   for index, name in enumerate(hero)}
+    # F-396: the willow and the snag are 12.5 m and 9 m now, not 5 m and 3.4 m, so
+    # they cannot stand in the undergrowth row any more — at 2.5 m spacing they
+    # simply filled the frame. They go behind the ground plants instead, which is
+    # a better shot anyway: the whole point of this sheet is the size relationship
+    # between a tree, a bush and a clover patch, and that only reads when the tree
+    # is far enough back to fit in it.
+    hero_spots["tree_willow_a"] = (-7.0, 9.0, 0.0)
+    hero_spots["tree_snag_b"] = (5.5, 8.0, 0.0)
     by_name = {record["name"]: record for record in records}
     hero_duplicates = {name: hero_duplicate(by_name[name], spot)
                         for name, spot in hero_spots.items()}
@@ -1348,9 +1506,9 @@ def main() -> None:
     hero_figure.hide_render = False
     scene.render.resolution_y = 1000
     camera.data.type = "PERSP"
-    camera.data.lens = 50.0
-    camera.location = (8.0, -15.5, 5.6)
-    look_at(camera, (-1.0, -0.6, 1.1))
+    camera.data.lens = 42.0
+    camera.location = (10.5, -20.0, 6.2)
+    look_at(camera, (-1.0, 0.8, 3.4))
     scene.render.filepath = str(PREVIEW_DIR / "flora_set_preview.png")
     bpy.ops.render.render(write_still=True)
     for record in records:
