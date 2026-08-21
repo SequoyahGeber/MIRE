@@ -69,6 +69,95 @@ do is worth as much as the record of what we did.
 
 ## Open
 
+### F-439 · No standing check that every shipped asset is reachable from something the game loads — 46 exports are built but referenced by nothing
+
+**Area:** assets · **Severity:** medium · **Found:** 2026-08-21 by mossecba4b
+
+F-395 fixed one instance of this class (141 authored-map assets the procedural island never
+placed) and closed with the line that matters: "Nothing checks that the two agree, so the gap is
+invisible." That is still true. `tools/art_coverage_check.gd` measures the forward direction — a
+definition whose art slot is empty or rotted. Nothing measures the reverse: an export that was
+built, catalogued, previewed and committed, and that no definition, scene, scatter table or layout
+ever names. Art is expensive, so an unreferenced export is the most wasteful failure this repo has,
+and it is silent by construction.
+
+Measured 2026-08-21 across 531 shipped exports (`assets/*/exports/`, excluding `preview/`,
+`source/` and `audit/`), matching each file's STEM rather than its filename — scatter entries name
+assets as `asset = &"bush_round_a"` with `kit = "flora"`, and `world/gen/authored_world.gd:776`
+composes the path as `res://assets/%s/exports/%s.glb`, so a filename-based sweep reports almost the
+whole flora and environment kit as dead and is worthless. Consumers counted: everything outside
+`assets/`, `docs/` and `tools/`. Note that `assets/*/catalog.json` is NOT a consumer — every
+`catalog.json` in the repo is read only by `tools/*_check.gd`, never by the game, so a catalogued
+asset is a validated asset, not a used one.
+
+46 exports are reachable from nothing:
+
+    paths            13  boardwalk_{straight,corner,stairs,broken}, path_{dirt,mud,cobble,corrupted},
+                         stepping_stones, signpost, trail_marker, warning_sign, rune_marker
+                         — the entire kit; no def, scene, scatter table or layout names any of it
+    food             13  cooked_meat, cooked_fish, raw_fish, meat_skewer, bog_loaf, honey_jar,
+                         hearty_stew, healing_stew, healing_draught, pale_draught, stamina_tonic,
+                         suspicious_sludge, fired_flask — `content/items/` has no def for any of
+                         these; the kit was built ahead of the cooking content
+    gatherables       8  clay_deposit, peat_deposit, resin_node, fibre_plant, medicinal_herb,
+                         wild_onion, honeycomb, poison_berry_bush
+    terrain_accents   4  cliff_face, cliff_corner, cliff_overhang, stone_steps
+    icons             3  icon_coin, icon_coin_stack, icon_salvage_fragment — losers of a naming
+                         split: `content/items/coins.tres` uses `icon_coins.png` (plural) and
+                         `loot_coin_pouch.glb`, so the singular variants are orphaned duplicates
+    camp              2  rack_storage, rack_weapon
+    enemies           2  enemy_crawler_fragment_leg, enemy_crawler_fragment_shell — the death
+                         fragments A-006 built; nothing spawns them on crawler death
+    wetland           1  fish_shoal
+
+These are three different problems wearing one symptom, and they want different fixes: a kit built
+ahead of its content (food, gatherables), a kit built and then never placed (paths, terrain_accents,
+camp), and orphaned duplicates from a rename (icons). Only the third is safe to delete.
+
+**Partly addressed 2026-08-21 by mossecba4b, in `9a7e323`.** The instrument now exists —
+`tools/asset_usage_check.gd`, run as `agent godot --script tools/asset_usage_check.gd`. It is the
+standing guard, so this list never has to be rebuilt by hand: it reprints the current set of
+unreferenced exports on every run and exits non-zero while any remain.
+
+One of the 46 is closed. `fibre_plant` is placed by `content/scatter/marsh_floor.tres` and
+`grassland_meadow.tres` and harvests as `nettle` via a new `HARVEST_RULES` prefix — same yield, same
+bare-hands cost, no duplicate definition. It was worth doing first for a reason beyond tidiness: the
+note on that rule block records that fibre is the entry point of the whole tool tree, and its only
+existing sources are flora dressing (`nettle_*`, `sedge_*`) that the player learns by accident.
+
+**The remaining 45 are not wiring gaps, and that is the useful part of this finding.** Each is
+blocked on companion work, so none of them is a scatter row somebody forgot:
+
+    food             13  needs item defs AND icons AND pickup meshes — none of the icons exist
+                         (no cooked_meat, no stew, no draught). An art batch, not a wiring task,
+                         and it presupposes a cooking design that is not settled.
+    paths            13  the whole kit. Needs a path/road placement system; scatter cannot place a
+                         linear feature, and a boardwalk dropped at a random point is worse than none.
+    gatherables       7  clay, peat, resin, herb, onion, honey have no yield items, and those items
+                         would need icons and pickup meshes. Same shape as food.
+    terrain_accents   4  the cliffs (`cliff_face`, `cliff_corner`, `cliff_overhang`, `stone_steps`).
+                         Need slope-aware placement plus a visual judgment call — `rocky_slope` and
+                         `scree_pile` from the same batch ARE placed, so this is specifically the
+                         assets whose read depends on meeting a grade.
+    enemies           2  `enemy_crawler_fragment_leg`/`_shell`, built by A-006 as death gibs. Needs
+                         a death-fragment spawn path with a declared network authority; `Enemy` has
+                         a corpse timer today and nothing that spawns parts.
+    icons             3  `icon_coin`, `icon_coin_stack`, `icon_salvage_fragment`. The first two lost
+                         a rename — `content/items/coins.tres` uses `icon_coins.png` (plural) and
+                         `loot_coin_pouch.glb`. The third has no item because salvage is banked as
+                         a number in `core/save/run_record_save.gd`, never held in inventory.
+                         **These three are the only ones safe to delete.**
+    camp              2  `rack_storage`, `rack_weapon` — POI dressing for `camp_abandoned.tscn`,
+                         which already places 25 assets. Cheapest of what is left, but placing props
+                         in a scene is a spatial judgment, not a table edit.
+    wetland           1  `fish_shoal` needs water-surface placement.
+
+So this finding closes in four separate pieces, not one: an art batch (food + gatherables items), a
+placement system (paths), two small systems (crawler gibs, water placement), and one `rm` (icons).
+
+---
+---
+
 ### F-321 · `AttunementUI` is the third mandatory panel and it still has F-307's soft-lock — it closes only on an accepted pick, so an orphaned client can never leave it
 
 **Area:** UI/netcode · **Severity:** high · **Found:** 2026-08-20 by lp during F-307's sweep
