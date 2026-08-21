@@ -167,6 +167,25 @@ func _ready() -> void:
 	# white so it contributes nothing. Anything that wants to tint the whole ground at once — a
 	# weather state, a debug view, `tools/grade_probe.gd`'s sweep — still has its lever here.
 	_shared_material.set_shader_parameter(&"albedo_color", Color(1.0, 1.0, 1.0))
+	_bind_mire_field()
+
+
+## F-435. Hands the terrain shader the live corruption field so blighted ground reads purple. Bound
+## ONCE, here: `MireGrid.corruption_field_texture()` returns a texture whose RID never changes (the
+## image behind it is re-uploaded in place), so there is nothing to re-push per frame and no
+## per-frame cost to this at all.
+##
+## Silent when there is no MireGrid — the greybox scene and every headless check that builds a
+## streamer without the full autoload set. The shader's `hint_default_black` makes that case read as
+## "clean everywhere", which is the correct terrain for a world with no Mire in it.
+func _bind_mire_field() -> void:
+	var mire_grid: Node = get_node_or_null(^"/root/MireGrid")
+	if mire_grid == null or not mire_grid.has_method(&"corruption_field_texture"):
+		return
+	_shared_material.set_shader_parameter(
+		&"mire_field", mire_grid.call(&"corruption_field_texture"))
+	_shared_material.set_shader_parameter(
+		&"mire_field_half_extent", float(mire_grid.call(&"corruption_field_half_extent")))
 
 
 func _exit_tree() -> void:

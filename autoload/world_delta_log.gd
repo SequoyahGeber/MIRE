@@ -34,6 +34,14 @@ extends Node
 ## `EventBus.cycle_advanced` off it (F-250's fix) without this file knowing anything about Cycle
 ## specifically, and any future kind gets the same for free.
 signal delta_applied(chunk: Vector2i, kind: StringName, key: String, value: Variant)
+## F-435. `net_world_snapshot()` REPLACES `_state` wholesale and deliberately emits no
+## `delta_applied` for the thousands of entries it brings in — replaying them one at a time is the
+## cost the single-message catch-up exists to avoid. Anything keeping an incremental mirror of this
+## log therefore has a hole exactly the size of a late join, and `MireGrid`'s corruption texture is
+## the first such mirror. This is that hole's only notification: "everything you thought you knew
+## about this log is stale, re-read it." Local-only, host never fires it (the host is where
+## snapshots come FROM).
+signal snapshot_applied
 
 ## The world this log can describe, used only to bound a snapshot (F-332). One-directional: nothing
 ## in the Mire knows about this file, and this file never instantiates the simulation — it reads a
@@ -113,6 +121,12 @@ func host_reseed(seed_value: int) -> void:
 ## arrives immediately after this on the same reliable channel (`CycleService`'s `RUN_KIND` record).
 func _reseed_local(seed_value: int) -> void:
 	_state.clear()
+	# F-435: same reason `net_world_snapshot()` fires it — a wholesale `_state.clear()` invalidates
+	# every incremental mirror of this log, and a mirror that only listens to `delta_applied` would
+	# carry the ended run's values into the new one forever (nothing re-sends a cell that happens to
+	# land on the same value twice). Fired BEFORE the reseed record so a listener's rebuild reads the
+	# cleared log and not a half-populated one.
+	snapshot_applied.emit()
 	_apply(SEED_CHUNK, SEED_KIND, SEED_KEY, seed_value)
 	var game_state: Node = get_node_or_null(^"/root/GameState")
 	if game_state != null:
@@ -211,6 +225,7 @@ func net_world_snapshot(seed_value: int, original_size: int, compressed: PackedB
 		push_warning("WorldDeltaLog: snapshot did not decode to a Dictionary — dropped")
 		return
 	_state = decoded as Dictionary
+	snapshot_applied.emit()
 
 
 ## Host -> everyone already connected, one live mutation. Reliable: a dropped delta is a point that

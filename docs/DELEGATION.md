@@ -75,6 +75,89 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-21 — F-432/F-434/F-442: a tree's collider is its trunk, and felling one leaves its own stump (kiln384569)
+
+Reported from play: *"harvest states of trees are not working, and the collision boxs of willows are
+huge, i want no collision box on the leaves of tree period."*
+
+**One collider fitter, for both world builders.** The measurement moved out of
+`ResourceScatterField` into its own file, because an authored map's Python mapgen cannot open a
+`.glb` and had been sizing tree colliders off a CANOPY footprint table.
+
+```gdscript
+const PROP_COLLIDER := preload("res://world/gen/prop_collider.gd")
+
+PROP_COLLIDER.fit(mesh_parts) -> Dictionary       # {} = "this must not collide at all"
+                                                  # {shape: &"cylinder", radius, height, center_y}
+                                                  # {shape: &"box", size: Vector3, center: Vector3, ...}
+PROP_COLLIDER.fit_cached(cache, key, mesh_parts)  # same, behind a cache YOU own (per-vertex walk)
+PROP_COLLIDER.has_foliage(mesh_parts) -> bool
+```
+
+`mesh_parts` is the `[{"mesh": Mesh, "offset": Transform3D}, ...]` shape both world builders already
+pass around. **Always check `shape`** — a prop that lies down (a felled trunk, an uprooted tree) now
+gets a box along its own length instead of a disc as wide as it is long.
+
+`AuthoredWorld._shapes_for()` re-measures any prop whose layout collider is a plain cylinder and
+leaves authored BOXES alone; a prop with no `cols` still collides with nothing.
+
+**Harvestable presentation.** A prop that keeps the world builder's own geometry now hands its node
+over as well as a way to hide it:
+
+```gdscript
+harvestable.set_visual_hook(func(shown: bool) -> void: ...)   # unchanged; the only seam a BATCHED prop has
+harvestable.set_presentation(node: Node3D)                    # NEW — the node that draws it
+```
+
+With a presentation node, `Harvestable` shakes the prop on every landed hit and leans it further as
+it goes down (client-local, off replicated `health`, no new RPC), and on depletion draws a stump cut
+from that tree's own trunk by `systems/harvesting/stump_builder.gd` in preference to the
+definition's one authored `depleted_scene`. Both are automatic — a new world builder gets them by
+calling `set_presentation()`.
+
+**Material names are load-bearing.** `_is_foliage()` classifies a surface by `Material.resource_name`
+(`"MIRE_" + CamelCase(palette_token)`). Anything that REPLACES a material at runtime must carry that
+name across, or every consumer downstream reads a tree's canopy as solid wood — which is what
+`EnvironmentVfx`'s sway dressing was doing (F-442).
+
+Gates: `agent godot --script tools/tree_collider_check.gd` (asserts over every asset the 29 scatter
+tables place) and `agent godot --script tools/harvest_tree_states_check.gd`. For a look:
+`agent godot --windowed --script tools/harvest_tree_states_shot.gd` -> `assets/audit/harvest/`.
+
+### 2026-08-21 — F-435: the Mire is visible on the ground (hollow80855f)
+
+**D-190.** The corruption grid is published to the GPU. Anything that wants to know where the Mire is
+per-fragment reads the texture; nothing calls back into the simulation per frame.
+
+```gdscript
+MireGrid.corruption_field_texture() -> Texture2D   # R8, 256x256, one texel per cell, world XZ.
+                                                   # RID is STABLE — bind once, never re-read.
+                                                   # Never null; black (clean) until a grid exists.
+MireGrid.corruption_field_half_extent() -> float    # world X/Z at the texture's edge; uv = (xz + h) / 2h
+
+WorldDeltaLog.snapshot_applied                      # signal: the log replaced itself wholesale
+                                                    # (late-join snapshot, or a run reseed).
+                                                    # Any incremental mirror of the log must rebuild here.
+
+GroundFog.place_window(eye: Vector3) -> void        # test seam: position the fog volume without a
+                                                    # main-viewport camera
+```
+
+Two consumers, both binding once: `ChunkStreamer._bind_mire_field()` (terrain, purple ground) and
+`GroundFog._push_mire_field()` (low yellow-green fog). Both shaders expose `mire_field`,
+`mire_field_half_extent` and a `blight_strength` A/B dial that is bit-for-bit the pre-F-435 look at 0,
+and both fall back to `hint_default_black` — a level with no `MireGrid` renders exactly as before.
+
+**If you add a third consumer:** the two-stage ramp constants (`BLIGHT_SEEN_AT` / `BLIGHT_HURTS_AT` /
+`BLIGHT_DEEP_AT` / `BLIGHT_HURTS_WEIGHT`) are duplicated in both shaders and the middle one tracks
+`PlayerHealth.BLIGHT_CORRUPTION_THRESHOLD`. Copy the set; do not invent a third ramp.
+
+`GroundFog` also now builds a coarse 64x64 terrain height map (`terrain_height_field`,
+`terrain_field_half_extent`, `terrain_field_ready`) from whatever node answers `height_at()`, so a
+ground-hugging layer works on any terrain. **The ordinary mist does not use it yet — F-444.**
+
+Gate: `agent godot --windowed --script tools/blight_ground_check.gd` (renders; needs `--windowed`).
+
 ### 2026-08-21 — F-433: enemies carry an overhead health bar and every landed hit prints its number (pike3c5846)
 
 **D-189.** Two new client-local HUD autoloads, both registered and both proved headless. Neither

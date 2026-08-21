@@ -33,6 +33,18 @@ extends FogVolume
 const SHADER_PATH: String = "res://world/environment/ground_fog.gdshader"
 const TERRAIN_GROUP: StringName = &"authored_world_terrain"
 
+## F-435. Resolution of the coarse terrain height map handed to the shader, per side. 64 is chosen
+## against what it is FOR: the blight layer is metres thick and its job is to hug the ground, so
+## relief finer than the layer itself changes nothing anyone can see, and every texel costs a
+## `height_at()` call at level load. On a 590 m island that is ~9 m per texel and 4,096 calls, once.
+const HEIGHT_FIELD_CELLS: int = 64
+## F-435. How far above the highest terrain in the level the evaluation window has to reach. The
+## box used to be sized for the MIST alone — `layer_height * HEADROOM_FACTOR` above `base_height`,
+## which on a streamed island is a lid about 17 m over the waterline. The blight fog hugs the ground
+## wherever the ground is, so on any terrain taller than that lid the layer was outside the window
+## and evaluated for nobody. Comfortably clears the shader's own `BLIGHT_REACH_M` halo.
+const BLIGHT_HEADROOM_M: float = 34.0
+
 ## How far out the evaluation window reaches. Beyond `Environment.volumetric_fog_length` (120 m by
 ## default) nothing is sampled at all, so there is no reason to pay for a wider box than that.
 const EXTENT_M: float = 260.0
@@ -53,6 +65,9 @@ const WATER_CLEARANCE_M: float = 0.75
 @export_range(0.0, 4.0, 0.01) var density_scale: float = 1.0
 
 var _shader: Shader
+## Highest terrain Y in the level, measured alongside `base_height`. NAN until then, in which case
+## the window is sized exactly as it was before F-435.
+var _terrain_top: float = NAN
 
 
 func _ready() -> void:
@@ -89,11 +104,24 @@ func _process(_delta: float) -> void:
 		base_height = measured
 		_apply_shape()
 		_push_parameters()
+		# Same frame the terrain first exists, and only ever once: this is the frame where
+		# `height_at()` has something to answer with.
+		_build_terrain_height_field()
 
 	var camera := get_viewport().get_camera_3d()
 	if camera == null:
 		return
-	var eye := camera.global_position
+	place_window(camera.global_position)
+
+
+## Places the evaluation window for an eye at [param eye], XZ only — the mist's height is a property
+## of the world, not of where the camera happens to be, and following in Y is what would make a
+## plateau look as foggy as the mere.
+##
+## Public because `_process()` is not the only thing that needs to drive it: a check that renders
+## through a SubViewport of its own has no camera on the MAIN viewport, so the line above finds
+## nothing and the window would sit at the world origin through every frame it photographs.
+func place_window(eye: Vector3) -> void:
 	global_position = Vector3(eye.x, _centre_height(), eye.z)
 
 
@@ -111,14 +139,24 @@ func apply_look(scale: float, albedo: Color, emission: Color, emission_energy: f
 
 
 func _centre_height() -> float:
-	var top := base_height + layer_height * HEADROOM_FACTOR
-	var bottom := base_height - pool_depth
-	return (top + bottom) * 0.5
+	return (_window_top() + _window_bottom()) * 0.5
 
 
 func _apply_shape() -> void:
-	var height := layer_height * HEADROOM_FACTOR + pool_depth
-	size = Vector3(EXTENT_M, height, EXTENT_M)
+	size = Vector3(EXTENT_M, _window_top() - _window_bottom(), EXTENT_M)
+
+
+## The lid. High enough for the mist, and — once the terrain has been measured — high enough that
+## the blight fog's ground-hugging layer is inside the window on the tallest ground in the level.
+func _window_top() -> float:
+	var top := base_height + layer_height * HEADROOM_FACTOR
+	if is_finite(_terrain_top):
+		top = maxf(top, _terrain_top + BLIGHT_HEADROOM_M)
+	return top
+
+
+func _window_bottom() -> float:
+	return base_height - pool_depth
 
 
 func _push_parameters() -> void:
@@ -129,6 +167,105 @@ func _push_parameters() -> void:
 	shader_material.set_shader_parameter(&"layer_height", layer_height)
 	shader_material.set_shader_parameter(&"pool_depth", pool_depth)
 	shader_material.set_shader_parameter(&"density_scale", density_scale)
+	_push_mire_field(shader_material)
+
+
+## F-435. A coarse height map of the level's own ground, so the blight fog hugs the terrain instead
+## of the single `base_height` datum — which on a streamed island is pinned just above the waterline
+## and would put the whole layer under the sea. See the shader's header for the full reasoning.
+##
+## Built ONCE, from whichever node in this level answers `height_at(x, z)` — the same duck-typed
+## seam `_measure_base_height()` already uses for `water_surface_at`, so a procedural island and an
+## authored map both work without this file knowing which it is in. A level with no such node leaves
+## `terrain_field_ready` at 0 and the shader falls back to `base_height`, unchanged from before.
+##
+## The extent is the terrain's own measured AABB, NOT the Mire grid's: the two fields are sampled
+## with separate uniforms precisely so neither has to be wrong for the other's sake.
+func _build_terrain_height_field() -> void:
+	var shader_material := material as ShaderMaterial
+	if shader_material == null:
+		return
+	var provider: Node = _height_provider()
+	if provider == null:
+		return
+	var half: float = _terrain_half_extent()
+	if not is_finite(half) or half <= 0.0:
+		return
+	var image := Image.create_empty(
+		HEIGHT_FIELD_CELLS, HEIGHT_FIELD_CELLS, false, Image.FORMAT_RF)
+	var span: float = half * 2.0 / float(HEIGHT_FIELD_CELLS)
+	var highest: float = -INF
+	for cell_z: int in HEIGHT_FIELD_CELLS:
+		var world_z: float = -half + (float(cell_z) + 0.5) * span
+		for cell_x: int in HEIGHT_FIELD_CELLS:
+			var world_x: float = -half + (float(cell_x) + 0.5) * span
+			var height: float = float(provider.call(&"height_at", world_x, world_z))
+			highest = maxf(highest, height)
+			image.set_pixel(cell_x, cell_z, Color(height, 0.0, 0.0, 1.0))
+	# The window's lid has to clear the tallest ground in the level, and this loop is the only place
+	# that knows what that is: `_measure_base_height()`'s AABB covers the chunks RESIDENT at level
+	# load, which on a streamed island is a few rings around the spawn and says nothing about the
+	# plateau on the far side. Re-shaping here is what makes the blight fog exist up there.
+	if is_finite(highest):
+		_terrain_top = highest
+		_apply_shape()
+	shader_material.set_shader_parameter(
+		&"terrain_height_field", ImageTexture.create_from_image(image))
+	shader_material.set_shader_parameter(&"terrain_field_half_extent", half)
+	shader_material.set_shader_parameter(&"terrain_field_ready", 1.0)
+
+
+## The level node that can answer for its own ground. Searched up the ancestor chain first (the
+## world root is this node's grandparent on every level that has an `Atmosphere`), then across the
+## terrain group, so neither layout has to be assumed.
+func _height_provider() -> Node:
+	var node: Node = get_parent()
+	while node != null:
+		if node.has_method(&"height_at"):
+			return node
+		node = node.get_parent()
+	for terrain: Node in get_tree().get_nodes_in_group(TERRAIN_GROUP):
+		if terrain.has_method(&"height_at"):
+			return terrain
+	return null
+
+
+## Half the square the height map has to cover, in XZ.
+##
+## The terrain AABB alone is NOT enough and this is the trap worth naming: on a streamed world the
+## group only holds the chunks currently resident around the player, so measured at level load it
+## describes a few rings, not the island — and the shader maps [-half, +half] symmetrically about
+## the origin, so an under-sized half would smear those few rings' heights across the whole map.
+## `MireGrid`'s own half extent is the island's authored radius and is exactly right there; the
+## AABB is exactly right on an authored map, which is fully resident from the first frame. The
+## larger of the two is correct in both cases, and over-covering only costs resolution.
+func _terrain_half_extent() -> float:
+	var half: float = 0.0
+	var mire_grid: Node = get_node_or_null(^"/root/MireGrid")
+	if mire_grid != null and mire_grid.has_method(&"corruption_field_half_extent"):
+		half = float(mire_grid.call(&"corruption_field_half_extent"))
+	for node: Node in get_tree().get_nodes_in_group(TERRAIN_GROUP):
+		var visual := node as VisualInstance3D
+		if visual == null:
+			continue
+		var box: AABB = visual.global_transform * visual.get_aabb()
+		half = maxf(half, maxf(absf(box.position.x), absf(box.end.x)))
+		half = maxf(half, maxf(absf(box.position.z), absf(box.end.z)))
+	return half if half > 0.0 else NAN
+
+
+## F-435. Hands the fog shader the same live corruption field the terrain shader gets, so the low
+## yellow-green blight fog and the purple ground agree about where the Mire is. Pushed once — the
+## texture's RID never changes, only the image behind it — and silently skipped when there is no
+## MireGrid, where `hint_default_black` leaves this shader exactly the pre-F-435 mist.
+func _push_mire_field(shader_material: ShaderMaterial) -> void:
+	var mire_grid: Node = get_node_or_null(^"/root/MireGrid")
+	if mire_grid == null or not mire_grid.has_method(&"corruption_field_texture"):
+		return
+	shader_material.set_shader_parameter(
+		&"mire_field", mire_grid.call(&"corruption_field_texture"))
+	shader_material.set_shader_parameter(
+		&"mire_field_half_extent", float(mire_grid.call(&"corruption_field_half_extent")))
 
 
 ## Where the mist sits, measured off the level rather than authored per map.
@@ -151,6 +288,9 @@ func _measure_base_height() -> float:
 	# different answers, and only the first one should be retried next frame.
 	if not found or bounds.size.y <= 0.0:
 		return NAN
+	# F-435. Recorded here rather than in a second AABB walk: this is the only place in the file
+	# that has the level's terrain bounds in hand.
+	_terrain_top = bounds.end.y
 	var measured: float = bounds.position.y + bounds.size.y * 0.25
 	# Streamed terrain includes the seabed — the island falloff runs tens of metres below the
 	# waterline — so a quarter-height datum measured off it sits underwater, where mist renders for

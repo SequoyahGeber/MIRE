@@ -69,94 +69,30 @@ do is worth as much as the record of what we did.
 
 ## Open
 
-### F-439 · No standing check that every shipped asset is reachable from something the game loads — 46 exports are built but referenced by nothing
+### F-444 · The ordinary ground mist still hangs off one world Y, and on a streamed island that Y is the waterline — it pools in the sea, not in the valleys
 
-**Area:** assets · **Severity:** medium · **Found:** 2026-08-21 by mossecba4b
+**Area:** world/VFX · **Severity:** medium · **Found:** 2026-08-21 by hollow80855f during F-435
 
-F-395 fixed one instance of this class (141 authored-map assets the procedural island never
-placed) and closed with the line that matters: "Nothing checks that the two agree, so the gap is
-invisible." That is still true. `tools/art_coverage_check.gd` measures the forward direction — a
-definition whose art slot is empty or rotted. Nothing measures the reverse: an export that was
-built, catalogued, previewed and committed, and that no definition, scene, scatter table or layout
-ever names. Art is expensive, so an unreferenced export is the most wasteful failure this repo has,
-and it is silent by construction.
+`world/environment/ground_fog.gd` measures `base_height` once, as a quarter of the way up the
+terrain's own AABB, clamped to just above the water surface. On the authored maps that file was
+written for this is exactly right and its header explains why. On the **streamed** island it is not:
+the terrain mesh includes the seabed, which runs tens of metres below the waterline, so the quarter-
+height datum lands underwater and the `maxf(water + WATER_CLEARANCE_M)` clamp is what actually
+decides the answer — every time. The mist therefore sits at sea level on a map whose dry ground runs
+from 3 m to about 45 m, which is not "low over the mere and clear on the plateau"; it is a metre of
+haze over the ocean and nothing over the island at all.
 
-Measured 2026-08-21 across 531 shipped exports (`assets/*/exports/`, excluding `preview/`,
-`source/` and `audit/`), matching each file's STEM rather than its filename — scatter entries name
-assets as `asset = &"bush_round_a"` with `kit = "flora"`, and `world/gen/authored_world.gd:776`
-composes the path as `res://assets/%s/exports/%s.glb`, so a filename-based sweep reports almost the
-whole flora and environment kit as dead and is worthless. Consumers counted: everything outside
-`assets/`, `docs/` and `tools/`. Note that `assets/*/catalog.json` is NOT a consumer — every
-`catalog.json` in the repo is read only by `tools/*_check.gd`, never by the game, so a catalogued
-asset is a validated asset, not a used one.
+F-435 hit the same wall for the blight fog and built the machinery to get past it:
+`_build_terrain_height_field()` now samples the level's own `height_at()` into a coarse 64x64 map,
+and the blight layer hugs THAT. The ordinary mist was deliberately left alone — F-435's scope was the
+Mire's visibility, and moving the shipped mist is a look change that wants its own before/after
+frames and Sequoyah's eye on them.
 
-46 exports are reachable from nothing:
-
-    paths            13  boardwalk_{straight,corner,stairs,broken}, path_{dirt,mud,cobble,corrupted},
-                         stepping_stones, signpost, trail_marker, warning_sign, rune_marker
-                         — the entire kit; no def, scene, scatter table or layout names any of it
-    food             13  cooked_meat, cooked_fish, raw_fish, meat_skewer, bog_loaf, honey_jar,
-                         hearty_stew, healing_stew, healing_draught, pale_draught, stamina_tonic,
-                         suspicious_sludge, fired_flask — `content/items/` has no def for any of
-                         these; the kit was built ahead of the cooking content
-    gatherables       8  clay_deposit, peat_deposit, resin_node, fibre_plant, medicinal_herb,
-                         wild_onion, honeycomb, poison_berry_bush
-    terrain_accents   4  cliff_face, cliff_corner, cliff_overhang, stone_steps
-    icons             3  icon_coin, icon_coin_stack, icon_salvage_fragment — losers of a naming
-                         split: `content/items/coins.tres` uses `icon_coins.png` (plural) and
-                         `loot_coin_pouch.glb`, so the singular variants are orphaned duplicates
-    camp              2  rack_storage, rack_weapon
-    enemies           2  enemy_crawler_fragment_leg, enemy_crawler_fragment_shell — the death
-                         fragments A-006 built; nothing spawns them on crawler death
-    wetland           1  fish_shoal
-
-These are three different problems wearing one symptom, and they want different fixes: a kit built
-ahead of its content (food, gatherables), a kit built and then never placed (paths, terrain_accents,
-camp), and orphaned duplicates from a rename (icons). Only the third is safe to delete.
-
-**Partly addressed 2026-08-21 by mossecba4b, in `9a7e323`.** The instrument now exists —
-`tools/asset_usage_check.gd`, run as `agent godot --script tools/asset_usage_check.gd`. It is the
-standing guard, so this list never has to be rebuilt by hand: it reprints the current set of
-unreferenced exports on every run and exits non-zero while any remain.
-
-One of the 46 is closed. `fibre_plant` is placed by `content/scatter/marsh_floor.tres` and
-`grassland_meadow.tres` and harvests as `nettle` via a new `HARVEST_RULES` prefix — same yield, same
-bare-hands cost, no duplicate definition. It was worth doing first for a reason beyond tidiness: the
-note on that rule block records that fibre is the entry point of the whole tool tree, and its only
-existing sources are flora dressing (`nettle_*`, `sedge_*`) that the player learns by accident.
-
-**The remaining 45 are not wiring gaps, and that is the useful part of this finding.** Each is
-blocked on companion work, so none of them is a scatter row somebody forgot:
-
-    food             13  needs item defs AND icons AND pickup meshes — none of the icons exist
-                         (no cooked_meat, no stew, no draught). An art batch, not a wiring task,
-                         and it presupposes a cooking design that is not settled.
-    paths            13  the whole kit. Needs a path/road placement system; scatter cannot place a
-                         linear feature, and a boardwalk dropped at a random point is worse than none.
-    gatherables       7  clay, peat, resin, herb, onion, honey have no yield items, and those items
-                         would need icons and pickup meshes. Same shape as food.
-    terrain_accents   4  the cliffs (`cliff_face`, `cliff_corner`, `cliff_overhang`, `stone_steps`).
-                         Need slope-aware placement plus a visual judgment call — `rocky_slope` and
-                         `scree_pile` from the same batch ARE placed, so this is specifically the
-                         assets whose read depends on meeting a grade.
-    enemies           2  `enemy_crawler_fragment_leg`/`_shell`, built by A-006 as death gibs. Needs
-                         a death-fragment spawn path with a declared network authority; `Enemy` has
-                         a corpse timer today and nothing that spawns parts.
-    icons             3  `icon_coin`, `icon_coin_stack`, `icon_salvage_fragment`. The first two lost
-                         a rename — `content/items/coins.tres` uses `icon_coins.png` (plural) and
-                         `loot_coin_pouch.glb`. The third has no item because salvage is banked as
-                         a number in `core/save/run_record_save.gd`, never held in inventory.
-                         **These three are the only ones safe to delete.**
-    camp              2  `rack_storage`, `rack_weapon` — POI dressing for `camp_abandoned.tscn`,
-                         which already places 25 assets. Cheapest of what is left, but placing props
-                         in a scene is a spatial judgment, not a table edit.
-    wetland           1  `fish_shoal` needs water-surface placement.
-
-So this finding closes in four separate pieces, not one: an art batch (food + gatherables items), a
-placement system (paths), two small systems (crawler gibs, water placement), and one `rm` (icons).
-
----
----
+**What the fix would be:** the same `ground_y` the blight term already computes, with the mist's
+`above`/`below` pair measured from it instead of from `base_height`, and `pool_depth` becoming depth
+below the LOCAL ground rather than below a global datum — which is what would finally make a hollow
+hold mist and a ridge not. `tools/blight_ground_check.gd`'s four-frame harness is the shape of the
+check it needs.
 
 ### F-321 · `AttunementUI` is the third mandatory panel and it still has F-307's soft-lock — it closes only on an accepted pick, so an orphaned client can never leave it
 
@@ -2579,7 +2515,570 @@ fails for an unrelated reason is worse than one that says it could not measure.
 
 ---
 
-### F-431 · No world-focus prompt: harvestables, haulables and chests give the player no indication they are interactable
+### F-436 · tools/inventory_check.gd asserts exactly one harvest-yield subscriber, and SfxDirector legitimately added a second
+
+**Area:** audio · **Severity:** low · **Found:** 2026-08-21 by wickc3d79c
+
+`tools/inventory_check.gd:39` asserts `EVENT_BUS.harvest_yielded_subscriber_count() == 1` with the
+description "InventoryService owns one harvest-yield subscription". Since `autoload/sfx_director.gd`
+started subscribing (`sfx_director.gd:361`, for the harvest sound), the real count is 2 and the check
+fails at HEAD — confirmed with `agent baseline --script tools/inventory_check.gd`, so it is not
+caused by any working-tree change.
+
+Both subscribers are correct: InventoryService grants the item, SfxDirector plays the sound. The
+assertion is what is stale. It was presumably written to catch a *double grant*, which is a real
+hazard worth keeping — so the fix is to assert that InventoryService's own handler is subscribed
+exactly once, rather than to assert the total subscriber count, which any new listener will break
+again.
+
+Noticed while resolving F-431; not touched, because the file belongs to whoever is shipping the 7.1
+audio work.
+
+---
+
+### F-437 · Three centre-screen HUD elements landed in the same week and nothing has seen them on screen together
+
+**Area:** ui · **Severity:** medium · **Found:** 2026-08-21 by wickc3d79c
+
+F-431 added `ui/hud/focus_prompt.gd` — a crosshair at screen centre and a prompt panel 44 px below
+it. In the same window, `pike3c5846` shipped F-433: `ui/hud/target_health_hud.gd` and
+`ui/hud/damage_numbers.gd`. All three draw at or near the centre of the screen, all three were built
+and rendered in isolation, and no check or shot has ever composited them.
+
+The concrete risks, in the order they are likely to bite:
+
+- **Overlap.** FocusPrompt's panel occupies centre + 44 px. If the target health bar picks a similar
+  offset, one covers the other, which is exactly the two-overlapping-boxes failure D-187 was written
+  to end — reintroduced from a different direction.
+- **Double naming.** FocusPrompt titles what you are aiming at; a target health HUD very likely
+  names it too. A player looking at a boar should not read "Boar" twice in two fonts.
+- **Damage numbers over the reticle.** Numbers that spawn at the hit point will pass through the
+  crosshair, which is the one pixel that has to stay readable while you aim.
+
+What resolving this looks like: one shot that renders all three at once, at 1280x720 and at the Deck's
+1280x800, against a lit backdrop — `tools/focus_prompt_shot.gd` and `tools/target_feedback_shot.gd`
+are both worked examples to copy from. Then decide the vertical budget around screen centre and
+record it, so the fourth thing that wants that space has a number to read rather than a guess to
+make.
+
+Filed by wickc3d79c on shipping F-431. Not attempted here: F-433's files were claimed and in flight,
+and judging the composite is a taste call best made on real pixels.
+
+---
+
+### F-438 · Three audio autoloads are unclassified in the run-scope audit, so tools/run_scope_audit_check.gd fails at HEAD
+
+**Area:** audio · **Severity:** low · **Found:** 2026-08-21 by wickc3d79c
+
+`tools/run_scope_audit_check.gd` fails with 3 failures at HEAD — confirmed with `agent baseline
+--script tools/run_scope_audit_check.gd`, so it is not caused by any working-tree change:
+
+    autoload/ambient_music_director.gd
+    autoload/theme_music_director.gd
+    autoload/sfx_director.gd
+
+None of the three appears in the audit's classification table, which D-178 requires every autoload to
+be in. The check's own message states the fix: decide whether each one's state is RUN-scoped — if it
+is, subscribe `EventBus.run_restarted` and add it as RESETS; if it is not, add it with the reason.
+
+This is not bookkeeping. The question the table forces is real for at least one of them: a music
+director that caches "which track is playing" or "which stage the run reached" and does not reset on
+`run_restarted` will start run two mid-way through run one's escalation.
+
+Noticed while resolving F-431, which added a fourth unclassified autoload (`ui/hud/focus_prompt.gd`);
+that one is classified and the check is down from 4 failures to 3. Left alone here because the three
+belong to whoever is shipping the 7.1 audio work.
+
+---
+
+### F-439 · No standing check that every shipped asset is reachable from something the game loads — 46 exports are built but referenced by nothing
+
+**Area:** assets · **Severity:** medium · **Found:** 2026-08-21 by mossecba4b
+
+F-395 fixed one instance of this class (141 authored-map assets the procedural island never
+placed) and closed with the line that matters: "Nothing checks that the two agree, so the gap is
+invisible." That is still true. `tools/art_coverage_check.gd` measures the forward direction — a
+definition whose art slot is empty or rotted. Nothing measures the reverse: an export that was
+built, catalogued, previewed and committed, and that no definition, scene, scatter table or layout
+ever names. Art is expensive, so an unreferenced export is the most wasteful failure this repo has,
+and it is silent by construction.
+
+Measured 2026-08-21 across 531 shipped exports (`assets/*/exports/`, excluding `preview/`,
+`source/` and `audit/`), matching each file's STEM rather than its filename — scatter entries name
+assets as `asset = &"bush_round_a"` with `kit = "flora"`, and `world/gen/authored_world.gd:776`
+composes the path as `res://assets/%s/exports/%s.glb`, so a filename-based sweep reports almost the
+whole flora and environment kit as dead and is worthless. Consumers counted: everything outside
+`assets/`, `docs/` and `tools/`. Note that `assets/*/catalog.json` is NOT a consumer — every
+`catalog.json` in the repo is read only by `tools/*_check.gd`, never by the game, so a catalogued
+asset is a validated asset, not a used one.
+
+46 exports are reachable from nothing:
+
+    paths            13  boardwalk_{straight,corner,stairs,broken}, path_{dirt,mud,cobble,corrupted},
+                         stepping_stones, signpost, trail_marker, warning_sign, rune_marker
+                         — the entire kit; no def, scene, scatter table or layout names any of it
+    food             13  cooked_meat, cooked_fish, raw_fish, meat_skewer, bog_loaf, honey_jar,
+                         hearty_stew, healing_stew, healing_draught, pale_draught, stamina_tonic,
+                         suspicious_sludge, fired_flask — `content/items/` has no def for any of
+                         these; the kit was built ahead of the cooking content
+    gatherables       8  clay_deposit, peat_deposit, resin_node, fibre_plant, medicinal_herb,
+                         wild_onion, honeycomb, poison_berry_bush
+    terrain_accents   4  cliff_face, cliff_corner, cliff_overhang, stone_steps
+    icons             3  icon_coin, icon_coin_stack, icon_salvage_fragment — losers of a naming
+                         split: `content/items/coins.tres` uses `icon_coins.png` (plural) and
+                         `loot_coin_pouch.glb`, so the singular variants are orphaned duplicates
+    camp              2  rack_storage, rack_weapon
+    enemies           2  enemy_crawler_fragment_leg, enemy_crawler_fragment_shell — the death
+                         fragments A-006 built; nothing spawns them on crawler death
+    wetland           1  fish_shoal
+
+These are three different problems wearing one symptom, and they want different fixes: a kit built
+ahead of its content (food, gatherables), a kit built and then never placed (paths, terrain_accents,
+camp), and orphaned duplicates from a rename (icons). Only the third is safe to delete.
+
+**Partly addressed 2026-08-21 by mossecba4b, in `9a7e323`.** The instrument now exists —
+`tools/asset_usage_check.gd`, run as `agent godot --script tools/asset_usage_check.gd`. It is the
+standing guard, so this list never has to be rebuilt by hand: it reprints the current set of
+unreferenced exports on every run and exits non-zero while any remain.
+
+One of the 46 is closed. `fibre_plant` is placed by `content/scatter/marsh_floor.tres` and
+`grassland_meadow.tres` and harvests as `nettle` via a new `HARVEST_RULES` prefix — same yield, same
+bare-hands cost, no duplicate definition. It was worth doing first for a reason beyond tidiness: the
+note on that rule block records that fibre is the entry point of the whole tool tree, and its only
+existing sources are flora dressing (`nettle_*`, `sedge_*`) that the player learns by accident.
+
+**The remaining 45 are not wiring gaps, and that is the useful part of this finding.** Each is
+blocked on companion work, so none of them is a scatter row somebody forgot:
+
+    food             13  needs item defs AND icons AND pickup meshes — none of the icons exist
+                         (no cooked_meat, no stew, no draught). An art batch, not a wiring task,
+                         and it presupposes a cooking design that is not settled.
+    paths            13  the whole kit. Needs a path/road placement system; scatter cannot place a
+                         linear feature, and a boardwalk dropped at a random point is worse than none.
+    gatherables       7  clay, peat, resin, herb, onion, honey have no yield items, and those items
+                         would need icons and pickup meshes. Same shape as food.
+    terrain_accents   4  the cliffs (`cliff_face`, `cliff_corner`, `cliff_overhang`, `stone_steps`).
+                         Need slope-aware placement plus a visual judgment call — `rocky_slope` and
+                         `scree_pile` from the same batch ARE placed, so this is specifically the
+                         assets whose read depends on meeting a grade.
+    enemies           2  `enemy_crawler_fragment_leg`/`_shell`, built by A-006 as death gibs. Needs
+                         a death-fragment spawn path with a declared network authority; `Enemy` has
+                         a corpse timer today and nothing that spawns parts.
+    icons             3  `icon_coin`, `icon_coin_stack`, `icon_salvage_fragment`. The first two lost
+                         a rename — `content/items/coins.tres` uses `icon_coins.png` (plural) and
+                         `loot_coin_pouch.glb`. The third has no item because salvage is banked as
+                         a number in `core/save/run_record_save.gd`, never held in inventory.
+                         **These three are the only ones safe to delete.**
+    camp              2  `rack_storage`, `rack_weapon` — POI dressing for `camp_abandoned.tscn`,
+                         which already places 25 assets. Cheapest of what is left, but placing props
+                         in a scene is a spatial judgment, not a table edit.
+    wetland           1  `fish_shoal` needs water-surface placement.
+
+So this finding closes in four separate pieces, not one: an art batch (food + gatherables items), a
+placement system (paths), two small systems (crawler gibs, water placement), and one `rm` (icons).
+
+---
+
+### F-440 · Five pickups have been 16-24% under their declared true size since world_bounds stopped using the inflated bound_box ruler
+
+**Area:** art · **Severity:** medium · **Found:** 2026-08-21 by gale43d16e
+
+Hit while adding `pickup_apple` (2026-08-21): `build_pickup_kit.py` aborts on its own scale contract,
+and has been doing so at HEAD. Five of the fourteen shipped pickups measure well under the size
+`mire_art.SCALE` declares for them:
+
+    pickup_stone      0.151 m vs 0.180   0.84x
+    pickup_flint      0.098 m vs 0.130   0.76x
+    pickup_iron_ore   0.160 m vs 0.200   0.80x
+    pickup_coal       0.134 m vs 0.160   0.84x
+    pickup_berry      0.075 m vs 0.090   0.84x
+
+**Nothing shrank. The tape measure got honest.** `mire_art.world_bounds` used to measure
+`obj.bound_box`, and was corrected — rightly — to measure VERTICES, because a bound box is
+axis-aligned in the object's LOCAL space, so once an object is rotated (which is every cone
+`cylinder_between` and `tapered_between` produce) transforming its eight corners gives a box strictly
+larger than the geometry inside it. That fix is documented in `world_bounds` itself; it was found
+because it was leaving up to 76 mm of air under every willow.
+
+The pickups' `SCALE` targets were set by eye against the OLD ruler, so they encode an inflated
+measurement. When the ruler was fixed, the geometry stayed exactly where it was and the numbers
+stopped agreeing — the assets in `assets/pickups/exports/` are the same ones that shipped, and the
+catalog beside them still records the old, larger figures. The contract has been red ever since, and
+because nothing enumerates the tools/ check suite (F-293) nobody saw it.
+
+**Fixed by normalising rather than by hand-growing five builders.** `create_asset` now scales each
+finished pickup onto its `SCALE` entry, which is what every other kit in the repo already does with
+its own size table (`build_flora_set.py`'s `SIZE_BANDS`, `build_gatherable_plants.py`'s `SIZE`,
+`build_camp_set.py`'s `SIZE`). That keeps the table as the single source of truth — an asset is the
+size the table says it is, and a builder's job is its SHAPE — and it means the contract can no longer
+be red without also being fixed. All fifteen pickups now measure their declared size exactly.
+
+Two things worth noting for whoever reads the catalog diff: the nine pickups that were already
+passing move by up to 12% as well, onto their exact declared figures rather than merely within
+tolerance of them; and this is a real gameplay-visible change, because a flint that was 98 mm is now
+130 mm on the ground.
+
+**The general lesson is about the second failure this caused.** A measurement fix silently
+invalidated a table of numbers derived from the old measurement, and there was no link between them
+to notice it. Anywhere a constant was calibrated by eye against a tool, fixing the tool is a change
+to the constant too.
+
+---
+
+### F-441 · The berry bushes' fruit was hidden under their own canopy, so the fruiting and picked states looked the same
+
+**Area:** art · **Severity:** medium · **Found:** 2026-08-21 by gale43d16e
+
+Sequoyah asked for food assets — mushrooms, berries, apples — with world models and icons, berry
+bushes with and without fruit to show harvest state, the same for apples, and "a beautiful apple
+tree" (2026-08-21).
+
+The berry bushes already existed and did not do their job. `berry_decision_preview.png` puts the
+fruiting bush, the poison bush and the picked bush side by side, and the only difference between the
+first and the last is a handful of red specks along one bottom edge. That is the single thing the
+asset exists to communicate.
+
+Two causes, and the second one hid the first:
+
+* **The fruit was under the canopy.** `berry_sites()` placed each cluster on the surface of one of
+  three foliage masses with the elevation biased DOWNWARD, i.e. beneath the mass, in its shadow, from
+  every angle a standing player occupies. Eleven of twelve clusters were effectively invisible.
+* **The berries were 7-9 cm across.** `berry_cluster()` used its size figure as a RADIUS. A blackberry
+  is about 2 cm. Nobody noticed for as long as the fruit was buried, because there was nothing
+  visible to compare it against — and the two errors cancelled into "you can sort of see some red".
+
+**A bush is its canes, not a pile of foliage.** A bramble or a blueberry throws arching canes out of
+the root crown; they lift, fall over, carry their leaves along the way, and fruit at their outer ends
+where the light is. Building that shape puts the berries where they can be seen for free — no bigger
+fruit, no brighter red, just fruit where the plant actually puts it. The three foliage masses stayed
+but shrank hard: at their old radii they engulfed every cane, and the plant went back to reading as
+green rocks. **A bush's outline should be made by the things that stick out of it.**
+
+The same mistake, at three different scales, in one afternoon:
+
+* the berry bush, above;
+* the apple tree, whose first cut hung its fruit at a guessed offset below each limb — inside the
+  crown, invisible from all eight azimuths;
+* and, for the same structural reason, both were fixed the same way: the surface the fruit hangs on
+  has to be a TABLE that both the frame builder and the fruit placer read. A guessed offset from a
+  limb is a guess about where the leaves are.
+
+Also built here: the apple tree itself (a `Malus domestica` — short thick trunk forking low into five
+uneven scaffold limbs that each kink once, a crown as wide as the tree is tall, two-toned fruit,
+because one flat red at that size is a cherry), and a mushroom patch, which the kit did not have. The
+six `mushroom_cluster_*` props are DECORATION in `fungus_cap` pink and `fungus_blue` — the mire's own
+growth-signal colours, meaning "this came out of the corruption" — so a mushroom the player is meant
+to eat cannot wear either without the palette lying to them. New `fungus_edible`/`fungus_gill`
+tokens, and `pickup_mushroom` recoloured off `mire_flesh`/`mire_light` for the same reason: an item
+that does not match the node it was picked from teaches the wrong colour twice.
+
+Last: `berry_bush_full` and `berry_bush_harvested` had been sitting in `assets/gatherables/exports/`
+with **no content definition referencing them at all**. The art existed, the state pair was verified,
+and nothing in the game could spawn either one. `content/harvestables/berry_bush.tres`,
+`apple_tree.tres` and `mushroom_patch.tres` now do. Worth a sweep for other orphaned art —
+`art_coverage_check.gd` finds definitions missing art, and cannot see art missing a definition.
+
+---
+
+## Resolved
+
+### F-432 · Felling a tree has no visible harvest states, and its stump is another species — **fixed**
+
+**Area:** world · **Severity:** high · **Found:** 2026-08-21 by kiln384569
+
+Reported from play (Sequoyah, 2026-08-21): "harvest states of trees are not working".
+
+Measured through the shipped path (a probe that builds real holders with
+`ResourceScatterField._build_node_holder()` and lets `HarvestWorld` wire them):
+
+* Every `tree_*` asset resolves through `HarvestLibrary.HARVEST_RULES` to
+  `content/harvestables/wild_tree.tres`, which has an EMPTY `active_state_scenes`.
+  So there is no damage progression at all for 95% of the island's trees: the tree
+  is whole, then it is gone.
+* Its `depleted_scene` is the one authored `harvest_tree_fresh_stump.glb` — a ~1.1 m
+  broadleaf stump 0.56 m across. A 13.6 m willow with a 2.2 m bole leaves it behind.
+  The stump does not match the species, the trunk width, or the tree's scale.
+* Only `harvest_tree_intact` carries the four-state chain, and an iron axe (power 3)
+  against `max_health` 6 goes 6 -> 3 -> 0, so states 1 and 3 are never seen even there.
+
+Nothing is broken in `Harvestable`'s state machine — `tools/harvest_state_chain_check.gd`
+passes — the content simply has no states for the trees the world actually places.
+
+---
+
+**Resolved 2026-08-21 by kiln384569.** Trees now have harvest states. Since a procedurally generated world cannot have a Blender export per
+species (the argument `systems/harvesting/harvest_library.gd` already makes about harvestability),
+the states are POSE and GENERATED GEOMETRY rather than authored art, and they work for every tree in
+the game — including any tree added later — with no content to write.
+
+**1. Every landed hit shakes the tree, and a damaged tree leans.** `systems/harvesting/harvestable.gd`
+gained `_start_shake()` / `_apply_pose()`: a decaying 2.6° wobble over 0.42 s that settles into a
+persistent lean, up to `MAX_LEAN_DEG` (5°) as the prop approaches 0 health. Both run off `health` —
+a replicated on-change property every peer already has, the same seam F-391's impact chips use — so
+a client watching a teammate chop sees the same tree move. No new RPC, no `PROTOCOL_VERSION` bump,
+no authority change. `_process` is switched ON only while a shake is running (F-099's rule).
+
+**2. A felled tree leaves ITS OWN stump.** New `systems/harvesting/stump_builder.gd` measures the
+tree's trunk cross-section at three heights up to 0.62 m, builds a nine-sided tapered tube through
+them, caps it with a lightened `MIRE_WoodCut` face, and clothes the sides in that species' own bark
+material. Cached per asset — a hundred felled pines cost one mesh. It answers null for anything
+under 2.5 m tall or for a definition that ships its own damage art, so a fallen log, a stump and
+`harvest_tree_intact` all keep exactly what they had.
+
+The root flare is bounded to 1.35x the cut face: a pine measures 1.08 m at the ground and 0.53 m at
+knee height, and a stump built honestly through both is a cone rather than a cut trunk.
+
+**3. `autoload/harvest_world.gd` hands the Harvestable the node, not just a way to hide it** —
+`set_presentation()`, alongside the existing `set_visual_hook()`. The hook stays the seam for
+batched props (a MultiMesh slot is not a node and has no pose); the new call is what the shake, the
+lean and the stump cut from this mesh all need.
+
+**Found on the way, fixed separately: F-442.** `EnvironmentVfx` replaces a mesh's surface materials
+when it dresses foliage for sway, and dropped their `resource_name` — the one thing that tells bark
+from leaves. The first stump built inside a live scene came out 12 m across.
+
+Verified: new `tools/harvest_tree_states_check.gd` (failures=0) drives real
+`ResourceScatterField._build_node_holder()` holders through `HarvestWorld` for a willow, a pine, a
+birch and `harvest_tree_intact`, asserting the hit moves the tree, the lean survives the shake and
+stays inside its bound, the stump matches THAT tree's trunk width (willow 1.03 m vs trunk 0.84,
+pine 0.70 vs 0.55, birch 0.62 vs 0.50), its faces point outward and its cut face looks up, the
+standing tree is hidden and restored across a respawn, and the one asset with authored damage states
+keeps using them instead of being posed.
+
+`tools/harvest_tree_states_shot.gd --windowed` renders the three states for a look;
+`assets/audit/harvest/` holds the images. Regression: `harvestable_check`,
+`harvest_state_chain_check`, `harvest_world_check`, `harvest_restart_check`, `harvest_vfx_check`,
+`harvest_batch_check`, `harvestable_net_check` (two real processes), `environment_vfx_check`,
+`environment_vfx_hollowmere_check`, `art_coverage_check`, `mire_interaction_check`,
+`tree_collider_check`, `hollowmere_check` — all zero failures.
+
+**Not fixed here, and worth a decision by someone tuning balance:** a tree is `max_health` 6 and an
+iron axe lands 3, so felling one is TWO swings and only one intermediate state is ever seen —
+`harvest_tree_intact` goes 6 -> 3 -> 0 and skips two of its four authored damage scenes outright.
+The states machinery is not what limits that; the health-to-tool ratio is.
+
+### F-443 · harvest_world_check waits 0.3 s on a 0.25 s cooldown and flakes under load — **fixed**
+
+**Area:** tools · **Severity:** low · **Found:** 2026-08-21 by kiln384569
+
+`tools/harvest_world_check.gd` submits a hit through the attack adapter, waits `create_timer(0.3)`,
+then submits a second through the first-person ray and asserts the second landed. The cooldown that
+gate has to clear is `HarvestableDef.request_cooldown_seconds` = 0.25 s, so the margin is ~20-50 ms —
+and the wait is measured from AFTER the first hit was stamped, not before.
+
+Observed failing once ("first-person ray submits one definition-authored hit", health unchanged at
+5) on a machine running several headless Godot processes at once, and passing on three consecutive
+re-runs of the identical build. Measured elapsed on a passing run: 271 ms against a 250 ms cooldown.
+
+Fixed by waiting 0.6 s instead. Nothing about the check's meaning depends on the wait being tight;
+it only has to clear the cooldown.
+
+**Resolved 2026-08-21 by kiln384569.** `tools/harvest_world_check.gd` now waits 0.6 s rather than 0.3 s before the ray hit, with a comment
+naming the 0.25 s `request_cooldown_seconds` it has to clear and why the margin mattered. Verified:
+four consecutive runs, `HARVEST_WORLD_CHECK live=178 hidden=11 events=1 failures=0`.
+
+### F-442 · Sway dressing erases a mesh's material names, so nothing downstream can tell bark from leaves — **fixed**
+
+**Area:** world · **Severity:** high · **Found:** 2026-08-21 by kiln384569
+
+`EnvironmentVfx._dress_foliage`/`_dress_baked_foliage` REPLACE a mesh's surface materials with
+cached `ShaderMaterial`s (`autoload/environment_vfx.gd`, `_sway_material` / `_baked_sway_material`).
+The replacements carry the original's colour, roughness and vertex-colour flag — and NOT its
+`resource_name`.
+
+That name is the only thing in the game that says which surface is foliage.
+`world/gen/prop_collider.gd::_is_foliage()` reads it, and so does anything built on the same rule.
+Once a mesh has been dressed, every surface on it looks unnamed, `_is_foliage()` answers "solid"
+(deliberately, since being too wide beats having no collision), and a tree's whole CANOPY becomes
+collidable geometry.
+
+Measured on `tree_willow_a` while writing F-432's stump builder: the same mesh measures a 0.85 m
+trunk in a process that has not dressed it and a 6.10 m crown in one that has. The stump generated
+from it came out 12 m across.
+
+The shipped collider path escapes this by ORDERING alone — `ResourceScatterField._build_node_holder()`
+fits the collider before it adds the holder to the tree, and caches the answer per asset, so the
+first willow in a run is measured clean and every later one reads the cache. Nothing enforces that
+order, nothing tests it, and any future consumer that measures a mesh after the world has been
+dressed silently gets the canopy.
+
+Fix is one property: carry `original.resource_name` onto the sway material, and put it in the
+material cache key so two differently-named materials that happen to share an appearance cannot
+collapse onto one name.
+
+---
+
+**Resolved 2026-08-21 by kiln384569.** Fixed in `autoload/environment_vfx.gd`: both `_sway_material()` and `_baked_sway_material()` now
+copy `original.resource_name` onto the ShaderMaterial they build, and both cache keys carry that
+name so two differently-named materials that happen to agree on colour, roughness and sway numbers
+cannot collapse onto one entry and take each other's name.
+
+Verified by the defect it was found through. `tools/harvest_tree_states_check.gd` builds a stump
+from a tree's own trunk inside a live scene — i.e. after `EnvironmentVfx` has dressed the mesh — and
+before this fix `tree_willow_a` produced a stump 12.01 m across (its CANOPY) against a 0.84 m trunk.
+After it, 1.03 m. `environment_vfx_check` (foliage=8103) and `environment_vfx_hollowmere_check` both
+pass with zero failures, so the dressing itself is unchanged.
+
+Worth keeping in mind: the shipped collider path was never actually wrong, because
+`ResourceScatterField._build_node_holder()` fits and caches the collider before the holder enters
+the tree and can be dressed. That ordering was load-bearing and nothing said so. It no longer is.
+
+### F-435 · The Mire's corrupted ground is invisible — the world looks identical where it drains you
+
+**Area:** world/VFX · **Severity:** high · **Found:** 2026-08-21 by Sequoyah, from play
+
+"The tainted ground that starts damaging you has no indication that it's different." He is right, and
+the gap is total: `MireGrid` is a live 256x256 corruption field, `PlayerHealth._tick_blight()` drains
+HP at every position where it reads `>= 0.15`, and **nothing in the 3D world renders that field at
+all**. F-349's HUD vignette is the only feedback in the game, and it is a *damage* indicator — it
+tells you the ground you are already standing on is hurting you, after the fact. There is nothing to
+read at a distance, so the Mire is not a place you can see advancing and route around; it is an
+invisible trap that fires when you walk into it.
+
+Structurally it is the same shape as F-379/F-399 (ground colour, ground detail): the corruption grid
+had no path to any shader. `corruption_at()` is a per-position GDScript call — fine for one player
+per physics tick, useless for a per-fragment terrain look.
+
+**His direction, verbatim:** "low yellowy green fog and a purple hue to the ground." — **fixed**
+
+**The fix, in four pieces.** `MireGrid` now publishes the grid as an R8 texture in world XZ
+(`corruption_field_texture()`), re-uploaded at most four times a second and only when the grid moved;
+`world/chunk/terrain_flat.gdshader` samples it and tints blighted ground a bruised violet with a
+ragged, noise-broken edge; `world/environment/ground_fog.gdshader` samples the same texture for a
+low, self-lit yellow-green layer that hugs the terrain; and `WorldDeltaLog` gained a
+`snapshot_applied` signal so a client's mirror of the field survives a late join and a run restart —
+`net_world_snapshot()` replaces its state wholesale and replays no deltas, which would otherwise have
+left every joining client's Mire invisible for the rest of the run.
+
+Both shaders ramp in two stages around `PlayerHealth.BLIGHT_CORRUPTION_THRESHOLD` so the line where
+the damage starts is the line where most of the colour change has already happened. Rule: **D-190**.
+
+**Verified** by `tools/blight_ground_check.gd` — twenty assertions over rendered frames, including
+that the texel the shader samples carries the simulation's own value, that corrupted ground moves
++0.51 in blue-minus-green at 22 m and +0.07 at 70 m while losing brightness, that the fog alone turns
+the same view yellow-green, and that clean ground 150 m away is within its own frame-to-frame noise
+floor of the pre-F-435 render.
+
+**Resolved 2026-08-21 by hollow80855f.**
+
+### F-434 · Willow colliders are twice any other tree's, and lying props collide as 4 m discs — **fixed**
+
+**Area:** world · **Severity:** high · **Found:** 2026-08-21 by kiln384569
+
+Reported from play (Sequoyah, 2026-08-21): "the collision boxs of willows are huge,
+i want no collision box on the leaves of tree period".
+
+Audited every asset the 29 shipped scatter tables place, through the shipped
+`ResourceScatterField._collider_for()`:
+
+* **Foliage is correctly excluded everywhere.** No scattered asset has a surface whose
+  material the `FOLIAGE_MATERIAL_PREFIXES` table fails to recognise, so no collider on
+  the procedural island is measured from leaves. F-348/F-390 hold.
+* **The willow's collider is honest — the willow's BOLE is the problem.** `tree_willow_a`
+  measures r=1.08 m in the trunk band (1.35 m at the table's `max_scale` 1.2), against
+  0.50-0.61 m for every pine, birch, bare and crooked tree in the kit. Its solid
+  `MIRE_WoodBark` cross-section really is ~2.2 m across at chest height on a 13.6 m tree.
+  F-424 set `base_radius` to 0.78 m (a 1.56 m bole before the scale-to-band) citing
+  research that says a mature weeping willow is "0.8-1.2 m ACROSS" — the number was
+  applied as a radius where the research states a diameter.
+* **Lying props get an upright disc.** `harvest_tree_felled_trunk` fits a cylinder of
+  r=3.94 m, h=1.8 m; `uprooted_tree` r=2.88 m, h=3.3 m; `rocky_slope` r=1.56 m, h=1.3 m.
+  `_collider_for()` always emits a vertical cylinder, so anything wider than it is tall
+  becomes a disc metres past its own geometry — the same defect as F-348 in a shape the
+  band-radius fix cannot see.
+
+---
+
+**Resolved 2026-08-21 by kiln384569.** Three changes, all verified through `tools/tree_collider_check.gd`, which this task rewrote from a
+ten-subject print into an assertion over every asset the 29 shipped scatter tables place.
+
+1. **The willow's bole was corrected, not its collider.** `tools/blender/build_flora_set.py`'s
+   `build_tree_willow` had F-424's research figure ("0.8-1.2 m ACROSS") applied as a RADIUS:
+   `base_radius` 0.78 m, which `create_asset`'s scale-to-band took to a bole 2.2 m across on a
+   13.6 m tree. Now 0.52/0.38, landing the finished bole near 1.4 m across — still the stoutest
+   trunk on the island, still nothing like the 0.46 m stick F-424 was reacting to. Measured
+   collider: `tree_willow_a` 1.08 -> 0.84 m, `_b` 0.67 -> 0.49, `_c` 0.85 -> 0.62, against a
+   median standing tree of 0.56.
+
+2. **A prop that lies down gets a box.** `_lies_down()`/`_box_fit()`: solid geometry more than
+   1.7x longer in one horizontal axis than the other, and longer than it is tall, is fitted with a
+   box along its own length instead of a cylinder as wide as it is long. `harvest_tree_felled_trunk`
+   went from a 3.94 m-radius disc to a 7.77 x 1.11 x 2.06 m box; `uprooted_tree` likewise. The
+   second half of the test ("longer than it is TALL") is load-bearing — without it a leaning willow
+   qualifies on limb spread alone and collides as its whole branch structure.
+
+3. **Height and centre now come from SOLID bounds**, not the foliage-inclusive AABB, so a willow's
+   cylinder tops out at its highest limb rather than 1.7 m higher, inside the hanging curtain.
+
+**The fitter moved to `world/gen/prop_collider.gd`** because the authored maps needed the same
+answer. `tools/mapgen/hollowmere_layout.py` sizes a generic collider as
+`footprint_radius(asset) * 0.62` off a hand-maintained table — for a tree, a fraction of its CANOPY
+— and `world/gen/authored_world.gd` built exactly what the layout said. Hollowmere's willows carried
+1.25 m cylinders and its bare trees 1.37 m ones. `AuthoredWorld._shapes_for()` now re-measures any
+prop whose layout shape is a plain cylinder (authored BOXES — walls, fences, door frames, hand
+written `col` overrides — are left alone, and a prop with no `cols` still collides with nothing).
+Hollowmere's trees now measure 0.48-1.02 m at the trunk, its felled trunks are boxes, and its
+bushes lost their canopy cylinders entirely: colliders 1,227 -> 538 on that map, with
+`HOLLOWMERE_CHECK PASS` throughout.
+
+**Audited, and clean:** no asset any shipped scatter table places has a surface whose material the
+foliage table fails to recognise, so nothing on the island was ever colliding with leaves through
+that route. `MIRE_Fibre` and `MIRE_Glowcap` are the two names outside both families; both are
+correctly solid, and the check now names them explicitly rather than reporting them as unknown.
+
+**Cost, recorded rather than hidden:** measuring per vertex at world-build time adds ~0.9 s to
+Hollowmere's prop phase (371 -> ~1,310 ms), cached once per asset. The generated island already paid
+this and pays it spread across chunk streaming. If it ever matters, the expensive half is
+`_band_radius`'s nine triangle-slicing passes.
+
+**Left standing, deliberately:** `tree_snag_a` measures 1.02 m at the trunk, 1.8x the median, the
+widest tree in the game. Its seed came out of `standing_trunk` heavy and `create_asset` scaled it up
+17% to reach its size band, thickness and all — honest geometry rather than a bad number.
+`TREE_RADIUS_SPREAD` is set at 1.9, just above it, so any NEW outlier fails the check.
+
+Verified: `tree_collider_check` failures=0 (was 2 when first written against the old assets),
+`hollowmere_check` PASS, `world_contract_check` PASS, `harvest_world_check` failures=0,
+`harvest_batch_check` failures=0, `resource_scatter_check` failures=0.
+
+### F-433 · Combat and harvesting have no per-target feedback: no enemy health bars, no damage numbers, no harvest progress — **fixed**
+
+**Area:** ui · **Severity:** medium · **Found:** 2026-08-21 by pike3c5846
+
+Reported by Sequoyah, 2026-08-21: "healthbars for enemies and damage indicators ex -5hp, -3hp, same
+thing for all harvestable resources that take more than one action to harvest, they should have
+healthbars as well or at least progress bars, enemy healthbars should hover above their head,
+resources should have their progress bar just next to the players crosshair while harvesting."
+
+Today a swing gives a hit flash, a chip burst and a sound, and nothing else. Nothing on screen says
+how much damage landed, how close an enemy is to dying, or how many more swings a tree will take.
+`Boss` has a top-centre bar (task 5.5) but an ordinary `Enemy` has none, and `Harvestable` has no
+readout at all even though `max_health`/`damage_per_hit` make most props multi-swing.
+
+Everything needed is already replicated and client-local: `Enemy.health`/`state`,
+`Harvestable.health`, and the `CombatService.attack_landed` / `RangedCombatService.shot_landed`
+broadcasts that carry (peer_id, position, damage, target_name) to every peer.
+
+---
+
+**Resolved 2026-08-21 by pike3c5846.** Two of the three readouts are new here, the third was already in flight and was deliberately not
+duplicated. D-189 records why the split is where it is.
+
+* `ui/hud/target_health_hud.gd` (autoload `TargetHealthHud`) — overhead enemy health bars, world
+  anchored, measured off the model's mesh rather than off `EnemyDef.height_m`. Shown when the enemy is
+  damaged, not IDLE, or inside 12 m; within 38 m, unoccluded, twelve nearest. Bosses skipped: task
+  5.5's top-centre bar already reads them.
+* `ui/hud/damage_numbers.gd` (autoload `DamageNumbers`) — the floating "-5" for both enemies and
+  harvestables, off `CombatService.attack_landed` / `RangedCombatService.shot_landed`. Local peer's
+  hits only. A wrong-tool bounce prints a muted "0" instead of being swallowed.
+* The harvestable progress bar next to the crosshair is **F-431's** `ui/hud/focus_prompt.gd`, which
+  already draws it from `Harvestable.health` and hides it at full health. Verified by rendering
+  `tools/focus_prompt_shot.gd`. If F-431 is ever abandoned, that third requirement goes with it.
+
+Client-local throughout (ARCHITECTURE.md §2.2, "VFX, audio, camera, UI"): no new RPC, no event, no
+protocol bump. `tools/target_feedback_check.gd` prints failures=0; `tools/target_feedback_shot.gd`
+renders the two proof PNGs.
+
+### F-431 · No world-focus prompt: harvestables, haulables and chests give the player no indication they are interactable — **fixed**
 
 **Area:** ui · **Severity:** medium · **Found:** 2026-08-21 by wickc3d79c
 
@@ -2600,7 +3099,30 @@ and a styled inventory tooltip that reads the real ItemDef/WeaponDef numbers.
 
 ---
 
-## Resolved
+**Resolved 2026-08-21 by wickc3d79c.** `ui/hud/focus_prompt.gd` (autoload `FocusPrompt`) is now the only thing in the game that draws an
+interaction prompt — D-187 records the call. It raycasts from the active camera at 15 Hz, falls back
+to an aim cone when the ray misses, and renders a crosshair plus a panel: target name, verb, hint,
+and a health bar once a harvestable has been chipped.
+
+The wrong-tool sentence goes through `HarvestableDef.damage_from_tool()`, the host's own function, so
+the prompt cannot promise a hit the host would refuse. `HarvestableDef.display_name` is new and
+authored on all eleven definitions.
+
+Three things fell out of the work:
+
+- The aim-cone fallback is load-bearing, not a nicety. A live probe of `levels/procedural_island.tscn`
+  found 208 of 313 harvestables with **no collider at all** — `HarvestLibrary.Represent.BATCH` keeps
+  dense flora inside a chunk's MultiMesh. Ray-only targeting would have left two thirds of the
+  harvestable world silent.
+- `Haulable.request_pickup()` had no caller anywhere in the shipped game, so every crate was scenery.
+  `FocusPrompt._input()` owns [E] for haulables now. Doors and chests keep their own input.
+- `ui/inventory/item_tooltip.gd` replaces the two-line `tooltip_text` with a card that reads the real
+  `ItemDef`/`WeaponDef`/`RangedWeaponDef` numbers.
+
+Verified: `tools/focus_prompt_check.gd` failures=0, `tools/focus_prompt_shot.gd --windowed` (three
+PNGs), `chest_check`/`crafting_ui_check`/`menu_focus_check`/`inventory_ui_check`/`stringname_sort_check`/
+`rpc_surface_audit_check` all 0, `run_scope_audit_check` down to the three pre-existing audio-autoload
+failures, and a clean `--quit-after 15` boot.
 
 ### F-430 · The ambient bed plays alone at full volume across the whole boot, then cuts to the theme — **fixed**
 

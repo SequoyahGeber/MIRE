@@ -114,6 +114,70 @@ const float FACET_HUE_AMP = 0.055;
 // into a colour nobody authored.
 const vec3 HUE_AXIS = vec3(0.90, 0.12, -0.85);
 
+// ---------------------------------------------------------------------------------------------
+// F-435 · THE MIRE HAS TO BE VISIBLE ON THE GROUND.
+//
+// Sequoyah, from play: "the tainted ground that starts damaging you has no indication that it's
+// different... I feel like there should be low yellowy green fog and a purple hue to the ground."
+// This is the purple half; `world/environment/ground_fog.gdshader` is the fog half, and they read
+// the SAME texture so the two can never disagree about where the Mire is.
+//
+// The field comes from `MireGrid.corruption_field_texture()` — the live 256x256 simulation grid,
+// R8, mapped over the island in world XZ. `mire_field_half_extent` is the world X/Z the texture's
+// edge lands on; it is pushed by `ChunkStreamer` from `MireGrid.corruption_field_half_extent()`
+// rather than being a constant here, because the grid derives its own extent from
+// `IslandHeightmap.ISLAND_RADIUS` and a hardcoded copy would silently slide off the terrain the
+// next time the island is resized (F-368, one layer down, is the same coupling).
+//
+// hint_default_black is doing real work: unbound — no MireGrid, a check that loads this shader on
+// its own, the frontend — the sample reads 0 and every line below collapses to the pre-F-435 look.
+// There is no "is the Mire wired up" branch anywhere in this file.
+//
+// WHY TWO RAMPS. The damage threshold is a hard number (`PlayerHealth.BLIGHT_CORRUPTION_THRESHOLD`,
+// 0.15) and a single smoothstep across the whole range puts nothing in particular at it — the
+// ground would fade so gradually that the line where you start losing HP is unmarked, which is the
+// finding all over again. So the first ramp runs from barely-there up TO that threshold and carries
+// 45% of the effect: by the time you are standing on ground that drains you, the colour shift has
+// already made its biggest single move. The second ramp carries the rest across the deep field, so
+// the heart of a Mire still reads as worse than its edge. Retune the weights freely; keep
+// BLIGHT_HURTS_AT equal to PlayerHealth's threshold.
+const float BLIGHT_SEEN_AT = 0.03;
+const float BLIGHT_HURTS_AT = 0.15;
+const float BLIGHT_DEEP_AT = 0.55;
+const float BLIGHT_HURTS_WEIGHT = 0.45;
+// The field is 256 cells across ~236 m — about 0.92 m per cell, which is the same order as a facet.
+// Sampled straight, its bilinear ramp would read as a smooth blob with a soft circular edge sitting
+// under the faceted ground like a decal. Jittering the corruption VALUE by the terrain detail field
+// that is already computed below breaks the boundary into the same scale of shapes the ground
+// itself is made of, for two ALU and no extra fetch. Amplitude is in corruption units.
+const float BLIGHT_EDGE_JITTER = 0.055;
+// Toward grey first, then multiplied by the tint — so a yellow shore and a green forest floor both
+// arrive at purple rather than at "slightly violet yellow" and "slightly violet green". A THIRD of
+// the way, not most of it: the first cut sat at 0.55 and photographed as pale mauve dust, because
+// killing the base's chroma before tinting leaves nothing for the tint to bruise. Enough of the
+// biome's own colour has to survive for the result to read as ground that went wrong rather than as
+// a flat swatch laid over it.
+const float BLIGHT_DESATURATE = 0.35;
+// The multiply. Green is pulled down hardest (it is what the ground mostly is), blue is barely
+// touched and red sits between them, so the channel ORDER comes out B > R > G — which is what
+// makes it violet rather than the neutral purple-grey that a tint with R and B equal produces. The
+// blue multiplier is deliberately ABOVE one — a tint that only ever darkens cannot separate B from
+// R on ground whose base is already low in blue, and the marsh floor (a brown-green) came out flat
+// grey at every all-below-one tint tried.
+// Sized so the ground also loses about 40% of its brightness: blighted ground reading brighter than
+// the grass beside it would be a highlight, and a highlight is the wrong signal for something that
+// drains you.
+const vec3 BLIGHT_TINT = vec3(0.66, 0.24, 1.22);
+// Blighted ground reads damp rather than dusty. Subtle — a full specular sheen on flat-shaded
+// facets is a mirrored polygon, which is worse than no cue at all.
+const float BLIGHT_ROUGHNESS = 0.76;
+
+uniform sampler2D mire_field : hint_default_black, filter_linear, repeat_disable;
+uniform float mire_field_half_extent = 118.0;
+// One dial for the whole effect, for an A/B and for a future look pass. At 0 this shader is
+// bit-for-bit the pre-F-435 one.
+uniform float blight_strength : hint_range(0.0, 2.0) = 1.0;
+
 // The broad value field, 0..1, interpolated across the facet.
 varying float broad_detail;
 // World XZ, pre-rotated and pre-scaled for the fine layer so the fragment stage does neither. The
@@ -124,6 +188,11 @@ varying vec2 fine_detail_uv;
 // One hash per TRIANGLE — see layer 3 above. `flat` is what makes it per-facet: the value is taken
 // from the provoking vertex and not interpolated.
 varying flat float facet_detail;
+// F-435. Corruption-field UV. Computed in the vertex stage because it is AFFINE in world position —
+// interpolation reconstructs it exactly, at every LOD, so the sample is still full-resolution
+// per-fragment. This is the opposite of `broad_detail`'s situation and the reason that one is
+// restricted to wavelengths far above the vertex spacing while this one is not restricted at all.
+varying vec2 mire_uv;
 
 // Hash without sine (integer-free, so it behaves the same on a GPU that flushes denormals and does
 // not need a transcendental unit). Fed lattice coordinates in roughly +/-20 after the scales above,
@@ -171,6 +240,11 @@ void vertex() {
 	// The provoking vertex's own world position, at a scale that keeps neighbouring vertices (>= 0.3
 	// m apart after ChunkMesher's jitter) well separated in the hash's input range.
 	facet_detail = detail_hash(world_xz * 0.37);
+
+	// F-435. Same mapping as `MireGridSim.world_to_cell()`: the field spans
+	// [-half_extent, +half_extent] on both axes.
+	mire_uv = (world_xz + vec2(mire_field_half_extent))
+		/ max(mire_field_half_extent * 2.0, 0.001);
 }
 
 void fragment() {
@@ -182,8 +256,20 @@ void fragment() {
 	float hue_dev = (broad_detail - 0.5) * HUE_AMP + facet_field * FACET_HUE_AMP;
 	vec3 detail = vec3(1.0) + (vec3(value_dev) + HUE_AXIS * hue_dev) * ground_detail_strength;
 
-	ALBEDO = ground_albedo * albedo_color * detail;
-	ROUGHNESS = 1.0;
+	vec3 base = ground_albedo * albedo_color * detail;
+
+	// F-435. `value_field` and `facet_field` are the terrain's own detail noise, reused here so the
+	// Mire's boundary is ragged at the scale of the ground rather than a clean bilinear circle.
+	float corruption = texture(mire_field, mire_uv).r
+		+ (value_field + facet_field * 0.5) * BLIGHT_EDGE_JITTER;
+	float blight = smoothstep(BLIGHT_SEEN_AT, BLIGHT_HURTS_AT, corruption) * BLIGHT_HURTS_WEIGHT
+		+ smoothstep(BLIGHT_HURTS_AT, BLIGHT_DEEP_AT, corruption) * (1.0 - BLIGHT_HURTS_WEIGHT);
+	blight = clamp(blight * blight_strength, 0.0, 1.0);
+	float grey = dot(base, vec3(0.2126, 0.7152, 0.0722));
+	vec3 tainted = mix(base, vec3(grey), BLIGHT_DESATURATE) * BLIGHT_TINT;
+
+	ALBEDO = mix(base, tainted, blight);
+	ROUGHNESS = mix(1.0, BLIGHT_ROUGHNESS, blight);
 	// dFdy x dFdx (not the other order): VERTEX is view-space, and this order faces the normal
 	// toward the camera the way Godot's own flat-shade examples do.
 	NORMAL = normalize(cross(dFdy(VERTEX), dFdx(VERTEX)));

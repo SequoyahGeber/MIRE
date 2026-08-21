@@ -6240,3 +6240,63 @@ for an outline or a backing plate rather than for moving them.
 
 **NETWORK AUTHORITY: none.** All three are ARCHITECTURE.md §2.2's "VFX, audio, camera, UI" row —
 client-local presentation over already-replicated state. No new RPC, no protocol bump.
+
+---
+
+### D-190 · 2026-08-21 · F-435: a simulation a player is standing in has to be published to the GPU as a field, and the cue for it is a colour on the ground first and a fog second
+
+Sequoyah, from play: **"the tainted ground that starts damaging you has no indication that it's
+different, i feel like there should be low yellowy green fog and a purple hue to the ground."**
+
+**The structural half.** `MireGrid` was a live 256x256 corruption grid with exactly one reader shape:
+`corruption_at(world_position)`, a GDScript call answering one position at a time. That is the right
+API for `PlayerHealth._tick_blight()` — one player, one physics tick — and it is useless for a look,
+which needs the value at every fragment of ground in frame. The gap was not a missing VFX task; it
+was that the simulation had no path to a shader at all, which is why the Mire had gone eight tasks
+without any world-space representation while accumulating a HUD vignette, a defeat condition and a
+Wellspring interaction.
+
+So the rule this settles, for any simulation of this kind: **a per-cell world simulation that a
+player physically occupies publishes a texture alongside its per-position getter.**
+`MireGrid.corruption_field_texture()` is that texture — R8, one texel per cell, mapped over the
+island in world XZ, re-uploaded at most four times a second and only when the grid moved. Consumers
+bind it once and sample it; they never call back into the simulation per frame. The host writes it
+from `_grid`; a client keeps a mirror fed by `WorldDeltaLog.delta_applied` and rebuilt on the new
+`snapshot_applied` signal, because a late-join snapshot replaces that log wholesale without replaying
+a single delta.
+
+**The look half, and the order it is in.** The purple ground is the PRIMARY cue and the fog is
+reinforcement, not the other way around, for three reasons that all point the same way: the ground is
+the thing you are standing on and the thing that hurts you; a colour on a surface survives every
+graphics preset, while the `low` preset disables volumetric fog and makes every FogVolume a no-op;
+and the ground shader can put a hard-edged, ragged boundary exactly where the damage threshold is,
+which a diffuse medium cannot.
+
+**Both cues are ramped in two stages around `PlayerHealth.BLIGHT_CORRUPTION_THRESHOLD` rather than
+smoothly across the range.** A single smoothstep across 0..1 marks nothing in particular at the value
+that actually starts draining health, and a player cannot learn a line that is not drawn. 45% of the
+effect lands between "barely there" and the threshold, the remaining 55% across the deep field. The
+constants are duplicated in both shaders and both name the GDScript constant they must track.
+
+**What the fog needed that was not obvious.** Two things, and both are recorded in
+`world/environment/ground_fog.gdshader`'s header because both were discovered by photographing the
+wrong answer:
+
+* **A blight layer hangs off the TERRAIN, not off `base_height`.** The mist's single measured datum
+  is pinned just above the waterline on a streamed island (the seabed is in the terrain's AABB), so a
+  layer built on it sits under the sea while the corruption it marks is thirty metres up. `GroundFog`
+  now builds a coarse 64x64 height map of the level from whatever node answers `height_at()`, and the
+  layer hugs that. The ordinary mist still hangs off `base_height` and is a candidate to move onto
+  the same map later.
+* **Emission carries more of a fog cue than albedo does.** The level runs
+  `volumetric_fog_anisotropy` at 0.92 — very strongly forward-scattering — so a purely scattering
+  medium is close to invisible on any heading except toward the sun, and invisible at night. A
+  sickly self-glow reads from every angle, which is also the half of "yellowy green" that albedo
+  alone cannot say.
+
+**Gated on pixels, not on source.** `tools/blight_ground_check.gd` renders the same ground four ways
+from one camera — both halves off, ground only, fog only, both — and asserts the colour moves the
+right way over corrupted ground at two distances, that clean ground 150 m away is bit-comparable to
+the pre-F-435 frame, and that the texel the shader samples carries the simulation's own value. The
+last one is what catches a flipped V, which every other assertion would pass while the purple sat
+metres from the ground that hurts you.
