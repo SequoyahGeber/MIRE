@@ -1769,45 +1769,6 @@ Worth a product call alongside it: how dark is night SUPPOSED to be? The atmosph
 
 ---
 
-### F-357 · A flat pale-grey band sits above the horizon in every daytime view, and six candidate causes have been eliminated
-
-**Area:** render · **Severity:** low · **Found:** 2026-08-21 by gale47f1fe
-
-Pre-existing, visible in the shipped renders (`assets/audit/terrain/island_shore_look.png`) and
-still there after F-353's grade fix (`assets/audit/lighting/25_final_spawn.png`,
-`20_shore_final.png`). Between the water horizon and the blue of the upper sky there is a wide,
-flat, desaturated grey-teal band. On the spawn view it is a thin strip behind the treeline; on the
-shore view it fills the top quarter of the frame. It reads as smog, and it is the last part of the
-frame that still looks washed out after F-353.
-
-Measured on the shore view at hour 8.35: band ~rgb(130,148,151) against a sky top of
-rgb(127,164,172) — lighter and markedly greyer than the sky above it.
-
-ELIMINATED, each by an isolated render at the same hour in the same run
-(`tools/grade_probe.gd`, round 3 variants 21-24 and round 4 variants 30-33):
-
-  · `fog_sky_affect = 0.0`             — no change
-  · `volumetric_fog_sky_affect = 0.0`  — no change
-  · `fog_aerial_perspective = 0.0`     — no change
-  · sky `ground_color` -> (0.09,0.14,0.20) — no change
-  · sky `turbidity` 5.2 -> 3.5 and -> 2.0 — no change
-  · sky `mie_coefficient` 0.0048 -> 0.0025 — no change
-
-CAVEAT WORTH CHECKING FIRST: the last three all go through `grade_probe.gd`'s sky-material override
-path, and that path has never been independently proven to take effect. Two unrelated properties
-both producing exactly zero change is as consistent with "the override silently did nothing" as
-with "the property is not the cause". Before spending time on new hypotheses, assert the write
-landed — read `turbidity` back off the material after setting it, or set it to something absurd
-(20.0) and confirm the frame changes at all.
-
-METHOD NOTE for whoever picks this up, learned the expensive way on F-353: `procedural_world`
-builds a DIFFERENT island per probe run, so shots from two different runs are two different maps
-and cannot be compared. Only variants within a single run are comparable. The first shot after the
-420-frame settle is also not yet converged and reads several units darker than the identical config
-rendered later in the same run — put a throwaway variant first, or discard shot one.
-
----
-
 ### F-358 · Retiring a navigation region costs 25-35 ms on the main thread, however it is done
 
 **Area:** navigation · **Severity:** high · **Found:** 2026-08-21 by ivy1bcae0
@@ -2287,7 +2248,9 @@ a stale joined key is indistinguishable from a legitimately-named file and will 
 
 ---
 
-### F-410 · Three visual defects remain in the noon frame after the grade fix: pale grey trunks, orange canopy facets, and a flat grey horizon
+## Resolved
+
+### F-410 · Three visual defects remain in the noon frame after the grade fix: pale grey trunks, orange canopy facets, and a flat grey horizon — **fixed**
 
 **Area:** render · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
 
@@ -2311,9 +2274,48 @@ above the horizon in every daytime view, and six candidate causes have been elim
 and with the ground no longer blowing out it is now the single most obviously wrong thing in frame.
 Worth re-reading F-357's eliminated-causes list before starting — six are already ruled out.
 
+**Resolved 2026-08-21 by ember.** Reset daytime presentation as one coupled baseline: neutral saturation/contrast, ACES highlight headroom, 1.15 sun, cool readable sky fill, restrained contact AO, lower fog sky-affect, and a game-wide procedural sky gradient. Imported pine/crooked bark was verified brown; the pale trunks are intentionally authored birch. Removed explicit LeafGold surfaces from all birch/crooked generated GLBs so isolated orange canopy facets no longer read as missing materials. Verified with `grade_check.gd` (0), `atmosphere_night_check.gd` (0), `graphics_quality_check.gd` (0), direct Godot import material inspection, and fixed-seed 4242 production noon/golden/night renders. Noon clipped-pixel rate is 0.01% and the grey horizon band is absent.
+
+### F-357 · A flat pale-grey band sits above the horizon in every daytime view, and six candidate causes have been eliminated — **fixed**
+
+**Area:** render · **Severity:** low · **Found:** 2026-08-21 by gale47f1fe
+
+Pre-existing, visible in the shipped renders (`assets/audit/terrain/island_shore_look.png`) and
+still there after F-353's grade fix (`assets/audit/lighting/25_final_spawn.png`,
+`20_shore_final.png`). Between the water horizon and the blue of the upper sky there is a wide,
+flat, desaturated grey-teal band. On the spawn view it is a thin strip behind the treeline; on the
+shore view it fills the top quarter of the frame. It reads as smog, and it is the last part of the
+frame that still looks washed out after F-353.
+
+Measured on the shore view at hour 8.35: band ~rgb(130,148,151) against a sky top of
+rgb(127,164,172) — lighter and markedly greyer than the sky above it.
+
+ELIMINATED, each by an isolated render at the same hour in the same run
+(`tools/grade_probe.gd`, round 3 variants 21-24 and round 4 variants 30-33):
+
+  · `fog_sky_affect = 0.0`             — no change
+  · `volumetric_fog_sky_affect = 0.0`  — no change
+  · `fog_aerial_perspective = 0.0`     — no change
+  · sky `ground_color` -> (0.09,0.14,0.20) — no change
+  · sky `turbidity` 5.2 -> 3.5 and -> 2.0 — no change
+  · sky `mie_coefficient` 0.0048 -> 0.0025 — no change
+
+CAVEAT WORTH CHECKING FIRST: the last three all go through `grade_probe.gd`'s sky-material override
+path, and that path has never been independently proven to take effect. Two unrelated properties
+both producing exactly zero change is as consistent with "the override silently did nothing" as
+with "the property is not the cause". Before spending time on new hypotheses, assert the write
+landed — read `turbidity` back off the material after setting it, or set it to something absurd
+(20.0) and confirm the frame changes at all.
+
+METHOD NOTE for whoever picks this up, learned the expensive way on F-353: `procedural_world`
+builds a DIFFERENT island per probe run, so shots from two different runs are two different maps
+and cannot be compared. Only variants within a single run are comparable. The first shot after the
+420-frame settle is also not yet converged and reads several units darker than the identical config
+rendered later in the same run — put a throwaway variant first, or discard shot one.
+
 ---
 
-## Resolved
+**Resolved 2026-08-21 by ember.** Replaced the PhysicalSkyMaterial scattering model with a controller-owned ProceduralSkyMaterial gradient. The fixed-seed production noon render `assets/audit/lighting/f410_20_noon_baseline.png` has a continuous blue-green sky/horizon transition and no flat pale-grey band. `tools/grade_check.gd` and `tools/atmosphere_night_check.gd` both pass with explicit procedural-sky and day/dusk/night gradient assertions.
 
 ### F-400 · The island's hills are too low to read as landform at the new island size — **fixed**
 
