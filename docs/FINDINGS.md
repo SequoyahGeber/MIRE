@@ -2274,7 +2274,9 @@ above the horizon in every daytime view, and six candidate causes have been elim
 and with the ground no longer blowing out it is now the single most obviously wrong thing in frame.
 Worth re-reading F-357's eliminated-causes list before starting — six are already ruled out.
 
-**Resolved 2026-08-21 by ember.** Reset daytime presentation as one coupled baseline: neutral saturation/contrast, ACES highlight headroom, 1.15 sun, cool readable sky fill, restrained contact AO, lower fog sky-affect, and a game-wide procedural sky gradient. Imported pine/crooked bark was verified brown; the pale trunks are intentionally authored birch. Removed explicit LeafGold surfaces from all birch/crooked generated GLBs so isolated orange canopy facets no longer read as missing materials. Verified with `grade_check.gd` (0), `atmosphere_night_check.gd` (0), `graphics_quality_check.gd` (0), direct Godot import material inspection, and fixed-seed 4242 production noon/golden/night renders. Noon clipped-pixel rate is 0.01% and the grey horizon band is absent.
+---
+
+**Resolved 2026-08-21 by emberd89a44.** Reset daytime presentation as one coupled baseline: neutral saturation/contrast, ACES highlight headroom, 1.15 sun, cool readable sky fill, restrained contact AO, lower fog sky-affect, and a game-wide procedural sky gradient. Imported pine/crooked bark was verified brown; the pale trunks are intentionally authored birch. Removed explicit LeafGold surfaces from all birch/crooked generated GLBs so isolated orange canopy facets no longer read as missing materials. Verified with `grade_check.gd` (0), `atmosphere_night_check.gd` (0), `graphics_quality_check.gd` (0), direct Godot import material inspection, and fixed-seed 4242 production noon/golden/night renders. Noon clipped-pixel rate is 0.01% and the grey horizon band is absent.
 
 ### F-357 · A flat pale-grey band sits above the horizon in every daytime view, and six candidate causes have been eliminated — **fixed**
 
@@ -2315,7 +2317,7 @@ rendered later in the same run — put a throwaway variant first, or discard sho
 
 ---
 
-**Resolved 2026-08-21 by ember.** Replaced the PhysicalSkyMaterial scattering model with a controller-owned ProceduralSkyMaterial gradient. The fixed-seed production noon render `assets/audit/lighting/f410_20_noon_baseline.png` has a continuous blue-green sky/horizon transition and no flat pale-grey band. `tools/grade_check.gd` and `tools/atmosphere_night_check.gd` both pass with explicit procedural-sky and day/dusk/night gradient assertions.
+**Resolved 2026-08-21 by emberd89a44.** Replaced the PhysicalSkyMaterial scattering model with a controller-owned ProceduralSkyMaterial gradient. The fixed-seed production noon render `assets/audit/lighting/f410_20_noon_baseline.png` has a continuous blue-green sky/horizon transition and no flat pale-grey band. `tools/grade_check.gd` and `tools/atmosphere_night_check.gd` both pass with explicit procedural-sky and day/dusk/night gradient assertions.
 
 ### F-400 · The island's hills are too low to read as landform at the new island size — **fixed**
 
