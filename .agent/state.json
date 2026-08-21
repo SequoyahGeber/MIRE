@@ -120,35 +120,11 @@
       "task": "F-405",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
-    "tools/target_feedback_check.gd": {
-      "agent": "pike3c5846",
-      "at": "2026-08-21T17:25:22+00:00",
-      "task": "F-433",
-      "token": "CLAUDE_CODE_SESSION_ID:b95e039a-4098-45fa-89d9-110729466e4a"
-    },
-    "tools/target_feedback_shot.gd": {
-      "agent": "pike3c5846",
-      "at": "2026-08-21T17:33:03+00:00",
-      "task": "F-433",
-      "token": "CLAUDE_CODE_SESSION_ID:b95e039a-4098-45fa-89d9-110729466e4a"
-    },
     "tools/tree_collider_check.gd": {
       "agent": "kiln384569",
       "at": "2026-08-21T17:25:34+00:00",
       "task": "F-434",
       "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
-    },
-    "ui/hud/damage_numbers.gd": {
-      "agent": "pike3c5846",
-      "at": "2026-08-21T17:25:22+00:00",
-      "task": "F-433",
-      "token": "CLAUDE_CODE_SESSION_ID:b95e039a-4098-45fa-89d9-110729466e4a"
-    },
-    "ui/hud/target_health_hud.gd": {
-      "agent": "pike3c5846",
-      "at": "2026-08-21T17:25:22+00:00",
-      "task": "F-433",
-      "token": "CLAUDE_CODE_SESSION_ID:b95e039a-4098-45fa-89d9-110729466e4a"
     },
     "world/chunk/chunk_streamer.gd": {
       "agent": "hollow80855f",
@@ -255,18 +231,6 @@
       "notes": [],
       "started": "2026-08-21T06:50:22+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
-    },
-    "F-433": {
-      "agent": "pike3c5846",
-      "files": [
-        "ui/hud/target_health_hud.gd",
-        "ui/hud/damage_numbers.gd",
-        "tools/target_feedback_check.gd",
-        "tools/target_feedback_shot.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-21T17:25:22+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:b95e039a-4098-45fa-89d9-110729466e4a"
     },
     "F-434": {
       "agent": "kiln384569",
@@ -3421,6 +3385,20 @@
       "task": "F-355",
       "token": "CODEX_SESSION_ID:01a021e9-16c4-79b1-aaa1-daca169c6136"
     },
+    "tools/target_feedback_check.gd": {
+      "agent": "pike3c5846",
+      "at": "2026-08-21T17:43:48+00:00",
+      "hash": "ee1b241db9df47c8837c3dca9e81552561eee4e80bbfa90d2bf51218b44679b6",
+      "task": "F-433",
+      "token": "CLAUDE_CODE_SESSION_ID:b95e039a-4098-45fa-89d9-110729466e4a"
+    },
+    "tools/target_feedback_shot.gd": {
+      "agent": "pike3c5846",
+      "at": "2026-08-21T17:43:48+00:00",
+      "hash": "93dd1de95eec2c0da2482fb93b08dcac04feee65a9c7c36644e41892a5d57022",
+      "task": "F-433",
+      "token": "CLAUDE_CODE_SESSION_ID:b95e039a-4098-45fa-89d9-110729466e4a"
+    },
     "tools/terminal_focus_check.gd": {
       "agent": "lp",
       "at": "2026-08-20T21:02:33+00:00",
@@ -3617,6 +3595,13 @@
       "task": "F-431",
       "token": "CLAUDE_CODE_SESSION_ID:80d76563-dcca-426a-ad54-2909c9fa380a"
     },
+    "ui/hud/damage_numbers.gd": {
+      "agent": "pike3c5846",
+      "at": "2026-08-21T17:43:48+00:00",
+      "hash": "158fe22cfa9a0dbc34c43967b62fb0f6c95622eb7d2817c42be88afb31bff6c0",
+      "task": "F-433",
+      "token": "CLAUDE_CODE_SESSION_ID:b95e039a-4098-45fa-89d9-110729466e4a"
+    },
     "ui/hud/defeat_hud.gd": {
       "agent": "kilnd3a089",
       "at": "2026-08-21T03:12:29+00:00",
@@ -3637,6 +3622,13 @@
       "hash": "a7be590fab3adfd951d0ed2cae9759e57dbadc24bcf688c835dd1cd3d5fb24da",
       "task": "F-431",
       "token": "CLAUDE_CODE_SESSION_ID:80d76563-dcca-426a-ad54-2909c9fa380a"
+    },
+    "ui/hud/target_health_hud.gd": {
+      "agent": "pike3c5846",
+      "at": "2026-08-21T17:43:48+00:00",
+      "hash": "9a01b5f7f561cfdfdd979f6142aef848cd4489b2bde8e5b68e91765a1fbc0431",
+      "task": "F-433",
+      "token": "CLAUDE_CODE_SESSION_ID:b95e039a-4098-45fa-89d9-110729466e4a"
     },
     "ui/hud/vitals_hud.gd": {
       "agent": "kilnd3a089",
@@ -3835,7 +3827,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 770,
+  "rev": 771,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9022,9 +9014,11 @@
       "title": "Felling a tree has no visible harvest states, and its stump is another species"
     },
     "F-433": {
+      "done_at": "2026-08-21T17:43:48+00:00",
+      "done_by": "pike3c5846",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Combat and harvesting have no per-target feedback: no enemy health bars, no damage numbers, no harvest progress"
     },

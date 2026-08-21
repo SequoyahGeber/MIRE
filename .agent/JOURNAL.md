@@ -8356,3 +8356,15 @@ FocusPrompt: one aim-driven prompt + crosshair for harvestables, haulables, ches
 Files: `ui/hud/focus_prompt.gd`, `ui/hud/crosshair.gd`, `ui/inventory/inventory_ui.gd`, `ui/inventory/item_tooltip.gd`, `ui/building/door_prompt.gd`, `ui/loot/chest_ui.gd`, `tools/focus_prompt_check.gd`, `systems/harvesting/harvestable_def.gd`, `content/harvestables/boulder.tres`, `content/harvestables/bush.tres`, `content/harvestables/fallen_log.tres`, `content/harvestables/iron_node.tres`, `content/harvestables/nettle.tres`, `content/harvestables/rock_cluster.tres`, `content/harvestables/sapling.tres`, `content/harvestables/stone_node.tres`, `content/harvestables/stump.tres`, `content/harvestables/tree.tres`, `content/harvestables/wild_tree.tres`, `tools/run_scope_audit_check.gd`, `tools/focus_prompt_shot.gd`
 
 Commit at time of writing: `7ead697`
+
+---
+
+### DONE · F-433 · pike3c5846 · 2026-08-21T17:43:48+00:00
+
+**Combat and harvesting have no per-target feedback: no enemy health bars, no damage numbers, no harvest progress**
+
+Overhead enemy health bars + floating damage numbers, both client-local autoloads; the harvest crosshair bar was already F-431's and was deliberately not duplicated. tools/target_feedback_check.gd failures=0.
+
+Files: `ui/hud/target_health_hud.gd`, `ui/hud/damage_numbers.gd`, `tools/target_feedback_check.gd`, `tools/target_feedback_shot.gd`
+
+Commit at time of writing: `716118e`
