@@ -2133,31 +2133,6 @@ Close this through a bounded follow-on command roadmap rather than an unsafe gen
 
 ---
 
-### F-419 · menu_focus_check has been failing on main for days — CRAFT ui_accept and an inventory slot move
-
-**Area:** ui · **Severity:** high · **Found:** 2026-08-21 by coil995fd7
-
-`tools/menu_focus_check.gd` fails 2 on `main` and has been failing unnoticed. Both reproduce in a
-clean worktree via `agent baseline`, so neither is another session's uncommitted work.
-
-**`FAIL: ui_accept on the enabled CRAFT button fires the same request_craft() a click would have`**
-Bisected to `bd4de67` (F-380, "the crafting list is a width-derived grid, not one unscrollable
-column"). At `bd4de67~1` the check fails 1; at `bd4de67` it fails 2. Reflowing the recipe list from
-a column into a width-derived grid changed the focus wiring the check drives, and the CRAFT button's
-`ui_accept` path did not survive it. This is the exact defect class F-209 exists to prevent: the
-button is present and enabled, a mouse click still works, and a controller cannot press it.
-
-**`FAIL: slot 0 is empty after the move`**
-Older — already failing at `420b83e` (F-369), so it predates the crafting grid change and needs its
-own bisect. Possibly related to F-309's intermittent inventory grant timeout, but this one is
-deterministic across every run here, which F-309's is not.
-
-The process point matters as much as the two bugs: F-380 shipped with `menu_focus_check` already
-red, and three subsequent menu tasks shipped on top of it without the count being looked at. Nothing
-in the ship path runs this check, so "it was already failing" stayed true indefinitely.
-
----
-
 ### F-420 · The settings screen has two contradictory row layouts, so the value column jumps between tabs
 
 **Area:** ui · **Severity:** low · **Found:** 2026-08-21 by coil995fd7
@@ -2185,7 +2160,147 @@ question; only which of the two layouts it should implement.
 
 ---
 
+### F-421 · Quitting from the in-game menu crashes the process on shutdown (macOS)
+
+**Area:** ui · **Severity:** high · **Found:** 2026-08-21 by mossb81aeb
+
+Quitting the game from the in-game menu (F1 -> QUIT, ui/menu/main_menu.gd request_quit) crashes the process on macOS: EXC_BAD_ACCESS at 0x0 on the main thread, inside SceneTree processing under Main::iteration, so macOS raises "Godot quit unexpectedly" every time. Four reports in one evening share an identical stack; every one of them is an editor-launched (F5) run. Headless and --windowed --quit-after runs through `agent godot` shut down cleanly, so the reproduction needs the editor-launched debug build. Investigating.
+
+---
+
+### F-422 · Kit tree trunks were a stack of frusta, and every trunk defect followed from the stack
+
+**Area:** art · **Severity:** medium · **Found:** 2026-08-21 by gale43d16e
+
+Sequoyah, twice, on the shipped environment-kit trees: "the trunks look really bad", and then again
+after F-396's pass. F-396 had already replaced two untapered cylinders with a tapered stack plus a
+root flare, bark ridges and buttress roots — so the second complaint was not about any of those
+missing. It was that the STACK itself produces the defects, and no amount of tuning its parts
+removes them. Rendering the bottom 4 m of all eighteen trees at eye height (the new
+`tools/blender/trunk_inspect.py`) made all four legible at once:
+
+* **A stepped silhouette.** Consecutive frusta are separate cylinders whose facets do not line up,
+  so the outline shouldered in and out at every joint — a telescoping antenna, not a taper. The old
+  `rolled_frustum` made it worse deliberately, rolling each segment to break up the shading.
+* **A chicken foot.** The flare had to be a separate fatter cone butted onto the column, with five
+  or six thin cones arching off it to the ground. From any angle those read as legs, and the tone
+  they were given (`wood_bark_light`, a saturated orange) made them the brightest thing on the tree.
+* **A dip line.** The flare cone carried its own material, so `tree_birch` — the one pale trunk —
+  stood in a dark grey-green boot with a hard horizontal paint line where the two met.
+* **A black stick beside the trunk.** The bark ridges were separate cones anchored at a fixed
+  fraction of the BASE radius. On a trunk that tapers, they finish outside the wood, in the shadow
+  tone, reading as a pole leaning against the tree. Clearest on the birch.
+
+The fix is `tube_mesh()`: one continuous flat-shaded tube through a stack of vertex rings, with
+radius, material and shape varying per RING and per COLUMN. The flare is the tube's own bottom
+rings; the buttresses are lobes in those rings; the grain is flutes in the same surface; the root
+toes are an extra reach applied to the sharpest lobes over the first ~0.3 m; and birch lenticels and
+crooked-tree moss are faces of the tube painted in a second material. Nothing is butted onto
+anything, so there is no seam to show and nothing to come unstuck.
+
+Two general lessons worth keeping:
+
+* **A part that is bolted onto a surface will eventually read as bolted on.** The kit hit this three
+  separate times on one asset family — the root cones, the birch lenticel cylinders, and the crooked
+  tree's moss lumps. `mire_art`'s own `paint_faces()` doctrine already said so for boulders; a trunk
+  needs the same answer expressed per column rather than per normal, because a trunk's surface is
+  vertical and `paint_faces` keys on `normal.z`.
+* **A front view is not a check.** Every one of these was invisible from the one camera angle the
+  batch had been signed off on, and obvious from the second azimuth.
+
+Cost: triangles went DOWN — the pine from 63 loose cones to 1,036 triangles in one mesh — because a
+tube has no internal end caps. Colliders are unaffected: `tools/tree_collider_check.gd` (extended
+here to cover the four kit species) measures 0.50-0.61 m radius with zero overhang, since
+`COLLIDER_TRUNK_BAND_MIN_M` starts above the flare by design (F-390).
+
+---
+
+### F-423 · The procedural island has never had ground shadows — shadow_normal_bias is 2.4, roughly double the authored maps, and the flat-shaded terrain cannot afford it
+
+**Area:** render · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-21, Sequoyah), as the daytime scene reading far brighter and flatter than
+the grade Codex had tuned. The grade was not the cause and had not been touched.
+
+`levels/procedural_island.tscn` sets `shadow_normal_bias = 2.4` on its `Sun`. The authored maps set
+1.15 (`playtest_hollow`) and 1.30 (`hollowmere`). The procedural island is the outlier, and
+`git log -S` puts the value in `2075ae3` — the commit that first dressed the procedural map. **It has
+therefore never had working ground shadows**, which is a large part of why that map has always read
+flat.
+
+Normal bias offsets shadow-map sampling along the surface normal to prevent acne. Too high and the
+shadow detaches from its caster ("peter-panning") and, at grazing sun angles, leaves the receiving
+surface entirely. This terrain is the worst possible case for it: `world/chunk/terrain_flat.gdshader`
+derives its facet normal in the FRAGMENT stage from screen-space derivatives, while the mesh itself
+carries smooth per-vertex normals over very large triangles — so the bias is applied along a normal
+that can point far from the facet actually being lit, and the same numeric value displaces much
+further here than on an authored mesh. That is why the procedural map needs a markedly lower value
+than the authored ones rather than the same one.
+
+Demonstrated by isolation, not inference. Two constants were changed together first
+(`shadow_normal_bias` 2.4 -> 0.3 and `directional_shadow_max_distance` 85 -> 180) and shadows
+appeared; restoring the distance to 85 with the bias still at 0.3 kept them. **The bias is the whole
+of it; 85 m of shadow distance was never the problem.**
+
+A sweep back upward shows how steep the response is: at 0.9 the dappling over open ground is already
+mostly gone. 0.3 renders correctly with no acne at both noon (sun overhead, the worst case for acne)
+and golden evening (grazing, the worst case for peter-panning).
+
+Captures: `assets/audit/lighting/f419/`.
+
+---
+
 ## Resolved
+
+### F-419 · menu_focus_check has been failing on main for days — CRAFT ui_accept and an inventory slot move — **fixed**
+
+**Area:** ui · **Severity:** high · **Found:** 2026-08-21 by coil995fd7
+
+`tools/menu_focus_check.gd` fails 2 on `main` and has been failing unnoticed. Both reproduce in a
+clean worktree via `agent baseline`, so neither is another session's uncommitted work.
+
+**`FAIL: ui_accept on the enabled CRAFT button fires the same request_craft() a click would have`**
+Bisected to `bd4de67` (F-380, "the crafting list is a width-derived grid, not one unscrollable
+column"). At `bd4de67~1` the check fails 1; at `bd4de67` it fails 2. Reflowing the recipe list from
+a column into a width-derived grid changed the focus wiring the check drives, and the CRAFT button's
+`ui_accept` path did not survive it. This is the exact defect class F-209 exists to prevent: the
+button is present and enabled, a mouse click still works, and a controller cannot press it.
+
+**`FAIL: slot 0 is empty after the move`**
+Older — already failing at `420b83e` (F-369), so it predates the crafting grid change and needs its
+own bisect. Possibly related to F-309's intermittent inventory grant timeout, but this one is
+deterministic across every run here, which F-309's is not.
+
+The process point matters as much as the two bugs: F-380 shipped with `menu_focus_check` already
+red, and three subsequent menu tasks shipped on top of it without the count being looked at. Nothing
+in the ship path runs this check, so "it was already failing" stayed true indefinitely.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** `shadow_normal_bias` 2.4 -> **0.3** on `levels/procedural_island.tscn`'s Sun. Nothing else changed —
+`directional_shadow_max_distance` stays 85, the grade constants Codex set (white 1.5, saturation 1.0,
+sun energy 1.15) are untouched.
+
+Isolated rather than inferred: the first test moved bias AND shadow distance together, so the
+distance was then restored to 85 with the bias still low, and the shadows stayed. The bias was the
+whole of it.
+
+0.3 rather than the authored maps' 1.15-1.30 because this terrain is a different receiving surface —
+`terrain_flat.gdshader` computes its facet normal in the fragment stage from screen-space derivatives
+over very large smooth-normalled triangles, so a given bias value displaces the shadow lookup much
+further here than on authored geometry. Verified upward too: at 0.9 the dappling over open ground is
+already mostly gone.
+
+Verified at the two angles that bracket the failure modes — noon (sun overhead: worst case for the
+acne this constant exists to prevent) and golden evening (grazing: worst case for the peter-panning
+it was causing). Neither shows acne; both show real cast shadows for the first time on this map.
+
+grade_check 0, atmosphere_night_check 0, day_night_check 0.
+
+**Not this finding's, and worth separating:** the scene may still read brighter than intended, but if
+so it is now for content reasons rather than lighting ones — F-417 thinned ground cover 36% and the
+taller hills moved shore (the brightest albedo) from 25.0% to 27.1% of the island, both after Codex
+graded. That is a judgement call for him against the current terrain, not a bug.
 
 ### F-418 · F-413 deleted the settings focus-navigation proof and never replaced it — **fixed**
 

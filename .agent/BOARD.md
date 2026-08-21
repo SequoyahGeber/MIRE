@@ -8,10 +8,13 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
-| **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | gale43d16e | 2026-08-21 06:53 | `tools/blender/build_mire_map_kit.py`, `tools/blender/mire_art.py`, `assets/environment/catalog.json`, `docs/ASSET_TRACKER.md` |
+| **7.2** Music: 4–6 tracks (act themes, boss, menu). CC0/licensed or commissioned. | ash843af8 | 2026-08-21 07:14 | `tools/audio/render_theme.py`, `tools/audio/render_sfx_options.py`, `tools/audio/mire_voices.py`, `docs/AUDIO.md` |
+| **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | gale43d16e | 2026-08-21 06:53 | `tools/blender/build_mire_map_kit.py`, `tools/blender/mire_art.py`, `assets/environment/catalog.json`, `docs/ASSET_TRACKER.md`, `tools/tree_collider_check.gd`, `tools/blender/trunk_inspect.py` |
 | **F-400** The island's hills are too low to read as landform at the new island size | kilnd3a089 | 2026-08-21 05:25 | `world/gen/island_heightmap.gd`, `content/biomes/shore.tres`, `content/biomes/marsh.tres`, `content/biomes/forest.tres`, `content/biomes/birchwood.tres`, `content/biomes/highland.tres`, `content/biomes/grassland.tres`, `content/biomes/heath.tres`, `tools/biome_terrain_check.gd` |
 | **F-404** Three separate movement-feel defects: stopping is near-instant, air control bleeds speed sideways, and gravity_scale 2.0 makes any real fall brutal | kilnd3a089 | 2026-08-21 07:03 | `entities/player/player_controller.gd`, `tools/movement_feel_check.gd` |
 | **F-405** step_height is 0.4 m but nothing below it is actually climbable — the capsule's rounded bottom catches the kerb edge and the is_on_floor() guard kills the next attempt | kilnd3a089 | 2026-08-21 06:50 | `entities/player/player_controller.gd`, `tools/step_up_check.gd` |
+| **F-419** menu_focus_check has been failing on main for days — CRAFT ui_accept and an inventory slot move | kilnd3a089 | 2026-08-21 07:15 | `levels/procedural_island.tscn`, `assets/audit/lighting/f419/noon.png`, `assets/audit/lighting/f419/golden_evening.png`, `assets/audit/lighting/f419/morning.png`, `assets/audit/lighting/f419/forest_sunward.png` |
+| **F-421** Quitting from the in-game menu crashes the process on shutdown (macOS) | mossb81aeb | 2026-08-21 07:12 | `tools/quit_crash_probe.gd` |
 
 **2.1d notes:**
 - Fixing kit tree trunks (F-396 follow-up) at Sequoyah's direct request before taking the NEXT batch A-016b
@@ -20,7 +23,7 @@
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `█████████░` 366/424 | 58 |
+| Findings | `█████████░` 366/426 | 60 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -111,7 +114,9 @@
 | 🔵 | **F-405** step_height is 0.4 m but nothing below it is actually climbable — the capsule's rounded bottom catches the kerb edge and the is_on_floor() guard kills the next attempt | in_flight |
 | ⬜ | **F-406** agent claim with more than one file stores the whole list as a single dictionary key, so the pre-commit hook never sees any of them as claimed | todo |
 | ⬜ | **F-412** The command system does not yet meet the Minecraft-like capability bar | todo |
-| ⬜ | **F-419** menu_focus_check has been failing on main for days — CRAFT ui_accept and an inventory slot move | todo |
+| 🔵 | **F-419** menu_focus_check has been failing on main for days — CRAFT ui_accept and an inventory slot move | in_flight |
+| ⬜ | **F-420** The settings screen has two contradictory row layouts, so the value column jumps between tabs | todo |
+| 🔵 | **F-421** Quitting from the in-game menu crashes the process on shutdown (macOS) | in_flight |
 
 ## Done
 
