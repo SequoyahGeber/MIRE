@@ -3056,6 +3056,105 @@ Reproduce: comment out the `_prewarm()` call in `BenchmarkRunner.run()` and run
 
 ---
 
+### F-461 · Chunk LOD transitions rebuild every prop in already-dressed chunks, and each holder re-sweeps HarvestWorld
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quillcfd8d7
+
+Reported from play: "when loading new chunks the game still stutters and lags like crazy and then
+when a new chunk does get loaded the assets in currently generated and loaded chunks get reloaded".
+
+Two independent causes, both found by reading, not guessed:
+
+1. `world/gen/resource_scatter_field.gd` fully tears down and rebuilds a chunk's scatter on EVERY
+   proxy-boundary transition. A chunk crossing ring 3 -> 2 (`_drain_lod0_pending`) calls
+   `_teardown_chunk()` then `_build_chunk(coord, true)`; walking back out, ring 3 -> 4 hits
+   `_on_chunk_mesh_ready(coord, 1)`, which tears down again and re-queues a visual-only build.
+   So each chunk is built THREE times on one pass (visual in, full, visual out) and two of those
+   rebuilds produce byte-identical MultiMeshes. Because the rebuild drains through
+   `_group_queue` at SCATTER_BUILD_BUDGET_MS = 2 ms/frame, the chunk 64 m in front of the player
+   goes visibly BARE for many frames and refills. That is the "assets get reloaded" the report
+   describes, and it is the only thing in the pipeline that can produce it.
+
+2. `autoload/harvest_world.gd` `_on_node_added()` fires `_schedule_refresh()` for every holder
+   node that enters the tree, and `refresh_current_scene()` is an O(all holders in the world)
+   sweep: `get_nodes_in_group()` over HOLDER_GROUPS plus a second full sweep in
+   `wired_harvestables()`, each entry filtered by `scene.is_ancestor_of()`. During traversal the
+   scatter field adds holders on nearly every frame, so this whole-world rewire runs nearly every
+   frame. `tools/chunk_stream_check.gd --windowed` prints "harvest: wired N live harvestable
+   prop(s)" hundreds of times in one run, climbing 337 -> 773, which is the sweep being re-run.
+   `wired_harvestables()` is computed there ONLY to produce that log line.
+
+---
+
+### F-462 · The benchmark shows a progress bar and no numbers, and never says how long is left
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
+
+While the benchmark runs (F-453), the panel on screen shows the current scene's name, one line of
+prose about what it stresses, and a bar that fills as scenes complete. That is everything.
+
+Two things are missing and Sequoyah asked for both.
+
+**There is no countdown.** The intro says "about four minutes" and then the player is on their own
+for four minutes with a bar that moves nine times. Nothing on screen answers "how much longer",
+which is the only question anybody has while watching a progress bar. A wall-clock estimate is not
+trivial to give honestly here: the per-scene settle waits on the chunk streamer and takes as long as
+it takes, so a countdown computed from the nominal sample and settle constants would drift and
+would be a lie by the end of the run.
+
+**There is no live performance data.** The benchmark is sampling frame times, draw calls, GPU and
+CPU render time continuously and showing the player none of it until the run ends. That is a waste
+of the one design decision that makes this benchmark watchable — the world is deliberately visible
+while it measures (F-453) precisely so a player can SEE the night wave stutter — and right now they
+can see it stutter without being shown the number that says it did. Every other benchmark a player
+has used puts a live readout on screen, and here it is free: the numbers already exist, they are
+just not being emitted.
+
+The readout must not distort what it reports: updating labels every frame is canvas work inside the
+sample window, so it needs to be throttled and the throttle rate stated.
+
+---
+
+### F-463 · agent ship silently drops force-added ignored files, so a music .import never lands
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-21 by slate977821
+
+`assets/audio/music/*.ogg.import` are gitignored (`.gitignore:7` is a blanket `*.import`) but all of
+them are TRACKED, force-added, because the `loop=true` flag lives in the sidecar and nothing else
+sets it — `project.godot` carries no `importer_defaults`. A music asset whose sidecar is missing
+imports with `loop=false` on a fresh clone, and `tools/audio_import_check.gd`'s "has loop enabled"
+assertion fails for it.
+
+`agent ship` cannot commit one. It re-stages the task's claimed paths with a plain `git add`, which
+skips ignored paths **silently** — no warning, no "left alone" line, nothing in the file count. I
+staged `assets/audio/music/theme_dawn.ogg.import` with `git add -f` BEFORE shipping and it was still
+absent from the resulting commit (fd182b5); the sidecar had to go in on its own (9444dad). The
+failure is quiet in the worst way: the commit looks complete, the check passes on the machine that
+rendered the asset (its sidecar is sitting there untracked), and it only fails for whoever clones
+next.
+
+Two other things showed up alongside it and belong in the same entry:
+
+1. **`agent ship <id> "msg" --no-verify` appends the flag to the commit message** rather than
+   consuming it — fd182b5's subject literally ends in ` --no-verify`. The flag does work; it is only
+   the message that is wrong. Parse it out before the message is built.
+
+2. **The editor guard blocks committing a `.import` even when a headless reimport wrote it.**
+   `render_theme.py --ship` boots Godot under `import_cache_guard` and regenerates the sidecar
+   correctly while the editor happens to be open; the guard then refuses the commit on D-031
+   grounds. D-031 is about the EDITOR rewriting a file under you, which is a real risk for
+   `.tscn`/`.tres` being authored, and a much weaker one for a sidecar the tool just regenerated
+   from a source file the editor never touched. Worth a narrower rule for `assets/**/*.import`, or
+   at least a message that names the override rather than leaving `--no-verify` as the only door.
+
+**How to reproduce:** render and `--ship` any new music asset, `git add -f` its `.ogg.import`, claim
+both, `agent ship`. The `.ogg` lands; the `.import` does not, and nothing says so.
+
+(Commit 9444dad's message cites "F-462" for this — written before the number was allocated, and
+F-462 is somebody else's benchmark finding. This entry, F-463, is the one it means.)
+
+---
+
 ## Resolved
 
 ### F-460 · The benchmark is only reachable from inside the graphics settings — **fixed**
