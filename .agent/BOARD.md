@@ -8,18 +8,19 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
-| **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | gale43d16e | 2026-08-21 17:13 | `docs/ASSET_TRACKER.md`, `tools/blender/build_gatherable_plants.py`, `assets/gatherables/catalog.json`, `tools/blender/build_pickup_kit.py`, `assets/pickups/catalog.json`, `content/items/apple.tres`, `content/harvestables/berry_bush.tres`, `content/harvestables/apple_tree.tres`, `content/harvestables/mushroom_patch.tres` |
+| **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | gale43d16e | 2026-08-21 17:13 | `docs/ASSET_TRACKER.md`, `tools/blender/build_gatherable_plants.py`, `assets/gatherables/catalog.json`, `tools/blender/build_pickup_kit.py`, `assets/pickups/catalog.json`, `content/items/apple.tres`, `content/harvestables/berry_bush.tres`, `content/harvestables/apple_tree.tres`, `content/harvestables/mushroom_patch.tres`, `tools/item_icons_check.gd` |
 | **F-400** The island's hills are too low to read as landform at the new island size | kilnd3a089 | 2026-08-21 05:25 | `world/gen/island_heightmap.gd`, `content/biomes/shore.tres`, `content/biomes/marsh.tres`, `content/biomes/forest.tres`, `content/biomes/birchwood.tres`, `content/biomes/highland.tres`, `content/biomes/grassland.tres`, `content/biomes/heath.tres`, `tools/biome_terrain_check.gd` |
 | **F-404** Three separate movement-feel defects: stopping is near-instant, air control bleeds speed sideways, and gravity_scale 2.0 makes any real fall brutal | kilnd3a089 | 2026-08-21 07:03 | `entities/player/player_controller.gd`, `tools/movement_feel_check.gd` |
 | **F-405** step_height is 0.4 m but nothing below it is actually climbable — the capsule's rounded bottom catches the kerb edge and the is_on_floor() guard kills the next attempt | kilnd3a089 | 2026-08-21 06:50 | `entities/player/player_controller.gd`, `tools/step_up_check.gd` |
+| **F-432** Felling a tree has no visible harvest states, and its stump is another species | kiln384569 | 2026-08-21 17:51 | `systems/harvesting/harvestable.gd`, `autoload/harvest_world.gd`, `systems/harvesting/stump_builder.gd`, `tools/harvest_tree_states_check.gd` |
 | **F-435** The Mire's corrupted ground is invisible — the world looks identical where it drains you | hollow80855f | 2026-08-21 17:32 | `world/mire/mire_grid.gd`, `world/chunk/terrain_flat.gdshader`, `world/chunk/chunk_streamer.gd`, `world/environment/ground_fog.gd`, `world/environment/ground_fog.gdshader`, `tools/blight_ground_check.gd`, `docs/FINDINGS.md`, `autoload/world_delta_log.gd` |
-| **F-439** No standing check that every shipped asset is reachable from something the game loads — 46 exports are built but referenced by nothing | mossecba4b | 2026-08-21 17:49 | `tools/asset_usage_check.gd` |
+| **F-442** Sway dressing erases a mesh's material names, so nothing downstream can tell bark from leaves | kiln384569 | 2026-08-21 17:58 | `autoload/environment_vfx.gd` |
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `████████░░` 372/443 | 71 |
+| Findings | `████████░░` 372/446 | 74 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -118,12 +119,15 @@
 | ⬜ | **F-427** Files under assets/ are being silently duplicated with a ' 2' suffix on this machine | todo |
 | ⬜ | **F-428** 78 untracked 'icon_* 2.png' duplicates in assets/icons/exports have item_icons_check red at HEAD | todo |
 | ⬜ | **F-429** A headless boot never streams terrain collision, so the local player falls forever | todo |
-| ⬜ | **F-432** Felling a tree has no visible harvest states, and its stump is another species | todo |
+| 🔵 | **F-432** Felling a tree has no visible harvest states, and its stump is another species | in_flight |
 | 🔵 | **F-435** The Mire's corrupted ground is invisible — the world looks identical where it drains you | in_flight |
 | ⬜ | **F-436** tools/inventory_check.gd asserts exactly one harvest-yield subscriber, and SfxDirector legitimately added a second | todo |
 | ⬜ | **F-437** Three centre-screen HUD elements landed in the same week and nothing has seen them on screen together | todo |
 | ⬜ | **F-438** Three audio autoloads are unclassified in the run-scope audit, so tools/run_scope_audit_check.gd fails at HEAD | todo |
-| 🔵 | **F-439** No standing check that every shipped asset is reachable from something the game loads — 46 exports are built but referenced by nothing | in_flight |
+| ⬜ | **F-439** No standing check that every shipped asset is reachable from something the game loads — 46 exports are built but referenced by nothing | todo |
+| ⬜ | **F-440** Five pickups have been 16-24% under their declared true size since world_bounds stopped using the inflated bound_box ruler | todo |
+| ⬜ | **F-441** The berry bushes' fruit was hidden under their own canopy, so the fruiting and picked states looked the same | todo |
+| 🔵 | **F-442** Sway dressing erases a mesh's material names, so nothing downstream can tell bark from leaves | in_flight |
 
 ## Done
 

@@ -8380,3 +8380,30 @@ Willow bole corrected (0.78->0.52 radius), lying props get boxes, collider fitte
 Files: `world/gen/resource_scatter_field.gd`, `tools/blender/build_flora_set.py`, `tools/tree_collider_check.gd`, `world/gen/authored_world.gd`, `world/gen/prop_collider.gd`, `assets/flora/catalog.json`, `assets/flora/exports/tree_willow_a.glb`, `assets/flora/exports/tree_willow_b.glb`, `assets/flora/exports/tree_willow_c.glb`, `assets/flora/preview/small_trees_preview.png`, `assets/flora/preview/flora_set_preview.png`
 
 Commit at time of writing: `0718d27`
+
+---
+
+### DONE · F-439 · mossecba4b · 2026-08-21T17:55:28+00:00
+
+**No standing check that every shipped asset is reachable from something the game loads — 46 exports are built but referenced by nothing**
+
+Built tools/asset_usage_check.gd, the reverse of art_coverage_check: every shipped export must be reachable from something the game loads. Two rules make it correct — match on the asset STEM (scatter names assets as asset=&"x" + kit="y"; authored_world.gd composes the path at runtime, so no filename appears anywhere) and treat assets/*/catalog.json as NOT a consumer (every catalog in the repo is read only by tools/*_check.gd). Three self-guards assert the corpus is real and stem matching is live, so it cannot pass by scanning nothing. Measured 46 of 530 exports referenced by nothing; wired fibre_plant (harvest rule + two scatter tables) to close one. The remaining 45 are each blocked on companion work, not a missing wiring line — see the finding body and note.
+
+Notes along the way:
+- Wired fibre_plant (harvest rule + marsh_floor/grassland_meadow scatter): 46 unreferenced -> 45. The remaining 45 are NOT wiring gaps; each is blocked on companion work. food(13) and gatherables(7) need yield items whose icons and pickup meshes do not exist, so they are art batches not scatter rows. paths(13) needs a path/road placement system. terrain_accents(4, the cliffs) needs slope-aware placement plus visual judgment. enemies(2) needs a death-fragment spawn system. wetland fish_shoal(1) needs water placement. icons(3) are orphaned duplicates of a rename (coins.tres uses icon_coins.png) plus icon_salvage_fragment, whose salvage is banked as a number in run_record_save.gd and never an inventory item.
+
+Files: `tools/asset_usage_check.gd`, `systems/harvesting/harvest_library.gd`, `content/scatter/marsh_floor.tres`, `content/scatter/grassland_meadow.tres`
+
+Commit at time of writing: `50bc6b5`
+
+---
+
+### REOPEN · F-439 · mossecba4b · 2026-08-21T18:02:27+00:00
+
+**No standing check that every shipped asset is reachable from something the game loads — 46 exports are built but referenced by nothing**
+
+Reopened (was marked done 2026-08-21 by mossecba4b).
+
+Only the instrument and one of 46 assets are done. tools/asset_usage_check.gd is committed and fibre_plant is wired; the remaining 45 exports are still unreferenced and each needs companion work (art batch for food+gatherables, a placement system for paths, slope placement for the cliffs, a death-fragment spawn for the crawler gibs, water placement for fish_shoal, and an rm for three rename-orphaned icons). Stays open so it is picked up later.
+
+Commit at time of writing: `6af68a0`

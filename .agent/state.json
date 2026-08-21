@@ -12,6 +12,18 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "autoload/environment_vfx.gd": {
+      "agent": "kiln384569",
+      "at": "2026-08-21T17:58:42+00:00",
+      "task": "F-442",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
+    },
+    "autoload/harvest_world.gd": {
+      "agent": "kiln384569",
+      "at": "2026-08-21T17:51:46+00:00",
+      "task": "F-432",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
+    },
     "autoload/world_delta_log.gd": {
       "agent": "hollow80855f",
       "at": "2026-08-21T17:33:04+00:00",
@@ -102,11 +114,17 @@
       "task": "F-404",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
-    "tools/asset_usage_check.gd": {
-      "agent": "mossecba4b",
-      "at": "2026-08-21T17:49:13+00:00",
-      "task": "F-439",
-      "token": "CLAUDE_CODE_SESSION_ID:1e714a39-d8b1-4450-9d79-102af2c5081f"
+    "systems/harvesting/harvestable.gd": {
+      "agent": "kiln384569",
+      "at": "2026-08-21T17:51:46+00:00",
+      "task": "F-432",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
+    },
+    "systems/harvesting/stump_builder.gd": {
+      "agent": "kiln384569",
+      "at": "2026-08-21T17:51:46+00:00",
+      "task": "F-432",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
     "tools/biome_terrain_check.gd": {
       "agent": "kilnd3a089",
@@ -131,6 +149,18 @@
       "at": "2026-08-21T17:32:49+00:00",
       "task": "F-435",
       "token": "CLAUDE_CODE_SESSION_ID:0e245ac7-67ca-4077-a49b-e1b4d92abe80"
+    },
+    "tools/harvest_tree_states_check.gd": {
+      "agent": "kiln384569",
+      "at": "2026-08-21T17:51:46+00:00",
+      "task": "F-432",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
+    },
+    "tools/item_icons_check.gd": {
+      "agent": "gale43d16e",
+      "at": "2026-08-21T17:52:45+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
     "tools/movement_feel_check.gd": {
       "agent": "kilnd3a089",
@@ -193,7 +223,8 @@
         "content/items/apple.tres",
         "content/harvestables/berry_bush.tres",
         "content/harvestables/apple_tree.tres",
-        "content/harvestables/mushroom_patch.tres"
+        "content/harvestables/mushroom_patch.tres",
+        "tools/item_icons_check.gd"
       ],
       "notes": [],
       "started": "2026-08-21T17:13:34+00:00",
@@ -236,6 +267,18 @@
       "started": "2026-08-21T06:50:22+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
+    "F-432": {
+      "agent": "kiln384569",
+      "files": [
+        "systems/harvesting/harvestable.gd",
+        "autoload/harvest_world.gd",
+        "systems/harvesting/stump_builder.gd",
+        "tools/harvest_tree_states_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-21T17:51:46+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
+    },
     "F-435": {
       "agent": "hollow80855f",
       "files": [
@@ -252,14 +295,14 @@
       "started": "2026-08-21T17:32:49+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:0e245ac7-67ca-4077-a49b-e1b4d92abe80"
     },
-    "F-439": {
-      "agent": "mossecba4b",
+    "F-442": {
+      "agent": "kiln384569",
       "files": [
-        "tools/asset_usage_check.gd"
+        "autoload/environment_vfx.gd"
       ],
       "notes": [],
-      "started": "2026-08-21T17:49:13+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:1e714a39-d8b1-4450-9d79-102af2c5081f"
+      "started": "2026-08-21T17:58:42+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     }
   },
   "recent": {
@@ -2308,11 +2351,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "content/scatter/grassland_meadow.tres": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T05:34:42+00:00",
-      "hash": "7fce27119dafe057a18a3670492778728663cceed943a216458f7618c65c7198",
-      "task": "F-401",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "mossecba4b",
+      "at": "2026-08-21T17:55:28+00:00",
+      "hash": "5f72b6ba083d7532b96586d651854c60061c8f05941665984f133a7bb839809b",
+      "task": "F-439",
+      "token": "CLAUDE_CODE_SESSION_ID:1e714a39-d8b1-4450-9d79-102af2c5081f"
     },
     "content/scatter/grassland_rocks.tres": {
       "agent": "kilnd3a089",
@@ -2413,11 +2456,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "content/scatter/marsh_floor.tres": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T05:34:42+00:00",
-      "hash": "a3208f128c2c670567f4b0d86223988caed500f459f8fabeb4566786ce34f610",
-      "task": "F-401",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "mossecba4b",
+      "at": "2026-08-21T17:55:28+00:00",
+      "hash": "1093c297a36f6340d2af3ec69ce2aa8faf33d284faed464d38aaf36313634231",
+      "task": "F-439",
+      "token": "CLAUDE_CODE_SESSION_ID:1e714a39-d8b1-4450-9d79-102af2c5081f"
     },
     "content/scatter/marsh_reeds.tres": {
       "agent": "kilnd3a089",
@@ -2693,11 +2736,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:34f19dd1-60f4-4279-b7ba-e40ce133b27f"
     },
     "systems/harvesting/harvest_library.gd": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T03:15:17+00:00",
-      "hash": "636c404cbe547df5951582448d8a9e9ac1d8a1769089b87ff610b56c04c5695a",
-      "task": "F-366",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "mossecba4b",
+      "at": "2026-08-21T17:55:28+00:00",
+      "hash": "4fe6b681b5c03750fcc0bdeefa7fa8427ef5321347045c4817292a49c0056ad4",
+      "task": "F-439",
+      "token": "CLAUDE_CODE_SESSION_ID:1e714a39-d8b1-4450-9d79-102af2c5081f"
     },
     "systems/harvesting/harvestable_def.gd": {
       "agent": "wickc3d79c",
@@ -2754,6 +2797,13 @@
       "hash": "147fce8fc818c6b160c2cc5c78ed256ed26fb6726da0ee8da704a1d4a3d7fc1a",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "tools/asset_usage_check.gd": {
+      "agent": "mossecba4b",
+      "at": "2026-08-21T17:55:28+00:00",
+      "hash": "097072c2d6e344843311e217d508920633219e05584918622746501f829cc8e7",
+      "task": "F-439",
+      "token": "CLAUDE_CODE_SESSION_ID:1e714a39-d8b1-4450-9d79-102af2c5081f"
     },
     "tools/atmosphere_look_shot.gd": {
       "agent": "kilnd3a089",
@@ -3841,7 +3891,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 778,
+  "rev": 787,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9023,7 +9073,7 @@
     "F-432": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Felling a tree has no visible harvest states, and its stump is another species"
     },
@@ -9076,9 +9126,30 @@
     "F-439": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "F",
       "title": "No standing check that every shipped asset is reachable from something the game loads \u2014 46 exports are built but referenced by nothing"
+    },
+    "F-440": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Five pickups have been 16-24% under their declared true size since world_bounds stopped using the inflated bound_box ruler"
+    },
+    "F-441": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The berry bushes' fruit was hidden under their own canopy, so the fruiting and picked states looked the same"
+    },
+    "F-442": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Sway dressing erases a mesh's material names, so nothing downstream can tell bark from leaves"
     }
   },
   "version": 1
