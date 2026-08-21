@@ -2848,7 +2848,9 @@ timing, but the four above failed on every run of both revisions.
 
 ---
 
-### F-449 · Task 5.3's ranged-weapon content was authored but never committed — the longbow, crossbow, sling and bolt existed only in the working tree
+## Resolved
+
+### F-449 · Task 5.3's ranged-weapon content was authored but never committed — the longbow, crossbow, sling and bolt existed only in the working tree — **fixed**
 
 **Area:** content · **Severity:** medium · **Found:** 2026-08-21 by quill26e3d7
 
@@ -2868,9 +2870,8 @@ done when the files are right on disk, it is done when they are in a commit
 that reached origin. `agent ship <id>` exists precisely so this cannot happen —
 5.3 was closed without it.
 
----
-
-## Resolved
+**Resolved 2026-08-21 by quill26e3d7.** Committed in 25c504d together with the FocusPrompt autoload registration. The
+content was already correct — it only ever needed to reach a commit.
 
 ### F-447 · The island is half the size it should be, its outline is still round, and every hill is the same symmetric dome — **fixed**
 
