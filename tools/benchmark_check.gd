@@ -59,6 +59,14 @@ var _live_error: String = ""
 ## Sampled during the first scene — see the connect in `_check_live()`.
 var _saw_god_mode: bool = false
 var _saw_picker_open: bool = true
+## F-462: how many live-readout ticks arrived, over how many frames, and the first countdown seen.
+var _telemetry_ticks: int = 0
+var _telemetry_frames: int = 1
+var _saw_countdown: float = 0.0
+var _saw_input_blocked: bool = false
+var _saw_mouse_mode: int = Input.MOUSE_MODE_CAPTURED
+var _saw_hud_visible: bool = true
+var _saw_vsync: int = DisplayServer.VSYNC_ENABLED
 
 
 func _initialize() -> void:
@@ -273,6 +281,23 @@ func _check_advisor() -> void:
 		.get("id", "") == "traverse",
 		"a suite where everything travels still yields a basis rather than nothing")
 
+	# A non-monotonic ladder is noise, not physics, and the report must say so rather than let a
+	# reader conclude the whole thing is junk.
+	var noisy: Dictionary = SettingsAdvisor.recommend(
+		[_scene_result("mire", 62.0, 142.0)],
+		{SettingsAdvisor.PRESET_HIGH: 62.0, SettingsAdvisor.PRESET_MEDIUM: 58.0,
+			SettingsAdvisor.PRESET_LOW: 69.0}, 60, 2)
+	_expect(noisy["preset"] == SettingsAdvisor.PRESET_HIGH,
+		"a noisy ladder still recommends the highest preset that cleared the target")
+	_expect(_reasons_mention(noisy, "within noise of each other"),
+		"and says the presets could not be told apart, rather than presenting noise as a result")
+	var clean: Dictionary = SettingsAdvisor.recommend(
+		[_scene_result("mire", 40.0, 90.0)],
+		{SettingsAdvisor.PRESET_HIGH: 40.0, SettingsAdvisor.PRESET_MEDIUM: 72.0,
+			SettingsAdvisor.PRESET_LOW: 130.0}, 60, 2)
+	_expect(not _reasons_mention(clean, "within noise of each other"),
+		"a ladder that IS a ladder gets no such caveat")
+
 	# The diagnostic: uneven, not slow. A resolution lever does not fix this and the advice says so.
 	var hitching: Dictionary = SettingsAdvisor.recommend(
 		[_scene_result("traverse", 25.0, 120.0)], {SettingsAdvisor.PRESET_HIGH: 25.0}, 60, 2)
@@ -432,6 +457,39 @@ func _check_screen() -> void:
 		"and cancels the benchmark instead of popping while one is running")
 	screen.set(&"_state", 0)
 
+	# F-462: the live readout exists and is wired. Driven with a synthetic tick rather than a real
+	# run, so the check covers the formatting rules — which are where the lies would be — without
+	# spending four minutes.
+	screen.call(&"_on_telemetry", {
+		"fps": 118.4, "low1_fps": 71.6, "frame_ms": 8.31, "gpu_ms": 6.02, "cpu_ms": 1.44,
+		"draws": 4193.0, "total_seconds_left": 137.0, "worst_ms": 41.2, "mprims": 1.84,
+		"vram_mb": 726.0, "physics_ms": 0.9, "nodes": 5120.0, "chunks": 289.0,
+	})
+	var readout: Dictionary = screen.get(&"_readout_labels")
+	_expect(readout.size() >= 12, "the readout shows every live figure (%d)" % readout.size())
+	for key: String in ["fps", "low1_fps", "frame_ms", "worst_ms", "gpu_ms", "cpu_ms",
+			"draws", "mprims", "vram_mb", "physics_ms", "nodes", "chunks"]:
+		_expect(readout.has(key), "the readout has a cell for '%s'" % key)
+	_expect((readout["fps"] as Label).text == "118", "frames per second are shown whole")
+	_expect((readout["low1_fps"] as Label).text == "72", "and the 1%% low beside them")
+	_expect((readout["draws"] as Label).text == "4193", "and the draw calls")
+	_expect((readout["worst_ms"] as Label).text == "41",
+		"and the worst frame, which is the hitch as it happens")
+	_expect((readout["chunks"] as Label).text == "289",
+		"and the streamer's chunk count, which is what the moving scenes stress")
+	_expect((readout["vram_mb"] as Label).text == "726", "and video memory")
+	var countdown: Label = screen.get(&"_countdown_label")
+	_expect(countdown.text == "~2:17",
+		"the countdown reads M:SS and is marked a guess until a scene has been timed (%s)"
+		% countdown.text)
+
+	# A staging tick has no sample behind it. Zero must read as "nothing measured yet", never as a
+	# machine rendering at zero frames a second.
+	screen.call(&"_on_telemetry", {"fps": 61.0, "low1_fps": 0.0, "total_seconds_left": 5.0})
+	_expect((readout["low1_fps"] as Label).text == "—",
+		"an unmeasured 1%% low shows a dash, not 0 fps")
+	_expect(countdown.text == "~0:05", "and the countdown pads its seconds")
+
 	var target_dropdowns: int = _count_option_buttons(screen)
 	_expect(target_dropdowns >= 1, "the target frame rate is selectable")
 
@@ -500,15 +558,25 @@ func _check_live() -> void:
 	# game had set, which on this project is `DevFrameCap`'s runtime value and not a project setting.
 	var limiter_before: int = Engine.max_fps
 	var god_before: bool = _god_mode_on()
+	var vsync_before: int = DisplayServer.window_get_vsync_mode()
 	# The two things that must be true DURING a run, checked while it is still going rather than
 	# after: the player cannot be killed, and the class picker is not sitting in front of the
 	# camera. Both are sampled on the first scene's `scene_started`, which fires once the runner
 	# has finished its setup and before it has measured anything.
+	runner.telemetry.connect(func(info: Dictionary) -> void:
+		_telemetry_ticks += 1
+		if _saw_countdown <= 0.0:
+			_saw_countdown = float(info.get("total_seconds_left", 0.0)))
+
 	runner.scene_started.connect(func(index: int, _n: int, _scene: Dictionary) -> void:
 		if index != 0:
 			return
 		_saw_god_mode = _god_mode_on()
-		_saw_picker_open = _picker_open())
+		_saw_picker_open = _picker_open()
+		_saw_input_blocked = _player_input_blocked()
+		_saw_mouse_mode = Input.mouse_mode
+		_saw_hud_visible = _hud_visible()
+		_saw_vsync = DisplayServer.window_get_vsync_mode())
 
 	var subset: Array[Dictionary] = []
 	if not full:
@@ -531,6 +599,7 @@ func _check_live() -> void:
 		return
 
 	var report: Dictionary = _live_report
+	_telemetry_frames = waited
 	var scenes: Array = report.get("scenes", [])
 	var median_draws: float = _median_draws(scenes)
 	_expect(scenes.size() == (BenchmarkSuite.scenes().size() if full else 1),
@@ -595,6 +664,29 @@ func _check_live() -> void:
 		"the run recorded the machine's power state at the start")
 	_expect(report.has("power_after") and report.has("power_drift"),
 		"and again at the end, with the drift between them")
+	_expect(_saw_vsync == DisplayServer.VSYNC_DISABLED,
+		"vsync was off while the benchmark measured — with it on, every scene that can hold the "
+		+ "refresh rate reports the refresh rate and the numbers describe the display")
+	_expect(DisplayServer.window_get_vsync_mode() == vsync_before,
+		"and the player's own vsync setting is restored afterwards")
+	_expect(_telemetry_ticks > 0,
+		"the runner published live numbers while it measured (%d tick(s))" % _telemetry_ticks)
+	_expect(_saw_countdown > 0.0,
+		"and a countdown with time left on it (%.0f s at the first tick)" % _saw_countdown)
+	_expect(_telemetry_ticks < _telemetry_frames,
+		"throttled below one update per frame — a readout must not cost what it reports "
+		+ "(%d tick(s) over %d frame(s))" % [_telemetry_ticks, _telemetry_frames])
+	_expect(_saw_input_blocked,
+		"the player's controls were switched off while the benchmark measured — a hand on WASD "
+		+ "would otherwise walk the camera out of the scene being measured")
+	_expect(_saw_mouse_mode != Input.MOUSE_MODE_CAPTURED,
+		"and the mouse was released, which is what gates look input in the controller")
+	_expect(not _player_input_blocked(),
+		"controls are given back when the run ends")
+	_expect(not _saw_hud_visible,
+		"the gameplay HUD — health, hunger, the hotbar, the crosshair — was hidden while the "
+		+ "benchmark measured")
+	_expect(_hud_visible(), "and shown again when the run ended")
 	_expect(_saw_god_mode,
 		"the player was invulnerable while the benchmark measured — the night wave stands still "
 		+ "in front of six enemies and must not be able to kill them")
@@ -625,6 +717,24 @@ func _median_draws(scenes: Array) -> float:
 		return 0.0
 	values.sort()
 	return values[values.size() / 2]
+
+
+## Mirrors `entities/player/player_controller.gd`'s own `gameplay_input_allowed()`, deliberately
+## re-derived from the group rather than read off the runner — the assertion is about the CONTROLLER
+## refusing input, not about the runner believing it asked for that.
+func _player_input_blocked() -> bool:
+	return root.get_tree().get_first_node_in_group(&"blocks_gameplay_input") != null
+
+
+## True if any of the HUD autoloads the runner hides is currently on screen.
+func _hud_visible() -> bool:
+	for autoload_name: String in BenchmarkRunner.HUD_AUTOLOADS:
+		var node: Node = root.get_node_or_null(NodePath("/root/%s" % autoload_name))
+		if node is CanvasLayer and (node as CanvasLayer).visible:
+			return true
+		if node is CanvasItem and (node as CanvasItem).visible:
+			return true
+	return false
 
 
 func _god_mode_on() -> bool:

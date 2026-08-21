@@ -95,10 +95,44 @@ const TRAVEL_CALIBRATION_SECONDS: float = BenchmarkSuite.SAMPLE_SECONDS
 ## higher than the nominal altitude.
 const FLY_CLEARANCE_M: float = 45.0
 
+## How often the live readout is updated, in hertz. NOT per frame: every update writes label text,
+## which is canvas work inside the sample window, and a readout that costs the thing it is reporting
+## is worse than no readout. Five times a second is faster than anyone can read and about 2% of the
+## frames at 120 fps.
+const TELEMETRY_HZ: float = 5.0
+
+## Frames dropped from the sample after the live readout repaints.
+##
+## Determined by measurement, not by reasoning about the render pipeline. With no readout at all the
+## stationary scenes measured a 63-81 fps 1% low, varying by content. Adding the readout collapsed
+## them to a flat 48-59 — a number identical across nine different views, which is an artifact.
+## Dropping ONE frame recovered them to 51-77, better but still short, so the repaint's cost is not
+## confined to the frame immediately after the emit; the label changes are queued and the redraw
+## lands a frame later than the work that requested it.
+const INSTRUMENT_SKIP_FRAMES: int = 2
+
 ## Seconds spent looking at each destination during the warm-up pass. Long enough to render the
 ## view a few hundred times, which is what forces first-sight work to happen; short enough that
 ## warming nine destinations costs well under a minute. See `_prewarm()`.
 const PREWARM_SECONDS: float = 1.5
+
+## The group `entities/player/player_controller.gd` checks in `gameplay_input_allowed()`. Anything in
+## it means "a cursor UI is open, the player is not driving" — see `_block_player_input()`.
+const PLAYER_INPUT_BLOCK_GROUP: StringName = &"blocks_gameplay_input"
+
+## The gameplay HUD, hidden for the duration of a run. Health, hunger and stamina, the hotbar, the
+## crosshair and every prompt and popup belong to a player who is playing; during a benchmark nobody
+## is, and they sit on top of the one thing the run exists to show. Naming them explicitly rather
+## than hiding every `CanvasLayer` is deliberate: `MenuStack` is a CanvasLayer too, and it is
+## carrying the benchmark's own panel.
+##
+## Prior visibility is recorded per node and restored exactly, so a HUD element that was already
+## hidden for its own reasons stays hidden afterwards.
+const HUD_AUTOLOADS: PackedStringArray = [
+	"VitalsHud", "InventoryUI", "CraftingUI", "ChestUI", "ExtractionHud", "DefeatHud",
+	"BossHealthHud", "WellspringHud", "DoorPrompt", "FocusPrompt", "TargetHealthHud",
+	"DamageNumbers", "NetDebugPanel", "BuildBar",
+]
 
 ## The attunement the benchmark picks for itself when the world starts without one. Fixed rather
 ## than random for the same reason the seed is: two runs have to measure the same thing. `warden` is
@@ -118,6 +152,10 @@ const SETTLE_QUIET_FRAMES: int = 30
 signal scene_started(index: int, total: int, scene: Dictionary)
 signal scene_finished(index: int, total: int, result: Dictionary)
 signal phase_changed(message: String)
+## Live numbers for the on-screen readout (F-462), emitted at `TELEMETRY_HZ` rather than per frame.
+## Keys: `fps`, `low1_fps`, `frame_ms`, `draws`, `gpu_ms`, `cpu_ms`, `scene_label`,
+## `scene_seconds_left`, `total_seconds_left`, `scene_index`, `scene_total`, `sampling`.
+signal telemetry(info: Dictionary)
 signal finished(report: Dictionary)
 signal failed(message: String)
 
@@ -134,6 +172,7 @@ var _viewport_rid: RID
 ## destroys data every time it runs.
 var report_writer: BenchmarkReport = BenchmarkReport.new()
 var _saved_max_fps: int = 0
+var _saved_vsync: int = DisplayServer.VSYNC_ENABLED
 var _saved_settings: Dictionary = {}
 var _travel_heading: float = 0.0
 var _biome_defs: Array = []
@@ -150,6 +189,18 @@ var _invulnerable: bool = false
 var _anchor: Vector3 = Vector3.ZERO
 ## True if the benchmark chose the attunement itself, and must therefore clear it on the way out.
 var _chose_attunement: bool = false
+## Wall-clock seconds each completed scene actually took, staging and settle included. The countdown
+## projects from these rather than from the nominal constants — see `_seconds_remaining()`.
+var _scene_durations: PackedFloat64Array = PackedFloat64Array()
+var _scene_started_usec: int = 0
+var _telemetry_usec: int = 0
+var _scenes_total: int = 0
+var _scene_index: int = 0
+var _scene_label: String = ""
+var _calibration_candidates: int = 0
+var _restore_mouse_mode: int = Input.MOUSE_MODE_VISIBLE
+## Each hidden HUD node's visibility as it was found, so it is handed back exactly.
+var _hud_restore: Dictionary = {}
 
 
 ## Runs the suite plus the calibration pass. `world` must be a loaded, settled level; the caller is
@@ -198,8 +249,10 @@ func run(world: Node3D, target_fps: int = SettingsAdvisor.DEFAULT_TARGET_FPS,
 
 	var scenes: Array[Dictionary] = scene_override if not scene_override.is_empty() \
 		else BenchmarkSuite.scenes()
+	_calibration_candidates = 3 if calibrate else 0
 	await _prewarm(scenes)
 	var results: Array = []
+	_scenes_total = scenes.size()
 	for index: int in scenes.size():
 		var scene: Dictionary = scenes[index]
 		var id: String = String(scene["id"])
@@ -208,8 +261,12 @@ func run(world: Node3D, target_fps: int = SettingsAdvisor.DEFAULT_TARGET_FPS,
 			continue
 		if cancelled:
 			break
+		_scene_index = index
+		_scene_label = String(scene["label"])
+		_scene_started_usec = Time.get_ticks_usec()
 		scene_started.emit(index, scenes.size(), scene)
 		var result: Dictionary = await _run_scene(scene)
+		_scene_durations.append(float(Time.get_ticks_usec() - _scene_started_usec) / 1e6)
 		# On disk BEFORE anything else happens to it. See BenchmarkReport's header — a run stopped
 		# here must cost the scene in flight and nothing more.
 		report_writer.append_scene(result)
@@ -247,7 +304,8 @@ func run(world: Node3D, target_fps: int = SettingsAdvisor.DEFAULT_TARGET_FPS,
 		"power_summary": MachineProbe.describe_power(power_before),
 		# Everything about the machine's condition that makes the table below less trustworthy:
 		# what was already wrong when the player pressed RUN, plus what went wrong during the run.
-		"state_notes": _state_notes(power_before, MachineProbe.drift(power_before, power_after)),
+		"state_notes": _state_notes(power_before, MachineProbe.drift(power_before, power_after))
+			+ _refresh_cap_notes(results),
 		"viewport": "%dx%d" % [_viewport.get_visible_rect().size.x,
 			_viewport.get_visible_rect().size.y],
 		"settings": settings_state,
@@ -318,8 +376,8 @@ func _prewarm(scenes: Array[Dictionary]) -> void:
 		_place_player(_resolve_destination(String(scene.get("where", "spawn"))))
 		_set_camera_pitch(BenchmarkSuite.FLY_PITCH_DEGREES
 			if motion == BenchmarkSuite.MOTION_FLY else 0.0)
-		await settle_world(_world, get_tree())
-		await _sleep(PREWARM_SECONDS)
+		await settle_world(_world, get_tree(), _staging_tick)
+		await _sleep_ticking(PREWARM_SECONDS)
 		if cancelled:
 			return
 
@@ -362,25 +420,35 @@ func _run_scene(scene: Dictionary) -> Dictionary:
 	# The traversal scene still measures streaming, and has to: it starts from a settled world and
 	# then RUNS, so the chunks it forces arrive inside the window because the player moved, which
 	# is the thing a player actually feels.
-	await settle_world(_world, tree)
+	await settle_world(_world, tree, _staging_tick)
 	# Then a short fixed tail for what settling cannot see — shadow atlas re-render, draw-policy
 	# state, first-frame shader compiles for whatever this view contains that the last one did not.
-	await _sleep(BenchmarkSuite.SETTLE_SECONDS)
+	await _sleep_ticking(BenchmarkSuite.SETTLE_SECONDS)
 
 	var sampler: FrameSampler = FrameSampler.new()
 	var start: int = Time.get_ticks_usec()
 	var last: int = start
+	var skip_frames: int = 0
 	while Time.get_ticks_usec() - start < int(BenchmarkSuite.SAMPLE_SECONDS * 1e6):
 		await tree.process_frame
 		_step_motion(motion)
 		var now: int = Time.get_ticks_usec()
-		sampler.record(
-			float(now - last) / 1000.0,
-			RenderingServer.viewport_get_measured_render_time_gpu(_viewport_rid),
-			RenderingServer.viewport_get_measured_render_time_cpu(_viewport_rid),
-			Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
-			Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME))
+		if skip_frames > 0:
+			# The readout repainted; this frame's delta still carries part of that repaint.
+			# See `_tick_telemetry()` — instrument cost is not game cost.
+			skip_frames -= 1
+			sampler.skip()
+		else:
+			sampler.record(
+				float(now - last) / 1000.0,
+				RenderingServer.viewport_get_measured_render_time_gpu(_viewport_rid),
+				RenderingServer.viewport_get_measured_render_time_cpu(_viewport_rid),
+				Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
+				Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME))
 		last = now
+		if _tick_telemetry(sampler, true,
+				BenchmarkSuite.SAMPLE_SECONDS - float(now - start) / 1e6):
+			skip_frames = INSTRUMENT_SKIP_FRAMES
 		if cancelled:
 			break
 
@@ -436,6 +504,10 @@ func _calibrate(results: Array, settings_state: Dictionary) -> Dictionary:
 
 	var calibration: Dictionary = {}
 	var original_preset: int = int(settings_state.get("graphics_preset", 2))
+	# The countdown has to know this pass is still coming; it shrinks as candidates are measured.
+	_calibration_candidates = 3
+	_scene_label = "Comparing presets"
+	_scene_index = _scenes_total
 	for preset: int in [SettingsAdvisor.PRESET_HIGH, SettingsAdvisor.PRESET_MEDIUM,
 			SettingsAdvisor.PRESET_LOW]:
 		if cancelled:
@@ -444,12 +516,14 @@ func _calibrate(results: Array, settings_state: Dictionary) -> Dictionary:
 			String(scene["label"]), SettingsAdvisor.PRESET_NAMES[preset]])
 		graphics.call(&"apply", preset)
 		calibration[preset] = await _sample_calibration(scene)
+		_calibration_candidates = maxi(_calibration_candidates - 1, 0)
 		# Highest first, and stop as soon as one clears comfortably: there is nothing to learn
 		# from measuring LOW on a machine that already held HIGH, and every candidate costs the
 		# player another seven seconds of black-box waiting.
 		if float(calibration[preset]) >= float(_target_hint()) * SettingsAdvisor.COMFORTABLE_MARGIN:
 			break
 	graphics.call(&"apply", original_preset)
+	_calibration_candidates = 0
 	return calibration
 
 
@@ -462,8 +536,8 @@ func _sample_calibration(scene: Dictionary) -> float:
 	# Same two-part settle as a scene: wait for the world, then for the toggle's own transient. A
 	# preset change re-renders the shadow atlas and rebuilds draw-policy state, and that belongs to
 	# the toggle rather than to the preset (docs/PERFORMANCE.md §1, rule 3).
-	await settle_world(_world, get_tree())
-	await _sleep(CALIBRATION_SETTLE)
+	await settle_world(_world, get_tree(), _staging_tick)
+	await _sleep_ticking(CALIBRATION_SETTLE)
 
 	var sampler: FrameSampler = FrameSampler.new()
 	var motion: StringName = StringName(scene.get("motion", BenchmarkSuite.MOTION_STILL))
@@ -471,17 +545,24 @@ func _sample_calibration(scene: Dictionary) -> float:
 	var seconds: float = TRAVEL_CALIBRATION_SECONDS if moving else CALIBRATION_SECONDS
 	var start: int = Time.get_ticks_usec()
 	var last: int = start
+	var skip_frames: int = 0
 	while Time.get_ticks_usec() - start < int(seconds * 1e6):
 		await tree.process_frame
 		_step_motion(motion)
 		var now: int = Time.get_ticks_usec()
-		sampler.record(
-			float(now - last) / 1000.0,
-			RenderingServer.viewport_get_measured_render_time_gpu(_viewport_rid),
-			RenderingServer.viewport_get_measured_render_time_cpu(_viewport_rid),
-			Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
-			Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME))
+		if skip_frames > 0:
+			skip_frames -= 1
+			sampler.skip()
+		else:
+			sampler.record(
+				float(now - last) / 1000.0,
+				RenderingServer.viewport_get_measured_render_time_gpu(_viewport_rid),
+				RenderingServer.viewport_get_measured_render_time_cpu(_viewport_rid),
+				Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
+				Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME))
 		last = now
+		if _tick_telemetry(sampler, true, seconds - float(now - start) / 1e6):
+			skip_frames = INSTRUMENT_SKIP_FRAMES
 		if cancelled:
 			break
 	return float(sampler.stats().get("low1_fps", 0.0))
@@ -683,6 +764,96 @@ func _travel() -> void:
 	_player.rotation.y = atan2(-direction.x, -direction.z)
 
 
+## Publishes the live readout, at most `TELEMETRY_HZ` times a second. Returns true if it actually
+## published, so the caller can drop the frame that pays for it.
+##
+## It has to be dropped. Repainting the panel — a dozen labels re-shaped, a styled panel redrawn —
+## costs several milliseconds, and at 5 Hz that lands 30 spikes inside a 6-second sample while the
+## worst 1% of ~860 frames is only 9 frames. Measured: adding this readout pulled every stationary
+## scene's 1% low to a uniform 52-58 fps, where the same scenes without it ranged 63-81 and varied
+## by content. A number identical across nine different views is not a measurement of those views.
+##
+## Dropping the frame is the same rule the sampler already applies to the first frames after a
+## transition and to OS stalls: instrument cost is not game cost. It is unbiased with respect to
+## what the game is drawing, because the repaint is scheduled off the wall clock rather than off
+## anything happening in the scene, and it costs about 3% of the frames in a sample.
+##
+## `sampler` may be null during staging — the warm-up and the settles have no sample of their own,
+## and the readout still has to show something rather than freezing on the last scene's numbers, so
+## it falls back to the engine's own frame counter.
+func _tick_telemetry(sampler: FrameSampler, sampling: bool, scene_seconds_left: float) -> bool:
+	var now: int = Time.get_ticks_usec()
+	if float(now - _telemetry_usec) / 1e6 < 1.0 / TELEMETRY_HZ:
+		return false
+	_telemetry_usec = now
+
+	var info: Dictionary = {
+		"scene_label": _scene_label,
+		"scene_index": _scene_index,
+		"scene_total": _scenes_total,
+		"sampling": sampling,
+		"scene_seconds_left": maxf(scene_seconds_left, 0.0),
+		"total_seconds_left": _seconds_remaining(scene_seconds_left),
+		"draws": Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
+		"mprims": Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1e6,
+		"vram_mb": Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0,
+		"physics_ms": Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
+		"nodes": Performance.get_monitor(Performance.OBJECT_NODE_COUNT),
+		# Game-specific and worth more than any engine counter here: the streamer's chunk count is
+		# what the traversal and flyover scenes are actually stressing, and watching it climb is
+		# what makes the hitch legible while it is happening rather than only in the report.
+		"chunks": _loaded_chunks(),
+	}
+	if sampler != null and sampler.frame_count() > 0:
+		var stats: Dictionary = sampler.stats()
+		info["fps"] = sampler.live_fps()
+		info["low1_fps"] = stats["low1_fps"]
+		info["worst_ms"] = sampler.worst_ms()
+		info["frame_ms"] = stats["median_ms"]
+		info["gpu_ms"] = stats["gpu_ms"]
+		info["cpu_ms"] = stats["cpu_ms"]
+	else:
+		info["fps"] = Performance.get_monitor(Performance.TIME_FPS)
+		info["low1_fps"] = 0.0
+		info["worst_ms"] = 0.0
+		info["frame_ms"] = Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
+		info["gpu_ms"] = 0.0
+		info["cpu_ms"] = 0.0
+	telemetry.emit(info)
+	return true
+
+
+## Seconds left in the whole run, projected from how long the scenes SO FAR actually took.
+##
+## The nominal constants cannot answer this. A scene is `SAMPLE_SECONDS` of sampling plus a settle
+## that waits on the chunk streamer for as long as the streamer needs, which on a slow machine — the
+## machines this exists for — is the larger half and is exactly the part that varies. A countdown
+## computed from the constants would run fast on a slow machine and be visibly wrong by the end,
+## which is worse than no countdown: it teaches the player the number is fiction.
+##
+## So it measures. Each completed scene's real wall time goes into `_scene_durations`, and the
+## estimate is the mean of those times the scenes left. Before the first scene finishes there is
+## nothing to average, so it falls back to the nominal figure and the screen shows it as
+## approximate. Self-correcting: it converges on this machine's actual pace within two scenes.
+func _seconds_remaining(scene_seconds_left: float) -> float:
+	var per_scene: float = BenchmarkSuite.SAMPLE_SECONDS + BenchmarkSuite.SETTLE_SECONDS
+	if not _scene_durations.is_empty():
+		var total: float = 0.0
+		for value: float in _scene_durations:
+			total += value
+		per_scene = total / float(_scene_durations.size())
+	var scenes_left: int = maxi(_scenes_total - _scene_index - 1, 0)
+	# Plus the calibration pass still to come, at roughly one shortened scene per candidate.
+	var calibration: float = float(_calibration_candidates) * (CALIBRATION_SECONDS
+		+ CALIBRATION_SETTLE)
+	return maxf(scene_seconds_left, 0.0) + float(scenes_left) * per_scene + calibration
+
+
+## True while the countdown is still a guess rather than a measurement.
+func has_measured_pace() -> bool:
+	return not _scene_durations.is_empty()
+
+
 ## One frame of whatever this scene's camera is doing.
 func _step_motion(motion: StringName) -> void:
 	match motion:
@@ -741,24 +912,42 @@ func _set_time_of_day(fraction: float) -> void:
 ## Everything that has to be true for the numbers to mean anything, set once for the whole run.
 func _begin_measurement() -> void:
 	_saved_max_fps = Engine.max_fps
+	_saved_vsync = DisplayServer.window_get_vsync_mode()
 	_god_mode_restore = _god_mode_enabled()
+	_block_player_input(true)
+	_set_hud_visible(false)
 	# A frame limiter turns every scene into the same number. `perf_probe` printed 120 fps for all
 	# fourteen of its rows on a 120 Hz panel this way and it read as "shadows and fog cost
 	# nothing" (docs/PERFORMANCE.md §1, rule 4). A benchmark capped at the refresh rate would
 	# recommend HIGH to every machine that can hold vsync, which is the wrong answer for exactly
 	# the machines this exists to help.
 	Engine.max_fps = 0
+	# ...and vsync, which is the OTHER half of the same rule and the half this originally missed.
+	# `Engine.max_fps = 0` does nothing about the compositor: with vsync on, every scene that can
+	# hold the refresh rate reports the refresh rate. Measured on a 120 Hz panel, fourteen of
+	# eighteen scenes came back at a median of 8.2 ms — 120.0 fps — which is not a measurement of
+	# those scenes, it is a measurement of the display.
+	#
+	# It matters most for exactly the machines this exists to help. Capped, a machine with 2.5x the
+	# headroom it needs and a machine one frame away from stuttering both read 120, and both get
+	# told HIGH is comfortable. Uncapped, the first reads 300 and the second reads 121, and only one
+	# of them is comfortable. Restored on the way out, so the player's own vsync setting is
+	# untouched.
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	RenderingServer.viewport_set_measure_render_time(_viewport_rid, true)
 
 
 func _end_measurement() -> void:
 	Engine.max_fps = _saved_max_fps
+	DisplayServer.window_set_vsync_mode(_saved_vsync)
 	RenderingServer.viewport_set_measure_render_time(_viewport_rid, false)
 	# Hand invulnerability back exactly as it was found, on EVERY exit path — the cancelled one and
 	# the failed one included, which is why this lives here rather than at the end of `run()`.
 	if _god_mode_enabled() != _god_mode_restore:
 		_set_god_mode(_god_mode_restore)
 	_restore_class_picker()
+	_block_player_input(false)
+	_set_hud_visible(true)
 
 
 ## Makes the player unkillable for the duration, through the shipped `GodModeService` rather than
@@ -821,6 +1010,11 @@ func _dismiss_class_picker() -> void:
 	# measurement. Cheap, and it cannot break a picker that is already closed.
 	if picker is CanvasLayer:
 		(picker as CanvasLayer).visible = false
+	# `AttunementUI._close_picker()` restores whatever mouse mode it captured on the way in, which
+	# is MOUSE_MODE_CAPTURED — and the controller applies mouse look whenever the mouse is captured,
+	# regardless of the input block. So the release has to happen AFTER the picker is dealt with,
+	# not only in `_begin_measurement()` before it.
+	_release_mouse()
 
 
 func _restore_class_picker() -> void:
@@ -835,6 +1029,74 @@ func _restore_class_picker() -> void:
 	if service != null and service.has_method(&"host_clear_all"):
 		service.call(&"host_clear_all")
 	_chose_attunement = false
+
+
+## Takes the controls away from the player for the duration of the run, and gives them back after.
+##
+## Input feeds the real player controller, so without this a hand on WASD walks the camera out of
+## the scene being measured and a nudge of the mouse turns it to face the sea. The intro asks the
+## player to keep their hands off; asking is not a mechanism, and "the benchmark you walked into a
+## tree" is not a benchmark.
+##
+## It uses the seam the game already has rather than a benchmark-only one: `gameplay_input_allowed()`
+## in `entities/player/player_controller.gd` is false whenever ANY node is in the
+## `blocks_gameplay_input` group, which is how every menu in the project stops the player moving
+## underneath it. Joining that group blocks movement, jump, dodge, attack, build and gamepad look
+## through the same path a pause menu uses, so this cannot drift out of step with what a menu does.
+##
+## Mouse look is gated separately — the controller only applies it while the mouse is CAPTURED — so
+## the cursor is released as well, and the previous mode restored afterwards.
+##
+## Note that god mode is already on for the run (`_ensure_invulnerable()`), and the controller skips
+## gravity entirely in god mode. So a blocked player does not merely stop walking, it stops falling,
+## which is what lets the flyover sit at 90 m through a multi-second settle without dropping.
+func _block_player_input(blocked: bool) -> void:
+	if blocked:
+		_restore_mouse_mode = Input.mouse_mode
+		add_to_group(PLAYER_INPUT_BLOCK_GROUP)
+		_release_mouse()
+		return
+	if is_in_group(PLAYER_INPUT_BLOCK_GROUP):
+		remove_from_group(PLAYER_INPUT_BLOCK_GROUP)
+	Input.mouse_mode = _restore_mouse_mode
+
+
+## Mouse look is gated on the cursor being CAPTURED, not on the input block, so releasing it is
+## what actually stops a nudge of the mouse turning the camera. Idempotent and cheap, because
+## several things in the game capture the mouse back and this has to win against all of them.
+func _release_mouse() -> void:
+	if Input.mouse_mode != Input.MOUSE_MODE_VISIBLE:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+## Hides or restores the gameplay HUD. See `HUD_AUTOLOADS`.
+func _set_hud_visible(visible_now: bool) -> void:
+	if not visible_now:
+		_hud_restore.clear()
+	for autoload_name: String in HUD_AUTOLOADS:
+		var node: Node = get_node_or_null(NodePath("/root/%s" % autoload_name))
+		if not (node is CanvasItem or node is CanvasLayer):
+			continue
+		if not visible_now:
+			_hud_restore[autoload_name] = _node_visible(node)
+			_set_node_visible(node, false)
+		elif _hud_restore.has(autoload_name):
+			_set_node_visible(node, bool(_hud_restore[autoload_name]))
+	if visible_now:
+		_hud_restore.clear()
+
+
+func _node_visible(node: Node) -> bool:
+	if node is CanvasLayer:
+		return (node as CanvasLayer).visible
+	return (node as CanvasItem).visible
+
+
+func _set_node_visible(node: Node, value: bool) -> void:
+	if node is CanvasLayer:
+		(node as CanvasLayer).visible = value
+	elif node is CanvasItem:
+		(node as CanvasItem).visible = value
 
 
 func _god_mode_enabled() -> bool:
@@ -863,6 +1125,35 @@ func _settings_summary(state: Dictionary) -> String:
 		"on" if bool(state.get("vsync_enabled", true)) else "off"]
 
 
+## Warns when the measured frame rates cluster on the display's refresh rate, which means something
+## is still pacing the frame and the numbers describe the display rather than the machine. The
+## runner disables vsync itself, so reaching this means something else did it — a driver-level
+## "force vsync on" setting, a compositor that will not let go, a frame limiter outside the game.
+## `perf_probe` learned this the hard way and prints the same warning (docs/PERFORMANCE.md §1,
+## rule 4); it is worth saying out loud rather than quietly reporting a capped number as a result.
+func _refresh_cap_notes(results: Array) -> PackedStringArray:
+	var refresh: float = DisplayServer.screen_get_refresh_rate()
+	if refresh <= 0.0:
+		return PackedStringArray()
+	var capped: int = 0
+	var measured: int = 0
+	for entry: Dictionary in results:
+		if int(entry.get("frames", 0)) <= 0:
+			continue
+		measured += 1
+		if absf(float(entry.get("fps", 0.0)) - refresh) < refresh * 0.02:
+			capped += 1
+	if measured == 0 or capped < measured / 2:
+		return PackedStringArray()
+	return PackedStringArray([
+		"%d of %d scenes measured within 2%% of this display's %.0f Hz refresh rate, even though "
+		% [capped, measured, refresh]
+		+ "the benchmark switched vsync off. Something outside the game is still pacing the frame "
+		+ "— a driver setting that forces vsync, or an external frame limiter. These numbers "
+		+ "describe your display, not your machine.",
+	])
+
+
 ## The condition warnings a reader must see next to the numbers. Kept out of the recommendation's
 ## own reasons on purpose: a reason explains the advice, and these explain how much to trust it,
 ## which is a different question and belongs in its own place on the screen.
@@ -889,6 +1180,11 @@ func _load_biome_defs() -> Array:
 	return (registry.get(&"biomes") as Dictionary).values()
 
 
+func _loaded_chunks() -> float:
+	var streamer: Node = _find_streamer(_world) if _world != null else null
+	return float(streamer.call(&"loaded_chunk_count")) if streamer != null else 0.0
+
+
 func _find_player(node: Node) -> Node3D:
 	var direct: Node = node.get_node_or_null(^"Player")
 	if direct is Node3D:
@@ -904,6 +1200,30 @@ func _sleep(seconds: float) -> void:
 	await get_tree().create_timer(seconds).timeout
 
 
+## A wait that keeps the readout alive. Frame-stepped rather than timer-based so the live numbers
+## keep moving through it; the staging waits are where a player is most likely to think the game has
+## frozen, because nothing on screen is changing and the world is not being driven.
+func _sleep_ticking(seconds: float) -> void:
+	var tree: SceneTree = get_tree()
+	var start: int = Time.get_ticks_usec()
+	while float(Time.get_ticks_usec() - start) / 1e6 < seconds:
+		await tree.process_frame
+		_staging_tick()
+		if cancelled:
+			return
+
+
+## The per-frame callback used during staging: live numbers, no sample of its own, and no scene
+## countdown — nothing is being measured yet, and showing a scene countdown that is not counting
+## down the sample would be a lie about what the run is doing.
+func _staging_tick() -> void:
+	# Staging is not measured, but it is where the camera is put in place, and a settle that lets it
+	# drift means the sample starts somewhere other than where the scene said.
+	_hold()
+	_release_mouse()
+	_tick_telemetry(null, false, 0.0)
+
+
 ## Waits until `world`'s chunk streamer has nothing left in flight. Both callers need this before
 ## the first sample and neither should hand-roll it: measuring a world that is still arriving is
 ## the mistake F-452 filed against every developer instrument at once, and it produces numbers that
@@ -913,7 +1233,10 @@ func _sleep(seconds: float) -> void:
 ## with no streamer settles instantly. This is deliberately the same shape as
 ## `tools/probe_scene.gd`'s `settle()`; that one belongs to the developer instruments and this one
 ## ships, and neither may import the other's directory.
-static func settle_world(world: Node, tree: SceneTree) -> Dictionary:
+## `on_frame` is called once per waited frame when valid, so a caller can keep a live readout moving
+## while the streamer works — a settle on a slow machine is seconds long, and a readout frozen for
+## seconds reads as the game having hung.
+static func settle_world(world: Node, tree: SceneTree, on_frame: Callable = Callable()) -> Dictionary:
 	var streamer: Node = _find_streamer(world)
 	if streamer == null:
 		return {"streaming": false, "frames": 0, "chunks": 0, "settled": true}
@@ -922,6 +1245,8 @@ static func settle_world(world: Node, tree: SceneTree) -> Dictionary:
 	while frames < SETTLE_MAX_FRAMES:
 		await tree.process_frame
 		frames += 1
+		if on_frame.is_valid():
+			on_frame.call()
 		if int(streamer.call(&"pending_job_count")) == 0:
 			quiet += 1
 			if quiet >= SETTLE_QUIET_FRAMES:

@@ -46,6 +46,8 @@ var _progress_host: Control
 var _progress_bar: ProgressBar
 var _progress_label: Label
 var _progress_detail: Label
+var _countdown_label: Label
+var _readout_labels: Dictionary = {}
 var _first_focus: Control
 
 var _target_fps: int = SettingsAdvisor.DEFAULT_TARGET_FPS
@@ -130,10 +132,10 @@ func _show_intro() -> void:
 		+ "hardest of those scenes at each graphics preset and tells you which one your machine "
 		+ "actually holds.", MireTheme.BODY, MireTheme.TEXT))
 	column.add_child(MireTheme.paragraph(
-		"About %d seconds, plus generating the island. Keep your hands off the keyboard while it "
+		"About %d seconds, plus generating the island. Your controls are switched off while it "
 		% int(BenchmarkSuite.estimated_seconds())
-		+ "runs — input moves the player, and a benchmark you walked into a tree is not a "
-		+ "benchmark. Esc stops it and keeps whatever it already measured."))
+		+ "runs, so nothing you press can walk the camera out of the scene being measured — Esc "
+		+ "still stops it, and keeps whatever it already measured."))
 
 	# What state this machine is in RIGHT NOW, before two minutes are spent measuring it. A player
 	# who is on battery in Low Power Mode can plug in and switch it off in ten seconds — but only
@@ -203,6 +205,14 @@ func _has_resumable_run() -> bool:
 # ── running ───────────────────────────────────────────────────────────────────────────────────
 
 
+## The panel shown over the live world while the benchmark runs: what it is doing, how much longer,
+## and what the frame is costing right now (F-462).
+##
+## The live readout is the reason this benchmark shows the world instead of a black screen. A player
+## watching the night wave stutter should be able to see the number that says it stuttered — that is
+## what turns "the game feels bad here" into something they can act on. It updates at
+## `BenchmarkRunner.TELEMETRY_HZ`, not per frame: writing label text is canvas work inside the
+## sample window, and a readout that costs the thing it reports is worse than none.
 func _build_progress_panel() -> Control:
 	var anchor := MarginContainer.new()
 	anchor.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
@@ -215,19 +225,111 @@ func _build_progress_panel() -> Control:
 	var column: VBoxContainer = MireTheme.column()
 	panel.add_child(_margins(column))
 
+	# Heading row: what is being measured, and how much longer the whole run has to go.
+	var heading: HBoxContainer = MireTheme.row(MireTheme.GRID * 2)
 	_progress_label = MireTheme.label("Preparing…", MireTheme.TITLE)
-	column.add_child(_progress_label)
+	_progress_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	heading.add_child(_progress_label)
+	_countdown_label = MireTheme.label("--:--", MireTheme.HEADLINE, MireTheme.AMBER)
+	heading.add_child(_countdown_label)
+	column.add_child(heading)
+
 	_progress_detail = MireTheme.paragraph("")
 	column.add_child(_progress_detail)
+
 	_progress_bar = ProgressBar.new()
 	_progress_bar.max_value = 1.0
 	_progress_bar.show_percentage = false
 	_progress_bar.custom_minimum_size = Vector2(0.0, 6.0)
 	column.add_child(_progress_bar)
+
+	column.add_child(_build_readout())
 	column.add_child(MireTheme.paragraph("Esc stops the benchmark and keeps what it measured."))
 
 	anchor.add_child(panel)
 	return anchor
+
+
+## The live numbers, in two rows of labelled figures.
+##
+## Row one is the frame itself — what it costs and how bad its worst moment was. Row two is what the
+## frame is made of, which is what tells a player WHY it costs that. `1% LOW` and `WORST` carry the
+## accent colour because they are the two numbers that describe how the game feels; a median frame
+## time describes the stretches nobody complains about.
+##
+## `CHUNKS` earns its place over any other engine counter: the traversal and flyover scenes are
+## stressing the chunk streamer, and watching that number climb while the frame time spikes is what
+## makes the hitch legible as it happens instead of only in the report.
+func _build_readout() -> Control:
+	var rows: VBoxContainer = MireTheme.column(MireTheme.GRID)
+	rows.add_child(_readout_row([
+		["fps", "FPS", MireTheme.TEXT],
+		["low1_fps", "1% LOW", MireTheme.AMBER],
+		["frame_ms", "FRAME ms", MireTheme.TEXT],
+		["worst_ms", "WORST ms", MireTheme.AMBER],
+		["gpu_ms", "GPU ms", MireTheme.MUTED],
+		["cpu_ms", "CPU ms", MireTheme.MUTED],
+	]))
+	rows.add_child(_readout_row([
+		["draws", "DRAWS", MireTheme.MUTED],
+		["mprims", "PRIMS M", MireTheme.MUTED],
+		["vram_mb", "VRAM MB", MireTheme.MUTED],
+		["physics_ms", "PHYS ms", MireTheme.MUTED],
+		["nodes", "NODES", MireTheme.MUTED],
+		["chunks", "CHUNKS", MireTheme.MOSS],
+	]))
+	return rows
+
+
+func _readout_row(fields: Array) -> Control:
+	var row: HBoxContainer = MireTheme.row(MireTheme.GRID * 3)
+	for field: Array in fields:
+		var cell: VBoxContainer = MireTheme.column(0)
+		cell.custom_minimum_size = Vector2(84.0 * MireTheme.ui_scale(), 0.0)
+		cell.add_child(MireTheme.label(String(field[1]), MireTheme.CAPTION, MireTheme.MUTED))
+		var value: Label = MireTheme.label("—", MireTheme.TITLE, field[2])
+		cell.add_child(value)
+		_readout_labels[String(field[0])] = value
+		row.add_child(cell)
+	return row
+
+
+## One telemetry tick from the runner.
+func _on_telemetry(info: Dictionary) -> void:
+	_set_readout("fps", "%.0f" % float(info.get("fps", 0.0)))
+	# Zero means no sample yet — during staging there is nothing being measured, and printing "0"
+	# would read as the machine rendering at zero frames a second.
+	for key: String in ["low1_fps", "worst_ms"]:
+		var value: float = float(info.get(key, 0.0))
+		_set_readout(key, "—" if value <= 0.0 else "%.0f" % value)
+	_set_readout("frame_ms", "%.1f" % float(info.get("frame_ms", 0.0)))
+	_set_readout("gpu_ms", "%.1f" % float(info.get("gpu_ms", 0.0)))
+	_set_readout("cpu_ms", "%.1f" % float(info.get("cpu_ms", 0.0)))
+	_set_readout("draws", "%.0f" % float(info.get("draws", 0.0)))
+	_set_readout("mprims", "%.2f" % float(info.get("mprims", 0.0)))
+	_set_readout("vram_mb", "%.0f" % float(info.get("vram_mb", 0.0)))
+	_set_readout("physics_ms", "%.1f" % float(info.get("physics_ms", 0.0)))
+	_set_readout("nodes", "%.0f" % float(info.get("nodes", 0.0)))
+	_set_readout("chunks", "%.0f" % float(info.get("chunks", 0.0)))
+	_set_countdown(float(info.get("total_seconds_left", 0.0)))
+
+
+func _set_readout(key: String, text: String) -> void:
+	var label: Label = _readout_labels.get(key, null)
+	if label != null:
+		label.text = text
+
+
+## M:SS remaining. Prefixed with a tilde until the runner has timed a scene of its own, because
+## until then the figure comes from nominal constants rather than from this machine — and a
+## countdown that presents a guess as a measurement is how a player learns to ignore it.
+func _set_countdown(seconds_left: float) -> void:
+	if _countdown_label == null:
+		return
+	var whole: int = int(ceilf(maxf(seconds_left, 0.0)))
+	var measured: bool = _runner != null and is_instance_valid(_runner) \
+		and bool(_runner.call(&"has_measured_pace"))
+	_countdown_label.text = "%s%d:%02d" % ["" if measured else "~", whole / 60, whole % 60]
 
 
 func _start_run(resume: bool) -> void:
@@ -258,6 +360,7 @@ func _run_async(resume: bool) -> void:
 		_set_progress("%s — %.0f fps" % [String(result.get("label", "")),
 			float(result.get("low1_fps", 0.0))],
 			"1% low, the number that decides how it feels", float(index + 1) / float(count)))
+	_runner.telemetry.connect(_on_telemetry)
 	_runner.phase_changed.connect(func(message: String) -> void:
 		_set_progress(message, "measuring the hardest scene at each preset", 1.0))
 	_runner.finished.connect(_on_finished)

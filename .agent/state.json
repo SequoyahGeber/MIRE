@@ -12,11 +12,35 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "autoload/crafting_service.gd": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T22:52:32+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "autoload/guide_service.gd": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T22:49:29+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
     "autoload/harvest_world.gd": {
       "agent": "quillcfd8d7",
       "at": "2026-08-21T22:13:12+00:00",
       "task": "F-461",
       "token": "CLAUDE_CODE_SESSION_ID:ef18b3c8-16fb-47c5-852c-09d362e8f2c4"
+    },
+    "autoload/progression_service.gd": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T22:51:41+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "autoload/salvage_service.gd": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T22:52:32+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
     "content/harvestables/apple_tree.tres": {
       "agent": "gale43d16e",
@@ -42,17 +66,11 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "core/bench/benchmark_runner.gd": {
-      "agent": "quill895277",
-      "at": "2026-08-21T22:20:25+00:00",
-      "task": "F-462",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
-    },
-    "core/bench/frame_sampler.gd": {
-      "agent": "quill895277",
-      "at": "2026-08-21T22:20:25+00:00",
-      "task": "F-462",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
+    "core/events/event_bus.gd": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T22:51:41+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
     "docs/ASSET_TRACKER.md": {
       "agent": "gale43d16e",
@@ -60,11 +78,23 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "tools/benchmark_check.gd": {
-      "agent": "quill895277",
-      "at": "2026-08-21T22:20:25+00:00",
-      "task": "F-462",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
+    "docs/PROGRESSION.md": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T22:49:29+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "systems/guide/guide_step_def.gd": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T22:49:29+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "systems/inventory/item_def.gd": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T22:51:41+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
     "tools/blender/build_gatherable_plants.py": {
       "agent": "gale43d16e",
@@ -78,11 +108,35 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "tools/cliff_check.gd": {
+      "agent": "onyx059945",
+      "at": "2026-08-21T22:45:11+00:00",
+      "task": "F-464",
+      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
+    },
+    "tools/cliff_render.gd": {
+      "agent": "onyx059945",
+      "at": "2026-08-21T22:45:11+00:00",
+      "task": "F-464",
+      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
+    },
+    "tools/guide_check.gd": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T22:49:29+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
     "tools/item_icons_check.gd": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:52:45+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "tools/progression_check.gd": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T22:51:41+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
     "tools/traversal_profile.gd": {
       "agent": "quillcfd8d7",
@@ -90,11 +144,17 @@
       "task": "F-461",
       "token": "CLAUDE_CODE_SESSION_ID:ef18b3c8-16fb-47c5-852c-09d362e8f2c4"
     },
-    "ui/frontend/benchmark_screen.gd": {
-      "agent": "quill895277",
-      "at": "2026-08-21T22:20:25+00:00",
-      "task": "F-462",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
+    "ui/hud/guide_hud.gd": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T22:49:29+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "world/chunk/chunk_mesher.gd": {
+      "agent": "onyx059945",
+      "at": "2026-08-21T22:45:11+00:00",
+      "task": "F-464",
+      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
     },
     "world/chunk/chunk_streamer.gd": {
       "agent": "quillcfd8d7",
@@ -107,6 +167,30 @@
       "at": "2026-08-21T22:27:06+00:00",
       "task": "F-461",
       "token": "CLAUDE_CODE_SESSION_ID:ef18b3c8-16fb-47c5-852c-09d362e8f2c4"
+    },
+    "world/chunk/terrain_flat.gdshader": {
+      "agent": "onyx059945",
+      "at": "2026-08-21T22:45:11+00:00",
+      "task": "F-464",
+      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
+    },
+    "world/gen/cliff_dresser.gd": {
+      "agent": "onyx059945",
+      "at": "2026-08-21T22:45:11+00:00",
+      "task": "F-464",
+      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
+    },
+    "world/gen/island_heightmap.gd": {
+      "agent": "onyx059945",
+      "at": "2026-08-21T22:45:11+00:00",
+      "task": "F-464",
+      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
+    },
+    "world/gen/procedural_world.gd": {
+      "agent": "onyx059945",
+      "at": "2026-08-21T22:45:11+00:00",
+      "task": "F-464",
+      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
     },
     "world/gen/resource_scatter.gd": {
       "agent": "quillcfd8d7",
@@ -140,6 +224,33 @@
       "started": "2026-08-21T17:13:34+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "3.18": {
+      "agent": "birche6b40e",
+      "files": [
+        "docs/PROGRESSION.md",
+        "systems/inventory/item_def.gd",
+        "autoload/progression_service.gd",
+        "core/events/event_bus.gd",
+        "tools/progression_check.gd",
+        "autoload/crafting_service.gd",
+        "autoload/salvage_service.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-21T22:49:29+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "3.19": {
+      "agent": "birche6b40e",
+      "files": [
+        "autoload/guide_service.gd",
+        "ui/hud/guide_hud.gd",
+        "systems/guide/guide_step_def.gd",
+        "tools/guide_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-21T22:49:29+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
     "F-461": {
       "agent": "quillcfd8d7",
       "files": [
@@ -154,17 +265,20 @@
       "started": "2026-08-21T22:13:12+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:ef18b3c8-16fb-47c5-852c-09d362e8f2c4"
     },
-    "F-462": {
-      "agent": "quill895277",
+    "F-464": {
+      "agent": "onyx059945",
       "files": [
-        "core/bench/frame_sampler.gd",
-        "core/bench/benchmark_runner.gd",
-        "ui/frontend/benchmark_screen.gd",
-        "tools/benchmark_check.gd"
+        "world/gen/island_heightmap.gd",
+        "world/chunk/chunk_mesher.gd",
+        "world/chunk/terrain_flat.gdshader",
+        "world/gen/cliff_dresser.gd",
+        "world/gen/procedural_world.gd",
+        "tools/cliff_check.gd",
+        "tools/cliff_render.gd"
       ],
       "notes": [],
-      "started": "2026-08-21T22:20:25+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
+      "started": "2026-08-21T22:45:11+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
     }
   },
   "recent": {
@@ -2389,16 +2503,16 @@
     },
     "core/bench/benchmark_report.gd": {
       "agent": "quill895277",
-      "at": "2026-08-21T21:36:55+00:00",
-      "hash": "cc69fda7d88535d13eeaf029e529f362bd0cd5d70a11754d490600dccf78a890",
-      "task": "F-453",
+      "at": "2026-08-21T22:53:18+00:00",
+      "hash": "c48baebf042e0e89af06eb914b378a853ccf0ce085a213e82f23b53137241a92",
+      "task": "F-462",
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "core/bench/benchmark_runner.gd": {
       "agent": "quill895277",
-      "at": "2026-08-21T21:57:23+00:00",
-      "hash": "df51cd23bf8f09db1581c7eb70fe7a621dc107604663e3fca97e6ee635add761",
-      "task": "F-458",
+      "at": "2026-08-21T22:53:18+00:00",
+      "hash": "a380982e2e5b5ef8e57e3b229b31cf8f8cb510e28e5fb656c7d65dadd5752bd0",
+      "task": "F-462",
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "core/bench/benchmark_suite.gd": {
@@ -2410,9 +2524,9 @@
     },
     "core/bench/frame_sampler.gd": {
       "agent": "quill895277",
-      "at": "2026-08-21T21:36:55+00:00",
-      "hash": "8d990deffb0d808e0d504507759773ca4dd41fe347a805902e8b445c7d0c00ea",
-      "task": "F-453",
+      "at": "2026-08-21T22:53:18+00:00",
+      "hash": "17bb20fede63cee1cbc41277c91e9dc69d224459665121383ae2df7fdfaaedd5",
+      "task": "F-462",
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "core/bench/machine_probe.gd": {
@@ -2424,9 +2538,9 @@
     },
     "core/bench/settings_advisor.gd": {
       "agent": "quill895277",
-      "at": "2026-08-21T21:57:23+00:00",
-      "hash": "b64b53079338a5436ee6ce4904b56db35bbf1a468d19722892edcd7189fa31be",
-      "task": "F-458",
+      "at": "2026-08-21T22:53:18+00:00",
+      "hash": "cf34bdbc6b4b0198ebe0d3a4156cfde638e51d6ee9cc4480fd7f6ab25e270074",
+      "task": "F-462",
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "core/net/net_version.gd": {
@@ -2816,9 +2930,9 @@
     },
     "tools/benchmark_check.gd": {
       "agent": "quill895277",
-      "at": "2026-08-21T21:57:23+00:00",
-      "hash": "351472b08b2b033f20d82460020d8cde9077087619e990fc0ab456b40cdbd983",
-      "task": "F-458",
+      "at": "2026-08-21T22:53:18+00:00",
+      "hash": "3e85560b75496bd1534b6daafbd3164e905d8089d3b1a2c400d4cf2009583c1b",
+      "task": "F-462",
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "tools/biome_region_check.gd": {
@@ -3425,9 +3539,9 @@
     },
     "ui/frontend/benchmark_screen.gd": {
       "agent": "quill895277",
-      "at": "2026-08-21T21:57:23+00:00",
-      "hash": "8bff89ad48a7b981d1a271158314ae9f0a7143f3f22d19794d09a58b618b26ac",
-      "task": "F-458",
+      "at": "2026-08-21T22:53:18+00:00",
+      "hash": "fc217626a0fc7b11270b8e08e9e41b7ac1dc57923c5aab5fe5f7dc36ca839672",
+      "task": "F-462",
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "ui/frontend/frontend.gd": {
@@ -3725,7 +3839,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     }
   },
-  "rev": 890,
+  "rev": 903,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -4313,6 +4427,20 @@
       "status": "done",
       "tier": "T1",
       "title": "Review 3.17 @ ad916c2 \u2014 judge the commit, file findings, no edits"
+    },
+    "3.18": {
+      "est": "4",
+      "milestone": "M3",
+      "status": "in_flight",
+      "tier": "T1",
+      "title": "Five-tier tool ladder, gated inside the run \u2014 extend 3.1's three tiers to five (wood \u2192 stone \u2192 iron \u2192 bogsilver \u2192 wellglass), each tier unlocked by a world event rather than by time: node access, a station the party must build, a Wellspring cap, a guardian kill (`PROGRESSION.md` \u00a72\u20134)"
+    },
+    "3.19": {
+      "est": "4",
+      "milestone": "M3",
+      "status": "in_flight",
+      "tier": "T1",
+      "title": "In-run guidance \u2014 a `GuideService` + HUD that names the next objective and fires one-shot contextual tips, data-authored, client-local, skippable (`PROGRESSION.md` \u00a75). The game currently ships no tutorial of any kind"
     },
     "3.2": {
       "est": "8",
@@ -9147,11 +9275,27 @@
       "title": "Chunk LOD transitions rebuild every prop in already-dressed chunks, and each holder re-sweeps HarvestWorld"
     },
     "F-462": {
+      "done_at": "2026-08-21T22:53:18+00:00",
+      "done_by": "quill895277",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "The benchmark shows a progress bar and no numbers, and never says how long is left"
+    },
+    "F-463": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "agent ship silently drops force-added ignored files, so a music .import never lands"
+    },
+    "F-464": {
       "est": "\u2014",
       "milestone": "Findings",
       "status": "in_flight",
       "tier": "F",
-      "title": "The benchmark shows a progress bar and no numbers, and never says how long is left"
+      "title": "The river's carve ends in a vertical wall wherever it crosses a hill, and nothing on the island reads as rock"
     }
   },
   "version": 1

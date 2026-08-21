@@ -8668,3 +8668,15 @@ Shipped a fourth authored theme: 'First Light' (theme_dawn.ogg), a 2:12 two-tune
 Files: `tools/audio/render_theme.py`, `autoload/theme_music_director.gd`, `docs/AUDIO.md`, `tools/theme_music_check.gd`, `tools/audio_import_check.gd`, `assets/audio/music/theme_dawn.ogg`, `assets/audio/music/theme_dawn.ogg.import`, `docs/DECISIONS.md`
 
 Commit at time of writing: `30e9d37`
+
+---
+
+### DONE · F-462 · quill895277 · 2026-08-21T22:53:18+00:00
+
+**The benchmark shows a progress bar and no numbers, and never says how long is left**
+
+Countdown, live metrics, instrument-frame exclusion, vsync disabled. 317 assertions, 0 failures.
+
+Files: `core/bench/frame_sampler.gd`, `core/bench/benchmark_runner.gd`, `ui/frontend/benchmark_screen.gd`, `tools/benchmark_check.gd`, `core/bench/benchmark_report.gd`, `core/bench/settings_advisor.gd`
+
+Commit at time of writing: `1e95da5`

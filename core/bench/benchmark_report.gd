@@ -183,6 +183,17 @@ static func format_text(report: Dictionary) -> String:
 	# The machine's CONDITION, on its own line and above the table, because a reader who skips it
 	# will quote a throttled laptop's numbers as that laptop's numbers.
 	lines.append("state: %s" % String(report.get("power_summary", "unknown")))
+	# Never let a shrunk sample be invisible. Frames are dropped for exactly two reasons — the live
+	# readout repainting (instrument cost, not game cost) and the process being suspended — and both
+	# belong on the page beside the numbers they changed.
+	var skipped: int = 0
+	var stalls: int = 0
+	for entry: Dictionary in report.get("scenes", []):
+		skipped += int(entry.get("skipped", 0))
+		stalls += int(entry.get("stalls", 0))
+	if skipped > 0 or stalls > 0:
+		lines.append("dropped: %d frame(s) to the on-screen readout repainting, %d to stalls"
+			% [skipped, stalls])
 	var notes: Array = report.get("state_notes", [])
 	if not notes.is_empty():
 		lines.append("")

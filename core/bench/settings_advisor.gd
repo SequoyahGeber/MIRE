@@ -156,6 +156,20 @@ static func recommend(
 					"Consider aiming at 30 fps instead — a steady 30 reads better than an "
 					+ "unsteady %d." % target_fps)
 
+	# When the ladder is not a ladder, say so. On a machine with plenty of headroom every preset
+	# clears the target and the differences between them fall inside the 1% low's own run-to-run
+	# variance, which shows up as a non-monotonic table — LOW slower than HIGH, or MEDIUM slower
+	# than both. That does not make the recommendation wrong (the highest preset that cleared the
+	# target is still the right answer), but a reader who sees MEDIUM below HIGH and is told
+	# nothing will conclude the whole report is junk. It is more honest, and more useful, to say
+	# that the presets could not be told apart than to present noise as a measurement.
+	if _ladder_is_noisy(calibration):
+		reasons.append(
+			"The presets measured within noise of each other on this machine — it has enough "
+			+ "headroom that the choice barely matters here. Any of them will run; %s is "
+			% PRESET_NAMES[chosen] + "recommended because it is the best-looking one that held "
+			+ "your target.")
+
 	# The diagnostic that changes what the advice is FOR. An uneven frame is a different problem
 	# from a slow one, and the resolution levers do not fix it.
 	if worst_low1 > 0.0 and worst_median_fps > 0.0 \
@@ -209,6 +223,21 @@ static func _unmeasured(worst: Dictionary, target_fps: int, current_preset: int)
 ##
 ## Falls back to the overall worst if every measured scene travels, so a caller that hands this a
 ## traversal-only suite still gets an answer rather than an empty dictionary.
+## True when the measured presets do not form a ladder — a lower preset measuring slower than a
+## higher one, which cannot be a real effect and means the differences are inside the noise.
+static func _ladder_is_noisy(calibration: Dictionary) -> bool:
+	var previous: float = -1.0
+	for preset: int in [PRESET_HIGH, PRESET_MEDIUM, PRESET_LOW]:
+		if not calibration.has(preset):
+			continue
+		var measured: float = float(calibration[preset])
+		# Walking from HIGH down, each step should be at least as fast as the one above it.
+		if previous >= 0.0 and measured < previous:
+			return true
+		previous = measured
+	return false
+
+
 static func preset_basis(results: Array) -> Dictionary:
 	var basis: Dictionary = {}
 	for entry: Dictionary in results:

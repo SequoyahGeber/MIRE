@@ -32,6 +32,11 @@ const MIN_TAIL_FRAMES: int = 3
 ## reported instead, so a run that lost frames this way can say so rather than quietly lying.
 const STALL_MS: float = 500.0
 
+## Frames the live readout averages over. About half a second at 120 fps — long enough that the
+## number is readable rather than flickering, short enough that it still reacts to a stutter while
+## the player is looking at the stutter.
+const LIVE_WINDOW_FRAMES: int = 60
+
 var _deltas: PackedFloat64Array = PackedFloat64Array()
 var _gpu_ms_total: float = 0.0
 var _cpu_ms_total: float = 0.0
@@ -39,6 +44,10 @@ var _draws_total: float = 0.0
 var _primitives_total: float = 0.0
 var _discarded: int = 0
 var _stalls: int = 0
+var _skipped: int = 0
+## The single worst frame recorded, tracked as it goes so the live readout can show the hitch at the
+## moment the player is watching it happen rather than only in the report afterwards.
+var _worst_ms: float = 0.0
 ## The engine reports viewport render times in a unit that has changed across versions; the scale
 ## is anchored on the first read that is implausibly large. See `_normalise_render_time()`.
 var _render_time_scale: float = 1.0
@@ -54,14 +63,49 @@ func record(delta_ms: float, gpu_ms: float, cpu_ms: float, draws: float, primiti
 		_stalls += 1
 		return
 	_deltas.append(delta_ms)
+	_worst_ms = maxf(_worst_ms, delta_ms)
 	_gpu_ms_total += _normalise_render_time(gpu_ms)
 	_cpu_ms_total += _normalise_render_time(cpu_ms)
 	_draws_total += draws
 	_primitives_total += primitives
 
 
+## Deliberately drops one frame from the sample. Used for frames whose cost belongs to the
+## instrument rather than to the game — currently the frame that pays for repainting the live
+## readout (see `BenchmarkRunner._tick_telemetry()`). Counted, so the report can say how many were
+## dropped rather than quietly shrinking the sample.
+func skip() -> void:
+	if _discarded < DISCARD_FRAMES:
+		_discarded += 1
+		return
+	_skipped += 1
+
+
+func skipped_frames() -> int:
+	return _skipped
+
+
 func frame_count() -> int:
 	return _deltas.size()
+
+
+## A cheap, current-feeling frame rate for the live readout — the mean of the last
+## `LIVE_WINDOW_FRAMES` recorded frames rather than of the whole scene. The scene average is the
+## wrong thing to put on screen while a scene is running: it converges early and then barely moves,
+## so the number stops responding to what the player is watching happen. Costs no sort.
+func worst_ms() -> float:
+	return _worst_ms
+
+
+func live_fps() -> float:
+	var count: int = _deltas.size()
+	if count == 0:
+		return 0.0
+	var window: int = mini(count, LIVE_WINDOW_FRAMES)
+	var total: float = 0.0
+	for i: int in range(count - window, count):
+		total += _deltas[i]
+	return 1000.0 * float(window) / maxf(total, 0.001)
 
 
 ## The scene's numbers. Safe to call on an empty sampler — a scene that was cut short before it
@@ -71,7 +115,7 @@ func stats() -> Dictionary:
 	var count: int = _deltas.size()
 	if count == 0:
 		return {
-			"frames": 0, "stalls": _stalls, "fps": 0.0, "median_ms": 0.0, "p95_ms": 0.0,
+			"frames": 0, "stalls": _stalls, "skipped": _skipped, "fps": 0.0, "median_ms": 0.0, "p95_ms": 0.0,
 			"low1_ms": 0.0, "low1_fps": 0.0, "gpu_ms": 0.0, "cpu_ms": 0.0,
 			"draws": 0.0, "mprims": 0.0,
 		}
@@ -84,6 +128,7 @@ func stats() -> Dictionary:
 	return {
 		"frames": count,
 		"stalls": _stalls,
+		"skipped": _skipped,
 		# Frames divided by the time those frames actually took, so a scene that lost time to a
 		# stall reports the rate it rendered at rather than one diluted by the suspension.
 		"fps": 1000.0 * float(count) / maxf(total_ms, 0.001),
