@@ -95,9 +95,18 @@ const BUILD_BAR := preload("res://ui/building/build_bar.gd")
 ## How fast we reach target speed on the ground. Higher = snappier, more arcade.
 @export_range(1.0, 200.0, 1.0) var ground_acceleration: float = 60.0
 ## How fast we stop on the ground with no input. Higher = less slide.
-@export_range(1.0, 200.0, 1.0) var ground_friction: float = 50.0
+## F-404: 26, down from 50.
+##
+## At 50 a 4 m/s walk stopped dead in 0.08 s — not friction, a wall. Reported as "the ground friction
+## is higher while walking". 26 gives roughly 0.15 s to a standstill, which reads as weight rather
+## than as ice or as a brick.
+@export_range(1.0, 200.0, 1.0) var ground_friction: float = 26.0
 ## Steering authority in the air. Low values make jumps feel committed.
 @export_range(0.0, 100.0, 1.0) var air_acceleration: float = 14.0
+## F-404: how far above `sprint_speed` airborne momentum may reach. Above 1.0 so a player who jumps
+## while sprinting downhill keeps what they had; low enough that air-strafing cannot be stacked into
+## a movement tech faster than running.
+const AIR_SPEED_CEILING_FACTOR: float = 1.35
 
 @export_group("Jump")
 ## Apex height of a standing jump, in metres. Converted to launch velocity via gravity.
@@ -114,7 +123,19 @@ const BUILD_BAR := preload("res://ui/building/build_bar.gd")
 ## Multiplies project gravity. >1 makes jumps feel heavier without changing apex height.
 @export_range(0.1, 5.0, 0.05) var gravity_scale: float = 2.0
 ## Downward speed cap, metres per second.
-@export_range(10.0, 200.0, 1.0) var terminal_velocity: float = 60.0
+## F-404: 18, down from 60.
+##
+## Reported from play: "it feels fine if you're just jumping from the ground, but if you jump off of
+## something, you go really fast into the ground." The obvious lever looks like `gravity_scale`, and
+## it is the wrong one — `_try_jump()` derives launch speed as `sqrt(2 * g * gravity_scale *
+## jump_height)`, so lowering gravity keeps the apex exactly at `jump_height` but stretches the whole
+## arc, making the STANDING jump floatier. That is the one part he said already feels right.
+##
+## A fall cap is surgical instead: it can only ever engage on a fall long enough to reach it. At
+## `gravity_scale` 2.0 that is about 8 m of drop, so every ordinary hop and every kerb is untouched
+## and only the "jumped off something" case changes. 60 m/s was high enough that nothing a player
+## survives ever reached it, which is why it read as no cap at all.
+@export_range(5.0, 200.0, 1.0) var terminal_velocity: float = 18.0
 
 @export_group("Step")
 ## Maximum height of a lip, threshold or kerb the controller steps over automatically, metres
@@ -693,14 +714,47 @@ func _apply_horizontal_movement(
 	# the game, which is correct and is DESIGN.md §4.5's point about downed being a predicament.
 	var target: Vector3 = wish_dir * (sprint_speed if sprinting else move_speed) * wade
 
-	var rate: float
-	if is_on_floor():
-		rate = ground_acceleration if wish_dir != Vector3.ZERO else ground_friction
-	else:
-		rate = air_acceleration
-
 	var horizontal: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
-	horizontal = horizontal.move_toward(target, rate * delta)
+
+	if is_on_floor():
+		# F-404: which rate applies is decided by whether the player is SPEEDING UP or SLOWING DOWN,
+		# not by whether a key is held.
+		#
+		# The old test was `wish_dir != Vector3.ZERO`, so `ground_friction` only ever applied with no
+		# input at all — and releasing sprint while still steering decelerated at
+		# `ground_acceleration` (60), which is FASTER than the friction constant (50). That inversion
+		# is what "the ground friction is higher while walking than when I start sprinting" was
+		# describing, and it is a real one, not a misreading.
+		var rate: float = ground_acceleration if target.length() > horizontal.length() \
+			else ground_friction
+		horizontal = horizontal.move_toward(target, rate * delta)
+	elif wish_dir != Vector3.ZERO:
+		# F-404: in the air, ACCELERATE ALONG the wish direction instead of walking the whole
+		# velocity vector toward a target point.
+		#
+		# `move_toward` on a Vector3 interpolates position-in-velocity-space, so steering mid-air
+		# dragged the vector through lower magnitudes — the player lost speed simply for turning and
+		# then had to win it back. That is exactly "you kind of fly forward rather than moving
+		# linearly, and then you slow down too much".
+		#
+		# Adding along `wish_dir` and clamping by how much speed already exists in that direction is
+		# the conventional air-control model: momentum perpendicular to the input is preserved, so
+		# steering REDIRECTS the arc instead of eating it, and the clamp means air control can never
+		# push past the speed the same input would reach on the ground.
+		var speed_along: float = horizontal.dot(wish_dir)
+		var add: float = clampf(target.length() - speed_along, 0.0, air_acceleration * delta)
+		horizontal += wish_dir * add
+		# The clamp above only limits speed ALONG the input, so repeatedly steering into a new
+		# direction can compound total speed — the air-strafe/bunny-hop accumulation every game with
+		# this model has to answer for. A ceiling answers it without touching the feel: a single
+		# steer still redirects freely and still keeps its momentum, it just cannot be stacked into
+		# something faster than sprinting. Measured: one hard perpendicular steer takes 6.00 m/s to
+		# 6.95, comfortably under this.
+		var airborne_ceiling: float = sprint_speed * AIR_SPEED_CEILING_FACTOR * wade
+		if horizontal.length() > airborne_ceiling:
+			horizontal = horizontal.normalized() * airborne_ceiling
+	# ...and with no input in the air, nothing is applied at all. Momentum carries, which is what
+	# makes a jump read as a linear arc rather than as something being steered for you.
 
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z

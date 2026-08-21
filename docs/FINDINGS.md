@@ -2084,50 +2084,6 @@ somebody will act on it anyway.
 
 ---
 
-### F-404 · Three separate movement-feel defects: stopping is near-instant, air control bleeds speed sideways, and gravity_scale 2.0 makes any real fall brutal
-
-**Area:** gameplay · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "the ground friction is higher while walking than like
-when I start sprinting and I jump, the movement through the air, just feels weird. It's like you kind
-of fly forward rather than moving linearly, and then you slow down too much. Also ... the
-acceleration when jumping is kind of off, like it feels fine if you're just jumping from the ground,
-but if you jump off of something, you go really fast into the ground."
-
-Three distinct causes in `entities/player/player_controller.gd`, all in `_apply_horizontal_movement()`
-and the gravity constants.
-
-**1. Stopping is near-instant, and stops feel identical at every speed.**
-
-    rate = ground_acceleration (60) if wish_dir != Vector3.ZERO else ground_friction (50)
-
-`ground_friction` only ever applies with NO input. At 50 m/s^2 a 4 m/s walk stops dead in 0.08 s and
-a 6 m/s sprint in 0.12 s — effectively a hard stop, which is what reads as "high ground friction".
-Note also that releasing sprint while still holding a direction decelerates at `ground_acceleration`
-(60), i.e. FASTER than the friction number, which is the inversion Sequoyah is describing.
-
-**2. Air control bleeds speed whenever you steer.**
-
-    horizontal = horizontal.move_toward(target, rate * delta)   # rate = air_acceleration (14)
-
-`move_toward` on a VECTOR walks toward the target point, so pushing a direction that differs from
-current travel drags the vector through lower magnitudes — you lose speed simply for steering, then
-regain it. That is exactly "you kind of fly forward rather than moving linearly, and then you slow
-down too much." The conventional fix is to add acceleration ALONG the wish direction while preserving
-the component perpendicular to it, so air steering redirects momentum instead of eating it.
-
-**3. `gravity_scale = 2.0` is tuned for the hop and punishes every real fall.**
-Doubling gravity makes a 1.1 m `jump_height` snappy, which is why a standing jump feels fine. The
-same 19.6 m/s^2 applied to a drop off a rock or a hillside is what "you go really fast into the
-ground" is. `terminal_velocity` is 60 m/s, far too high to cap anything a player will survive.
-Because launch velocity is DERIVED from `jump_height` and gravity, lowering `gravity_scale` keeps the
-jump apex identical while making falls readable — the two are not in tension.
-
-All three are feel calls and should be judged in play, not by a check. What a check CAN pin is that
-steering in air no longer reduces speed, and that a given drop height produces a given impact speed.
-
----
-
 ### F-406 · agent claim with more than one file stores the whole list as a single dictionary key, so the pre-commit hook never sees any of them as claimed
 
 **Area:** tooling · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
@@ -2177,7 +2133,150 @@ Close this through a bounded follow-on command roadmap rather than an unsafe gen
 
 ---
 
+### F-418 · F-413 deleted the settings focus-navigation proof and never replaced it
+
+**Area:** ui · **Severity:** medium · **Found:** 2026-08-21 by coil995fd7
+
+`7a5ff9e` (F-413) retired `ui/menu/settings_menu.gd` and correctly routed the title, main-menu and
+pause entry points to `ui/frontend/settings_screen.gd`. In the same commit it deleted
+`_check_settings_menu()` from `tools/menu_focus_check.gd` — 45 lines — and did not write its
+replacement against the screen that took over.
+
+What that check proved, and what nothing proves now for the live settings surface:
+
+  · opening the screen grabs focus on a real control rather than leaving focus nowhere
+  · D-pad down walks from the first control to the next one
+  · a focused slider responds to ui_left/ui_right, and the value ui_left removes ui_right restores
+  · the whole focus chain is a loop that returns to where it started within a bounded number of
+    steps (`_walk_loop`), which is what catches a chain broken in the middle
+  · the control that leaves the screen is reachable by D-pad
+
+`tools/settings_screen_check.gd` asserts only that each tab "names a focusable default". That is one
+of the six, and it is the weakest — it reads `menu_default_focus()` rather than driving input. The
+screen now has six tabs, a tab bar that has to be traversable by bumper or D-pad, and a footer with
+SAVE and RESTORE DEFAULTS outside the scroll viewport, so it has strictly more focus surface than
+the panel whose proof was removed.
+
+F-209/D-134 make gamepad reachability an acceptance criterion, and `docs/MENU.md` §9 makes the Steam
+Deck a first-class layout target — a settings screen a controller cannot walk is a shipping defect
+on that target. The retirement itself was right; only the coverage deletion was not.
+
+---
+
+### F-419 · menu_focus_check has been failing on main for days — CRAFT ui_accept and an inventory slot move
+
+**Area:** ui · **Severity:** high · **Found:** 2026-08-21 by coil995fd7
+
+`tools/menu_focus_check.gd` fails 2 on `main` and has been failing unnoticed. Both reproduce in a
+clean worktree via `agent baseline`, so neither is another session's uncommitted work.
+
+**`FAIL: ui_accept on the enabled CRAFT button fires the same request_craft() a click would have`**
+Bisected to `bd4de67` (F-380, "the crafting list is a width-derived grid, not one unscrollable
+column"). At `bd4de67~1` the check fails 1; at `bd4de67` it fails 2. Reflowing the recipe list from
+a column into a width-derived grid changed the focus wiring the check drives, and the CRAFT button's
+`ui_accept` path did not survive it. This is the exact defect class F-209 exists to prevent: the
+button is present and enabled, a mouse click still works, and a controller cannot press it.
+
+**`FAIL: slot 0 is empty after the move`**
+Older — already failing at `420b83e` (F-369), so it predates the crafting grid change and needs its
+own bisect. Possibly related to F-309's intermittent inventory grant timeout, but this one is
+deterministic across every run here, which F-309's is not.
+
+The process point matters as much as the two bugs: F-380 shipped with `menu_focus_check` already
+red, and three subsequent menu tasks shipped on top of it without the count being looked at. Nothing
+in the ship path runs this check, so "it was already failing" stayed true indefinitely.
+
+---
+
 ## Resolved
+
+### F-404 · Three separate movement-feel defects: stopping is near-instant, air control bleeds speed sideways, and gravity_scale 2.0 makes any real fall brutal — **fixed**
+
+**Area:** gameplay · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "the ground friction is higher while walking than like
+when I start sprinting and I jump, the movement through the air, just feels weird. It's like you kind
+of fly forward rather than moving linearly, and then you slow down too much. Also ... the
+acceleration when jumping is kind of off, like it feels fine if you're just jumping from the ground,
+but if you jump off of something, you go really fast into the ground."
+
+Three distinct causes in `entities/player/player_controller.gd`, all in `_apply_horizontal_movement()`
+and the gravity constants.
+
+**1. Stopping is near-instant, and stops feel identical at every speed.**
+
+    rate = ground_acceleration (60) if wish_dir != Vector3.ZERO else ground_friction (50)
+
+`ground_friction` only ever applies with NO input. At 50 m/s^2 a 4 m/s walk stops dead in 0.08 s and
+a 6 m/s sprint in 0.12 s — effectively a hard stop, which is what reads as "high ground friction".
+Note also that releasing sprint while still holding a direction decelerates at `ground_acceleration`
+(60), i.e. FASTER than the friction number, which is the inversion Sequoyah is describing.
+
+**2. Air control bleeds speed whenever you steer.**
+
+    horizontal = horizontal.move_toward(target, rate * delta)   # rate = air_acceleration (14)
+
+`move_toward` on a VECTOR walks toward the target point, so pushing a direction that differs from
+current travel drags the vector through lower magnitudes — you lose speed simply for steering, then
+regain it. That is exactly "you kind of fly forward rather than moving linearly, and then you slow
+down too much." The conventional fix is to add acceleration ALONG the wish direction while preserving
+the component perpendicular to it, so air steering redirects momentum instead of eating it.
+
+**3. `gravity_scale = 2.0` is tuned for the hop and punishes every real fall.**
+Doubling gravity makes a 1.1 m `jump_height` snappy, which is why a standing jump feels fine. The
+same 19.6 m/s^2 applied to a drop off a rock or a hillside is what "you go really fast into the
+ground" is. `terminal_velocity` is 60 m/s, far too high to cap anything a player will survive.
+Because launch velocity is DERIVED from `jump_height` and gravity, lowering `gravity_scale` keeps the
+jump apex identical while making falls readable — the two are not in tension.
+
+All three are feel calls and should be judged in play, not by a check. What a check CAN pin is that
+steering in air no longer reduces speed, and that a given drop height produces a given impact speed.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** All three, each at its own cause.
+
+**1. Stopping, and the inversion.** The rate was chosen by `wish_dir != Vector3.ZERO`, so
+`ground_friction` only ever applied with NO input — and releasing sprint while still steering
+decelerated at `ground_acceleration` (60), which is FASTER than the friction constant (50). That is
+the inversion being described in "the ground friction is higher while walking than when I start
+sprinting", and it was real, not a misreading. The rate is now chosen by whether the player is
+speeding up or slowing down. `ground_friction` 50 -> 26: at 50 a 4 m/s walk stopped dead in 0.08 s,
+which is a wall rather than friction; 26 gives ~0.15 s, which reads as weight.
+
+**2. Air control.** `move_toward` on a Vector3 interpolates position in velocity-space, so steering
+mid-air dragged the whole vector through lower magnitudes — the player paid speed for turning and
+then had to win it back. That is "you kind of fly forward rather than moving linearly, and then you
+slow down too much", exactly. Replaced with the conventional model: accelerate ALONG `wish_dir`,
+clamped by how much speed already exists in that direction, so momentum perpendicular to the input is
+preserved and steering REDIRECTS the arc instead of eating it. With no input in the air, nothing is
+applied at all — momentum carries, which is what makes a jump read as an arc rather than as something
+being steered for you.
+
+Measured: a hard perpendicular steer now takes 6.00 m/s -> 6.95 and puts -3.50 m/s on the new axis.
+Before, the same input LOST speed. The gain is the air-strafe accumulation this model always has to
+answer for, so `AIR_SPEED_CEILING_FACTOR` (1.35 x sprint) bounds it — a single steer keeps its
+momentum, stacked steers cannot become a movement tech faster than running.
+
+**3. Falls.** `gravity_scale` looks like the lever and is the wrong one: `_try_jump()` derives launch
+speed as `sqrt(2 * g * gravity_scale * jump_height)`, so lowering gravity holds the apex at
+`jump_height` but stretches the whole arc and makes the STANDING jump floatier — the one part that
+was said to already feel right. `terminal_velocity` 60 -> 18 is surgical instead: at
+`gravity_scale` 2.0 a fall needs about 8 m to reach it, so every hop and every kerb is untouched and
+only "jumped off something" changes. 60 m/s was high enough that nothing a player survives ever
+reached it, so it was a cap in name only.
+
+`tools/movement_feel_check.gd` pins the two properties that are objective rather than felt — steering
+in air must not cost speed, and a long fall must actually be capped — and drives them through
+`Input.action_press()` so the real `_apply_horizontal_movement()` runs rather than a reimplementation
+that could agree with itself while the game disagrees. failures=0. Writing it caught my own first
+test being wrong: `move_left` against +X travel is a REVERSE, not a steer, and it correctly
+decelerated.
+
+Regression: player_vitals_check 0, player_health_check 0, step_up_check 0.
+
+**These remain feel calls.** The numbers are defensible and the checks stop them regressing, but 26 /
+1.35 / 18 want Sequoyah's hands on them, not mine.
 
 ### F-417 · Ground-cover scatter is too dense to afford — grassland_turf alone places a prop every 5.7 m2 — **fixed**
 
