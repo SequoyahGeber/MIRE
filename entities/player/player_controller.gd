@@ -37,6 +37,13 @@ const BLOCKING_UI_GROUP: StringName = &"blocks_gameplay_input"
 ## A player joining it is what lets 2.13's downed/revive flow exist without new plumbing: damage in
 ## is already "anything in this group", and what it costs a player is systems/health/player_health.gd.
 const DAMAGEABLE_GROUP: StringName = &"damageable"
+## The group both world scripts publish themselves or their terrain into — how `_water_source_node()`
+## finds whichever map is loaded without preloading either map script (F-375). Restated as a literal
+## rather than reached through `ProceduralWorld.TERRAIN_GROUP` on purpose: both world scripts already
+## keep their own copy (`world/gen/procedural_world.gd:40`, `world/gen/authored_world.gd:36`), and a
+## `const` reference to one of them would make the player controller — which every check scene builds
+## — drag a whole world generator into its compile.
+const TERRAIN_GROUP: StringName = &"authored_world_terrain"
 ## preload, not the bare `PlayerViewmodel` (F-016): a new class_name is not in the global class cache
 ## until an editor scan puts it there, so naming it here stops this script compiling in every
 ## `--script` harness — and a player whose script failed to compile never joins the `players` group,
@@ -52,6 +59,27 @@ const BUILD_BAR := preload("res://ui/building/build_bar.gd")
 @export_range(1.0, 15.0, 0.1) var walk_speed: float = 4.0
 ## Ground speed while the sprint action is held.
 @export_range(1.0, 25.0, 0.1) var sprint_speed: float = 6.0
+
+@export_group("Wade")
+## F-375: how deep the water has to be over the feet before it costs any speed, metres. Sequoyah,
+## from play: "the water should slow player movement down slightly".
+##
+## Not 0.0 on purpose. The shoreline is where the seabed crosses the waterline, so a player walking
+## the beach sits within millimetres of zero depth for a long stretch — a threshold at exactly the
+## surface would have the multiplier chattering on and off every tick along the whole coast, which
+## is a visible speed stutter for no gameplay reason. 0.25 m is roughly ankle-deep on the 1.8 m
+## capsule: splashing through the shallows is free, which is also what it looks like.
+@export_range(0.0, 2.0, 0.01) var wade_shallow_depth: float = 0.25
+## Foot-depth at which the slowdown reaches its floor and stops deepening, metres. Two thirds of the
+## capsule (`entities/player/player.tscn`'s CapsuleShape3D is 1.8 m) — chest deep. Past this the
+## honest answer is swimming, which MIRE does not have; the multiplier simply holds rather than
+## pretending a 5 m-deep ocean floor (`IslandHeightmap.OCEAN_FLOOR_DEPTH`) is walkable at a crawl.
+@export_range(0.1, 3.0, 0.01) var wade_deep_depth: float = 1.2
+## Speed multiplier at `wade_deep_depth` and beyond. 0.55 makes a chest-deep SPRINT (6.0 -> 3.3 m/s)
+## slower than a dry WALK (4.0 m/s), which is the one property that matters: deep water must not be
+## a fast route. Knee-deep (~0.5 m) lands near x0.88 and waist-deep (~0.9 m) near x0.69, which is
+## the "slightly" the report asked for over the depths a player actually spends time in.
+@export_range(0.1, 1.0, 0.01) var wade_min_speed_scale: float = 0.55
 
 @export_group("Acceleration")
 ## How fast we reach target speed on the ground. Higher = snappier, more arcade.
@@ -166,6 +194,23 @@ var _dodge_time_remaining: float = 0.0
 ## changes nothing about a base dodge.
 var _iframe_time_remaining: float = 0.0
 var _dodge_cooldown_remaining: float = 0.0
+
+## F-375: how far this tick's water surface sits above the FEET, metres; 0.0 on dry land and on any
+## map that cannot say where its water is. Sampled once per physics tick by `_tick_wade()` and read
+## by `wade_speed_scale()`, rather than re-derived at each use, so every consumer in a tick agrees
+## about one depth — the same reason `_physics_process` resolves downed/dead/input_allowed once.
+## Public because it is the only "am I in the water" answer in the codebase and the next thing that
+## wants one (splash audio, a wet-screen overlay, a swim state) should read it rather than sample
+## `water_surface_at()` a second time and drift.
+var wade_depth: float = 0.0
+
+## The node that answers `water_surface_at()` for the map currently loaded — `ProceduralWorld` (which
+## is the level root) or `AuthoredWorld` (the level's "World" child). Cached, same F-105 reasoning as
+## `_health` below: this is resolved from a group scan plus two `get_node_or_null` walks, and a
+## physics tick should pay for that once per map, not 60 times a second. Left null rather than
+## resolved-once-and-trusted so a harness that builds the player before the world exists still finds
+## it the moment it does, and so a world freed by a map change is re-resolved instead of leaking.
+var _water_source: Node = null
 
 ## F-105: PlayerHealth is an autoload, so this reference outlives the whole session once resolved —
 ## caching it kills the ~6-8 `get_node_or_null(/root/PlayerHealth)` path lookups a single physics tick
@@ -480,6 +525,9 @@ func _physics_process(delta: float) -> void:
 
 	_tick_timers(delta)
 	_tick_dodge(delta)
+	# F-375, before movement reads it: how deep the water is over the feet decides this tick's speed
+	# cap, so it has to be sampled at the position the tick STARTS from, not left over from the last.
+	_tick_wade()
 	_apply_gravity(delta)
 	_apply_horizontal_movement(delta, input_allowed, downed, dead)
 	_try_jump(input_allowed, downed, dead)
@@ -522,6 +570,11 @@ func _apply_gravity(delta: float) -> void:
 
 func _apply_horizontal_movement(
 		delta: float, input_allowed: bool, downed: bool, dead: bool) -> void:
+	# F-375: ONE speed modifier, applied to both branches below. Read from `wade_depth`, which
+	# `_physics_process` sampled for this tick before calling in here; 1.0 on dry land, so nothing
+	# about movement out of the water is touched by this line existing.
+	var wade: float = wade_speed_scale()
+
 	# Dodge overrides normal locomotion outright for its whole window: a committed dash at a constant
 	# speed, not an accelerated target move_toward chases (same reasoning as jump's velocity.y — set
 	# once, not steered). Stamina still ticks (never sprinting mid-dash) so the bar keeps regenerating
@@ -534,8 +587,14 @@ func _apply_horizontal_movement(
 		var health: Node = _health_node()
 		if health != null:
 			health.call(&"local_tick_stamina", delta, false)
-		velocity.x = _dodge_velocity.x
-		velocity.z = _dodge_velocity.z
+		# The dash is scaled by the CURRENT depth, not by the depth it was accepted at (F-375). The
+		# direction is committed at accept time — that is D-072's whole point — but the speed is not,
+		# or a dodge would be a full-speed dash across water that a walk cannot cross, i.e. the exact
+		# "deep water is a fast route" hole `wade_min_speed_scale` exists to close. Scaling here
+		# rather than at `_execute_dodge()` also means dodging OUT of the water speeds back up over
+		# the dash instead of staying slow for its whole window.
+		velocity.x = _dodge_velocity.x * wade
+		velocity.z = _dodge_velocity.z * wade
 		camera.set_sprinting(false)
 		return
 
@@ -560,7 +619,12 @@ func _apply_horizontal_movement(
 	if health != null:
 		health.call(&"local_tick_stamina", delta, sprinting)
 	var move_speed: float = crawl_speed if downed else walk_speed
-	var target: Vector3 = wish_dir * (sprint_speed if sprinting else move_speed)
+	# F-375: wading multiplies the TARGET speed, not the acceleration, so water changes how fast you
+	# can go and not how sharply you can steer — a player who walks into the sea decelerates to the
+	# wade speed through the ordinary `ground_friction`/`ground_acceleration` ramp rather than
+	# snapping to it. A downed crawl is scaled too: crawling through water is the slowest thing in
+	# the game, which is correct and is DESIGN.md §4.5's point about downed being a predicament.
+	var target: Vector3 = wish_dir * (sprint_speed if sprinting else move_speed) * wade
 
 	var rate: float
 	if is_on_floor():
@@ -575,6 +639,113 @@ func _apply_horizontal_movement(
 	velocity.z = horizontal.z
 
 	camera.set_sprinting(sprinting and is_on_floor())
+
+
+# ── Wade (F-375) ──────────────────────────────────────────────────────────────────────────────────
+#
+# Network authority: OWN PLAYER MOVEMENT — CLIENT (ARCHITECTURE.md §2.2, row 1), exactly like the
+# sprint gate and the dodge above it, and applied on the SAME path they are: it scales the velocity
+# this body simulates, never a camera effect or a client-only overlay. Three things make that safe
+# rather than "the client decides how fast it goes in water", which it would be if the depth were
+# the client's opinion:
+#
+#   1. The depth is not an opinion. `water_surface_at()` is a pure function of (x, z) published by
+#      the world script, and worldgen is deterministic across peers (D-017), so the host's own copy
+#      of the map computes the identical surface for the identical position. Nothing new goes on the
+#      wire and there is nothing for two peers to disagree about.
+#   2. It can only ever SLOW a player down — `wade_speed_scale()` returns (0, 1]. The host's
+#      advisory speed check (`autoload/player_net.gd` `_check_speed()`, §2.2 row 1) is an upper
+#      bound of `sprint_speed * SPEED_CHECK_TOLERANCE`, so wading cannot trip it and the check needs
+#      no knowledge of this at all. A client that ignored the slowdown would look to the host exactly
+#      like a client that stayed on dry land, which is the pre-existing trust boundary, not a new one.
+#   3. It costs nothing that is authoritative. Wading spends no stamina, deals no damage and sets no
+#      replicated flag, so there is no resource a lying client could gain by skipping it.
+#
+# Before this the player scripts did not mention water anywhere — a recursive search returned zero
+# hits — so a sprint straight off the beach carried on at 6 m/s across the sea with no drag and no
+# feedback of any kind.
+
+
+## Samples the water surface over the FEET and stores this tick's depth in `wade_depth`.
+##
+## `global_position.y` IS foot height: `player.tscn` puts the CapsuleShape3D's centre at y = 0.9 on a
+## 1.8 m capsule, so the body origin sits on the soles. Reading the origin rather than measuring the
+## shape keeps this a single float read per tick.
+##
+## Degrades to "dry" in every failure mode rather than guessing, because every one of them is a real
+## configuration:
+##   * no world node resolved yet — a `--script` harness that stands a player up before a map, or the
+##     first ticks of a level whose world is still building;
+##   * a world that does not implement `water_surface_at()` at all — the F-284 pair is a convention,
+##     not an interface the engine enforces, and an authored map is free to predate it;
+##   * a non-finite answer — `AuthoredWorld.water_surface_at()` returns -INF for a point no water
+##     body covers, which is its way of saying "no water here", and NAN must never propagate into a
+##     velocity.
+func _tick_wade() -> void:
+	var source: Node = _water_source_node()
+	if source == null:
+		wade_depth = 0.0
+		return
+	var surface: float = float(source.call(&"water_surface_at", global_position.x, global_position.z))
+	if not is_finite(surface):
+		wade_depth = 0.0
+		return
+	wade_depth = maxf(surface - global_position.y, 0.0)
+
+
+## This tick's movement-speed multiplier from `wade_depth`, in (0, 1]. Exactly 1.0 on dry land and
+## through the shallows, so nothing about movement on land is touched by this feature existing.
+##
+## smoothstep, not a straight lerp: a linear ramp puts a hard kink in the speed curve at
+## `wade_shallow_depth`, and walking down a beach at a shallow angle crosses that depth slowly enough
+## that the kink is felt as a lurch. smoothstep eases in and out, so the water takes hold and lets go
+## gradually — which is also what wading feels like.
+func wade_speed_scale() -> float:
+	if wade_depth <= wade_shallow_depth:
+		return 1.0
+	# maxf guards a hand-tuned `wade_deep_depth` set at or below `wade_shallow_depth` in the
+	# inspector: smoothstep with from >= to is undefined, and a designer sliding two numbers past
+	# each other should get a hard cutover, not a NAN in `velocity`.
+	var deep: float = maxf(wade_deep_depth, wade_shallow_depth + 0.01)
+	return lerpf(1.0, wade_min_speed_scale, smoothstep(wade_shallow_depth, deep, wade_depth))
+
+
+## Resolves whichever node answers the F-284 `height_at()`/`water_surface_at()` pair for the map that
+## is loaded, cached in `_water_source`. The first two shapes are the two
+## `tools/world_contract_check.gd` `_check_spawn_standable()` already knows about, tried in the same
+## order it tries them:
+##   procedural — `ProceduralWorld` IS the level root, so `current_scene` answers directly.
+##   authored   — `AuthoredWorld` is the level's "World" child.
+## Deliberately NOT by walking this node's ancestors, which is the obvious third option and is wrong:
+## in a session `PlayerNet` parents every player under its own `players_root()`, not under the world,
+## so a body that is standing in the sea has no world anywhere above it.
+##
+## The `authored_world_terrain` scan is a last resort for a `--script` harness whose `current_scene`
+## is a check root rather than the level. It is last, not first, because on the procedural map that
+## group also holds every streamed chunk MeshInstance3D (`world/chunk/chunk_streamer.gd:487`) — a
+## scan that allocates and walks dozens of nodes to find the one that is also `current_scene`.
+##
+## Returns null — never a stand-in — when nothing answers, and `_tick_wade()` reads that as dry land.
+func _water_source_node() -> Node:
+	if is_instance_valid(_water_source):
+		return _water_source
+
+	_water_source = null
+	var scene: Node = get_tree().current_scene
+	if scene != null:
+		if scene.has_method(&"water_surface_at"):
+			_water_source = scene
+			return _water_source
+		var world: Node = scene.get_node_or_null(^"World")
+		if world != null and world.has_method(&"water_surface_at"):
+			_water_source = world
+			return _water_source
+
+	for node: Node in get_tree().get_nodes_in_group(TERRAIN_GROUP):
+		if node.has_method(&"water_surface_at"):
+			_water_source = node
+			return _water_source
+	return null
 
 
 func _try_jump(input_allowed: bool, downed: bool, dead: bool) -> void:

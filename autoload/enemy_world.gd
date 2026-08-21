@@ -25,6 +25,10 @@ const DEFS_PATH: String = "res://content/enemies"
 const CONTAINER_NODE: StringName = &"Enemies"
 const SPAWNER_NODE: StringName = &"EnemySpawner"
 const ENEMY_GROUP: StringName = &"enemies"
+## The group `entities/player/player_controller.gd` joins. Read by F-392's spawn-distance guard, by
+## name rather than by preloading that script — this autoload must not take a hard dependency on the
+## player scene it only ever meets at runtime, and most `tools/` harnesses stand in a bare Node3D.
+const PLAYER_GROUP: StringName = &"players"
 ## Group a `NavBaker` joins when it owns a level's navigation (F-351). Kept in sync with that file's
 ## own `NAV_OWNER_GROUP` by name rather than by preloading it: this autoload must not take a hard
 ## dependency on a world-building script it only ever meets at runtime, and most of the harnesses in
@@ -54,6 +58,30 @@ const BOOTSTRAP_DELAY_SEC: float = 0.75
 ## Spread around the marker, so four crawlers do not stack in one spot.
 @export_range(0.0, 20.0, 0.5) var ambient_scatter_m: float = 4.0
 @export var ambient_enemy: StringName = &"crawler"
+## F-392. No ambient crawler may materialise closer than this to a live player. Reported from play:
+## "a crawler randomly spawned in the middle of the map right after i respawned during the day" —
+## the loop picked a nest marker with no regard for who was standing on it, so respawning next to a
+## nest (which `content/poi/enemy_nest.tres`'s placement makes possible) put one in your face.
+##
+## 28 m is picked off a distance the game already defines rather than as a round number: the crawler
+## inherits `EnemyDef`'s 18 m `aggro_radius_m` and 26 m `deaggro_radius_m` (it overrides neither), so
+## a spawn beyond 28 m cannot be aggroed on the frame it appears — it has to notice you and walk,
+## which is the difference between "something moved over there" and "something appeared here".
+## Not larger: the island is 118 m across (F-368) and its nests cluster, so a much wider guard would
+## leave a top-up with nowhere legal to go on most frames and permanently ride the fallback below.
+@export_range(0.0, 60.0, 1.0) var ambient_min_player_distance_m: float = 28.0
+## F-392. How long after a player comes back up — a bleed-out respawn or a teammate's revive — the
+## ambient loop refuses to add anything at all. Distance alone does not cover the reported case: a
+## respawn TELEPORTS the body (`PlayerHealth._teleport_to_spawn()`), so a top-up that ran on the same
+## frame could clear the guard against where the player used to be and still land next to where they
+## now are. Six seconds is long enough to cover the teleport, the fade and the first look around, and
+## short enough that it never eats a whole `ambient_respawn_seconds` cycle.
+const AMBIENT_RESPAWN_GRACE_SEC: float = 6.0
+## F-392. How many (marker, scatter) rolls to try before falling back. The scatter can push an
+## otherwise-legal marker back inside the guard radius, and re-rolling is far cheaper than solving
+## for a legal offset; eight rolls is well past the point where a legal marker fails to produce a
+## legal position.
+const AMBIENT_PLACEMENT_ATTEMPTS: int = 8
 
 signal enemy_spawned(enemy: Node3D)
 signal enemy_died(enemy_id: StringName, instigator_peer_id: int, position: Vector3)
@@ -75,6 +103,11 @@ var _bootstrap_elapsed: float = 0.0
 ## re-resolving /root/NetTransport by path each time. Path-based on purpose (F-011 — harnesses
 ## install their transport at /root), cached once found.
 var _transport_node: Node
+## F-392. Seconds of ambient silence still owed after somebody came back up. Counted down in
+## `_physics_process`, and checked by `top_up_ambient()` itself rather than by the timer branch, so
+## the rule-change path (`_on_rule_changed` -> `top_up_ambient`) is covered by the same guard — that
+## path is the one that can fire at any instant, including the frame a player finishes respawning.
+var _ambient_grace_remaining: float = 0.0
 
 
 func _ready() -> void:
@@ -89,7 +122,38 @@ func _ready() -> void:
 	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
 	_register_commands()
 	_bind_rules()
+	# F-392: PlayerHealth is registered AFTER EnemyWorld in project.godot's [autoload] block, so
+	# `/root/PlayerHealth` does not exist yet inside this `_ready()`. Binding straight from here would
+	# find nothing and the respawn grace would never arm — a wiring failure that presents as silence,
+	# exactly F-068's class of bug. Deferred, every autoload is in the tree by the time it runs.
+	_bind_player_health.call_deferred()
 	MireLog.info(&"content", "loaded %d enemy definition(s)" % defs.size())
+
+
+## F-392's respawn half. `PlayerHealth.downed_flag_changed(peer_id, false)` is the one signal that
+## fires exactly once per "a player is upright again" — a bleed-out respawn and a teammate's revive
+## both land there, and `_broadcast_downed_flag()` only emits on an actual change, so this costs
+## nothing on the 1 Hz hunger publishes that share the same `_publish_snapshot()` path.
+##
+## Optional by design, same shape as `_bind_rules()` above: most `tools/` harnesses install no
+## PlayerHealth at all, and an ambient loop that refused to run without one would take the whole
+## enemy population down with it.
+func _bind_player_health() -> void:
+	var health: Node = get_node_or_null(^"/root/PlayerHealth")
+	if health == null or not health.has_signal(&"downed_flag_changed"):
+		return
+	if health.is_connected(&"downed_flag_changed", _on_downed_flag_changed):
+		return
+	health.connect(&"downed_flag_changed", _on_downed_flag_changed)
+
+
+## Arms the grace only on the false edge — the transition INTO being upright. Going down is not the
+## dangerous moment; standing back up is, because `PlayerHealth._teleport_to_spawn()` has just put
+## the body somewhere the last top-up never evaluated.
+func _on_downed_flag_changed(_peer_id: int, downed: bool) -> void:
+	if downed:
+		return
+	_ambient_grace_remaining = AMBIENT_RESPAWN_GRACE_SEC
 
 
 func _exit_tree() -> void:
@@ -206,6 +270,13 @@ func _cmd_enemies(_ctx: Dictionary, _args: Dictionary) -> Dictionary:
 ## timer rather than tracking individual deaths, so a crawler killed at any moment is replaced within
 ## `ambient_respawn_seconds` and nothing has to be unsubscribed.
 func _physics_process(delta: float) -> void:
+	# F-392: the respawn grace burns down ahead of every early-out below, night included. It is a
+	# real-time "nothing appears near someone who just stood up" window, not a share of the ambient
+	# timer, so it must not freeze while `WaveSpawner` has `ambient_enabled` off for the night and
+	# then still be owing at dawn. One float subtract, and only while one is actually owed.
+	if _ambient_grace_remaining > 0.0:
+		_ambient_grace_remaining = maxf(_ambient_grace_remaining - delta, 0.0)
+
 	# Cheap constant checks first; the authority check dispatches into the transport (F-099).
 	if not ambient_enabled or defs.is_empty() or not _owns_spawning():
 		return
@@ -233,12 +304,24 @@ func _physics_process(delta: float) -> void:
 
 ## Spawns up to `ambient_population` living enemies at the level's enemy_spawn markers. Returns how
 ## many it added. Public so a console command and task 2.12 can both drive it.
+##
+## F-392: HOST-ONLY placement, and it has to stay that way. This is ARCHITECTURE.md §2.2's "wave
+## director" row — the distance guard below decides WHERE a body comes into the world, so it belongs
+## on the one machine that runs `host_spawn()`. A client filtering what it renders would only hide
+## the crawler that already exists next to it, which is not the same thing at all.
 func top_up_ambient() -> int:
 	if not _owns_spawning():
+		return 0
+	# F-392: checked here rather than in `_physics_process` so that EVERY way in is covered by one
+	# guard — the 12 s timer, the bootstrap top-up, and `_on_rule_changed()`'s immediate refill, which
+	# is the path that can land on the exact frame a player finishes respawning. Returning 0 leaves
+	# the field a body or two short for a few seconds; the next tick fills it.
+	if _ambient_grace_remaining > 0.0:
 		return 0
 	var points: Array[Vector3] = ambient_spawn_points()
 	if points.is_empty():
 		return 0
+	var players: Array[Vector3] = _live_player_positions()
 	var added: int = 0
 	# live_count() alone, NOT live_count() + added: a spawned enemy joins the `enemies` group inside
 	# its own _ready, so it is already counted by the next iteration. Adding both stopped the loop at
@@ -246,16 +329,108 @@ func top_up_ambient() -> int:
 	var attempts: int = 0
 	while live_count() < ambient_population and attempts < ambient_population:
 		attempts += 1
-		var origin: Vector3 = points[_ambient_rng.randi_range(0, points.size() - 1)]
-		var offset := Vector3(
-			_ambient_rng.randf_range(-ambient_scatter_m, ambient_scatter_m),
-			0.0,
-			_ambient_rng.randf_range(-ambient_scatter_m, ambient_scatter_m)
-		)
-		if host_spawn(ambient_enemy, origin + offset) == null:
+		if host_spawn(ambient_enemy, _pick_ambient_position(points, players)) == null:
 			break
 		added += 1
 	return added
+
+
+## F-392. Where one ambient crawler actually lands: a nest marker plus scatter, re-rolled until the
+## result clears `ambient_min_player_distance_m` from every live player.
+##
+## Re-rolling the whole (marker, scatter) pair rather than only the marker is deliberate — the
+## scatter is up to 4 m and can push an otherwise-legal marker back inside the guard, which is how a
+## "safe" nest still produced a crawler at arm's length.
+##
+## When every roll fails the fallback is `_furthest_ambient_point()`, NOT "spawn nothing": an empty
+## field is a worse bug than a distant crawler, and on a map whose nests all sit near the players
+## (small island, everyone regrouped at the Wellspring) silently spawning nothing would drain the
+## daytime population to zero and stay there. `top_up_ambient()` is the daytime population by design
+## — `systems/waves/wave_spawner.gd` disables it for the night and owns the field then — so it must
+## always produce a body, just never an ambush.
+func _pick_ambient_position(points: Array[Vector3], players: Array[Vector3]) -> Vector3:
+	var minimum_sq: float = ambient_min_player_distance_m * ambient_min_player_distance_m
+	for _attempt: int in AMBIENT_PLACEMENT_ATTEMPTS:
+		var candidate: Vector3 = points[_ambient_rng.randi_range(0, points.size() - 1)] \
+			+ _ambient_scatter_offset()
+		if _nearest_player_distance_sq(candidate, players) >= minimum_sq:
+			return candidate
+	return _furthest_ambient_point(points, players)
+
+
+## F-392's fallback. Sweeps every nest deterministically (not another random roll — this branch only
+## runs when the random ones have already failed, and "the best of eight more guesses" is not the
+## furthest point) and then walks the winner one full scatter length directly AWAY from the player
+## nearest it, so the least-bad option is still made as un-ambush-like as the map allows.
+func _furthest_ambient_point(points: Array[Vector3], players: Array[Vector3]) -> Vector3:
+	var best: Vector3 = points[0]
+	var best_clearance_sq: float = -1.0
+	for point: Vector3 in points:
+		var clearance_sq: float = _nearest_player_distance_sq(point, players)
+		if clearance_sq > best_clearance_sq:
+			best_clearance_sq = clearance_sq
+			best = point
+	var nearest: Vector3 = _nearest_player_position(best, players)
+	var away := Vector3(best.x - nearest.x, 0.0, best.z - nearest.z)
+	if away.length_squared() < 0.0001:
+		# Standing exactly on the marker. Any direction is equally away; take a seeded one rather
+		# than dropping the body on the player's head.
+		away = Vector3(_ambient_rng.randf_range(-1.0, 1.0), 0.0, _ambient_rng.randf_range(-1.0, 1.0))
+		if away.length_squared() < 0.0001:
+			away = Vector3.FORWARD
+	return best + away.normalized() * ambient_scatter_m
+
+
+## The seeded spread that keeps four crawlers from stacking on one marker. Split out of
+## `top_up_ambient()` by F-392 only so the re-roll above can ask for a fresh one.
+func _ambient_scatter_offset() -> Vector3:
+	return Vector3(
+		_ambient_rng.randf_range(-ambient_scatter_m, ambient_scatter_m),
+		0.0,
+		_ambient_rng.randf_range(-ambient_scatter_m, ambient_scatter_m)
+	)
+
+
+## F-392. Every live player body, host-side — the same `&"players"` group `Wellspring._present_count()`
+## reads, which holds on the host for remote bodies and offline for the local one. A downed or dead
+## body still counts: it is about to stand back up, in place or at its spawn, and neither is somewhere
+## a crawler should be waiting.
+func _live_player_positions() -> Array[Vector3]:
+	var positions: Array[Vector3] = []
+	var tree: SceneTree = get_tree()
+	if tree == null:
+		return positions
+	for node: Node in tree.get_nodes_in_group(PLAYER_GROUP):
+		var body := node as Node3D
+		if body != null and body.is_inside_tree():
+			positions.append(body.global_position)
+	return positions
+
+
+## Horizontal distance only, and squared — the question is "how far away across the ground", and a
+## nest marker authored at y=0 under terrain that is 3 m up must not read as further away than it is.
+## INF when nobody is present, so an empty session (every `tools/` harness that installs no player)
+## takes the first roll and behaves exactly as it did before F-392.
+func _nearest_player_distance_sq(point: Vector3, players: Array[Vector3]) -> float:
+	var nearest_sq: float = INF
+	for player_position: Vector3 in players:
+		var dx: float = point.x - player_position.x
+		var dz: float = point.z - player_position.z
+		nearest_sq = minf(nearest_sq, dx * dx + dz * dz)
+	return nearest_sq
+
+
+func _nearest_player_position(point: Vector3, players: Array[Vector3]) -> Vector3:
+	var nearest: Vector3 = point
+	var nearest_sq: float = INF
+	for player_position: Vector3 in players:
+		var dx: float = point.x - player_position.x
+		var dz: float = point.z - player_position.z
+		var distance_sq: float = dx * dx + dz * dz
+		if distance_sq < nearest_sq:
+			nearest_sq = distance_sq
+			nearest = player_position
+	return nearest
 
 
 ## Every nest marker the level published, from either map's marker group.

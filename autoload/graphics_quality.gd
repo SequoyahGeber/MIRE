@@ -12,6 +12,8 @@ extends Node
 ##   shadow cascades   — every PSSM split re-renders the caster scene; 4 -> 2 halves that load
 ##   shadow distance   — bounds how much of the world is a shadow caster at all
 ##   shadow atlas size — shadow-pass fill and memory
+##   blend splits      — NOT a cost lever; the stability partner of the two above (F-377)
+##   shadow bias scale — NOT a cost lever either; keeps bias proportional to texel size (F-377)
 ##   glow, volumetric  — post/froxel passes that touch the whole frame
 ##   undergrowth scale — instance budget of the densest scatter; a lower budget is a strict
 ##                       prefix of the full placement sequence, so it rescatters deterministically
@@ -28,6 +30,48 @@ extends Node
 ## discovered through the tree at apply time (any DirectionalLight3D, any WorldEnvironment, a
 ## node named Undergrowth), and authored values are captured per node the first time a preset
 ## touches it, so `high` on a generated level restores that level's own numbers.
+##
+## ── Shadow stability is a property of the whole preset, not of one knob (F-377) ────────────────
+## Reported from play: "shadows flicker and flash on low graphics quality". LOW had lowered four
+## shadow knobs independently — 2 splits instead of 4, 55 m of distance, a 2048 atlas instead of
+## 4096, and a 0.59 render scale — each of which is a defensible cost cut on its own and which
+## together produced a configuration that was cheap and wrong. Nothing owned the stability of the
+## result, because stability is not a property any one of those knobs has.
+##
+## The three things that were actually wrong, and what LOW now does about each:
+##
+##   1. Texel size. Halving the atlas halves the resolution of every split, and halving the split
+##      count roughly doubles the ground each remaining split has to cover. Those multiply. The
+##      fix is not to give the atlas back — LOW exists for the worst machine we target and 2048
+##      is most of why it is cheap — but to stop asking those two splits to cover 55 m. At 38 m
+##      the far split's slice is about 34 m of the frustum against HIGH's ~42 m, so LOW's far
+##      texel ends up roughly 1.6x HIGH's rather than the ~2.3x it was, for no extra fill.
+##      tools/graphics_quality_check.gd derives both ratios from the preset table itself, so this
+##      paragraph cannot rot into a comment that describes numbers the file no longer has.
+##   2. The cascade seam. Without `directional_shadow_blend_splits` the boundary between the two
+##      splits is a hard cut, and with only two splits that cut sits right where the player walks.
+##      The three shipped gameplay levels happen to author it `true`, which is why this never got
+##      caught in review — but `levels/greybox_test.tscn` and the frontend backdrop's runtime sun
+##      do not, and a procedurally generated world has no author to rely on at all. So LOW states
+##      it rather than inheriting it. It costs a boundary blend, not a third cascade.
+##   3. Bias. `shadow_bias`/`shadow_normal_bias` are authored against the split geometry the level
+##      was tuned at, and LOW changes that geometry underneath them. They are applied here as
+##      SCALES on the level's own authored values, never as absolute numbers: an absolute would
+##      restate one level's tuning (procedural_island's 2.4 normal bias) onto every other one
+##      (Hollowmere's 1.3, greybox's engine default) and quietly break the "a preset names only
+##      what it overrides" property that makes `high` an exact restore. `shadow_normal_bias_scale`
+##      tracks the 1.6x texel growth from (1); `shadow_bias_scale` is deliberately smaller, because
+##      depth bias is the one that detaches a shadow from its caster and LOW's shorter depth range
+##      already needs less of it. Both magnitudes are the taste half of this fix — the geometry is
+##      derived, the exact values want a human's eyes on a moving camera.
+##
+## MEDIUM does NOT have this problem and deliberately gets none of this treatment: it overrides no
+## shadow knob at all, so it runs HIGH's authored cascades, distance, atlas and bias, all mutually
+## consistent. Its only exposure is render scale 0.77, which is the mildest of the four causes
+## acting alone and on a full-quality shadow map. Adding shadow overrides to MEDIUM would make it
+## differ from HIGH for no reason. Note that dynamic resolution (F-098) can drive MEDIUM and HIGH
+## down to DYNAMIC_SCALE_MIN, i.e. LOW's render scale — they keep the good shadow map while it
+## does, which is exactly the trade that makes the render-scale contribution survivable.
 
 ## Preloaded rather than referenced by `class_name`: a new global class is invisible to a
 ## headless `--script` run until the editor rescans the project.
@@ -43,14 +87,26 @@ const PRESETS: Dictionary = {
 	Preset.LOW: {
 		"render_scale": 0.59,
 		"cascades": DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS,
-		"shadow_distance": 55.0,
+		# 55.0 before F-377. Two splits over 55 m at a 2048 atlas gave the far cascade a texel
+		# roughly 2.3x HIGH's, which at 0.59 render scale is what the crawl actually was;
+		# tools/graphics_quality_check.gd derives both ratios rather than trusting this line.
+		"shadow_distance": 38.0,
 		"shadow_atlas": 2048,
+		# Stated, not inherited: with two splits the seam sits in walking range, and not every
+		# level (greybox, anything generated) authors this on. See the F-377 block at the top.
+		"blend_splits": true,
+		# Multipliers on the level's own authored bias, never absolutes — see the F-377 block.
+		"shadow_normal_bias_scale": 1.6,
+		"shadow_bias_scale": 1.25,
 		"glow": false,
 		"volumetric": false,
 		"undergrowth": 0.45,
 		"draw_distance": 0.55,
 		"lod_threshold": 4.0,
 	},
+	# Checked for F-377's problem and deliberately left alone: MEDIUM names no shadow knob, so it
+	# runs HIGH's authored cascades/distance/atlas/bias as one consistent set. Do not "fix" it to
+	# match LOW — that would make it differ from the authored look for no reason.
 	Preset.MEDIUM: {
 		"render_scale": 0.77,
 		"undergrowth": 0.8,
@@ -64,6 +120,11 @@ const DEFAULT_SHADOW_ATLAS: int = 4096
 const DEFAULT_LOD_THRESHOLD: float = 1.0
 
 var preset: Preset = Preset.HIGH
+## The atlas size the last `apply()` actually pushed to the RenderingServer. The server has no
+## getter for it, so without this a check can only assert what the preset table INTENDS, which is
+## the one thing that was never in doubt in F-377. Written from the same expression that makes the
+## call, on the line after it, so the two cannot drift.
+var applied_shadow_atlas: int = DEFAULT_SHADOW_ATLAS
 ## Read by world/gen/undergrowth.gd when it scatters; 1.0 until a preset lowers it.
 var undergrowth_density_scale: float = 1.0
 ## Multiplies every draw distance `world/environment/draw_policy.gd` hands out. Pulling props in
@@ -164,8 +225,8 @@ func apply(new_preset: Preset) -> void:
 	# right default for a machine that can afford it and the wrong one for the machine this game
 	# is meant to run on. Raising it costs silhouette detail at distance and nothing else.
 	get_viewport().mesh_lod_threshold = float(spec.get("lod_threshold", DEFAULT_LOD_THRESHOLD))
-	RenderingServer.directional_shadow_atlas_set_size(
-		int(spec.get("shadow_atlas", DEFAULT_SHADOW_ATLAS)), true)
+	applied_shadow_atlas = int(spec.get("shadow_atlas", DEFAULT_SHADOW_ATLAS))
+	RenderingServer.directional_shadow_atlas_set_size(applied_shadow_atlas, true)
 	if scene == null:
 		return
 
@@ -174,10 +235,21 @@ func apply(new_preset: Preset) -> void:
 		var authored: Dictionary = _authored_lights.get_or_add(sun.get_instance_id(), {
 			"mode": sun.directional_shadow_mode,
 			"distance": sun.directional_shadow_max_distance,
+			"blend_splits": sun.directional_shadow_blend_splits,
+			"bias": sun.shadow_bias,
+			"normal_bias": sun.shadow_normal_bias,
 		}) as Dictionary
 		sun.directional_shadow_mode = int(spec.get("cascades", authored["mode"]))
 		sun.directional_shadow_max_distance = float(
 			spec.get("shadow_distance", authored["distance"]))
+		sun.directional_shadow_blend_splits = bool(
+			spec.get("blend_splits", authored["blend_splits"]))
+		# Both biases are derived from the AUTHORED value every time, never from the light's
+		# current one, so re-applying a preset — which `_process()` does on every scene change —
+		# cannot compound the scale, and `high` lands back on the level's exact numbers (F-377).
+		sun.shadow_bias = float(authored["bias"]) * float(spec.get("shadow_bias_scale", 1.0))
+		sun.shadow_normal_bias = float(authored["normal_bias"]) \
+			* float(spec.get("shadow_normal_bias_scale", 1.0))
 
 	for holder: Node in scene.find_children("*", "WorldEnvironment", true, false):
 		var environment: Environment = (holder as WorldEnvironment).environment

@@ -45,6 +45,10 @@ func _run() -> void:
 	await process_frame
 	_check_daytime_is_untouched()
 	await process_frame
+	_check_sun_has_a_disc()
+	await process_frame
+	_check_there_is_a_moon()
+	await process_frame
 	_check_star_field_is_deterministic()
 	await process_frame
 	await _check_dome_rides_the_camera()
@@ -171,8 +175,14 @@ func _check_dusk_is_a_fade() -> void:
 	var sunset_sky := _sky_material(level)
 	check(sunset_sky.mie_color.is_equal_approx(AUTHORED_MIE),
 		"the sun on the horizon keeps the authored warm scattering (%s)" % sunset_sky.mie_color)
-	check(sunset_sky.energy_multiplier > 0.8,
-		"the sky is not force-dimmed while the sun is still up (%.3f)" % sunset_sky.energy_multiplier)
+	# Against the controller's own day end rather than a hard-coded 0.8. What this asserts is that
+	# `sky_night` has not kicked in early — the sun is still on the horizon at 18:00 and the sky
+	# should be at full DAY brightness — and F-378 changed what "full day brightness" is (0.9 -> 0.45,
+	# because 0.9 blew six degrees of sky around the sun past the white point and hid the disc
+	# inside it). Comparing to the constant keeps the claim and drops the stale number.
+	check(sunset_sky.energy_multiplier > ATMOSPHERE_SCRIPT.DAY_SKY_ENERGY * 0.99,
+		"the sky is not force-dimmed while the sun is still up (%.3f of a %.3f day)" % [
+			sunset_sky.energy_multiplier, ATMOSPHERE_SCRIPT.DAY_SKY_ENERGY])
 	atmosphere.call(&"set_time_of_day", 19.5)
 	var after_dark := _sky_material(level)
 	check(after_dark.mie_color.b > after_dark.mie_color.r,
@@ -193,6 +203,127 @@ func _check_daytime_is_untouched() -> void:
 		"mie_color returns to the authored value (%s)" % sky.mie_color)
 	check(sky.ground_color.is_equal_approx(AUTHORED_GROUND),
 		"ground_color returns to the authored value (%s)" % sky.ground_color)
+	level.queue_free()
+
+
+# ── F-378: the sun is a disc, and there is a moon ────────────────────────────────────────────────
+
+
+## Sequoyah's verdict was "the sun doesnt have a clear circle form in the sky its more of a faded
+## haze thats way to wide". Three numbers decide that, and until F-378 the controller owned none of
+## them: the disc's angular size lived in each level's `.tscn`, and the two knobs that set the halo's
+## width and density were either authored per level or lerped the wrong way.
+##
+## Headless, so this asserts the numbers a renderer would draw the disc FROM. The bounds are the
+## interesting part — a disc has to exist (a zero angular size draws nothing at all) and it has to
+## stay a disc (six degrees of "sun" is the haze again by another route).
+func _check_sun_has_a_disc() -> void:
+	print("\n== the sun is a circle, and the haze around it is not a quarter of the sky ==")
+	var level := _build_level(NOON)
+	var sun := level.get_node(^"Sun") as DirectionalLight3D
+	var sky := _sky_material(level)
+
+	check(sun.light_angular_distance > 0.0,
+		"the sun has an angular size at all — at 0 the sky shader draws no disc (%.2f deg)"
+			% sun.light_angular_distance)
+	check(sun.light_angular_distance <= 1.0,
+		"the sun's own angle stays tight, because it is also the shadow penumbra (%.2f deg)"
+			% sun.light_angular_distance)
+	# The lower bound is the one that matters and it is a MEASURED number, not a tasteful one: the
+	# sky around the sun is blown past the white point out to ~3.5 deg even after F-378 darkened it,
+	# so a disc smaller than that is invisible inside its own glow no matter how hard its edge is.
+	# The upper bound is only there to catch someone "fixing" a future haze complaint by inflating
+	# the sun until it IS the haze.
+	var apparent: float = sun.light_angular_distance * sky.sun_disk_scale
+	check(apparent > 4.0 and apparent < 12.0,
+		"the disc is bigger than the sky's own blown region, so its edge shows: %.2f deg apparent (angle %.2f x disk scale %.2f)" % [
+			apparent, sun.light_angular_distance, sky.sun_disk_scale])
+	check(sky.energy_multiplier < 0.7,
+		"the day sky is not blown out around the sun (energy %.2f)" % sky.energy_multiplier)
+	# The halo's WIDTH. Henyey-Greenstein falls to half its peak around 13 deg at the 0.74 both
+	# levels authored, which is the "way to wide" in one number.
+	check(sky.mie_eccentricity >= 0.82,
+		"the mie lobe is forward-tight, so the glow hugs the disc (eccentricity %.2f)"
+			% sky.mie_eccentricity)
+	var day_turbidity: float = sky.turbidity
+
+	# The halo's DENSITY, which used to run UP as the sun went down — thickest exactly across dusk
+	# and dawn, which is when a player is looking at the sun.
+	var atmosphere: Node = level.get_node(^"Atmosphere")
+	atmosphere.call(&"set_time_of_day", MIDNIGHT)
+	check(sky.turbidity < day_turbidity,
+		"night thins the haze rather than thickening it (%.2f at night vs %.2f by day)" % [
+			sky.turbidity, day_turbidity])
+	level.queue_free()
+
+
+## "night time could be slightly less dark but only because of moonlight so we need to add a moon in
+## that cast cool white light dimmly over the map." Before F-378 the level held exactly one
+## DirectionalLight3D and night was that one dimmed to 0.04, which is also the whole of F-356: the
+## ground was not dark, it was UNLIT.
+##
+## The load-bearing assertion here is the handover. Two directional lights that are both on is a
+## night lit from two directions and a second shadow map nobody budgeted for, so the check is not
+## "there is a moon" but "exactly one of the two is lit, at both ends of the day".
+func _check_there_is_a_moon() -> void:
+	print("\n== a second light nobody placed, opposite the sun, and only one of them is ever on ==")
+	var level := _build_level(NOON)
+	var atmosphere: Node = level.get_node(^"Atmosphere")
+	var sun := level.get_node(^"Sun") as DirectionalLight3D
+
+	var moon := atmosphere.get_node_or_null(^"Moon") as DirectionalLight3D
+	check(moon != null, "Atmosphere created a Moon DirectionalLight3D")
+	if moon == null:
+		level.queue_free()
+		return
+	# LIGHT_ONLY is not tidiness: PhysicalSkyMaterial draws its disc for LIGHT0, and a moon that
+	# contributed to the sky could take that slot and be handed the SUN's disc.
+	check(moon.sky_mode == DirectionalLight3D.SKY_MODE_LIGHT_ONLY,
+		"the moon never contributes to the sky, so it can never be given the sun's disc")
+	check(moon.light_color.b > moon.light_color.r,
+		"the moon is cool white, not a second sun (%s)" % moon.light_color)
+
+	check(is_zero_approx(moon.light_energy),
+		"noon leaves the moon completely dark (%.3f)" % moon.light_energy)
+	check(not moon.visible, "noon hides the moon entirely, so daylight pays nothing for it")
+	check(sun.light_energy > 1.0, "noon is the sun's (%.2f)" % sun.light_energy)
+	check(sun.shadow_enabled and not moon.shadow_enabled,
+		"by day the sun casts the shadows and the moon casts none")
+
+	atmosphere.call(&"set_time_of_day", MIDNIGHT)
+	check(moon.light_energy > 0.1,
+		"midnight actually lights the map from the moon (%.3f)" % moon.light_energy)
+	check(moon.visible, "midnight makes the moon visible")
+	check(is_zero_approx(sun.light_energy),
+		"midnight takes the sun to zero rather than to a token 0.04 (%.4f)" % sun.light_energy)
+	check(moon.shadow_enabled and not sun.shadow_enabled,
+		"at night the moon casts the shadows and the sun casts none — never two shadow maps")
+
+	# The antipode, at four hours rather than one: a moon that only happens to be opposite at
+	# midnight is a moon on its own clock.
+	var worst_dot: float = 1.0
+	for hour: float in [0.0, 3.5, 12.0, 21.0]:
+		atmosphere.call(&"set_time_of_day", hour)
+		worst_dot = minf(worst_dot, sun.global_basis.z.dot(moon.global_basis.z))
+	check(worst_dot < -0.999,
+		"the moon is the sun's antipode at every hour (worst dot %.5f)" % worst_dot)
+
+	# And the thing you actually see. It is geometry in the star field, so it is readable headless
+	# for the same reason the stars are (D-042).
+	atmosphere.call(&"set_time_of_day", MIDNIGHT)
+	var star_field: Node3D = atmosphere.get_node_or_null(^"StarField")
+	var disc := atmosphere.get_node_or_null(^"StarField/MoonDisc") as MeshInstance3D
+	check(disc != null, "the star field built a visible moon disc, not just a light")
+	if disc == null or star_field == null:
+		level.queue_free()
+		return
+	check(disc.visible, "the disc is drawn at midnight")
+	var to_disc: Vector3 = (disc.global_position - star_field.global_position).normalized()
+	check(to_disc.dot(moon.global_basis.z) > 0.999,
+		"the disc sits where the light comes from, star wheel and all (dot %.5f)"
+			% to_disc.dot(moon.global_basis.z))
+	atmosphere.call(&"set_time_of_day", NOON)
+	check(not disc.visible, "and it is gone by day")
 	level.queue_free()
 
 

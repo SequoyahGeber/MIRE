@@ -1,6 +1,8 @@
 extends Node3D
 
-## Client-local night sky: a deterministic dome of star quads that fades in across dusk.
+## Client-local night sky: a deterministic dome of star quads that fades in across dusk, plus the
+## moon disc (F-378) — everything you can SEE at night. The moon's light, and the clock both halves
+## ride, belong to `world/environment/playtest_atmosphere.gd`.
 ##
 ## NETWORK AUTHORITY (docs/ARCHITECTURE.md §2.2, "VFX, audio, camera, UI" row): NONE — this is
 ## presentation only. Nothing here is replicated and no gameplay reads it back. The one number that
@@ -34,6 +36,31 @@ const POLE_AXIS := Vector3(0.28, 0.93, 0.24)
 const STAR_COOL := Color(0.72, 0.82, 1.0)
 const STAR_WARM := Color(1.0, 0.86, 0.68)
 
+## ── The moon (F-378) ──────────────────────────────────────────────────────────────────────────
+## "there is no moon at night at all." `playtest_atmosphere.gd` now adds a second DirectionalLight3D
+## for the light; this is the thing you can actually see, and it lives here because it is night sky
+## and the night sky is already one draw call that rides the camera.
+##
+## It could NOT come from the sky material: `PhysicalSkyMaterial` draws a disc for LIGHT0 only, and
+## the moon light is deliberately SKY_MODE_LIGHT_ONLY so it can never steal that slot from the sun
+## (see the moon's factory in the atmosphere controller). So it is geometry, for the same three
+## reasons D-042 chose geometry for the stars — deterministic, one draw call, and assertable
+## headless without a framebuffer.
+##
+## A separate MeshInstance3D rather than more vertices in the star mesh, because the two do not move
+## together: the star dome WHEELS about POLE_AXIS, while the moon tracks the sun's own antipode. It
+## is a child of the dome all the same, so it inherits the camera-following transform for free —
+## `_place_moon()` is what undoes the wheel.
+##
+## Rim points, not a quad: at 2 deg across, a square moon is unmistakably square. The disc is a fan
+## with a full-alpha core ring and a zero-alpha outer ring, so the hardware interpolates one pixel
+## of edge softening and nothing more — a moon needs a hard rim, which is the opposite of the soft
+## point a star wants.
+const MOON_TINT := Color(0.92, 0.95, 1.0)
+const MOON_RIM_POINTS: int = 28
+## Where the hard core ends and the one-pixel antialiasing ring begins, as a fraction of the radius.
+const MOON_CORE_FRACTION: float = 0.94
+
 @export_range(64, 2000, 1) var star_count: int = 520
 ## Inside tools/hollowmere_render_check.gd's 520 m far plane and the player camera's default, with
 ## room to spare. The dome follows the camera, so this is a distance from the eye, not from origin.
@@ -41,9 +68,19 @@ const STAR_WARM := Color(1.0, 0.86, 0.68)
 ## 0 = daylight, nothing drawn. 1 = full night. Atmosphere owns this; see set_night_amount().
 @export_range(0.0, 1.0, 0.001) var night_amount: float = 0.0
 @export var follow_camera: bool = true
+## Apparent diameter of the moon, in degrees. Deliberately NOT the moon light's
+## `light_angular_distance` (0.6 deg in `playtest_atmosphere.gd`): that number is the shadow
+## penumbra and wants to be tight, this one is how big the moon LOOKS and wants to read across a
+## 1280 px frame. The sun's disc is split between two knobs for exactly the same reason.
+@export_range(0.2, 12.0, 0.05) var moon_angular_diameter_deg: float = 2.4
 
 var _mesh_instance: MeshInstance3D
 var _material: StandardMaterial3D
+var _moon_instance: MeshInstance3D
+var _moon_material: StandardMaterial3D
+## Direction from the viewer TOWARD the moon, in world space — the atmosphere hands this over in
+## world space on purpose, because the dome it is parented under is rotating underneath it.
+var _moon_direction := Vector3.DOWN
 var _sky_rotation: float = 0.0
 
 
@@ -84,6 +121,35 @@ func rebuild_stars() -> void:
 	_mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_mesh_instance.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
 	add_child(_mesh_instance)
+	_rebuild_moon()
+
+
+## The moon disc (F-378). Rebuilt alongside the stars so a caller that re-seeds the field gets a
+## whole night sky back, not most of one.
+func _rebuild_moon() -> void:
+	if _moon_instance != null and is_instance_valid(_moon_instance):
+		_moon_instance.queue_free()
+	_moon_material = StandardMaterial3D.new()
+	_moon_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_moon_material.vertex_color_use_as_albedo = true
+	_moon_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	# Additive, like the stars: the moon ADDS to the sky behind it rather than punching a hole in
+	# it, so it fades out cleanly into a brightening dawn instead of leaving a grey coin in the sky.
+	_moon_material.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	_moon_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_moon_material.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+	_moon_material.disable_receive_shadows = true
+	_moon_material.disable_ambient_light = true
+	_moon_material.albedo_color = Color(1.0, 1.0, 1.0, night_amount)
+
+	_moon_instance = MeshInstance3D.new()
+	_moon_instance.name = "MoonDisc"
+	_moon_instance.mesh = _build_moon_mesh()
+	_moon_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_moon_instance.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
+	_moon_instance.visible = false
+	add_child(_moon_instance)
+	_place_moon()
 
 
 ## 0 = daylight, 1 = full night. Drives the material alpha, which multiplies each star's own
@@ -98,14 +164,52 @@ func set_night_amount(value: float) -> void:
 func set_sky_rotation(radians: float) -> void:
 	_sky_rotation = radians
 	_apply_transform(global_position)
+	# The wheel just moved under the moon, so its place in the dome's frame changed even though its
+	# place in the sky did not.
+	_place_moon()
+
+
+## Where the moon is, as a direction from the viewer toward it in WORLD space. `playtest_atmosphere.gd`
+## passes the moon light's own `global_basis.z`, so the disc and the light that casts the shadows
+## are the same object by construction and cannot drift apart (F-378).
+func set_moon_direction(direction: Vector3) -> void:
+	if direction.length_squared() < 0.000001:
+		return
+	_moon_direction = direction.normalized()
+	_place_moon()
+
+
+## Puts the disc on the dome in the direction the atmosphere last gave, undoing the star wheel's own
+## rotation on the way — the dome spins about POLE_AXIS and the moon does not, so a moon parented
+## under it has to be expressed in the dome's frame or it would slide across the sky all night.
+##
+## Hidden below the horizon rather than drawn and occluded: the dome is only 380 m across and the
+## terrain that would hide it is the player's own hill, so a moon at -0.4 elevation would otherwise
+## be a bright disc sitting underground a short walk away.
+func _place_moon() -> void:
+	if _moon_instance == null or not is_instance_valid(_moon_instance):
+		return
+	var above_horizon: bool = _moon_direction.y > 0.0
+	_moon_instance.visible = above_horizon and night_amount > 0.001
+	if not _moon_instance.visible:
+		return
+	var local: Vector3 = global_transform.basis.inverse() * _moon_direction
+	# The disc is rotationally symmetric and CULL_DISABLED, so which way is "up" on it does not
+	# matter — the guard is only here because Basis.looking_at() errors when the two are parallel,
+	# and a moon directly overhead at midnight is not a corner case, it is every midnight.
+	var up: Vector3 = Vector3.UP if absf(local.y) < 0.99 else Vector3.RIGHT
+	_moon_instance.transform = Transform3D(Basis.looking_at(local, up), local * dome_radius)
 
 
 func _apply_night_amount() -> void:
 	if _material != null:
 		_material.albedo_color = Color(1.0, 1.0, 1.0, night_amount)
+	if _moon_material != null:
+		_moon_material.albedo_color = Color(1.0, 1.0, 1.0, night_amount)
 	var lit: bool = night_amount > 0.001
 	if _mesh_instance != null and is_instance_valid(_mesh_instance):
 		_mesh_instance.visible = lit
+	_place_moon()
 	# Daylight costs nothing: no per-frame camera follow while the field is invisible. Snap the
 	# transform once on the way back in so the first visible frame is already in the right place.
 	set_process(lit and follow_camera)
@@ -127,6 +231,57 @@ func _follow_camera() -> void:
 
 func _apply_transform(where: Vector3) -> void:
 	global_transform = Transform3D(Basis(POLE_AXIS.normalized(), _sky_rotation), where)
+
+
+## One flat disc in the XY plane, normal +Z, centred on the origin — `_place_moon()` is what puts it
+## somewhere. Sized off `dome_radius` so the ANGULAR diameter is what the export says regardless of
+## how far out the dome happens to sit.
+func _build_moon_mesh() -> ArrayMesh:
+	var half_angle: float = deg_to_rad(moon_angular_diameter_deg) * 0.5
+	var radius: float = dome_radius * tan(half_angle)
+	var vertices := PackedVector3Array()
+	var normals := PackedVector3Array()
+	var colors := PackedColorArray()
+	var core: Color = MOON_TINT
+	var rim := Color(MOON_TINT.r, MOON_TINT.g, MOON_TINT.b, 0.0)
+	var normal := Vector3(0.0, 0.0, 1.0)
+	for edge: int in MOON_RIM_POINTS:
+		var angle_a: float = TAU * float(edge) / float(MOON_RIM_POINTS)
+		var angle_b: float = TAU * float(edge + 1) / float(MOON_RIM_POINTS)
+		var inner_a := Vector3(cos(angle_a), sin(angle_a), 0.0) * radius * MOON_CORE_FRACTION
+		var inner_b := Vector3(cos(angle_b), sin(angle_b), 0.0) * radius * MOON_CORE_FRACTION
+		var outer_a := Vector3(cos(angle_a), sin(angle_a), 0.0) * radius
+		var outer_b := Vector3(cos(angle_b), sin(angle_b), 0.0) * radius
+		# The solid core, as a fan from the centre.
+		for corner: Array in [
+			[Vector3.ZERO, core], [inner_a, core], [inner_b, core]
+		]:
+			vertices.append(corner[0] as Vector3)
+			normals.append(normal)
+			colors.append(corner[1] as Color)
+		# The one-pixel rim that keeps the circle from stair-stepping, as a quad per segment.
+		for corner: Array in [
+			[inner_a, core], [outer_a, rim], [outer_b, rim],
+			[inner_a, core], [outer_b, rim], [inner_b, core]
+		]:
+			vertices.append(corner[0] as Vector3)
+			normals.append(normal)
+			colors.append(corner[1] as Color)
+
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_COLOR] = colors
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	mesh.surface_set_material(0, _moon_material)
+	# Same reasoning as the star dome's: the disc is a few metres of geometry that lives 380 m from
+	# the camera and moves every frame, so the culler must not be given a tight local box to test.
+	mesh.custom_aabb = AABB(
+		Vector3.ONE * -dome_radius * 1.05, Vector3.ONE * dome_radius * 2.1
+	)
+	return mesh
 
 
 ## One ArrayMesh, one surface, one draw call. Each star is a quad in the plane tangent to the dome,

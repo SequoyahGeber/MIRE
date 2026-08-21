@@ -38,6 +38,14 @@ const SHOTS: Array = [
 	## Close on a stand of trees, where falling leaves are large enough on screen to judge.
 	["canopy_leaves", 9.5, Vector3(-14.0, 4.0, 30.0), Vector3(-26.0, 4.5, 22.0)],
 	["canopy_leaves_golden", 6.8, Vector3(-14.0, 4.0, 30.0), Vector3(-26.0, 4.5, 22.0)],
+	## F-378. Night is the half of the cycle nobody could judge, because until there was a moon the
+	## only night shot was a black frame with stars in it and there was nothing to point a camera AT.
+	## `_moonward` is the moon's own version of `_sunward` below — it looks along the moon light's
+	## axis, which is the one frame that shows the disc and the light it casts in the same picture.
+	["moonrise_moonward", 19.4, Vector3(6.0, 6.0, 34.0), Vector3.ZERO],
+	["midnight_moonward", 0.0, Vector3(6.0, 6.0, 34.0), Vector3.ZERO],
+	["midnight_ground", 0.0, Vector3(6.0, 6.0, 34.0), Vector3(-18.0, 0.0, 6.0)],
+	["late_night_ground", 22.0, Vector3(-14.0, 4.0, 30.0), Vector3(-26.0, 4.5, 22.0)],
 ]
 
 
@@ -95,16 +103,34 @@ func _run() -> void:
 	camera.make_current()
 
 	var sun := scene.get_node_or_null(^"Sun") as DirectionalLight3D
+	# F-378: the moon is built by the Atmosphere controller rather than placed in the scene (release
+	# worlds have no level author), so it is found under it, not beside it.
+	var moon := atmosphere.get_node_or_null(^"Moon") as DirectionalLight3D
+	# The star dome (and the moon riding it) follows whatever camera the MAIN viewport reports, which
+	# is the player's — hundreds of metres from the SubViewport camera these shots are taken through,
+	# so the whole night sky parallaxes out of place in every frame here. Park it on the shot camera
+	# instead. In play there is one camera and none of this applies.
+	var star_field := atmosphere.get_node_or_null(^"StarField") as Node3D
+	if star_field != null:
+		star_field.set("follow_camera", false)
 	for shot_value: Variant in SHOTS:
 		var shot: Array = shot_value as Array
 		day_night.set("time_of_day", float(shot[1]) / 24.0)
 		atmosphere.call(&"set_time_of_day", float(shot[1]))
 		camera.global_position = shot[2] as Vector3
+		if star_field != null:
+			star_field.global_position = camera.global_position
+			if moon != null:
+				# Re-places the disc in the dome's frame now that the dome itself has moved.
+				star_field.call(&"set_moon_direction", moon.global_basis.z)
 		if String(shot[0]).ends_with("_sunward") and sun != null:
 			# A DirectionalLight3D shines along its own -Z, so the sun itself is at +Z of its basis.
 			# Looking that way is the only frame that can tell you whether the shafts are working.
 			await process_frame
 			camera.look_at(camera.global_position + sun.global_basis.z * 60.0, Vector3.UP)
+		elif String(shot[0]).ends_with("_moonward") and moon != null:
+			await process_frame
+			camera.look_at(camera.global_position + moon.global_basis.z * 60.0, Vector3.UP)
 		else:
 			camera.look_at(shot[3] as Vector3, Vector3.UP)
 		# Volumetric fog uses temporal reprojection, so the first frames after a jump are still

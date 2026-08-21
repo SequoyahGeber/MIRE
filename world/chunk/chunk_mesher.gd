@@ -15,9 +15,21 @@ extends RefCounted
 ## beneath it is itself pure and cross-platform-safe (D-017/D-075) and this file adds no RNG, no
 ## `sin`/`cos`/`pow`/`exp`/`log`, and no shared mutable state. `biome_defs` is content — authored
 ## `.tres`, identical on every peer, never generated — so it changes nothing about that.
+##
+## F-379 added a second thing the biome table decides: the ground's COLOUR, blended per vertex into
+## `Mesh.ARRAY_COLOR` across the same contour that blends its roughness. Everything above still
+## holds — the colours are authored content, the blend is the same crossfade, and the conversion
+## that would have cost a `pow()` lives in the shader instead (see [GroundPalette]).
 
 const Heightmap := preload("res://world/gen/island_heightmap.gd")
 const BiomeMapScript := preload("res://world/gen/biome_map.gd")
+const BiomeDefScript := preload("res://world/gen/biome_def.gd")
+
+## The ground colour a chunk falls back to when `biome_defs` carries no usable def — the same green
+## `ChunkStreamer` used to paint the WHOLE island with (F-379). Kept as the fallback and nothing
+## else: a bench harness that builds a mesh with an empty biome table still gets ground it can see,
+## and anything that renders this colour across real terrain is the bug this constant is named after.
+const FALLBACK_GROUND_ALBEDO := Color(0.26, 0.40, 0.19)
 
 ## Chunk footprint in metres. Fixed across every LOD — only vertex density changes.
 const CHUNK_SIZE: int = 32
@@ -63,6 +75,112 @@ const SKIRT_DEPTH: float = Heightmap.HEIGHT_SCALE * SKIRT_DEPTH_FRACTION
 ## contracts hold by construction, and `biome_terrain_check` asserts the cross-chunk border
 ## agreement directly.
 const VERTEX_JITTER_FRACTION: float = 0.35
+
+
+## The authored biome colours flattened to plain floats, once per chunk build, for the same reason
+## `BiomeMap.TerrainTable` exists (F-274): a LOD0 chunk resolves 1,089 vertices, and going back to
+## the `Resource` for a Color and four bounds at each of them is thousands of Variant property
+## lookups on a `WorkerThreadPool` task the whole streaming budget (D-074) is measured against.
+##
+## Colours stay in the sRGB the `.tres` authored, all the way into the mesh. Two reasons, and the
+## second is the one that decided it: `Mesh.ARRAY_COLOR` is eight bits a channel, and sRGB spends
+## those 256 steps where the eye is — a forest floor at linear 0.04 would land on code 10 of 255 and
+## band across its own crossfade. The other is this file's own header contract: converting here
+## means `pow()` on a content value inside the mesher, and "no `sin`/`cos`/`pow`/`exp`/`log`" is the
+## D-017 discipline that makes `build_mesh()` bit-identical on every platform. `terrain_flat.gdshader`
+## decodes to linear in its vertex stage instead, where it is three instructions per vertex and
+## nobody's determinism claim is involved.
+##
+## Sorted by `id`, like `make_terrain_table()`, and for the identical reason: the blend below SUMS
+## float weights, float addition is not associative, and an incidental directory-scan order would
+## move a vertex colour by a few ULPs between two peers running the same seed (D-079, F-175). A
+## colour is not gameplay, but it IS in the mesh, and a mesh that differs between peers is a mesh
+## nothing can compare.
+class GroundPalette extends RefCounted:
+	var count: int = 0
+	## Four floats per def, ordered by `id`: height_min, height_max, moisture_min, moisture_max.
+	## Deliberately its own copy rather than an index into `BiomeMap.TerrainTable.bands` — the two
+	## are built by the same sort rule, but an implicit index alignment between two structures in
+	## two files is exactly the coupling that goes wrong silently when one of them is retuned.
+	var bands := PackedFloat64Array()
+	## Index-aligned with `bands`, in the authored sRGB — see this class's header for why.
+	var colors := PackedColorArray()
+
+
+const _PALETTE_STRIDE: int = 4
+
+
+## Flattens `biome_defs` — `Registry.biomes.values()` on every shipped caller — into a
+## [GroundPalette]. Skips anything that is not a `BiomeDef`, exactly as `BiomeMap` does, so a
+## fixture array with a stray Resource in it is not a crash.
+static func make_ground_palette(biome_defs: Array) -> GroundPalette:
+	var defs: Array = []
+	for def_value: Variant in biome_defs:
+		var def: Resource = def_value as Resource
+		if def != null and def.get_script() == BiomeDefScript:
+			defs.append(def)
+	defs.sort_custom(
+		func(a: Resource, b: Resource) -> bool: return String(a.get(&"id")) < String(b.get(&"id"))
+	)
+	var palette := GroundPalette.new()
+	palette.count = defs.size()
+	palette.bands.resize(palette.count * _PALETTE_STRIDE)
+	palette.colors.resize(palette.count)
+	var i: int = 0
+	for def: Resource in defs:
+		palette.bands[i] = float(def.get(&"height_min"))
+		palette.bands[i + 1] = float(def.get(&"height_max"))
+		palette.bands[i + 2] = float(def.get(&"moisture_min"))
+		palette.bands[i + 3] = float(def.get(&"moisture_max"))
+		palette.colors[i / _PALETTE_STRIDE] = def.get(&"ground_albedo") as Color
+		i += _PALETTE_STRIDE
+	return palette
+
+
+## The ground colour at one point: every biome weighted by how far inside its own (height, moisture)
+## band the point sits, and the weighted mean of their colours (F-379).
+##
+## The weights come from `BiomeMap._band_weight()` and the two margins `BiomeMap.blend_amplitudes()`
+## uses, and that is not a convenience — it is the requirement. Colour and roughness have to cross
+## the SAME contour with the SAME width, or the ground changes hue in one place and changes shape in
+## another and the island reads as two unrelated maps laid over each other. A local copy of that
+## smoothstep would be one retuning away from exactly that, so this calls the shared one instead.
+##
+## Priority-blind, like `blend_amplitudes()` and unlike `BiomeMap.assign()`: where two authored
+## bands overlap, the ground there genuinely IS between the two, and a winner-takes-all step would
+## put a hue wall along the moisture contour — the same cliff the amplitude crossfade exists to
+## remove, in colour instead of in metres.
+##
+## Mixes in sRGB, because that is the space the values are stored and travel in (see [GroundPalette]).
+## A linear mix of the same two ends would darken the middle of the crossfade; on a beach running
+## into a meadow, sRGB is also the space the two were CHOSEN in.
+static func blend_ground_albedo(
+	continent_height: float, moisture_value: float, palette: GroundPalette
+) -> Color:
+	var total: float = 0.0
+	var red: float = 0.0
+	var green: float = 0.0
+	var blue: float = 0.0
+	var i: int = 0
+	while i < palette.bands.size():
+		var weight: float = BiomeMapScript._band_weight(
+			continent_height, palette.bands[i], palette.bands[i + 1],
+			BiomeMapScript.AMPLITUDE_BLEND_HEIGHT_M)
+		if weight > 0.0:
+			weight *= BiomeMapScript._band_weight(
+				moisture_value, palette.bands[i + 2], palette.bands[i + 3],
+				BiomeMapScript.AMPLITUDE_BLEND_MOISTURE)
+		if weight > 0.0:
+			var colour: Color = palette.colors[i / _PALETTE_STRIDE]
+			total += weight
+			red += weight * colour.r
+			green += weight * colour.g
+			blue += weight * colour.b
+		i += _PALETTE_STRIDE
+	if total <= 0.0:
+		return FALLBACK_GROUND_ALBEDO
+	var inverse: float = 1.0 / total
+	return Color(red * inverse, green * inverse, blue * inverse, 1.0)
 
 
 static func verts_per_side(lod: int) -> int:
@@ -276,15 +394,20 @@ static func build_mesh(
 	var side: int = verts_per_side(lod)
 	var noise_set: BiomeMapScript.NoiseSet = BiomeMapScript.make_noise_set(world_seed)
 	var table: BiomeMapScript.TerrainTable = BiomeMapScript.make_terrain_table(biome_defs)
+	# F-379: the same authored table again, flattened for colour instead of roughness. Built here
+	# rather than per vertex for the reason the terrain table is — see make_ground_palette().
+	var palette: GroundPalette = make_ground_palette(biome_defs)
 	var shape := Heightmap.Shape.new()
 
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var uvs := PackedVector2Array()
+	var colors := PackedColorArray()
 	var count: int = side * side
 	vertices.resize(count)
 	normals.resize(count)
 	uvs.resize(count)
+	colors.resize(count)
 
 	var inv_size: float = 1.0 / float(CHUNK_SIZE)
 	# F-339 removed the one-ring apron this function used to sample. Its only consumer was the
@@ -320,10 +443,25 @@ static func build_mesh(
 			var snapped := Vector2(local_x + jitter.x * amp, local_z + jitter.y * amp)
 			local_x = snapped.x
 			local_z = snapped.y
+			var world_x: float = origin_x + local_x
+			var world_z: float = origin_z + local_z
 			var h: float = BiomeMapScript.surface_from_set(
-				origin_x + local_x, origin_z + local_z, noise_set, world_seed, table, shape)
+				world_x, world_z, noise_set, world_seed, table, shape)
 			vertices[v] = Vector3(local_x, h, local_z)
 			uvs[v] = Vector2(local_x * inv_size, local_z * inv_size)
+			# F-379: the vertex's own biome colour, crossfaded exactly as its roughness was.
+			#
+			# The continental height is FREE here — `surface_from_set()` just filled `shape` with it
+			# on its way to the surface, and `continent_from_shape()` only reads what is already
+			# there. Moisture is the one field this costs: a second 3-octave fBm sample per vertex,
+			# the cheapest of the seven the surface already builds, and the only alternative was
+			# widening `BiomeMap.surface_from_set()`'s return so it hands back the two intermediates
+			# — which would put a colour concern into the signature every height query in the game
+			# goes through.
+			colors[v] = blend_ground_albedo(
+				Heightmap.continent_from_shape(shape),
+				BiomeMapScript.moisture_from_set(world_x, world_z, noise_set),
+				palette)
 			v += 1
 
 	var indices: PackedInt32Array = _build_indices(lod)
@@ -350,17 +488,21 @@ static func build_mesh(
 	vertices.resize(count + ring_len)
 	normals.resize(count + ring_len)
 	uvs.resize(count + ring_len)
+	colors.resize(count + ring_len)
 	for i: int in ring_len:
 		var top: int = ring[i]
 		var above: Vector3 = vertices[top]
 		vertices[skirt_base + i] = Vector3(above.x, above.y - SKIRT_DEPTH, above.z)
-		# The wall inherits the normal and UV of the terrain vertex it hangs from, rather than a
-		# true outward-facing normal. That is deliberate: lit as if it were more terrain, the wall
-		# reads as a continuation of the surface at the seam instead of a dark flange under it —
+		# The wall inherits the normal, UV and COLOUR of the terrain vertex it hangs from, rather
+		# than a true outward-facing normal. That is deliberate: lit as if it were more terrain, the
+		# wall reads as a continuation of the surface at the seam instead of a dark flange under it —
 		# which is the entire point, since it is only ever seen through a crack a few centimetres
-		# tall. The UV streaks downward for the same reason.
+		# tall. The UV streaks downward for the same reason, and F-379's colour has to come with
+		# them: a skirt in the old single green under a shore chunk's sand would be a brown seam
+		# drawn along every chunk edge on the beach.
 		normals[skirt_base + i] = normals[top]
 		uvs[skirt_base + i] = uvs[top]
+		colors[skirt_base + i] = colors[top]
 
 	var si: int = indices.size()
 	indices.resize(si + ring_len * 6)
@@ -383,6 +525,13 @@ static func build_mesh(
 	arrays[Mesh.ARRAY_VERTEX] = vertices
 	arrays[Mesh.ARRAY_NORMAL] = normals
 	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	# F-379. Four bytes a vertex in the attribute buffer (Godot stores ARRAY_COLOR as RGBA8), so a
+	# LOD0 chunk carries ~4.8 KB more and a full 289-chunk residency ~1.4 MB — paid once at upload,
+	# never per frame, and it buys the only per-point ground colour the flat-shaded terrain can have
+	# without a texture or a second material. A per-CHUNK uniform would have been free and wrong: a
+	# chunk is 32 m and the biome contour runs straight through it, so the island would have gone
+	# from one green to a checkerboard.
+	arrays[Mesh.ARRAY_COLOR] = colors
 	arrays[Mesh.ARRAY_INDEX] = indices
 
 	var mesh := ArrayMesh.new()

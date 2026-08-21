@@ -30,6 +30,12 @@ extends RefCounted
 ## the same asset ids and nothing crosses the wire. Two peers on different graphics presets see
 ## different numbers of campfire lights and simulate identically.
 
+## F-391: `impact_for_tool()` maps a harvestable's `required_tool` onto a destruction material, so
+## this file needs that enum. Preloaded by path rather than named as `HarvestLibrary`, the same rule
+## every other file here follows — a `class_name` only enters the global script class cache when the
+## editor rescans the project, and `agent godot` is always a headless `--script` run that never does.
+const HARVEST_LIB := preload("res://systems/harvesting/harvest_library.gd")
+
 ## How an asset moves in wind. The enum is the asset-facing vocabulary; `SWAY_PROFILES` holds the
 ## numbers, so retuning the look never touches the classification.
 enum Sway {
@@ -43,6 +49,18 @@ enum Sway {
 	CANOPY,        ## Mature trees. Slow and small — the trunk holds, the crown drifts.
 	TENDRIL,       ## Mire growth. Slow, wrong-looking, unsynchronised with the honest plants.
 	FLOAT,         ## Lily pads. Bobs vertically on water instead of leaning.
+}
+
+## What flies off an asset when something breaks it (F-391). Deliberately a SEPARATE axis from
+## `Emitter`: every one of those is ambient and pooled — it exists because the asset is standing
+## there — while this one is fired from a gameplay event and lasts under two seconds. Harvesting a
+## node used to produce no impact feedback at all, reported from play as "the destruction partials
+## either dont work or look bad as well"; the swap to a depleted stump was the whole of it.
+enum Impact {
+	NONE,
+	WOOD,     ## Trees, saplings, stumps, felled logs: pale splinters and a thin puff of sawdust.
+	STONE,    ## Boulders, rock clusters, ore nodes: hard grey chips and a heavier dust cloud.
+	FOLIAGE,  ## Soft growth — bushes, nettles, sedge: torn leaf, no dust and no hard fragments.
 }
 
 ## A light/particle effect the asset carries. Budgeted at runtime by distance — see
@@ -101,9 +119,46 @@ const EMITTER_PROFILES: Dictionary = {
 	Emitter.GLOW:     {"max_live": 0, "shadow_live": 0, "radius": 0.0},
 	## The most numerous emitter by an order of magnitude — Hollowmere has 113 trees and a
 	## generated forest could have thousands — so the budget is what makes it affordable, not the
-	## per-emitter cost. Twelve at a time, nearest first, no light and no shadow: at that point one
-	## slot is a single small GPUParticles3D and the whole class costs less than two campfires.
-	Emitter.LEAF_FALL: {"max_live": 12, "shadow_live": 0, "radius": 0.0},
+	## per-emitter cost. Nearest first, no light and no shadow: at that point one slot is a single
+	## small GPUParticles3D and the whole class costs less than two campfires.
+	##
+	## F-376 cut this from 12 to 7. Twelve live crowns times `EnvironmentVfx`'s twelve leaves each
+	## put up to 144 leaves in the air around the player, and play reported "way too many spawn".
+	## The per-emitter count came down with it (`EnvironmentVfx.LEAF_FALL_AMOUNT`), so a walk
+	## through the forest now shows about 35 leaves at once rather than 144 — which is what "the
+	## one effect whose job is to be barely noticed" was always supposed to look like.
+	Emitter.LEAF_FALL: {"max_live": 7, "shadow_live": 0, "radius": 0.0},
+}
+
+## What each destruction class throws off, in the same shape `EMITTER_PROFILES` uses: the
+## classification above is the asset-facing vocabulary, the numbers live here, and retuning the look
+## never touches which asset is made of what.
+##
+## `chip_*` is the solid fragment — splinters, stone flakes, torn leaf. `dust_*` is the soft cloud
+## that hangs after it; `dust_amount` 0 means the material does not make one, which is correct for
+## foliage and would read as smoke if it did.
+const IMPACT_PROFILES: Dictionary = {
+	Impact.WOOD: {
+		"chip_amount": 16, "chip_life": 0.9, "chip_size": Vector2(0.075, 0.032),
+		"chip_color": Color(0.60, 0.44, 0.24, 1.0),
+		"chip_speed_min": 1.5, "chip_speed_max": 4.0, "origin_radius": 0.20,
+		"dust_amount": 5, "dust_life": 0.85, "dust_size": Vector2(0.30, 0.30),
+		"dust_color": Color(0.46, 0.38, 0.26, 0.30), "dust_rise": 0.55,
+	},
+	Impact.STONE: {
+		"chip_amount": 20, "chip_life": 0.75, "chip_size": Vector2(0.05, 0.034),
+		"chip_color": Color(0.55, 0.54, 0.51, 1.0),
+		"chip_speed_min": 2.0, "chip_speed_max": 5.2, "origin_radius": 0.18,
+		"dust_amount": 9, "dust_life": 1.25, "dust_size": Vector2(0.42, 0.42),
+		"dust_color": Color(0.62, 0.60, 0.55, 0.38), "dust_rise": 0.75,
+	},
+	Impact.FOLIAGE: {
+		"chip_amount": 12, "chip_life": 1.15, "chip_size": Vector2(0.085, 0.05),
+		"chip_color": Color(0.36, 0.48, 0.20, 1.0),
+		"chip_speed_min": 0.9, "chip_speed_max": 2.4, "origin_radius": 0.26,
+		"dust_amount": 0, "dust_life": 0.0, "dust_size": Vector2(0.2, 0.2),
+		"dust_color": Color(0.0, 0.0, 0.0, 0.0), "dust_rise": 0.0,
+	},
 }
 
 ## Assets whose own mesh is a PLACEHOLDER that the effect replaces, rather than something the
@@ -165,6 +220,36 @@ const EMITTER_RULES: Array = [
 	["furnace_fire", Emitter.FORGE],
 ]
 
+## F-391. Same longest-prefix-first-wins table as everything else here, and deliberately keyed on the
+## asset rather than on the tool that happens to be swinging: the asset is what is being destroyed.
+## `impact_for_tool()` below is the fallback for an asset no rule names yet, so a generated world
+## containing a species this table has never heard of still throws the right kind of debris.
+const IMPACT_RULES: Array = [
+	## Wood. The three authored harvest states first, for the same reason the emitter table orders
+	## them first — `harvest_tree_` would otherwise never be reached past `tree_`.
+	["harvest_tree_", Impact.WOOD],
+	["mire_broadleaf_tree", Impact.WOOD],
+	["tree_", Impact.WOOD],
+	["sapling", Impact.WOOD],
+	["stump_", Impact.WOOD],
+	["fallen_log", Impact.WOOD],
+
+	## Stone.
+	["mire_mossy_boulder", Impact.STONE],
+	["boulder_", Impact.STONE],
+	["rock_cluster", Impact.STONE],
+	["stone_node", Impact.STONE],
+	["iron_node", Impact.STONE],
+	["mire_crystal", Impact.STONE],
+
+	## Soft growth — every batched harvestable in `HarvestLibrary.HARVEST_RULES`.
+	["bush_", Impact.FOLIAGE],
+	["nettle", Impact.FOLIAGE],
+	["sedge_", Impact.FOLIAGE],
+	["bracken", Impact.FOLIAGE],
+	["fern", Impact.FOLIAGE],
+]
+
 
 ## What this asset does. `asset_id` is the bare export name — `grass_tuft_a`, `station_campfire` —
 ## with no kit, path or extension.
@@ -190,6 +275,38 @@ static func sway_profile(sway: Sway) -> Dictionary:
 
 static func emitter_profile(emitter: Emitter) -> Dictionary:
 	return EMITTER_PROFILES.get(emitter, {}) as Dictionary
+
+
+## What this asset throws off when it is broken (F-391).
+static func impact_for(asset_id: String) -> Impact:
+	var id := asset_id.to_lower()
+	for rule: Array in IMPACT_RULES:
+		if id.begins_with(String(rule[0])):
+			return rule[1] as Impact
+	return Impact.NONE
+
+
+## The fallback classification for an asset `IMPACT_RULES` does not name: the tool the harvestable
+## demands already says what it is made of, because that is the whole content of `HarvestLibrary`'s
+## tool axis — an axe is for wood and a pickaxe is for stone. `Tool.NONE` ("anything will do") is
+## what every soft batched prop uses, so it maps to foliage rather than to nothing.
+##
+## Takes the plain int the definition stores rather than the enum, exactly as `HarvestableDef`
+## does — `HARVEST_LIB` is preloaded by path for the usual reason (a `class_name` is invisible to a
+## headless `--script` run until the editor rescans the project, F-093's family).
+static func impact_for_tool(tool_class: int) -> Impact:
+	match tool_class:
+		HARVEST_LIB.Tool.CHOP:
+			return Impact.WOOD
+		HARVEST_LIB.Tool.MINE:
+			return Impact.STONE
+		HARVEST_LIB.Tool.NONE:
+			return Impact.FOLIAGE
+	return Impact.NONE
+
+
+static func impact_profile(impact: Impact) -> Dictionary:
+	return IMPACT_PROFILES.get(impact, {}) as Dictionary
 
 
 ## True when this asset's own mesh is a stand-in the effect takes the place of. See

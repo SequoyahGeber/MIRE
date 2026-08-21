@@ -84,9 +84,51 @@ const SITE_MERGE_DISTANCE: float = 0.35
 ## Emitter counts are scaled by the graphics preset. Low-end machines pay for lights first.
 const BUDGET_BY_PRESET: PackedFloat32Array = [0.4, 0.7, 1.0]
 
+## F-376: how strongly a slot resists being outranked off the site it already holds. `_assign_slots`
+## ranks sites nearest-first; a site a slot is standing on is ranked as if it were 18% closer than it
+## really is, so the live set changes only when a new site is meaningfully nearer, not every time two
+## roughly equidistant props swap order in the sort.
+const SLOT_HOLD_BIAS: float = 0.82
+
+## How many leaves ONE crown has in the air at a time (F-376). Was 12, which times the old budget of
+## twelve live crowns put up to 144 leaves around the player and was reported from play as "way too
+## many spawn". Five over a seven-second lifetime is a leaf letting go of a given tree about every
+## 1.4 seconds — weather rather than confetti.
+const LEAF_FALL_AMOUNT: int = 5
+## Where a leaf lets go, as a fraction of the host prop's measured height, and how deep that band is.
+## A canopy occupies roughly the top third of a tree, so emitting from 0.80 of its height with a
+## band of ±0.13 keeps every leaf inside the foliage it is supposed to be falling out of.
+const LEAF_FALL_CROWN_HEIGHT: float = 0.80
+const LEAF_FALL_CROWN_BAND: float = 0.13
+## How much of the crown's measured half-width leaves actually come from. Under 1.0 on purpose: the
+## prop's bounds include the widest branch, and a leaf appearing at that exact radius is a leaf
+## appearing beside the tree rather than out of it.
+const LEAF_FALL_CROWN_INSET: float = 0.72
+## Used only when a holder cannot answer for ONE prop's bounds — see `_crown_metrics`. A stated
+## fallback, not the fixed 4.8 m F-376 is about: every prop that CAN be measured is measured.
+const LEAF_FALL_DEFAULT_CROWN: Vector2 = Vector2(4.2, 2.4)
+## Bounds the per-prop mesh walk `_crown_metrics` does once per emitter site. A GLB tree arrives as
+## around forty MeshInstance3D nodes; this caps what a malformed holder can cost, it does not
+## describe any prop this project ships.
+const CROWN_MESH_PART_CAP: int = 64
+
+## How many one-shot impact bursts of ONE material may be in flight at once (F-391). Beyond this the
+## oldest is reused, which for a burst that lives under one and a half seconds is inaudible — and it
+## is what keeps a six-player crew all swinging at once from allocating without bound.
+const IMPACT_POOL_SIZE: int = 6
+## Past this the burst is skipped entirely. A burst nobody can see is not worth a restart, and this
+## is also the guard that stops a client being told LATE about a prop harvested minutes ago — see
+## `play_impact` and `systems/harvesting/harvestable.gd`'s own arm delay.
+const IMPACT_MAX_DISTANCE_M: float = 40.0
+
 ## Kept from the first version because the existing checks read them.
 var foliage_mesh_count: int = 0
 var fire_source_count: int = 0
+## F-391: how many one-shot destruction bursts this process has played, and what the last one was.
+## Published for the same reason the emitter censuses are — a one-shot leaves nothing behind to
+## inspect a frame later, so a check has no other way to prove it fired.
+var impact_burst_count: int = 0
+var last_impact: Dictionary = {}
 ## Asset-level counters — the honest measure now that one material serves thousands of copies.
 var sway_asset_count: int = 0
 var emitter_site_count: int = 0
@@ -100,7 +142,18 @@ var _sites: Dictionary = {}
 ## This is the whole node-removed path (F-287): a site is scene-derived state, and nothing
 ## else in this file records which piece of scene it was derived FROM.
 var _site_sources: Dictionary = {}
+## F-376: `AssetVfx.Emitter` -> `PackedVector2Array` of each site's own crown, index for index with
+## `_sites[emitter]` and written/pruned by exactly the same two functions that keep `_site_sources`
+## in step. `x` is how far above the site the prop tops out, `y` is its horizontal half-width, both
+## in world metres. Recorded only for the classes that use it (`_needs_crown`), because a campfire
+## emits from a point and does not care how big the stone ring around it is.
+var _site_crowns: Dictionary = {}
 var _pools: Dictionary = {}
+## F-391: `AssetVfx.Impact` -> `Array` of one-shot burst nodes, and where the round-robin is up to in
+## each. Separate from `_pools` on purpose: those are ambient sites the budget assigns, these are
+## fired by a gameplay event and belong to no site at all.
+var _impact_pools: Dictionary = {}
+var _impact_cursors: Dictionary = {}
 var _effect_root: Node3D = null
 var _time: float = 0.0
 var _budget_timer: float = 0.0
@@ -180,7 +233,11 @@ func _reset() -> void:
 	_effect_root = null
 	_sites.clear()
 	_site_sources.clear()
+	_site_crowns.clear()
 	_pools.clear()
+	# The burst nodes were children of the effect root that just went with the old scene.
+	_impact_pools.clear()
+	_impact_cursors.clear()
 	_dressed_meshes.clear()
 	fire_source_count = 0
 	emitter_site_count = 0
@@ -242,8 +299,10 @@ func _prune_dead_sites() -> void:
 	for emitter: AssetVfx.Emitter in _sites:
 		var sites: Array = _sites[emitter] as Array
 		var sources: PackedInt64Array = _site_sources.get(emitter, PackedInt64Array())
+		var crowns: PackedVector2Array = _site_crowns.get(emitter, PackedVector2Array())
 		var kept: Array = []
 		var kept_sources: PackedInt64Array = PackedInt64Array()
+		var kept_crowns: PackedVector2Array = PackedVector2Array()
 		for index: int in sites.size():
 			# A site with no recorded source cannot be proven dead, so it is kept — losing a real
 			# emitter is worse than holding a ghost, and the two writers are in step by
@@ -254,13 +313,24 @@ func _prune_dead_sites() -> void:
 			kept.append(sites[index])
 			if index < sources.size():
 				kept_sources.append(sources[index])
+			# F-376: the crown array is the third parallel array and is rebuilt by the same walk,
+			# for the same reason the sources are — a site's index is its only key, and an array
+			# that skips a drop the others took would silently hand one tree another's crown.
+			if index < crowns.size():
+				kept_crowns.append(crowns[index])
 		_sites[emitter] = kept
 		_site_sources[emitter] = kept_sources
+		_site_crowns[emitter] = kept_crowns
 		live_sites += kept.size()
 		if _is_fire(emitter):
 			live_fires += kept.size()
 	if dropped == 0:
 		return
+	# F-376: every surviving site's INDEX just moved, and a pool slot records the index it is bound
+	# to rather than the position. Releasing every binding is the honest response — the next
+	# `_assign_slots()` re-derives them from the compacted arrays, which costs one budget tick of
+	# reassignment on the rare tick that actually dropped a site.
+	_unbind_all_slots()
 	# Recounted rather than decremented: these are published counters (`tools/
 	# environment_vfx_check.gd` and the Hollowmere check both read them), and a census that can
 	# only ever be re-derived from the arrays should be, not tracked by arithmetic on both sides.
@@ -666,6 +736,13 @@ func _register_emitter(
 	var source: Node = _emitter_host(node)
 	var sites: Array = _sites.get_or_add(emitter, [] as Array) as Array
 	var sources: PackedInt64Array = _site_sources.get_or_add(emitter, PackedInt64Array())
+	var crowns: PackedVector2Array = _site_crowns.get_or_add(emitter, PackedVector2Array())
+	# F-376: measured ONCE per prop here rather than per budget tick in `_assign_slots`, because it
+	# is a property of the asset standing there and does not change while it stands. Vector2.ZERO
+	# from a holder that cannot answer for one prop; `_apply_site_shape` reads that as "use the
+	# stated fallback".
+	var crown := _crown_metrics(node, source, not published.is_empty()) \
+		if _needs_crown(emitter) else Vector2.ZERO
 	for position: Vector3 in placements:
 		var duplicate: bool = false
 		for existing: Vector3 in sites:
@@ -676,6 +753,7 @@ func _register_emitter(
 			continue
 		sites.append(position)
 		sources.append(source.get_instance_id())
+		crowns.append(crown)
 		emitter_site_count += 1
 		if _is_fire(emitter):
 			fire_source_count += 1
@@ -684,6 +762,7 @@ func _register_emitter(
 	# copy, and appending to it stores nothing (the same trap `_check_placement_space` documents in
 	# `tools/environment_vfx_hollowmere_check.gd`).
 	_site_sources[emitter] = sources
+	_site_crowns[emitter] = crowns
 
 
 ## The node that IS this prop: the nearest ancestor carrying the asset id, or the node itself when
@@ -724,19 +803,32 @@ func _budget_scale() -> float:
 
 ## Point the fixed pool at the nearest sites. This is the whole scalability story: the pool is
 ## sized from the budget, never from the world, so a hundred mire crystals cost what eight do.
+##
+## ## Why assignment is STABLE (F-376)
+##
+## The first version bound pool slot `i` to `ranked[i]` on every budget tick. That is correct about
+## *which* sites are live and wrong about *which slot serves which*: walking at 4.4 m/s past a stand
+## of trees reorders roughly-equidistant sites several times a second, and every reorder moved a live
+## `GPUParticles3D` — with every leaf currently mid-fall inside it — to a different tree in one
+## frame. Reported from play as leaves that "bug out when you start walking/running", and it got
+## worse the faster you moved, because faster movement reorders the sort more often.
+##
+## A slot now keeps the site it already holds for as long as that site stays in the live set, and
+## only a slot whose site genuinely dropped out is re-pointed. `SLOT_HOLD_BIAS` adds hysteresis so a
+## site sitting on the boundary does not flip in and out on sub-metre movement. `_restart()` — which
+## clears the in-flight particles rather than dragging them — is then reserved for the rare real
+## reassignment it was always the right answer to.
 func _assign_slots() -> void:
 	if _sites.is_empty():
 		return
-	var scene: Node = get_tree().current_scene
-	if scene == null:
+	if not _ensure_effect_root():
 		return
-	if not is_instance_valid(_effect_root):
-		_effect_root = Node3D.new()
-		_effect_root.name = "EnvironmentVfxEffects"
-		scene.add_child(_effect_root)
 
 	var scale := _budget_scale()
 	var viewpoint := _viewpoint()
+	# F-376: read once per pass rather than per slot — it is a property of the world clock, not of
+	# any one tree.
+	var leaves_allowed := _leaf_fall_allowed()
 	for emitter: AssetVfx.Emitter in _sites:
 		var sites: Array = _sites[emitter] as Array
 		var profile := AssetVfx.emitter_profile(emitter)
@@ -744,30 +836,259 @@ func _assign_slots() -> void:
 			maxi(1, int(round(float(profile.get("max_live", 4)) * scale))), sites.size())
 		var shadows: int = int(round(float(profile.get("shadow_live", 0)) * scale))
 
-		var ranked := sites.duplicate() as Array
-		ranked.sort_custom(func(a: Vector3, b: Vector3) -> bool:
-			return a.distance_squared_to(viewpoint) < b.distance_squared_to(viewpoint))
-
 		var pool: Array = _pools.get_or_add(emitter, [] as Array) as Array
 		while pool.size() < live:
 			pool.append(_make_effect(emitter))
-		for index: int in pool.size():
-			var slot: Dictionary = pool[index]
+
+		# Which site each slot is standing on right now. Read BEFORE the ranking, because holding a
+		# site is what earns it the hysteresis bonus in that ranking.
+		var held: Dictionary = {}
+		for slot_index: int in pool.size():
+			var slot: Dictionary = pool[slot_index]
+			if not bool(slot.get("bound", false)):
+				continue
+			var site_index: int = int(slot.get("site", -1))
+			if site_index >= 0 and site_index < sites.size():
+				held[site_index] = slot_index
+
+		var ranked: Array[int] = []
+		for site_index: int in sites.size():
+			ranked.append(site_index)
+		var hold_bias_sq := SLOT_HOLD_BIAS * SLOT_HOLD_BIAS
+		ranked.sort_custom(func(a: int, b: int) -> bool:
+			var distance_a: float = (sites[a] as Vector3).distance_squared_to(viewpoint)
+			var distance_b: float = (sites[b] as Vector3).distance_squared_to(viewpoint)
+			if held.has(a):
+				distance_a *= hold_bias_sq
+			if held.has(b):
+				distance_b *= hold_bias_sq
+			return distance_a < distance_b)
+
+		# The live set, and each member's rank inside it. The rank used to fall out of the slot
+		# index — it cannot any more, now that a slot keeps its site — and shadows are assigned from
+		# it, so it is carried explicitly.
+		var target_rank: Dictionary = {}
+		for rank: int in mini(live, ranked.size()):
+			target_rank[ranked[rank]] = rank
+
+		# Pass 1: every slot already holding a live site keeps it, and nothing about it moves.
+		var free_slots: PackedInt32Array = PackedInt32Array()
+		var claimed: Dictionary = {}
+		for slot_index: int in pool.size():
+			var slot: Dictionary = pool[slot_index]
+			var site_index: int = int(slot.get("site", -1))
+			if bool(slot.get("bound", false)) and target_rank.has(site_index) \
+					and not claimed.has(site_index):
+				claimed[site_index] = true
+				continue
+			free_slots.append(slot_index)
+
+		# Pass 2: the live sites nobody is standing on go to the slots that were released. Iterating
+		# `target_rank` walks the live set in rank order, so the nearest unserved site is served
+		# first when there are fewer free slots than the budget would like.
+		var pending: PackedInt32Array = PackedInt32Array()
+		for site_index: int in target_rank:
+			if not claimed.has(site_index):
+				pending.append(site_index)
+		for offset: int in free_slots.size():
+			var slot: Dictionary = pool[free_slots[offset]]
 			var node := slot["node"] as Node3D
 			if not is_instance_valid(node):
 				continue
-			if index >= live:
-				node.visible = false
+			if offset >= pending.size():
+				slot["bound"] = false
+				slot["site"] = -1
 				continue
-			var target: Vector3 = ranked[index]
-			node.visible = true
-			if node.global_position.distance_squared_to(target) > 0.01:
-				node.global_position = target
-				_restart(node)
+			var site_index: int = pending[offset]
+			slot["bound"] = true
+			slot["site"] = site_index
+			node.global_position = sites[site_index] as Vector3
+			_apply_site_shape(emitter, node, site_index)
+			# The particles in the air belonged to the site this slot just left. Restarting is what
+			# stops them being dragged across the world to the new one (F-376).
+			_restart(node)
+
+		# Pass 3: presentation for every slot, bound or not.
+		for slot_index: int in pool.size():
+			var slot: Dictionary = pool[slot_index]
+			var node := slot["node"] as Node3D
+			if not is_instance_valid(node):
+				continue
+			var bound := bool(slot.get("bound", false))
+			node.visible = bound
+			# F-376: `emitting`, not `visible`. Stopping emission lets the leaves already mid-fall
+			# at dusk finish falling; hiding the node would snap them out of the air.
+			_set_emitting(
+				node, bound and (emitter != AssetVfx.Emitter.LEAF_FALL or leaves_allowed))
 			var light := slot["light"] as OmniLight3D
 			if light != null and is_instance_valid(light):
-				light.shadow_enabled = index < shadows
+				var rank: int = int(target_rank.get(int(slot.get("site", -1)), shadows))
+				light.shadow_enabled = bound and rank < shadows
 		_pools[emitter] = pool
+
+
+## The container every pooled effect and every impact burst hangs under. Split out of
+## `_assign_slots` because F-391's one-shot bursts need it too, and a world can hold destructible
+## props without holding a single ambient emitter site.
+func _ensure_effect_root() -> bool:
+	if is_instance_valid(_effect_root):
+		return true
+	var scene: Node = get_tree().current_scene
+	if scene == null:
+		return false
+	_effect_root = Node3D.new()
+	_effect_root.name = "EnvironmentVfxEffects"
+	scene.add_child(_effect_root)
+	return true
+
+
+## Release every slot's site binding. Called when the site arrays are re-indexed under the pools
+## (`_prune_dead_sites`), which is the one event that makes a recorded index mean a different site.
+func _unbind_all_slots() -> void:
+	for emitter: AssetVfx.Emitter in _pools:
+		for slot: Dictionary in _pools[emitter] as Array:
+			slot["bound"] = false
+			slot["site"] = -1
+
+
+## Which emitter classes measure the prop they stand on. Only LEAF_FALL does: every other class
+## emits from a point, and how big the asset around that point is changes nothing about it.
+func _needs_crown(emitter: AssetVfx.Emitter) -> bool:
+	return emitter == AssetVfx.Emitter.LEAF_FALL
+
+
+## Do leaves fall right now? (F-376.)
+##
+## Nothing used to ask. Leaves kept coming down in full darkness lit by nothing, which is what made
+## them read as a bug rather than as weather — reported from play as "also visible at night when they
+## shouldnt be". `DayNight` owns the clock and its thresholds are exported, so this reads them rather
+## than hardcoding dawn and dusk a second time; a harness with no DayNight autoload, or one whose
+## stand-in does not carry the properties, keeps the old always-on behaviour rather than silently
+## going dark.
+func _leaf_fall_allowed() -> bool:
+	var day_night: Node = get_node_or_null(^"/root/DayNight")
+	if day_night == null:
+		return true
+	var raw_time: Variant = day_night.get(&"time_of_day")
+	var raw_dawn: Variant = day_night.get(&"day_started_at")
+	var raw_dusk: Variant = day_night.get(&"night_started_at")
+	if not (raw_time is float and raw_dawn is float and raw_dusk is float):
+		return true
+	var dawn: float = raw_dawn
+	var dusk: float = raw_dusk
+	if dusk <= dawn:
+		return true
+	var fraction: float = raw_time
+	return fraction >= dawn and fraction < dusk
+
+
+## Per-SITE geometry for a slot that has just taken a new site. Only LEAF_FALL has any.
+func _apply_site_shape(
+	emitter: AssetVfx.Emitter, node: Node3D, site_index: int
+) -> void:
+	if emitter != AssetVfx.Emitter.LEAF_FALL:
+		return
+	var crowns: PackedVector2Array = _site_crowns.get(emitter, PackedVector2Array())
+	var crown := LEAF_FALL_DEFAULT_CROWN
+	if site_index >= 0 and site_index < crowns.size() and crowns[site_index].x > 0.01:
+		crown = crowns[site_index]
+	_shape_leaf_fall(node.get_node_or_null(^"Leaves") as GPUParticles3D, crown)
+
+
+## Put the leaf emitter INSIDE the crown of the tree it is standing on (F-376).
+##
+## The first version passed one hardcoded height of 4.8 m for every species — `_leaf_fall(12, 7.0,
+## 4.8)` — and its own header called that "a compromise, and a forgiving one, because a leaf that
+## starts a metre inside the foliage simply appears from behind it". That reasoning holds only while
+## the number UNDER-estimates the crown. Against the shipped trees it over-estimates: play reported
+## leaves that "spawn above the trees", because a canopy topping out below 4.8 m was shedding from
+## open sky. The height is now measured from the host prop's own mesh bounds, so it is right for a
+## sapling, right for a mature oak, and right again the moment F-370 makes the trees taller —
+## derived here rather than waiting on that finding to land.
+func _shape_leaf_fall(leaves: GPUParticles3D, crown: Vector2) -> void:
+	if leaves == null or not is_instance_valid(leaves):
+		return
+	var height: float = maxf(crown.x, 0.5)
+	var radius: float = maxf(crown.y, 0.35)
+	var emit_y: float = height * LEAF_FALL_CROWN_HEIGHT
+	var band: float = maxf(height * LEAF_FALL_CROWN_BAND, 0.15)
+	leaves.position.y = emit_y
+	var process := leaves.process_material as ParticleProcessMaterial
+	if process != null:
+		process.emission_box_extents = Vector3(
+			radius * LEAF_FALL_CROWN_INSET, band, radius * LEAF_FALL_CROWN_INSET)
+	# Set explicitly and generously: particles that travel outside their own AABB are culled as a
+	# group the moment the emitter's box leaves the frustum, which for something falling `emit_y`
+	# metres and drifting sideways means leaves winking out while you are looking straight at them.
+	var span: float = radius + 3.0
+	leaves.visibility_aabb = AABB(
+		Vector3(-span, -emit_y - 1.5, -span), Vector3(span * 2.0, emit_y + 3.0, span * 2.0))
+
+
+## The prop's own crown, as (height above the site, horizontal half-width), both in world metres.
+## `Vector2.ZERO` when this holder cannot answer for ONE prop — the caller then falls back to
+## `LEAF_FALL_DEFAULT_CROWN`, which is a stated guess rather than a silent one.
+##
+## Three cases, because the three ways a generator can emit a prop answer differently:
+##
+## * A **MultiMesh batch** draws every copy from one mesh, so that mesh's LOCAL AABB is exactly one
+##   prop's bounds. Per-instance transforms are not readable here — under `--headless`, which is
+##   every way an agent can verify anything (F-077), the RenderingServer buffer is empty and every
+##   read returns identity — so the batch node's own basis is the only scale available, and it is
+##   identity for every generator in this project.
+## * A **loose prop** (every harvestable tree, and everything `world/gen/resource_scatter_field.gd`
+##   promotes to its own node) is a holder with mesh parts under it. Merging their world-space
+##   bounds and subtracting the site origin gives the true height including the 0.85-1.2 placement
+##   scale the scatter def applies.
+## * A **merged multi-asset bake** (F-203's `EMITTER_META` holder) has a mesh whose AABB spans the
+##   whole chunk bucket — several different assets and the terrain relief under them. There is no
+##   per-prop answer to extract from that, so it declines rather than reporting a 40 m crown.
+func _crown_metrics(node: GeometryInstance3D, host: Node, from_published: bool) -> Vector2:
+	if from_published:
+		var batch := node as MultiMeshInstance3D
+		if batch == null or batch.multimesh == null or batch.multimesh.mesh == null:
+			return Vector2.ZERO
+		var local_bounds: AABB = Transform3D(node.global_transform.basis, Vector3.ZERO) \
+			* batch.multimesh.mesh.get_aabb()
+		return _crown_from_bounds(local_bounds, 0.0)
+
+	var host_3d := host as Node3D
+	if host_3d == null or not host_3d.is_inside_tree():
+		return Vector2.ZERO
+	var bounds := AABB()
+	var found: bool = false
+	for part: MeshInstance3D in _mesh_parts(host_3d):
+		var mesh: Mesh = part.mesh
+		if mesh == null:
+			continue
+		var part_bounds: AABB = part.global_transform * mesh.get_aabb()
+		bounds = part_bounds if not found else bounds.merge(part_bounds)
+		found = true
+	if not found:
+		return Vector2.ZERO
+	return _crown_from_bounds(bounds, host_3d.global_position.y)
+
+
+func _crown_from_bounds(bounds: AABB, origin_y: float) -> Vector2:
+	var top: float = bounds.position.y + bounds.size.y - origin_y
+	if top <= 0.25:
+		return Vector2.ZERO
+	return Vector2(top, maxf(bounds.size.x, bounds.size.z) * 0.5)
+
+
+## Every MeshInstance3D under a prop's holder, capped at `CROWN_MESH_PART_CAP`. Runs once per
+## emitter site at load, never per frame.
+func _mesh_parts(host: Node3D) -> Array[MeshInstance3D]:
+	var parts: Array[MeshInstance3D] = []
+	var queue: Array[Node] = [host]
+	while not queue.is_empty() and parts.size() < CROWN_MESH_PART_CAP:
+		var cursor: Node = queue.pop_back()
+		var mesh_instance := cursor as MeshInstance3D
+		if mesh_instance != null and mesh_instance.is_inside_tree():
+			parts.append(mesh_instance)
+		for child: Node in cursor.get_children():
+			queue.append(child)
+	return parts
 
 
 ## Where "nearest" is measured from. The camera in a running game; the origin when there is no
@@ -786,6 +1107,15 @@ func _restart(node: Node3D) -> void:
 	for child: Node in node.get_children():
 		if child is GPUParticles3D:
 			(child as GPUParticles3D).restart()
+
+
+## Switch a pooled effect's particle systems on or off WITHOUT touching its visibility. A stopped
+## emitter keeps whatever is already in the air until it dies of its own lifetime, which is the
+## difference between a fade and a pop — see the day gate in `_assign_slots` (F-376).
+func _set_emitting(node: Node3D, on: bool) -> void:
+	for child: Node in node.get_children():
+		if child is GPUParticles3D:
+			(child as GPUParticles3D).emitting = on
 
 
 func _animate_lights() -> void:
@@ -814,7 +1144,9 @@ func _animate_lights() -> void:
 
 ## Build one pooled effect for an emitter class. Called at most `max_live` times per class for the
 ## whole run, however large the world is — the pool is reassigned to new sites as the player moves
-## rather than grown.
+## rather than grown. `site`/`bound` are how F-376 makes that reassignment stable: a slot records
+## WHICH site it is serving, so `_assign_slots` can leave it there instead of re-deriving a binding
+## from the slot's position in the distance sort every quarter second.
 func _make_effect(emitter: AssetVfx.Emitter) -> Dictionary:
 	var profile := AssetVfx.emitter_profile(emitter)
 	var node := Node3D.new()
@@ -852,10 +1184,12 @@ func _make_effect(emitter: AssetVfx.Emitter) -> Dictionary:
 		AssetVfx.Emitter.LEAF_FALL:
 			# The one effect whose job is to be barely noticed: a handful of leaves letting go of a
 			# crown and taking six seconds to reach the ground. No light, no shadow, no smoke.
-			node.add_child(_leaf_fall(12, 7.0, 4.8))
+			# The emitter's HEIGHT is not decided here any more — `_apply_site_shape` measures it
+			# from whatever prop the slot is standing on (F-376).
+			node.add_child(_leaf_fall(LEAF_FALL_AMOUNT, 7.0))
 	if light != null:
 		node.add_child(light)
-	return {"node": node, "light": light, "energy": energy}
+	return {"node": node, "light": light, "energy": energy, "site": -1, "bound": false}
 
 
 func _flame(amount: int, lifetime: float, size: Vector2, speed_min: float, speed_max: float,
@@ -920,17 +1254,18 @@ func _motes(amount: int, lifetime: float, tint: Color, rise: float, radius: floa
 
 ## Leaves letting go of a canopy (F-118). Emitted from a slab the width of a crown and dropped
 ## slowly, with sideways gravity so they slip rather than plummet — a leaf that falls straight down
-## reads as a rock. `height` is where the crown starts; one number for every species is a
-## compromise, and a forgiving one, because a leaf that starts a metre inside the foliage simply
-## appears from behind it.
+## reads as a rock.
 ##
-## The visibility AABB is set explicitly and generously: the default in `_make_particles` is 5 m
-## tall, and particles that travel outside their own AABB are culled as a group the moment the
-## emitter's box leaves the frustum — which for something falling 6 m and drifting 4 m sideways
-## means leaves winking out while you are looking straight at them.
-func _leaf_fall(amount: int, lifetime: float, height: float) -> GPUParticles3D:
+## Where the slab SITS is no longer decided here. F-376 replaced the single hardcoded height with a
+## per-site measurement (`_shape_leaf_fall`, called from `_apply_site_shape` every time a slot takes
+## a new tree); this only builds the system, seeded with the stated fallback so a slot is never
+## degenerate between construction and its first binding.
+func _leaf_fall(amount: int, lifetime: float) -> GPUParticles3D:
 	var particles := _make_particles(amount, lifetime, Vector2(0.15, 0.21),
 		Color(0.78, 0.63, 0.22, 0.95), Color(0.45, 0.37, 0.15, 0.0), 3)
+	# Named so `_apply_site_shape` can find it again — every other emitter's particle children are
+	# write-once, this one is re-shaped per site.
+	particles.name = "Leaves"
 	var process := particles.process_material as ParticleProcessMaterial
 	process.direction = Vector3.DOWN
 	process.spread = 30.0
@@ -947,11 +1282,7 @@ func _leaf_fall(amount: int, lifetime: float, height: float) -> GPUParticles3D:
 	process.scale_min = 0.7
 	process.scale_max = 1.25
 	process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	process.emission_box_extents = Vector3(2.6, 0.7, 2.6)
-	particles.position.y = height
-	particles.visibility_aabb = AABB(
-		Vector3(-5.0, -height - 2.0, -5.0), Vector3(10.0, height + 4.0, 10.0)
-	)
+	_shape_leaf_fall(particles, LEAF_FALL_DEFAULT_CROWN)
 	return particles
 
 
@@ -994,6 +1325,184 @@ func _make_particles(amount: int, lifetime: float, size: Vector2, start_color: C
 
 
 # ---------------------------------------------------------------------------------------------
+# Impacts (F-391)
+# ---------------------------------------------------------------------------------------------
+
+## Play a one-shot destruction burst at [param world_position].
+##
+## ## AUTHORITY: none
+##
+## Exactly like everything else in this file. The host alone decides whether a harvestable actually
+## broke; this only draws the consequence, and every peer draws it from its own copy of the
+## already-replicated health value (see `systems/harvesting/harvestable.gd`). Nothing here is sent,
+## requested or trusted across the wire — no new RPC, and therefore no `NetVersion.PROTOCOL_VERSION`
+## bump.
+##
+## ## Bound to the ASSET
+##
+## The caller passes the material class `AssetVfxLibrary` resolved from the asset id, never a scene,
+## a map or a node name — the same contract every ambient effect here already honours, and for the
+## same reason: release worlds are procedurally generated, so a world containing a boulder gets stone
+## chips off it with no map edit and no code change (F-391, F-097's rule applied to an event).
+##
+## [param intensity] is one swing at 1.0; the depleting hit passes more and gets the bigger burst.
+func play_impact(impact: AssetVfx.Impact, world_position: Vector3, intensity: float = 1.0) -> void:
+	if impact == AssetVfx.Impact.NONE or intensity <= 0.0:
+		return
+	# A burst nobody can see is not worth a restart. This is also the second half of the guard on a
+	# client being told LATE about a prop harvested minutes ago: interest management admits a prop at
+	# `NetConfig.INTEREST_ENTER_RADIUS_M` (120 m), so the catch-up delta that drops its health to
+	# zero always lands far outside this radius and never bursts. `Harvestable`'s own arm delay
+	# covers the other route in, a prop whose first sync arrives moments after it is built.
+	if world_position.distance_squared_to(_viewpoint()) \
+			> IMPACT_MAX_DISTANCE_M * IMPACT_MAX_DISTANCE_M:
+		return
+	if not _ensure_effect_root():
+		return
+	var burst := _impact_slot(impact)
+	if burst == null:
+		return
+	burst.global_position = world_position
+	burst.visible = true
+	# `amount_ratio` rather than `amount`: changing the count reallocates the particle buffer, and a
+	# burst that reallocates on every swing is a hitch on exactly the machines this game targets.
+	# The system is built at the material's full count and a normal swing simply uses less of it.
+	var ratio: float = clampf(intensity * 0.42, 0.2, 1.0)
+	for child: Node in burst.get_children():
+		var particles := child as GPUParticles3D
+		if particles == null:
+			continue
+		particles.amount_ratio = ratio
+		particles.restart()
+	impact_burst_count += 1
+	last_impact = {
+		"impact": int(impact),
+		"position": world_position,
+		"intensity": intensity,
+		"amount_ratio": ratio,
+	}
+
+
+## The next burst node for a material, building the pool up to `IMPACT_POOL_SIZE` and then reusing
+## it round-robin. Oldest-first reuse is correct for something that lives under 1.5 s: by the time
+## the cursor comes back around, the burst it is stealing has finished.
+func _impact_slot(impact: AssetVfx.Impact) -> Node3D:
+	var pool: Array = _impact_pools.get_or_add(impact, [] as Array) as Array
+	if pool.size() < IMPACT_POOL_SIZE:
+		var built := _make_impact(impact, pool.size())
+		if built == null:
+			return null
+		pool.append(built)
+		_impact_pools[impact] = pool
+		return built
+	var cursor: int = int(_impact_cursors.get(impact, 0)) % pool.size()
+	_impact_cursors[impact] = (cursor + 1) % pool.size()
+	var node := pool[cursor] as Node3D
+	return node if is_instance_valid(node) else null
+
+
+func _make_impact(impact: AssetVfx.Impact, index: int) -> Node3D:
+	var profile := AssetVfx.impact_profile(impact)
+	if profile.is_empty():
+		return null
+	var node := Node3D.new()
+	node.name = "Impact%d_%d" % [int(impact), index]
+	node.set_meta(VFX_META, true)
+	node.visible = false
+	_effect_root.add_child(node)
+	node.add_child(_chips(profile))
+	if int(profile.get("dust_amount", 0)) > 0:
+		node.add_child(_dust(profile))
+	return node
+
+
+## The solid fragments — splinters, stone flakes, torn leaf.
+##
+## Drawn with the leaf shape (`particle_shape` 3) rather than the spark shape, and the reason is
+## worth stating: shape 1 is a soft round blob that `particle_billboard.gdshader` self-illuminates at
+## 1.4x, which is right for an ember flying off a fire and completely wrong for a wood chip. Shape 3
+## is unlit and tapered at both ends, so at three centimetres across it reads as a sliver of the
+## thing you just hit. No shader change was needed for this, which is why none was made.
+func _chips(profile: Dictionary) -> GPUParticles3D:
+	var tint: Color = profile.get("chip_color", Color(0.6, 0.45, 0.25, 1.0))
+	var particles := _make_particles(
+		int(profile.get("chip_amount", 14)), float(profile.get("chip_life", 0.9)),
+		profile.get("chip_size", Vector2(0.07, 0.035)) as Vector2,
+		tint, Color(tint.r * 0.7, tint.g * 0.7, tint.b * 0.7, 0.0), 3)
+	particles.name = "Chips"
+	# One burst, all at once, and then nothing until the next swing.
+	particles.one_shot = true
+	particles.explosiveness = 1.0
+	particles.emitting = false
+	var process := particles.process_material as ParticleProcessMaterial
+	process.direction = Vector3.UP
+	# Near-hemispherical: a struck surface throws fragments outward, not up a chimney.
+	process.spread = 78.0
+	process.initial_velocity_min = float(profile.get("chip_speed_min", 1.5))
+	process.initial_velocity_max = float(profile.get("chip_speed_max", 4.0))
+	# Real gravity, unlike every ambient emitter in this file. A chip is a solid fragment thrown off
+	# a surface and it has to arc and drop to read as one; the drifting values that make smoke and
+	# leaves work would make this look like ash.
+	process.gravity = Vector3(0.0, -9.2, 0.0)
+	process.angular_velocity_min = -520.0
+	process.angular_velocity_max = 520.0
+	process.angle_min = -180.0
+	process.angle_max = 180.0
+	process.scale_min = 0.6
+	process.scale_max = 1.25
+	process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	process.emission_sphere_radius = float(profile.get("origin_radius", 0.2))
+	particles.visibility_aabb = AABB(Vector3(-2.5, -3.0, -2.5), Vector3(5.0, 6.0, 5.0))
+	return particles
+
+
+## The soft cloud that hangs after the fragments have fallen — sawdust off an axe, rock powder off a
+## pickaxe. `dust_amount` 0 means the material does not make one; foliage does not, and a puff of
+## dust off a nettle would read as smoke.
+func _dust(profile: Dictionary) -> GPUParticles3D:
+	var tint: Color = profile.get("dust_color", Color(0.5, 0.45, 0.35, 0.3))
+	var particles := _make_particles(
+		int(profile.get("dust_amount", 6)), float(profile.get("dust_life", 1.0)),
+		profile.get("dust_size", Vector2(0.32, 0.32)) as Vector2,
+		tint, Color(tint.r, tint.g, tint.b, 0.0), 2)
+	particles.name = "Dust"
+	particles.one_shot = true
+	particles.explosiveness = 0.85
+	particles.emitting = false
+	var rise: float = float(profile.get("dust_rise", 0.6))
+	var process := particles.process_material as ParticleProcessMaterial
+	process.direction = Vector3.UP
+	process.spread = 60.0
+	process.initial_velocity_min = rise * 0.4
+	process.initial_velocity_max = rise
+	# Barely any fall: dust hangs, and the slight lateral term keeps the cloud from being a sphere.
+	process.gravity = Vector3(0.05, -0.35, 0.04)
+	# Grows as it disperses, which is most of what separates dust from a puff of steam.
+	process.scale_min = 0.5
+	process.scale_max = 1.0
+	process.scale_curve = _dust_growth_curve()
+	process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	process.emission_sphere_radius = float(profile.get("origin_radius", 0.2)) * 1.4
+	particles.visibility_aabb = AABB(Vector3(-2.0, -1.0, -2.0), Vector3(4.0, 4.0, 4.0))
+	return particles
+
+
+## Built per dust system rather than cached on the script. It is immutable content and one shared
+## copy would be tidier, but a `static var` on an autoload holds it for the life of the PROCESS, and
+## a resource alive at exit is a line in the engine's shutdown report — noise that a reviewer then
+## has to prove is harmless. At most `IMPACT_POOL_SIZE` burst nodes per material carry one, they are
+## a handful of floats each, and they die with the scene like everything else under `_effect_root`.
+func _dust_growth_curve() -> CurveTexture:
+	var curve := Curve.new()
+	curve.add_point(Vector2(0.0, 0.35))
+	curve.add_point(Vector2(0.35, 1.0))
+	curve.add_point(Vector2(1.0, 1.35))
+	var texture := CurveTexture.new()
+	texture.curve = curve
+	return texture
+
+
+# ---------------------------------------------------------------------------------------------
 # Introspection
 # ---------------------------------------------------------------------------------------------
 
@@ -1027,6 +1536,35 @@ func pool_counts() -> Dictionary:
 	for emitter: AssetVfx.Emitter in _pools:
 		counts[emitter] = (_pools[emitter] as Array).size()
 	return counts
+
+
+## Which site index each slot of one emitter class is bound to, in slot order; -1 for an idle slot.
+##
+## Exists for `tools/harvest_vfx_check.gd` (F-376). Slot STABILITY is the fix for the leaves that
+## "bug out when you start walking" and only the binding shows it: a count is identical whether a
+## slot kept its tree or was re-pointed at a different one every quarter second.
+func slot_sites(emitter: AssetVfx.Emitter) -> PackedInt32Array:
+	var bound := PackedInt32Array()
+	for slot: Dictionary in _pools.get(emitter, [] as Array) as Array:
+		bound.append(int(slot.get("site", -1)) if bool(slot.get("bound", false)) else -1)
+	return bound
+
+
+## The pooled effect nodes for one emitter class, in slot order. Also for the checks (F-376): the
+## day gate and the measured crown are both properties of the NODE, and no census exposes either.
+func effect_nodes(emitter: AssetVfx.Emitter) -> Array[Node3D]:
+	var nodes: Array[Node3D] = []
+	for slot: Dictionary in _pools.get(emitter, [] as Array) as Array:
+		var node := slot["node"] as Node3D
+		if is_instance_valid(node):
+			nodes.append(node)
+	return nodes
+
+
+## The crown each site of one emitter class was measured at, index for index with
+## `site_positions()`. `Vector2.ZERO` marks a site that fell back to `LEAF_FALL_DEFAULT_CROWN`.
+func site_crowns(emitter: AssetVfx.Emitter) -> PackedVector2Array:
+	return (_site_crowns.get(emitter, PackedVector2Array()) as PackedVector2Array).duplicate()
 
 
 ## How many effect nodes are switched on right now.

@@ -14,6 +14,11 @@ extends Node
 ## NETWORK AUTHORITY (docs/ARCHITECTURE.md §2.2, "VFX, audio, camera, UI" row): none. Every peer
 ## applies its own settings locally; nothing here is ever sent over the wire.
 ##
+## Since F-386 this also owns the preview seam both settings screens commit through —
+## `hold_persistence()` / `release_persistence()` / `capture_state()` / `apply_state()` /
+## `default_state()`, documented at their own section below. It changes nothing for any other caller:
+## a setter invoked from gameplay code still applies and persists on the spot.
+##
 ## Registered last in `project.godot`'s `[autoload]` list (D-021 append-only) — everything it reads
 ## at `_ready()` (`GraphicsQuality`, `AudioServer`, `InputMap`) is either an engine singleton or an
 ## autoload already earlier in that list, so append-only ordering is never a problem here. Consumers
@@ -64,6 +69,24 @@ const MAX_SENSITIVITY: float = 1.0
 const MIN_GAMEPAD_SENSITIVITY: float = 30.0
 const MAX_GAMEPAD_SENSITIVITY: float = 720.0
 
+## Every value's factory default, in one place. These were three copies before F-386 — the field
+## initialisers below, `_load()`'s `data.get()` fallbacks, and `core/save/settings_save.gd`'s
+## migration backfill — and the settings screens' "restore defaults" button had no way to ask for
+## them at all, which is why they never had one. `_load()` and `default_state()` both read from here
+## now; `settings_save.gd` keeps its own copy because a save-file migration has to be able to run
+## without this autoload, and `tools/settings_check.gd` asserts the two agree.
+const DEFAULTS: Dictionary = {
+	&"graphics_preset": 2,
+	&"master_volume": 1.0,
+	&"music_volume": 1.0,
+	&"sfx_volume": 1.0,
+	&"look_sensitivity": 0.12,
+	&"gamepad_look_sensitivity": 180.0,
+	&"invert_y": false,
+	&"fov_degrees": 75.0,
+	&"reduce_camera_motion": false,
+}
+
 ## Fires after any setting changes and is applied — `PlayerCamera` and `SettingsMenu` both refresh
 ## from this rather than each setter having its own bespoke callback.
 signal settings_changed
@@ -71,6 +94,16 @@ signal settings_changed
 ## Override for `tools/settings_check.gd` only — production code never sets this, so it always
 ## reads `SettingsSave.SAVE_PATH` and a check run never touches a real player's settings file.
 var save_path: String = SETTINGS_SAVE.SAVE_PATH
+
+## F-386: how many settings surfaces are currently previewing. While this is above zero every setter
+## still applies its value for real — the player must see FOV and sensitivity change as they drag —
+## but `_save()` records the intent instead of writing, and the open screen decides on Save or Cancel
+## whether that intent ever reaches disk. Counted rather than a bool only so a stray double
+## `hold_persistence()` cannot strand the service in preview mode; D-032's one-cursor-UI interlock
+## means two screens are never actually open at once.
+var _persistence_holds: int = 0
+## True when a setter wanted to write while held. Cleared by either outcome of `release_persistence`.
+var _persistence_pending: bool = false
 
 var _graphics_preset: int = 2
 var _master_volume: float = 1.0
@@ -292,6 +325,124 @@ func _apply_keybind_joypad(action: StringName, button_index: int) -> void:
 	InputMap.action_add_event(action, new_event)
 
 
+# ── F-386: preview, then commit or discard ────────────────────────────────────────────────────────
+#
+# Before this, every control in both settings screens wrote straight through to a setter that applied
+# AND persisted on the spot: no Save, no Cancel, no way back to what you had. Reported from play
+# (2026-08-20, Sequoyah) as "theres no 'save changes' button in the settings menu to confirm changes",
+# and it is worse than it sounds combined with F-385's missing readouts — a FOV handle knocked by
+# accident was unrecoverable, because you could not see the number you had and nothing would put it
+# back.
+#
+# Making everything deferred would have been the wrong fix: you have to SEE field of view and mouse
+# sensitivity to judge them, so a settings screen that only applies on Save is a settings screen you
+# cannot tune. These four calls are the seam that lets a screen keep the live preview and still offer
+# a real commit step:
+#
+#     hold_persistence()                    on open — stop writing to disk, keep applying
+#     var baseline := capture_state()       on open — what the player had, to hand back on Cancel
+#     release_persistence(true)             SAVE    — flush the current state to disk
+#     apply_state(baseline)                 CANCEL  — put every value back, live, still not writing
+#     release_persistence(false)            CANCEL  — drop the intent; memory matches disk again
+#
+# Nothing else in the project holds persistence, so a setter called from gameplay code (or from a
+# check) behaves exactly as it always did.
+
+
+## Begins a preview. Setters keep applying; `_save()` stops writing until the matching release.
+func hold_persistence() -> void:
+	_persistence_holds += 1
+
+
+## Ends a preview. `commit` true writes the current in-memory state to disk (SAVE); false drops the
+## deferred write entirely (CANCEL) — correct only because the canceller has already handed the
+## baseline back through `apply_state()`, which leaves memory equal to what is still on disk.
+func release_persistence(commit: bool) -> void:
+	_persistence_holds = maxi(_persistence_holds - 1, 0)
+	if _persistence_holds > 0:
+		return
+	var pending: bool = _persistence_pending
+	_persistence_pending = false
+	if commit and pending:
+		_save()
+
+
+func is_persistence_held() -> bool:
+	return _persistence_holds > 0
+
+
+## Every persisted value as it stands right now, in the shape `apply_state()` reads back. The
+## keybind dictionaries are duplicated: a snapshot the caller holds across a whole settings session
+## must not be mutated out from under it by the rebinds that session performs.
+func capture_state() -> Dictionary:
+	return {
+		&"graphics_preset": _graphics_preset,
+		&"master_volume": _master_volume,
+		&"music_volume": _music_volume,
+		&"sfx_volume": _sfx_volume,
+		&"look_sensitivity": _look_sensitivity,
+		&"gamepad_look_sensitivity": _gamepad_look_sensitivity,
+		&"invert_y": _invert_y,
+		&"fov_degrees": _fov_degrees,
+		&"reduce_camera_motion": _reduce_camera_motion,
+		&"keybinds": _keybinds.duplicate(),
+		&"joypad_binds": _joypad_binds.duplicate(),
+	}
+
+
+## The factory defaults in `capture_state()`'s shape, with no keybind overrides at all — "restore
+## defaults" has to reach the InputMap too, or the button would silently leave a rebound WASD in
+## place while claiming everything was back to normal.
+func default_state() -> Dictionary:
+	var state: Dictionary = DEFAULTS.duplicate()
+	state[&"keybinds"] = {}
+	state[&"joypad_binds"] = {}
+	return state
+
+
+## Applies a whole state at once — the Cancel and Restore Defaults path. Every value is pushed
+## through the same clamps and the same apply seams the individual setters use, then
+## `settings_changed` fires exactly once, so a listener (`PlayerCamera`) sees one coherent change
+## rather than eleven. Writes to disk only if nothing is holding persistence.
+func apply_state(state: Dictionary) -> void:
+	_graphics_preset = clampi(int(state.get(&"graphics_preset", _graphics_preset)), 0, 2)
+	_master_volume = clampf(float(state.get(&"master_volume", _master_volume)), 0.0, 1.0)
+	_music_volume = clampf(float(state.get(&"music_volume", _music_volume)), 0.0, 1.0)
+	_sfx_volume = clampf(float(state.get(&"sfx_volume", _sfx_volume)), 0.0, 1.0)
+	_look_sensitivity = clampf(
+		float(state.get(&"look_sensitivity", _look_sensitivity)), MIN_SENSITIVITY, MAX_SENSITIVITY)
+	_gamepad_look_sensitivity = clampf(
+		float(state.get(&"gamepad_look_sensitivity", _gamepad_look_sensitivity)),
+		MIN_GAMEPAD_SENSITIVITY, MAX_GAMEPAD_SENSITIVITY)
+	_invert_y = bool(state.get(&"invert_y", _invert_y))
+	_fov_degrees = clampf(float(state.get(&"fov_degrees", _fov_degrees)), MIN_FOV, MAX_FOV)
+	_reduce_camera_motion = bool(state.get(&"reduce_camera_motion", _reduce_camera_motion))
+
+	_apply_keybind_state(
+		state.get(&"keybinds", _keybinds) as Dictionary,
+		state.get(&"joypad_binds", _joypad_binds) as Dictionary)
+
+	_apply_values()
+	_save()
+	settings_changed.emit()
+
+
+## Rebuilds the InputMap from `project.godot`'s authored bindings and then re-applies exactly the
+## overrides in `keys`/`buttons`. Skipped entirely when neither dictionary differs from what is
+## already applied — a Cancel that touched no keybind must not reset the whole InputMap, because
+## `load_from_project_settings()` is process-wide and would drop a rebind another surface made.
+func _apply_keybind_state(keys: Dictionary, buttons: Dictionary) -> void:
+	if keys == _keybinds and buttons == _joypad_binds:
+		return
+	InputMap.load_from_project_settings()
+	_keybinds = keys.duplicate()
+	_joypad_binds = buttons.duplicate()
+	for action: StringName in _keybinds.keys():
+		_apply_keybind(action, int(_keybinds[action]))
+	for action: StringName in _joypad_binds.keys():
+		_apply_keybind_joypad(action, int(_joypad_binds[action]))
+
+
 ## "Music"/"SFX" are runtime-created rather than a committed bus layout resource — a couple of
 ## `AudioServer.add_bus()` calls need no `.tres` and avoids adding a Godot-authored file to this
 ## task's claim set for something this small (AGENTS.md's Godot-file rule). Both send to Master, so
@@ -328,18 +479,20 @@ func _apply_bus_volume(bus_name: StringName, linear: float) -> void:
 
 func _load() -> void:
 	var data: Dictionary = SETTINGS_SAVE.load_data(save_path)
-	_graphics_preset = clampi(int(data.get(&"graphics_preset", 2)), 0, 2)
-	_master_volume = clampf(float(data.get(&"master_volume", 1.0)), 0.0, 1.0)
-	_music_volume = clampf(float(data.get(&"music_volume", 1.0)), 0.0, 1.0)
-	_sfx_volume = clampf(float(data.get(&"sfx_volume", 1.0)), 0.0, 1.0)
+	_graphics_preset = clampi(int(data.get(&"graphics_preset", DEFAULTS[&"graphics_preset"])), 0, 2)
+	_master_volume = clampf(float(data.get(&"master_volume", DEFAULTS[&"master_volume"])), 0.0, 1.0)
+	_music_volume = clampf(float(data.get(&"music_volume", DEFAULTS[&"music_volume"])), 0.0, 1.0)
+	_sfx_volume = clampf(float(data.get(&"sfx_volume", DEFAULTS[&"sfx_volume"])), 0.0, 1.0)
 	_look_sensitivity = clampf(
-		float(data.get(&"look_sensitivity", 0.12)), MIN_SENSITIVITY, MAX_SENSITIVITY)
+		float(data.get(&"look_sensitivity", DEFAULTS[&"look_sensitivity"])),
+		MIN_SENSITIVITY, MAX_SENSITIVITY)
 	_gamepad_look_sensitivity = clampf(
-		float(data.get(&"gamepad_look_sensitivity", 180.0)),
+		float(data.get(&"gamepad_look_sensitivity", DEFAULTS[&"gamepad_look_sensitivity"])),
 		MIN_GAMEPAD_SENSITIVITY, MAX_GAMEPAD_SENSITIVITY)
-	_invert_y = bool(data.get(&"invert_y", false))
-	_fov_degrees = clampf(float(data.get(&"fov_degrees", 75.0)), MIN_FOV, MAX_FOV)
-	_reduce_camera_motion = bool(data.get(&"reduce_camera_motion", false))
+	_invert_y = bool(data.get(&"invert_y", DEFAULTS[&"invert_y"]))
+	_fov_degrees = clampf(float(data.get(&"fov_degrees", DEFAULTS[&"fov_degrees"])), MIN_FOV, MAX_FOV)
+	_reduce_camera_motion = bool(
+		data.get(&"reduce_camera_motion", DEFAULTS[&"reduce_camera_motion"]))
 
 	_keybinds.clear()
 	var raw_keybinds: Dictionary = data.get(&"keybinds", {}) as Dictionary
@@ -359,6 +512,13 @@ func _load() -> void:
 		_apply_keybind_joypad(StringName(action_name), button_index)
 		_joypad_binds[StringName(action_name)] = button_index
 
+	_apply_values()
+
+
+## Pushes the non-InputMap values at the engine seams that own them. Shared by `_load()` and
+## `apply_state()` (F-386) so a whole-state change cannot forget one of the three audio buses the
+## way a hand-written second copy would.
+func _apply_values() -> void:
 	_apply_graphics()
 	_apply_bus_volume(&"Master", _master_volume)
 	_apply_bus_volume(MUSIC_BUS, _music_volume)
@@ -366,6 +526,12 @@ func _load() -> void:
 
 
 func _save() -> void:
+	# F-386: a settings screen is previewing. Remember that there is something to write and let the
+	# screen's Save or Cancel decide — the value itself has already been applied by the caller, so
+	# the preview the player is looking at is unaffected.
+	if _persistence_holds > 0:
+		_persistence_pending = true
+		return
 	if not _persistence_enabled():
 		return
 	var raw_keybinds: Dictionary = {}

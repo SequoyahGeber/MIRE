@@ -26,8 +26,25 @@ extends Control
 ## own persistence round-trip evidence — not something to bolt onto the screen that presents them.
 ## The tab structure below already has a home for each, and `MireTheme.ui_scale()` is already written
 ## to read a `ui_scale()` method the moment one exists. Filed as a finding rather than half-built.
+##
+## ## Preview, then commit (F-386), and reaching the rows below the fold (F-387)
+##
+## Showing this screen starts a `SettingsService` preview: controls keep applying live — FOV and
+## sensitivity are unjudgeable otherwise — but nothing is persisted until SAVE. Backing out (the back
+## link, Esc, or any pop of the stack) hands the opening state back. Together with the numeric
+## readouts F-385 added, that is what makes a handle knocked by accident recoverable.
+##
+## The CONTROLS tab is twelve rebind rows plus a slider and a toggle, which is taller than the
+## viewport on every screen this ships to, and none of it could be reached: the page host was a bare
+## `Control`, which reports no minimum size of its own, so the `ScrollContainer` never had anything
+## taller than itself to scroll and the overflow was simply clipped. It is a `VBoxContainer` now.
 
 const MireTheme := preload("res://ui/theme/mire_theme.gd")
+const FocusRingSlider := preload("res://ui/menu/focus_ring_slider.gd")
+
+## Fixed width of a slider's numeric readout, in pixels at `MireTheme.BODY`. Wide enough for the
+## longest string any row produces ("720°/s") so the row cannot reflow while the handle moves.
+const READOUT_WIDTH: float = 96.0
 
 ## Tab order is deliberate: the things a player changes most often first, the long rebind tables
 ## last. GAME is present but currently empty — see the scope note above.
@@ -37,11 +54,25 @@ const GRAPHICS_PRESETS: Array[String] = ["LOW", "MEDIUM", "HIGH"]
 
 var _tab_buttons: Array[Button] = []
 var _pages: Array[Control] = []
-var _page_host: Control
+var _page_host: VBoxContainer
 var _active_tab: int = 0
 var _status_label: Label
 var _back_button: Button
+var _save_button: Button
+var _restore_button: Button
 var _first_focus: Control
+
+## F-386: what every setting was when this screen was shown, from `SettingsService.capture_state()`.
+## Handed back on the way out, re-taken on SAVE so leaving after a save keeps the save.
+var _baseline: Dictionary = {}
+var _previewing: bool = false
+var _dirty: bool = false
+
+## Every control that mirrors a `SettingsService` value, as `{control, getter}`. RESTORE DEFAULTS
+## changes nine values at once and the widgets have to follow, which a screen that reads each value
+## exactly once at build time cannot do — this is the registry that makes `_refresh_controls()`
+## possible without a member variable per row.
+var _bound_controls: Array[Dictionary] = []
 
 ## The rebind row currently listening for a key or button, or an empty StringName. Two captures can
 ## never be armed at once: arming one disarms the other, because a player who pressed two rows in a
@@ -63,11 +94,46 @@ func menu_default_focus() -> Control:
 
 ## While a rebind is armed, Esc must cancel the capture rather than leave the screen — otherwise the
 ## only way out of "press a key…" is to bind a key you did not want.
+##
+## With nothing armed this returns true and the stack pops, which reaches `menu_hidden()` — where the
+## preview is handed back (F-386). Esc means "leave it as I found it" here, the same as the back link.
 func menu_allows_cancel() -> bool:
 	if _capturing_action != &"":
 		_cancel_capture()
 		return false
 	return true
+
+
+## F-386: the preview starts when the screen actually goes on screen, not in `_ready()` — a screen
+## built but never pushed must not leave `SettingsService` holding its writes forever. Guarded
+## because `MenuStack` calls this again every time a modal pushed over this screen pops back off.
+func menu_shown() -> void:
+	if _previewing:
+		return
+	var settings: Node = _settings()
+	if settings == null or not settings.has_method("hold_persistence"):
+		return
+	settings.call("hold_persistence")
+	_baseline = settings.call("capture_state") as Dictionary
+	_previewing = true
+	_set_dirty(false)
+
+
+## Called both when this screen is COVERED by a pushed modal and when it is popped for good, so the
+## two have to be told apart: `MenuStack.pop()` removes the screen from the stack before calling this,
+## `push()` leaves it on. Only the genuine departure hands the preview back.
+func menu_hidden() -> void:
+	var stack: Node = get_node_or_null(^"/root/MenuStack")
+	if stack != null and bool(stack.call("has_screen", self)):
+		return
+	_cancel_preview()
+
+
+## The stack frees a popped screen, but `pop_all()` on a screen pushed with `free_on_pop = false`
+## (and an outright `queue_free()` from anywhere else) would otherwise leave the service holding a
+## preview no one can ever release. Idempotent with `menu_hidden()`.
+func _exit_tree() -> void:
+	_cancel_preview()
 
 
 func _input(event: InputEvent) -> void:
@@ -172,11 +238,19 @@ func _build() -> void:
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	# F-387: a gamepad walking the focus chain past the fold has to bring the viewport with it, or
+	# the rows below stay unreachable on a controller no matter what the mouse wheel does.
+	scroll.follow_focus = true
 	page.add_child(scroll)
 
-	_page_host = Control.new()
+	# F-387: a `VBoxContainer`, NOT a bare `Control`. A `Control` has no minimum size of its own, so
+	# whatever it holds, a `ScrollContainer` sees a child exactly as tall as its own viewport and
+	# concludes there is nothing to scroll — the twelve rebind rows of the CONTROLS tab were being
+	# clipped, not scrolled past. A `BoxContainer` reports its VISIBLE children's minimum size, and
+	# `show_tab()` leaves exactly one page visible, so the scroll range is always the showing tab's.
+	_page_host = VBoxContainer.new()
+	_page_host.name = "SettingsPages"
 	_page_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_page_host.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.add_child(_page_host)
 
 	_pages.append(_build_display_page())
@@ -185,11 +259,22 @@ func _build() -> void:
 	_pages.append(_build_gamepad_page())
 	_pages.append(_build_accessibility_page())
 	for entry: Control in _pages:
-		entry.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_page_host.add_child(entry)
 
 	_status_label = MireTheme.paragraph("", MireTheme.CAPTION, MireTheme.MUTED)
 	page.add_child(_status_label)
+
+	# F-386's commit step. Outside the scroll viewport, because a SAVE button you have to scroll to
+	# find is a SAVE button players report as missing — which is how both settings surfaces got here.
+	var footer: HBoxContainer = MireTheme.row()
+	page.add_child(footer)
+	_restore_button = MireTheme.button("RESTORE DEFAULTS", _on_restore_defaults)
+	footer.add_child(_restore_button)
+	footer.add_child(_spacer())
+	_save_button = MireTheme.button("SAVE", _on_save, MireTheme.Variant.PRIMARY)
+	footer.add_child(_save_button)
+	MireTheme.wire_row([_restore_button, _save_button])
 
 
 func _page() -> VBoxContainer:
@@ -218,6 +303,25 @@ func _row(label_text: String, control: Control, hint: String = "") -> Control:
 	return wrapper
 
 
+## A slider row: `_row()`, plus the number the slider was missing (F-385). Every slider on this
+## screen shipped with a bare handle and no readout — field of view spans 60-110 in steps of 1, so
+## once you moved it, the value you had was gone. `FocusRingSlider.bind_readout()` owns the format
+## and pins the label's width so the row cannot reflow mid-drag; the same call is what
+## `ui/menu/settings_menu.gd` uses, so the two settings surfaces cannot disagree about how a
+## percentage or a degree is written.
+func _slider_row(label_text: String, slider: HSlider, readout: int, hint: String = "") -> Control:
+	var holder: HBoxContainer = MireTheme.row()
+	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	holder.add_child(slider)
+
+	var value_label: Label = MireTheme.label("", MireTheme.BODY, MireTheme.TEXT)
+	value_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	holder.add_child(value_label)
+	(slider as FocusRingSlider).bind_readout(value_label, readout, READOUT_WIDTH)
+
+	return _row(label_text, holder, hint)
+
+
 func _build_display_page() -> Control:
 	var column: VBoxContainer = _page()
 	var settings: Node = _settings()
@@ -228,8 +332,9 @@ func _build_display_page() -> Control:
 	if settings != null:
 		preset.selected = clampi(int(settings.call("graphics_preset")), 0, GRAPHICS_PRESETS.size() - 1)
 		preset.item_selected.connect(func(index: int) -> void:
-			settings.call("set_graphics_preset", index)
+			_write("set_graphics_preset", index)
 			_note("Graphics set to %s." % GRAPHICS_PRESETS[index]))
+		_bind(preset, "graphics_preset")
 	column.add_child(_row("Graphics quality", preset,
 		"Lower presets cut shadows and draw distance first — the settings that cost the most on a weak machine."))
 
@@ -238,8 +343,9 @@ func _build_display_page() -> Control:
 			float(settings.get("MIN_FOV")), float(settings.get("MAX_FOV")), 1.0
 		)
 		fov.value = float(settings.call("fov_degrees"))
-		fov.value_changed.connect(func(value: float) -> void: settings.call("set_fov_degrees", value))
-		column.add_child(_row("Field of view", fov))
+		fov.value_changed.connect(func(value: float) -> void: _write("set_fov_degrees", value))
+		_bind(fov, "fov_degrees")
+		column.add_child(_slider_row("Field of view", fov, FocusRingSlider.Readout.DEGREES))
 	return column
 
 
@@ -257,8 +363,9 @@ func _build_audio_page() -> Control:
 		var slider: HSlider = MireTheme.slider(0.0, 1.0, 0.01)
 		slider.value = float(settings.call(String(entry[1])))
 		var setter: String = String(entry[2])
-		slider.value_changed.connect(func(value: float) -> void: settings.call(setter, value))
-		column.add_child(_row(String(entry[0]), slider))
+		slider.value_changed.connect(func(value: float) -> void: _write(setter, value))
+		_bind(slider, String(entry[1]))
+		column.add_child(_slider_row(String(entry[0]), slider, FocusRingSlider.Readout.PERCENT))
 	return column
 
 
@@ -272,12 +379,14 @@ func _build_controls_page() -> Control:
 		float(settings.get("MIN_SENSITIVITY")), float(settings.get("MAX_SENSITIVITY")), 0.005
 	)
 	sensitivity.value = float(settings.call("look_sensitivity"))
-	sensitivity.value_changed.connect(func(value: float) -> void: settings.call("set_look_sensitivity", value))
-	column.add_child(_row("Mouse sensitivity", sensitivity))
+	sensitivity.value_changed.connect(func(value: float) -> void: _write("set_look_sensitivity", value))
+	_bind(sensitivity, "look_sensitivity")
+	column.add_child(_slider_row("Mouse sensitivity", sensitivity, FocusRingSlider.Readout.DECIMAL2))
 
 	var invert: CheckBox = MireTheme.toggle()
 	invert.button_pressed = bool(settings.call("invert_y"))
-	invert.toggled.connect(func(pressed: bool) -> void: settings.call("set_invert_y", pressed))
+	invert.toggled.connect(func(pressed: bool) -> void: _write("set_invert_y", pressed))
+	_bind(invert, "invert_y")
 	column.add_child(_row("Invert vertical look", invert))
 
 	column.add_child(MireTheme.separator())
@@ -286,7 +395,7 @@ func _build_controls_page() -> Control:
 		column.add_child(_rebind_row(StringName(action_name), false))
 
 	var reset: Button = MireTheme.button("RESET KEYS TO DEFAULTS", func() -> void:
-		settings.call("reset_keybinds")
+		_write_no_arg("reset_keybinds")
 		_refresh_rebind_labels()
 		_note("Back to how the swamp intended."))
 	column.add_child(reset)
@@ -304,8 +413,10 @@ func _build_gamepad_page() -> Control:
 	)
 	sensitivity.value = float(settings.call("gamepad_look_sensitivity"))
 	sensitivity.value_changed.connect(func(value: float) -> void:
-		settings.call("set_gamepad_look_sensitivity", value))
-	column.add_child(_row("Gamepad look sensitivity", sensitivity))
+		_write("set_gamepad_look_sensitivity", value))
+	_bind(sensitivity, "gamepad_look_sensitivity")
+	column.add_child(_slider_row(
+		"Gamepad look sensitivity", sensitivity, FocusRingSlider.Readout.DEGREES_PER_SECOND))
 
 	column.add_child(MireTheme.separator())
 	column.add_child(MireTheme.label("BUTTONS", MireTheme.CAPTION, MireTheme.MUTED))
@@ -325,8 +436,9 @@ func _build_accessibility_page() -> Control:
 	var reduce: CheckBox = MireTheme.toggle()
 	reduce.button_pressed = bool(settings.call("reduce_camera_motion"))
 	reduce.toggled.connect(func(pressed: bool) -> void:
-		settings.call("set_reduce_camera_motion", pressed)
+		_write("set_reduce_camera_motion", pressed)
 		_note("Menu animation and camera motion %s." % ("off" if pressed else "on")))
+	_bind(reduce, "reduce_camera_motion")
 	column.add_child(_row("Reduce motion", reduce,
 		"Stops camera shake, menu fades and the title screen's drift. Everything cuts instantly instead."))
 	return column
@@ -369,6 +481,9 @@ func _finish_capture_joypad(event: InputEventJoypadButton) -> void:
 
 func _report_rebind(clash: StringName) -> void:
 	if clash == &"":
+		# F-386: a rebind stages like any other change — live in the InputMap so the player can try
+		# it, on disk only once they press SAVE, gone again if they back out.
+		_set_dirty(true)
 		_note("Bound.")
 	elif clash == &"__not_rebindable__":
 		_note("That one can't be rebound.")
@@ -424,6 +539,117 @@ func _first_focusable(node: Node) -> Control:
 	return null
 
 
+# ── F-386: preview, save, cancel, restore defaults ───────────────────────────────────────────────
+
+
+## Every control writes through here, which makes it the one place that has to notice something
+## changed. The value applies immediately — `SettingsService` is holding the persistence, not the
+## application — so the live preview the player is judging is untouched by the staging.
+func _write(setter: String, value: Variant) -> void:
+	var settings: Node = _settings()
+	if settings == null:
+		return
+	settings.call(setter, value)
+	_set_dirty(true)
+
+
+## `_write()` for the one setter that takes no argument (`reset_keybinds`). Separate rather than a
+## nullable parameter, because `null` is a value a bool setter could plausibly be handed by mistake.
+func _write_no_arg(setter: String) -> void:
+	var settings: Node = _settings()
+	if settings == null:
+		return
+	settings.call(setter)
+	_set_dirty(true)
+
+
+## Hands the baseline back and drops the deferred write. Guarded on `_previewing` because both
+## `menu_hidden()` and `_exit_tree()` call it on the way out and only the first one has work to do.
+func _cancel_preview() -> void:
+	if not _previewing:
+		return
+	_previewing = false
+	var settings: Node = _settings()
+	if settings == null or not settings.has_method("release_persistence"):
+		return
+	if not _baseline.is_empty():
+		settings.call("apply_state", _baseline)
+	settings.call("release_persistence", false)
+	_baseline = {}
+	_set_dirty(false)
+
+
+## SAVE: the deferred write reaches disk, then the preview restarts against what was just saved —
+## which is what makes backing out afterwards keep the save rather than undo it.
+func _on_save() -> void:
+	var settings: Node = _settings()
+	if settings == null or not settings.has_method("release_persistence"):
+		return
+	if _previewing:
+		settings.call("release_persistence", true)
+	settings.call("hold_persistence")
+	_baseline = settings.call("capture_state") as Dictionary
+	_previewing = true
+	_set_dirty(false)
+	_note("Settings saved.")
+
+
+## RESTORE DEFAULTS puts the factory values into the LIVE state without persisting them, so it is a
+## proposal like any other: SAVE keeps it, backing out throws it away.
+func _on_restore_defaults() -> void:
+	var settings: Node = _settings()
+	if settings == null or not settings.has_method("default_state"):
+		return
+	settings.call("apply_state", settings.call("default_state"))
+	_refresh_controls()
+	_set_dirty(true)
+	_note("Defaults loaded — SAVE to keep them.")
+
+
+## Records `control` as the view of `getter`, so `_refresh_controls()` can put a whole-state change
+## back on screen without this file growing a member variable per row.
+func _bind(control: Control, getter: String) -> void:
+	_bound_controls.append({&"control": control, &"getter": getter})
+
+
+## Re-derives every value control from `SettingsService`. Signals are blocked around the write so a
+## refresh cannot re-fire the setters it is reflecting — which also swallows `value_changed`, hence
+## the explicit `refresh_readout()` or the numbers would keep showing the pre-refresh values (F-385).
+func _refresh_controls() -> void:
+	var settings: Node = _settings()
+	if settings == null:
+		return
+	for entry: Dictionary in _bound_controls:
+		var control: Control = entry[&"control"]
+		if not is_instance_valid(control):
+			continue
+		var value: Variant = settings.call(String(entry[&"getter"]))
+		control.set_block_signals(true)
+		if control is OptionButton:
+			var dropdown: OptionButton = control
+			dropdown.selected = clampi(int(value), 0, dropdown.item_count - 1)
+		elif control is CheckBox:
+			(control as CheckBox).button_pressed = bool(value)
+		elif control is Range:
+			(control as Range).value = float(value)
+		control.set_block_signals(false)
+		if control is FocusRingSlider:
+			(control as FocusRingSlider).refresh_readout()
+	_refresh_rebind_labels()
+
+
+func _set_dirty(dirty: bool) -> void:
+	_dirty = dirty
+
+
+func has_unsaved_changes() -> bool:
+	return _dirty
+
+
+func is_previewing() -> bool:
+	return _previewing
+
+
 func _note(message: String) -> void:
 	_status_label.text = message
 
@@ -439,6 +665,9 @@ func _settings() -> Node:
 	return get_node_or_null(^"/root/SettingsService")
 
 
+## Backing out means "leave it as I found it" (F-386) — the pop reaches `menu_hidden()`, which hands
+## the baseline back. Nothing is reverted here directly, so the back link, Esc and any other pop of
+## the stack all take exactly the same road out and none of them can forget.
 func _go_back() -> void:
 	var stack: Node = get_node_or_null(^"/root/MenuStack")
 	if stack != null:

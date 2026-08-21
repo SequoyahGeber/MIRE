@@ -11,9 +11,17 @@ extends Node
 ## there was no star layer at all. apply_atmosphere() now drives both, plus the night ends of the
 ## sky material, on the same daylight curve everything else already used.
 ##
+## F-378 is the same shape of bug one level up: the clock and the grade were both right, and the sky
+## still had no SUN in it — only a haze where one should be — and no moon at all, because the level
+## contained exactly one light. Both are owned here now (see the SUN_* and moon blocks below), which
+## also settles F-356: night is dark because nothing is lit at night, and the fix for that is a
+## second light, not a higher ambient floor.
+##
 ## Everything in this file is client-local presentation (docs/ARCHITECTURE.md §2.2, "VFX, audio,
 ## camera, UI" row). It reads a replicated number and touches no gameplay state, so nothing here
-## bumps the protocol version.
+## bumps the protocol version. That covers the moon too: it is derived from the same replicated
+## `time_of_day` every peer already has, so every peer builds an identical one and none of it
+## crosses the wire.
 
 const STAR_FIELD_SCRIPT := preload("res://world/environment/star_field.gd")
 const GROUND_FOG_SCRIPT := preload("res://world/environment/ground_fog.gd")
@@ -51,8 +59,89 @@ const NIGHT_GROUND_COLOR := Color(0.017, 0.022, 0.036)
 ## ambient_light_sky_contribution). With the night sky now genuinely dark, this is the floor that
 ## keeps a night you can still fight in — night should be dangerous, not unreadable.
 const NIGHT_AMBIENT_COLOR := Color(0.34, 0.42, 0.62)
-## Cool cast on what little directional light survives the sun going down.
-const MOONLIGHT_COLOR := Color(0.55, 0.68, 1.0)
+
+## ── The sun's disc (F-378) ────────────────────────────────────────────────────────────────────
+## Sequoyah, from play: "the sun doesnt have a clear circle form in the sky its more of a faded haze
+## thats way to wide."
+##
+## MEASURED FIRST, because the obvious answer was wrong. `tools/_tmp_sun_halo_probe.gd` (throwaway,
+## not committed) rendered the same sunward frame under nine variants in one run and reported how far
+## out the frame is still pure white. The result that decided everything below: with the sun's disc
+## turned OFF ENTIRELY (`light_angular_distance = 0`), the white region did not shrink by a single
+## pixel — 6.22 deg either way. Disabling `glow` did not move it either. **The blob was never the
+## disc and never the bloom; it was the SKY, blown past the white point across 6 degrees of solid
+## angle, with the disc invisible inside it because both sides of its edge tonemapped to 1.0.**
+##
+## So the fix is not to draw a bigger sun, it is to stop the sky around it clipping — and then the
+## disc's own hard edge (the sky shader's `smoothstep` is razor-sharp) has something to be an edge
+## AGAINST. Three numbers, in the order they matter:
+##
+##   · SKY ENERGY. `energy_multiplier` scales the whole sky, disc and halo alike, and at the 0.9 it
+##     ran at, everything within 6 deg of the sun was over 1.0. At 0.45 the white region is 3.5 deg
+##     and the rest of the sky comes back as a deeper blue instead of the pale wash it was — the
+##     same washed-out sky F-357 is still open about, improved as a side effect rather than by
+##     chasing it.
+##   · MIE. `mie_coefficient` sets the peak of the forward-scattering lobe and `mie_eccentricity`
+##     its width. Raising eccentricity alone is a trap and this file fell in it once: the
+##     Henyey-Greenstein peak scales as roughly 1/(1-g)^2, so going 0.74 -> 0.86 narrowed the lobe
+##     from a 13 deg half-width to 6.6 deg while making it 3.7x BRIGHTER, and the blown region did
+##     not move. The coefficient comes down by the same factor the peak went up.
+##   · THE DISC. Now that the sky's white stops at ~3.5 deg, the disc has to be bigger than that or
+##     it is still inside it — measured, 6.8 deg apparent is where a circle with a visible edge
+##     appears. That is thirteen times the real sun, and it is the number the frame asked for.
+##
+## The two angular knobs stay split, which is what makes a 6.8 deg sun affordable at all.
+## `light_angular_distance` is ALSO the shadow penumbra — a 6.8 deg light would blur every shadow on
+## the map into a smear — while `sun_disk_scale` is sky-shader-only and costs nothing anywhere else.
+## So the light keeps a near-real 0.85 deg and the sky does all of the exaggerating.
+##
+## Written here rather than read off the level: this is one look decision for the whole game, the
+## same standing `turbidity` already had, and a level that authors its own is a level whose sun is a
+## different size for no reason anyone chose.
+const SUN_ANGULAR_DIAMETER_DEG: float = 0.85
+const SUN_DISK_SCALE: float = 8.0
+const MIE_ECCENTRICITY: float = 0.86
+const MIE_COEFFICIENT: float = 0.0013
+## Day end of the sky's own `energy_multiplier`. The night end stays where F-065 put it.
+const DAY_SKY_ENERGY: float = 0.45
+const NIGHT_SKY_ENERGY: float = 0.055
+## `turbidity` multiplies the mie term outright, and it used to be lerped UP to 10.0 at night — so
+## the haze was thickest exactly across dusk and dawn, the two hours a player is most likely to be
+## looking straight at the sun, and the hours the verdict came from.
+const DAY_TURBIDITY: float = 4.6
+const NIGHT_TURBIDITY: float = 3.4
+
+## ── The moon (F-378, and the answer to F-356) ─────────────────────────────────────────────────
+## Sequoyah, same session: "night time could be slightly less dark but only because of moonlight so
+## we need to add a moon in that cast cool white light dimmly over the map."
+##
+## Until this there was exactly one DirectionalLight3D in the level, named `Sun`, and night was that
+## light dimmed to 0.04 and tinted blue. That is why F-356 measured a night whose ground luminance
+## median was 0.000: nothing was LIT, so there was nothing for the grade to bring back. The fix is a
+## second light and specifically NOT a higher ambient floor — ambient with no key flattens the
+## flat-shaded facets (D-184) that are the only thing giving the ground form, so a raised floor
+## would have bought a visible night by deleting the terrain's shape.
+##
+## Built in code, like the star field and the ground mist above it, for the same reason: release
+## worlds are procedurally generated and have no level author to remember to place one.
+##
+## It rides the sun's own clock, rotated exactly opposite, so it rises as the sun sets. Its energy
+## follows `starlight` — the same window the stars fade in across — and the sun's shadows are
+## switched off for as long as the moon's are on, so the map never pays for two shadow-casting
+## directional lights at once and exactly one of the two is meaningfully lit at any hour.
+const MOONLIGHT_COLOR := Color(0.66, 0.76, 1.0)
+## Roughly a seventh of the day sun. Moonlight has to read as "you can just make out the ground",
+## never as a blue midday: the whole point of night is that it is dangerous.
+const MOON_ENERGY: float = 0.55
+## Tighter than the sun's, because the moon's shadows are the ones most likely to look wrong — a
+## soft-edged shadow at this energy is a smudge rather than a shape.
+const MOON_ANGULAR_DIAMETER_DEG: float = 0.6
+## Moonlight is a rim light, not a key. At full opacity its shadows read as a second midday's, which
+## is the tell that a "moon" is really just a blue sun.
+const MOON_SHADOW_OPACITY: float = 0.55
+## One split, and only as far as anything is legible at night anyway — this is the "shadows on but
+## cheap" half of the trade that lets the sun's own shadows switch off at the same time.
+const MOON_SHADOW_DISTANCE_M: float = 48.0
 
 ## ── The daytime varnish (F-353) ────────────────────────────────────────────────────────────────
 ## Sequoyah, on the shipped island: "it looks super washed out and looks like it needs a coat of
@@ -83,7 +172,21 @@ const MOONLIGHT_COLOR := Color(0.55, 0.68, 1.0)
 ##   · SATURATION AND CONTRAST. The grade's own last word, once the three above stopped fighting it.
 const DAY_TONEMAP_WHITE: float = 1.0
 const DAY_TONEMAP_EXPOSURE: float = 0.95
-const DAY_AMBIENT_ENERGY: float = 0.30
+## F-378 raised this from F-353's 0.30, and it is NOT a walk-back of that fix — it is what keeps it.
+## 68% of the ambient term is the sky (the level's own `ambient_light_sky_contribution`), and F-378
+## halved the sky's radiance to stop it blowing out around the sun. That silently halved the fill
+## F-353 tuned, and the first render after it showed exactly what F-353's own note predicts: with
+## the blue sky bounce gone, warm sunlight was the only thing left on the ground and a khaki forest
+## floor came back reading as desert. This puts most of that fill back — "warm light against cool
+## shadow is most of the perceived chroma" is the sentence being preserved here, not overruled.
+##
+## PARTIAL, not a full restoration, and the difference was rendered rather than reasoned. A full
+## compensation is about 0.45, and at 0.45 the ground came back BRIGHTER and FLATTER instead of
+## cooler: only 68% of the fill is the sky, the other 32% is `ambient_light_color` at whatever the
+## level authored (white, on both shipped levels), so scaling the whole term to make up a halved sky
+## overshoots on the half that never changed — and washing out the flat-shaded facets is precisely
+## what F-353 lowered this number to stop.
+const DAY_AMBIENT_ENERGY: float = 0.36
 const DAY_ADJUSTMENT_CONTRAST: float = 1.14
 const DAY_ADJUSTMENT_SATURATION: float = 1.30
 const DAY_GLOW_BLOOM: float = 0.0
@@ -145,6 +248,7 @@ var _local_fog_densities: Array[float] = [0.24, 0.07, 0.09]
 var _cloud_deck: Node = null
 var _star_field: Node3D = null
 var _ground_fog: FogVolume = null
+var _moon: DirectionalLight3D = null
 # Authored day ends, captured once so the night lerps cannot drift the tuned daytime look.
 var _day_rayleigh_color := Color(0.2, 0.4, 0.9)
 var _day_mie_color := Color(0.94, 0.7, 0.48)
@@ -176,6 +280,22 @@ func _ready() -> void:
 		_day_rayleigh_color = _sky_material.rayleigh_color
 		_day_mie_color = _sky_material.mie_color
 		_day_ground_color = _sky_material.ground_color
+		# F-378: the disc's size and the halo's WIDTH are standing look decisions, not per-hour
+		# ones, so they are written once here rather than re-lerped 60 times a second. See the
+		# SUN_* block for why the two angular knobs are separate.
+		_sky_material.sun_disk_scale = SUN_DISK_SCALE
+		_sky_material.mie_eccentricity = MIE_ECCENTRICITY
+		_sky_material.mie_coefficient = MIE_COEFFICIENT
+	# F-378: the sun's angular size was never set from here, so how big the game's sun is depended on
+	# which level you were standing in. It is a light property rather than a sky one because it is
+	# also the shadow penumbra, which is exactly why it is kept tight and `sun_disk_scale` above does
+	# the exaggerating.
+	sun.light_angular_distance = SUN_ANGULAR_DIAMETER_DEG
+	# The sky shader only ever reads LIGHT0, and the moon below sets SKY_MODE_LIGHT_ONLY so it can
+	# never become that light. Stating the sun's own mode explicitly is the other half of that
+	# guarantee: if the moon ever took LIGHT0, the sun's disc would be drawn wherever the MOON is.
+	sun.sky_mode = DirectionalLight3D.SKY_MODE_LIGHT_AND_SKY
+	_moon = _resolve_moon()
 	for fog_path: NodePath in [^"../MireGroundFog", ^"../ForestMist", ^"../RuinsMist"]:
 		var fog_volume := get_node_or_null(fog_path) as FogVolume
 		if fog_volume != null and fog_volume.material is FogMaterial:
@@ -227,6 +347,48 @@ func _resolve_ground_fog() -> FogVolume:
 	return created
 
 
+## The moon (F-378). Same build-it-here reasoning as the star field and the ground mist, and the
+## same escape hatch: a level that places its own `Moon` beside its `Sun` keeps it, so an authored
+## map can pose a moon by hand without this file fighting it. `apply_atmosphere()` still drives
+## whatever it finds, because the clock is not the level's to own (docs/SPECS.md 2.11).
+##
+## Everything configured here is the part that never changes with the hour. The three things that DO
+## — rotation, energy, and whether it casts shadows at all — are written by `apply_atmosphere()`.
+func _resolve_moon() -> DirectionalLight3D:
+	var authored := get_node_or_null(^"../Moon") as DirectionalLight3D
+	if authored != null:
+		return authored
+	var existing := get_node_or_null(^"Moon") as DirectionalLight3D
+	if existing != null:
+		return existing
+	var created := DirectionalLight3D.new()
+	created.name = "Moon"
+	created.light_color = MOONLIGHT_COLOR
+	created.light_energy = 0.0
+	created.light_angular_distance = MOON_ANGULAR_DIAMETER_DEG
+	# LIGHT_ONLY, and this is load-bearing rather than tidy: `PhysicalSkyMaterial` draws its sun disc
+	# for LIGHT0, Godot picks LIGHT0 from the directional lights that contribute to the sky, and a
+	# moon that qualified could take that slot — which would paint the sun's disc on the moon and
+	# leave the real sun blank. The moon's own disc is geometry in `star_field.gd` instead.
+	created.sky_mode = DirectionalLight3D.SKY_MODE_LIGHT_ONLY
+	# Shadows on, but the cheapest kind: one split, and only across the distance anything is legible
+	# at night. The sun's shadows go off while these are on (see apply_atmosphere), so the map never
+	# renders two directional shadow maps at once and this costs nothing net.
+	created.shadow_enabled = true
+	created.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
+	created.directional_shadow_max_distance = MOON_SHADOW_DISTANCE_M
+	created.shadow_opacity = MOON_SHADOW_OPACITY
+	created.shadow_bias = 0.05
+	created.shadow_normal_bias = 1.6
+	# `shadow_enabled` above is the standing capability; whether it is actually ON at a given hour is
+	# apply_atmosphere()'s call, and so are energy, colour, rotation and volumetric contribution.
+	# Starting hidden matters on its own: a level that boots at noon must never pay a frame for a
+	# light that is about to be switched off anyway.
+	created.visible = false
+	add_child(created)
+	return created
+
+
 func _process(delta: float) -> void:
 	if not cycle_enabled:
 		return
@@ -269,8 +431,19 @@ func apply_atmosphere() -> void:
 	if hour != _applied_sun_hour:
 		_applied_sun_hour = hour
 		sun.rotation_degrees = Vector3(-elevation, azimuth, 0.0)
+		# F-378: the moon is the sun's antipode on the same clock — negate the elevation, add half a
+		# turn of azimuth. At midnight (elevation -90) that puts it directly overhead, and at the
+		# moment of sunset it is exactly rising, which is the only arrangement where "one of the two
+		# is lit" is true by construction rather than by tuning.
+		if _moon != null:
+			_moon.rotation_degrees = Vector3(elevation, azimuth + 180.0, 0.0)
 		if _star_field != null and starlight > 0.001:
 			_star_field.call(&"set_sky_rotation", hour / 24.0 * TAU)
+			# The dome carries the star wheel's own rotation, so the moon's direction is handed over
+			# in WORLD space and the star field puts it into the dome's frame itself — otherwise the
+			# moon would wheel with the stars instead of tracking the clock it is actually on.
+			if _moon != null:
+				_star_field.call(&"set_moon_direction", _moon.global_basis.z)
 
 	# Everything below only responds to these drivers, so while they hold — which is every tick
 	# outside the dawn/dusk windows — the writes are identical and skipping them is invisible.
@@ -288,8 +461,15 @@ func apply_atmosphere() -> void:
 	var daylight_color := Color(1.0, 0.94, 0.815)
 	var sunrise_color := Color(1.0, 0.55, 0.27)
 	var horizon_mix := sunrise_color.lerp(daylight_color, 1.0 - warm_horizon * 0.58)
-	sun.light_color = horizon_mix.lerp(MOONLIGHT_COLOR, starlight)
-	sun.light_energy = lerpf(0.04, DAY_SUN_ENERGY, daylight)
+	# F-378: the sun stays the sun all the way down. It used to lerp toward MOONLIGHT_COLOR as the
+	# stars came out, which was this file pretending to be a moon it did not have — and the give-away
+	# was that the "moonlight" came from wherever the sun had set. There is a real moon now, so the
+	# sun keeps its sunset warmth and simply goes out.
+	sun.light_color = horizon_mix
+	# To zero, not to 0.04. A key light at 0.04 against a 0.06-linear albedo lands under what the
+	# tonemapper resolves at all (F-356 measured the result at luminance median 0.000), so all it
+	# ever bought was the illusion that night was lit. The moon below is what lights night now.
+	sun.light_energy = DAY_SUN_ENERGY * daylight
 	# Shafts peak at GOLDEN HOUR, not at noon. A sun overhead lights the mist from above and there
 	# is nothing to rake through; a sun on the horizon fires the length of the valley through every
 	# trunk in it, which is the shot this is for. `golden` is the extra 60% either side of dawn.
@@ -297,6 +477,23 @@ func apply_atmosphere() -> void:
 		god_ray_strength * lerpf(0.25, 1.0, daylight) * (1.0 + golden * 0.6)
 	)
 	sun.shadow_opacity = lerpf(0.4, 0.88, daylight)
+	# F-378: a light at zero energy still renders a shadow map. Once the sun is down that is a full
+	# directional shadow pass for a light contributing nothing, and it is exactly the budget the
+	# moon's own shadows need — so the two hand it back and forth rather than both holding one.
+	sun.shadow_enabled = daylight > 0.004
+	if _moon != null:
+		var moonlight := starlight
+		_moon.visible = moonlight > 0.002
+		_moon.light_color = MOONLIGHT_COLOR
+		_moon.light_energy = MOON_ENERGY * moonlight
+		# Off below the point where the moon is too dim to cast anything you could identify — which
+		# is also the dusk window where the sun's shadows are still on, so the handover never leaves
+		# both enabled for longer than the fade itself.
+		_moon.shadow_enabled = moonlight > 0.25
+		# Moonlight through mist is a lot of what makes a night READ as a night rather than as a
+		# dark day, but at a quarter of the sun's rate: a shaft you can follow the length of a
+		# valley at midnight is a searchlight, not a moon.
+		_moon.light_volumetric_fog_energy = god_ray_strength * 0.25 * moonlight
 
 	_environment.background_energy_multiplier = lerpf(0.12, 0.9, daylight)
 	# The day end is the floor under everything the sun is NOT hitting, and F-353 took it from 0.62
@@ -360,8 +557,15 @@ func apply_atmosphere() -> void:
 	if _sky_material != null:
 		# PhysicalSkyMaterial already dims itself as LIGHT0 drops, so let it do that work while the
 		# sun is up and only force the night colours once the sun is actually below the horizon.
-		_sky_material.energy_multiplier = lerpf(0.9, 0.055, sky_night)
-		_sky_material.turbidity = lerpf(10.0, 5.2, daylight)
+		# F-378: the day end came down from 0.9. That single number is what was blowing six degrees
+		# of sky past the white point around the sun, and lowering it is what lets the disc's edge be
+		# seen at all — see the SUN_* block for the measurement.
+		_sky_material.energy_multiplier = lerpf(NIGHT_SKY_ENERGY, DAY_SKY_ENERGY, 1.0 - sky_night)
+		# F-378: this used to run to 10.0 at night. Turbidity multiplies the mie term outright, so
+		# the haze around the sun was at its thickest across dusk and dawn — the two hours a player
+		# is most likely to be looking straight at it, and the hours the "faded haze thats way to
+		# wide" verdict came from. Both ends are down, and the night end further than the day one.
+		_sky_material.turbidity = lerpf(NIGHT_TURBIDITY, DAY_TURBIDITY, daylight)
 		_sky_material.rayleigh_color = _day_rayleigh_color.lerp(NIGHT_RAYLEIGH_COLOR, sky_night)
 		_sky_material.mie_color = _day_mie_color.lerp(NIGHT_MIE_COLOR, sky_night)
 		_sky_material.ground_color = _day_ground_color.lerp(NIGHT_GROUND_COLOR, sky_night)

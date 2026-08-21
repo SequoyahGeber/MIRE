@@ -8,7 +8,7 @@ extends SceneTree
 ##      a solo attempt gets a longer timer and still completes, and a co-op attempt's progress
 ##      PAUSES (not resets) while under the 2-player presence requirement, then finishes once both
 ##      are present. `host_tick()` crosses whole ritual durations in one call, the same reason
-##      `DayNight.host_advance()` exists — no need to wait 150 real seconds for a headless check.
+##      `DayNight.host_advance()` exists — no need to wait 80 real seconds for a headless check.
 ##   3. F-168: `wellspring_capped` fires off `capped`'s setter, not `_finish_cap()`'s host-only body —
 ##      so setting `capped` the way a client's MultiplayerSynchronizer would (a bare property write,
 ##      never through `_finish_cap()`) still fires the event. Before the fix this branch caught
@@ -16,6 +16,10 @@ extends SceneTree
 ##   4. F-181: the identical bug existed on the true->false transition — `wellspring_recorrupted` fired
 ##      from `_finish_recorruption()`'s host-only body, so a bare `capped = false` write (the shape a
 ##      client's synchronizer delta takes) fired nothing. Same fix, same setter, symmetric proof.
+##   5. F-374: the solo timer is the retuned 80 s, not the 150 s that read in play as "an absurdly
+##      long time to cap", and a lapse in presence shorter than `PRESENCE_GRACE_SEC` no longer
+##      stalls the bar — a crawler's knockback out of a 4.5 m circle used to freeze it for the whole
+##      round trip. Past the grace it pauses, and it still never decays (D-092).
 ##
 ##   .agent/bin/agent godot --script tools/wellspring_check.gd
 
@@ -110,8 +114,14 @@ func _check_ritual_fsm() -> void:
 	wellspring.call(&"request_toggle_channel")
 	check(bool(wellspring.get("channeling")), "an in-range press starts the channel")
 	check(int(wellspring.get("required_players")) == 1, "one live player -> solo requirement")
-	check(is_equal_approx(float(wellspring.get("duration_sec")), 150.0),
-		"solo duration is the longer fallback")
+	# F-374 retuned this from 150.0. The assertion names the number rather than merely proving
+	# "longer than co-op", because the SIZE of the solo premium was the bug — an inequality check
+	# would have stayed green through the whole of it. Retuning again means editing this line on
+	# purpose, which is the point (this is a tuning constant Sequoyah reviews at commit level).
+	check(is_equal_approx(float(wellspring.get("duration_sec")), 80.0),
+		"solo duration is the longer fallback, at F-374's retuned 80 s")
+	check(float(wellspring.get("duration_sec")) > WELLSPRING_SCRIPT.COOP_DURATION_SEC,
+		"solo is still longer than co-op, as DESIGN.md §4.5 asks")
 	wellspring.call(&"request_toggle_channel")
 	check(not bool(wellspring.get("channeling")), "a second press cancels the channel")
 	check(is_equal_approx(float(wellspring.get("progress_sec")), 0.0),
@@ -168,6 +178,68 @@ func _check_ritual_fsm() -> void:
 	wellspring_two.call(&"host_tick", 70.0)
 	check(bool(wellspring_two.get("capped")),
 		"progress resumes and finishes once both players are present")
+	world.call("host_despawn_all")
+
+	_check_presence_grace(player_one, player_two)
+
+
+## F-374's second half. The finding's own words: a hard pause "is what makes an interrupted cap feel
+## long rather than hard" — one crawler knockback out of a 4.5 m circle froze the bar for the entire
+## walk back. `PRESENCE_GRACE_SEC` forgives exactly that round trip and nothing longer.
+##
+## Deltas here are small and exact, unlike the 70-200 s fast-forwards above, because the whole
+## behaviour under test lives in a two-second window. That means real engine frames would corrupt it:
+## `_start_channel()` turns `_process` on, so the wellspring would keep ticking itself between these
+## assertions. Driving `host_tick()` by hand with `_process` off is the same trick
+## `tools/player_vitals_check.gd` uses on PlayerHealth, and for the same reason.
+func _check_presence_grace(player_one: Node3D, player_two: Node3D) -> void:
+	print("\n== F-374: a knockback shorter than the presence grace does not stall the bar ==")
+	# Back to a solo session — `_session_player_total()` counts the group, and a second body left in
+	# it would make this a co-op attempt needing two present players. Restored at the end.
+	player_two.remove_from_group(&"players")
+
+	var wellspring := WELLSPRING_SCRIPT.new() as Node3D
+	wellspring.name = "CheckWellspringGrace"
+	root.add_child(wellspring)
+	wellspring.global_position = Vector3(-1100.0, 0.0, -1100.0)
+	player_one.global_position = wellspring.global_position
+	var away: Vector3 = wellspring.global_position + Vector3(50.0, 0.0, 0.0)
+
+	wellspring.call(&"request_toggle_channel")
+	wellspring.set_process(false)
+	check(bool(wellspring.get("channeling")), "the solo attempt starts")
+	check(is_equal_approx(float(wellspring.get("duration_sec")),
+		WELLSPRING_SCRIPT.SOLO_DURATION_SEC), "and it is running the solo duration")
+
+	wellspring.call(&"host_tick", 5.0)
+	check(is_equal_approx(float(wellspring.get("progress_sec")), 5.0),
+		"progress accrues second for second while present")
+
+	player_one.global_position = away
+	wellspring.call(&"host_tick", 1.0)
+	check(is_equal_approx(float(wellspring.get("progress_sec")), 6.0),
+		"a 1 s lapse, inside PRESENCE_GRACE_SEC, keeps the bar moving (F-374)")
+	wellspring.call(&"host_tick", 1.5)
+	check(is_equal_approx(float(wellspring.get("progress_sec")), 6.0),
+		"2.5 s of unbroken absence is past the grace, and the bar stops")
+	wellspring.call(&"host_tick", 300.0)
+	check(is_equal_approx(float(wellspring.get("progress_sec")), 6.0),
+		"it stays stopped however long nobody is present — paused, never decayed (D-092)")
+
+	player_one.global_position = wellspring.global_position
+	wellspring.call(&"host_tick", 2.0)
+	check(is_equal_approx(float(wellspring.get("progress_sec")), 8.0),
+		"returning resumes from exactly where it paused")
+	player_one.global_position = away
+	wellspring.call(&"host_tick", 1.0)
+	check(is_equal_approx(float(wellspring.get("progress_sec")), 9.0),
+		"the grace re-arms on return, so the second knockback is forgiven too")
+
+	player_one.global_position = wellspring.global_position
+	wellspring.call(&"host_tick", WELLSPRING_SCRIPT.SOLO_DURATION_SEC)
+	check(bool(wellspring.get("capped")), "and the attempt still finishes")
+
+	player_two.add_to_group(&"players")
 	world.call("host_despawn_all")
 
 

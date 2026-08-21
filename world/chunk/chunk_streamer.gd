@@ -155,16 +155,18 @@ class ChunkJob extends RefCounted:
 
 func _ready() -> void:
 	# Flat-shaded terrain (4.18/D-184): per-facet lighting from screen-space derivatives — see the
-	# shader's own header. Still one shared material, one bind per chunk; the placeholder colour
-	# and 4.4's eventual per-biome tint both live on as shader uniforms.
+	# shader's own header. Still one shared material, one bind per chunk.
 	_shared_material = ShaderMaterial.new()
 	_shared_material.shader = preload("res://world/chunk/terrain_flat.gdshader")
-	# F-353: deepened and given real chroma. The old value was a greyed olive (sRGB saturation ~0.20)
-	# chosen while the grade was washing everything out anyway; with the veils gone it rendered as a
-	# pale chartreuse sheet. This is the same hue family, darker and further from grey, which is what
-	# lets the flat-shaded facets read as shading rather than as one flat fill. Kept in step with the
-	# shader's own default so the two copies of the placeholder colour cannot drift.
-	_shared_material.set_shader_parameter(&"albedo_color", Color(0.26, 0.40, 0.19))
+	# F-379: 4.4's "eventual per-biome tint" is no longer eventual, and it is no longer THIS. The
+	# single value that used to live here (F-353's Color(0.26, 0.40, 0.19)) painted every chunk on
+	# the island one saturated green — which, against a canopy in the same band under warm light, is
+	# most of why Sequoyah's verdict was "game looks to green/yellow". The ground's colour is a
+	# per-vertex blend of each biome's authored `ground_albedo` now (`ChunkMesher.make_ground_palette`),
+	# and this uniform is what survives of the old one: a global multiply over that, shipping at
+	# white so it contributes nothing. Anything that wants to tint the whole ground at once — a
+	# weather state, a debug view, `tools/grade_probe.gd`'s sweep — still has its lever here.
+	_shared_material.set_shader_parameter(&"albedo_color", Color(1.0, 1.0, 1.0))
 
 
 func _exit_tree() -> void:

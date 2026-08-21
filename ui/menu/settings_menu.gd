@@ -11,8 +11,29 @@ extends CanvasLayer
 ##
 ## NETWORK AUTHORITY (docs/ARCHITECTURE.md §2.2): none — client-local UI, the table's free last row.
 ## Opened from `MainMenu`; no keybind of its own yet since nothing inside it needs one.
+##
+## ## Preview, then commit (F-386)
+##
+## Opening this panel starts a `SettingsService` preview: every control still applies live, because
+## FOV and sensitivity are settings you have to see to judge, but nothing reaches disk until SAVE.
+## CLOSE and Esc both hand the whole opening state back and drop the write — which is what makes an
+## accidentally-dragged handle recoverable, together with F-385's numeric readouts. `set_open(false)`
+## is the single close path (`MenuStack.close_blocking_panel()` calls exactly that, F-384), so the
+## revert cannot be bypassed by whichever way the player leaves.
+
+const FocusRingSlider := preload("res://ui/menu/focus_ring_slider.gd")
 
 const BLOCKING_UI_GROUP: StringName = &"blocks_gameplay_input"
+
+## F-387: the scroll viewport was a fixed 380 px, which is both too short to be worth scrolling on a
+## 1080p screen and — with the title, footer and margins on top — taller than the window on nothing.
+## Sized from the window instead: a fraction of its height, capped so the panel as a whole always
+## fits, floored so a tiny window still shows more than one row.
+const SCROLL_HEIGHT_FRACTION: float = 0.62
+## Title + separator + footer buttons + hint + the panel's own margins, in pixels. The height the
+## scroll viewport must leave behind for the panel to fit the window.
+const SCROLL_CHROME_HEIGHT: float = 210.0
+const SCROLL_MIN_HEIGHT: float = 180.0
 
 const COLOUR_SCREEN_SHADE := Color(0.018, 0.035, 0.028, 0.78)
 const COLOUR_PANEL := Color(0.055, 0.086, 0.070, 0.97)
@@ -42,7 +63,11 @@ const ACTION_LABELS: Dictionary = {
 var _root: Control
 var _shade: ColorRect
 var _center: CenterContainer
+var _scroll: ScrollContainer
 var _close_button: Button
+var _save_button: Button
+var _restore_defaults_button: Button
+var _unsaved_label: Label
 
 var _graphics_option: OptionButton
 var _master_slider: HSlider
@@ -60,6 +85,13 @@ var _status_label: Label
 
 var _open: bool = false
 var _restore_mouse_captured: bool = false
+## F-386: every persisted value as it stood when this panel opened, from
+## `SettingsService.capture_state()`. Handed back verbatim by CLOSE/Esc, and re-taken by SAVE so a
+## second CLOSE after a save reverts to what was saved rather than to what was on screen an hour ago.
+var _baseline: Dictionary = {}
+## True once anything in the panel has written a setting since the last open or save. Drives the
+## "unsaved changes" line — a confirm step the player cannot see the state of is not a confirm step.
+var _dirty: bool = false
 ## Non-empty while waiting for the next physical key press to rebind this action (see `_input()`).
 var _rebinding_action: StringName = &""
 var _rebinding_button: Button
@@ -117,9 +149,17 @@ func set_open(open: bool) -> void:
 		add_to_group(BLOCKING_UI_GROUP)
 		_restore_mouse_captured = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		_begin_preview()
 		_refresh_from_settings()
+		_refresh_scroll_height()
 		_graphics_option.grab_focus()
 	else:
+		# F-386: closing is CANCEL. Every route out of this panel lands here — the CLOSE button, the
+		# Esc branch in `_input()`, and `MenuStack.close_blocking_panel()`'s `set_open(false)` (F-384)
+		# — so there is exactly one place that has to remember to put the player's settings back, and
+		# no way to leave by a door that forgets. SAVE reaches this too, having already committed and
+		# re-taken the baseline, which makes the revert below a no-op rather than an undo of the save.
+		_cancel_preview()
 		_rebinding_action = &""
 		_rebinding_button = null
 		_rebinding_joypad_action = &""
@@ -192,11 +232,15 @@ func _build_ui() -> void:
 	title.add_theme_color_override("font_color", COLOUR_TEXT)
 	outer.add_child(title)
 
-	var scroll := ScrollContainer.new()
-	scroll.name = "SettingsScroll"
-	scroll.custom_minimum_size = Vector2(0.0, 380.0)
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	outer.add_child(scroll)
+	_scroll = ScrollContainer.new()
+	_scroll.name = "SettingsScroll"
+	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	# F-387: a gamepad walking the focus chain past the fold has to bring the viewport with it, or
+	# the rows below are unreachable on a controller even once the wheel works on mouse.
+	_scroll.follow_focus = true
+	outer.add_child(_scroll)
+	_refresh_scroll_height()
+	get_viewport().size_changed.connect(_refresh_scroll_height)
 
 	# 7.5's controls live here — each is a thin view over SettingsService, nothing else in this
 	# file needs to change to add another row.
@@ -204,7 +248,7 @@ func _build_ui() -> void:
 	stack.name = "SettingsStack"
 	stack.add_theme_constant_override("separation", 10)
 	stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(stack)
+	_scroll.add_child(stack)
 
 	_build_graphics_row(stack)
 	_build_audio_rows(stack)
@@ -215,18 +259,35 @@ func _build_ui() -> void:
 
 	outer.add_child(HSeparator.new())
 
-	_close_button = Button.new()
-	_close_button.text = "CLOSE"
-	_close_button.add_theme_color_override("font_color", COLOUR_TEXT)
-	_close_button.add_theme_stylebox_override("normal", _field_style(COLOUR_FIELD, COLOUR_BORDER))
-	_close_button.add_theme_stylebox_override("hover", _field_style(COLOUR_FIELD, COLOUR_ACCENT))
-	_close_button.add_theme_stylebox_override("pressed", _field_style(COLOUR_FIELD, COLOUR_ACCENT))
-	_close_button.add_theme_stylebox_override("focus", _focus_style())
-	_close_button.pressed.connect(request_close)
+	# F-386's footer. It sits OUTSIDE the scroll viewport on purpose: a Save button you have to
+	# scroll to find is a Save button players report as missing, which is how this panel got here.
+	_unsaved_label = Label.new()
+	_unsaved_label.name = "UnsavedNotice"
+	_unsaved_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_unsaved_label.add_theme_font_size_override("font_size", 11)
+	_unsaved_label.add_theme_color_override("font_color", COLOUR_ACCENT)
+	outer.add_child(_unsaved_label)
+
+	var actions := HBoxContainer.new()
+	actions.name = "SettingsActions"
+	actions.add_theme_constant_override("separation", 8)
+	outer.add_child(actions)
+
+	_restore_defaults_button = _footer_button("RESTORE DEFAULTS", _on_restore_defaults)
+	_restore_defaults_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	actions.add_child(_restore_defaults_button)
+
+	_save_button = _footer_button("SAVE", _on_save)
+	_save_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	actions.add_child(_save_button)
+
+	# Still literally CLOSE, still the last entry in the focus chain: with SAVE beside it, "close"
+	# means "leave it as I found it", which is exactly the way out F-386 says the panel was missing.
+	_close_button = _footer_button("CLOSE", request_close)
 	outer.add_child(_close_button)
 
 	var close_hint := Label.new()
-	close_hint.text = "ESC  CLOSE"
+	close_hint.text = "ESC  CLOSE WITHOUT SAVING"
 	close_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	close_hint.add_theme_font_size_override("font_size", 10)
 	close_hint.add_theme_color_override("font_color", COLOUR_MUTED)
@@ -243,6 +304,8 @@ func _build_ui() -> void:
 	chain.append_array(_keybind_buttons.values())
 	chain.append(_reset_keybind_button)
 	chain.append_array(_gamepad_keybind_buttons.values())
+	chain.append(_restore_defaults_button)
+	chain.append(_save_button)
 	chain.append(_close_button)
 	_wire_vertical_chain(chain)
 
@@ -266,20 +329,26 @@ func _on_graphics_selected(index: int) -> void:
 func _build_audio_rows(parent: VBoxContainer) -> void:
 	_add_section_label(parent, "AUDIO")
 	_master_slider = _build_slider_row(parent, "Master Volume", 0.0, 1.0, 0.01,
+		FocusRingSlider.Readout.PERCENT,
 		func(v: float) -> void: _settings_call("set_master_volume", [v]))
 	_music_slider = _build_slider_row(parent, "Music Volume", 0.0, 1.0, 0.01,
+		FocusRingSlider.Readout.PERCENT,
 		func(v: float) -> void: _settings_call("set_music_volume", [v]))
 	_sfx_slider = _build_slider_row(parent, "SFX Volume", 0.0, 1.0, 0.01,
+		FocusRingSlider.Readout.PERCENT,
 		func(v: float) -> void: _settings_call("set_sfx_volume", [v]))
 
 
 func _build_look_rows(parent: VBoxContainer) -> void:
 	_add_section_label(parent, "LOOK")
 	_sensitivity_slider = _build_slider_row(parent, "Mouse Sensitivity", 0.01, 1.0, 0.01,
+		FocusRingSlider.Readout.DECIMAL2,
 		func(v: float) -> void: _settings_call("set_look_sensitivity", [v]))
 	_gamepad_sensitivity_slider = _build_slider_row(parent, "Gamepad Look Sensitivity", 30.0, 720.0, 5.0,
+		FocusRingSlider.Readout.DEGREES_PER_SECOND,
 		func(v: float) -> void: _settings_call("set_gamepad_look_sensitivity", [v]))
 	_fov_slider = _build_slider_row(parent, "Field of View", 60.0, 110.0, 1.0,
+		FocusRingSlider.Readout.DEGREES,
 		func(v: float) -> void: _settings_call("set_fov_degrees", [v]))
 	_invert_checkbox = CheckBox.new()
 	_invert_checkbox.text = "Invert Look Y"
@@ -409,6 +478,9 @@ func _finish_rebind(key: InputEventKey) -> void:
 		if conflict != &"":
 			_set_status("Already bound to %s." % String(ACTION_LABELS.get(conflict, String(conflict))))
 		else:
+			# F-386: a rebind stages like every other change — applied to the InputMap now so the
+			# player can try it, persisted only by SAVE, undone by CLOSE.
+			_set_dirty(true)
 			_set_status("Bound %s." % String(ACTION_LABELS.get(action, String(action))))
 	else:
 		_set_status("")
@@ -437,6 +509,7 @@ func _finish_rebind_joypad(joy_event: InputEventJoypadButton) -> void:
 	if conflict != &"":
 		_set_status("Already bound to %s." % String(ACTION_LABELS.get(conflict, String(conflict))))
 	else:
+		_set_dirty(true)
 		_set_status("Bound %s." % String(ACTION_LABELS.get(action, String(action))))
 	button.text = String(settings.call("keybind_label_joypad", action))
 
@@ -490,10 +563,15 @@ func _refresh_from_settings() -> void:
 	_set_status("")
 
 
+## Signals are blocked so re-showing the panel does not fire every setter again — which also swallows
+## `value_changed`, so the readout has to be re-derived by hand or it would keep showing the last
+## value the player dragged to rather than the one just loaded (F-385).
 func _set_slider(slider: HSlider, value: float) -> void:
 	slider.set_block_signals(true)
 	slider.value = value
 	slider.set_block_signals(false)
+	if slider is FocusRingSlider:
+		(slider as FocusRingSlider).refresh_readout()
 
 
 func _add_section_label(parent: VBoxContainer, text: String) -> void:
@@ -504,32 +582,144 @@ func _add_section_label(parent: VBoxContainer, text: String) -> void:
 	parent.add_child(label)
 
 
+## One slider row: its name on the left, its NUMBER on the right, the handle underneath.
+##
+## F-385: the readout half is the fix. All six sliders in this panel came through here, and this
+## helper put a label on the left and nothing at all on the right — so a 60-110 FOV slider in steps
+## of 1 could be dragged with no way to read where it now was, and no way to know where it had been.
+## The `Label` is styled here (this panel has its own palette, predating `MireTheme`) but formatted
+## and width-pinned by `FocusRingSlider.bind_readout()`, which `ui/frontend/settings_screen.gd` calls
+## too — the format table and the "fixed width so the row does not reflow mid-drag" rule live in one
+## place for both settings surfaces rather than being written twice and drifting.
 func _build_slider_row(parent: VBoxContainer, label_text: String, min_v: float, max_v: float,
-		step: float, on_change: Callable) -> HSlider:
+		step: float, readout: int, on_change: Callable) -> HSlider:
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 8)
+	parent.add_child(header)
+
 	var label := Label.new()
 	label.text = label_text
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.add_theme_font_size_override("font_size", 11)
 	label.add_theme_color_override("font_color", COLOUR_MUTED)
-	parent.add_child(label)
+	header.add_child(label)
+
+	var value_label := Label.new()
+	value_label.add_theme_font_size_override("font_size", 12)
+	value_label.add_theme_color_override("font_color", COLOUR_TEXT)
+	header.add_child(value_label)
 
 	var slider := FocusRingSlider.new()
 	slider.focus_ring_style = _focus_style()
 	slider.min_value = min_v
 	slider.max_value = max_v
 	slider.step = step
+	slider.bind_readout(value_label, readout)
 	slider.value_changed.connect(on_change)
 	parent.add_child(slider)
 	return slider
+
+
+## Sizes the scroll viewport to the window (F-387). The 380 px it was hard-coded to showed barely two
+## sections of six on any screen, and — with the title, footer and margins on top — had no relation
+## to whether the panel as a whole fitted. Re-run on every window resize, so a player who alt-tabs to
+## a different resolution or docks a Steam Deck does not get a panel sized for the old one.
+func _refresh_scroll_height() -> void:
+	if _scroll == null:
+		return
+	var window_height: float = float(get_viewport().get_visible_rect().size.y)
+	var budget: float = minf(
+		window_height * SCROLL_HEIGHT_FRACTION, window_height - SCROLL_CHROME_HEIGHT)
+	_scroll.custom_minimum_size = Vector2(0.0, maxf(budget, SCROLL_MIN_HEIGHT))
+
+
+func _footer_button(text: String, on_pressed: Callable) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.add_theme_color_override("font_color", COLOUR_TEXT)
+	button.add_theme_stylebox_override("normal", _field_style(COLOUR_FIELD, COLOUR_BORDER))
+	button.add_theme_stylebox_override("hover", _field_style(COLOUR_FIELD, COLOUR_ACCENT))
+	button.add_theme_stylebox_override("pressed", _field_style(COLOUR_FIELD, COLOUR_ACCENT))
+	button.add_theme_stylebox_override("focus", _focus_style())
+	button.pressed.connect(on_pressed)
+	return button
+
+
+# ── F-386: preview, save, cancel, restore defaults ───────────────────────────────────────────────
+
+
+## Takes the baseline and asks `SettingsService` to stop writing. Every control keeps applying live
+## from here — that is the point — but nothing is persisted until `_on_save()`.
+func _begin_preview() -> void:
+	var settings: Node = _settings_node()
+	if settings == null or not settings.has_method("hold_persistence"):
+		return
+	settings.call("hold_persistence")
+	_baseline = settings.call("capture_state") as Dictionary
+	_set_dirty(false)
+
+
+## Hands the baseline back and drops the deferred write. Safe to call when nothing was previewing
+## (`_baseline` empty) and safe to call twice — `release_persistence` floors its own counter.
+func _cancel_preview() -> void:
+	var settings: Node = _settings_node()
+	if settings == null or not settings.has_method("release_persistence"):
+		return
+	if not _baseline.is_empty():
+		settings.call("apply_state", _baseline)
+	settings.call("release_persistence", false)
+	_baseline = {}
+	_set_dirty(false)
+
+
+## SAVE: the deferred write goes to disk, then the preview restarts against the state just saved.
+## Re-taking the baseline is what makes CLOSE-after-SAVE keep the save instead of undoing it.
+func _on_save() -> void:
+	var settings: Node = _settings_node()
+	if settings == null or not settings.has_method("release_persistence"):
+		return
+	settings.call("release_persistence", true)
+	settings.call("hold_persistence")
+	_baseline = settings.call("capture_state") as Dictionary
+	_set_dirty(false)
+	_set_status("Settings saved.")
+
+
+## RESTORE DEFAULTS loads the factory values into the LIVE state without persisting them (F-386), so
+## it is a proposal like any other drag of a handle: SAVE keeps it, CLOSE throws it away.
+func _on_restore_defaults() -> void:
+	var settings: Node = _settings_node()
+	if settings == null or not settings.has_method("default_state"):
+		return
+	settings.call("apply_state", settings.call("default_state"))
+	_refresh_from_settings()
+	_set_dirty(true)
+	_set_status("Defaults loaded — SAVE to keep them.")
+
+
+func _set_dirty(dirty: bool) -> void:
+	_dirty = dirty
+	if _unsaved_label != null:
+		_unsaved_label.text = "Unsaved changes" if dirty else ""
+
+
+func has_unsaved_changes() -> bool:
+	return _dirty
 
 
 func _settings_node() -> Node:
 	return get_node_or_null(^"/root/SettingsService")
 
 
+## Every control in this panel writes through here, which makes it the one place that has to notice
+## something changed (F-386). The value still applies immediately — `SettingsService` is holding the
+## persistence, not the application — so the preview the player is judging is unaffected.
 func _settings_call(method: StringName, args: Array) -> void:
 	var settings: Node = _settings_node()
 	if settings != null:
 		settings.callv(method, args)
+		if _open:
+			_set_dirty(true)
 
 
 func _wire_vertical_chain(controls: Array) -> void:

@@ -26,8 +26,9 @@ extends Node3D
 ## its own tick — task 4.11) covers this Wellspring's position — the identical pause-not-reset rule
 ## D-092 already gives the ritual's own presence requirement. It rides the same `host_tick()` this
 ## file already exposes for the ritual, so a check can cross the whole clock in one call exactly like
-## it already does for a 60-150s ritual. Finishing flips `capped` back to `false` — the exact
-## pre-ritual state, so `request_toggle_channel()` recaptures it with no special-casing — and fires
+## it already does for a 60-80s ritual (F-374 retuned the solo half of that range down from 150s).
+## Finishing flips `capped` back to `false` — the exact pre-ritual state, so
+## `request_toggle_channel()` recaptures it with no special-casing — and fires
 ## `EventBus.emit_wellspring_recorrupted()`, `MireGrid`'s seam to undo the spread-rate reduction this
 ## cap granted (D-104).
 
@@ -47,8 +48,32 @@ const FOUNDATION_HEIGHT_M: float = 0.6
 ## ring (assets/wellsprings/catalog.json), so standing inside the ring always counts.
 const PRESENCE_RANGE_M: float = 4.5
 const COOP_DURATION_SEC: float = 60.0
-## D-092: 2.5× the co-op duration. DESIGN.md §4.5 says only "longer", not a number.
-const SOLO_DURATION_SEC: float = 150.0
+## F-374, retuned from 150.0 (D-092's original 2.5× the co-op duration). Reported from play
+## (2026-08-20, Sequoyah): "the wellspring takes an absurdly long time to cap".
+##
+## DESIGN.md §4.5 asks for "longer", and 2.5× was never a measured number — it priced the same
+## objective at two and a half minutes of unbroken standing for the player least able to hold ground,
+## while `DEFENSE_WAVE_BASE_COUNT` + `DEFENSE_WAVE_PER_PLAYER` put four crawlers on top of them and
+## the Blight (F-349) drains the ground they are standing on.
+##
+## 80 s is 4/3 of the co-op timer: still visibly "longer" alone, but the premium is now a third
+## rather than a run's worth of standing still. The shape it buys is the one this ritual should have
+## — long enough that the defence wave is fought DURING the cap and not before a wait, short enough
+## that finishing it is the thing you remember instead of the standing. Landing mid-band on F-374's
+## own 75-90 s range rather than at an edge leaves room to move it either way after a real playtest;
+## like `RECORRUPTION_DURATION_SEC` below, this is placeholder-tuned until one happens.
+const SOLO_DURATION_SEC: float = 80.0
+## F-374. Presence is allowed to lapse for this long without the timer stalling. Progress PAUSES
+## rather than DECAYS when it does lapse — D-092's rule, deliberately kept: decay on top of a wave
+## that physically shoves you (crawlers knock back, and `PRESENCE_RANGE_M` is only 4.5 m) turns one
+## bad hit into a loss spiral solo, which is punishing the player for the fight the ritual itself
+## started. But a hard pause is what makes an interrupted cap feel LONG: a single knockback used to
+## cost the whole round trip out and back with the bar frozen the entire time.
+##
+## Two seconds is the knockback round trip and nothing more — long enough to be shoved out of a 4.5 m
+## circle and walk back in, far too short to leave and do something else. Step away properly and the
+## bar still stops, exactly as it always did.
+const PRESENCE_GRACE_SEC: float = 2.0
 const DEFENSE_WAVE_BASE_COUNT: int = 3
 const DEFENSE_WAVE_PER_PLAYER: int = 1
 const DEFENSE_WAVE_ENEMY_ID: StringName = &"crawler"
@@ -125,6 +150,13 @@ var has_recorrupted: bool = false:
 ## ever see the replicated `recorruption_sec` it drives.
 var _recorruption_active: bool = false
 
+## Host-only, not replicated (F-374): how long the presence requirement has been unmet without a
+## break. Deliberately NOT on the wire — a client already sees the consequence in `progress_sec`,
+## which either advances or does not, and one more replicated float per Wellspring to say why is
+## bandwidth for a number nothing renders. Reset by every path that starts, ends or abandons an
+## attempt, so a grace can never carry across two of them.
+var _absence_sec: float = 0.0
+
 var _visual: Node3D
 var _sync: MultiplayerSynchronizer
 var _visual_refresh_scheduled: bool = false
@@ -186,6 +218,7 @@ func _process_toggle(peer_id: int) -> void:
 func _start_channel() -> void:
 	channeling = true
 	progress_sec = 0.0
+	_absence_sec = 0.0
 	var solo: bool = _session_player_total() <= 1
 	# Cycle Modifier `tithe` (F-245, content/cycle_modifiers/tithe.tres): one more player must be
 	# physically present than usual. Read once here, same "snapshotted at channel start" rule every
@@ -205,6 +238,7 @@ func _start_channel() -> void:
 func _cancel_channel() -> void:
 	channeling = false
 	progress_sec = 0.0
+	_absence_sec = 0.0
 	set_process(false)
 
 
@@ -221,6 +255,7 @@ func host_reset_for_new_run() -> void:
 		return
 	channeling = false
 	progress_sec = 0.0
+	_absence_sec = 0.0
 	_recorruption_active = false
 	recorruption_sec = 0.0
 	has_recorrupted = false
@@ -237,7 +272,7 @@ func _process(delta: float) -> void:
 
 
 ## Advances the ritual AND the re-corruption clock by `delta` seconds, host-only. Split out of
-## `_process()` so a check can cross a whole 60-150 s ritual, or the much longer
+## `_process()` so a check can cross a whole 60-80 s ritual (F-374), or the much longer
 ## `RECORRUPTION_DURATION_SEC` clock, in a handful of calls instead of thousands of real engine
 ## frames — the same reason `DayNight.host_advance()` is public rather than something only
 ## `_physics_process` calls.
@@ -246,8 +281,19 @@ func host_tick(delta: float) -> void:
 		set_process(false)
 		return
 	if channeling:
+		# F-374. Presence lost is a PAUSE, never a decay (D-092) — but the pause now owes the player
+		# `PRESENCE_GRACE_SEC` first, so a crawler's knockback out of a 4.5 m circle costs the walk
+		# back and not a frozen bar on top of it. A fast-forward (`host_tick(70.0)` in the checks, a
+		# real engine hitch) spends its whole delta of absence in one step and therefore blows
+		# straight through the grace, which is the conservative reading and the one that keeps
+		# "progress does not advance while under-presence" true for any tick large enough to matter.
 		if _present_count() >= required_players:
+			_absence_sec = 0.0
 			progress_sec = minf(progress_sec + delta, duration_sec)
+		else:
+			_absence_sec += delta
+			if _absence_sec <= PRESENCE_GRACE_SEC:
+				progress_sec = minf(progress_sec + delta, duration_sec)
 		if progress_sec >= duration_sec:
 			_finish_cap()
 	if capped and _recorruption_active and not _is_warded():
@@ -261,6 +307,7 @@ func host_tick(delta: float) -> void:
 func _finish_cap() -> void:
 	channeling = false
 	progress_sec = 0.0
+	_absence_sec = 0.0
 	capped = true
 	recorruption_sec = 0.0
 	set_process(false)

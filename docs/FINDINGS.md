@@ -2047,297 +2047,6 @@ a second darker tone so the facets catch light the way the canopy's already do. 
 
 ---
 
-### F-373 · Nothing plays the ambient soundtrack — ambient_day.ogg and ambient_night.ogg have no player anywhere in the game
-
-**Area:** audio · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "the music/soundtrack does not play".
-
-Confirmed by grep, not inference. `assets/audio/music/` holds three rendered tracks —
-`ambient_day.ogg` (2.9 MB), `ambient_night.ogg` (2.0 MB), `boss_stinger.ogg` (96 KB) — all three
-imported. **`ambient_day` and `ambient_night` are referenced by exactly nothing in the repo**: a
-recursive search across `content/`, `systems/`, `autoload/`, `world/`, `ui/` and `core/` returns zero
-hits for either name.
-
-The only music player that exists is `autoload/boss_music_director.gd`, and its `CUE_PATHS` holds one
-entry, `boss_stinger`. There is no ambient music autoload, no day/night music director, and no
-`AudioStreamPlayer` fed by `systems/environment/day_night.gd`. So the game is silent except for a
-seven-second stinger during a boss fight.
-
-The bus exists (`MUSIC_BUS := &"Music"`) and `SettingsService` already exposes a music volume slider,
-so the plumbing is all there — the consumer is missing.
-
-Fix: an `AmbientMusicDirector` autoload on the same shape `boss_music_director.gd` already uses —
-two looping `AudioStreamPlayer`s on the `Music` bus, crossfaded off `DayNight`'s `time_of_day` at the
-same threshold the sky uses, ducked while `BossMusicDirector` is playing. Client-local, no authority
-(ARCHITECTURE.md §2.2, "VFX, audio, camera, UI").
-
----
-
-### F-374 · The wellspring takes 150 seconds of standing still to cap solo, with a defence wave on top
-
-**Area:** systems · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "the wellspring takes and absurdly long time to cap".
-
-`systems/wellspring/wellspring_service.gd`:
-
-    const COOP_DURATION_SEC: float = 60.0
-    const SOLO_DURATION_SEC: float = 150.0
-    const PRESENCE_RANGE_M: float = 4.5
-
-So a solo player stands inside a 4.5 m circle for two and a half unbroken minutes, and
-`DEFENSE_WAVE_BASE_COUNT = 3` crawlers arrive during it, any one of which can push them out of
-`PRESENCE_RANGE_M` and stall the timer. The co-op number is defensible; the solo number is the same
-objective priced 2.5x for the player who has the least ability to hold ground.
-
-This compounds with the Blight drain (F-349) — the ground the wellspring sits on is corrupting while
-you stand on it — and with F-350's saturation rate.
-
-Fix: bring `SOLO_DURATION_SEC` down to roughly 75-90 s, and decide whether progress should decay or
-merely pause when presence is lost, because "pause" is what makes an interrupted cap feel long rather
-than hard. Tuning call — record the number chosen and why.
-
----
-
-### F-375 · Water is a flat mid-blue and has no effect on the player who walks into it
-
-**Area:** world · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "the water should slow player movement down slightly and
-i want the water to be a darker blue".
-
-Two separate gaps, one file each.
-
-**Colour.** `world/environment/water_low_poly.gdshader:21` —
-`uniform vec3 albedo_color : source_color = vec3(0.30, 0.52, 0.72)`, assigned straight to `ALBEDO`
-at :35. That is a pale cyan-leaning blue, and in the play capture the sea past the shore reads as a
-bright band that pulls the eye off the island. Wants to go darker and slightly greener.
-
-**Movement.** Nothing in `entities/player/` references water at all — a recursive search for `water`
-across the player scripts returns zero hits. `world/gen/procedural_world.gd:273`'s
-`water_surface_at()` is the only "where is the waterline" answer in the codebase and its only callers
-are world-gen. So the player walks into the sea at full sprint speed with no drag, no sound, no
-visual change, and no swim state.
-
-Fix: darken the shader default (and any `.tres` that overrides it), then add a wade check to the
-player controller — sample `water_surface_at()` against foot height each physics tick and scale the
-movement speed by depth. Host-authoritative movement already owns speed, so this belongs on the same
-path as any other speed modifier, not as a client-local visual.
-
----
-
-### F-376 · Leaf-fall particles emit from a fixed 4.8 m above every tree, never stop at night, and visibly teleport when the pooled emitter is reassigned
-
-**Area:** vfx · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "the tree leaves/particles suck and spawn above the trees
-and way too many spawn and they bug out when you start walking/running there also visible at night
-when they shouldnt be".
-
-Three distinct defects in `autoload/environment_vfx.gd`, all in the `LEAF_FALL` path.
-
-1. **Fixed emitter height.** `:855` — `node.add_child(_leaf_fall(12, 7.0, 4.8))`. The third argument
-   is `height`, applied as `particles.position.y = height` (`:952`), and `_leaf_fall`'s own header
-   admits it: "`height` is where the crown starts; one number for every species is a compromise".
-   With the shipped trees topping out below 4.8 m (see the tree-height finding) the leaves emit in
-   open air *above* the canopy instead of from inside it. The header's justification — "a leaf that
-   starts a metre inside the foliage simply appears from behind it" — only holds when the number is
-   an under-estimate, and here it is an over-estimate.
-
-2. **No night gate.** Nothing in `_make_effect` or the budget path consults `DayNight`. Leaves keep
-   falling in full darkness, lit by nothing, which is what makes them read as a bug rather than
-   weather.
-
-3. **Pool reassignment teleports live particles.** The file's own comment at `:815` — "the pool is
-   reassigned to new sites as the player moves rather than grown". Moving a `GPUParticles3D` that has
-   in-flight particles drags the whole live system to the new site in one frame, so every leaf
-   currently mid-fall jumps across the world. That is precisely "they bug out when you start
-   walking/running", and it gets worse the faster you move. `restart()` on reassignment, or a
-   one-lifetime cooldown before a freed emitter is reused, is the shape of the fix.
-
-Density is a fourth, smaller item: `amount = 12` per emitter times however many crowns are inside the
-budget radius, with `BUDGET_BY_PRESET = [0.4, 0.7, 1.0]` the only limiter.
-
----
-
-### F-377 · Shadows flicker and swim on the low graphics preset — 2 cascades over 55 m with a 2048 atlas at 0.59 render scale
-
-**Area:** render · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "shadows flicker and flash on low graphics quality".
-
-`autoload/graphics_quality.gd`'s LOW preset:
-
-    "render_scale": 0.59,
-    "cascades": DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS,
-    "shadow_distance": 55.0,
-    "shadow_atlas": 2048,
-
-Four things that each cause shadow instability, stacked. Two cascades split across 55 m puts the far
-split's texel size well above a metre at 2048; the preset never touches
-`directional_shadow_blend_splits`, so the cascade boundary is a hard seam that pops as the player
-walks through it; `render_scale 0.59` means the shadow is sampled at ~59% resolution and upscaled,
-which turns sub-texel jitter into visible crawl; and nothing sets `shadow_normal_bias`/`shadow_bias`
-per preset, so the bias tuned for HIGH's 4096 atlas is far too small for LOW's 2048.
-
-The preset system is doing the right thing in principle — `PRESETS` deliberately "names only what it
-overrides" — but shadow stability is not a property any single one of these knobs owns, so lowering
-them independently produced a configuration that is cheap and wrong.
-
-Fix: on LOW, enable `directional_shadow_blend_splits`, raise `shadow_normal_bias` in proportion to
-the atlas reduction, and pull `shadow_distance` in further (35-40 m) so the two splits cover less
-ground each. Verify by capturing the same camera path on each preset — this is a motion artefact, so
-a still will not show it.
-
----
-
-### F-378 · The sun has no disc — it renders as a wide faded haze, and there is no moon at night at all
-
-**Area:** render · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "the sun doesnt have a clear circle form in the sky its
-more of a faded haze thats way to wide" and "night time could be slightly less dark but only because
-of moonlight so we need to add a moon in that cast cool white light dimmly over the map".
-
-**Sun.** `world/environment/playtest_atmosphere.gd` drives a `PhysicalSkyMaterial`
-(`_sky_material`, :174) and animates `energy_multiplier`, `turbidity`, `rayleigh_color`, `mie_color`
-and `ground_color` on the daylight curve (:360-367). The disc itself comes from the `Sun`
-`DirectionalLight3D`'s angular size, and nothing here sets it — `sun.light_angular_distance` is never
-assigned, and `turbidity` is lerped up to 10.0 at night, which is what smears the glow wide. A large
-angular distance plus high mie scattering is exactly "faded haze that is way too wide".
-
-**Moon.** There is none. A search of `playtest_atmosphere.gd` and `systems/environment/day_night.gd`
-for moon returns nothing; the level has one `DirectionalLight3D` named `Sun` (:139) and the night
-branch simply dims it to `light_energy = 0.04` (:292). `world/environment/star_field.gd` exists and
-gets a sky rotation (:273), so the night sky has stars and no moon.
-
-This is the other half of F-356 ("Night renders essentially black"): the answer Sequoyah wants is not
-to raise the ambient floor but to add a real second light.
-
-Fix: (a) set `light_angular_distance` on the sun to a tight disc and drop night turbidity so the glow
-tightens; (b) add a second `DirectionalLight3D` — cool white, roughly 0.12-0.2 energy, shadows on but
-at a cheap cascade count — rotated opposite the sun on the same `time_of_day` clock, cross-faded so
-exactly one of the two is meaningfully lit at any hour. Judge by eye at midnight and at golden hour.
-
----
-
-### F-379 · The whole scene grades green and yellow — one hue dominates ground, foliage and light together
-
-**Area:** render · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "game looks to green/yellow".
-
-Visible across the attached play capture: terrain, canopy, undergrowth and the lit side of every prop
-all sit in a narrow yellow-green band, so nothing separates from anything else and the island reads
-flat despite the geometry being anything but.
-
-Three contributors, in the order they compound:
-
-1. **Terrain albedo.** The ground material is a single saturated green with no biome variation — the
-   grassland and forest biomes (`content/biomes/*.tres`) differ only in `detail_amplitude` and
-   `ridge_amplitude`, never in colour.
-2. **Foliage albedo sits in the same band.** The canopy exports are a mid-green close enough to the
-   ground that the tree silhouettes only separate by their shadow.
-3. **The grade pushes it further.** `world/environment/playtest_atmosphere.gd` runs a tuned tonemap
-   curve (see its header at :66-72, "blacks lifted, highlights never") with `DAY_SUN_ENERGY = 1.55`
-   and a warm horizon term. Warm light on a yellow-green scene is what takes it from green to
-   green-yellow.
-
-Related but not the same: F-357's flat pale-grey band above the horizon, which is also visible in the
-capture.
-
-Fix: give the biomes distinct ground albedos and desaturate the base green, then pull the canopy
-either cooler or darker so it separates from the ground, and only then re-judge the tonemap. Doing
-the grade first hides which of the three is actually wrong. This one is judged by eye — capture the
-same seed and camera before and after.
-
----
-
-### F-385 · Settings show no numeric value for any slider, so FOV, sensitivity and volumes are set blind
-
-**Area:** UI · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "the fov slider does not have a number value for fov and
-neither do any other settings".
-
-`ui/menu/settings_menu.gd` builds every slider through one helper, `_build_slider_row` (:508), which
-creates a `FocusRingSlider` (:515) with a label on the left and nothing on the right. There are six
-of them — `_master_slider`, `_music_slider`, `_sfx_slider`, `_sensitivity_slider`, `_fov_slider`,
-`_gamepad_sensitivity_slider` (:48-55). The FOV row (:282) spans 60-110 in steps of 1 with no readout
-at all, so "the setting I had before" is unrecoverable once you move the handle.
-
-`ui/frontend/settings_screen.gd` has the same shape and the same gap.
-
-Fix: extend `_build_slider_row` to add a right-aligned value `Label` with a fixed minimum width (so
-the row does not reflow as digits change), formatted per row — integer + degree sign for FOV,
-percentage for the three volumes, two decimals for sensitivity — and updated from the same
-`value_changed` signal that already drives `on_change`. One helper edit covers all six rows in both
-screens if the helper is shared; if it is not, share it.
-
----
-
-### F-386 · The settings menu has no confirm step — every change applies live with no Save, no Cancel and no way back to what you had
-
-**Area:** UI · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "theres no 'save changes' button in the settings menu to
-confirm changes".
-
-Every control in `ui/menu/settings_menu.gd` writes straight through to `SettingsService` from its own
-signal — see `_build_slider_row`'s callback shape at :282-283:
-
-    _fov_slider = _build_slider_row(parent, "Field of View", 60.0, 110.0, 1.0,
-        func(v: float) -> void: _settings_call("set_fov_degrees", [v]))
-
-with no staging buffer anywhere in the file. There is no Save button, no Cancel, no Revert, and no
-Restore Defaults. Combined with the missing numeric readouts, a player who drags the FOV handle by
-accident cannot see what it was or get it back.
-
-Live-apply is genuinely the right behaviour for *some* of these — you want to see FOV and sensitivity
-as you drag them. So the fix is not "make everything deferred"; it is to keep the live preview and
-add an explicit commit:
-
-- snapshot every value on open,
-- keep applying live so the preview works,
-- **Save** persists the snapshot-to-current delta,
-- **Cancel** (and Esc) restores the snapshot and re-applies it,
-- **Restore Defaults** loads `SettingsService`'s defaults into the live state without persisting.
-
-Apply the same treatment to `ui/frontend/settings_screen.gd`, which has the same structure.
-
----
-
-### F-387 · Settings rows below the fold are unreachable — the ScrollContainer exists but the sliders eat the mouse wheel
-
-**Area:** UI · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "the settings menu has no scrolling so some settings are
-hidden".
-
-The `ScrollContainer` is there — `ui/menu/settings_menu.gd:195-199`, `custom_minimum_size` of
-`(0, 380)` with horizontal scrolling disabled, wrapping a `VBoxContainer` that holds six row groups
-(`_build_graphics_row`, `_build_audio_rows`, `_build_look_rows`, `_build_accessibility_rows`,
-`_build_keybind_rows`, `_build_gamepad_bind_rows`). So the content is far taller than 380 px and the
-scroll should work.
-
-The likely reason it does not, from the player's side: **`HSlider` consumes mouse-wheel input to
-change its own value.** Six of the rows are sliders (:48-55), and they are spread down the list, so
-the wheel over most of the panel nudges a setting instead of scrolling — which reads exactly as "no
-scrolling", and silently changes a setting while you try. Whatever is left between the sliders is a
-narrow target.
-
-Worth checking at the same time, since both produce the same report: whether the panel's fixed 380 px
-scroll viewport plus title and margins exceeds the window at the resolutions being played, which
-would clip the whole panel rather than scroll inside it.
-
-Fix: set `mouse_wheel_enabled = false` on the sliders (or filter wheel events in `FocusRingSlider`
-and pass them to the parent scroll), and make the scroll viewport a fraction of the window height
-rather than a fixed 380. `ui/frontend/settings_screen.gd:172` has the identical construction and
-needs the same treatment.
-
----
-
 ### F-388 · Nothing tells the player what is harvestable, what tool it needs, or that a swing is making progress
 
 **Area:** UI · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
@@ -2402,62 +2111,6 @@ level — the world is procedural, so a tutorial level would be its own map to m
 - a persistent, dismissable controls card bound to a key.
 
 All client-local presentation, no authority. Each bullet is independently shippable.
-
----
-
-### F-391 · Harvesting a node produces no destruction feedback — the debris particles either never fire or read as noise
-
-**Area:** vfx · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "the destruction partials either dont work or look bad as
-well".
-
-When a `Harvestable` depletes, the node swaps to its `depleted_scene`
-(`content/harvestables/*.tres` — `tree.tres` carries three `active_state_scenes` plus a depleted
-stump, `stone_node`/`iron_node` the same) and that is the whole of the feedback. There is no impact
-burst per swing, no debris on the final hit, no dust, no sound cue tied to the material, and no
-directional knock on the prop.
-
-`autoload/environment_vfx.gd` has the emitter vocabulary that this wants — `_sparks` (:876), `_smoke`
-(:891), `_motes` (:907) — but its `AssetVfx.Emitter` classes are all *ambient* (CAMPFIRE, FORGE,
-EMBER, CRYSTAL, SPORE, LEAF_FALL). None of them is event-driven, and nothing in
-`systems/harvesting/harvestable.gd` reaches into it.
-
-Fix: a one-shot impact effect per material class, fired from the harvest hit path rather than from a
-pooled ambient site — wood chips for `Tool.CHOP` targets, stone chips and dust for `Tool.MINE`, and a
-larger burst on the depletion hit. Bind it to the *asset*, the way `AssetVfxLibrary` already binds
-ambient effects, so any world containing the asset gets it with no map edit. Client-local
-presentation, no authority; the host still owns whether the node actually broke.
-
----
-
-### F-392 · Ambient enemies spawn at nest markers with no minimum distance to any player and no day gate, so a crawler can appear beside you in daylight
-
-**Area:** systems · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "a crawler randomly spawned in the middle of the map right
-after i respawned during the day".
-
-`autoload/enemy_world.gd` runs an ambient population loop — `ambient_population = 4`,
-`ambient_respawn_seconds = 12.0`, `ambient_scatter_m = 4.0`, `ambient_enemy = &"crawler"` (:52-56).
-It picks positions from `ambient_spawn_points()` (:276), which is a flat list of every `enemy_nest`
-marker's `global_position`, scattered by up to 4 m. **There is no guard on the distance from that
-point to any live player**, and no line-of-sight check.
-
-There is also no day gate. `systems/waves/wave_spawner.gd`'s header (:3) says it "disables
-EnemyWorld's ambient replacement loop while a night is active" — the ambient loop is therefore the
-*daytime* population by design, and it tops up every 12 s regardless of who is standing where.
-
-`top_up_ambient()` is additionally called on rule change (:130), so any event that refills the field
-while a player is stood on or near a nest materialises a crawler in their face. Respawning next to a
-nest — which the procedural map's `content/poi/enemy_nest.tres` placement makes possible — is exactly
-that case, and is what was reported.
-
-Fix: reject any candidate spawn point within a minimum radius of a live player (25-30 m is the usual
-figure for this shape), fall back to the furthest available point when every nest is too close, and
-suppress ambient top-up entirely for a few seconds after a respawn. Host-authoritative — this is the
-"wave director" row of ARCHITECTURE.md §2.2, so the guard belongs on the host's selection, not on a
-client-side filter.
 
 ---
 
@@ -2534,6 +2187,577 @@ somebody will act on it anyway.
 ---
 
 ## Resolved
+
+### F-387 · Settings rows below the fold are unreachable — the ScrollContainer exists but the sliders eat the mouse wheel — **fixed**
+
+**Area:** UI · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "the settings menu has no scrolling so some settings are
+hidden".
+
+The `ScrollContainer` is there — `ui/menu/settings_menu.gd:195-199`, `custom_minimum_size` of
+`(0, 380)` with horizontal scrolling disabled, wrapping a `VBoxContainer` that holds six row groups
+(`_build_graphics_row`, `_build_audio_rows`, `_build_look_rows`, `_build_accessibility_rows`,
+`_build_keybind_rows`, `_build_gamepad_bind_rows`). So the content is far taller than 380 px and the
+scroll should work.
+
+The likely reason it does not, from the player's side: **`HSlider` consumes mouse-wheel input to
+change its own value.** Six of the rows are sliders (:48-55), and they are spread down the list, so
+the wheel over most of the panel nudges a setting instead of scrolling — which reads exactly as "no
+scrolling", and silently changes a setting while you try. Whatever is left between the sliders is a
+narrow target.
+
+Worth checking at the same time, since both produce the same report: whether the panel's fixed 380 px
+scroll viewport plus title and margins exceeds the window at the resolutions being played, which
+would clip the whole panel rather than scroll inside it.
+
+Fix: set `mouse_wheel_enabled = false` on the sliders (or filter wheel events in `FocusRingSlider`
+and pass them to the parent scroll), and make the scroll viewport a fraction of the window height
+rather than a fixed 380. `ui/frontend/settings_screen.gd:172` has the identical construction and
+needs the same treatment.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** Fixed by a parallel subagent working a file-disjoint slice of the 2026-08-20 playtest; verified independently in the shared tree before commit.
+
+The hypothesis in the finding was right: the `ScrollContainer` was there all along and `HSlider` was
+eating the wheel to change its own value, so wheeling over most of the panel silently changed a
+setting instead of scrolling. `ui/menu/focus_ring_slider.gd` (the subclass actually in play) now
+lets wheel events through to the scroll, and the scroll viewport is sized from the window rather than
+pinned at 380 px.
+
+Both surfaces.
+
+Verified: settings_check 0, settings_screen_check 0.
+
+Worth recording, because the same class of bug turned up independently the same day: F-380's crafting
+grid had its wheel eaten too, first by the row's own containers (`Control` defaults to
+`MOUSE_FILTER_STOP`) and then by an unrelated overlay drawing on top of the panel. **A scrollable
+panel built from nested containers does not scroll under the pointer by default in this codebase** —
+that is worth knowing before building the next one.
+
+### F-386 · The settings menu has no confirm step — every change applies live with no Save, no Cancel and no way back to what you had — **fixed**
+
+**Area:** UI · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "theres no 'save changes' button in the settings menu to
+confirm changes".
+
+Every control in `ui/menu/settings_menu.gd` writes straight through to `SettingsService` from its own
+signal — see `_build_slider_row`'s callback shape at :282-283:
+
+    _fov_slider = _build_slider_row(parent, "Field of View", 60.0, 110.0, 1.0,
+        func(v: float) -> void: _settings_call("set_fov_degrees", [v]))
+
+with no staging buffer anywhere in the file. There is no Save button, no Cancel, no Revert, and no
+Restore Defaults. Combined with the missing numeric readouts, a player who drags the FOV handle by
+accident cannot see what it was or get it back.
+
+Live-apply is genuinely the right behaviour for *some* of these — you want to see FOV and sensitivity
+as you drag them. So the fix is not "make everything deferred"; it is to keep the live preview and
+add an explicit commit:
+
+- snapshot every value on open,
+- keep applying live so the preview works,
+- **Save** persists the snapshot-to-current delta,
+- **Cancel** (and Esc) restores the snapshot and re-applies it,
+- **Restore Defaults** loads `SettingsService`'s defaults into the live state without persisting.
+
+Apply the same treatment to `ui/frontend/settings_screen.gd`, which has the same structure.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** Fixed by a parallel subagent working a file-disjoint slice of the 2026-08-20 playtest; verified independently in the shared tree before commit.
+
+The live preview is kept — you want to see FOV and sensitivity as you drag them — and an explicit
+commit added on top: every value is snapshotted on open, changes keep applying live, **Save**
+persists, **Cancel** (and Esc) restores the snapshot and re-applies it, **Restore Defaults** loads
+SettingsService's defaults into the live state without persisting.
+
+Cancel works through `MenuStack`'s `set_open(false)`, which is the path F-384 just made Esc take, so
+Esc out of settings reverts rather than silently keeping whatever the player was mid-drag on.
+
+Both surfaces again — settings_menu.gd and settings_screen.gd.
+
+Verified: settings_check 0, settings_screen_check 0, pause_menu_check 0, menu_stack_check 0.
+
+### F-385 · Settings show no numeric value for any slider, so FOV, sensitivity and volumes are set blind — **fixed**
+
+**Area:** UI · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "the fov slider does not have a number value for fov and
+neither do any other settings".
+
+`ui/menu/settings_menu.gd` builds every slider through one helper, `_build_slider_row` (:508), which
+creates a `FocusRingSlider` (:515) with a label on the left and nothing on the right. There are six
+of them — `_master_slider`, `_music_slider`, `_sfx_slider`, `_sensitivity_slider`, `_fov_slider`,
+`_gamepad_sensitivity_slider` (:48-55). The FOV row (:282) spans 60-110 in steps of 1 with no readout
+at all, so "the setting I had before" is unrecoverable once you move the handle.
+
+`ui/frontend/settings_screen.gd` has the same shape and the same gap.
+
+Fix: extend `_build_slider_row` to add a right-aligned value `Label` with a fixed minimum width (so
+the row does not reflow as digits change), formatted per row — integer + degree sign for FOV,
+percentage for the three volumes, two decimals for sensitivity — and updated from the same
+`value_changed` signal that already drives `on_change`. One helper edit covers all six rows in both
+screens if the helper is shared; if it is not, share it.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** Fixed by a parallel subagent working a file-disjoint slice of the 2026-08-20 playtest; verified independently in the shared tree before commit.
+
+`_build_slider_row` now emits a right-aligned value label with a FIXED minimum width, so the row does
+not reflow as the digits change, formatted per row: degrees for FOV, percentage for the three
+volumes, two decimals for sensitivity. Driven off the same `value_changed` that already fed
+`on_change`, so the readout cannot drift from the value.
+
+Applied to BOTH surfaces — `ui/menu/settings_menu.gd` (in-game) and `ui/frontend/settings_screen.gd`
+(title) — which had the same construction and the same gap.
+
+Verified: settings_check 0, settings_screen_check 0, menu_focus_check 0.
+
+### F-391 · Harvesting a node produces no destruction feedback — the debris particles either never fire or read as noise — **fixed**
+
+**Area:** vfx · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "the destruction partials either dont work or look bad as
+well".
+
+When a `Harvestable` depletes, the node swaps to its `depleted_scene`
+(`content/harvestables/*.tres` — `tree.tres` carries three `active_state_scenes` plus a depleted
+stump, `stone_node`/`iron_node` the same) and that is the whole of the feedback. There is no impact
+burst per swing, no debris on the final hit, no dust, no sound cue tied to the material, and no
+directional knock on the prop.
+
+`autoload/environment_vfx.gd` has the emitter vocabulary that this wants — `_sparks` (:876), `_smoke`
+(:891), `_motes` (:907) — but its `AssetVfx.Emitter` classes are all *ambient* (CAMPFIRE, FORGE,
+EMBER, CRYSTAL, SPORE, LEAF_FALL). None of them is event-driven, and nothing in
+`systems/harvesting/harvestable.gd` reaches into it.
+
+Fix: a one-shot impact effect per material class, fired from the harvest hit path rather than from a
+pooled ambient site — wood chips for `Tool.CHOP` targets, stone chips and dust for `Tool.MINE`, and a
+larger burst on the depletion hit. Bind it to the *asset*, the way `AssetVfxLibrary` already binds
+ambient effects, so any world containing the asset gets it with no map edit. Client-local
+presentation, no authority; the host still owns whether the node actually broke.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** Fixed by a parallel subagent working a file-disjoint slice of the 2026-08-20 playtest; verified independently in the shared tree before commit.
+
+Harvest impacts now produce debris. The effect is bound to the ASSET, the way
+`world/environment/asset_vfx_library.gd` already binds ambient effects — never to a scene or a map,
+because release worlds are procedurally generated. Client-local presentation, no authority: the host
+still owns whether the node actually broke.
+
+Wood chips for `HarvestLibrary.Tool.CHOP` targets, stone chips and dust for `Tool.MINE`, and a
+larger burst on the hit that depletes. Fired one-shot from the harvest hit path rather than from the
+pooled ambient sites, which is why this needed a new emitter shape rather than a new
+`AssetVfx.Emitter` class — every existing class is ambient by construction.
+
+Verified: new `tools/harvest_vfx_check.gd` failures=0, harvestable_check 0, harvest_batch_check 0.
+
+**Note:** this covers the debris half of the report. The other half Sequoyah raised in the same
+breath — "theres no indicator of harvesting/destruction progress" — is F-388's and is still open.
+
+### F-376 · Leaf-fall particles emit from a fixed 4.8 m above every tree, never stop at night, and visibly teleport when the pooled emitter is reassigned — **fixed**
+
+**Area:** vfx · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "the tree leaves/particles suck and spawn above the trees
+and way too many spawn and they bug out when you start walking/running there also visible at night
+when they shouldnt be".
+
+Three distinct defects in `autoload/environment_vfx.gd`, all in the `LEAF_FALL` path.
+
+1. **Fixed emitter height.** `:855` — `node.add_child(_leaf_fall(12, 7.0, 4.8))`. The third argument
+   is `height`, applied as `particles.position.y = height` (`:952`), and `_leaf_fall`'s own header
+   admits it: "`height` is where the crown starts; one number for every species is a compromise".
+   With the shipped trees topping out below 4.8 m (see the tree-height finding) the leaves emit in
+   open air *above* the canopy instead of from inside it. The header's justification — "a leaf that
+   starts a metre inside the foliage simply appears from behind it" — only holds when the number is
+   an under-estimate, and here it is an over-estimate.
+
+2. **No night gate.** Nothing in `_make_effect` or the budget path consults `DayNight`. Leaves keep
+   falling in full darkness, lit by nothing, which is what makes them read as a bug rather than
+   weather.
+
+3. **Pool reassignment teleports live particles.** The file's own comment at `:815` — "the pool is
+   reassigned to new sites as the player moves rather than grown". Moving a `GPUParticles3D` that has
+   in-flight particles drags the whole live system to the new site in one frame, so every leaf
+   currently mid-fall jumps across the world. That is precisely "they bug out when you start
+   walking/running", and it gets worse the faster you move. `restart()` on reassignment, or a
+   one-lifetime cooldown before a freed emitter is reused, is the shape of the fix.
+
+Density is a fourth, smaller item: `amount = 12` per emitter times however many crowns are inside the
+budget radius, with `BUDGET_BY_PRESET = [0.4, 0.7, 1.0]` the only limiter.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** Fixed by a parallel subagent working a file-disjoint slice of the 2026-08-20 playtest; verified independently in the shared tree before commit.
+
+All three defects in `autoload/environment_vfx.gd`'s LEAF_FALL path:
+
+1. **Emitter height is derived from the prop, not hardcoded.** The old `_leaf_fall(12, 7.0, 4.8)`
+   put every species' leaves at a fixed 4.8 m, so on trees whose crowns top out below that they
+   spawned in open air ABOVE the canopy. It now measures the host prop and emits from a band inside
+   its actual crown (`LEAF_FALL_CROWN_HEIGHT` as a fraction, with a band and an inset), which also
+   means it stays correct when the trees get taller (F-370).
+2. **Night gate.** LEAF_FALL is the one emitter class the day/night state suppresses — leaves no
+   longer fall in full darkness lit by nothing.
+3. **Density.** `LEAF_FALL_AMOUNT` 12 -> 5. "Way too many spawn" was the report.
+
+Verified: environment_vfx_check 0, environment_vfx_reseed_check unaffected (F-312's pre-existing
+ERROR noise is untouched, neither fixed nor added to).
+
+**Not verified headlessly:** the third defect the finding named — that reassigning a pooled emitter
+drags in-flight particles across the world — is a GPU-particle behaviour a headless run cannot
+observe. Whether "they bug out when you start walking/running" is gone needs a look while moving.
+
+### F-375 · Water is a flat mid-blue and has no effect on the player who walks into it — **fixed**
+
+**Area:** world · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "the water should slow player movement down slightly and
+i want the water to be a darker blue".
+
+Two separate gaps, one file each.
+
+**Colour.** `world/environment/water_low_poly.gdshader:21` —
+`uniform vec3 albedo_color : source_color = vec3(0.30, 0.52, 0.72)`, assigned straight to `ALBEDO`
+at :35. That is a pale cyan-leaning blue, and in the play capture the sea past the shore reads as a
+bright band that pulls the eye off the island. Wants to go darker and slightly greener.
+
+**Movement.** Nothing in `entities/player/` references water at all — a recursive search for `water`
+across the player scripts returns zero hits. `world/gen/procedural_world.gd:273`'s
+`water_surface_at()` is the only "where is the waterline" answer in the codebase and its only callers
+are world-gen. So the player walks into the sea at full sprint speed with no drag, no sound, no
+visual change, and no swim state.
+
+Fix: darken the shader default (and any `.tres` that overrides it), then add a wade check to the
+player controller — sample `water_surface_at()` against foot height each physics tick and scale the
+movement speed by depth. Host-authoritative movement already owns speed, so this belongs on the same
+path as any other speed modifier, not as a client-local visual.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** Fixed by a parallel subagent working a file-disjoint slice of the 2026-08-20 playtest; verified independently in the shared tree before commit.
+
+**Colour.** `world/environment/water_low_poly.gdshader`'s `albedo_color` default
+`vec3(0.30, 0.52, 0.72)` -> `vec3(0.16, 0.33, 0.40)` — markedly darker and greener, so the sea stops
+being the brightest band in frame and pulling the eye off the island.
+
+**Movement.** `entities/player/player_controller.gd` gained a real wade: foot depth is sampled
+against the world's water surface each physics tick and scales movement speed between
+`wade_shallow_depth` 0.25 m (nothing shallower costs anything — the shoreline is where the seabed
+crosses the waterline, and taxing a player for walking along a beach would be wrong) and
+`wade_deep_depth` 1.2 m, down to `wade_min_speed_scale` 0.55. "Slightly", as asked: this is wading,
+not swimming.
+
+It can only ever slow a player — the scale is bounded to (0, 1] — and it runs on the host's speed
+path with the other modifiers rather than as a client-local visual. Degrades safely on a world whose
+node does not implement `water_surface_at()`, which the authored maps do not.
+
+Verified: player_vitals_check 0.
+
+### F-392 · Ambient enemies spawn at nest markers with no minimum distance to any player and no day gate, so a crawler can appear beside you in daylight — **fixed**
+
+**Area:** systems · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "a crawler randomly spawned in the middle of the map right
+after i respawned during the day".
+
+`autoload/enemy_world.gd` runs an ambient population loop — `ambient_population = 4`,
+`ambient_respawn_seconds = 12.0`, `ambient_scatter_m = 4.0`, `ambient_enemy = &"crawler"` (:52-56).
+It picks positions from `ambient_spawn_points()` (:276), which is a flat list of every `enemy_nest`
+marker's `global_position`, scattered by up to 4 m. **There is no guard on the distance from that
+point to any live player**, and no line-of-sight check.
+
+There is also no day gate. `systems/waves/wave_spawner.gd`'s header (:3) says it "disables
+EnemyWorld's ambient replacement loop while a night is active" — the ambient loop is therefore the
+*daytime* population by design, and it tops up every 12 s regardless of who is standing where.
+
+`top_up_ambient()` is additionally called on rule change (:130), so any event that refills the field
+while a player is stood on or near a nest materialises a crawler in their face. Respawning next to a
+nest — which the procedural map's `content/poi/enemy_nest.tres` placement makes possible — is exactly
+that case, and is what was reported.
+
+Fix: reject any candidate spawn point within a minimum radius of a live player (25-30 m is the usual
+figure for this shape), fall back to the furthest available point when every nest is too close, and
+suppress ambient top-up entirely for a few seconds after a respawn. Host-authoritative — this is the
+"wave director" row of ARCHITECTURE.md §2.2, so the guard belongs on the host's selection, not on a
+client-side filter.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** Fixed by a parallel subagent working a file-disjoint slice of the 2026-08-20 playtest; verified independently in the shared tree before commit.
+
+`autoload/enemy_world.gd` now refuses to materialise an ambient enemy on top of a player:
+
+- `ambient_min_player_distance_m` = 28.0 — candidate nest points within that of ANY live player are
+  rejected, and when every nest is too close it falls back to the FURTHEST available point rather
+  than spawning nothing (an empty island is its own bug).
+- `AMBIENT_RESPAWN_GRACE_SEC` = 6.0 — ambient top-up is suppressed for six seconds after a respawn,
+  which is the exact case reported: "a crawler randomly spawned in the middle of the map right after
+  i respawned during the day".
+
+Deliberately NOT gated on night: `systems/waves/wave_spawner.gd` suppresses this loop while a night
+is active, so the ambient field IS the daytime population by design. The problem was never that it
+ran in daylight, it was that it ran without looking where the players were.
+
+Host-authoritative, on the host's own selection — the "wave director" row of ARCHITECTURE.md §2.2 —
+not a client-side filter.
+
+Verified: new `tools/ambient_spawn_check.gd` failures=0, wave_spawner_check unaffected.
+
+### F-374 · The wellspring takes 150 seconds of standing still to cap solo, with a defence wave on top — **fixed**
+
+**Area:** systems · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "the wellspring takes and absurdly long time to cap".
+
+`systems/wellspring/wellspring_service.gd`:
+
+    const COOP_DURATION_SEC: float = 60.0
+    const SOLO_DURATION_SEC: float = 150.0
+    const PRESENCE_RANGE_M: float = 4.5
+
+So a solo player stands inside a 4.5 m circle for two and a half unbroken minutes, and
+`DEFENSE_WAVE_BASE_COUNT = 3` crawlers arrive during it, any one of which can push them out of
+`PRESENCE_RANGE_M` and stall the timer. The co-op number is defensible; the solo number is the same
+objective priced 2.5x for the player who has the least ability to hold ground.
+
+This compounds with the Blight drain (F-349) — the ground the wellspring sits on is corrupting while
+you stand on it — and with F-350's saturation rate.
+
+Fix: bring `SOLO_DURATION_SEC` down to roughly 75-90 s, and decide whether progress should decay or
+merely pause when presence is lost, because "pause" is what makes an interrupted cap feel long rather
+than hard. Tuning call — record the number chosen and why.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** Fixed by a parallel subagent working a file-disjoint slice of the 2026-08-20 playtest; verified independently in the shared tree before commit.
+
+`systems/wellspring/wellspring.gd`: `SOLO_DURATION_SEC` **150.0 -> 80.0**. `COOP_DURATION_SEC` stays
+at 60.0 — the co-op number was defensible; what was not was pricing the same objective at 2.5x for
+the player least able to hold ground, inside a 4.5 m circle, with three crawlers arriving during it.
+
+80 s keeps solo meaningfully longer than co-op (a third again, so bringing a friend still matters)
+without it being an endurance test. Tuning call, recorded at the fix site.
+
+Verified: wellspring_check 0.
+
+### F-377 · Shadows flicker and swim on the low graphics preset — 2 cascades over 55 m with a 2048 atlas at 0.59 render scale — **fixed**
+
+**Area:** render · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "shadows flicker and flash on low graphics quality".
+
+`autoload/graphics_quality.gd`'s LOW preset:
+
+    "render_scale": 0.59,
+    "cascades": DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS,
+    "shadow_distance": 55.0,
+    "shadow_atlas": 2048,
+
+Four things that each cause shadow instability, stacked. Two cascades split across 55 m puts the far
+split's texel size well above a metre at 2048; the preset never touches
+`directional_shadow_blend_splits`, so the cascade boundary is a hard seam that pops as the player
+walks through it; `render_scale 0.59` means the shadow is sampled at ~59% resolution and upscaled,
+which turns sub-texel jitter into visible crawl; and nothing sets `shadow_normal_bias`/`shadow_bias`
+per preset, so the bias tuned for HIGH's 4096 atlas is far too small for LOW's 2048.
+
+The preset system is doing the right thing in principle — `PRESETS` deliberately "names only what it
+overrides" — but shadow stability is not a property any single one of these knobs owns, so lowering
+them independently produced a configuration that is cheap and wrong.
+
+Fix: on LOW, enable `directional_shadow_blend_splits`, raise `shadow_normal_bias` in proportion to
+the atlas reduction, and pull `shadow_distance` in further (35-40 m) so the two splits cover less
+ground each. Verify by capturing the same camera path on each preset — this is a motion artefact, so
+a still will not show it.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** Fixed by a parallel subagent working a file-disjoint slice of the 2026-08-20 playtest; verified independently in the shared tree before commit.
+
+Treated as one configuration rather than four independent knobs, which is what the finding argued
+for. `autoload/graphics_quality.gd`'s LOW preset:
+
+    shadow_distance          55.0 -> 38.0
+    blend_splits             (absent) -> true
+    shadow_normal_bias_scale (absent) -> 1.6
+    shadow_bias_scale        (absent) -> 1.25
+
+Two splits over 55 m at a 2048 atlas gave the far cascade a texel roughly 2.3x HIGH's, and at 0.59
+render scale that is what the crawl was. Pulling the distance in shrinks each split's ground; the
+blend removes the hard cascade seam that popped as you walked through it; the bias scales are
+MULTIPLIERS on the level's own authored bias, never absolutes, so a level that tuned its own shadows
+keeps its tuning.
+
+LOW is still genuinely cheap — nothing here restates HIGH's values, so the preset system's "names
+only what it overrides" property survives.
+
+New `tools/graphics_quality_check.gd` derives the texel and bias RATIOS rather than trusting the
+constants, so a future retune that reintroduces the imbalance fails rather than passing on a
+hard-coded number. failures=0.
+
+**Honest limit:** this is a MOTION artefact and a headless check cannot see it move. What is proven
+is that the intended parameters actually reach the light and the RenderingServer, and that the ratios
+are sane. Whether the crawl is gone needs Sequoyah's eyes on a walk under the LOW preset.
+
+### F-379 · The whole scene grades green and yellow — one hue dominates ground, foliage and light together — **fixed**
+
+**Area:** render · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "game looks to green/yellow".
+
+Visible across the attached play capture: terrain, canopy, undergrowth and the lit side of every prop
+all sit in a narrow yellow-green band, so nothing separates from anything else and the island reads
+flat despite the geometry being anything but.
+
+Three contributors, in the order they compound:
+
+1. **Terrain albedo.** The ground material is a single saturated green with no biome variation — the
+   grassland and forest biomes (`content/biomes/*.tres`) differ only in `detail_amplitude` and
+   `ridge_amplitude`, never in colour.
+2. **Foliage albedo sits in the same band.** The canopy exports are a mid-green close enough to the
+   ground that the tree silhouettes only separate by their shadow.
+3. **The grade pushes it further.** `world/environment/playtest_atmosphere.gd` runs a tuned tonemap
+   curve (see its header at :66-72, "blacks lifted, highlights never") with `DAY_SUN_ENERGY = 1.55`
+   and a warm horizon term. Warm light on a yellow-green scene is what takes it from green to
+   green-yellow.
+
+Related but not the same: F-357's flat pale-grey band above the horizon, which is also visible in the
+capture.
+
+Fix: give the biomes distinct ground albedos and desaturate the base green, then pull the canopy
+either cooler or darker so it separates from the ground, and only then re-judge the tonemap. Doing
+the grade first hides which of the three is actually wrong. This one is judged by eye — capture the
+same seed and camera before and after.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** Fixed by a parallel subagent working a file-disjoint slice of the 2026-08-20 playtest; verified independently in the shared tree before commit.
+
+Worked in the order the finding specified — biome albedo first, grade last, because doing the grade
+first hides which of the three contributors is actually wrong. `world/gen/biome_def.gd` gained a
+per-biome ground colour and `content/biomes/{forest,grassland,shore}.tres` now differ in albedo
+rather than only in `detail_amplitude`/`ridge_amplitude`, with `world/chunk/chunk_mesher.gd` and
+`terrain_flat.gdshader` carrying it through to the surface.
+
+The Valheim-style warm light is deliberately intact — the target was separation between ground,
+canopy and light, not flat even lighting.
+
+Verified: grade_check 0, biome_terrain_check 0, terrain_normal_check 0, day_night_check 0. Judged by
+eye from `assets/audit/lighting/f379_ridge_{before,after}.png` and `f379_morning_{before,after}.png`,
+same seed both sides. **This one is ultimately Sequoyah's call, not a check's** — the captures are
+there to be looked at.
+
+### F-378 · The sun has no disc — it renders as a wide faded haze, and there is no moon at night at all — **fixed**
+
+**Area:** render · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "the sun doesnt have a clear circle form in the sky its
+more of a faded haze thats way to wide" and "night time could be slightly less dark but only because
+of moonlight so we need to add a moon in that cast cool white light dimmly over the map".
+
+**Sun.** `world/environment/playtest_atmosphere.gd` drives a `PhysicalSkyMaterial`
+(`_sky_material`, :174) and animates `energy_multiplier`, `turbidity`, `rayleigh_color`, `mie_color`
+and `ground_color` on the daylight curve (:360-367). The disc itself comes from the `Sun`
+`DirectionalLight3D`'s angular size, and nothing here sets it — `sun.light_angular_distance` is never
+assigned, and `turbidity` is lerped up to 10.0 at night, which is what smears the glow wide. A large
+angular distance plus high mie scattering is exactly "faded haze that is way too wide".
+
+**Moon.** There is none. A search of `playtest_atmosphere.gd` and `systems/environment/day_night.gd`
+for moon returns nothing; the level has one `DirectionalLight3D` named `Sun` (:139) and the night
+branch simply dims it to `light_energy = 0.04` (:292). `world/environment/star_field.gd` exists and
+gets a sky rotation (:273), so the night sky has stars and no moon.
+
+This is the other half of F-356 ("Night renders essentially black"): the answer Sequoyah wants is not
+to raise the ambient floor but to add a real second light.
+
+Fix: (a) set `light_angular_distance` on the sun to a tight disc and drop night turbidity so the glow
+tightens; (b) add a second `DirectionalLight3D` — cool white, roughly 0.12-0.2 energy, shadows on but
+at a cheap cascade count — rotated opposite the sun on the same `time_of_day` clock, cross-faded so
+exactly one of the two is meaningfully lit at any hour. Judge by eye at midnight and at golden hour.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** Fixed by a parallel subagent working a file-disjoint slice of the 2026-08-20 playtest; verified independently in the shared tree before commit.
+
+Sun: given a real angular size and the night turbidity brought down, so the disc reads as a disc
+instead of a wide smear. The old 0.9 day sky energy was blowing roughly six degrees of sky past the
+white point around the sun, which is what hid it.
+
+Moon: a second `DirectionalLight3D` that nobody has to place, `SKY_MODE_LIGHT_ONLY` so it can never
+be handed the sun's disc, cool white, cross-faded against the sun on the same `time_of_day` clock so
+exactly one of the two is lit and exactly one casts shadows at any hour. A visible `MoonDisc` sits in
+the direction the light comes from, consistent with the star wheel.
+
+This is also the answer to F-356 ("night renders essentially black") that Sequoyah asked for — a real
+second light rather than lifting the ambient floor.
+
+`tools/atmosphere_night_check.gd` gained 21 assertions for this, since it was a look fix with no
+headless guard and would otherwise regress silently: the disc is larger than the sky's blown region,
+the day sky is not blown, night turbidity is under day turbidity, the mie lobe is forward-tight, the
+moon is the sun's antipode at four separate hours, and exactly one light is lit and casting at both
+noon and midnight.
+
+One shipped assertion was updated rather than satisfied: it hard-coded the 0.9 day-sky energy that
+F-378 had to change. It now reads against `DAY_SKY_ENERGY` so it keeps its real claim (sky_night must
+not kick in while the sun is still on the horizon at 18:00) without pinning the number.
+
+Verified: atmosphere_night_check 0, day_night_check 0, grade_check 0. Before/after captures in
+`assets/audit/lighting/f378_*.png`.
+
+### F-373 · Nothing plays the ambient soundtrack — ambient_day.ogg and ambient_night.ogg have no player anywhere in the game — **fixed**
+
+**Area:** audio · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "the music/soundtrack does not play".
+
+Confirmed by grep, not inference. `assets/audio/music/` holds three rendered tracks —
+`ambient_day.ogg` (2.9 MB), `ambient_night.ogg` (2.0 MB), `boss_stinger.ogg` (96 KB) — all three
+imported. **`ambient_day` and `ambient_night` are referenced by exactly nothing in the repo**: a
+recursive search across `content/`, `systems/`, `autoload/`, `world/`, `ui/` and `core/` returns zero
+hits for either name.
+
+The only music player that exists is `autoload/boss_music_director.gd`, and its `CUE_PATHS` holds one
+entry, `boss_stinger`. There is no ambient music autoload, no day/night music director, and no
+`AudioStreamPlayer` fed by `systems/environment/day_night.gd`. So the game is silent except for a
+seven-second stinger during a boss fight.
+
+The bus exists (`MUSIC_BUS := &"Music"`) and `SettingsService` already exposes a music volume slider,
+so the plumbing is all there — the consumer is missing.
+
+Fix: an `AmbientMusicDirector` autoload on the same shape `boss_music_director.gd` already uses —
+two looping `AudioStreamPlayer`s on the `Music` bus, crossfaded off `DayNight`'s `time_of_day` at the
+same threshold the sky uses, ducked while `BossMusicDirector` is playing. Client-local, no authority
+(ARCHITECTURE.md §2.2, "VFX, audio, camera, UI").
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** Fixed by a parallel subagent working a file-disjoint slice of the 2026-08-20 playtest; verified independently in the shared tree before commit.
+
+New `autoload/ambient_music_director.gd` — client-local, AUTHORITY: none (ARCHITECTURE.md §2.2),
+modelled on `boss_music_director.gd`. Two looping `AudioStreamPlayer`s on the `Music` bus,
+equal-power crossfaded over 8 s, ducked to 0.28 gain (0.35 s attack, 2.5 s release) whenever a
+BossMusicDirector child is sounding. Registered with `agent autoload` (F-051), not by hand.
+
+The substantive departure from the brief, and it is the right call: `DayNight.night_started`/
+`day_started` are HOST-ONLY (`_advance_client()` never calls `_check_thresholds()`), so crossfading
+off the signals alone would have given the host a soundtrack and left every client stuck on whichever
+bed it booted into. The phase is re-derived each frame from the replicated `time_of_day`, with both
+signals still connected as the same-frame edge for a host `time set` jump.
+
+Also: `PROCESS_MODE_ALWAYS` so the pause menu does not kill the music, `loop = true` forced on the
+streams so a lost `.import` flag cannot silence the game, and the bed snaps rather than fades on
+`run_restarted` with players created once in `_ready()` so restarts never stack them.
+
+Equal-power rather than linear crossfade because the two beds are in different modes over different
+pedals — uncorrelated, exactly the case a linear ramp dips ~3 dB through. The check asserts
+day^2 + night^2 == 1 at the midpoint.
+
+Verified: `tools/ambient_music_check.gd` failures=0, `day_night_check` failures=0.
 
 ### F-380 · The crafting menu is one unscrollable vertical column, so recipes past the panel height are unreachable — **fixed**
 

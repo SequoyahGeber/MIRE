@@ -61,6 +61,53 @@ extends Resource
 ## appears anywhere.
 @export_range(0.0, 4.0, 0.05) var ridge_amplitude: float = 1.0
 
+@export_group("Look")
+## This biome's ground colour, authored in sRGB — the value a colour picker shows, not a linear
+## radiance. `world/chunk/chunk_mesher.gd` runs it through `Color.srgb_to_linear()` on its way into
+## the chunk mesh's vertex colours, so authoring one here is the same act as picking a swatch out of
+## `tools/blender/mire_art.py`'s palette, and the two stay comparable by eye.
+##
+## F-379: until this existed the whole island was ONE colour. `ChunkStreamer` set a single
+## `albedo_color` uniform on the shared terrain material and biomes differed only in
+## `detail_amplitude`/`ridge_amplitude`, so ground, canopy and every lit prop sat in the same narrow
+## yellow-green band and nothing separated from anything else — Sequoyah's "game looks to
+## green/yellow". The three shipped biomes now differ in HUE and in VALUE, not only in roughness.
+##
+## The constraint when authoring a new one: the canopy is `mire_art`'s `leaf`, #59AF65 — a bright,
+## saturated, mid-green — and it is what every ground colour is seen against. A biome that lands at
+## that value with that chroma puts the flat back, however different its roughness is. What the
+## three shipped biomes do about that, and why each is the value it is:
+##
+##   · `shore`     #918A78  pale grey-sand. The lightest ground on the map, so the island has a
+##                          visible EDGE — before this the beach was the same green as the interior
+##                          and the waterline was a shape, not a shore.
+##   · `grassland` #616B4F  muted meadow. Still green, because it is a meadow, but half the chroma
+##                          of the old single value and well below the canopy in brightness, so a
+##                          tree reads as a lighter shape against the field it stands in rather than
+##                          as the same colour with a shadow under it.
+##   · `forest`    #474338  dark neutral humus. Under a closed canopy the ground is leaf litter, not
+##                          grass. It is the darkest ground on the map and the reason a forest reads
+##                          as a forest from outside it.
+##
+## Three VALUES first (0.57 / 0.42 / 0.28 sRGB), hue second, and that ordering is deliberate: the
+## terrain is flat-shaded with no texture and no normal map (D-184), so value is the only thing
+## carrying form at distance, and three biomes at one value is one silhouette however they differ in
+## hue. The green sits in the MIDDLE of that ladder with a neutral at either end, which is what
+## stops the whole ladder reading as one ramp.
+##
+## And all three are LOW CHROMA on purpose. The light is warm and the grade multiplies saturation by
+## 1.30 (`playtest_atmosphere.gd`), so whatever chroma the ground has is amplified and then tinted
+## toward the sun — a first cut of this fix used a warm brown forest floor (#4E4534) and golden hour
+## came back a flat orange, which is F-379 again with the hue moved rather than fixed. Warm light
+## needs ground that is not itself warm and saturated, or there is nothing for it to be warm
+## AGAINST.
+##
+## Blended, not picked, at the biome boundary: `ChunkMesher` weighs every biome's colour by the same
+## `BiomeMap._band_weight()` crossfade that `blend_amplitudes()` weighs the roughness by, so the
+## colour transition and the roughness transition land on the same contour instead of a hue wall
+## next to a slope.
+@export var ground_albedo: Color = Color(0.26, 0.40, 0.19)
+
 
 ## Same shape as every other Def's validation_errors() — registry.gd calls this before indexing and
 ## skips anything that fails, so a malformed .tres is a named boot error, not a silent hole in the

@@ -8,6 +8,13 @@ extends SceneTree
 
 const SettingsScreen := preload("res://ui/frontend/settings_screen.gd")
 const MireTheme := preload("res://ui/theme/mire_theme.gd")
+const SETTINGS_SAVE := preload("res://core/save/settings_save.gd")
+const FOCUS_RING_SLIDER := preload("res://ui/menu/focus_ring_slider.gd")
+
+## F-386 made this check able to observe persistence, which means it now WRITES — so it points
+## `SettingsService` at its own file first, exactly as `tools/settings_check.gd` does, and a run can
+## never touch a real player's `user://settings.json`.
+const TEST_PATH: String = "user://settings_screen_check.json"
 
 var failures: int = 0
 
@@ -28,6 +35,8 @@ func _run() -> void:
 		finish()
 		return
 	stack.call("pop_all")
+	settings.set(&"save_path", TEST_PATH)
+	_cleanup()
 
 	var screen: Control = SettingsScreen.new()
 	stack.call("push", screen, false)
@@ -133,6 +142,125 @@ func _run() -> void:
 	check(_minimum_font_size(screen) >= MireTheme.CAPTION,
 		"no text in settings falls below the %dpx floor" % MireTheme.CAPTION)
 
+	# ── F-385: every slider says what it is set to ───────────────────────────────────────────────
+	print("\n== numeric readouts (F-385) ==")
+	screen.call("show_tab", 0)
+	await process_frame
+	for entry: Array in [
+		[0, 90.0, "90°", "field of view"],
+		[1, 0.5, "50%", "master volume"],
+		[4, 0.35, "0.35", "mouse sensitivity"],
+		[5, 245.0, "245°/s", "gamepad look sensitivity"],
+	]:
+		var slider: HSlider = _find_slider(screen, int(entry[0]))
+		check(slider is FOCUS_RING_SLIDER, "the %s row is a FocusRingSlider" % entry[3])
+		if not (slider is FOCUS_RING_SLIDER):
+			continue
+		var ring: FocusRingSlider = slider
+		ring.value = float(entry[1])
+		check(ring.readout_text() == String(entry[2]),
+			"the %s row reads %s (got: %s)" % [entry[3], entry[2], ring.readout_text()])
+		check(ring.readout_min_width() > 0.0,
+			"the %s readout has a fixed width, so the row cannot reflow mid-drag" % entry[3])
+
+	# ── F-387: the rows below the fold are reachable ─────────────────────────────────────────────
+	print("\n== scrolling and the mouse wheel (F-387) ==")
+	var host: Control = screen.get(&"_page_host") as Control
+	check(host is VBoxContainer,
+		"the page host is a BoxContainer — a bare Control reports no minimum size, so the scroll " +
+		"container had nothing taller than itself to scroll and simply clipped the overflow")
+	var scroll: ScrollContainer = host.get_parent() as ScrollContainer
+	check(scroll != null, "the pages sit inside a ScrollContainer")
+	if scroll != null:
+		check(scroll.follow_focus, "the viewport follows focus, so a gamepad reaches the rows below")
+
+		# CONTROLS is the tallest tab: a slider, a toggle and twelve rebind rows. The bug was that
+		# the host reported NO minimum size at all, so the scroll range was always zero and the
+		# overflow was clipped rather than scrolled — which is why this asserts the range against the
+		# page's own content height rather than against the window. Whether that content happens to
+		# overflow depends on the resolution (this harness runs a 1280-tall window and it does not);
+		# whether the ScrollContainer can SEE it does not, and that is the defect.
+		screen.call("show_tab", 2)
+		await process_frame
+		await process_frame
+		var pages: Array = screen.get(&"_pages")
+		var controls_height: float = (pages[2] as Control).get_combined_minimum_size().y
+		check(controls_height > 0.0 and is_equal_approx(host.get_combined_minimum_size().y, controls_height),
+			"the scroll host measures the showing tab's real height (%.0f px)" % controls_height)
+		var bar: VScrollBar = scroll.get_v_scroll_bar()
+		check(bar.max_value >= controls_height,
+			"the scroll range covers all of it (%.0f of %.0f)" % [bar.max_value, controls_height])
+
+		# A hidden tab must not inflate the range either, or every tab would scroll as if it were
+		# the longest one. `BoxContainer` skips invisible children, which is the other half of why
+		# the host is one.
+		screen.call("show_tab", 4)
+		await process_frame
+		await process_frame
+		var accessibility_height: float = (pages[4] as Control).get_combined_minimum_size().y
+		check(is_equal_approx(host.get_combined_minimum_size().y, accessibility_height),
+			"switching to a short tab shrinks the range to that tab (%.0f px)" % accessibility_height)
+
+	var all_sliders: Array[HSlider] = []
+	_collect_sliders(screen, all_sliders)
+	var wheel_safe: int = 0
+	for slider: HSlider in all_sliders:
+		if not slider.scrollable and slider.mouse_force_pass_scroll_events:
+			wheel_safe += 1
+	check(wheel_safe == all_sliders.size() and all_sliders.size() == 6,
+		"every slider declines the wheel and lets it climb to the scroll container (%d/%d)"
+			% [wheel_safe, all_sliders.size()])
+
+	# ── F-386: preview, save, cancel, restore defaults ───────────────────────────────────────────
+	print("\n== preview, save, cancel, restore defaults (F-386) ==")
+	check(bool(screen.call("is_previewing")), "showing the screen starts a preview")
+	var save_button: Button = screen.get(&"_save_button") as Button
+	var restore_button: Button = screen.get(&"_restore_button") as Button
+	check(save_button != null and restore_button != null, "the screen has SAVE and RESTORE DEFAULTS")
+	check(save_button != null and save_button.focus_mode == Control.FOCUS_ALL
+			and restore_button != null and restore_button.focus_mode == Control.FOCUS_ALL,
+		"both footer buttons are focusable — a commit step a controller cannot land on is no step")
+
+	screen.call("show_tab", 0)
+	await process_frame
+	var staged_fov: HSlider = _find_slider(screen, 0)
+	if save_button != null and restore_button != null and staged_fov != null:
+		staged_fov.value = 80.0
+		save_button.pressed.emit()
+		check(is_equal_approx(_fov_on_disk(), 80.0), "SAVE writes the staged value to disk")
+		check(not bool(screen.call("has_unsaved_changes")), "SAVE clears the unsaved marker")
+		check(bool(screen.call("is_previewing")), "SAVE keeps previewing, so the next edit stages")
+
+		staged_fov.value = 100.0
+		check(is_equal_approx(float(settings.call("fov_degrees")), 100.0),
+			"dragging FOV applies live — the preview is why this is not deferred")
+		check(is_equal_approx(_fov_on_disk(), 80.0), "dragging FOV does NOT reach disk")
+		check(bool(screen.call("has_unsaved_changes")), "the screen says it has unsaved changes")
+
+		# Popping is the road Esc and the back link both take, so this is the real cancel path.
+		stack.call("pop")
+		await process_frame
+		check(is_equal_approx(float(settings.call("fov_degrees")), 80.0),
+			"backing out hands back the FOV the player arrived with — the drag is recoverable")
+		check(not bool(settings.call("is_persistence_held")), "backing out releases the preview")
+		check(is_equal_approx(_fov_on_disk(), 80.0), "the cancelled drag never touched disk")
+
+		var default_fov: float = float(
+			(settings.call("default_state") as Dictionary)[&"fov_degrees"])
+		stack.call("push", screen, false)
+		await process_frame
+		restore_button.pressed.emit()
+		check(is_equal_approx(float(settings.call("fov_degrees")), default_fov),
+			"RESTORE DEFAULTS loads the default FOV into the live state")
+		check(is_equal_approx(staged_fov.value, default_fov), "and the slider follows it")
+		check(is_equal_approx(_fov_on_disk(), 80.0), "RESTORE DEFAULTS does not persist on its own")
+		stack.call("pop")
+		await process_frame
+		check(is_equal_approx(float(settings.call("fov_degrees")), 80.0),
+			"backing out undoes RESTORE DEFAULTS, same as any other unsaved change")
+
+	check(not bool(settings.call("is_persistence_held")), "no preview is left holding the service")
+
 	settings.call("set_fov_degrees", restore_fov)
 	settings.call("set_master_volume", restore_master)
 	settings.call("set_invert_y", restore_invert)
@@ -140,8 +268,18 @@ func _run() -> void:
 
 	stack.call("pop_all")
 	screen.free()
+	_cleanup()
 	print("SETTINGS_SCREEN_CHECK failures=%d" % failures)
 	finish()
+
+
+func _fov_on_disk() -> float:
+	return float(SETTINGS_SAVE.load_data(TEST_PATH).get(&"fov_degrees", -1.0))
+
+
+func _cleanup() -> void:
+	if FileAccess.file_exists(TEST_PATH):
+		DirAccess.remove_absolute(TEST_PATH)
 
 
 func _find_slider(node: Node, index: int) -> HSlider:

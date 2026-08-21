@@ -13,6 +13,7 @@ extends SceneTree
 
 const SETTINGS_SAVE := preload("res://core/save/settings_save.gd")
 const PLAYER_CAMERA_SCRIPT := preload("res://entities/player/player_camera.gd")
+const FOCUS_RING_SLIDER := preload("res://ui/menu/focus_ring_slider.gd")
 
 const TEST_PATH: String = "user://settings_check.json"
 const TEST_CORRUPT_PATH: String = "user://settings_check_corrupt.json"
@@ -53,7 +54,11 @@ func _run() -> void:
 	_check_keybinds(settings)
 	_check_joypad_keybinds(settings)
 	await _check_player_camera(settings)
+	_check_defaults(settings)
 	_check_menu(settings, menu)
+	_check_slider_readouts(menu)
+	_check_scroll_reachability(menu)
+	_check_preview_commit(settings, menu)
 
 	var on_disk: Dictionary = SETTINGS_SAVE.load_data(TEST_PATH)
 	check(int(on_disk.get(&"graphics_preset", -1)) == int(settings.call("graphics_preset")),
@@ -325,6 +330,201 @@ func _check_menu(settings: Node, menu: Node) -> void:
 	check(not bool(menu.call("is_open")), "menu closes")
 	check(not menu.is_in_group(&"blocks_gameplay_input"), "closing releases the blocking group")
 	settings.call("set_master_volume", 1.0)
+
+
+## F-386 gave `SettingsService` a single authored copy of the factory values so "restore defaults"
+## has something to ask for. `core/save/settings_save.gd` keeps its own copy (a save-file migration
+## has to run without this autoload), so the two have to be held to each other or a future edit to
+## one silently makes "restore defaults" and "fresh install" mean different things.
+func _check_defaults(settings: Node) -> void:
+	print("\n== SettingsService: DEFAULTS ==")
+	var fresh: Dictionary = SETTINGS_SAVE.load_data(TEST_MISSING_PATH)
+	var defaults: Dictionary = settings.call("default_state") as Dictionary
+
+	check(int(defaults[&"graphics_preset"]) == int(fresh.get(&"graphics_preset", -1)),
+		"default graphics preset matches the save file's fresh-install value")
+	for key: StringName in [
+		&"master_volume", &"music_volume", &"sfx_volume",
+		&"look_sensitivity", &"gamepad_look_sensitivity", &"fov_degrees",
+	]:
+		check(is_equal_approx(float(defaults[key]), float(fresh.get(key, -1.0))),
+			"default %s matches the save file's fresh-install value" % key)
+	for key: StringName in [&"invert_y", &"reduce_camera_motion"]:
+		check(bool(defaults[key]) == bool(fresh.get(key, true)),
+			"default %s matches the save file's fresh-install value" % key)
+
+	check((defaults[&"keybinds"] as Dictionary).is_empty()
+			and (defaults[&"joypad_binds"] as Dictionary).is_empty(),
+		"default_state carries no keybind overrides — restoring defaults reaches the InputMap too")
+
+
+## F-385: reported from play as "the fov slider does not have a number value for fov and neither do
+## any other settings". Every slider in the panel is built by one helper, so the proof is that each
+## of the six has a bound readout, that the readout says what the value actually is, and that its
+## width is pinned — a number that shoves the row sideways as digits change is barely better.
+func _check_slider_readouts(menu: Node) -> void:
+	print("\n== SettingsMenu: numeric readouts (F-385) ==")
+	var settings: Node = root.get_node_or_null(^"SettingsService")
+	settings.call("set_master_volume", 0.6)
+	settings.call("set_music_volume", 0.25)
+	settings.call("set_sfx_volume", 1.0)
+	settings.call("set_look_sensitivity", 0.35)
+	settings.call("set_gamepad_look_sensitivity", 245.0)
+	settings.call("set_fov_degrees", 103.0)
+
+	menu.call("set_open", true)
+
+	var expected: Dictionary = {
+		&"_master_slider": "60%",
+		&"_music_slider": "25%",
+		&"_sfx_slider": "100%",
+		&"_sensitivity_slider": "0.35",
+		&"_gamepad_sensitivity_slider": "245°/s",
+		&"_fov_slider": "103°",
+	}
+	for property: StringName in expected.keys():
+		var slider: HSlider = menu.get(property) as HSlider
+		check(slider is FOCUS_RING_SLIDER, "%s is a FocusRingSlider" % property)
+		if not (slider is FOCUS_RING_SLIDER):
+			continue
+		var ring: FocusRingSlider = slider
+		check(ring.readout_text() == String(expected[property]),
+			"%s reads %s (got: %s)" % [property, expected[property], ring.readout_text()])
+		check(ring.readout_min_width() > 0.0,
+			"%s's readout has a fixed width, so the row cannot reflow mid-drag" % property)
+
+	# The readout has to survive a refresh, which writes the value with signals blocked — the one
+	# path that would otherwise leave a stale number on screen after re-opening the panel. Note the
+	# order: the value is changed with the panel CLOSED, because a change made while it is open is
+	# staged and handed back on close (F-386), which is a different behaviour tested elsewhere.
+	menu.call("set_open", false)
+	settings.call("set_fov_degrees", 66.0)
+	menu.call("set_open", true)
+	var fov: FocusRingSlider = menu.get(&"_fov_slider")
+	check(fov.readout_text() == "66°",
+		"re-opening the panel re-derives the readout (got: %s)" % fov.readout_text())
+	menu.call("set_open", false)
+
+	check(FOCUS_RING_SLIDER.format_value(0.0, FOCUS_RING_SLIDER.Readout.PERCENT) == "0%",
+		"the format table renders a zero volume as 0%")
+	check(FOCUS_RING_SLIDER.format_value(60.0, FOCUS_RING_SLIDER.Readout.DEGREES) == "60°",
+		"the format table renders the minimum FOV as 60°")
+	check(FOCUS_RING_SLIDER.format_value(0.01, FOCUS_RING_SLIDER.Readout.DECIMAL2) == "0.01",
+		"the format table keeps two decimals at the bottom of the sensitivity range")
+
+
+## F-387: reported from play as "the settings menu has no scrolling so some settings are hidden".
+## The ScrollContainer was always there — what stopped it was `Slider.scrollable`, which makes every
+## slider eat the wheel and change its own value, plus `Control`'s STOP mouse filter, which then
+## drops the event rather than letting the ancestor scroll. Both are properties, so both are
+## assertable; the fixed 380 px viewport is checked here too.
+func _check_scroll_reachability(menu: Node) -> void:
+	print("\n== SettingsMenu: the wheel scrolls the panel (F-387) ==")
+	var root_control: Control = menu.get(&"_root") as Control
+	var sliders: Array[HSlider] = []
+	_collect_sliders(root_control, sliders)
+	check(sliders.size() == 6, "the panel still has its six sliders (%d)" % sliders.size())
+	var wheel_safe: int = 0
+	for slider: HSlider in sliders:
+		if not slider.scrollable and slider.mouse_force_pass_scroll_events:
+			wheel_safe += 1
+	check(wheel_safe == sliders.size(),
+		"every slider declines the wheel and lets it climb to the scroll container (%d/%d)"
+			% [wheel_safe, sliders.size()])
+
+	var scroll: ScrollContainer = menu.get(&"_scroll") as ScrollContainer
+	check(scroll != null, "the panel exposes its ScrollContainer")
+	if scroll == null:
+		return
+	check(scroll.follow_focus, "the viewport follows focus, so a gamepad can reach the rows below")
+
+	var consts: Dictionary = (menu.get_script() as GDScript).get_script_constant_map()
+	var window_height: float = float(root_control.get_viewport().get_visible_rect().size.y)
+	var expected: float = maxf(
+		minf(window_height * float(consts["SCROLL_HEIGHT_FRACTION"]),
+			window_height - float(consts["SCROLL_CHROME_HEIGHT"])),
+		float(consts["SCROLL_MIN_HEIGHT"]))
+	check(is_equal_approx(scroll.custom_minimum_size.y, expected),
+		"the viewport is derived from the window (%.0f px of %.0f), not a fixed 380"
+			% [scroll.custom_minimum_size.y, window_height])
+	check(scroll.custom_minimum_size.y + float(consts["SCROLL_CHROME_HEIGHT"]) <= window_height,
+		"the panel with its title and footer still fits the window")
+
+
+## F-386: reported from play as "theres no 'save changes' button in the settings menu to confirm
+## changes". The contract is deliberately not "defer everything" — FOV has to move while you drag it
+## — so what is proved here is the pair: the value applies live AND does not reach disk, until SAVE.
+func _check_preview_commit(settings: Node, menu: Node) -> void:
+	print("\n== SettingsMenu: preview, save, cancel, restore defaults (F-386) ==")
+	settings.call("set_fov_degrees", 80.0)
+	check(is_equal_approx(_fov_on_disk(), 80.0), "a change with no panel open persists as it always did")
+
+	var fov_slider: HSlider = menu.get(&"_fov_slider") as HSlider
+	var save_button: Button = menu.get(&"_save_button") as Button
+	var restore_button: Button = menu.get(&"_restore_defaults_button") as Button
+	check(save_button != null and restore_button != null, "the panel has SAVE and RESTORE DEFAULTS")
+	if fov_slider == null or save_button == null or restore_button == null:
+		return
+
+	# ── drag, then cancel ────────────────────────────────────────────────────────────────────────
+	menu.call("set_open", true)
+	check(bool(settings.call("is_persistence_held")), "opening the panel starts a preview")
+	check(not bool(menu.call("has_unsaved_changes")), "a freshly opened panel has nothing to save")
+
+	fov_slider.value = 100.0
+	check(is_equal_approx(float(settings.call("fov_degrees")), 100.0),
+		"dragging FOV applies live — the preview is the whole reason this is not deferred")
+	check(is_equal_approx(_fov_on_disk(), 80.0), "dragging FOV does NOT reach disk")
+	check(bool(menu.call("has_unsaved_changes")), "the panel says it has unsaved changes")
+
+	menu.call("set_open", false)
+	check(is_equal_approx(float(settings.call("fov_degrees")), 80.0),
+		"closing hands back the FOV the player opened with — the drag is recoverable")
+	check(not bool(settings.call("is_persistence_held")), "closing releases the preview")
+	check(is_equal_approx(_fov_on_disk(), 80.0), "the cancelled drag never touched disk")
+
+	# ── drag, then save ──────────────────────────────────────────────────────────────────────────
+	menu.call("set_open", true)
+	fov_slider.value = 95.0
+	save_button.pressed.emit()
+	check(is_equal_approx(_fov_on_disk(), 95.0), "SAVE writes the staged value to disk")
+	check(not bool(menu.call("has_unsaved_changes")), "SAVE clears the unsaved marker")
+	check(bool(settings.call("is_persistence_held")),
+		"SAVE keeps previewing, so the next edit stages instead of writing through")
+	menu.call("set_open", false)
+	check(is_equal_approx(float(settings.call("fov_degrees")), 95.0),
+		"closing AFTER a save keeps the save rather than reverting to the opening value")
+	check(is_equal_approx(_fov_on_disk(), 95.0), "and disk still holds it")
+
+	# ── restore defaults is a proposal, not a commit ─────────────────────────────────────────────
+	var default_fov: float = float((settings.call("default_state") as Dictionary)[&"fov_degrees"])
+	menu.call("set_open", true)
+	restore_button.pressed.emit()
+	check(is_equal_approx(float(settings.call("fov_degrees")), default_fov),
+		"RESTORE DEFAULTS loads the default FOV into the live state")
+	check(is_equal_approx(fov_slider.value, default_fov), "and the slider follows it")
+	check(is_equal_approx(_fov_on_disk(), 95.0), "RESTORE DEFAULTS does not persist on its own")
+	check(bool(menu.call("has_unsaved_changes")), "restored defaults count as unsaved changes")
+	menu.call("set_open", false)
+	check(is_equal_approx(float(settings.call("fov_degrees")), 95.0),
+		"closing undoes RESTORE DEFAULTS, same as any other unsaved change")
+
+	# Leave the service unheld and agreeing with disk, for the on-disk assertions at the end of the
+	# run — a leaked hold would make every later write invisible.
+	check(not bool(settings.call("is_persistence_held")), "no preview is left holding the service")
+	settings.call("set_fov_degrees", 90.0)
+	settings.call("set_graphics_preset", 2)
+
+
+func _fov_on_disk() -> float:
+	return float(SETTINGS_SAVE.load_data(TEST_PATH).get(&"fov_degrees", -1.0))
+
+
+func _collect_sliders(node: Node, into: Array[HSlider]) -> void:
+	if node is HSlider:
+		into.append(node)
+	for child: Node in node.get_children():
+		_collect_sliders(child, into)
 
 
 func _cleanup_test_paths() -> void:

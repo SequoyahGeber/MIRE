@@ -16,9 +16,33 @@ const MeshMerge := preload("res://core/render/mesh_merge.gd")
 const DrawPolicy := preload("res://world/environment/draw_policy.gd")
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
 const HARVESTABLE_DEFINITION := preload("res://systems/harvesting/harvestable_def.gd")
+## F-391: which destruction material this prop is made of, decided from the asset exactly as every
+## ambient effect already is. Preloaded by path for the usual reason — a `class_name` is invisible to
+## a headless `--script` run until the editor rescans the project.
+const ASSET_VFX := preload("res://world/environment/asset_vfx_library.gd")
 const SYNC_NODE_NAME: StringName = &"HarvestSync"
 const VISUAL_NODE_NAME: StringName = &"HarvestVisual"
 const HARVESTABLE_GROUP: StringName = &"harvestable"
+## F-391: how long after this node enters the tree its impact VFX stays muted. A client builds the
+## prop at full health locally and only then receives the host's real state — up to one
+## `NetConfig.PROP_SYNC_INTERVAL_SEC` later — so a stump felled an hour ago arrives as a max -> 0
+## health drop and would otherwise burst chips as if someone had just hit it. Comfortably longer
+## than that interval, and shorter than the walk from anywhere a chunk streams in (LOD0 range) to
+## anywhere you can swing at it, so no real first swing is ever muted.
+const IMPACT_ARM_DELAY_MSEC: int = 1500
+## What the depleting hit is worth relative to an ordinary one. Scales the burst, not the damage.
+const IMPACT_DEPLETION_INTENSITY: float = 2.4
+## Where on the prop the chips come off, as a fraction of its measured height, and the ceiling that
+## keeps a tall tree's fragments at the height a player actually swings.
+const IMPACT_ANCHOR_HEIGHT_FRACTION: float = 0.32
+const IMPACT_ANCHOR_MAX_HEIGHT_M: float = 1.6
+## Fallback anchor for a BATCHED prop — a bush or a nettle is one slot in a chunk's MultiMesh and
+## has no mesh node of its own to measure (`autoload/harvest_world.gd`'s `_batch_visual_hook` is the
+## whole of its presentation). Chest height off the ground is the honest guess for something you
+## are standing over and swinging at.
+const IMPACT_ANCHOR_FALLBACK_M: float = 0.55
+## Bounds the one-time mesh walk `_measure_anchor_offset()` does on a prop's first landed hit.
+const IMPACT_MESH_PART_CAP: int = 48
 ## The cross-system melee target seam (task 2.8). Anything in this group must implement
 ## `host_apply_damage(amount, instigator_peer_id) -> bool` and expect host-only callers; 2.10's
 ## enemies join it too and CombatService needs no change when they do.
@@ -36,7 +60,19 @@ signal respawned
 @export_node_path("Node3D") var authored_visual_path: NodePath
 
 ## Replicated state. Setters keep presentation correct when a network delta arrives on a client.
-var health: int = 0
+##
+## F-391 hangs the destruction feedback here, and deliberately NOT on `hit_accepted`: that signal
+## fires on the HOST only, so a client watching a teammate fell a tree got nothing at all. `health`
+## is a replicated on-change property, which means this setter runs on every peer — the host's copy
+## from `host_apply_damage()`, a client's from the MultiplayerSynchronizer delta — off a value
+## everyone already has. Presentation only: the host still owns whether the node broke, and no new
+## RPC means no `NetVersion.PROTOCOL_VERSION` bump.
+var health: int = 0:
+	set(value):
+		var previous: int = health
+		health = value
+		if value < previous:
+			_play_impact_vfx(value == 0)
 
 var visual_state: int = 0:
 	set(value):
@@ -69,11 +105,19 @@ var _collision_mask: int = 0
 var _visual: Node3D
 var _sync: MultiplayerSynchronizer
 var _visual_refresh_scheduled: bool = false
+## F-391. `_impact_muted` covers the one health DROP that is bookkeeping rather than a swing;
+## `_spawn_msec` covers the replication catch-up; `_impact_anchor_offset` caches the measured swing
+## height (negative = not measured yet).
+var _impact_muted: bool = false
+var _spawn_msec: int = 0
+var _impact_anchor_offset: float = -1.0
 var _respawn_remaining: float = 0.0
 var _last_request_msec: Dictionary[int, int] = {}
 
 
 func _ready() -> void:
+	# Stamped before anything can move `health`, because the arm delay below is measured from it.
+	_spawn_msec = Time.get_ticks_msec()
 	set_multiplayer_authority(NetConfig.HOST_PEER_ID)
 	add_to_group(HARVESTABLE_GROUP)
 	add_to_group(DAMAGEABLE_GROUP)
@@ -165,7 +209,12 @@ func host_apply_damage(amount: int, instigator_peer_id: int) -> bool:
 func host_restore_depleted() -> bool:
 	if not _owns_world_mutation() or not _configuration_valid or not active:
 		return false
+	# F-391: this is a replay of a harvest that already happened and already paid out, so it must
+	# not throw chips either — same reasoning as the `depleted`/`harvest_yielded` suppression this
+	# function exists for, applied to the presentation half.
+	_impact_muted = true
 	health = 0
+	_impact_muted = false
 	active = false
 	visual_state = definition.active_state_scenes.size()
 	_respawn_remaining = definition.respawn_seconds
@@ -190,6 +239,101 @@ func host_respawn() -> bool:
 
 func respawn_remaining() -> float:
 	return _respawn_remaining
+
+
+## Which destruction material this prop is made of (F-391), asset first.
+##
+## The asset id is the durable identity — `AssetVfxLibrary` classifies from it exactly as it does
+## for ambient effects, so any world containing a boulder gets stone chips off it with no map edit.
+## The definition's `required_tool` is the fallback for an asset no rule names yet: a CHOP target is
+## wood and a MINE target is stone, which is the same statement `HarvestLibrary`'s tool axis already
+## makes. Public because the checks read it and because a future interact prompt wants the same
+## answer.
+func impact_class() -> int:
+	var asset_id := _asset_id()
+	if not asset_id.is_empty():
+		var from_asset: int = ASSET_VFX.impact_for(asset_id)
+		if from_asset != ASSET_VFX.Impact.NONE:
+			return from_asset
+	if definition == null:
+		return ASSET_VFX.Impact.NONE
+	return ASSET_VFX.impact_for_tool(definition.required_tool)
+
+
+## Client-local destruction feedback for one landed hit (F-391). No authority and no wire traffic:
+## it runs off `health`, which every peer already has.
+##
+## Muted in the two situations that are a health drop and not a swing:
+##
+## 1. `host_restore_depleted()` replaying a depletion this island already paid out (F-231's
+##    depletion memory) — `_impact_muted` covers that one directly.
+## 2. The first `IMPACT_ARM_DELAY_MSEC` of this node's life, which is the replication catch-up
+##    described on that constant. `EnvironmentVfx.play_impact()` carries the other half of that
+##    guard — a 40 m distance gate, which is what covers the same catch-up arriving late because
+##    interest management only admitted the prop at 120 m.
+func _play_impact_vfx(depleting: bool) -> void:
+	if _impact_muted or not is_inside_tree():
+		return
+	if Time.get_ticks_msec() - _spawn_msec < IMPACT_ARM_DELAY_MSEC:
+		return
+	var impact: int = impact_class()
+	if impact == ASSET_VFX.Impact.NONE:
+		return
+	var vfx: Node = get_node_or_null(^"/root/EnvironmentVfx")
+	if vfx == null or not vfx.has_method(&"play_impact"):
+		return
+	vfx.call(
+		&"play_impact",
+		impact,
+		_impact_anchor(),
+		IMPACT_DEPLETION_INTENSITY if depleting else 1.0
+	)
+
+
+## The asset id this prop was built from. `autoload/harvest_world.gd` stamps it on the Harvestable
+## itself; the walk upward covers a holder that carries it and a construction site that does not
+## stamp the child, mirroring `EnvironmentVfx._asset_id_for`'s own ancestor walk.
+func _asset_id() -> String:
+	var cursor: Node = self
+	for _depth: int in 4:
+		if cursor == null:
+			break
+		if cursor.has_meta(&"asset"):
+			return String(cursor.get_meta(&"asset"))
+		cursor = cursor.get_parent()
+	return ""
+
+
+## Where the chips come off. Measured from the prop's own geometry — a tree is struck at chest
+## height, a boulder near its middle — and cached, because from here the geometry only shrinks and
+## the depleted stump is not what the swing hit.
+func _impact_anchor() -> Vector3:
+	if _impact_anchor_offset < 0.0:
+		_impact_anchor_offset = _measure_anchor_offset()
+	return global_position + Vector3.UP * _impact_anchor_offset
+
+
+func _measure_anchor_offset() -> float:
+	var holder := get_parent() as Node3D
+	var root: Node = holder if holder != null else self
+	var bounds := AABB()
+	var found: bool = false
+	var seen: int = 0
+	var queue: Array[Node] = [root]
+	while not queue.is_empty() and seen < IMPACT_MESH_PART_CAP:
+		var cursor: Node = queue.pop_back()
+		var mesh_instance := cursor as MeshInstance3D
+		if mesh_instance != null and mesh_instance.mesh != null and mesh_instance.is_inside_tree():
+			seen += 1
+			var part: AABB = mesh_instance.global_transform * mesh_instance.mesh.get_aabb()
+			bounds = part if not found else bounds.merge(part)
+			found = true
+		for child: Node in cursor.get_children():
+			queue.append(child)
+	if not found:
+		return IMPACT_ANCHOR_FALLBACK_M
+	var top: float = bounds.position.y + bounds.size.y - global_position.y
+	return clampf(top * IMPACT_ANCHOR_HEIGHT_FRACTION, 0.25, IMPACT_ANCHOR_MAX_HEIGHT_M)
 
 
 @rpc("any_peer", "call_remote", "reliable")
