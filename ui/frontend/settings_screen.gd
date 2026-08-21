@@ -42,6 +42,7 @@ extends Control
 const MireTheme := preload("res://ui/theme/mire_theme.gd")
 const FocusRingSlider := preload("res://ui/menu/focus_ring_slider.gd")
 const GraphicsSettingsPage := preload("res://ui/frontend/graphics_settings_page.gd")
+const BenchmarkScreen := preload("res://ui/frontend/benchmark_screen.gd")
 
 ## Fixed width of a slider's numeric readout, in pixels at `MireTheme.BODY`. Wide enough for the
 ## longest string any row produces ("720°/s") so the row cannot reflow while the handle moves.
@@ -324,11 +325,38 @@ func _slider_row(label_text: String, slider: HSlider, readout: int, hint: String
 
 func _build_display_page() -> Control:
 	var settings: Node = _settings()
-	var graphics_page := GraphicsSettingsPage.new(settings)
+	# The benchmark row only exists on the front end: it builds its own world on a pinned seed and
+	# two of its scenes change that world permanently, so it can never run over a live run (D-192).
+	# Membership of the front end's group IS the definition of "not in a run" — the same test
+	# `ui/menu/pause_menu.gd` uses, so the two cannot drift apart.
+	var on_frontend: bool = not get_tree().get_nodes_in_group(&"mire_frontend").is_empty()
+	var graphics_page := GraphicsSettingsPage.new(settings, on_frontend)
 	graphics_page.setting_requested.connect(func(setter: String, value: Variant) -> void:
 		_write(setter, value))
 	graphics_page.note_requested.connect(_note)
+	graphics_page.benchmark_requested.connect(_open_benchmark)
 	return graphics_page
+
+
+## Hands the settings off to the benchmark and gets out of the way (F-453).
+##
+## Two things have to happen first, and both are this screen's job rather than the benchmark's.
+## The current values are SAVED, because the benchmark measures the settings that are actually in
+## effect and a preview that has not been committed is not what it would be measuring. Then the
+## preview is released outright: the benchmark's whole purpose is to change these values, and a
+## screen still holding a preview would hand its own baseline back over the top of the
+## recommendation the moment the player left. `menu_shown()` re-takes the preview when this screen
+## comes back, against whatever the benchmark left behind.
+func _open_benchmark() -> void:
+	_on_save()
+	_cancel_preview()
+	var stack: Node = get_node_or_null(^"/root/MenuStack")
+	if stack == null or not stack.has_method("push"):
+		_note("The benchmark needs the menu stack, which is not running.")
+		return
+	var screen := BenchmarkScreen.new()
+	screen.name = "BenchmarkScreen"
+	stack.call("push", screen)
 
 
 func _build_audio_page() -> Control:

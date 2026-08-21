@@ -8527,3 +8527,18 @@ Root cause: render_census did its work in _init(), before autoloads existed, so 
 Files: `tools/_perf_attrib.gd`, `docs/PERFORMANCE.md`, `tools/perf_probe.gd`, `core/render/hardware_tier.gd`, `autoload/settings_service.gd`, `tools/hardware_tier_check.gd`, `tools/frame_cost_check.gd`, `tools/probe_scene.gd`, `tools/render_census.gd`
 
 Commit at time of writing: `afc8178`
+
+---
+
+### DONE · F-453 · quill895277 · 2026-08-21T21:36:55+00:00
+
+**No in-game benchmark: a player cannot measure their own machine**
+
+In-game benchmark: nine scenes, machine-state capture, measured settings recommendation. 159 assertions, 0 failures on the full run.
+
+Notes along the way:
+- Built core/bench/ (frame_sampler, benchmark_suite, benchmark_runner, settings_advisor, benchmark_report), ui/frontend/benchmark_screen.gd, the Settings->DISPLAY entry point, and tools/benchmark_check.gd. Pure half: 81 assertions, 0 failures headless. Live half pending a windowed run.
+
+Files: `core/bench/frame_sampler.gd`, `core/bench/benchmark_suite.gd`, `core/bench/settings_advisor.gd`, `core/bench/benchmark_report.gd`, `core/bench/benchmark_runner.gd`, `ui/frontend/benchmark_screen.gd`, `ui/frontend/graphics_settings_page.gd`, `ui/frontend/settings_screen.gd`, `tools/benchmark_check.gd`, `core/bench/machine_probe.gd`
+
+Commit at time of writing: `cbbd2bb`

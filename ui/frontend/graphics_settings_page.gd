@@ -9,6 +9,10 @@ const FocusRingSlider := preload("res://ui/menu/focus_ring_slider.gd")
 
 signal setting_requested(setter: String, value: Variant)
 signal note_requested(message: String)
+## The player asked to measure this machine rather than guess at it (F-453). The page does not open
+## the benchmark itself — it runs in its own world and the settings screen has to commit and stop
+## previewing before that can happen, which is the screen's business, not this page's.
+signal benchmark_requested()
 
 const GRAPHICS_PRESETS: Array[String] = ["LOW", "MEDIUM", "HIGH"]
 const SSAO_MODES: Array[String] = ["AUTO (PRESET)", "OFF", "ON"]
@@ -16,10 +20,15 @@ const READOUT_WIDTH: float = 96.0
 
 var _settings: Node
 var _controls: Array[Dictionary] = []
+## False in-run: the benchmark generates its own world and cannot run over a live session (D-192),
+## so the row is absent rather than present-and-refusing. A button that explains why it will not
+## work is a worse answer than no button.
+var _allow_benchmark: bool = true
 
 
-func _init(settings: Node) -> void:
+func _init(settings: Node, allow_benchmark: bool = true) -> void:
 	_settings = settings
+	_allow_benchmark = allow_benchmark
 	add_theme_constant_override("separation", MireTheme.GRID)
 	_build()
 	if _settings != null and _settings.has_signal(&"settings_changed"):
@@ -78,6 +87,9 @@ func _build() -> void:
 	add_child(_toggle_row("Dynamic resolution", "dynamic_resolution", "set_dynamic_resolution",
 		"Lowers 3D resolution during expensive scenes to protect the target frame rate."))
 
+	if _allow_benchmark:
+		add_child(_benchmark_row())
+
 	add_child(MireTheme.separator())
 	add_child(_heading("IMAGE"))
 	var fov: HSlider = MireTheme.slider(
@@ -91,6 +103,21 @@ func _build() -> void:
 	add_child(_slider_row("Brightness", brightness, FocusRingSlider.Readout.PERCENT,
 		"Adjusts the final environment grade without changing gameplay lighting."))
 	refresh()
+
+
+## The one control on this page that measures instead of setting. It sits directly under the
+## quality dropdowns because that is where a player is when they are guessing — every value above
+## it is a guess about this machine, and this is the button that stops it being one.
+func _benchmark_row() -> Control:
+	var wrapper: VBoxContainer = MireTheme.column(MireTheme.GRID)
+	var button: Button = MireTheme.button("RUN BENCHMARK",
+		func() -> void: benchmark_requested.emit())
+	wrapper.add_child(button)
+	wrapper.add_child(MireTheme.label(
+		"Measures this machine across the whole island — shore, forest, night, a wave — and "
+		+ "recommends the settings it actually holds. Takes about two minutes.",
+		MireTheme.CAPTION, MireTheme.MUTED))
+	return wrapper
 
 
 func _heading(text: String) -> Label:

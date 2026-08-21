@@ -36,53 +36,11 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "core/bench/benchmark_report.gd": {
-      "agent": "quill895277",
-      "at": "2026-08-21T20:53:20+00:00",
-      "task": "F-453",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
-    },
-    "core/bench/benchmark_runner.gd": {
-      "agent": "quill895277",
-      "at": "2026-08-21T20:55:17+00:00",
-      "task": "F-453",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
-    },
-    "core/bench/benchmark_suite.gd": {
-      "agent": "quill895277",
-      "at": "2026-08-21T20:51:23+00:00",
-      "task": "F-453",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
-    },
-    "core/bench/frame_sampler.gd": {
-      "agent": "quill895277",
-      "at": "2026-08-21T20:49:51+00:00",
-      "task": "F-453",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
-    },
-    "core/bench/machine_probe.gd": {
-      "agent": "quill895277",
-      "at": "2026-08-21T21:16:42+00:00",
-      "task": "F-453",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
-    },
-    "core/bench/settings_advisor.gd": {
-      "agent": "quill895277",
-      "at": "2026-08-21T20:52:37+00:00",
-      "task": "F-453",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
-    },
     "docs/ASSET_TRACKER.md": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:13:34+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
-    },
-    "tools/benchmark_check.gd": {
-      "agent": "quill895277",
-      "at": "2026-08-21T21:00:24+00:00",
-      "task": "F-453",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "tools/blender/build_gatherable_plants.py": {
       "agent": "gale43d16e",
@@ -102,23 +60,23 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "ui/frontend/benchmark_screen.gd": {
-      "agent": "quill895277",
-      "at": "2026-08-21T20:57:42+00:00",
-      "task": "F-453",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
+    "tools/traversal_profile.gd": {
+      "agent": "wick5e2d04",
+      "at": "2026-08-21T21:19:23+00:00",
+      "task": "F-454",
+      "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
     },
-    "ui/frontend/graphics_settings_page.gd": {
-      "agent": "quill895277",
-      "at": "2026-08-21T20:58:40+00:00",
-      "task": "F-453",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
+    "world/chunk/chunk_streamer.gd": {
+      "agent": "wick5e2d04",
+      "at": "2026-08-21T21:21:59+00:00",
+      "task": "F-454",
+      "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
     },
-    "ui/frontend/settings_screen.gd": {
-      "agent": "quill895277",
-      "at": "2026-08-21T20:58:40+00:00",
-      "task": "F-453",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
+    "world/gen/resource_scatter_field.gd": {
+      "agent": "wick5e2d04",
+      "at": "2026-08-21T21:21:59+00:00",
+      "task": "F-454",
+      "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
     }
   },
   "in_flight": {
@@ -140,29 +98,22 @@
       "started": "2026-08-21T17:13:34+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "F-453": {
-      "agent": "quill895277",
+    "F-454": {
+      "agent": "wick5e2d04",
       "files": [
-        "core/bench/frame_sampler.gd",
-        "core/bench/benchmark_suite.gd",
-        "core/bench/settings_advisor.gd",
-        "core/bench/benchmark_report.gd",
-        "core/bench/benchmark_runner.gd",
-        "ui/frontend/benchmark_screen.gd",
-        "ui/frontend/graphics_settings_page.gd",
-        "ui/frontend/settings_screen.gd",
-        "tools/benchmark_check.gd",
-        "core/bench/machine_probe.gd"
+        "tools/traversal_profile.gd",
+        "world/gen/resource_scatter_field.gd",
+        "world/chunk/chunk_streamer.gd"
       ],
       "notes": [
         {
-          "at": "2026-08-21T21:06:41+00:00",
-          "by": "quill895277",
-          "text": "Built core/bench/ (frame_sampler, benchmark_suite, benchmark_runner, settings_advisor, benchmark_report), ui/frontend/benchmark_screen.gd, the Settings->DISPLAY entry point, and tools/benchmark_check.gd. Pure half: 81 assertions, 0 failures headless. Live half pending a windowed run."
+          "at": "2026-08-21T21:32:36+00:00",
+          "by": "wick5e2d04",
+          "text": "Localized, partly fixed, not solved. Three profile runs with tools/traversal_profile.gd (new),\nwalking 7 m/s for 45 s on BENCH_SEED, M5 Pro fullscreen:\n\n  run                                    worst    hitches (>=25ms)    nodes/hitch frame\n  at HEAD                               217 ms    2.4% frames, 15.4% clock    215 (vs 0 quiet)\n  + LOD0 poll budgeted nearest-first    142 ms    2.5% frames, 16.0% clock    184\n  + asset groups budgeted by ms         150 ms    3.1% frames, 16.8% clock    100\n\nTWO REAL DEFECTS FOUND AND FIXED, neither of which was the dominant cost:\n\n1. `ResourceScatterField`'s LOD0 collision poll had NO per-frame cap \u2014 it dressed every chunk whose\n   collider had cooked, in one frame. Now budgeted nearest-first, with the chunk underfoot exempt.\n2. The visual band's budget counted CHUNKS, and a chunk is 200-500 nodes. Budget unit is now\n   milliseconds against the asset GROUP, the seam `_build_chunk()` already had.\n\nTogether these removed the node-burst class of hitch entirely: the 353/453/542-node frames are gone\nand the worst frame fell 217 -> 150 ms. `tools/resource_scatter_check.gd` still passes all 19\nassertions (failures=0), so the deferral is behaviourally invisible.\n\nWHAT THEY DID NOT DO is move total hitch time \u2014 15.4% -> 16.8% of the wall clock, which across three\nruns is inside variance. So the node churn was a real bound worth having and NOT the main cost.\n\nWHAT IS STILL UNATTRIBUTED, and it is most of it. The worst frames now look like this:\n\n  frame ms    process    physics   streamer   nodes    navQ    grpQ\n    104.35       8.83       1.25       0.23       5       0      80\n    103.58       9.05       1.14       0.30       5       0      77\n    102.63       8.93       1.24       0.29       5       0      91\n\nA ~104 ms frame with 9 ms of `_process`, 1 ms of `_physics_process`, 0.3 ms of streamer cost and\nFIVE nodes added. Roughly 90 ms per hitch frame is accounted for by none of the four counters this\ntool has. The aggregate line reads \"75.6% in _process\" only because two outlier frames (62 and\n76 ms of process) dominate the sum; the typical hitch frame is not those.\n\nSo the remaining suspects are things a scene-tree instrument cannot see: GPU/driver stalls, resource\nor texture uploads on the main thread, MultiMesh buffer commits, `queue_free` of large subtrees, or\nshader compilation. Resolving it needs a real frame profiler (Godot's own visual profiler, or a\nMetal capture), not another counter bolted onto this tool.\n\nSEPARATELY: `ChunkStreamer` overruns its own FRAME_BUDGET_MS badly under motion \u2014 39, 43, 45, 48,\n53, 55 ms observed against a 4 ms budget. That is roughly 10x and it is its own defect, distinct\nfrom this one. It accounts for ~21% of hitch time."
         }
       ],
-      "started": "2026-08-21T20:49:51+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
+      "started": "2026-08-21T21:18:52+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
     }
   },
   "recent": {
@@ -1194,13 +1145,6 @@
       "hash": "01b45c297cd9ceed1abd4d0b9864e5ed4149d200ad261398b6f2546511b5cbb7",
       "task": "F-432",
       "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
-    },
-    "autoload/player_net.gd": {
-      "agent": "slate8b6811",
-      "at": "2026-08-20T21:22:10+00:00",
-      "hash": "e377732ae7f5bdd7c0313186c39b81b3ad2a597272998bc0579e19856ac70cfd",
-      "task": "F-324",
-      "token": "CLAUDE_CODE_SESSION_ID:dcf988c3-f81b-4177-97bb-d3f72dcb1927"
     },
     "autoload/ranged_combat_service.gd": {
       "agent": "ivy1bcae0",
@@ -2399,6 +2343,48 @@
       "task": "F-401",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
+    "core/bench/benchmark_report.gd": {
+      "agent": "quill895277",
+      "at": "2026-08-21T21:36:55+00:00",
+      "hash": "cc69fda7d88535d13eeaf029e529f362bd0cd5d70a11754d490600dccf78a890",
+      "task": "F-453",
+      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
+    },
+    "core/bench/benchmark_runner.gd": {
+      "agent": "quill895277",
+      "at": "2026-08-21T21:36:55+00:00",
+      "hash": "d6ba11da125019ae67e982072e1f509709ee8aa31a0fb2ce010453079a4fd9ce",
+      "task": "F-453",
+      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
+    },
+    "core/bench/benchmark_suite.gd": {
+      "agent": "quill895277",
+      "at": "2026-08-21T21:36:55+00:00",
+      "hash": "13a88190e22807df256bb1321d714d36c808e79a00be4646f1e972c3f5ad1774",
+      "task": "F-453",
+      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
+    },
+    "core/bench/frame_sampler.gd": {
+      "agent": "quill895277",
+      "at": "2026-08-21T21:36:55+00:00",
+      "hash": "8d990deffb0d808e0d504507759773ca4dd41fe347a805902e8b445c7d0c00ea",
+      "task": "F-453",
+      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
+    },
+    "core/bench/machine_probe.gd": {
+      "agent": "quill895277",
+      "at": "2026-08-21T21:36:55+00:00",
+      "hash": "ec368caae287dce1088cf4238084132dc99ec6aa4fdc8201b73cc4a7fb729dbe",
+      "task": "F-453",
+      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
+    },
+    "core/bench/settings_advisor.gd": {
+      "agent": "quill895277",
+      "at": "2026-08-21T21:36:55+00:00",
+      "hash": "b64b53079338a5436ee6ce4904b56db35bbf1a468d19722892edcd7189fa31be",
+      "task": "F-453",
+      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
+    },
     "core/net/net_version.gd": {
       "agent": "flinta92725",
       "at": "2026-08-21T05:51:07+00:00",
@@ -2504,13 +2490,6 @@
       "task": "F-336",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
-    "docs/MENU.md": {
-      "agent": "reed31c598",
-      "at": "2026-08-20T21:19:06+00:00",
-      "hash": "7a0ffd74bbe36816948344ee946e069a07d34d88812cee80f626e697acf15b29",
-      "task": "7.4",
-      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
-    },
     "docs/PERFORMANCE.md": {
       "agent": "wick5e2d04",
       "at": "2026-08-21T21:17:45+00:00",
@@ -2566,13 +2545,6 @@
       "hash": "43925af392be8875b53a004861974e11cd7d437f0c78b359873ec0d0e83be68d",
       "task": "F-355",
       "token": "CODEX_SESSION_ID:01a021e9-16c4-79b1-aaa1-daca169c6136"
-    },
-    "levels/frontend.tscn": {
-      "agent": "reed31c598",
-      "at": "2026-08-20T21:19:06+00:00",
-      "hash": "11cc639d4aa2fc858862e98e6d2d76fa8731ebbc580fdb3eda201efb3864f58f",
-      "task": "7.4",
-      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
     "levels/greybox_test.tscn": {
       "agent": "kilnd3a089",
@@ -2791,6 +2763,13 @@
       "task": "F-347",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
+    "tools/benchmark_check.gd": {
+      "agent": "quill895277",
+      "at": "2026-08-21T21:36:55+00:00",
+      "hash": "4c5874f14ba9ec556dfd59c2ceb37fbd4be9fe68e773bb82a3e7341fb042416c",
+      "task": "F-453",
+      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
+    },
     "tools/biome_region_check.gd": {
       "agent": "birchcf39ce",
       "at": "2026-08-21T19:40:33+00:00",
@@ -2965,13 +2944,6 @@
       "hash": "32c5cacbed895b6127406a328944ef7afc92d3037843906b27de2eb67662e486",
       "task": "F-351",
       "token": "CLAUDE_CODE_SESSION_ID:34f19dd1-60f4-4279-b7ba-e40ce133b27f"
-    },
-    "tools/expedition_check.gd": {
-      "agent": "reed31c598",
-      "at": "2026-08-20T21:19:06+00:00",
-      "hash": "ad583a2f2cb9f00fe44c87abbe77b9c1e66258150b00f89cb559baee5e506d11",
-      "task": "7.4",
-      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
     "tools/f356_night_probe.gd": {
       "agent": "emberd89a44",
@@ -3162,20 +3134,6 @@
       "task": "F-419",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
-    "tools/menu_kit_check.gd": {
-      "agent": "reed31c598",
-      "at": "2026-08-20T21:19:06+00:00",
-      "hash": "1f67755f02d8933675e6a6f5efab1176c3566b99d6459341f3920435f119bae9",
-      "task": "7.4",
-      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
-    },
-    "tools/menu_stack_check.gd": {
-      "agent": "reed31c598",
-      "at": "2026-08-20T21:19:06+00:00",
-      "hash": "74c6af4713ab7b357182bff0c6d7fb9b7af75f61e3498fca44a15a99cb4c7e57",
-      "task": "7.4",
-      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
-    },
     "tools/mire_scatter_check.gd": {
       "agent": "kilnf96279",
       "at": "2026-08-21T19:17:13+00:00",
@@ -3189,20 +3147,6 @@
       "hash": "72e9841c2b5d8c84484849834929bdefffbcfaf17855819e84582d2eff52fb98",
       "task": "F-346",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "tools/noise_reuse_check.gd": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T21:26:49+00:00",
-      "hash": "641651d5f44fe51eafeb95fcfcb8b66f9b76b9376625ab9c68f65e94eb08815b",
-      "task": "4.18",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
-    },
-    "tools/pause_menu_check.gd": {
-      "agent": "reed31c598",
-      "at": "2026-08-20T21:19:06+00:00",
-      "hash": "8f14378367ba9de5377de2177a1bad268fd2ebd25a35ce5105e69158e9a4fcc8",
-      "task": "7.4",
-      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
     "tools/perf_probe.gd": {
       "agent": "wick5e2d04",
@@ -3266,20 +3210,6 @@
       "hash": "288e68fe876c25e20a39ebc59a038db6ec0f63112f685aef3ec0ccbeba572259",
       "task": "F-431",
       "token": "CLAUDE_CODE_SESSION_ID:80d76563-dcca-426a-ad54-2909c9fa380a"
-    },
-    "tools/run_summary_check.gd": {
-      "agent": "reed31c598",
-      "at": "2026-08-20T21:19:06+00:00",
-      "hash": "812e856fe92ba01133e92dc9282da4bab498aefe71877fa71cc7c1e9582a0d9c",
-      "task": "7.4",
-      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
-    },
-    "tools/salvage_bench_check.gd": {
-      "agent": "reed31c598",
-      "at": "2026-08-20T21:19:06+00:00",
-      "hash": "f65529623241b3e28dc3b76d0237e951353f710abc48c8e33847008db1228440",
-      "task": "7.4",
-      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
     "tools/save_atomicity_check.gd": {
       "agent": "ivy1bcae0",
@@ -3393,13 +3323,6 @@
       "task": "F-335",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
-    "tools/title_render.gd": {
-      "agent": "reed31c598",
-      "at": "2026-08-20T21:19:06+00:00",
-      "hash": "3c81567ffbe5a9f234d424730b1712f8f1544e798baeed712863e2d54d1c1a4d",
-      "task": "7.4",
-      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
-    },
     "tools/tree_collider_check.gd": {
       "agent": "kiln384569",
       "at": "2026-08-21T17:50:16+00:00",
@@ -3442,19 +3365,12 @@
       "task": "F-380",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
-    "ui/frontend/backdrop.gd": {
-      "agent": "reed31c598",
-      "at": "2026-08-20T21:19:06+00:00",
-      "hash": "df45b40516d86a74efa23e5be2846bf349ed5828daa37e3361f0bc263a4ceb23",
-      "task": "7.4",
-      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
-    },
-    "ui/frontend/expedition_screen.gd": {
-      "agent": "reed31c598",
-      "at": "2026-08-20T21:19:06+00:00",
-      "hash": "1dec8b73a720051b4dad8e3cde6be292c82c9233c95272a30598d8556c118fb9",
-      "task": "7.4",
-      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
+    "ui/frontend/benchmark_screen.gd": {
+      "agent": "quill895277",
+      "at": "2026-08-21T21:36:55+00:00",
+      "hash": "8bff89ad48a7b981d1a271158314ae9f0a7143f3f22d19794d09a58b618b26ac",
+      "task": "F-453",
+      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "ui/frontend/frontend.gd": {
       "agent": "mossb81aeb",
@@ -3464,11 +3380,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:53027a2a-9613-416b-bd3c-e7a62777eff1"
     },
     "ui/frontend/graphics_settings_page.gd": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T06:29:30+00:00",
-      "hash": "c5411adc7eecd2df485f254634110991a09ba72c081fcf4143f92ffc64baeea2",
-      "task": "F-414",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
+      "agent": "quill895277",
+      "at": "2026-08-21T21:36:55+00:00",
+      "hash": "7b57e1f6dba8fe5ef39f5e28d34e158824b6cb7efb16617234eb981fec86ad1d",
+      "task": "F-453",
+      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "ui/frontend/graphics_settings_page.gd.uid": {
       "agent": "flinta92725",
@@ -3477,40 +3393,12 @@
       "task": "F-414",
       "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
-    "ui/frontend/island_minimap.gd": {
-      "agent": "reed31c598",
-      "at": "2026-08-20T21:19:06+00:00",
-      "hash": "9a4149d263bfcfd915cafcab533ef6e64746ede0d003272826ef75a76152b595",
-      "task": "7.4",
-      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
-    },
-    "ui/frontend/run_summary_screen.gd": {
-      "agent": "reed31c598",
-      "at": "2026-08-20T21:19:06+00:00",
-      "hash": "7f0742c0c30d26f534d65371719c50b8d2984ef6ff30f56f8b674525b33f3504",
-      "task": "7.4",
-      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
-    },
-    "ui/frontend/salvage_bench_screen.gd": {
-      "agent": "reed31c598",
-      "at": "2026-08-20T21:19:06+00:00",
-      "hash": "90d10632a8e782c6d65de52f683f1605b8181ca88003b5d4b7c3d83328d6bea5",
-      "task": "7.4",
-      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
-    },
     "ui/frontend/settings_screen.gd": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T06:29:30+00:00",
-      "hash": "2378fcd1ff916308699851d77ab71dd0eb0afacc4de66998d598ffb74379745c",
-      "task": "F-414",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
-    },
-    "ui/frontend/title_screen.gd": {
-      "agent": "reed31c598",
-      "at": "2026-08-20T21:19:06+00:00",
-      "hash": "d01edc1eb962ae1a9889298fc2374956bcc5e347e8f55797df8bb8a235092c1a",
-      "task": "7.4",
-      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
+      "agent": "quill895277",
+      "at": "2026-08-21T21:36:55+00:00",
+      "hash": "bb61d0183b93deeea3c3e7df40b4b7d951eb935dca6d10c54df3a50702113754",
+      "task": "F-453",
+      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "ui/hud/blight_vignette.gdshader": {
       "agent": "kilnd3a089",
@@ -3602,13 +3490,6 @@
       "hash": "273c9da54c862c6c43b384da7fb904d257ec9c5e0710ab7a0ac08f06846572c5",
       "task": "F-413",
       "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
-    },
-    "ui/menu/pause_menu.gd": {
-      "agent": "reed31c598",
-      "at": "2026-08-20T21:19:06+00:00",
-      "hash": "936db4978092e746931573d67b08f11ce85987e4fa968924c74e188a6acf9778",
-      "task": "7.4",
-      "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
     "ui/menu/settings_menu.gd": {
       "agent": "flinta92725",
@@ -3779,7 +3660,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     }
   },
-  "rev": 860,
+  "rev": 866,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9130,11 +9011,20 @@
       "title": "render_census sees 388 surfaces in a world whose real frame is 4,908 draw calls \u2014 the structural instrument is blind to nearly all of the shipped cost"
     },
     "F-453": {
+      "done_at": "2026-08-21T21:36:55+00:00",
+      "done_by": "quill895277",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "No in-game benchmark: a player cannot measure their own machine"
+    },
+    "F-454": {
       "est": "\u2014",
       "milestone": "Findings",
       "status": "in_flight",
       "tier": "F",
-      "title": "No in-game benchmark: a player cannot measure their own machine"
+      "title": "The felt performance problem is chunk streaming, not rendering: traversal drops the 1% low from 81 fps to 13 fps, and no graphics preset touches it"
     }
   },
   "version": 1
