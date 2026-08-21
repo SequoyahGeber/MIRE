@@ -1730,45 +1730,6 @@ more complete fix, since it also removes the double-stepping every other asserti
 
 ---
 
-### F-356 · Night renders essentially black on the shipped grade — the ground is invisible, not merely dark
-
-**Area:** render · **Severity:** high · **Found:** 2026-08-21 by gale47f1fe
-
-Found while measuring F-353's daytime fix, and NOT caused by it: the shipped grade was rendered at
-hour 22.0 as its own control (`assets/audit/lighting/35_baseline_night.png`) and measures
-
-  luminance p05 0.000  median 0.000  p95 0.003   (3682 distinct colours in the whole frame)
-
-The frame is not empty — stars, a few blue cloud facets and the emissive rims on foliage survive —
-but the TERRAIN is gone. There is no ground plane, no silhouette, no horizon. A player standing in
-it can see the sky and nothing they are standing on.
-
-This contradicts what `world/environment/playtest_atmosphere.gd` is explicitly trying to do. Its
-own `NIGHT_AMBIENT_COLOR` comment says the night ambient floor exists so that "night should be
-dangerous, not unreadable", and `MOONLIGHT_COLOR` exists to tint what directional light survives.
-Both are being applied; neither is reaching the ground.
-
-Candidates, none yet isolated:
-
-  · `background_energy_multiplier` runs to 0.12 at night and `ambient_light_sky_contribution` is
-    0.68, so 68% of the ambient term is a sky that has itself been dimmed to near nothing — the
-    two multiply, and `NIGHT_AMBIENT_ENERGY` 0.22 is then applied to the product.
-  · `sun.light_energy` bottoms out at 0.04, which against a terrain albedo of 0.26/0.40/0.19 is
-    below what the tonemapper resolves at all.
-  · `tonemap_white` 3.0 at night maps the scene into the toe of the ACES curve (this is the same
-    mechanism F-353 measured on the day side), so what little radiance exists is compressed toward
-    zero rather than lifted.
-
-Deliberately left alone by F-353: that fix drives every grade knob it touches off `daylight` so
-night lands on the authored values unchanged, precisely so this pre-existing problem stays a
-separate, separately-judged change. Whoever takes this should re-measure FIRST — the numbers above
-are one seed at one hour, and `tools/grade_probe.gd` will pose any hour with no overrides.
-
-Worth a product call alongside it: how dark is night SUPPOSED to be? The atmosphere file says
-"dangerous, not unreadable", but nobody has rendered a night anyone signed off on.
-
----
-
 ### F-358 · Retiring a navigation region costs 25-35 ms on the main thread, however it is done
 
 **Area:** navigation · **Severity:** high · **Found:** 2026-08-21 by ivy1bcae0
@@ -2248,7 +2209,78 @@ a stale joined key is indistinguishable from a legitimately-named file and will 
 
 ---
 
+### F-412 · The command system does not yet meet the Minecraft-like capability bar
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by cinder1a9bda
+
+Sequoyah's acceptance requirement is Minecraft-like command capability: commands must be able to compose and control essentially every meaningful part of a running game, not merely provide one debug verb per existing service.
+
+The shipped v1 catalog in docs/COMMANDS.md explicitly leaves important capability classes out: no general conditional execution/context composition, no runtime data/query/storage operations, no scheduling, no rich scoreboard/objective equivalent, no command-driven audiovisual feedback, no world/POI/biome/Mire/Cycle/extraction/run-state administration, and only eight gamerules. Content .tres definitions being data-driven at boot does not make their relevant runtime state command-addressable.
+
+Close this through a bounded follow-on command roadmap rather than an unsafe generic property setter. Preserve the existing CommandService front door, typed CommandSpec metadata, LOCAL/HOST authority, op gating, host re-parse, selectors, functions/hooks, and existing system mutation seams. Add capability families and coverage tests so each gameplay system declares: query verbs, mutation verbs, selectors/targets, gamerules where live tuning is meaningful, structured CommandResult data, and function/headless-runner compatibility. The acceptance check should exercise cross-system scenarios composed entirely from .mcmd commands, including conditionals and assertions, without bespoke GDScript harness setup beyond launching the runner.
+
+---
+
+### F-413 · God Mode is wired only to the obsolete SettingsMenu autoload
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by flinta92725
+
+The live pause/title Settings flow builds ui/frontend/settings_screen.gd, whose five tabs have no God Mode control. F-411 added the toggle and its automated assertion only to ui/menu/settings_menu.gd, an older autoload surface, so tools/god_mode_check.gd passed while the player-visible screen omitted the feature. Migrate the toggle to the live tabbed SettingsScreen, remove the unused SettingsMenu autoload and legacy script if reference analysis confirms it is dead, and update coverage to instantiate the player-visible screen.
+
+---
+
+### F-414 · Graphics settings menu is incomplete
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill5df327
+
+ui/frontend/settings_screen.gd's DISPLAY tab exposes only graphics quality and FOV. docs/MENU.md section 7.1 explicitly requires window mode, resolution, vsync, and FPS cap, and docs/FINDINGS.md's performance record says the shipped game still has no retail vsync/frame-rate surface. Implement these as persisted local SettingsService values with DisplayServer/Engine application and round-trip/runtime checks.
+
+---
+
 ## Resolved
+
+### F-356 · Night renders essentially black on the shipped grade — the ground is invisible, not merely dark — **fixed**
+
+**Area:** render · **Severity:** high · **Found:** 2026-08-21 by gale47f1fe
+
+Found while measuring F-353's daytime fix, and NOT caused by it: the shipped grade was rendered at
+hour 22.0 as its own control (`assets/audit/lighting/35_baseline_night.png`) and measures
+
+  luminance p05 0.000  median 0.000  p95 0.003   (3682 distinct colours in the whole frame)
+
+The frame is not empty — stars, a few blue cloud facets and the emissive rims on foliage survive —
+but the TERRAIN is gone. There is no ground plane, no silhouette, no horizon. A player standing in
+it can see the sky and nothing they are standing on.
+
+This contradicts what `world/environment/playtest_atmosphere.gd` is explicitly trying to do. Its
+own `NIGHT_AMBIENT_COLOR` comment says the night ambient floor exists so that "night should be
+dangerous, not unreadable", and `MOONLIGHT_COLOR` exists to tint what directional light survives.
+Both are being applied; neither is reaching the ground.
+
+Candidates, none yet isolated:
+
+  · `background_energy_multiplier` runs to 0.12 at night and `ambient_light_sky_contribution` is
+    0.68, so 68% of the ambient term is a sky that has itself been dimmed to near nothing — the
+    two multiply, and `NIGHT_AMBIENT_ENERGY` 0.22 is then applied to the product.
+  · `sun.light_energy` bottoms out at 0.04, which against a terrain albedo of 0.26/0.40/0.19 is
+    below what the tonemapper resolves at all.
+  · `tonemap_white` 3.0 at night maps the scene into the toe of the ACES curve (this is the same
+    mechanism F-353 measured on the day side), so what little radiance exists is compressed toward
+    zero rather than lifted.
+
+Deliberately left alone by F-353: that fix drives every grade knob it touches off `daylight` so
+night lands on the authored values unchanged, precisely so this pre-existing problem stays a
+separate, separately-judged change. Whoever takes this should re-measure FIRST — the numbers above
+are one seed at one hour, and `tools/grade_probe.gd` will pose any hour with no overrides.
+
+Worth a product call alongside it: how dark is night SUPPOSED to be? The atmosphere file says
+"dangerous, not unreadable", but nobody has rendered a night anyone signed off on.
+
+---
+
+**Resolved 2026-08-21 by emberd89a44.** Rebalanced only the controller-owned night endpoint while preserving the approved daytime constants. The procedural sky now keeps a visible indigo gradient; the ACES white point no longer buries moonlight in the toe; cool ambient fill is less contaminated by the green ground half of the sky; saturation is restrained; and the moon remains the sole directional key and shadow caster at night.
+
+Verified with `.agent/bin/agent godot --script tools/atmosphere_night_check.gd` (`failures=0`), `.agent/bin/agent godot --script tools/grade_check.gd` (`failures=0`), and `.agent/bin/agent godot --script tools/graphics_quality_check.gd` (`failures=0`). Fixed-seed Forward+ renders are recorded by `tools/f356_night_probe.gd`: midnight median luminance rose from 0.0127 to 0.1105, p95 remains 0.3016, and pixels below 0.02 fell from 51.31% to 1.37%. `f356_20_noon_control.png` confirms the daytime endpoint remains on the F-410 baseline.
 
 ### F-411 · Add a playtesting God mode toggle — **fixed**
 
