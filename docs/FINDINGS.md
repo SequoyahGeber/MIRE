@@ -1695,80 +1695,6 @@ Filed alongside F-349 (the same drain has no player-facing signal at all).
 
 ---
 
-### F-351 · Enemies navigate a map the streamed world never bakes into — every chunk navmesh is on NavBaker's private map
-
-**Area:** gameplay · **Severity:** high · **Found:** 2026-08-21 by ivycc0920
-
-Reported from play (2026-08-20): "when it became night time the crawlers spawned from the well but
-they walked backwards away from me."
-
-**Two navigation maps exist and nothing joins them.**
-
-`world/chunk/nav_baker.gd:_ensure_map()` calls `NavigationServer3D.map_create()` and puts every
-streamed chunk's region on that private map (`region_set_map(region, _map)`, line 279).
-`Enemy._build_agent()` creates a plain `NavigationAgent3D` and never assigns a map, so it queries the
-viewport's DEFAULT world map. `EnemyWorld.bake_navigation()` adds its `EnemyNavRegion` as a child of
-the autoload, which also lands on the default map.
-
-Measured in the shipped level (`tools/enemy_nav_map_check.gd`, new — boots
-`res://levels/procedural_island.tscn` and reads both maps):
-
-    default map (what every enemy queries):  1 region, 0 region connections
-    NavBaker's own map:                     25 regions (25 chunk navmeshes baked)
-    same map as the enemies query?          false
-
-So **none of the island's terrain navmesh is reachable by any enemy.** What an enemy actually paths
-on is `EnemyNavRegion`: one region, baked ONCE from `get_tree().current_scene`'s static colliders at
-session start, and never rebaked as chunks stream. `autoload/enemy_world.gd`'s own header states the
-assumption out loud — "the region is baked once from the level's static collision at session start" —
-which was true of the authored maps and is false of a streamed island, where at session start the
-only colliders that exist are the handful of spawn chunks `ChunkStreamer.prime()` built.
-
-**Why it reads as "walked away from me."** `Enemy._nav_ready` is TRUE — the default map is valid and
-has a non-zero iteration id, because `EnemyNavRegion` is on it — so `_steer_toward()` never takes its
-"no map, steer straight" fallback. It hands the target to an agent whose only navmesh is a small
-stale patch near the world spawn point. A `NavigationAgent3D` given a target off its navmesh paths
-toward the nearest reachable point instead, so a crawler spawned out at the well walks off toward
-that spawn patch — away from the player standing next to it.
-
-**Reproduced.** From a spawn marker at (-69.1, 3.1, -32.4), with a player 12 m away, the crawler
-walks the other way — the agent returns a constant step direction that has almost nothing in common
-with the direction of the player, and the gap widens for as long as the trace runs:
-
-     t(s)   dist(m)   step_dir.x   direct_dir.x
-      0.0    11.98       0.21          0.99
-      1.0    11.93       0.21          0.98
-      2.0    14.27       0.21          0.95
-      2.7    18.56       0.21          0.92
-     end     21.44       — DID NOT CLOSE
-
-That is the reported behaviour exactly: the crawler is not confused about which way it is facing, it
-is walking, deliberately and steadily, at the stale region instead of at the player.
-
-Whether it happens at a given spot is positional, which is why it looks intermittent from inside the
-game. At other ambient spawn markers the agent returns nothing usable and `_steer_toward()` falls
-through to `direct.normalized()` — step direction and direct direction identical to two decimals —
-and the crawler closes normally. That fallback is incidental, not the designed one: it depends on
-where the stale region's polygons happen to lie relative to the enemy.
-
-Ruled out on the way, so nobody re-treads it:
-
-- **Facing is correct.** The crawler GLB really does face +Z (measured: `head` bone z=+0.180, `jaw`
-  z=+0.360, `abdomen` z=-0.160), so F-039's `model_yaw_offset_degrees = 180.0` workaround is right
-  and all five enemy defs are correctly set. This is not a repeat of F-039.
-- **Targeting never flees.** `_resolve_target()` only ever returns a player, and `_tick_pursuit()`
-  zeroes horizontal velocity when there is none. No code path steers an enemy away from its target.
-
-Fix direction: enemies must query the map their world actually bakes. Either point each
-`NavigationAgent3D` at `NavBaker.map_rid()` when a `NavBaker` owns navigation for the level, or stop
-NavBaker minting a private map and have it register chunk regions on the default world map that
-`EnemyWorld` and every agent already share. The second is less machinery but needs a decision about
-`EnemyNavRegion` overlapping chunk regions on one map — two overlapping navmeshes over the same
-ground is its own pathing hazard, so whichever way this goes, `EnemyWorld.bake_navigation()` should
-not also be baking terrain in a streamed level.
-
----
-
 ### F-352 · render_census reports the procedural world's ring-based LOD as a missing lever
 
 **Area:** rendering · **Severity:** medium · **Found:** 2026-08-21 by ivy1bcae0
@@ -1889,7 +1815,141 @@ more complete fix, since it also removes the double-stepping every other asserti
 
 ---
 
+### F-355 · Godot project and export settings need a release-readiness audit
+
+**Area:** build/export · **Severity:** medium · **Found:** 2026-08-21 by moss5523e3
+
+Sequoyah requested a full Godot editor audit of project settings, editor-visible settings, export presets, and installed export templates. Verify effective settings against the pinned 4.7.1 engine and MIRE's architecture, inspect all desktop presets in the editor, correct only objective project/export deficiencies under exact guarded-file claims with the editor closed, validate exports as far as this machine allows, and document any identity/signing/store metadata that intentionally remains placeholder or human-supplied.
+
+---
+
 ## Resolved
+
+### F-351 · Enemies navigate a map the streamed world never bakes into — every chunk navmesh is on NavBaker's private map — **fixed**
+
+**Area:** gameplay · **Severity:** high · **Found:** 2026-08-21 by ivycc0920
+
+Reported from play (2026-08-20): "when it became night time the crawlers spawned from the well but
+they walked backwards away from me."
+
+**Two navigation maps exist and nothing joins them.**
+
+`world/chunk/nav_baker.gd:_ensure_map()` calls `NavigationServer3D.map_create()` and puts every
+streamed chunk's region on that private map (`region_set_map(region, _map)`, line 279).
+`Enemy._build_agent()` creates a plain `NavigationAgent3D` and never assigns a map, so it queries the
+viewport's DEFAULT world map. `EnemyWorld.bake_navigation()` adds its `EnemyNavRegion` as a child of
+the autoload, which also lands on the default map.
+
+Measured in the shipped level (`tools/enemy_nav_map_check.gd`, new — boots
+`res://levels/procedural_island.tscn` and reads both maps):
+
+    default map (what every enemy queries):  1 region, 0 region connections
+    NavBaker's own map:                     25 regions (25 chunk navmeshes baked)
+    same map as the enemies query?          false
+
+So **none of the island's terrain navmesh is reachable by any enemy.** What an enemy actually paths
+on is `EnemyNavRegion`: one region, baked ONCE from `get_tree().current_scene`'s static colliders at
+session start, and never rebaked as chunks stream. `autoload/enemy_world.gd`'s own header states the
+assumption out loud — "the region is baked once from the level's static collision at session start" —
+which was true of the authored maps and is false of a streamed island, where at session start the
+only colliders that exist are the handful of spawn chunks `ChunkStreamer.prime()` built.
+
+**Why it reads as "walked away from me."** `Enemy._nav_ready` is TRUE — the default map is valid and
+has a non-zero iteration id, because `EnemyNavRegion` is on it — so `_steer_toward()` never takes its
+"no map, steer straight" fallback. It hands the target to an agent whose only navmesh is a small
+stale patch near the world spawn point. A `NavigationAgent3D` given a target off its navmesh paths
+toward the nearest reachable point instead, so a crawler spawned out at the well walks off toward
+that spawn patch — away from the player standing next to it.
+
+**Reproduced.** From a spawn marker at (-69.1, 3.1, -32.4), with a player 12 m away, the crawler
+walks the other way — the agent returns a constant step direction that has almost nothing in common
+with the direction of the player, and the gap widens for as long as the trace runs:
+
+     t(s)   dist(m)   step_dir.x   direct_dir.x
+      0.0    11.98       0.21          0.99
+      1.0    11.93       0.21          0.98
+      2.0    14.27       0.21          0.95
+      2.7    18.56       0.21          0.92
+     end     21.44       — DID NOT CLOSE
+
+That is the reported behaviour exactly: the crawler is not confused about which way it is facing, it
+is walking, deliberately and steadily, at the stale region instead of at the player.
+
+Whether it happens at a given spot is positional, which is why it looks intermittent from inside the
+game. At other ambient spawn markers the agent returns nothing usable and `_steer_toward()` falls
+through to `direct.normalized()` — step direction and direct direction identical to two decimals —
+and the crawler closes normally. That fallback is incidental, not the designed one: it depends on
+where the stale region's polygons happen to lie relative to the enemy.
+
+Ruled out on the way, so nobody re-treads it:
+
+- **Facing is correct.** The crawler GLB really does face +Z (measured: `head` bone z=+0.180, `jaw`
+  z=+0.360, `abdomen` z=-0.160), so F-039's `model_yaw_offset_degrees = 180.0` workaround is right
+  and all five enemy defs are correctly set. This is not a repeat of F-039.
+- **Targeting never flees.** `_resolve_target()` only ever returns a player, and `_tick_pursuit()`
+  zeroes horizontal velocity when there is none. No code path steers an enemy away from its target.
+
+Fix direction: enemies must query the map their world actually bakes. Either point each
+`NavigationAgent3D` at `NavBaker.map_rid()` when a `NavBaker` owns navigation for the level, or stop
+NavBaker minting a private map and have it register chunk regions on the default world map that
+`EnemyWorld` and every agent already share. The second is less machinery but needs a decision about
+`EnemyNavRegion` overlapping chunk regions on one map — two overlapping navmeshes over the same
+ground is its own pathing hazard, so whichever way this goes, `EnemyWorld.bake_navigation()` should
+not also be baking terrain in a streamed level.
+
+---
+
+**Resolved 2026-08-21 by ivycc0920.** **Fixed.** Enemies now navigate the map their level actually bakes into.
+
+- `world/chunk/nav_baker.gd` joins a `navigation_map_owner` group the moment it mints its map. A
+  group rather than a node path or a class reference: the baker is built in code by whoever
+  assembles the world, and nothing that walks should have to know which world script that was.
+- `autoload/enemy_world.gd` grows `navigation_map_rid()` — the one seam for "where is this level's
+  navmesh". It answers with the owner's map when a baker owns the level, and with the viewport's
+  default map otherwise, which is every authored map and every harness. `bake_navigation()` now
+  declines outright when an owner exists: baking there would parse the whole scene to produce a
+  second description of the same ground on a different map, and that second description is exactly
+  the stale rival enemies were pathing on.
+- `systems/enemies/enemy.gd` asks that seam in `_confirm_nav_map()` and points its
+  `NavigationAgent3D` at the answer. The check is now RETRIED on `NAV_RECHECK_INTERVAL_SEC` while
+  the map is not live yet instead of latching after one deferred call — on a streamed world the map
+  is genuinely empty until the first chunk region lands, so an enemy spawning into that window used
+  to steer straight-line for the rest of its life. Retries stop the moment the map is live.
+- `_engagement_ledger()` was the only cached `/root/EnemyWorld` lookup; extracted as `_world()` so
+  the nav path shares it rather than adding a second one. F-331's per-transition cost is unchanged.
+
+Verified, on the shipped procedural island (`tools/enemy_nav_map_check.gd`, extended to assert on
+the map the AGENT queries rather than on the default map, which is deliberately empty now):
+
+    before   agent map 1 region  (stale, baked at session start) · baker map 25 · walked 11.98 -> 21.44 m AWAY
+    after    agent map 25 regions (the same ones the baker fills) · walked 11.94 ->  6.93 m CLOSER
+
+The step direction after the fix is 0.85-0.87 against a straight-line direction of 0.99 — the enemy
+is following a real navmesh path, not falling through to `_steer_toward()`'s straight-line branch.
+
+Everything else still passes, and the authored path is untouched: `nav_bake_check` 0 failures
+(EnemyWorld still bakes 20 then 2 polygons and still detours around a placed piece — F-177 intact),
+`hollowmere_check` PASS with 9,637 polygons baked, `dev_loadout_check` 0 failures logging "NavBaker
+owns this level's navigation (13 region(s)) — not baking a rival", plus `enemy_check`,
+`enemy_ai_check`, `boss_check` and `enemy_lod_check` all at 0.
+
+Two check-side changes this forced, both because the fix made their measure wrong rather than their
+intent wrong:
+
+- `tools/dev_loadout_check.gd` asserted `nav_polygon_count() > 0` on the main scene. That is now
+  legitimately zero there. `EnemyWorld.navigation_ready()` (new) answers the question the check was
+  actually asking — "is there a navmesh anything can path on" — for both world shapes;
+  `nav_polygon_count()` keeps meaning strictly "polygons EnemyWorld itself baked".
+- `tools/nav_bake_check.gd` kept its standalone `NavBaker` alive in the tree for the whole run, so
+  the F-177 section — which tests the authored shape, where EnemyWorld is the only baker there is —
+  had an owner present and got a declined bake. It now frees the baker before that section starts.
+  Every earlier section is finished with it, and `_exit_tree()` takes it out of the group.
+
+Noted in passing, not addressed: with agents finally on the chunk map, its own seams are now load-
+bearing, and `dev_loadout_check` surfaces "Navigation region synchronization had 4 edge error(s)"
+from overlapping region edges. That warning predates this task — NavBaker always baked those regions
+— but nothing navigated on them before, so it was invisible. Worth a look at
+`EDGE_CONNECTION_MARGIN`/D-016 before trusting long paths across chunk seams.
 
 ### F-339 · Jittered terrain vertices keep normals derived from the unjittered height grid — **fixed**
 
