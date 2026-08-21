@@ -2177,7 +2177,9 @@ Close this through a bounded follow-on command roadmap rather than an unsafe gen
 
 ---
 
-### F-417 · Ground-cover scatter is too dense to afford — grassland_turf alone places a prop every 5.7 m2
+## Resolved
+
+### F-417 · Ground-cover scatter is too dense to afford — grassland_turf alone places a prop every 5.7 m2 — **fixed**
 
 **Area:** performance · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
 
@@ -2201,9 +2203,37 @@ sparse (0.002-0.008/m2) and are the island's visual structure, so they are not w
 The constraint on any fix is that the VARIETY must survive — the whole point of F-395 was reaching
 the authored map's full kit. So the lever is `coverage`, never the `entries` lists.
 
----
+**Resolved 2026-08-21 by kilnd3a089.** `coverage` reduced on the 13 ground-cover and low-shrub tables; **every `entries` list untouched**,
+which is what keeps the variety F-395 spent its whole effort acquiring.
 
-## Resolved
+    grassland_turf   0.85 -> 0.48      forest_floor          0.72 -> 0.42
+    marsh_reeds      0.68 -> 0.40      birchwood_floor       0.66 -> 0.40
+    grassland_meadow 0.62 -> 0.40      heath_turf            0.60 -> 0.38
+    highland_floor   0.52 -> 0.34      marsh_floor           0.50 -> 0.34
+    forest_undergrowth 0.50 -> 0.36    shore_beach           0.42 -> 0.30
+    birchwood_undergrowth 0.42 -> 0.30 heath_scrub           0.34 -> 0.26
+    highland_scrub   0.30 -> 0.24
+
+Canopy, tree, rock and deadwood tables deliberately untouched — already sparse (0.002-0.008/m2), and
+they are what gives the island its shape.
+
+Measured over an 81-chunk sample at seed 20260819:
+
+    placements       8,767 -> 5,581      (-36%)
+    per chunk        108.2 -> 68.9
+    distinct assets  184 of 189 still placed
+
+That last line is the one that matters against the brief ("reduce the quantities of each but keep the
+variety"): thinning `coverage` scales each table uniformly rather than dropping species, so
+essentially the whole catalogue still appears. The five missing are low-weight entries that did not
+happen to land in this particular sample.
+
+Streaming cost, same 500 m traverse: `own_cost_mean` 0.2443 ms -> 0.1252 ms, worst frame 27.37 ->
+24.30 ms. resource_scatter_check 0, biome_region_check 0.
+
+**Record correction:** the commit that carries this work is titled `F-411` (`2be7e13`). That number
+was already taken by another session's finding; this work is F-417. The code is correct, the commit
+title is not — noted here rather than rewriting pushed history.
 
 ### F-416 · Every settings checkbox is invisible when off — MireTheme.toggle() is unstyled — **fixed**
 
