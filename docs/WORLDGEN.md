@@ -129,6 +129,34 @@ mutations; `MireGrid` binds to the island bound the same way it does today.
   `shipwreck`, `enemy_nest`, chest kinds, `station`, or empty for scenery) so the composer stays a
   dumb loop and content stays in charge — same philosophy as every other Def family.
 
+### 3.1a Scatter has a second gate: Mire corruption (F-445, D-191)
+
+A `ScatterDef` gates on one `biome_id`, and the Mire is not a biome — it is `MireGrid`'s corruption
+field, seeded from the world seed and spreading over the run. So the Mire's own art
+(`mushroom_cluster_*`, `mire_crystal_*`, `mire_tendril_*`, the `mire_growth` category) had nowhere
+to live and was scattered as ordinary woodland decor, which put purple corruption in clean birch
+forest.
+
+`ScatterDef` therefore carries `min_corruption`/`max_corruption` alongside its height band, and
+`biome_id = "*"` (`ScatterDef.ANY_BIOME`) for a table that opts out of the biome gate entirely.
+Two rules go with it:
+
+- **A `"*"` table MUST set a corruption band.** `validation_errors()` rejects one that does not —
+  a table with neither gate would carpet the whole island. Only the Mire uses `"*"` today and it
+  should stay that way; anything else wanting it needs a gate at least as narrow as a biome.
+- **The gate reads the INITIAL corruption field, never the live one.**
+  `MireGridSim.initial_corruption_at()` is a pure function of the world seed. Scatter placements are
+  generated once per chunk, cached, and identical on every peer forever; a field that moves every
+  two seconds cannot be an input to that. The spreading half of the Mire is shown by F-435's ground
+  shader — this half is the permanent growth at the origin it spread from. Since D-191 there is
+  exactly one such origin per run.
+
+Two tables ship on it: `mire_growth` (mushroom-dominant, from corruption 0.12 outward) and
+`mire_heart` (crystals and tendrils, corruption 0.55 and up), so the patch reads as a dense core
+inside a thinning rim rather than a uniform disc. `tools/mire_scatter_check.gd` guards both
+directions — no `mire_growth` asset in an ungated biome table, and no `mire_growth` export left
+referenced by nothing.
+
 ### 3.2 Cutover strategy — flag first, parity second, default last
 
 1. **4.15** ships the composer behind `DevLaunch --procedural` (beside the existing `--seed=`,

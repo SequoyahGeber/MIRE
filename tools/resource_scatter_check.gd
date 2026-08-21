@@ -16,6 +16,7 @@ extends SceneTree
 ##   .agent/bin/agent godot --script tools/resource_scatter_check.gd
 
 const ResourceScatterLib := preload("res://world/gen/resource_scatter.gd")
+const ScatterDefLib := preload("res://world/gen/scatter_def.gd")
 const ResourceScatterFieldScript := preload("res://world/gen/resource_scatter_field.gd")
 const IslandHeightmap := preload("res://world/gen/island_heightmap.gd")
 const BiomeMap := preload("res://world/gen/biome_map.gd")
@@ -124,10 +125,16 @@ func _check_biome_gate() -> void:
 				# F-271 these three lines used `height()` — the same mistake the code under test was
 				# making — so the check and the bug agreed with each other and neither agreed with
 				# D-144. If this ever has to change to keep passing, that is the finding.
+				# F-445: a table may declare `ANY_BIOME` and gate on Mire corruption instead —
+				# there is no biome claim to witness for those, and `tools/mire_scatter_check.gd`
+				# is what holds them to their own gate.
+				var def_biome: StringName = def.get(&"biome_id")
+				if def_biome == ScatterDefLib.ANY_BIOME:
+					continue
 				var continent: float = IslandHeightmap.continent(pos.x, pos.z, SEED_A)
 				var moisture: float = BiomeMap.moisture(pos.x, pos.z, SEED_A)
 				var biome: StringName = BiomeMap.assign(continent, moisture, biome_defs)
-				if biome != def.get(&"biome_id"):
+				if biome != def_biome:
 					all_in_biome = false
 	check(checked_any, "at least one placement was produced across the sampled chunks")
 	check(all_in_biome, "every placed point's world position actually resolves to its table's biome")

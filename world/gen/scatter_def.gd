@@ -16,8 +16,15 @@ extends Resource
 ## handled below as plain `Resource` with `.get()`, never cast back to `ScatterEntry`.
 const SCATTER_ENTRY := preload("res://world/gen/scatter_entry.gd")
 
+## `biome_id` for a table that is not a biome's table at all — it dresses wherever its other gates
+## say, in any biome. Only the Mire uses it today, and it should stay that way: a table with no
+## biome has no natural density and no natural palette, so anything using this needs a gate of its
+## own that is at least as narrow as a biome would have been.
+const ANY_BIOME: StringName = &"*"
+
 @export var id: StringName = &""
 ## Which `BiomeDef.id` this table dresses. A point outside this biome never rolls against it.
+## `ANY_BIOME` (`"*"`) opts out of the biome gate entirely — see that constant.
 @export var biome_id: StringName = &""
 ## Spacing of the jittered placement grid. Smaller = denser and costs more per chunk (trees want
 ## this large, ground-hugging scatter wants it small) — matches `world/gen/undergrowth.gd`'s own
@@ -38,7 +45,24 @@ const SCATTER_ENTRY := preload("res://world/gen/scatter_entry.gd")
 ## a meadow table sets `min_height` above the bed so grass does not grow out of the water.
 @export var min_height: float = -1000.0
 @export var max_height: float = 1000.0
+## Band of INITIAL Mire corruption (`MireGridSim.initial_corruption_at()`) this table may dress.
+## The defaults accept everything, so an ordinary biome table never thinks about the Mire.
+##
+## F-445: the Mire is not a biome — it is a corruption field seeded from the world seed and
+## spreading over the run — so a table that dresses it cannot be expressed with `biome_id` alone.
+## Gating on the INITIAL field rather than the live one is what keeps scatter deterministic: a
+## chunk's placements are generated once, cached, and identical on every peer forever, which a
+## field that moves every two seconds could never be. The spreading half of the Mire is shown by
+## `MireGrid`'s ground shader (F-435); this half is the permanent growth at its heart.
+@export_range(0.0, 1.0, 0.01) var min_corruption: float = 0.0
+@export_range(0.0, 1.0, 0.01) var max_corruption: float = 1.0
 @export var entries: Array[SCATTER_ENTRY] = []
+
+
+## Does this table gate on the Mire at all? Tables that do not — every biome table — must not pay
+## for a corruption sample per candidate point.
+func reads_corruption() -> bool:
+	return min_corruption > 0.0 or max_corruption < 1.0
 
 
 func total_weight() -> float:
@@ -68,6 +92,12 @@ func validation_errors() -> PackedStringArray:
 		errors.append("id is empty")
 	if biome_id == &"":
 		errors.append("biome_id is empty")
+	if max_corruption < min_corruption:
+		errors.append("max_corruption must be >= min_corruption")
+	if biome_id == ANY_BIOME and not reads_corruption():
+		errors.append(
+			"biome_id is \"%s\" but no corruption band is set — a table with neither gate " % ANY_BIOME
+			+ "would place its assets over the entire island")
 	if entries.is_empty():
 		errors.append("entries is empty")
 	if total_weight() <= 0.0:

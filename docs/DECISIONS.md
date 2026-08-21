@@ -6300,3 +6300,30 @@ right way over corrupted ground at two distances, that clean ground 150 m away i
 the pre-F-435 frame, and that the texel the shader samples carries the simulation's own value. The
 last one is what catches a flipped V, which every other assertion would pass while the purple sat
 metres from the ground that hurts you.
+
+### D-191 · 2026-08-21 · The Mire starts as exactly one corruption area, and its own art grows only there
+Two calls from one session, and they hold each other up.
+
+**One seed, not four.** Sequoyah, on seeing four clusters generated: *"there should only be one
+corruption area on the map since it will start spreading, having more than one is too much."*
+`MireGridSim.SEED_CLUSTER_COUNT` is 1. The Mire is a spreading threat, so its initial footprint is a
+starting position and not a coverage target: one front is a thing a player can point at, navigate
+relative to, and watch advance, and four fronts merge within minutes into "the ground is going bad
+everywhere" — which is weather, not an enemy with a location. If the Mire ever needs to threaten
+more of the island, raise the spread rate, the cluster radius or the Cycle multiplier. Never the
+number of fronts.
+
+**Mire growth is scattered by corruption, not by biome.** `mushroom_cluster_*`, `mire_crystal_*` and
+`mire_tendril_*` are the `mire_growth` category — purple corruption, not woodland decor — and they
+were entries in three ordinary biome tables, so corruption grew out of clean birch woodland (F-445).
+The Mire is not a biome and never will be, so `ScatterDef` grew a second, orthogonal gate:
+`min_corruption`/`max_corruption`, plus `biome_id = "*"` for a table that opts out of the biome gate
+entirely. It reads `MireGridSim.initial_corruption_at()` — the field the world STARTS with, not the
+live spreading one — because a chunk's placements are generated once, cached, and must be identical
+on every peer forever, which a field that moves every two seconds could never be. The spreading half
+of the Mire is already shown by F-435's ground shader; the scatter is the permanent growth at the
+heart it spread from, which is exactly why there needs to be only one heart.
+
+**Would change my mind:** a second corruption origin that is a deliberate, authored event rather
+than a generation parameter (a Cycle escalation seeding a new front, say) — that is a different
+mechanic and would want its own decision, not a bigger `SEED_CLUSTER_COUNT`.

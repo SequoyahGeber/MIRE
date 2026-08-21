@@ -31,7 +31,16 @@ const NEIGHBOR_OFFSETS: Array[Vector2i] = [
 ## `IslandHeightmap`'s own noise salts (D-017's convention: XOR the shared seed with a per-subsystem
 ## constant) so retuning terrain noise can never shift where the Mire starts.
 const SEED_CLUSTER_SALT: int = 0x6D97E001
-const SEED_CLUSTER_COUNT: int = 4
+## ONE. Sequoyah, 2026-08-21: "there should only be one corruption area on the map since it will
+## start spreading, having more than one is too much."
+##
+## This was 4, and four fronts is a different game from one. A run has a single thing eating the
+## island, so a player can point at it, decide to go there or away from it, and watch one edge
+## advance; four overlapping fronts merge within minutes into "the ground is going bad everywhere",
+## which is weather, not a threat with a location. It also gives the Mire's own art somewhere to be
+## (F-445 scatters `mire_growth` only inside this seed) — one dense, unmistakable place instead of
+## four thin smudges. See D-191.
+const SEED_CLUSTER_COUNT: int = 1
 const SEED_CLUSTER_RADIUS_M: float = 32.0
 ## Clusters land within this fraction of the island radius — keeps every seed off the outer taper
 ## the terrain falloff already thins to nothing (`IslandHeightmap.FALLOFF_START_FRACTION`).
@@ -64,14 +73,62 @@ static func cell_to_world_center(cell_x: int, cell_z: int) -> Vector2:
 static func seed_initial(world_seed: int) -> PackedFloat32Array:
 	var grid := PackedFloat32Array()
 	grid.resize(CELL_COUNT)
+	for center: Vector2 in seed_cluster_centres(world_seed):
+		_stamp_cluster(grid, center.x, center.y, SEED_CLUSTER_RADIUS_M)
+	return grid
+
+
+## Where this seed's initial corruption clusters are centred, in world XZ.
+##
+## Split out of `seed_initial()` rather than copied, so there is exactly one description of where
+## the Mire starts. `world/gen/resource_scatter.gd` needs the CENTRES and not the grid: it asks
+## "how corrupt is this one point" a few thousand times per chunk, and answering that by building a
+## 65536-cell `PackedFloat32Array` per chunk would be absurd when four centres and a distance test
+## give the same answer. `seed_initial()` still walks the same list in the same order, so the two
+## cannot drift.
+static func seed_cluster_centres(world_seed: int) -> PackedVector2Array:
+	var centres := PackedVector2Array()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = world_seed ^ SEED_CLUSTER_SALT
 	var span: float = ISLAND_HALF_M * SEED_CLUSTER_SPAN_FRACTION
 	for _cluster_index: int in SEED_CLUSTER_COUNT:
+		# Two draws per cluster, in this order — `seed_initial()` consumed the stream exactly this
+		# way before this function existed, so an existing world's Mire lands where it always did.
 		var center_x: float = rng.randf_range(-span, span)
 		var center_z: float = rng.randf_range(-span, span)
-		_stamp_cluster(grid, center_x, center_z, SEED_CLUSTER_RADIUS_M)
-	return grid
+		centres.append(Vector2(center_x, center_z))
+	return centres
+
+
+## The corruption this seed STARTS with at a world point, without building a grid — the same
+## `1 - distance / radius` cone `_stamp_cluster()` stamps, maxed across clusters.
+##
+## Continuous where `seed_initial()` is quantized to cell centres, and that difference is deliberate:
+## the grid exists to be ticked and replicated per cell, while a caller placing individual props
+## wants the smooth field, not the 1.15 m stair-step of a 256-cell grid.
+##
+## This is the world's INITIAL corruption and it never changes — it is not a reading of the live,
+## spreading `MireGrid`. Callers that need where the Mire is *now* must ask the autoload's
+## `corruption_at()`; callers that need something deterministic and identical on every peer forever
+## (scatter placement, which is baked per chunk and cached) must ask this.
+static func initial_corruption_at(world_x: float, world_z: float, world_seed: int) -> float:
+	return initial_corruption_from_centres(
+		world_x, world_z, seed_cluster_centres(world_seed))
+
+
+## `initial_corruption_at()` with the centres hoisted out, for callers sampling many points against
+## one seed (a chunk of scatter draws the centres once and then tests every candidate against them).
+static func initial_corruption_from_centres(
+	world_x: float, world_z: float, centres: PackedVector2Array
+) -> float:
+	var point := Vector2(world_x, world_z)
+	var best: float = 0.0
+	for centre: Vector2 in centres:
+		var distance: float = point.distance_to(centre)
+		if distance > SEED_CLUSTER_RADIUS_M:
+			continue
+		best = maxf(best, 1.0 - distance / SEED_CLUSTER_RADIUS_M)
+	return best
 
 
 static func _stamp_cluster(

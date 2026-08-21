@@ -2780,6 +2780,101 @@ and nothing in the game could spawn either one. `content/harvestables/berry_bush
 
 ---
 
+### F-445 · Purple Mire growth scatters across clean forests, and the Mire's own crystal/tendril assets are placed nowhere
+
+**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-21 by kilnf96279
+
+Sequoyah, from play: "the world gen is not using many of the assets for nature and stuff, also the
+purple mushrooms should only be in the mire."
+
+Both halves are the same defect seen from two sides — the Mire has no scatter of its own, so its
+art was scattered as if it were ordinary woodland decor and the rest of it was never scattered at
+all.
+
+`mushroom_cluster_a..f` are MIRE GROWTH, not toadstools. `tools/blender/build_mire_map_kit.py:923`
+builds them in the `mire_growth` category alongside `mire_crystal_*` and `mire_tendril_*`, and
+`build_mushrooms()` finishes every cluster with an `ico("Mire_Growth", ..., mats["mire"])` blob —
+`mire` is `#5D2473`, the corruption purple. `assets/environment/catalog.json` agrees:
+`"category": "mire_growth"`. They are currently entries in three ordinary biome tables —
+`content/scatter/forest_deadwood.tres`, `birchwood_deadwood.tres` and `marsh_deadwood.tres` — so
+purple corruption grows out of clean birch woodland with no corruption anywhere near it.
+
+Their ten siblings are the other side of it. `mire_crystal_a..f` and `mire_tendril_a..d` appear in
+no scatter table, no layout and no definition; they are ten built, catalogued, committed nature
+exports that no run of the game can ever show (they are on F-439's unreferenced list).
+
+Measured with a throwaway census over 121 chunks of seed 20260821 (every second chunk across the
+island): 175 distinct assets place, 3568 placements, and every `mire_growth` asset that places is a
+purple mushroom cluster standing in a biome with no relationship to the Mire.
+
+The cause is structural, not a bad weight. `ScatterDef` gates a table on exactly one `biome_id`, and
+the Mire is not a biome — it is `MireGrid`'s corruption field, seeded by `MireGridSim.seed_initial()`
+from the world seed and spreading over the run. There is no way to express "here, and only here" in
+the scatter content as it stands, so whoever placed the clusters had only biome tables to put them
+in.
+
+---
+
+### F-446 · Deep Forest is 3.5% of the island's dry land, so the richest scatter tables in the game are almost never seen
+
+**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-21 by kilnf96279
+
+Measured while investigating F-445, with a throwaway census over seed 20260821: 8257 sample points
+on the island disc, keeping only those whose surface sits above sea level, classified through
+`BiomeMap.biome_at_from_set()` with the shipped `content/biomes/*.tres`.
+
+    grassland   30.6%
+    shore       25.3%
+    birchwood   22.7%
+    highland     6.4%
+    marsh        6.0%
+    heath        5.5%
+    forest       3.5%
+
+`shore` there is DRY beach — the seabed samples are already excluded — so a quarter of everything a
+player can walk on is the strip between height 0 and 3.1, dressed by three thin tables
+(`shore_beach`, `shore_drift`, `shore_rocks`).
+
+The cost lands on the content, not on the terrain. `forest` owns the deepest asset tables in the
+project — `forest_floor` alone lists 32 entries across bracken, six ferns, leaf litter, moss,
+nettles, broadleaf plants, creepers and six grass clumps — and a 121-chunk sample placed 11 forest
+canopy trees and 6 forest deadwood props across the whole island. Willows, hollow trees, hanging
+moss and most of the deadwood kit are effectively unreachable, not because they are weighted low but
+because the biome that owns them barely exists. The same census found 15 referenced assets that
+placed nothing at all in the sample: `standing_stone_a..d` and `stone_marker_a` (heath, 5.5%),
+`hollow_tree`, `tree_snag_c`, `tree_bare_d`, `fallen_log_c`, `lily_pad_c`, `stone_node_cracked`.
+
+The bands themselves are the lever: `forest` is the only biome with a CEILING as well as a floor
+(5.5 to 6.9 m at moisture >= 0.62), a 1.4 m slice, and `highland` takes everything above it, so
+forest can only ever exist on the narrow shoulder between marsh and highland.
+
+Not touched here because `content/biomes/*.tres` and `world/gen/island_heightmap.gd` are claimed by
+F-400 ("the island's hills are too low to read as landform"), which is retuning exactly these
+numbers. Recording the measurement so whoever finishes F-400 can check the biome SHARES afterwards
+and not just the landform — the two are the same set of constants and it would be easy to fix the
+silhouette and leave forest at 3.5%.
+
+---
+
+### F-447 · The island is half the size it should be, its outline is still round, and every hill is the same symmetric dome
+
+**Area:** world-gen · **Severity:** high · **Found:** 2026-08-21 by birchcf39ce
+
+Playtest direction (2026-08-21, Sequoyah, verbatim intent): "the island should be maybe twice as
+big and id like the shape to be a bit more random rather than usually mostly round it would be
+cool if it could be more unique, also hills can be a bit taller maybe 25%, with some more variety
+in steepness, like one side of the hill could be more steep than the other kinda making a cliff
+type area".
+
+Three separate defects in world/gen/island_heightmap.gd:
+  1. ISLAND_RADIUS 295 m is still too small — he wants roughly double.
+  2. The lobe union still reads as mostly round across seeds: lobes are circles, so their union
+     is a rounded blob whatever the offsets are. Silhouettes are not distinctive per seed.
+  3. Placed hills are symmetric smoothstep domes at a fixed profile — every hill on every island
+     has the same gradient everywhere on it. No cliffs, no aspect variety.
+
+---
+
 ## Resolved
 
 ### F-432 · Felling a tree has no visible harvest states, and its stump is another species — **fixed**

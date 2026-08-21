@@ -43,6 +43,9 @@ extends RefCounted
 const CHUNK_MESHER := preload("res://world/chunk/chunk_mesher.gd")
 const ISLAND_HEIGHTMAP := preload("res://world/gen/island_heightmap.gd")
 const BIOME_MAP := preload("res://world/gen/biome_map.gd")
+const SCATTER_DEF := preload("res://world/gen/scatter_def.gd")
+## F-445: `MireGridSim` is a `class_name`, preloaded for the same F-016 reason as the others above.
+const MIRE_GRID_SIM := preload("res://world/mire/mire_grid_sim.gd")
 ## F-016: ScatterDef/ScatterEntry are brand-new this task. `scatter_defs` stays untyped `Array` of
 ## plain `Resource` throughout this file (never cast to the class) for the same reason
 ## `systems/loot/loot_table_def.gd` treats `LootEntry` as `Resource` — see that file's own comment.
@@ -52,7 +55,8 @@ const SEED_SALT: int = 0x5CA77E5
 
 
 ## One entry per surviving jittered-grid point in this chunk, across every `ScatterDef` whose
-## `biome_id` this chunk contains anywhere. Each entry: `{point_id: String, def_id: StringName,
+## `biome_id` this chunk contains anywhere (plus any `ANY_BIOME` table, which is gated on Mire
+## corruption instead — F-445). Each entry: `{point_id: String, def_id: StringName,
 ## asset: StringName, kit: String, position: Vector3, rotation_y: float, scale: float}`.
 static func placements_for_chunk(
 	chunk_x: int, chunk_z: int, world_seed: int, scatter_defs: Array, biome_defs: Array
@@ -79,6 +83,14 @@ static func placements_for_chunk(
 	# on the surface the chunk mesher builds rather than on the biome-blind 1.0/1.0 one — which in
 	# forest, the biome most of the scatter lives in, sits up to several metres below it.
 	var table: BIOME_MAP.TerrainTable = BIOME_MAP.make_terrain_table(biome_defs)
+	# F-445: where this seed's Mire starts, drawn once per chunk for the same reason as the noise
+	# set above. Empty unless some table actually gates on corruption, so a world whose content has
+	# no Mire table pays nothing for this.
+	var mire_centres := PackedVector2Array()
+	for def: Resource in defs:
+		if bool(def.call(&"reads_corruption")):
+			mire_centres = MIRE_GRID_SIM.seed_cluster_centres(world_seed)
+			break
 
 	for def: Resource in defs:
 		var total_weight: float = float(def.call(&"total_weight"))
@@ -91,7 +103,7 @@ static func placements_for_chunk(
 			for gz: int in cells_per_side:
 				var placement: Dictionary = _placement_at(
 					chunk_x, chunk_z, gx, gz, cell, origin_x, origin_z, world_seed, def, total_weight,
-					biome_defs, noise_set, table
+					biome_defs, noise_set, table, mire_centres
 				)
 				if not placement.is_empty():
 					out.append(placement)
@@ -101,7 +113,7 @@ static func placements_for_chunk(
 static func _placement_at(
 	chunk_x: int, chunk_z: int, gx: int, gz: int, cell: float, origin_x: float, origin_z: float,
 	world_seed: int, def: Resource, total_weight: float, biome_defs: Array,
-	noise_set: BIOME_MAP.NoiseSet, table: BIOME_MAP.TerrainTable
+	noise_set: BIOME_MAP.NoiseSet, table: BIOME_MAP.TerrainTable, mire_centres: PackedVector2Array
 ) -> Dictionary:
 	var def_id: StringName = def.get(&"id")
 	var rng := RandomNumberGenerator.new()
@@ -133,10 +145,22 @@ static func _placement_at(
 	# The jitter may have carried a point out of the biome its cell nominally belongs to. Skip
 	# rather than force it — a def that pulled the point back to its own biome would place the
 	# asset at the wrong height/moisture combination it was never authored to describe.
-	var biome_id: StringName = BIOME_MAP.biome_at_from_set(
-		world_x, world_z, noise_set, world_seed, biome_defs)
-	if biome_id != def.get(&"biome_id"):
-		return {}
+	var def_biome: StringName = def.get(&"biome_id")
+	if def_biome != SCATTER_DEF.ANY_BIOME:
+		var biome_id: StringName = BIOME_MAP.biome_at_from_set(
+			world_x, world_z, noise_set, world_seed, biome_defs)
+		if biome_id != def_biome:
+			return {}
+
+	# F-445: the Mire band, tested before the surface sample for the same reason as the biome gate —
+	# it is the cheapest rejection there is (four distance tests) and it is what a Mire table rejects
+	# almost every point on. Stream-safe: like the gates around it, it touches no `rng`.
+	if bool(def.call(&"reads_corruption")):
+		var corruption: float = MIRE_GRID_SIM.initial_corruption_from_centres(
+			world_x, world_z, mire_centres)
+		if corruption < float(def.get(&"min_corruption")) \
+				or corruption > float(def.get(&"max_corruption")):
+			return {}
 
 	# Only surviving points pay for the surface sample, and it is used for `position.y` alone —
 	# where the asset's feet go. Safe to sit after the gate: neither this nor the biome test touches
