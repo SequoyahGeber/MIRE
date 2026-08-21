@@ -1,0 +1,103 @@
+[gd_resource type="Resource" script_class="ScatterDef" format=3]
+
+[ext_resource type="Script" path="res://world/gen/scatter_entry.gd" id="1_entry"]
+[ext_resource type="Script" path="res://world/gen/scatter_def.gd" id="2_def"]
+
+[sub_resource type="Resource" id="Resource_00_tree_bare_a"]
+script = ExtResource("1_entry")
+asset = &"tree_bare_a"
+kit = "environment"
+weight = 1.2
+min_scale = 0.85
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_01_tree_bare_b"]
+script = ExtResource("1_entry")
+asset = &"tree_bare_b"
+kit = "environment"
+weight = 1.2
+min_scale = 0.85
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_02_tree_bare_c"]
+script = ExtResource("1_entry")
+asset = &"tree_bare_c"
+kit = "environment"
+weight = 1.2
+min_scale = 0.85
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_03_tree_bare_d"]
+script = ExtResource("1_entry")
+asset = &"tree_bare_d"
+kit = "environment"
+weight = 1.2
+min_scale = 0.85
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_04_tree_crooked_a"]
+script = ExtResource("1_entry")
+asset = &"tree_crooked_a"
+kit = "environment"
+weight = 1
+min_scale = 0.85
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_05_tree_crooked_b"]
+script = ExtResource("1_entry")
+asset = &"tree_crooked_b"
+kit = "environment"
+weight = 1
+min_scale = 0.85
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_06_tree_crooked_c"]
+script = ExtResource("1_entry")
+asset = &"tree_crooked_c"
+kit = "environment"
+weight = 1
+min_scale = 0.85
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_07_tree_crooked_d"]
+script = ExtResource("1_entry")
+asset = &"tree_crooked_d"
+kit = "environment"
+weight = 1
+min_scale = 0.85
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_08_tree_snag_a"]
+script = ExtResource("1_entry")
+asset = &"tree_snag_a"
+kit = "flora"
+weight = 0.4
+min_scale = 0.85
+max_scale = 1.15
+
+[sub_resource type="Resource" id="Resource_09_tree_snag_b"]
+script = ExtResource("1_entry")
+asset = &"tree_snag_b"
+kit = "flora"
+weight = 0.4
+min_scale = 0.85
+max_scale = 1.15
+
+[sub_resource type="Resource" id="Resource_10_tree_snag_c"]
+script = ExtResource("1_entry")
+asset = &"tree_snag_c"
+kit = "flora"
+weight = 0.4
+min_scale = 0.85
+max_scale = 1.15
+
+[resource]
+script = ExtResource("2_def")
+id = &"heath_trees"
+biome_id = &"heath"
+cell_size_m = 20
+jitter_fraction = 0.8
+coverage = 0.2
+min_height = 0.8
+max_height = 1000
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_tree_bare_a"), SubResource("Resource_01_tree_bare_b"), SubResource("Resource_02_tree_bare_c"), SubResource("Resource_03_tree_bare_d"), SubResource("Resource_04_tree_crooked_a"), SubResource("Resource_05_tree_crooked_b"), SubResource("Resource_06_tree_crooked_c"), SubResource("Resource_07_tree_crooked_d"), SubResource("Resource_08_tree_snag_a"), SubResource("Resource_09_tree_snag_b"), SubResource("Resource_10_tree_snag_c")])

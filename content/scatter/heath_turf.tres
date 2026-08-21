@@ -1,0 +1,135 @@
+[gd_resource type="Resource" script_class="ScatterDef" format=3]
+
+[ext_resource type="Script" path="res://world/gen/scatter_entry.gd" id="1_entry"]
+[ext_resource type="Script" path="res://world/gen/scatter_def.gd" id="2_def"]
+
+[sub_resource type="Resource" id="Resource_00_grass_dry_a"]
+script = ExtResource("1_entry")
+asset = &"grass_dry_a"
+kit = "flora"
+weight = 1.2
+min_scale = 0.8
+max_scale = 1.3
+
+[sub_resource type="Resource" id="Resource_01_grass_dry_b"]
+script = ExtResource("1_entry")
+asset = &"grass_dry_b"
+kit = "flora"
+weight = 1.2
+min_scale = 0.8
+max_scale = 1.3
+
+[sub_resource type="Resource" id="Resource_02_grass_dry_c"]
+script = ExtResource("1_entry")
+asset = &"grass_dry_c"
+kit = "flora"
+weight = 1.2
+min_scale = 0.8
+max_scale = 1.3
+
+[sub_resource type="Resource" id="Resource_03_grass_dry_d"]
+script = ExtResource("1_entry")
+asset = &"grass_dry_d"
+kit = "flora"
+weight = 1.2
+min_scale = 0.8
+max_scale = 1.3
+
+[sub_resource type="Resource" id="Resource_04_grass_tuft_a"]
+script = ExtResource("1_entry")
+asset = &"grass_tuft_a"
+kit = "environment"
+weight = 1.1
+min_scale = 0.8
+max_scale = 1.35
+
+[sub_resource type="Resource" id="Resource_05_grass_tuft_b"]
+script = ExtResource("1_entry")
+asset = &"grass_tuft_b"
+kit = "environment"
+weight = 1.1
+min_scale = 0.8
+max_scale = 1.35
+
+[sub_resource type="Resource" id="Resource_06_grass_tuft_c"]
+script = ExtResource("1_entry")
+asset = &"grass_tuft_c"
+kit = "environment"
+weight = 1.1
+min_scale = 0.8
+max_scale = 1.35
+
+[sub_resource type="Resource" id="Resource_07_grass_tuft_d"]
+script = ExtResource("1_entry")
+asset = &"grass_tuft_d"
+kit = "environment"
+weight = 1.1
+min_scale = 0.8
+max_scale = 1.35
+
+[sub_resource type="Resource" id="Resource_08_grass_clump_a"]
+script = ExtResource("1_entry")
+asset = &"grass_clump_a"
+kit = "environment"
+weight = 0.8
+min_scale = 0.8
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_09_grass_clump_b"]
+script = ExtResource("1_entry")
+asset = &"grass_clump_b"
+kit = "environment"
+weight = 0.8
+min_scale = 0.8
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_10_grass_clump_c"]
+script = ExtResource("1_entry")
+asset = &"grass_clump_c"
+kit = "environment"
+weight = 0.8
+min_scale = 0.8
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_11_grass_clump_d"]
+script = ExtResource("1_entry")
+asset = &"grass_clump_d"
+kit = "environment"
+weight = 0.8
+min_scale = 0.8
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_12_grass_clump_e"]
+script = ExtResource("1_entry")
+asset = &"grass_clump_e"
+kit = "environment"
+weight = 0.8
+min_scale = 0.8
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_13_grass_clump_f"]
+script = ExtResource("1_entry")
+asset = &"grass_clump_f"
+kit = "environment"
+weight = 0.8
+min_scale = 0.8
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_14_clover_patch_c"]
+script = ExtResource("1_entry")
+asset = &"clover_patch_c"
+kit = "flora"
+weight = 0.3
+min_scale = 0.85
+max_scale = 1.2
+
+[resource]
+script = ExtResource("2_def")
+id = &"heath_turf"
+biome_id = &"heath"
+cell_size_m = 2.9
+jitter_fraction = 0.8
+coverage = 0.6
+min_height = 0.6
+max_height = 1000
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_grass_dry_a"), SubResource("Resource_01_grass_dry_b"), SubResource("Resource_02_grass_dry_c"), SubResource("Resource_03_grass_dry_d"), SubResource("Resource_04_grass_tuft_a"), SubResource("Resource_05_grass_tuft_b"), SubResource("Resource_06_grass_tuft_c"), SubResource("Resource_07_grass_tuft_d"), SubResource("Resource_08_grass_clump_a"), SubResource("Resource_09_grass_clump_b"), SubResource("Resource_10_grass_clump_c"), SubResource("Resource_11_grass_clump_d"), SubResource("Resource_12_grass_clump_e"), SubResource("Resource_13_grass_clump_f"), SubResource("Resource_14_clover_patch_c")])

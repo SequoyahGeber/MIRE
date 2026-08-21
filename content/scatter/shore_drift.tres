@@ -1,0 +1,95 @@
+[gd_resource type="Resource" script_class="ScatterDef" format=3]
+
+[ext_resource type="Script" path="res://world/gen/scatter_entry.gd" id="1_entry"]
+[ext_resource type="Script" path="res://world/gen/scatter_def.gd" id="2_def"]
+
+[sub_resource type="Resource" id="Resource_00_fallen_log_a"]
+script = ExtResource("1_entry")
+asset = &"fallen_log_a"
+kit = "environment"
+weight = 1
+min_scale = 0.8
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_01_fallen_log_b"]
+script = ExtResource("1_entry")
+asset = &"fallen_log_b"
+kit = "environment"
+weight = 1
+min_scale = 0.8
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_02_fallen_log_c"]
+script = ExtResource("1_entry")
+asset = &"fallen_log_c"
+kit = "environment"
+weight = 1
+min_scale = 0.8
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_03_fallen_log_d"]
+script = ExtResource("1_entry")
+asset = &"fallen_log_d"
+kit = "environment"
+weight = 1
+min_scale = 0.8
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_04_tree_snag_b"]
+script = ExtResource("1_entry")
+asset = &"tree_snag_b"
+kit = "flora"
+weight = 0.45
+min_scale = 0.8
+max_scale = 1.1
+
+[sub_resource type="Resource" id="Resource_05_tree_snag_c"]
+script = ExtResource("1_entry")
+asset = &"tree_snag_c"
+kit = "flora"
+weight = 0.45
+min_scale = 0.8
+max_scale = 1.1
+
+[sub_resource type="Resource" id="Resource_06_stump_c"]
+script = ExtResource("1_entry")
+asset = &"stump_c"
+kit = "environment"
+weight = 0.5
+min_scale = 0.85
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_07_stump_d"]
+script = ExtResource("1_entry")
+asset = &"stump_d"
+kit = "environment"
+weight = 0.5
+min_scale = 0.85
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_08_root_cluster_c"]
+script = ExtResource("1_entry")
+asset = &"root_cluster_c"
+kit = "environment"
+weight = 0.4
+min_scale = 0.8
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_09_root_cluster_d"]
+script = ExtResource("1_entry")
+asset = &"root_cluster_d"
+kit = "environment"
+weight = 0.4
+min_scale = 0.8
+max_scale = 1.2
+
+[resource]
+script = ExtResource("2_def")
+id = &"shore_drift"
+biome_id = &"shore"
+cell_size_m = 16
+jitter_fraction = 0.8
+coverage = 0.24
+min_height = 0.35
+max_height = 2.6
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_fallen_log_a"), SubResource("Resource_01_fallen_log_b"), SubResource("Resource_02_fallen_log_c"), SubResource("Resource_03_fallen_log_d"), SubResource("Resource_04_tree_snag_b"), SubResource("Resource_05_tree_snag_c"), SubResource("Resource_06_stump_c"), SubResource("Resource_07_stump_d"), SubResource("Resource_08_root_cluster_c"), SubResource("Resource_09_root_cluster_d")])

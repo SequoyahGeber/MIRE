@@ -1,0 +1,103 @@
+[gd_resource type="Resource" script_class="ScatterDef" format=3]
+
+[ext_resource type="Script" path="res://world/gen/scatter_entry.gd" id="1_entry"]
+[ext_resource type="Script" path="res://world/gen/scatter_def.gd" id="2_def"]
+
+[sub_resource type="Resource" id="Resource_00_bush_thorn_a"]
+script = ExtResource("1_entry")
+asset = &"bush_thorn_a"
+kit = "flora"
+weight = 1.2
+min_scale = 0.8
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_01_bush_thorn_b"]
+script = ExtResource("1_entry")
+asset = &"bush_thorn_b"
+kit = "flora"
+weight = 1.2
+min_scale = 0.8
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_02_bush_thorn_c"]
+script = ExtResource("1_entry")
+asset = &"bush_thorn_c"
+kit = "flora"
+weight = 1.2
+min_scale = 0.8
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_03_bush_dead_a"]
+script = ExtResource("1_entry")
+asset = &"bush_dead_a"
+kit = "flora"
+weight = 1
+min_scale = 0.8
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_04_bush_dead_b"]
+script = ExtResource("1_entry")
+asset = &"bush_dead_b"
+kit = "flora"
+weight = 1
+min_scale = 0.8
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_05_bush_dead_c"]
+script = ExtResource("1_entry")
+asset = &"bush_dead_c"
+kit = "flora"
+weight = 1
+min_scale = 0.8
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_06_bush_round_c"]
+script = ExtResource("1_entry")
+asset = &"bush_round_c"
+kit = "flora"
+weight = 0.5
+min_scale = 0.8
+max_scale = 1.15
+
+[sub_resource type="Resource" id="Resource_07_plant_creeper_a"]
+script = ExtResource("1_entry")
+asset = &"plant_creeper_a"
+kit = "flora"
+weight = 0.5
+min_scale = 0.85
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_08_plant_creeper_b"]
+script = ExtResource("1_entry")
+asset = &"plant_creeper_b"
+kit = "flora"
+weight = 0.5
+min_scale = 0.85
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_09_plant_creeper_c"]
+script = ExtResource("1_entry")
+asset = &"plant_creeper_c"
+kit = "flora"
+weight = 0.5
+min_scale = 0.85
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_10_sapling_d"]
+script = ExtResource("1_entry")
+asset = &"sapling_d"
+kit = "flora"
+weight = 0.4
+min_scale = 0.85
+max_scale = 1.2
+
+[resource]
+script = ExtResource("2_def")
+id = &"heath_scrub"
+biome_id = &"heath"
+cell_size_m = 5.5
+jitter_fraction = 0.7
+coverage = 0.34
+min_height = 0.6
+max_height = 1000
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_bush_thorn_a"), SubResource("Resource_01_bush_thorn_b"), SubResource("Resource_02_bush_thorn_c"), SubResource("Resource_03_bush_dead_a"), SubResource("Resource_04_bush_dead_b"), SubResource("Resource_05_bush_dead_c"), SubResource("Resource_06_bush_round_c"), SubResource("Resource_07_plant_creeper_a"), SubResource("Resource_08_plant_creeper_b"), SubResource("Resource_09_plant_creeper_c"), SubResource("Resource_10_sapling_d")])

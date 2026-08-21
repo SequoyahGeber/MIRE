@@ -3,15 +3,23 @@
 [ext_resource type="Script" path="res://world/gen/scatter_entry.gd" id="1_entry"]
 [ext_resource type="Script" path="res://world/gen/scatter_def.gd" id="2_def"]
 
-[sub_resource type="Resource" id="Resource_rock_cluster_f"]
+[sub_resource type="Resource" id="Resource_00_rock_cluster_f"]
 script = ExtResource("1_entry")
 asset = &"rock_cluster_f"
 kit = "environment"
-weight = 1.0
+weight = 1
 min_scale = 0.7
 max_scale = 1.2
 
-[sub_resource type="Resource" id="Resource_boulder_h"]
+[sub_resource type="Resource" id="Resource_01_rock_cluster_a"]
+script = ExtResource("1_entry")
+asset = &"rock_cluster_a"
+kit = "environment"
+weight = 0.6
+min_scale = 0.7
+max_scale = 1.15
+
+[sub_resource type="Resource" id="Resource_02_boulder_h"]
 script = ExtResource("1_entry")
 asset = &"boulder_h"
 kit = "environment"
@@ -19,7 +27,15 @@ weight = 0.8
 min_scale = 0.65
 max_scale = 1.15
 
-[sub_resource type="Resource" id="Resource_stone_node"]
+[sub_resource type="Resource" id="Resource_03_boulder_c"]
+script = ExtResource("1_entry")
+asset = &"boulder_c"
+kit = "environment"
+weight = 0.5
+min_scale = 0.6
+max_scale = 1.1
+
+[sub_resource type="Resource" id="Resource_04_stone_node_intact"]
 script = ExtResource("1_entry")
 asset = &"stone_node_intact"
 kit = "harvestables"
@@ -31,9 +47,9 @@ max_scale = 1.1
 script = ExtResource("2_def")
 id = &"shore_rocks"
 biome_id = &"shore"
-cell_size_m = 11.0
+cell_size_m = 11
 jitter_fraction = 0.75
-coverage = 0.26
-min_height = 0.2
-max_height = 1.6
-entries = Array[ExtResource("1_entry")]([SubResource("Resource_rock_cluster_f"), SubResource("Resource_boulder_h"), SubResource("Resource_stone_node")])
+coverage = 0.28
+min_height = 0.15
+max_height = 2.4
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_rock_cluster_f"), SubResource("Resource_01_rock_cluster_a"), SubResource("Resource_02_boulder_h"), SubResource("Resource_03_boulder_c"), SubResource("Resource_04_stone_node_intact")])

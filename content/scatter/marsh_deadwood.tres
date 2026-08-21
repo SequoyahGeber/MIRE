@@ -1,0 +1,103 @@
+[gd_resource type="Resource" script_class="ScatterDef" format=3]
+
+[ext_resource type="Script" path="res://world/gen/scatter_entry.gd" id="1_entry"]
+[ext_resource type="Script" path="res://world/gen/scatter_def.gd" id="2_def"]
+
+[sub_resource type="Resource" id="Resource_00_root_cluster_a"]
+script = ExtResource("1_entry")
+asset = &"root_cluster_a"
+kit = "environment"
+weight = 1
+min_scale = 0.85
+max_scale = 1.3
+
+[sub_resource type="Resource" id="Resource_01_root_cluster_b"]
+script = ExtResource("1_entry")
+asset = &"root_cluster_b"
+kit = "environment"
+weight = 1
+min_scale = 0.85
+max_scale = 1.3
+
+[sub_resource type="Resource" id="Resource_02_root_cluster_c"]
+script = ExtResource("1_entry")
+asset = &"root_cluster_c"
+kit = "environment"
+weight = 1
+min_scale = 0.85
+max_scale = 1.3
+
+[sub_resource type="Resource" id="Resource_03_root_cluster_d"]
+script = ExtResource("1_entry")
+asset = &"root_cluster_d"
+kit = "environment"
+weight = 1
+min_scale = 0.85
+max_scale = 1.3
+
+[sub_resource type="Resource" id="Resource_04_fallen_log_a"]
+script = ExtResource("1_entry")
+asset = &"fallen_log_a"
+kit = "environment"
+weight = 0.8
+min_scale = 0.85
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_05_fallen_log_b"]
+script = ExtResource("1_entry")
+asset = &"fallen_log_b"
+kit = "environment"
+weight = 0.8
+min_scale = 0.85
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_06_fallen_log_c"]
+script = ExtResource("1_entry")
+asset = &"fallen_log_c"
+kit = "environment"
+weight = 0.8
+min_scale = 0.85
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_07_fallen_log_d"]
+script = ExtResource("1_entry")
+asset = &"fallen_log_d"
+kit = "environment"
+weight = 0.8
+min_scale = 0.85
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_08_mushroom_cluster_e"]
+script = ExtResource("1_entry")
+asset = &"mushroom_cluster_e"
+kit = "environment"
+weight = 0.4
+min_scale = 0.9
+max_scale = 1.3
+
+[sub_resource type="Resource" id="Resource_09_mushroom_cluster_f"]
+script = ExtResource("1_entry")
+asset = &"mushroom_cluster_f"
+kit = "environment"
+weight = 0.4
+min_scale = 0.9
+max_scale = 1.3
+
+[sub_resource type="Resource" id="Resource_10_hanging_moss"]
+script = ExtResource("1_entry")
+asset = &"hanging_moss"
+kit = "wetland_nature"
+weight = 0.5
+min_scale = 0.9
+max_scale = 1.25
+
+[resource]
+script = ExtResource("2_def")
+id = &"marsh_deadwood"
+biome_id = &"marsh"
+cell_size_m = 13
+jitter_fraction = 0.75
+coverage = 0.28
+min_height = 0.4
+max_height = 1000
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_root_cluster_a"), SubResource("Resource_01_root_cluster_b"), SubResource("Resource_02_root_cluster_c"), SubResource("Resource_03_root_cluster_d"), SubResource("Resource_04_fallen_log_a"), SubResource("Resource_05_fallen_log_b"), SubResource("Resource_06_fallen_log_c"), SubResource("Resource_07_fallen_log_d"), SubResource("Resource_08_mushroom_cluster_e"), SubResource("Resource_09_mushroom_cluster_f"), SubResource("Resource_10_hanging_moss")])

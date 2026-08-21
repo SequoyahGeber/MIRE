@@ -1,0 +1,79 @@
+[gd_resource type="Resource" script_class="ScatterDef" format=3]
+
+[ext_resource type="Script" path="res://world/gen/scatter_entry.gd" id="1_entry"]
+[ext_resource type="Script" path="res://world/gen/scatter_def.gd" id="2_def"]
+
+[sub_resource type="Resource" id="Resource_00_tree_crooked_a"]
+script = ExtResource("1_entry")
+asset = &"tree_crooked_a"
+kit = "environment"
+weight = 1
+min_scale = 0.9
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_01_tree_crooked_b"]
+script = ExtResource("1_entry")
+asset = &"tree_crooked_b"
+kit = "environment"
+weight = 1
+min_scale = 0.9
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_02_tree_crooked_c"]
+script = ExtResource("1_entry")
+asset = &"tree_crooked_c"
+kit = "environment"
+weight = 1
+min_scale = 0.9
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_03_tree_crooked_d"]
+script = ExtResource("1_entry")
+asset = &"tree_crooked_d"
+kit = "environment"
+weight = 1
+min_scale = 0.9
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_04_tree_bare_b"]
+script = ExtResource("1_entry")
+asset = &"tree_bare_b"
+kit = "environment"
+weight = 0.5
+min_scale = 0.9
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_05_tree_bare_d"]
+script = ExtResource("1_entry")
+asset = &"tree_bare_d"
+kit = "environment"
+weight = 0.5
+min_scale = 0.9
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_06_mire_broadleaf_tree"]
+script = ExtResource("1_entry")
+asset = &"mire_broadleaf_tree"
+kit = "environment_additions"
+weight = 0.9
+min_scale = 0.9
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_07_tree_birch_a"]
+script = ExtResource("1_entry")
+asset = &"tree_birch_a"
+kit = "environment"
+weight = 0.6
+min_scale = 0.9
+max_scale = 1.2
+
+[resource]
+script = ExtResource("2_def")
+id = &"grassland_trees"
+biome_id = &"grassland"
+cell_size_m = 24
+jitter_fraction = 0.85
+coverage = 0.18
+min_height = 0.9
+max_height = 1000
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_tree_crooked_a"), SubResource("Resource_01_tree_crooked_b"), SubResource("Resource_02_tree_crooked_c"), SubResource("Resource_03_tree_crooked_d"), SubResource("Resource_04_tree_bare_b"), SubResource("Resource_05_tree_bare_d"), SubResource("Resource_06_mire_broadleaf_tree"), SubResource("Resource_07_tree_birch_a")])
