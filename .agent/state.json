@@ -1473,7 +1473,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 260,
+  "rev": 263,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -6044,11 +6044,9 @@
       "title": "Procedural trees collide as canopy-wide cylinders, not trunks"
     },
     "F-349": {
-      "done_at": "2026-08-21T01:01:06+00:00",
-      "done_by": "ivycc0920",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "done",
+      "status": "todo",
       "tier": "F",
       "title": "Blight drains a standing player to death with no signal that anything is happening"
     },
@@ -6157,6 +6155,209 @@
       "status": "todo",
       "tier": "F",
       "title": "The Mire tick still costs most of a frame at saturation, on the host main thread"
+    },
+    "F-364": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Godot's macOS shader baker leaves ten MSL 3.1 variants for runtime compilation"
+    },
+    "F-365": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "No scatter def places a single rock, so the island has no stone on its surface at all"
+    },
+    "F-366": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "fibre_bundle has no harvestable source, so both starter tools are uncraftable and the procedural run has no way out of bare hands"
+    },
+    "F-367": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "No chest reaches the procedural island: the loot_cache POI asks for 8 sites at 70 m spacing on a 118 m island"
+    },
+    "F-368": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The island is too small to hold its own content \u2014 ISLAND_RADIUS 118 m against a spec that wants dense forest, open ground and spaced POIs"
+    },
+    "F-369": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Play shows near-bare ground across the whole island despite scatter defs that ask for 45-50% coverage"
+    },
+    "F-370": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Trees are far too short next to the player, which also puts the leaf-fall emitter above the crown"
+    },
+    "F-371": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Tree trunk art does not hold up at the distance the player actually stands at"
+    },
+    "F-372": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The river carve reads as a random ravine cut across open grassland, because nothing dresses its banks or fills its bed"
+    },
+    "F-373": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Nothing plays the ambient soundtrack \u2014 ambient_day.ogg and ambient_night.ogg have no player anywhere in the game"
+    },
+    "F-374": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The wellspring takes 150 seconds of standing still to cap solo, with a defence wave on top"
+    },
+    "F-375": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Water is a flat mid-blue and has no effect on the player who walks into it"
+    },
+    "F-376": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Leaf-fall particles emit from a fixed 4.8 m above every tree, never stop at night, and visibly teleport when the pooled emitter is reassigned"
+    },
+    "F-377": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Shadows flicker and swim on the low graphics preset \u2014 2 cascades over 55 m with a 2048 atlas at 0.59 render scale"
+    },
+    "F-378": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The sun has no disc \u2014 it renders as a wide faded haze, and there is no moon at night at all"
+    },
+    "F-379": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The whole scene grades green and yellow \u2014 one hue dominates ground, foliage and light together"
+    },
+    "F-380": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The crafting menu is one unscrollable vertical column, so recipes past the panel height are unreachable"
+    },
+    "F-381": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Clicking an inventory slot grows it by 4 px and shoves the row above it, because the selected and focus styles carry a 3 px border against the base style's 1 px"
+    },
+    "F-382": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Items fill the backpack before the hotbar, because InventoryStore.add() walks slot 0 upward and the hotbar is the trailing region"
+    },
+    "F-383": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The death screen's centre column is anchored with KEEP_SIZE before its labels have text, so the whole block sits off-centre"
+    },
+    "F-384": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The multiplayer menu cannot be closed: M is swallowed by the join field it focuses on open, and Esc is consumed by the pause menu first"
+    },
+    "F-385": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Settings show no numeric value for any slider, so FOV, sensitivity and volumes are set blind"
+    },
+    "F-386": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The settings menu has no confirm step \u2014 every change applies live with no Save, no Cancel and no way back to what you had"
+    },
+    "F-387": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Settings rows below the fold are unreachable \u2014 the ScrollContainer exists but the sliders eat the mouse wheel"
+    },
+    "F-388": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Nothing tells the player what is harvestable, what tool it needs, or that a swing is making progress"
+    },
+    "F-389": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The game teaches nothing \u2014 there is no tutorial, no first-run guidance and no tooltips anywhere"
+    },
+    "F-390": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Running into a tree bounces the player and stops them well short of the trunk \u2014 prop colliders are cylinders sized to the whole canopy"
+    },
+    "F-391": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Harvesting a node produces no destruction feedback \u2014 the debris particles either never fire or read as noise"
+    },
+    "F-392": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Ambient enemies spawn at nest markers with no minimum distance to any player and no day gate, so a crawler can appear beside you in daylight"
     }
   },
   "version": 1

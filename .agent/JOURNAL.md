@@ -7907,3 +7907,15 @@ Notes along the way:
 - Installed Apple Xcode 27.0 beta 5 (27A5237l) at /Applications/Xcode-beta.app, installed optional Metal Toolchain 27A5237l, and selected it system-wide through Xcode Settings > Locations. xcode-select, xcodebuild, xcrun metal, and xcrun metallib all resolve correctly. Independent Metal source -> AIR -> metallib compile passed. Fresh Godot macOS Release export exited 0, strict codesign passed, produced 88 native Metal cache entries, and removed the prior SPIR-V-only warning; exported game boot exited 0. Ten MSL 3.1 target-mismatch variants remain and are separated as a new finding. The incompatible App Store Xcode 26.6 copy remains at /Applications/Xcode.app because it is root-owned and moving it to Trash requires administrator authentication; it is not selected.
 
 Commit at time of writing: `774f64c`
+
+---
+
+### REOPEN · F-349 · kilnd3a089 · 2026-08-21T03:01:55+00:00
+
+**Blight drains a standing player to death with no signal that anything is happening**
+
+Reopened (was marked done 2026-08-21 by ivycc0920).
+
+Re-reported from play on 2026-08-20 by Sequoyah, in the same words as the original: health starts draining after running around a bit, and 'stuff keeps randomly killing me'. Nothing has shipped that adds Blight feedback — a grep of ui/ still finds no corruption indicator and core/events/event_bus.gd still carries no blight event. The earlier 'done' recorded a session, not a resolution (F-131).
+
+Commit at time of writing: `cf1af0d`

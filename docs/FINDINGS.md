@@ -2039,6 +2039,827 @@ After F-361 installed Xcode 27 beta 5 plus Metal Toolchain 27A5237l, a fresh mac
 
 ---
 
+### F-365 · No scatter def places a single rock, so the island has no stone on its surface at all
+
+**Area:** worldgen · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "theres no rocks anywhere on the map".
+
+All six shipped `content/scatter/*.tres` defs are flora only — `forest_canopy` (willows + a snag),
+`forest_floor`, `forest_undergrowth`, `grassland_meadow`, `grassland_shrubs`, `shore_beach`. Not one
+entry names a rock, boulder, pebble or outcrop asset.
+
+The harvestable side of the content is fully authored and completely unreachable because of it:
+`content/harvestables/boulder.tres`, `rock_cluster.tres`, `stone_node.tres` and `iron_node.tres` all
+exist, all yield `stone`/`iron_ore`, and `systems/harvesting/harvest_library.gd:82-85` already maps
+`mire_mossy_boulder`, `boulder_` and `rock_cluster` asset prefixes to them as `Represent.NODE`. The
+rules are there; nothing ever stamps an asset that matches them on the procedural island.
+
+Consequence: `stone` and `iron_ore` have no source in the shipped world, which takes out
+`stone_axe`, `stone_pickaxe`, `iron_ingot`, `iron_pickaxe`, `iron_sword` and everything downstream.
+See the companion finding on the fibre deadlock — together they mean the procedural map has no tool
+tier at all.
+
+Fix: add rock entries to `grassland_shrubs`/`forest_floor` (or a new `*_rocks` def per biome) using
+asset ids that `HARVEST_RULES` already recognises, and confirm with a placement census that the
+count is non-zero at several seeds.
+
+---
+
+### F-366 · fibre_bundle has no harvestable source, so both starter tools are uncraftable and the procedural run has no way out of bare hands
+
+**Area:** content · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "theres no way to harvest the base resources without
+tools and theres no way to craft tools without base resouces".
+
+Traced. Both starter tools take the same two inputs:
+
+- `content/recipes/wooden_axe.tres` — `branch` + `fibre_bundle`
+- `content/recipes/wooden_pickaxe.tres` — `branch` + `fibre_bundle`
+
+`branch` is fine: `content/harvestables/bush.tres` and `sapling.tres` both carry `required_tool = 0`
+(`HarvestLibrary.Tool.NONE`), so bare hands yield branches.
+
+`fibre_bundle` is the wall. Every reference in the repo is a *sink* or an authored-map placement:
+`content/loot/bog.tres` (a chest table), `content/recipes/{wooden_axe,wooden_pickaxe,short_bow}.tres`,
+`content/buildables/ladder.tres`, `systems/extraction/extraction_ship.gd:73`, and one hand-placed
+`pickup_fibre_bundle` in `world/gen/layouts/playtest_hollow.json:3455`. **No `HarvestableDef` in
+`content/harvestables/` has `yield_item_id = &"fibre_bundle"`** — the four yields in the whole
+directory are `branch`, `log`, `stone`, `iron_ore`.
+
+So on the procedural map the only fibre source is a bog chest, and the companion finding on chest
+placement says chests do not place there either. The player is hard-locked to bare hands: no axe
+means no `log`, no pickaxe means no `stone`, and `required_tool` 1 and 2 gate every other node.
+
+Fix: give fibre a bare-hands harvestable — the obvious one is a `nettle`/`reed` definition with
+`required_tool = 0` mapped off the `nettle_a`/`sedge_`/`marsh_grass_` asset prefixes that
+`content/scatter/{forest_floor,shore_beach}.tres` already place. That closes the loop without
+touching the recipes.
+
+---
+
+### F-367 · No chest reaches the procedural island: the loot_cache POI asks for 8 sites at 70 m spacing on a 118 m island
+
+**Area:** worldgen · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "theres no chests or loot placed around the map".
+
+`content/poi/loot_cache.tres` asks for `target_count = 8` with `min_spacing_m = 70.0` and
+`clearance_m = 12.0`. `world/gen/island_heightmap.gd:29` puts `ISLAND_RADIUS` at 118.0 m, and the
+placeable band is `radius_min_fraction 0.1 .. radius_max_fraction 0.9` with `height_min 2.0`. Eight
+mutually-70 m-separated points do not exist inside that band, so `PoiMap._place_kind`'s relaxation
+ladder (D-152) is the only thing placing anything, and it places far fewer than eight.
+
+This is F-319's defect ("Every multi-site POI badly under-places on the 118 m island") observed from
+the player's side, and it is filed separately because the *consequence* is bigger than a thin POI
+count: `autoload/chest_placement_service.gd` only ever builds a `Chest` on a marker it finds in the
+`authored_world_marker` group with `kind = "loot"`. No loot marker, no chest — anywhere, for the
+whole run. Combined with the fibre finding, the run has no loot economy and no tool tier.
+
+Fix is coupled to the island-size finding: a larger `ISLAND_RADIUS` makes the spacing satisfiable as
+written. Either way, add a check that fails when a REQUIRED POI kind places fewer than
+`target_count` after the ladder, instead of shrugging.
+
+---
+
+### F-368 · The island is too small to hold its own content — ISLAND_RADIUS 118 m against a spec that wants dense forest, open ground and spaced POIs
+
+**Area:** worldgen · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "the island should be 2-3x larger".
+
+`world/gen/island_heightmap.gd:29` — `const ISLAND_RADIUS: float = 118.0`. Everything downstream is
+written as a fraction of it, so the constant is the single lever: `FREQUENCY_SCALE` at :40 is
+`512.0 / ISLAND_RADIUS`, the lobes (:224-231), islets (:264-268), river overshoot (:293) and the POI
+band (`radius_*_fraction`) all scale with it.
+
+Three separate findings bottom out here: `loot_cache`'s 8 sites at 70 m spacing (F-367), F-319's
+general POI under-placement, and the wellspring's 180 m spacing that makes a second one
+geometrically impossible. And the play complaint the size causes directly — there is no room for a
+dense forest *and* open ground, so the whole island reads as one continuous field.
+
+Raising it is not a one-line change even though it is a one-line edit: `FREQUENCY_SCALE` is defined
+against a 512 m reference specifically so terrain frequency stays put when the radius moves, but the
+POI `min_spacing_m`/`target_count` pairs, the wellspring's clear radius, the Mire's four seeded
+clusters and `world/gen/resource_scatter.gd`'s per-chunk budget were all tuned against 118 m. Expect
+to retune scatter counts and to re-measure chunk streaming cost — the surface area goes up 4-9x.
+
+Fix: raise to ~250-350 m, then re-run `tools/nav_bake_check.gd`, the perf probe and a POI census at
+several seeds.
+
+---
+
+### F-369 · Play shows near-bare ground across the whole island despite scatter defs that ask for 45-50% coverage
+
+**Area:** worldgen · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "theres barely any of the nature assets/plants placed
+around the map, it would be good to have dense forested regions and then some more open areas as
+well" and "there should be far more small grass covering basically the whole island".
+
+The content does not look like what ships. `content/scatter/grassland_meadow.tres` asks for
+`cell_size_m = 3.0` at `coverage = 0.5` over ten entries (four short grasses, two tussocks, three
+flower sets, clover); `forest_floor.tres` is the same 3 m / 0.5 with bracken, moss, nettle and leaf
+litter; `forest_undergrowth.tres` is 4 m / 0.45. A 3 m cell at half coverage is roughly one plant
+per 18 m^2, which should read as continuous ground cover and does not — the attached play capture
+shows flat unbroken green with a handful of isolated tufts.
+
+Two suspects, both worth eliminating before retuning any numbers:
+
+1. `autoload/graphics_quality.gd`'s `undergrowth` multiplier — LOW is `0.45`, MEDIUM `0.8`. If the
+   session ran below HIGH, more than half the scatter is being dropped by the preset, and the
+   defaults are being judged through it.
+2. `world/gen/resource_scatter_field.gd` only builds scatter for chunks inside the collision ring
+   (D-080). Everything past that ring is bare by construction, which is correct for *proxies* but
+   would be very wrong for *visuals* if the two share the boundary — and the file's own header says
+   they do: "scatter (visuals AND proxies together) builds only once a chunk crosses into that ring".
+
+That second one would explain the capture exactly: a small dressed disc around the player and bare
+ground everywhere else, which is what the screenshot shows past ~40 m.
+
+Fix: separate the visual radius from the proxy/collision radius, confirm the preset multiplier is
+not silently in play, then raise density and add the biome contrast Sequoyah asked for — dense
+forest cores against genuinely open meadow, rather than one uniform field.
+
+---
+
+### F-370 · Trees are far too short next to the player, which also puts the leaf-fall emitter above the crown
+
+**Area:** art · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "tree assets should be significantly taller, they are way
+too short compared to the player and other assets".
+
+Visible in the play capture: canopy tops sit at roughly head height to a little above it, so the
+forest reads as shrubbery rather than woodland, and the horizon line is never broken.
+
+The scatter defs scale them 0.85-1.2 (`content/scatter/forest_canopy.tres`), so the source exports
+under `assets/flora/exports/tree_*.glb` are the thing to change, or the scale range is.
+
+This has a second, non-cosmetic consequence, filed separately but caused here:
+`autoload/environment_vfx.gd:855` emits `LEAF_FALL` from a hardcoded `height` of 4.8 m. If a crown
+tops out below 4.8 m the leaves spawn in open air above the tree — which is exactly what was
+reported. Raising the trees fixes the emitter placement for free; lowering the emitter without
+raising the trees fixes the symptom and leaves the forest short.
+
+Fix: retall the tree exports (or the scale range) to a canopy that clears the player by a real
+margin, then re-check `_leaf_fall`'s height against the new crowns.
+
+---
+
+### F-371 · Tree trunk art does not hold up at the distance the player actually stands at
+
+**Area:** art · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "the tree leaves look fine but the trunks need work the
+trunks look really bad".
+
+The canopies read correctly in the play capture — clean faceted low-poly foliage with good silhouette
+variation. The trunks do not: they are thin, near-cylindrical, uniformly dark red-brown, with no
+taper, no root flare and no branching structure, so a tree at 5 m looks like a stick holding a shape.
+
+Source assets are `assets/flora/exports/tree_*.glb` (willow a/b/c and `tree_snag_a` are what
+`content/scatter/forest_canopy.tres` places).
+
+Fix: taper the trunk, flare it at the base, add one or two forking limbs into the crown, and give it
+a second darker tone so the facets catch light the way the canopy's already do. This is judged by eye
+— render a comparison at player height before and after.
+
+---
+
+### F-372 · The river carve reads as a random ravine cut across open grassland, because nothing dresses its banks or fills its bed
+
+**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "random ravine in the middle of the island". Visible in
+the play capture: a steep-sided channel running through otherwise flat green ground, dry, unlit,
+with the same grass on its floor as on the plateau either side.
+
+It is `world/gen/island_heightmap.gd`'s river, working as coded. `_river_channel()` (:479) carves a
+bed lerping `RIVER_BED_SOURCE 1.2` down to `RIVER_BED_MOUTH -1.2`, with `RIVER_BANK_RISE 2.2`
+lifting the walls off the bed over a corridor of `RIVER_WIDTH * RIVER_CORRIDOR` (2.6x). The header at
+:273-282 says the intent out loud — "a river out of the northern rim through a gorge into the mere",
+a Hollowmere identity feature.
+
+The geometry shipped; the river did not. There is no water surface in the channel
+(`world/gen/procedural_world.gd:273` `water_surface_at()` returns one constant — "this generator has
+exactly one body of water, the ocean"), no bank material change, no shore-biome band along it, and
+no scatter def keyed to it. So what the player meets is a bare trench with no reason to exist.
+
+Fix, in the order that gets the most back per unit of work: run the shore biome up the channel so its
+banks and floor dress differently from the plateau, then either fill the bed with water above
+`RIVER_BED_MOUTH` or soften `RIVER_BANK_RISE` so it reads as a dry wash rather than a cut. If the
+river is not wanted on the procedural map at all, gating the carve is a one-line alternative — but
+that is a design call, not a bug fix.
+
+---
+
+### F-373 · Nothing plays the ambient soundtrack — ambient_day.ogg and ambient_night.ogg have no player anywhere in the game
+
+**Area:** audio · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "the music/soundtrack does not play".
+
+Confirmed by grep, not inference. `assets/audio/music/` holds three rendered tracks —
+`ambient_day.ogg` (2.9 MB), `ambient_night.ogg` (2.0 MB), `boss_stinger.ogg` (96 KB) — all three
+imported. **`ambient_day` and `ambient_night` are referenced by exactly nothing in the repo**: a
+recursive search across `content/`, `systems/`, `autoload/`, `world/`, `ui/` and `core/` returns zero
+hits for either name.
+
+The only music player that exists is `autoload/boss_music_director.gd`, and its `CUE_PATHS` holds one
+entry, `boss_stinger`. There is no ambient music autoload, no day/night music director, and no
+`AudioStreamPlayer` fed by `systems/environment/day_night.gd`. So the game is silent except for a
+seven-second stinger during a boss fight.
+
+The bus exists (`MUSIC_BUS := &"Music"`) and `SettingsService` already exposes a music volume slider,
+so the plumbing is all there — the consumer is missing.
+
+Fix: an `AmbientMusicDirector` autoload on the same shape `boss_music_director.gd` already uses —
+two looping `AudioStreamPlayer`s on the `Music` bus, crossfaded off `DayNight`'s `time_of_day` at the
+same threshold the sky uses, ducked while `BossMusicDirector` is playing. Client-local, no authority
+(ARCHITECTURE.md §2.2, "VFX, audio, camera, UI").
+
+---
+
+### F-374 · The wellspring takes 150 seconds of standing still to cap solo, with a defence wave on top
+
+**Area:** systems · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "the wellspring takes and absurdly long time to cap".
+
+`systems/wellspring/wellspring_service.gd`:
+
+    const COOP_DURATION_SEC: float = 60.0
+    const SOLO_DURATION_SEC: float = 150.0
+    const PRESENCE_RANGE_M: float = 4.5
+
+So a solo player stands inside a 4.5 m circle for two and a half unbroken minutes, and
+`DEFENSE_WAVE_BASE_COUNT = 3` crawlers arrive during it, any one of which can push them out of
+`PRESENCE_RANGE_M` and stall the timer. The co-op number is defensible; the solo number is the same
+objective priced 2.5x for the player who has the least ability to hold ground.
+
+This compounds with the Blight drain (F-349) — the ground the wellspring sits on is corrupting while
+you stand on it — and with F-350's saturation rate.
+
+Fix: bring `SOLO_DURATION_SEC` down to roughly 75-90 s, and decide whether progress should decay or
+merely pause when presence is lost, because "pause" is what makes an interrupted cap feel long rather
+than hard. Tuning call — record the number chosen and why.
+
+---
+
+### F-375 · Water is a flat mid-blue and has no effect on the player who walks into it
+
+**Area:** world · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "the water should slow player movement down slightly and
+i want the water to be a darker blue".
+
+Two separate gaps, one file each.
+
+**Colour.** `world/environment/water_low_poly.gdshader:21` —
+`uniform vec3 albedo_color : source_color = vec3(0.30, 0.52, 0.72)`, assigned straight to `ALBEDO`
+at :35. That is a pale cyan-leaning blue, and in the play capture the sea past the shore reads as a
+bright band that pulls the eye off the island. Wants to go darker and slightly greener.
+
+**Movement.** Nothing in `entities/player/` references water at all — a recursive search for `water`
+across the player scripts returns zero hits. `world/gen/procedural_world.gd:273`'s
+`water_surface_at()` is the only "where is the waterline" answer in the codebase and its only callers
+are world-gen. So the player walks into the sea at full sprint speed with no drag, no sound, no
+visual change, and no swim state.
+
+Fix: darken the shader default (and any `.tres` that overrides it), then add a wade check to the
+player controller — sample `water_surface_at()` against foot height each physics tick and scale the
+movement speed by depth. Host-authoritative movement already owns speed, so this belongs on the same
+path as any other speed modifier, not as a client-local visual.
+
+---
+
+### F-376 · Leaf-fall particles emit from a fixed 4.8 m above every tree, never stop at night, and visibly teleport when the pooled emitter is reassigned
+
+**Area:** vfx · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "the tree leaves/particles suck and spawn above the trees
+and way too many spawn and they bug out when you start walking/running there also visible at night
+when they shouldnt be".
+
+Three distinct defects in `autoload/environment_vfx.gd`, all in the `LEAF_FALL` path.
+
+1. **Fixed emitter height.** `:855` — `node.add_child(_leaf_fall(12, 7.0, 4.8))`. The third argument
+   is `height`, applied as `particles.position.y = height` (`:952`), and `_leaf_fall`'s own header
+   admits it: "`height` is where the crown starts; one number for every species is a compromise".
+   With the shipped trees topping out below 4.8 m (see the tree-height finding) the leaves emit in
+   open air *above* the canopy instead of from inside it. The header's justification — "a leaf that
+   starts a metre inside the foliage simply appears from behind it" — only holds when the number is
+   an under-estimate, and here it is an over-estimate.
+
+2. **No night gate.** Nothing in `_make_effect` or the budget path consults `DayNight`. Leaves keep
+   falling in full darkness, lit by nothing, which is what makes them read as a bug rather than
+   weather.
+
+3. **Pool reassignment teleports live particles.** The file's own comment at `:815` — "the pool is
+   reassigned to new sites as the player moves rather than grown". Moving a `GPUParticles3D` that has
+   in-flight particles drags the whole live system to the new site in one frame, so every leaf
+   currently mid-fall jumps across the world. That is precisely "they bug out when you start
+   walking/running", and it gets worse the faster you move. `restart()` on reassignment, or a
+   one-lifetime cooldown before a freed emitter is reused, is the shape of the fix.
+
+Density is a fourth, smaller item: `amount = 12` per emitter times however many crowns are inside the
+budget radius, with `BUDGET_BY_PRESET = [0.4, 0.7, 1.0]` the only limiter.
+
+---
+
+### F-377 · Shadows flicker and swim on the low graphics preset — 2 cascades over 55 m with a 2048 atlas at 0.59 render scale
+
+**Area:** render · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "shadows flicker and flash on low graphics quality".
+
+`autoload/graphics_quality.gd`'s LOW preset:
+
+    "render_scale": 0.59,
+    "cascades": DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS,
+    "shadow_distance": 55.0,
+    "shadow_atlas": 2048,
+
+Four things that each cause shadow instability, stacked. Two cascades split across 55 m puts the far
+split's texel size well above a metre at 2048; the preset never touches
+`directional_shadow_blend_splits`, so the cascade boundary is a hard seam that pops as the player
+walks through it; `render_scale 0.59` means the shadow is sampled at ~59% resolution and upscaled,
+which turns sub-texel jitter into visible crawl; and nothing sets `shadow_normal_bias`/`shadow_bias`
+per preset, so the bias tuned for HIGH's 4096 atlas is far too small for LOW's 2048.
+
+The preset system is doing the right thing in principle — `PRESETS` deliberately "names only what it
+overrides" — but shadow stability is not a property any single one of these knobs owns, so lowering
+them independently produced a configuration that is cheap and wrong.
+
+Fix: on LOW, enable `directional_shadow_blend_splits`, raise `shadow_normal_bias` in proportion to
+the atlas reduction, and pull `shadow_distance` in further (35-40 m) so the two splits cover less
+ground each. Verify by capturing the same camera path on each preset — this is a motion artefact, so
+a still will not show it.
+
+---
+
+### F-378 · The sun has no disc — it renders as a wide faded haze, and there is no moon at night at all
+
+**Area:** render · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "the sun doesnt have a clear circle form in the sky its
+more of a faded haze thats way to wide" and "night time could be slightly less dark but only because
+of moonlight so we need to add a moon in that cast cool white light dimmly over the map".
+
+**Sun.** `world/environment/playtest_atmosphere.gd` drives a `PhysicalSkyMaterial`
+(`_sky_material`, :174) and animates `energy_multiplier`, `turbidity`, `rayleigh_color`, `mie_color`
+and `ground_color` on the daylight curve (:360-367). The disc itself comes from the `Sun`
+`DirectionalLight3D`'s angular size, and nothing here sets it — `sun.light_angular_distance` is never
+assigned, and `turbidity` is lerped up to 10.0 at night, which is what smears the glow wide. A large
+angular distance plus high mie scattering is exactly "faded haze that is way too wide".
+
+**Moon.** There is none. A search of `playtest_atmosphere.gd` and `systems/environment/day_night.gd`
+for moon returns nothing; the level has one `DirectionalLight3D` named `Sun` (:139) and the night
+branch simply dims it to `light_energy = 0.04` (:292). `world/environment/star_field.gd` exists and
+gets a sky rotation (:273), so the night sky has stars and no moon.
+
+This is the other half of F-356 ("Night renders essentially black"): the answer Sequoyah wants is not
+to raise the ambient floor but to add a real second light.
+
+Fix: (a) set `light_angular_distance` on the sun to a tight disc and drop night turbidity so the glow
+tightens; (b) add a second `DirectionalLight3D` — cool white, roughly 0.12-0.2 energy, shadows on but
+at a cheap cascade count — rotated opposite the sun on the same `time_of_day` clock, cross-faded so
+exactly one of the two is meaningfully lit at any hour. Judge by eye at midnight and at golden hour.
+
+---
+
+### F-379 · The whole scene grades green and yellow — one hue dominates ground, foliage and light together
+
+**Area:** render · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "game looks to green/yellow".
+
+Visible across the attached play capture: terrain, canopy, undergrowth and the lit side of every prop
+all sit in a narrow yellow-green band, so nothing separates from anything else and the island reads
+flat despite the geometry being anything but.
+
+Three contributors, in the order they compound:
+
+1. **Terrain albedo.** The ground material is a single saturated green with no biome variation — the
+   grassland and forest biomes (`content/biomes/*.tres`) differ only in `detail_amplitude` and
+   `ridge_amplitude`, never in colour.
+2. **Foliage albedo sits in the same band.** The canopy exports are a mid-green close enough to the
+   ground that the tree silhouettes only separate by their shadow.
+3. **The grade pushes it further.** `world/environment/playtest_atmosphere.gd` runs a tuned tonemap
+   curve (see its header at :66-72, "blacks lifted, highlights never") with `DAY_SUN_ENERGY = 1.55`
+   and a warm horizon term. Warm light on a yellow-green scene is what takes it from green to
+   green-yellow.
+
+Related but not the same: F-357's flat pale-grey band above the horizon, which is also visible in the
+capture.
+
+Fix: give the biomes distinct ground albedos and desaturate the base green, then pull the canopy
+either cooler or darker so it separates from the ground, and only then re-judge the tonemap. Doing
+the grade first hides which of the three is actually wrong. This one is judged by eye — capture the
+same seed and camera before and after.
+
+---
+
+### F-380 · The crafting menu is one unscrollable vertical column, so recipes past the panel height are unreachable
+
+**Area:** UI · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "the workbench crafting menu is not scrollable, id rather
+it expand horizontally and have multiple rows rather than vertically".
+
+`ui/crafting/crafting_ui.gd` builds its recipe list as a bare `VBoxContainer` — `_row_box` at :413,
+declared at :188 — one `HBoxContainer` row per recipe (:116). There is **no `ScrollContainer`
+anywhere in the file** (compare `ui/menu/settings_menu.gd:195`, which has one). The panel's minimum
+size is set at :620, so the column simply grows past it and the overflow is clipped with no way to
+reach it.
+
+With 13 recipes in `content/recipes/` this is already reproducible at 1080p, and it gets strictly
+worse as content lands — F-236 is explicitly about adding more.
+
+Sequoyah's preference is not "add a scrollbar": he wants the list to **grow horizontally into a
+multi-column grid** rather than downward, which suits a first-person game where the panel wants to
+stay short and wide. That means replacing `_row_box` with a `GridContainer` whose `columns` is
+derived from the available width, and keeping a `ScrollContainer` as the backstop for when even the
+grid overflows.
+
+Fix: `GridContainer` + width-derived `columns` + `ScrollContainer` wrapper, with the compact/full row
+variants at :89 and :152 reused as the grid cell.
+
+---
+
+### F-381 · Clicking an inventory slot grows it by 4 px and shoves the row above it, because the selected and focus styles carry a 3 px border against the base style's 1 px
+
+**Area:** UI · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "clicking on an empty inventory slot make it larger and
+move the row above it".
+
+`ui/inventory/inventory_ui.gd:259-263`:
+
+    _base_style      = _slot_style(COLOUR_SLOT,       COLOUR_BORDER,   1)
+    _hover_style     = _slot_style(COLOUR_SLOT_HOVER, COLOUR_SELECTED, 1)
+    _selected_style  = _slot_style(COLOUR_SLOT,       COLOUR_SELECTED, 3)
+    _focus_style_box = _slot_style(COLOUR_SLOT,       COLOUR_FOCUS,    3)
+    _carry_style     = _slot_style(COLOUR_SLOT_HOVER, COLOUR_CARRY,    3)
+
+`_slot_style` (:267) does `style.set_border_width_all(border_width)`. A `StyleBoxFlat`'s border width
+contributes to the owning `PanelContainer`'s minimum size, so swapping base (1) for selected/focus/
+carry (3) adds 2 px on every side — the slot grows by 4 px in each axis the instant it is clicked or
+focused, and the container reflows every sibling and the row above.
+
+The visual intent is right (a thicker ring marks selection, per the comment at :26). The mechanism is
+wrong: the ring must not change the box's size.
+
+Fix: give every one of the five styles the same 3 px border and vary only the *colour* — make the
+base style's border 3 px of `COLOUR_BORDER` (or transparent) rather than 1 px. Same look, constant
+metrics. Verify by asserting a slot's `size` is unchanged across `present(selected=false)` ->
+`present(selected=true)` in a headless check.
+
+---
+
+### F-382 · Items fill the backpack before the hotbar, because InventoryStore.add() walks slot 0 upward and the hotbar is the trailing region
+
+**Area:** systems · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "when there is a free slot in the hotbar items should be
+placed in the first available hotbar slot moving from left to right until the hotbar is full then
+items should go into the backpack".
+
+The current behaviour is the exact inverse, and it is deliberate — which is why it needs a decision,
+not just a patch. `systems/inventory/inventory_store.gd:64` documents it: "Empty primary slots are
+visited before the trailing region, so InventoryService fills the backpack before hotbar overflow."
+`add()` (:66) merges into existing stacks first, then walks `_slots` from index 0 upward for empties.
+
+`autoload/inventory_service.gd:14-16` fixes which end is which:
+
+    const HOTBAR_SLOT_COUNT: int = 8
+    const HOTBAR_START_INDEX: int = INVENTORY_SLOT_COUNT
+    const SLOT_COUNT: int = INVENTORY_SLOT_COUNT + HOTBAR_SLOT_COUNT
+
+So indices `0 .. INVENTORY_SLOT_COUNT-1` are the backpack and the hotbar is the tail. Walking upward
+therefore fills the backpack first, and a player who picks up their first branch sees an empty hotbar
+and has to open the inventory and drag it out before they can use it.
+
+Note the symmetric rule at :99 — removal consumes the primary region first "so crafting/removal
+preserves equipped stacks". That half is right and must survive the change: fill hotbar-first,
+consume backpack-first.
+
+Fix: give `add()` an explicit fill order (hotbar range ascending, then backpack ascending) rather
+than a bare `for index in _slots.size()`, and leave `_removal_order()` alone. The existing inventory
+net checks cover the all-or-nothing contract; add one that asserts a grant into an empty inventory
+lands in `HOTBAR_START_INDEX`.
+
+---
+
+### F-383 · The death screen's centre column is anchored with KEEP_SIZE before its labels have text, so the whole block sits off-centre
+
+**Area:** UI · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "the death screen stuff was not centered". Confirmed in
+the attached capture: "CYCLE 1 / THE CREW HAS FALLEN / Modifiers drawn / Salvage earned / Start Next
+Run" sits low and right of centre, while the "DOWNED" banner above it is correctly centred.
+
+`ui/hud/defeat_hud.gd:283`:
+
+    column.set_anchors_and_offsets_preset(Control.PRESET_CENTER, Control.PRESET_MODE_KEEP_SIZE)
+
+`PRESET_MODE_KEEP_SIZE` computes the offsets **once, from the control's size at the moment of the
+call**. At `_build()` time the column's labels are empty, so it is near-zero-sized and the offsets
+that get baked in centre a zero-sized box. `_on_run_wiped()` (:125) then fills `_headline`,
+`_cause_label`, `_modifiers_label` and `_detail` with real text, the column grows down and right from
+those stale offsets, and the visual centre drifts by half the grown size.
+
+The labels' own `horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER` (:289-307) is why the *text* is
+internally centred while the *block* is not — it hides the cause.
+
+Fix: put the column inside a `CenterContainer` anchored `PRESET_FULL_RECT` so centring is recomputed
+on every resize, or re-apply the preset after the text is set. The `CenterContainer` is the right
+answer — it cannot go stale.
+
+---
+
+### F-384 · The multiplayer menu cannot be closed: M is swallowed by the join field it focuses on open, and Esc is consumed by the pause menu first
+
+**Area:** UI · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "esc does not close the multiplayer menu opened with m ...
+and m also does not close the mutplayer menu theres no way to close that menu".
+
+Both halves traced in `ui/lobby/lobby_menu.gd`.
+
+**M cannot close it.** `_input` (:70) guards the M branch against typing:
+
+    if key.keycode == KEY_M:
+        var focus_owner: Control = get_viewport().gui_get_focus_owner()
+        if focus_owner is LineEdit or focus_owner is TextEdit:
+            return
+
+and `set_open(true)` ends with `_join_field.grab_focus()` (:109), where `_join_field` is a `LineEdit`
+(:36). So opening the menu focuses a `LineEdit`, and the very next M press hits the guard and returns
+before reaching `set_open(not _open)`. The guard is correct in intent — typing "m" into a lobby id
+must not toggle the menu — but it fires on the default state, not the exception.
+
+**Esc cannot close it either.** The Esc branch exists (:86) but `_input` opens with
+`if get_viewport().is_input_handled(): return`. `MenuStack` (`ui/menu_stack.gd:101`) and `PauseMenu`
+are both autoloads registered *after* `LobbyMenu` in `project.godot` (lines 49, 80, 81), and `_input`
+propagates in reverse tree order, so they see the press first. `MenuStack` emits `cancel_at_root` on
+an empty stack, the pause menu opens, the event is marked handled, and `LobbyMenu._input` returns at
+its first line.
+
+That second half is the general rule Sequoyah asked for: **"esc key should close any currently open
+menu or interface before opening the settings/pause menu"**. `MenuStack` already owns `ui_cancel`
+project-wide (its header at :49) and already knows about the `blocks_gameplay_input` group (:62) —
+what it does not do is check whether a *non-stack* blocking panel is open before falling through to
+`cancel_at_root`.
+
+Fix: (a) in the M branch, only bail when the focused `LineEdit` actually belongs to this menu — or
+simpler, do not grab the join field on open; (b) in `MenuStack._input`, before emitting
+`cancel_at_root`, ask the `blocks_gameplay_input` group whether anything is open and let it close
+itself. That one change fixes Esc for the lobby menu, the attunement picker (F-321) and every future
+panel at once.
+
+---
+
+### F-385 · Settings show no numeric value for any slider, so FOV, sensitivity and volumes are set blind
+
+**Area:** UI · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "the fov slider does not have a number value for fov and
+neither do any other settings".
+
+`ui/menu/settings_menu.gd` builds every slider through one helper, `_build_slider_row` (:508), which
+creates a `FocusRingSlider` (:515) with a label on the left and nothing on the right. There are six
+of them — `_master_slider`, `_music_slider`, `_sfx_slider`, `_sensitivity_slider`, `_fov_slider`,
+`_gamepad_sensitivity_slider` (:48-55). The FOV row (:282) spans 60-110 in steps of 1 with no readout
+at all, so "the setting I had before" is unrecoverable once you move the handle.
+
+`ui/frontend/settings_screen.gd` has the same shape and the same gap.
+
+Fix: extend `_build_slider_row` to add a right-aligned value `Label` with a fixed minimum width (so
+the row does not reflow as digits change), formatted per row — integer + degree sign for FOV,
+percentage for the three volumes, two decimals for sensitivity — and updated from the same
+`value_changed` signal that already drives `on_change`. One helper edit covers all six rows in both
+screens if the helper is shared; if it is not, share it.
+
+---
+
+### F-386 · The settings menu has no confirm step — every change applies live with no Save, no Cancel and no way back to what you had
+
+**Area:** UI · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "theres no 'save changes' button in the settings menu to
+confirm changes".
+
+Every control in `ui/menu/settings_menu.gd` writes straight through to `SettingsService` from its own
+signal — see `_build_slider_row`'s callback shape at :282-283:
+
+    _fov_slider = _build_slider_row(parent, "Field of View", 60.0, 110.0, 1.0,
+        func(v: float) -> void: _settings_call("set_fov_degrees", [v]))
+
+with no staging buffer anywhere in the file. There is no Save button, no Cancel, no Revert, and no
+Restore Defaults. Combined with the missing numeric readouts, a player who drags the FOV handle by
+accident cannot see what it was or get it back.
+
+Live-apply is genuinely the right behaviour for *some* of these — you want to see FOV and sensitivity
+as you drag them. So the fix is not "make everything deferred"; it is to keep the live preview and
+add an explicit commit:
+
+- snapshot every value on open,
+- keep applying live so the preview works,
+- **Save** persists the snapshot-to-current delta,
+- **Cancel** (and Esc) restores the snapshot and re-applies it,
+- **Restore Defaults** loads `SettingsService`'s defaults into the live state without persisting.
+
+Apply the same treatment to `ui/frontend/settings_screen.gd`, which has the same structure.
+
+---
+
+### F-387 · Settings rows below the fold are unreachable — the ScrollContainer exists but the sliders eat the mouse wheel
+
+**Area:** UI · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "the settings menu has no scrolling so some settings are
+hidden".
+
+The `ScrollContainer` is there — `ui/menu/settings_menu.gd:195-199`, `custom_minimum_size` of
+`(0, 380)` with horizontal scrolling disabled, wrapping a `VBoxContainer` that holds six row groups
+(`_build_graphics_row`, `_build_audio_rows`, `_build_look_rows`, `_build_accessibility_rows`,
+`_build_keybind_rows`, `_build_gamepad_bind_rows`). So the content is far taller than 380 px and the
+scroll should work.
+
+The likely reason it does not, from the player's side: **`HSlider` consumes mouse-wheel input to
+change its own value.** Six of the rows are sliders (:48-55), and they are spread down the list, so
+the wheel over most of the panel nudges a setting instead of scrolling — which reads exactly as "no
+scrolling", and silently changes a setting while you try. Whatever is left between the sliders is a
+narrow target.
+
+Worth checking at the same time, since both produce the same report: whether the panel's fixed 380 px
+scroll viewport plus title and margins exceeds the window at the resolutions being played, which
+would clip the whole panel rather than scroll inside it.
+
+Fix: set `mouse_wheel_enabled = false` on the sliders (or filter wheel events in `FocusRingSlider`
+and pass them to the parent scroll), and make the scroll viewport a fraction of the window height
+rather than a fixed 380. `ui/frontend/settings_screen.gd:172` has the identical construction and
+needs the same treatment.
+
+---
+
+### F-388 · Nothing tells the player what is harvestable, what tool it needs, or that a swing is making progress
+
+**Area:** UI · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "theres no indicator that something is harvestable or what
+tool it requires" and "theres no indicator of harvesting/destruction progress".
+
+Three missing pieces of the same feedback loop, and the data for all three already exists.
+
+1. **Is it harvestable.** `HarvestLibrary.is_harvestable(asset)`
+   (`systems/harvesting/harvest_library.gd:103`) answers this from the asset id alone, and every
+   holder already carries an `asset` meta. Nothing in `ui/` reads it. The player walks up to a tree
+   and a painted-scenery pine and gets identical feedback from both — which is the same failure
+   F-114 was written to end, one layer up.
+
+2. **Which tool.** `HarvestableDef.required_tool` is an int (`Tool.NONE`/`CHOP`/`MINE`) and
+   `HarvestLibrary.tool_name()` (:130) already turns it into a string. A boulder is
+   `required_tool = 2` and a bare-handed swing at it does nothing with no explanation. There is no
+   prompt, no icon, no "needs a pickaxe" line.
+
+3. **Progress.** `HarvestableDef.max_health` is 3-9 across the ten definitions, so a node takes
+   several swings, and none of them show. No health ring, no chip, no shake, no depletion stage
+   readout — the player cannot tell a node they are two hits from breaking apart from one they
+   cannot break at all.
+
+`ui/building/door_prompt.gd` is the existing pattern for a look-at prompt, so the interaction shape is
+already settled in this codebase.
+
+Fix: a look-at prompt that reads the aimed holder's `asset` meta, asks `HarvestLibrary` what it is,
+shows the name and the required tool (greyed or red when the held item's `tool_class` does not
+match), plus a progress arc that fills off the `Harvestable`'s replicated health. Presentation only,
+client-local, no authority (ARCHITECTURE.md §2.2).
+
+---
+
+### F-389 · The game teaches nothing — there is no tutorial, no first-run guidance and no tooltips anywhere
+
+**Area:** UI · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "theres no tutorial or tool tips to guide players through
+the game".
+
+A new player is dropped on a shore with eight empty hotbar slots and no statement of what the run
+wants from them. Nothing names the objective (cap the wellspring), nothing explains the Blight that
+is draining them (F-349), nothing says which key opens the inventory, the crafting bench, the
+multiplayer menu or the map, and nothing explains that bushes give branches while trees need an axe
+(see the harvest-indicator finding).
+
+This is the difference between the systems being *shipped* and the systems being *playable*, and it
+is the one thing on the 2026-08-20 play report that no other finding covers as a side effect.
+
+Scope it small enough to land: a first-run contextual prompt chain rather than a scripted tutorial
+level — the world is procedural, so a tutorial level would be its own map to maintain
+(see the asset-bound-animation reasoning: bind guidance to the *event*, not to a map).
+
+- one-line objective banner on run start, driven off the existing wellspring objective marker,
+- contextual key prompts fired the first time each system becomes relevant (first pickup -> inventory
+  key; first bench in range -> crafting key; first Blight tick -> what Blight is),
+- hover tooltips on every inventory item and recipe row using `ItemDef.description`, which is already
+  authored (`content/items/fibre_bundle.tres:11` — "Twisted plant fibre. Rope, string, and everything
+  that ties."),
+- a persistent, dismissable controls card bound to a key.
+
+All client-local presentation, no authority. Each bullet is independently shippable.
+
+---
+
+### F-390 · Running into a tree bounces the player and stops them well short of the trunk — prop colliders are cylinders sized to the whole canopy
+
+**Area:** physics · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "running into a tree still makes the play bounce up and
+down and the collision box doesnt let you get close to the tree", and the same symptom at the
+shipwreck: "going near the shipwreck causes the same weird collision issue with the player causing
+bouncing".
+
+Two properties of the same collider path.
+
+**Radius.** `world/gen/authored_world.gd:_add_shapes` (:919) builds each prop shape from the layout
+data — a `BoxShape3D` when `t == "box"`, otherwise a `CylinderShape3D` with `r`/`h` straight out of
+the record. Whatever produced those records sized them to the prop's full bounds, so a tree's cylinder
+is canopy-width, not trunk-width. That directly violates the standing rule for this project: **a
+tree's collider is its trunk; leaves and canopy never collide.** The shipwreck is the same story with
+a box that bounds the whole hull rather than its walls.
+
+**Bounce.** Vertical oscillation on contact is a `CharacterBody3D`-versus-static-body interaction, not
+a shape problem: it is what happens when the floor probe and the wall shape disagree about whether a
+surface is walkable, so the controller alternately snaps to it and falls off it, once per physics
+tick. A too-wide cylinder makes this far more likely because its curved side reads as a steep slope
+at the point of contact. Worth checking the player's `floor_max_angle`, `floor_snap_length` and
+whether `safe_margin` is at the default alongside the collider fix.
+
+Fix: size tree colliders to the trunk (a thin cylinder at the base, the canopy uncollidable), give the
+shipwreck real wall shapes instead of one bounding box, then re-test the bounce — if it survives a
+correct collider, it is a controller bug and deserves its own finding.
+
+---
+
+### F-391 · Harvesting a node produces no destruction feedback — the debris particles either never fire or read as noise
+
+**Area:** vfx · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "the destruction partials either dont work or look bad as
+well".
+
+When a `Harvestable` depletes, the node swaps to its `depleted_scene`
+(`content/harvestables/*.tres` — `tree.tres` carries three `active_state_scenes` plus a depleted
+stump, `stone_node`/`iron_node` the same) and that is the whole of the feedback. There is no impact
+burst per swing, no debris on the final hit, no dust, no sound cue tied to the material, and no
+directional knock on the prop.
+
+`autoload/environment_vfx.gd` has the emitter vocabulary that this wants — `_sparks` (:876), `_smoke`
+(:891), `_motes` (:907) — but its `AssetVfx.Emitter` classes are all *ambient* (CAMPFIRE, FORGE,
+EMBER, CRYSTAL, SPORE, LEAF_FALL). None of them is event-driven, and nothing in
+`systems/harvesting/harvestable.gd` reaches into it.
+
+Fix: a one-shot impact effect per material class, fired from the harvest hit path rather than from a
+pooled ambient site — wood chips for `Tool.CHOP` targets, stone chips and dust for `Tool.MINE`, and a
+larger burst on the depletion hit. Bind it to the *asset*, the way `AssetVfxLibrary` already binds
+ambient effects, so any world containing the asset gets it with no map edit. Client-local
+presentation, no authority; the host still owns whether the node actually broke.
+
+---
+
+### F-392 · Ambient enemies spawn at nest markers with no minimum distance to any player and no day gate, so a crawler can appear beside you in daylight
+
+**Area:** systems · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "a crawler randomly spawned in the middle of the map right
+after i respawned during the day".
+
+`autoload/enemy_world.gd` runs an ambient population loop — `ambient_population = 4`,
+`ambient_respawn_seconds = 12.0`, `ambient_scatter_m = 4.0`, `ambient_enemy = &"crawler"` (:52-56).
+It picks positions from `ambient_spawn_points()` (:276), which is a flat list of every `enemy_nest`
+marker's `global_position`, scattered by up to 4 m. **There is no guard on the distance from that
+point to any live player**, and no line-of-sight check.
+
+There is also no day gate. `systems/waves/wave_spawner.gd`'s header (:3) says it "disables
+EnemyWorld's ambient replacement loop while a night is active" — the ambient loop is therefore the
+*daytime* population by design, and it tops up every 12 s regardless of who is standing where.
+
+`top_up_ambient()` is additionally called on rule change (:130), so any event that refills the field
+while a player is stood on or near a nest materialises a crawler in their face. Respawning next to a
+nest — which the procedural map's `content/poi/enemy_nest.tres` placement makes possible — is exactly
+that case, and is what was reported.
+
+Fix: reject any candidate spawn point within a minimum radius of a live player (25-30 m is the usual
+figure for this shape), fall back to the furthest available point when every nest is too close, and
+suppress ambient top-up entirely for a few seconds after a respawn. Host-authoritative — this is the
+"wave director" row of ARCHITECTURE.md §2.2, so the guard belongs on the host's selection, not on a
+client-side filter.
+
+---
+
 ## Resolved
 
 ### F-361 · macOS release host lacks the Metal shader compiler — **fixed**
