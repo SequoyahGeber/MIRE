@@ -75,6 +75,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	print("\n=== benchmark check (F-453) ===")
+	_go_fullscreen()
 	_check_sampler()
 	_check_suite()
 	_check_advisor()
@@ -90,6 +91,38 @@ func _run() -> void:
 
 
 # ── the statistics ────────────────────────────────────────────────────────────────────────────
+
+
+## Fullscreen, at the very top of the run, before anything else touches the tree.
+##
+## This was originally done inside `_check_live()`, most of the way through the check, and it
+## silently did nothing: the run reported a 1280x803 viewport on a 3024x1898 display and burned a
+## measurement window that had been asked for specifically. `tools/perf_probe.gd` sets the mode as
+## the first thing it does and has always worked, which is the difference — the wrapper passes
+## `--headless` ahead of `--display-driver macos`, so the window arrives late and a mode set after
+## other nodes exist is refused.
+##
+## Verified rather than assumed: the resulting size is printed and asserted against the screen, so a
+## refusal says so in the first line of output instead of at the end of a seven-minute run.
+func _go_fullscreen() -> void:
+	if not OS.get_cmdline_user_args().has("--fullscreen"):
+		return
+	if DisplayServer.get_name() == "headless":
+		_fail("--fullscreen asked for but this process has no display — add --display-driver macos")
+		return
+	root.title = "MIRE benchmark — leave this window in front, do not cover it"
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+	DisplayServer.window_move_to_foreground()
+	var screen: Vector2i = DisplayServer.screen_get_size()
+	var window: Vector2i = DisplayServer.window_get_size()
+	print("  window %dx%d on a %dx%d screen | focused %s" % [
+		window.x, window.y, screen.x, screen.y, DisplayServer.window_is_focused()])
+	# Height is allowed to fall short of the screen: macOS keeps the menu bar, so a genuinely
+	# fullscreen window on a 3024x1964 display measures 3024x1898 — the same figure
+	# docs/PERFORMANCE.md quotes for `perf_probe`'s fullscreen runs. Width has no such excuse.
+	_expect(window.x >= screen.x and float(window.y) >= float(screen.y) * 0.9,
+		"the window really is fullscreen (%dx%d of %dx%d) — a frame time from a small window is "
+		% [window.x, window.y, screen.x, screen.y] + "not the frame time of the game")
 
 
 func _check_sampler() -> void:
@@ -524,19 +557,6 @@ func _check_live() -> void:
 
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	var full: bool = args.has("--full")
-	# Fullscreen on the real display is the only way to get frame times that mean anything (F-466,
-	# and docs/PERFORMANCE.md §1). The offscreen 64x64 harness is fine for everything structural.
-	if args.has("--fullscreen"):
-		root.mode = Window.MODE_FULLSCREEN
-		root.title = "MIRE benchmark — leave this window in front"
-		# Take focus, or the whole run is void. Launched from a terminal, macOS leaves focus with
-		# the terminal: the first fullscreen run measured 883 unfocused frames and flagged itself
-		# invalid, correctly. Walking away does not move focus, so the harness has to claim it.
-		# Focus-stealing prevention may still refuse, which is why the focus counter remains the
-		# authority — a failed grab produces a flagged run, not a quiet one.
-		DisplayServer.window_move_to_foreground()
-		await process_frame
-		await process_frame
 	var packed := load("res://levels/procedural_island.tscn") as PackedScene
 	if packed == null:
 		_fail("could not load the benchmark world")

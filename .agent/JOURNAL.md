@@ -8805,3 +8805,15 @@ resolve_placement: free placement, neighbour mating, V/D-pad-left toggle, protoc
 Files: `systems/building/placement_validator.gd`, `systems/building/build_ghost.gd`, `autoload/build_service.gd`, `core/net/net_version.gd`, `core/net/rpc_manifest.gd`, `entities/player/player_controller.gd`, `ui/building/build_bar.gd`, `project.godot`, `docs/FINDINGS.md`, `docs/DELEGATION.md`, `tools/build_check.gd`, `tools/build_net_check.gd`, `tools/build_snap_check.gd`, `tools/handshake_check.gd`, `tools/gamepad_check.gd`
 
 Commit at time of writing: `2b13db1`
+
+---
+
+### HANDOFF · F-470 · quill895277 · 2026-08-21T23:29:48+00:00
+
+**The fullscreen benchmark harness does not take focus, so its own runs are void**
+
+Fullscreen now genuinely applies: set at the top of _run() via DisplayServer.window_set_mode, verified 3024x1898 on a 3024x1964 screen and asserted (width exact, height >=90% because macOS keeps the menu bar). It previously did nothing because the mode was set part way through _check_live(), after other nodes existed. Focus still cannot be grabbed from a terminal-launched process, so runs report focused=false; that is expected and not fatal — only occlusion matters, and nothing can detect it. Remaining: the measurement itself, ~7 min of an untouched machine.
+
+Files: `tools/benchmark_check.gd`
+
+Commit at time of writing: `35c15a8`
