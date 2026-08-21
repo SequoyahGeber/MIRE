@@ -7511,3 +7511,27 @@ Water rematerialed to match the terrain: flat matte facets via the same derivati
 Files: `world/environment/water_low_poly.gdshader`, `assets/audit/terrain/island_orbit.png`, `assets/audit/terrain/island_shore_look.png`, `assets/audit/terrain/island_spawn_view.png`
 
 Commit at time of writing: `8b5310d`
+
+---
+
+### REOPEN · 4.18 · quill5fa5c7 · 2026-08-21T00:12:52+00:00
+
+**Three-seed island-feel walk vs Hollowmere (tuning input, not a gate — D-125)**
+
+Reopened (was marked done 2026-08-21 by quill5fa5c7).
+
+Coast slope: the beach reads as a cliff. Widening the falloff band, swapping the cubic taper for a smoothstep, and giving the seabed a shelf so the wade-in is gradual.
+
+Commit at time of writing: `4cff1e9`
+
+---
+
+### DONE · 4.18 · quill5fa5c7 · 2026-08-21T00:25:01+00:00
+
+**Three-seed island-feel walk vs Hollowmere (tuning input, not a gate — D-125)**
+
+Gradual coast shipped: worst shore slope 71deg -> 48deg, shore run <4m -> ~12m. Four stacked causes fixed (falloff curve cubic->S-curve, band 0.70->0.48, sea-floor term linear->cubed shelf, coast jitter frequency halved) plus a minimum absolute beach band so islets/small lobes get one too. Island size and raggedness preserved. Full suite green; renders sent.
+
+Files: `world/gen/island_heightmap.gd`, `assets/audit/terrain/island_orbit.png`, `assets/audit/terrain/island_shore_look.png`, `assets/audit/terrain/island_spawn_view.png`
+
+Commit at time of writing: `bf8141a`

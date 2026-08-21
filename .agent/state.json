@@ -1,6 +1,87 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "core/save/atomic_json.gd": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T00:12:40+00:00",
+      "task": "F-326",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
+    "core/save/run_record_save.gd": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T00:12:40+00:00",
+      "task": "F-326",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
+    "core/save/salvage_save.gd": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T00:12:40+00:00",
+      "task": "F-326",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
+    "core/save/settings_save.gd": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T00:12:40+00:00",
+      "task": "F-326",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
+    "core/save/steam_stats_save.gd": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T00:12:40+00:00",
+      "task": "F-326",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
+    "core/save/unlock_save.gd": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T00:12:40+00:00",
+      "task": "F-326",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
+    "tools/blender/asset_repro_check.py": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T00:17:46+00:00",
+      "task": "F-329",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
+    "tools/blender/crafting_stations_repro_check.py": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T00:17:46+00:00",
+      "task": "F-329",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
+    "tools/save_atomicity_check.gd": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T00:12:40+00:00",
+      "task": "F-326",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    }
+  },
+  "in_flight": {
+    "F-326": {
+      "agent": "ivy1bcae0",
+      "files": [
+        "core/save/salvage_save.gd",
+        "core/save/unlock_save.gd",
+        "core/save/run_record_save.gd",
+        "core/save/steam_stats_save.gd",
+        "core/save/settings_save.gd",
+        "core/save/atomic_json.gd",
+        "tools/save_atomicity_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-21T00:12:40+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
+    "F-329": {
+      "agent": "ivy1bcae0",
+      "files": [
+        "tools/blender/asset_repro_check.py",
+        "tools/blender/crafting_stations_repro_check.py"
+      ],
+      "notes": [],
+      "started": "2026-08-21T00:17:46+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    }
+  },
   "recent": {
     ".agent/bin/agent": {
       "agent": "galef95fa6",
@@ -102,22 +183,22 @@
     },
     "assets/audit/terrain/island_orbit.png": {
       "agent": "quill5fa5c7",
-      "at": "2026-08-21T00:10:24+00:00",
-      "hash": "7e11e7602396b93a789a9e27838cb7d5aa9e8672beb5dca5f2cb4d641fa91daa",
+      "at": "2026-08-21T00:25:01+00:00",
+      "hash": "4e12c0e48bb3f9f2609b5ebb20254a5d5920a137ce4d5a830ae19ce1b8f53a81",
       "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "assets/audit/terrain/island_shore_look.png": {
       "agent": "quill5fa5c7",
-      "at": "2026-08-21T00:10:24+00:00",
-      "hash": "da848a75587f1f0b27e406ef9852dfc505817a6e5e7786d7c740c6bac5bf151c",
+      "at": "2026-08-21T00:25:01+00:00",
+      "hash": "97c28ec4df44350360275de541d06b7173ce20bd52ac788ff7bb1fcf8c178585",
       "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "assets/audit/terrain/island_spawn_view.png": {
       "agent": "quill5fa5c7",
-      "at": "2026-08-21T00:10:24+00:00",
-      "hash": "f6336910571556326ba00301ae70cc01cf72d5564ad882f143daffef01e1fc21",
+      "at": "2026-08-21T00:25:01+00:00",
+      "hash": "326acab23823295dee1f6d14d282e62e7ef8a646a213ce620b84204a140a72c3",
       "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
@@ -1173,8 +1254,8 @@
     },
     "world/gen/island_heightmap.gd": {
       "agent": "quill5fa5c7",
-      "at": "2026-08-20T21:58:15+00:00",
-      "hash": "dab95984f268d6d4154d49af5ac86b5392f5b4c8f2566074136f619a81e34c33",
+      "at": "2026-08-21T00:25:01+00:00",
+      "hash": "36f602de6efa0dc56a123297c1f116ff332fd39516e018adadaadd8bb74bb70b",
       "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
@@ -1228,7 +1309,7 @@
       "token": null
     }
   },
-  "rev": 159,
+  "rev": 166,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -2056,7 +2137,7 @@
       "title": "Spike: one-time seeded erosion; cross-platform hash on the D-028 machine; adopt/reject with numbers"
     },
     "4.18": {
-      "done_at": "2026-08-21T00:10:24+00:00",
+      "done_at": "2026-08-21T00:25:01+00:00",
       "done_by": "quill5fa5c7",
       "est": "1",
       "milestone": "M4",
@@ -5596,7 +5677,7 @@
     "F-326": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "All five player-facing save writers truncate the only valid copy before replacement"
     },
@@ -5617,7 +5698,7 @@
     "F-329": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Blender reproducibility checks mutate the shared tracked asset tree and do not restore it"
     },

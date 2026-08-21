@@ -6,7 +6,10 @@
 
 ## In flight
 
-_Nothing in flight._
+| Task | Agent | Started | Files claimed |
+|---|---|---|---|
+| **F-326** All five player-facing save writers truncate the only valid copy before replacement | ivy1bcae0 | 2026-08-21 00:12 | `core/save/salvage_save.gd`, `core/save/unlock_save.gd`, `core/save/run_record_save.gd`, `core/save/steam_stats_save.gd`, `core/save/settings_save.gd`, `core/save/atomic_json.gd`, `tools/save_atomicity_check.gd` |
+| **F-329** Blender reproducibility checks mutate the shared tracked asset tree and do not restore it | ivy1bcae0 | 2026-08-21 00:17 | `tools/blender/asset_repro_check.py`, `tools/blender/crafting_stations_repro_check.py` |
 
 ## Milestones
 
@@ -83,10 +86,10 @@ _Nothing in flight._
 | ⬜ | **F-322** `NetSession.end_session()` has no shipped caller, so every real host quit costs its clients a 19-second rejoin ladder and the wrong end-of-session message | todo |
 | ⬜ | **F-323** SteamLobby has no member-metadata API, so the dock cannot show ready flags or per-player colours | todo |
 | ⬜ | **F-325** No system tallies per-player run stats, so the run summary has a headline but no scoreboard | todo |
-| ⬜ | **F-326** All five player-facing save writers truncate the only valid copy before replacement | todo |
+| 🔵 | **F-326** All five player-facing save writers truncate the only valid copy before replacement | in_flight |
 | ⬜ | **F-327** Ranged shot observers run before local recovery and hitstop are applied | todo |
 | ⬜ | **F-328** The run-scope totality audit already misses three newly registered autoloads | todo |
-| ⬜ | **F-329** Blender reproducibility checks mutate the shared tracked asset tree and do not restore it | todo |
+| 🔵 | **F-329** Blender reproducibility checks mutate the shared tracked asset tree and do not restore it | in_flight |
 | ⬜ | **F-330** Every procedural client streams terrain around every replicated player | todo |
 | ⬜ | **F-331** Enemy attack-slot arbitration is quadratic and the documented per-kind cap counts every kind | todo |
 | ⬜ | **F-332** World snapshot decompression trusts an unbounded size supplied by the host | todo |
