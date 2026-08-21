@@ -1931,6 +1931,14 @@ Until 1 or 2 lands, the practical rule for every agent: after committing, run
 
 ---
 
+### F-361 · macOS release host lacks the Metal shader compiler
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by moss5523e3
+
+The Godot 4.7.1 macOS Release export succeeds with shader baking enabled, but reports `Metal shader baking limited to SPIR-V: Unable to determine toolchain properties to compile .metallib`; several Apple6/MSL 3.1 variants fall back to runtime compilation. This machine selects `/Library/Developer/CommandLineTools`; `xcodebuild -version`, `xcrun -f metal`, and `xcrun -f metallib` all confirm full Xcode/Metal tools are absent. Before final macOS release packaging, install the matching full Xcode toolchain, select it with xcode-select, rerun `tools/steam/export_release.sh`, and require the Metal-toolchain warning to disappear. This is a large machine-level install, not a project setting to guess or silently trigger.
+
+---
+
 ## Resolved
 
 ### F-346 · Chunk navigation regions repeatedly report overlapping edge synchronization errors — **fixed**
