@@ -29,18 +29,22 @@ func _run() -> void:
 	check((ui.get_node(^"InventoryUIRoot/HotbarCenter") as Control).visible,
 		"hotbar remains visible while the inventory is closed")
 
+	# F-382: a grant lands in the HOTBAR first (store slot 24 = hotbar view 0), not the backpack.
 	check(bool(inventory.call("host_add", 1, &"log", 3)), "host grants test logs")
-	check(ui.call("displayed_item_id", 0, false) == &"log", "grid follows authoritative item id")
-	check(int(ui.call("displayed_amount", 0, false)) == 3, "grid follows authoritative amount")
-	check(ui.call("displayed_item_id", 0, true) == &"", "backpack grants do not alias into hotbar zero")
+	check(ui.call("displayed_item_id", 0, true) == &"log", "grid follows authoritative item id")
+	check(int(ui.call("displayed_amount", 0, true)) == 3, "grid follows authoritative amount")
+	check(ui.call("displayed_item_id", 0, false) == &"",
+		"hotbar grants do not alias into backpack zero")
 
+	# Drag it out of the hotbar and into the backpack. `request_slot_move` speaks absolute store
+	# indices, so the source is 24 (hotbar view 0) and the destination is backpack view 10.
 	var revision_before: int = int(inventory.call("local_revision"))
-	var request_id: int = int(ui.call("request_slot_move", 0, 10))
+	var request_id: int = int(ui.call("request_slot_move", 24, 10))
 	check(request_id > 0, "drag/drop seam returns an InventoryService request id")
 	check(_confirmation(request_id).get("accepted", false), "offline authority confirms the UI move")
 	check(int(inventory.call("local_revision")) == revision_before + 1,
 		"accepted UI move advances the authoritative revision once")
-	check(ui.call("displayed_item_id", 0, false) == &"", "source view clears after snapshot")
+	check(ui.call("displayed_item_id", 0, true) == &"", "source view clears after snapshot")
 	check(ui.call("displayed_item_id", 10, false) == &"log", "destination view updates after snapshot")
 	check(int(ui.call("displayed_amount", 10, false)) == 3, "destination preserves the stack amount")
 

@@ -7931,3 +7931,39 @@ Esc closes any open blocking panel before the pause menu; M closes the lobby men
 Files: `ui/menu_stack.gd`, `ui/lobby/lobby_menu.gd`, `tools/lobby_menu_check.gd`
 
 Commit at time of writing: `1aaf4ed`
+
+---
+
+### DONE · F-381 · kilnd3a089 · 2026-08-21T03:12:29+00:00
+
+**Clicking an inventory slot grows it by 4 px and shoves the row above it, because the selected and focus styles carry a 3 px border against the base style's 1 px**
+
+fixed and verified headlessly
+
+Files: `ui/inventory/inventory_ui.gd`
+
+Commit at time of writing: `8da3a0a`
+
+---
+
+### DONE · F-382 · kilnd3a089 · 2026-08-21T03:12:29+00:00
+
+**Items fill the backpack before the hotbar, because InventoryStore.add() walks slot 0 upward and the hotbar is the trailing region**
+
+fixed and verified headlessly
+
+Files: `systems/inventory/inventory_store.gd`, `tools/inventory_check.gd`, `tools/inventory_ui_check.gd`
+
+Commit at time of writing: `8da3a0a`
+
+---
+
+### DONE · F-383 · kilnd3a089 · 2026-08-21T03:12:29+00:00
+
+**The death screen's centre column is anchored with KEEP_SIZE before its labels have text, so the whole block sits off-centre**
+
+fixed and verified headlessly
+
+Files: `ui/hud/defeat_hud.gd`, `tools/defeat_check.gd`
+
+Commit at time of writing: `8da3a0a`

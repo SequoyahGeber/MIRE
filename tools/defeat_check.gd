@@ -150,6 +150,8 @@ func _check_team_wipe_and_freeze() -> void:
 		"a huge post-defeat delta does not auto-respawn a downed peer"
 	)
 
+	await _check_defeat_hud_centred()
+
 	peer_a.queue_free()
 	peer_b.queue_free()
 	await process_frame
@@ -157,6 +159,58 @@ func _check_team_wipe_and_freeze() -> void:
 		not bool(defeat_service.call(&"_check_team_wipe")),
 		"an empty player roster is never read as a wipe"
 	)
+
+
+## F-383: the overlay's text column used to be anchored with PRESET_CENTER + KEEP_SIZE, which bakes
+## its offsets from the size the column had at BUILD time — zero, because every label was still
+## empty. Filling them in `_on_run_wiped` then grew the column down and right from those stale
+## offsets, so the block sat visibly low and right of centre in play.
+##
+## This asserts the property, not the mechanism: with real text in it, the column's centre is the
+## overlay's centre. A CenterContainer satisfies that on every resize; the old preset satisfies it
+## only for a control that never changes size.
+func _check_defeat_hud_centred() -> void:
+	var hud: Node = root.get_node_or_null(^"DefeatHud")
+	check(hud != null, "DefeatHud autoload exists")
+	if hud == null:
+		return
+	var overlay := hud.get_node_or_null(^"DefeatOverlay") as Control
+	if overlay == null:
+		for child: Node in hud.get_children():
+			if child is ColorRect:
+				overlay = child as Control
+				break
+	check(overlay != null, "the defeat overlay exists")
+	if overlay == null:
+		return
+
+	# Let the labels' text reach the layout before measuring.
+	await process_frame
+	await process_frame
+
+	var column: Control = _first_vbox(overlay)
+	check(column != null, "the overlay has a text column")
+	if column == null:
+		return
+	check(column.size.y > 0.0, "the column has been laid out with real text in it")
+
+	var column_centre: Vector2 = column.global_position + column.size * 0.5
+	var overlay_centre: Vector2 = overlay.global_position + overlay.size * 0.5
+	var drift: Vector2 = (column_centre - overlay_centre).abs()
+	check(
+		drift.x <= 1.0 and drift.y <= 1.0,
+		"the filled defeat column is centred on the overlay (drift %.1f, %.1f px)" % [drift.x, drift.y]
+	)
+
+
+func _first_vbox(node: Node) -> Control:
+	for child: Node in node.get_children():
+		if child is VBoxContainer:
+			return child as Control
+		var nested: Control = _first_vbox(child)
+		if nested != null:
+			return nested
+	return null
 
 
 # ── 3. Island consumed — the second, independent cause ────────────────────────────────────────

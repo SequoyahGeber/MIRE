@@ -270,6 +270,19 @@ class InventorySlot extends PanelContainer:
 		style.border_color = border
 		style.set_border_width_all(border_width)
 		style.set_corner_radius_all(5)
+		# F-381: the ring must not resize the slot.
+		#
+		# A StyleBoxFlat with no explicit content margin falls back to its BORDER WIDTH for the
+		# minimum size it imposes on the owning PanelContainer. So swapping the 1 px base for the
+		# 3 px selected/focus/carry grew the slot by 4 px in each axis the instant it was clicked or
+		# focused, and the container reflowed every sibling — reported from play as "clicking on an
+		# empty inventory slot make it larger and move the row above it".
+		#
+		# Pinning the content margin to 0 takes the border out of the size calculation entirely, so
+		# all five styles impose identical metrics while keeping the widths that make selection
+		# read. Padding is `_content_margin`/`_icon_margin`'s job (see `set_slot_size`), and always
+		# was — the border was contributing to it by accident.
+		style.set_content_margin_all(0.0)
 		return style
 
 

@@ -278,10 +278,20 @@ func _build_ui() -> void:
 	_overlay.visible = false
 	add_child(_overlay)
 
+	# F-383: a CenterContainer, NOT `set_anchors_and_offsets_preset(PRESET_CENTER, KEEP_SIZE)`.
+	# KEEP_SIZE bakes the offsets from the control's size at the moment it is called, and at build
+	# time every label below is still empty — so it centred a zero-sized box, and once `_on_run_wiped`
+	# filled in the headline, cause, modifiers and detail the column grew down and right from those
+	# stale offsets. Reported from play as "the death screen stuff was not centered". A
+	# CenterContainer recomputes on every resize and cannot go stale.
+	var centre := CenterContainer.new()
+	centre.set_anchors_preset(Control.PRESET_FULL_RECT)
+	centre.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_overlay.add_child(centre)
+
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 12)
-	column.set_anchors_and_offsets_preset(Control.PRESET_CENTER, Control.PRESET_MODE_KEEP_SIZE)
-	_overlay.add_child(column)
+	centre.add_child(column)
 
 	_headline = Label.new()
 	_headline.add_theme_color_override("font_color", COLOUR_DETAIL)

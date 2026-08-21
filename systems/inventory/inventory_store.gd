@@ -61,14 +61,28 @@ func can_add(item_id: StringName, amount: int) -> bool:
 	return amount > 0 and capacity_for(item_id) >= amount
 
 
-## All-or-nothing. A grant never silently drops the part that did not fit. Empty primary slots are
-## visited before the trailing region, so InventoryService fills the backpack before hotbar overflow.
+## All-or-nothing. A grant never silently drops the part that did not fit. Empty TRAILING slots are
+## visited before the primary region, so InventoryService fills the hotbar before the backpack.
+##
+## F-382: this used to be the other way round — a bare `for index in _slots.size()` walking slot 0
+## upward, which is the backpack, with the hotbar as the tail. A player picking up their first branch
+## therefore saw an empty hotbar and had to open the inventory and drag the stack out before they
+## could use it. Reported from play: "when there is a free slot in the hotbar items should be placed
+## in the first available hotbar slot moving from left to right until the hotbar is full then items
+## should go into the backpack."
+##
+## Note the deliberate asymmetry with `_removal_order()`, which still consumes the primary region
+## FIRST: fill the hotbar, spend the backpack. Together those keep what you are holding in your hand
+## while crafting eats what you are carrying, which is what both halves were separately reaching for.
 func add(item_id: StringName, amount: int) -> bool:
 	if not can_add(item_id, amount):
 		return false
 	var stack_size: int = _stack_size(item_id)
 	var remaining: int = amount
-	for index: int in _slots.size():
+	var order: Array[int] = _addition_order()
+	# Top up existing stacks of this item first, wherever they are — merging beats opening a new
+	# slot regardless of region, or a hotbar full of one-item stacks is the result.
+	for index: int in order:
 		var slot: Dictionary = _slots[index]
 		if _slot_item_id(slot) != item_id:
 			continue
@@ -80,7 +94,7 @@ func add(item_id: StringName, amount: int) -> bool:
 		remaining -= moved
 		if remaining == 0:
 			return true
-	for index: int in _slots.size():
+	for index: int in order:
 		if not _slots[index].is_empty():
 			continue
 		var moved: int = mini(stack_size, remaining)
@@ -89,6 +103,19 @@ func add(item_id: StringName, amount: int) -> bool:
 		if remaining == 0:
 			return true
 	return false
+
+
+## Trailing region ascending (the hotbar, left to right), then the primary region ascending (the
+## backpack). The mirror of `_removal_order()`. When there is no trailing region — `_init` collapses
+## `_primary_slot_count` to `_slot_count` for a plain single-region store — this degenerates to a
+## straight 0..n walk, which is what such a store always had.
+func _addition_order() -> Array[int]:
+	var result: Array[int] = []
+	for index: int in range(_primary_slot_count, _slot_count):
+		result.append(index)
+	for index: int in range(0, _primary_slot_count):
+		result.append(index)
+	return result
 
 
 func can_remove(item_id: StringName, amount: int) -> bool:

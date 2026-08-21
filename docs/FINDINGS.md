@@ -2489,97 +2489,6 @@ variants at :89 and :152 reused as the grid cell.
 
 ---
 
-### F-381 · Clicking an inventory slot grows it by 4 px and shoves the row above it, because the selected and focus styles carry a 3 px border against the base style's 1 px
-
-**Area:** UI · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "clicking on an empty inventory slot make it larger and
-move the row above it".
-
-`ui/inventory/inventory_ui.gd:259-263`:
-
-    _base_style      = _slot_style(COLOUR_SLOT,       COLOUR_BORDER,   1)
-    _hover_style     = _slot_style(COLOUR_SLOT_HOVER, COLOUR_SELECTED, 1)
-    _selected_style  = _slot_style(COLOUR_SLOT,       COLOUR_SELECTED, 3)
-    _focus_style_box = _slot_style(COLOUR_SLOT,       COLOUR_FOCUS,    3)
-    _carry_style     = _slot_style(COLOUR_SLOT_HOVER, COLOUR_CARRY,    3)
-
-`_slot_style` (:267) does `style.set_border_width_all(border_width)`. A `StyleBoxFlat`'s border width
-contributes to the owning `PanelContainer`'s minimum size, so swapping base (1) for selected/focus/
-carry (3) adds 2 px on every side — the slot grows by 4 px in each axis the instant it is clicked or
-focused, and the container reflows every sibling and the row above.
-
-The visual intent is right (a thicker ring marks selection, per the comment at :26). The mechanism is
-wrong: the ring must not change the box's size.
-
-Fix: give every one of the five styles the same 3 px border and vary only the *colour* — make the
-base style's border 3 px of `COLOUR_BORDER` (or transparent) rather than 1 px. Same look, constant
-metrics. Verify by asserting a slot's `size` is unchanged across `present(selected=false)` ->
-`present(selected=true)` in a headless check.
-
----
-
-### F-382 · Items fill the backpack before the hotbar, because InventoryStore.add() walks slot 0 upward and the hotbar is the trailing region
-
-**Area:** systems · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "when there is a free slot in the hotbar items should be
-placed in the first available hotbar slot moving from left to right until the hotbar is full then
-items should go into the backpack".
-
-The current behaviour is the exact inverse, and it is deliberate — which is why it needs a decision,
-not just a patch. `systems/inventory/inventory_store.gd:64` documents it: "Empty primary slots are
-visited before the trailing region, so InventoryService fills the backpack before hotbar overflow."
-`add()` (:66) merges into existing stacks first, then walks `_slots` from index 0 upward for empties.
-
-`autoload/inventory_service.gd:14-16` fixes which end is which:
-
-    const HOTBAR_SLOT_COUNT: int = 8
-    const HOTBAR_START_INDEX: int = INVENTORY_SLOT_COUNT
-    const SLOT_COUNT: int = INVENTORY_SLOT_COUNT + HOTBAR_SLOT_COUNT
-
-So indices `0 .. INVENTORY_SLOT_COUNT-1` are the backpack and the hotbar is the tail. Walking upward
-therefore fills the backpack first, and a player who picks up their first branch sees an empty hotbar
-and has to open the inventory and drag it out before they can use it.
-
-Note the symmetric rule at :99 — removal consumes the primary region first "so crafting/removal
-preserves equipped stacks". That half is right and must survive the change: fill hotbar-first,
-consume backpack-first.
-
-Fix: give `add()` an explicit fill order (hotbar range ascending, then backpack ascending) rather
-than a bare `for index in _slots.size()`, and leave `_removal_order()` alone. The existing inventory
-net checks cover the all-or-nothing contract; add one that asserts a grant into an empty inventory
-lands in `HOTBAR_START_INDEX`.
-
----
-
-### F-383 · The death screen's centre column is anchored with KEEP_SIZE before its labels have text, so the whole block sits off-centre
-
-**Area:** UI · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "the death screen stuff was not centered". Confirmed in
-the attached capture: "CYCLE 1 / THE CREW HAS FALLEN / Modifiers drawn / Salvage earned / Start Next
-Run" sits low and right of centre, while the "DOWNED" banner above it is correctly centred.
-
-`ui/hud/defeat_hud.gd:283`:
-
-    column.set_anchors_and_offsets_preset(Control.PRESET_CENTER, Control.PRESET_MODE_KEEP_SIZE)
-
-`PRESET_MODE_KEEP_SIZE` computes the offsets **once, from the control's size at the moment of the
-call**. At `_build()` time the column's labels are empty, so it is near-zero-sized and the offsets
-that get baked in centre a zero-sized box. `_on_run_wiped()` (:125) then fills `_headline`,
-`_cause_label`, `_modifiers_label` and `_detail` with real text, the column grows down and right from
-those stale offsets, and the visual centre drifts by half the grown size.
-
-The labels' own `horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER` (:289-307) is why the *text* is
-internally centred while the *block* is not — it hides the cause.
-
-Fix: put the column inside a `CenterContainer` anchored `PRESET_FULL_RECT` so centring is recomputed
-on every resize, or re-apply the preset after the text is set. The `CenterContainer` is the right
-answer — it cannot go stale.
-
----
-
 ### F-385 · Settings show no numeric value for any slider, so FOV, sensitivity and volumes are set blind
 
 **Area:** UI · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
@@ -2819,6 +2728,146 @@ client-side filter.
 ---
 
 ## Resolved
+
+### F-383 · The death screen's centre column is anchored with KEEP_SIZE before its labels have text, so the whole block sits off-centre — **fixed**
+
+**Area:** UI · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "the death screen stuff was not centered". Confirmed in
+the attached capture: "CYCLE 1 / THE CREW HAS FALLEN / Modifiers drawn / Salvage earned / Start Next
+Run" sits low and right of centre, while the "DOWNED" banner above it is correctly centred.
+
+`ui/hud/defeat_hud.gd:283`:
+
+    column.set_anchors_and_offsets_preset(Control.PRESET_CENTER, Control.PRESET_MODE_KEEP_SIZE)
+
+`PRESET_MODE_KEEP_SIZE` computes the offsets **once, from the control's size at the moment of the
+call**. At `_build()` time the column's labels are empty, so it is near-zero-sized and the offsets
+that get baked in centre a zero-sized box. `_on_run_wiped()` (:125) then fills `_headline`,
+`_cause_label`, `_modifiers_label` and `_detail` with real text, the column grows down and right from
+those stale offsets, and the visual centre drifts by half the grown size.
+
+The labels' own `horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER` (:289-307) is why the *text* is
+internally centred while the *block* is not — it hides the cause.
+
+Fix: put the column inside a `CenterContainer` anchored `PRESET_FULL_RECT` so centring is recomputed
+on every resize, or re-apply the preset after the text is set. The `CenterContainer` is the right
+answer — it cannot go stale.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** `ui/hud/defeat_hud.gd` now puts the text column inside a `CenterContainer` anchored
+`PRESET_FULL_RECT`, replacing `set_anchors_and_offsets_preset(PRESET_CENTER, PRESET_MODE_KEEP_SIZE)`.
+KEEP_SIZE bakes its offsets from the control's size at the moment it is called, and at build time
+every label was still empty — so it centred a zero-sized box, and `_on_run_wiped()` then grew the
+column down and right from those stale offsets.
+
+`tools/defeat_check.gd` gained `_check_defeat_hud_centred()`, which asserts the property rather than
+the mechanism: with real text in it, the column's centre is the overlay's centre.
+
+Verified, and verified to be a real catch — reverting `defeat_hud.gd` to HEAD with the new assertion
+in place fails it at **drift 143.5, 123.5 px**, which matches the offset visible in the playtest
+capture. With the fix: drift 0.5, 0.5 px, DEFEAT_CHECK failures=0.
+
+### F-382 · Items fill the backpack before the hotbar, because InventoryStore.add() walks slot 0 upward and the hotbar is the trailing region — **fixed**
+
+**Area:** systems · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "when there is a free slot in the hotbar items should be
+placed in the first available hotbar slot moving from left to right until the hotbar is full then
+items should go into the backpack".
+
+The current behaviour is the exact inverse, and it is deliberate — which is why it needs a decision,
+not just a patch. `systems/inventory/inventory_store.gd:64` documents it: "Empty primary slots are
+visited before the trailing region, so InventoryService fills the backpack before hotbar overflow."
+`add()` (:66) merges into existing stacks first, then walks `_slots` from index 0 upward for empties.
+
+`autoload/inventory_service.gd:14-16` fixes which end is which:
+
+    const HOTBAR_SLOT_COUNT: int = 8
+    const HOTBAR_START_INDEX: int = INVENTORY_SLOT_COUNT
+    const SLOT_COUNT: int = INVENTORY_SLOT_COUNT + HOTBAR_SLOT_COUNT
+
+So indices `0 .. INVENTORY_SLOT_COUNT-1` are the backpack and the hotbar is the tail. Walking upward
+therefore fills the backpack first, and a player who picks up their first branch sees an empty hotbar
+and has to open the inventory and drag it out before they can use it.
+
+Note the symmetric rule at :99 — removal consumes the primary region first "so crafting/removal
+preserves equipped stacks". That half is right and must survive the change: fill hotbar-first,
+consume backpack-first.
+
+Fix: give `add()` an explicit fill order (hotbar range ascending, then backpack ascending) rather
+than a bare `for index in _slots.size()`, and leave `_removal_order()` alone. The existing inventory
+net checks cover the all-or-nothing contract; add one that asserts a grant into an empty inventory
+lands in `HOTBAR_START_INDEX`.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** `systems/inventory/inventory_store.gd`'s `add()` now walks a new `_addition_order()` — trailing
+region ascending (the hotbar, left to right), then primary ascending (the backpack) — instead of a
+bare `for index in _slots.size()`, which was the backpack first. Existing stacks are still topped up
+before any new slot is opened, in the same order, or a hotbar of one-item stacks is the result.
+
+`_removal_order()` is deliberately left alone: fill the hotbar, spend the backpack. That asymmetry is
+what keeps what you are holding in your hand while crafting eats what you are carrying, and both
+halves were separately reaching for it.
+
+The two shipped checks asserted the OLD rule by index and had to be updated rather than satisfied —
+`tools/inventory_check.gd`'s "new grants fill the backpack before the hotbar" and "grant leaves
+trailing slots empty while primary fits", and `tools/inventory_ui_check.gd`'s backpack-slot-0
+expectations. They now assert the new rule in the same shape, plus a new assertion that the backpack
+takes the overflow the trailing region could not hold.
+
+Verified: `tools/inventory_check.gd` failures=0, `tools/inventory_ui_check.gd` failures=0.
+
+### F-381 · Clicking an inventory slot grows it by 4 px and shoves the row above it, because the selected and focus styles carry a 3 px border against the base style's 1 px — **fixed**
+
+**Area:** UI · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "clicking on an empty inventory slot make it larger and
+move the row above it".
+
+`ui/inventory/inventory_ui.gd:259-263`:
+
+    _base_style      = _slot_style(COLOUR_SLOT,       COLOUR_BORDER,   1)
+    _hover_style     = _slot_style(COLOUR_SLOT_HOVER, COLOUR_SELECTED, 1)
+    _selected_style  = _slot_style(COLOUR_SLOT,       COLOUR_SELECTED, 3)
+    _focus_style_box = _slot_style(COLOUR_SLOT,       COLOUR_FOCUS,    3)
+    _carry_style     = _slot_style(COLOUR_SLOT_HOVER, COLOUR_CARRY,    3)
+
+`_slot_style` (:267) does `style.set_border_width_all(border_width)`. A `StyleBoxFlat`'s border width
+contributes to the owning `PanelContainer`'s minimum size, so swapping base (1) for selected/focus/
+carry (3) adds 2 px on every side — the slot grows by 4 px in each axis the instant it is clicked or
+focused, and the container reflows every sibling and the row above.
+
+The visual intent is right (a thicker ring marks selection, per the comment at :26). The mechanism is
+wrong: the ring must not change the box's size.
+
+Fix: give every one of the five styles the same 3 px border and vary only the *colour* — make the
+base style's border 3 px of `COLOUR_BORDER` (or transparent) rather than 1 px. Same look, constant
+metrics. Verify by asserting a slot's `size` is unchanged across `present(selected=false)` ->
+`present(selected=true)` in a headless check.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** `ui/inventory/inventory_ui.gd`'s `_slot_style()` now pins `set_content_margin_all(0.0)` on every slot
+style. A StyleBoxFlat with no explicit content margin falls back to its border width for the minimum
+size it imposes, which is why swapping the 1 px base for the 3 px selected/focus/carry grew the slot
+by 4 px per axis and reflowed the row above it.
+
+Border widths are unchanged (1/3), so the look is identical to before — the border simply no longer
+feeds the layout. Padding was already `_content_margin`/`_icon_margin`'s job in `set_slot_size()`;
+the border had been contributing to it by accident.
+
+Note on the first attempt, recorded because it is the more obvious fix and it is wrong: equalising
+every border to 3 px also makes the metrics constant, but it widens every slot by 4 px, and
+`inventory_ui_check`'s "phone-width hotbar keeps all eight slots on screen" caught it immediately —
+eight slots x 4 px overflowed a 375 px viewport. Taking the border out of the size calculation is the
+fix that does not trade one layout bug for another.
+
+Verified: `agent godot --script tools/inventory_ui_check.gd` failures=0 (including the phone-width
+assertion), `tools/inventory_check.gd` failures=0, and `--windowed --script
+tools/inventory_ui_render_check.gd` renders both the 1280x720 and 374x666 captures.
 
 ### F-384 · The multiplayer menu cannot be closed: M is swallowed by the join field it focuses on open, and Esc is consumed by the pause menu first — **fixed**
 

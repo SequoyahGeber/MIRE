@@ -44,14 +44,19 @@ func _run() -> void:
 	check(local_changes == 1 and host_changes == 1, "harvest publishes one confirmed revision")
 	check(int(inventory.call("local_revision")) == 1, "first mutation advances revision to one")
 	slots = inventory.call("local_slots")
-	check((slots[24] as Dictionary).is_empty(), "new grants fill the backpack before the hotbar")
+	# F-382: the hotbar is slots 24..31 and it fills FIRST, left to right, so a pickup is usable
+	# without opening the inventory. The backpack (0..23) is the overflow, not the destination.
+	check(int((slots[24] as Dictionary).get("amount", 0)) == 3,
+		"new grants fill the hotbar before the backpack")
+	check((slots[0] as Dictionary).is_empty(), "the backpack stays empty while the hotbar has room")
 
 	check(bool(inventory.call("host_add", 1, &"log", 96)), "host fills the existing log stack")
 	slots = inventory.call("local_slots")
-	check(int((slots[0] as Dictionary).get("amount", 0)) == 99, "stack is capped at ItemDef.stack_size")
+	check(int((slots[24] as Dictionary).get("amount", 0)) == 99, "stack is capped at ItemDef.stack_size")
 	check(bool(inventory.call("host_add", 1, &"log", 1)), "overflow opens a second stable slot")
 	slots = inventory.call("local_slots")
-	check(int((slots[1] as Dictionary).get("amount", 0)) == 1, "overflow amount is preserved")
+	check(int((slots[25] as Dictionary).get("amount", 0)) == 1,
+		"overflow amount is preserved, in the next hotbar slot along")
 
 	var caller_copy: Array = inventory.call("local_slots")
 	(caller_copy[0] as Dictionary)["amount"] = 1
@@ -110,13 +115,19 @@ func _run() -> void:
 	var segmented: RefCounted = INVENTORY_STORE_SCRIPT.new(registry, 4, 2)
 	check(bool(segmented.call("add", &"log", 198)), "segmented store fills its primary slots")
 	var segmented_slots: Array = segmented.call("slots_snapshot")
-	check((segmented_slots[2] as Dictionary).is_empty(), "grant leaves trailing slots empty while primary fits")
-	check(bool(segmented.call("add", &"log", 1)), "grant uses trailing capacity after primary fills")
+	check((segmented_slots[0] as Dictionary).is_empty(),
+		"grant leaves primary slots empty while the trailing region fits (F-382)")
+	check(int((segmented_slots[2] as Dictionary).get("amount", 0)) == 99,
+		"the trailing region fills from its own first slot, ascending")
+	check(bool(segmented.call("add", &"log", 1)), "grant uses primary capacity after trailing fills")
+	segmented_slots = segmented.call("slots_snapshot")
+	check(int((segmented_slots[0] as Dictionary).get("amount", 0)) == 1,
+		"primary takes the overflow the trailing region could not hold")
 	check(bool(segmented.call("remove", &"log", 1)), "segmented removal succeeds")
 	segmented_slots = segmented.call("slots_snapshot")
-	check(int((segmented_slots[1] as Dictionary).get("amount", 0)) == 98,
+	check((segmented_slots[0] as Dictionary).is_empty(),
 		"segmented removal consumes primary before trailing slots")
-	check(int((segmented_slots[2] as Dictionary).get("amount", 0)) == 1,
+	check(int((segmented_slots[2] as Dictionary).get("amount", 0)) == 99,
 		"segmented removal preserves trailing hotbar capacity")
 	var valid_snapshot: Array = tiny.call("slots_snapshot")
 	check(bool(INVENTORY_STORE_SCRIPT.snapshot_is_valid(valid_snapshot, registry, 2)),
