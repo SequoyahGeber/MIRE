@@ -2538,7 +2538,105 @@ when this lands — that is the proof this is fixed.
 
 ---
 
+### F-406 · agent claim with more than one file stores the whole list as a single dictionary key, so the pre-commit hook never sees any of them as claimed
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+`.agent/bin/agent claim <task> <file-a> <file-b> ...` joins every path into ONE `claims` key instead
+of writing one entry per file. Observed directly in `.agent/state.json` after claiming 43 files:
+
+    "claims": {
+      "content/biomes/birchwood.tres content/biomes/forest.tres content/biomes/grassla…": {…},
+      "assets/audit/f398/after/canopy_leaves.png assets/audit/f398/after/canopy_leaves…": {…}
+    }
+
+Two entries for 43 files. The pre-commit hook looks a claim up BY PATH (`.agent/bin/agent:1774`,
+`if (c and _is_mine(c, me, me_token)) or in_grace(f)`), so every one of those lookups returns None
+and every Godot-authored file is rejected with "requires an exact-file claim and a closed editor
+(D-031)" — while `agent board` cheerfully lists all 43 under the task, because the board renders the
+key rather than looking paths up in it.
+
+Claiming ONE file per call keys correctly. Verified both ways: a single-file claim produced
+`'content/biomes/forest.tres'`, and re-claiming the same 158 files one per call took the hook's
+blocking errors from 47 to 0.
+
+**Why this went unnoticed:** the hook's other escape hatch is `in_grace(f)`, which passes a file this
+session edited recently. An agent that claims a file and edits it immediately is inside the grace
+window, so the broken claim never matters. It only bites when the edit and the commit are far apart —
+which is exactly the case when integrating work a subagent produced half an hour earlier, and the
+one time you most need claims to work.
+
+`AGENTS.md` documents the multi-file form implicitly ("Derive your own claim set from the task and
+claim it") while every worked example passes a single path, so the broken shape is reachable from a
+plain reading of the protocol.
+
+Fix: split on the argument list when writing, and while in there, migrate any existing joined keys —
+a stale joined key is indistinguishable from a legitimately-named file and will silently never match.
+
+---
+
 ## Resolved
+
+### F-407 · Chunk loading froze a full second per new asset, because scatter meshes load synchronously on the main thread the first time each is seen — **fixed**
+
+**Area:** performance · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-21, Sequoyah): "there's some insane stuttering happening when new chunks
+are loaded in on the map." His guess was grass shadows; it was not.
+
+`ResourceScatterField._load_mesh_parts()` calls `load()` on the main thread the first time it sees
+each asset, then caches it. That was survivable while the island referenced 57 assets across 9
+scatter tables. F-401/F-395 took it to 31 tables and roughly 100 assets, and the first-touch cost
+stopped hiding in the noise.
+
+Measured with `agent godot --windowed --script tools/chunk_stream_check.gd`, same 500 m traverse:
+
+    before F-401/F-395   worst frame    28.99 ms
+    after                worst frame  1009.49 ms      <- a full one-second freeze
+    after this fix       worst frame    27.37 ms
+
+Note the check's own attribution stayed at `own_cost_worst_ms` 3.5-6.5 ms throughout, and
+`own_cost_hitches` stayed 0. That is the part worth remembering: **the streaming system correctly
+reported that streaming was not the cost**, because the cost was a synchronous disk read and scene
+import landing inside a gameplay frame. Anyone reading only the own-cost line would have concluded
+there was nothing wrong.
+
+Fixed by warming the cache off the main thread: every asset the scatter tables can place is queued at
+startup and loaded via `ResourceLoader.load_threaded_request()`, four in flight, with at most two
+completed loads per frame folded into `_mesh_cache` — bounding `instantiate()`, the one step that
+genuinely cannot leave the main thread.
+
+**Not done, and worth its own look:** grass shadow casting, which is what Sequoyah actually asked
+about. `DrawPolicy.SHADOW_MIN_HEIGHT` is 1.2 m and F-369 only just started applying DrawPolicy to
+procedural scatter at all, so most grass already casts no shadow — but bushes at 1.35 m and the new
+taller flora do, and nobody has measured the shadow pass since the biome expansion tripled the prop
+count.
+
+**Resolved 2026-08-21 by kilnd3a089.** Scatter assets are now warmed off the main thread. `ResourceScatterField` enumerates every asset its
+scatter tables can place, requests them through `ResourceLoader.load_threaded_request()` (four in
+flight), and folds at most two completed loads per frame into `_mesh_cache` — bounding
+`instantiate()`, the one step that genuinely cannot leave the main thread.
+
+Enumerated lazily rather than in `_ready()`, because the world assigns `scatter_defs` after the node
+exists, so there is nothing to enumerate at ready time.
+
+Measured, same 500 m traverse through `chunk_stream_check --windowed`:
+
+    worst frame  1009.49 ms  ->  27.37 ms
+    own_cost_worst  3.52 ms  ->   6.47 ms   (still zero own-cost hitches)
+
+The own-cost line is the lesson here. It read 3.5 ms while frames were taking a full second, because
+the streaming system was accurately reporting ITS cost — the freeze was a synchronous disk read and
+scene import happening inside the same frame. A check that only watched own-cost would have said
+everything was fine, twice.
+
+resource_scatter_check failures=0.
+
+**Left open deliberately:** grass shadow casting, which is what was actually asked about.
+`DrawPolicy.SHADOW_MIN_HEIGHT` is 1.2 m and F-369 only just began applying DrawPolicy to procedural
+scatter, so most grass already casts nothing — but bushes at 1.35 m and the new taller flora do, and
+the shadow pass has not been measured since the biome work tripled the prop count. Worth measuring
+before changing, rather than disabling on a hunch.
 
 ### F-403 · Pushing into any wall teleports the player a full step_height into the air, because the step-up probe never tests whether it moved forward — **fixed**
 

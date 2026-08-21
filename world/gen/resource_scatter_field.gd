@@ -147,6 +147,24 @@ const SCATTER_VISUAL_MAX_LOD: int = 1
 ## player wait for them to appear is the one case where the budget would cost more than it saves.
 const SCATTER_VISUAL_BUILDS_PER_FRAME: int = 2
 
+## F-407: how many GLB warm-up requests may be in flight, and how many completed ones may be turned
+## into cached mesh parts, per frame.
+##
+## `_load_mesh_parts()` calls `load()` on the MAIN THREAD the first time each asset is seen, and
+## caches it afterwards. That was survivable when the island referenced 57 assets across 9 scatter
+## tables. F-401/F-395 took it to 31 tables and ~100 assets, and the first-touch cost stopped being
+## amortised into the noise: `chunk_stream_check` measured the **worst frame at 1009 ms**, against
+## 29 ms before, while its own streaming attribution stayed at 3.5 ms — because the cost is not
+## streaming, it is a synchronous disk read and scene import landing inside a gameplay frame.
+##
+## So the loads are moved off the main thread and started up front.
+## `ResourceLoader.load_threaded_request()` does the disk and import work on a worker; by the time a
+## chunk actually needs the asset, `load()` returns from the resource cache. Four in flight keeps the
+## worker busy without thrashing, and turning at most two COMPLETED loads into mesh parts per frame
+## bounds the one piece that genuinely has to be on the main thread — `instantiate()`.
+const WARM_REQUESTS_IN_FLIGHT: int = 4
+const WARM_COMPLETIONS_PER_FRAME: int = 2
+
 const COLLIDER_TRUNK_BAND_MIN_M: float = 0.5
 ## F-390: nothing shorter than this gets a collider at all. You step over it, so a cylinder there can
 ## only ever be something to trip on.
@@ -190,6 +208,11 @@ var _chunk_has_proxies: Dictionary[Vector2i, bool] = {}
 ## F-369: visual-band chunks awaiting their turn under SCATTER_VISUAL_BUILDS_PER_FRAME. Insertion
 ## order is streaming order, which is near-to-far, so draining it in order dresses inward-out.
 var _visual_queue: Array[Vector2i] = []
+## F-407 warm-up state. `_warm_pending` is [kit, asset] not yet requested; `_warm_active` is
+## [kit, asset, path] currently loading on a worker thread. Both drain to empty and stay there.
+var _warm_pending: Array = []
+var _warm_active: Array = []
+var _warm_queued: bool = false
 
 
 ## Connects to a running `ChunkStreamer` — a plain `Node3D`, per its own DELEGATION note, so this
@@ -268,6 +291,7 @@ func is_point_depleted(point_id: String) -> bool:
 func _process(delta: float) -> void:
 	if _streamer == null:
 		return
+	_pump_asset_warm()
 	_drain_visual_queue()
 	if _pending_lod0.is_empty():
 		return
@@ -330,6 +354,57 @@ func _on_chunk_unloaded(coord: Vector2i) -> void:
 	_pending_lod0.erase(coord)
 	_visual_queue.erase(coord)
 	_teardown_chunk(coord)
+
+
+## F-407: starts background loads for every asset the scatter tables can place, and folds completed
+## ones into `_mesh_cache` so no chunk build ever pays a first-touch `load()`.
+##
+## Enumerated lazily rather than in `_ready()` because `scatter_defs` is assigned by the world after
+## this node exists, so there is nothing to enumerate at ready time.
+func _pump_asset_warm() -> void:
+	if not _warm_queued:
+		if scatter_defs.is_empty():
+			return
+		_warm_queued = true
+		var seen: Dictionary = {}
+		for def: Resource in scatter_defs:
+			for entry: Resource in (def.get(&"entries") as Array):
+				var kit := String(entry.get(&"kit"))
+				var asset := String(entry.get(&"asset"))
+				var key := "%s|%s" % [kit, asset]
+				if seen.has(key) or _mesh_cache.has(key):
+					continue
+				seen[key] = true
+				_warm_pending.append([kit, asset])
+
+	while _warm_active.size() < WARM_REQUESTS_IN_FLIGHT and not _warm_pending.is_empty():
+		var pair: Array = _warm_pending.pop_front()
+		var path := "res://assets/%s/exports/%s.glb" % [pair[0], pair[1]]
+		if ResourceLoader.load_threaded_request(path) == OK:
+			_warm_active.append([pair[0], pair[1], path])
+
+	var folded: int = 0
+	for index: int in range(_warm_active.size() - 1, -1, -1):
+		if folded >= WARM_COMPLETIONS_PER_FRAME:
+			break
+		var active: Array = _warm_active[index]
+		var status: int = ResourceLoader.load_threaded_get_status(active[2])
+		if status == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+			continue
+		_warm_active.remove_at(index)
+		if status != ResourceLoader.THREAD_LOAD_LOADED:
+			continue
+		# Retrieving it is what puts the resource in the cache; `_load_mesh_parts` then only has to
+		# instantiate, which is the part that cannot leave the main thread.
+		ResourceLoader.load_threaded_get(active[2])
+		_load_mesh_parts(active[0], active[1])
+		folded += 1
+
+
+## True once every scatter asset is loaded and cached — the point after which no chunk build can
+## stall on a first-touch load. Test seam for tools/chunk_stream_check.gd.
+func assets_warm() -> bool:
+	return _warm_queued and _warm_pending.is_empty() and _warm_active.is_empty()
 
 
 ## Dresses up to [constant SCATTER_VISUAL_BUILDS_PER_FRAME] queued visual-band chunks. Coords that

@@ -1,6 +1,1136 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "assets/audit/f398/after/canopy_leaves.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:11+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/after/canopy_leaves.png assets/audit/f398/after/canopy_leaves_golden.png assets/audit/f398/after/contact_afternoon.png assets/audit/f398/after/contact_golden.png assets/audit/f398/after/contact_noon.png assets/audit/f398/after/contact_overcast.png assets/audit/f398/after/dawn.png assets/audit/f398/after/dawn_ridge.png assets/audit/f398/after/dusk.png assets/audit/f398/after/evening_sunward.png assets/audit/f398/after/forest_evening_sunward.png assets/audit/f398/after/forest_sunward.png assets/audit/f398/after/golden_evening.png assets/audit/f398/after/golden_morning.png assets/audit/f398/after/golden_sunward.png assets/audit/f398/after/late_night_ground.png assets/audit/f398/after/midnight_ground.png assets/audit/f398/after/midnight_moonward.png assets/audit/f398/after/moonrise_moonward.png assets/audit/f398/after/morning.png assets/audit/f398/after/morning_sunward.png assets/audit/f398/after/night.png assets/audit/f398/after/noon.png assets/audit/f398/before/canopy_leaves.png assets/audit/f398/before/canopy_leaves_golden.png assets/audit/f398/before/contact_afternoon.png assets/audit/f398/before/contact_golden.png assets/audit/f398/before/contact_noon.png assets/audit/f398/before/contact_overcast.png assets/audit/f398/before/dawn.png assets/audit/f398/before/dawn_ridge.png assets/audit/f398/before/dusk.png assets/audit/f398/before/evening_sunward.png assets/audit/f398/before/forest_evening_sunward.png assets/audit/f398/before/forest_sunward.png assets/audit/f398/before/golden_evening.png assets/audit/f398/before/golden_morning.png assets/audit/f398/before/golden_sunward.png assets/audit/f398/before/late_night_ground.png assets/audit/f398/before/midnight_ground.png assets/audit/f398/before/midnight_moonward.png assets/audit/f398/before/moonrise_moonward.png assets/audit/f398/before/morning.png assets/audit/f398/before/morning_sunward.png assets/audit/f398/before/night.png assets/audit/f398/before/noon.png assets/audit/menu/dock_1080p.png assets/audit/menu/dock_deck.png assets/audit/menu/title_1080p_creep000.png assets/audit/menu/title_1080p_creep042.png assets/audit/menu/title_1080p_creep150.png assets/audit/menu/title_deck_creep000.png assets/audit/menu/title_deck_creep042.png assets/audit/menu/title_deck_creep150.png assets/audit/terrain/biomes_20260819.png assets/audit/terrain/biomes_4242.png assets/audit/terrain/biomes_7.png assets/audit/terrain/biomes_991.png assets/audit/terrain/island_20260819.png assets/audit/terrain/island_7.png assets/audit/terrain/island_seed7.png assets/audit/terrain/shape_20260819.png assets/audit/terrain/shape_4242.png assets/audit/terrain/shape_7.png assets/audit/terrain/shape_991.png assets/audit/trees/flora_hero.png assets/audit/trees/flora_small_trees_sheet.png assets/audit/trees/kit_hero.png assets/audit/trees/kit_trees_sheet.png assets/environment/catalog.json assets/environment/exports/tree_bare_a.glb assets/environment/exports/tree_bare_b.glb assets/environment/exports/tree_bare_c.glb assets/environment/exports/tree_bare_d.glb assets/environment/exports/tree_birch_a.glb assets/environment/exports/tree_birch_b.glb assets/environment/exports/tree_birch_c.glb assets/environment/exports/tree_birch_d.glb assets/environment/exports/tree_crooked_a.glb assets/environment/exports/tree_crooked_b.glb assets/environment/exports/tree_crooked_c.glb assets/environment/exports/tree_crooked_d.glb assets/environment/exports/tree_pine_a.glb assets/environment/exports/tree_pine_b.glb assets/environment/exports/tree_pine_c.glb assets/environment/exports/tree_pine_d.glb assets/environment/exports/tree_pine_e.glb assets/environment/exports/tree_pine_f.glb assets/environment/preview/mire_map_kit_preview.png assets/environment/preview/trees_preview.png assets/flora/catalog.json assets/flora/exports/tree_snag_a.glb assets/flora/exports/tree_snag_b.glb assets/flora/exports/tree_snag_c.glb assets/flora/exports/tree_willow_a.glb assets/flora/exports/tree_willow_b.glb assets/flora/exports/tree_willow_c.glb assets/flora/preview/flora_set_preview.png assets/flora/preview/small_trees_preview.png autoload/graphics_quality.gd content/biomes/birchwood.tres content/biomes/forest.tres content/biomes/grassland.tres content/biomes/heath.tres content/biomes/highland.tres content/biomes/marsh.tres content/biomes/shore.tres content/poi/station_camp.tres content/scatter/birchwood_canopy.tres content/scatter/birchwood_deadwood.tres content/scatter/birchwood_floor.tres content/scatter/birchwood_undergrowth.tres content/scatter/forest_canopy.tres content/scatter/forest_deadwood.tres content/scatter/forest_floor.tres content/scatter/forest_rocks.tres content/scatter/forest_undergrowth.tres content/scatter/grassland_meadow.tres content/scatter/grassland_rocks.tres content/scatter/grassland_shrubs.tres content/scatter/grassland_trees.tres content/scatter/grassland_turf.tres content/scatter/heath_scrub.tres content/scatter/heath_stones.tres content/scatter/heath_trees.tres content/scatter/heath_turf.tres content/scatter/highland_floor.tres content/scatter/highland_pines.tres content/scatter/highland_rocks.tres content/scatter/highland_scrub.tres content/scatter/marsh_canopy.tres content/scatter/marsh_deadwood.tres content/scatter/marsh_floor.tres content/scatter/marsh_reeds.tres content/scatter/shore_beach.tres content/scatter/shore_drift.tres content/scatter/shore_rocks.tres entities/props/camp_abandoned.tscn entities/props/prop_group.gd entities/props/prop_group.gd.uid entities/props/standing_stone_circle.tscn levels/greybox_test.tscn levels/hollowmere.tscn levels/playtest_hollow.tscn levels/procedural_island.tscn tools/atmosphere_look_shot.gd tools/biome_terrain_check.gd tools/blender/build_flora_set.py tools/blender/build_mire_map_kit.py tools/grade_check.gd tools/graphics_quality_check.gd tools/terrain_map_render.gd tools/terrain_texture_check.gd world/chunk/chunk_mesher.gd world/chunk/terrain_flat.gdshader world/environment/playtest_atmosphere.gd world/gen/biome_def.gd world/gen/biome_map.gd ": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:06:39+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/after/canopy_leaves_golden.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:11+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/after/contact_afternoon.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:11+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/after/contact_golden.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:12+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/after/contact_noon.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:12+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/after/contact_overcast.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:12+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/after/dawn.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:12+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/after/dawn_ridge.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:12+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/after/dusk.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:12+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/after/evening_sunward.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:12+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/after/forest_evening_sunward.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:12+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/after/forest_sunward.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:12+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/after/golden_evening.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:12+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/after/golden_morning.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:12+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/after/golden_sunward.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:12+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/after/late_night_ground.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:12+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/after/midnight_ground.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:12+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/after/midnight_moonward.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:12+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/after/moonrise_moonward.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:12+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/after/morning.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:12+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/after/morning_sunward.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:12+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/after/night.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:13+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/after/noon.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:13+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/before/canopy_leaves.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:13+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/before/canopy_leaves_golden.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:13+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/before/contact_afternoon.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:13+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/before/contact_golden.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:13+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/before/contact_noon.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:13+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/before/contact_overcast.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:13+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/before/dawn.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:13+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/before/dawn_ridge.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:13+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/before/dusk.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:13+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/before/evening_sunward.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:13+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/before/forest_evening_sunward.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:13+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/before/forest_sunward.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:13+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/before/golden_evening.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:13+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/before/golden_morning.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:13+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/before/golden_sunward.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:13+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/before/late_night_ground.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:13+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/before/midnight_ground.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:14+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/before/midnight_moonward.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:14+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/before/moonrise_moonward.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:14+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/before/morning.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:14+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/before/morning_sunward.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:14+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/before/night.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:14+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/f398/before/noon.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:14+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/menu/dock_1080p.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:14+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/menu/dock_deck.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:14+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/menu/title_1080p_creep000.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:14+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/menu/title_1080p_creep042.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:14+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/menu/title_1080p_creep150.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:14+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/menu/title_deck_creep000.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:14+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/menu/title_deck_creep042.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:14+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/menu/title_deck_creep150.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:14+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/terrain/biomes_20260819.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:14+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/terrain/biomes_4242.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:14+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/terrain/biomes_7.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:14+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/terrain/biomes_991.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:15+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/terrain/island_20260819.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:15+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/terrain/island_7.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:15+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/terrain/island_seed7.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:15+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/terrain/shape_20260819.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:15+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/terrain/shape_4242.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:15+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/terrain/shape_7.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:15+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/terrain/shape_991.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:15+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/trees/flora_hero.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:15+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/trees/flora_small_trees_sheet.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:15+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/trees/kit_hero.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:15+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/audit/trees/kit_trees_sheet.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:15+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/environment/catalog.json": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:15+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/environment/exports/tree_bare_a.glb": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:15+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/environment/exports/tree_bare_b.glb": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:15+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/environment/exports/tree_bare_c.glb": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:15+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/environment/exports/tree_bare_d.glb": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:15+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/environment/exports/tree_birch_a.glb": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:15+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/environment/exports/tree_birch_b.glb": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:16+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/environment/exports/tree_birch_c.glb": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:16+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/environment/exports/tree_birch_d.glb": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:16+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/environment/exports/tree_crooked_a.glb": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:16+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/environment/exports/tree_crooked_b.glb": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:16+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/environment/exports/tree_crooked_c.glb": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:16+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/environment/exports/tree_crooked_d.glb": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:16+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/environment/exports/tree_pine_a.glb": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:16+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/environment/exports/tree_pine_b.glb": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:16+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/environment/exports/tree_pine_c.glb": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:16+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/environment/exports/tree_pine_d.glb": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:16+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/environment/exports/tree_pine_e.glb": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:16+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/environment/exports/tree_pine_f.glb": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:16+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/environment/preview/mire_map_kit_preview.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:16+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/environment/preview/trees_preview.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:16+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/flora/catalog.json": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:16+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/flora/exports/tree_snag_a.glb": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:16+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/flora/exports/tree_snag_b.glb": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:16+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/flora/exports/tree_snag_c.glb": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:16+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/flora/exports/tree_willow_a.glb": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:17+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/flora/exports/tree_willow_b.glb": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:17+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/flora/exports/tree_willow_c.glb": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:17+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/flora/preview/flora_set_preview.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:17+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "assets/flora/preview/small_trees_preview.png": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:17+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "autoload/graphics_quality.gd": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:17+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/biomes/birchwood.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:17+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/biomes/birchwood.tres content/biomes/forest.tres content/biomes/grassland.tres content/biomes/heath.tres content/biomes/highland.tres content/biomes/marsh.tres content/biomes/shore.tres content/poi/station_camp.tres content/scatter/birchwood_canopy.tres content/scatter/birchwood_deadwood.tres content/scatter/birchwood_floor.tres content/scatter/birchwood_undergrowth.tres content/scatter/forest_canopy.tres content/scatter/forest_deadwood.tres content/scatter/forest_floor.tres content/scatter/forest_rocks.tres content/scatter/forest_undergrowth.tres content/scatter/grassland_meadow.tres content/scatter/grassland_rocks.tres content/scatter/grassland_shrubs.tres content/scatter/grassland_trees.tres content/scatter/grassland_turf.tres content/scatter/heath_scrub.tres content/scatter/heath_stones.tres content/scatter/heath_trees.tres content/scatter/heath_turf.tres content/scatter/highland_floor.tres content/scatter/highland_pines.tres content/scatter/highland_rocks.tres content/scatter/highland_scrub.tres content/scatter/marsh_canopy.tres content/scatter/marsh_deadwood.tres content/scatter/marsh_floor.tres content/scatter/marsh_reeds.tres content/scatter/shore_beach.tres content/scatter/shore_drift.tres content/scatter/shore_rocks.tres entities/props/camp_abandoned.tscn entities/props/standing_stone_circle.tscn levels/greybox_test.tscn levels/hollowmere.tscn levels/playtest_hollow.tscn levels/procedural_island.tscn ": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:03:25+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/biomes/forest.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:17+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/biomes/grassland.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:17+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/biomes/heath.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:17+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/biomes/highland.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:17+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/biomes/marsh.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:17+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/biomes/shore.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:17+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/poi/station_camp.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:17+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/birchwood_canopy.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:17+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/birchwood_deadwood.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:17+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/birchwood_floor.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:17+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/birchwood_undergrowth.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:17+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/forest_canopy.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:18+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/forest_deadwood.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:18+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/forest_floor.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:18+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/forest_rocks.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:18+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/forest_undergrowth.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:18+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/grassland_meadow.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:18+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/grassland_rocks.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:18+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/grassland_shrubs.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:18+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/grassland_trees.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:18+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/grassland_turf.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:18+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/heath_scrub.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:18+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/heath_stones.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:18+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/heath_trees.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:18+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/heath_turf.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:18+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/highland_floor.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:18+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/highland_pines.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:18+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/highland_rocks.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:18+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/highland_scrub.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:18+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/marsh_canopy.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:18+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/marsh_deadwood.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:19+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/marsh_floor.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:19+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/marsh_reeds.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:19+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/shore_beach.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:19+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/shore_drift.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:19+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/shore_rocks.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:19+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "entities/props/camp_abandoned.tscn": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:19+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "entities/props/prop_group.gd": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:19+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "entities/props/prop_group.gd.uid": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:19+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "entities/props/standing_stone_circle.tscn": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:19+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "levels/greybox_test.tscn": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:19+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "levels/hollowmere.tscn": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:19+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "levels/playtest_hollow.tscn": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:19+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "levels/procedural_island.tscn": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:19+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "tools/atmosphere_look_shot.gd": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:19+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "tools/biome_terrain_check.gd": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:19+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "tools/blender/build_flora_set.py": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:19+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "tools/blender/build_mire_map_kit.py": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:19+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "tools/grade_check.gd": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:19+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "tools/graphics_quality_check.gd": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:20+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "tools/terrain_map_render.gd": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:20+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "tools/terrain_texture_check.gd": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:20+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "world/chunk/chunk_mesher.gd": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:20+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "world/chunk/terrain_flat.gdshader": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:20+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "world/environment/playtest_atmosphere.gd": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:20+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "world/gen/biome_def.gd": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:20+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "world/gen/biome_map.gd": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:08:20+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    }
+  },
+  "in_flight": {
+    "F-401": {
+      "agent": "kilnd3a089",
+      "files": [
+        "content/biomes/birchwood.tres content/biomes/forest.tres content/biomes/grassland.tres content/biomes/heath.tres content/biomes/highland.tres content/biomes/marsh.tres content/biomes/shore.tres content/poi/station_camp.tres content/scatter/birchwood_canopy.tres content/scatter/birchwood_deadwood.tres content/scatter/birchwood_floor.tres content/scatter/birchwood_undergrowth.tres content/scatter/forest_canopy.tres content/scatter/forest_deadwood.tres content/scatter/forest_floor.tres content/scatter/forest_rocks.tres content/scatter/forest_undergrowth.tres content/scatter/grassland_meadow.tres content/scatter/grassland_rocks.tres content/scatter/grassland_shrubs.tres content/scatter/grassland_trees.tres content/scatter/grassland_turf.tres content/scatter/heath_scrub.tres content/scatter/heath_stones.tres content/scatter/heath_trees.tres content/scatter/heath_turf.tres content/scatter/highland_floor.tres content/scatter/highland_pines.tres content/scatter/highland_rocks.tres content/scatter/highland_scrub.tres content/scatter/marsh_canopy.tres content/scatter/marsh_deadwood.tres content/scatter/marsh_floor.tres content/scatter/marsh_reeds.tres content/scatter/shore_beach.tres content/scatter/shore_drift.tres content/scatter/shore_rocks.tres entities/props/camp_abandoned.tscn entities/props/standing_stone_circle.tscn levels/greybox_test.tscn levels/hollowmere.tscn levels/playtest_hollow.tscn levels/procedural_island.tscn ",
+        "assets/audit/f398/after/canopy_leaves.png assets/audit/f398/after/canopy_leaves_golden.png assets/audit/f398/after/contact_afternoon.png assets/audit/f398/after/contact_golden.png assets/audit/f398/after/contact_noon.png assets/audit/f398/after/contact_overcast.png assets/audit/f398/after/dawn.png assets/audit/f398/after/dawn_ridge.png assets/audit/f398/after/dusk.png assets/audit/f398/after/evening_sunward.png assets/audit/f398/after/forest_evening_sunward.png assets/audit/f398/after/forest_sunward.png assets/audit/f398/after/golden_evening.png assets/audit/f398/after/golden_morning.png assets/audit/f398/after/golden_sunward.png assets/audit/f398/after/late_night_ground.png assets/audit/f398/after/midnight_ground.png assets/audit/f398/after/midnight_moonward.png assets/audit/f398/after/moonrise_moonward.png assets/audit/f398/after/morning.png assets/audit/f398/after/morning_sunward.png assets/audit/f398/after/night.png assets/audit/f398/after/noon.png assets/audit/f398/before/canopy_leaves.png assets/audit/f398/before/canopy_leaves_golden.png assets/audit/f398/before/contact_afternoon.png assets/audit/f398/before/contact_golden.png assets/audit/f398/before/contact_noon.png assets/audit/f398/before/contact_overcast.png assets/audit/f398/before/dawn.png assets/audit/f398/before/dawn_ridge.png assets/audit/f398/before/dusk.png assets/audit/f398/before/evening_sunward.png assets/audit/f398/before/forest_evening_sunward.png assets/audit/f398/before/forest_sunward.png assets/audit/f398/before/golden_evening.png assets/audit/f398/before/golden_morning.png assets/audit/f398/before/golden_sunward.png assets/audit/f398/before/late_night_ground.png assets/audit/f398/before/midnight_ground.png assets/audit/f398/before/midnight_moonward.png assets/audit/f398/before/moonrise_moonward.png assets/audit/f398/before/morning.png assets/audit/f398/before/morning_sunward.png assets/audit/f398/before/night.png assets/audit/f398/before/noon.png assets/audit/menu/dock_1080p.png assets/audit/menu/dock_deck.png assets/audit/menu/title_1080p_creep000.png assets/audit/menu/title_1080p_creep042.png assets/audit/menu/title_1080p_creep150.png assets/audit/menu/title_deck_creep000.png assets/audit/menu/title_deck_creep042.png assets/audit/menu/title_deck_creep150.png assets/audit/terrain/biomes_20260819.png assets/audit/terrain/biomes_4242.png assets/audit/terrain/biomes_7.png assets/audit/terrain/biomes_991.png assets/audit/terrain/island_20260819.png assets/audit/terrain/island_7.png assets/audit/terrain/island_seed7.png assets/audit/terrain/shape_20260819.png assets/audit/terrain/shape_4242.png assets/audit/terrain/shape_7.png assets/audit/terrain/shape_991.png assets/audit/trees/flora_hero.png assets/audit/trees/flora_small_trees_sheet.png assets/audit/trees/kit_hero.png assets/audit/trees/kit_trees_sheet.png assets/environment/catalog.json assets/environment/exports/tree_bare_a.glb assets/environment/exports/tree_bare_b.glb assets/environment/exports/tree_bare_c.glb assets/environment/exports/tree_bare_d.glb assets/environment/exports/tree_birch_a.glb assets/environment/exports/tree_birch_b.glb assets/environment/exports/tree_birch_c.glb assets/environment/exports/tree_birch_d.glb assets/environment/exports/tree_crooked_a.glb assets/environment/exports/tree_crooked_b.glb assets/environment/exports/tree_crooked_c.glb assets/environment/exports/tree_crooked_d.glb assets/environment/exports/tree_pine_a.glb assets/environment/exports/tree_pine_b.glb assets/environment/exports/tree_pine_c.glb assets/environment/exports/tree_pine_d.glb assets/environment/exports/tree_pine_e.glb assets/environment/exports/tree_pine_f.glb assets/environment/preview/mire_map_kit_preview.png assets/environment/preview/trees_preview.png assets/flora/catalog.json assets/flora/exports/tree_snag_a.glb assets/flora/exports/tree_snag_b.glb assets/flora/exports/tree_snag_c.glb assets/flora/exports/tree_willow_a.glb assets/flora/exports/tree_willow_b.glb assets/flora/exports/tree_willow_c.glb assets/flora/preview/flora_set_preview.png assets/flora/preview/small_trees_preview.png autoload/graphics_quality.gd content/biomes/birchwood.tres content/biomes/forest.tres content/biomes/grassland.tres content/biomes/heath.tres content/biomes/highland.tres content/biomes/marsh.tres content/biomes/shore.tres content/poi/station_camp.tres content/scatter/birchwood_canopy.tres content/scatter/birchwood_deadwood.tres content/scatter/birchwood_floor.tres content/scatter/birchwood_undergrowth.tres content/scatter/forest_canopy.tres content/scatter/forest_deadwood.tres content/scatter/forest_floor.tres content/scatter/forest_rocks.tres content/scatter/forest_undergrowth.tres content/scatter/grassland_meadow.tres content/scatter/grassland_rocks.tres content/scatter/grassland_shrubs.tres content/scatter/grassland_trees.tres content/scatter/grassland_turf.tres content/scatter/heath_scrub.tres content/scatter/heath_stones.tres content/scatter/heath_trees.tres content/scatter/heath_turf.tres content/scatter/highland_floor.tres content/scatter/highland_pines.tres content/scatter/highland_rocks.tres content/scatter/highland_scrub.tres content/scatter/marsh_canopy.tres content/scatter/marsh_deadwood.tres content/scatter/marsh_floor.tres content/scatter/marsh_reeds.tres content/scatter/shore_beach.tres content/scatter/shore_drift.tres content/scatter/shore_rocks.tres entities/props/camp_abandoned.tscn entities/props/prop_group.gd entities/props/prop_group.gd.uid entities/props/standing_stone_circle.tscn levels/greybox_test.tscn levels/hollowmere.tscn levels/playtest_hollow.tscn levels/procedural_island.tscn tools/atmosphere_look_shot.gd tools/biome_terrain_check.gd tools/blender/build_flora_set.py tools/blender/build_mire_map_kit.py tools/grade_check.gd tools/graphics_quality_check.gd tools/terrain_map_render.gd tools/terrain_texture_check.gd world/chunk/chunk_mesher.gd world/chunk/terrain_flat.gdshader world/environment/playtest_atmosphere.gd world/gen/biome_def.gd world/gen/biome_map.gd ",
+        "content/biomes/forest.tres",
+        "assets/audit/f398/after/canopy_leaves.png",
+        "assets/audit/f398/after/canopy_leaves_golden.png",
+        "assets/audit/f398/after/contact_afternoon.png",
+        "assets/audit/f398/after/contact_golden.png",
+        "assets/audit/f398/after/contact_noon.png",
+        "assets/audit/f398/after/contact_overcast.png",
+        "assets/audit/f398/after/dawn.png",
+        "assets/audit/f398/after/dawn_ridge.png",
+        "assets/audit/f398/after/dusk.png",
+        "assets/audit/f398/after/evening_sunward.png",
+        "assets/audit/f398/after/forest_evening_sunward.png",
+        "assets/audit/f398/after/forest_sunward.png",
+        "assets/audit/f398/after/golden_evening.png",
+        "assets/audit/f398/after/golden_morning.png",
+        "assets/audit/f398/after/golden_sunward.png",
+        "assets/audit/f398/after/late_night_ground.png",
+        "assets/audit/f398/after/midnight_ground.png",
+        "assets/audit/f398/after/midnight_moonward.png",
+        "assets/audit/f398/after/moonrise_moonward.png",
+        "assets/audit/f398/after/morning.png",
+        "assets/audit/f398/after/morning_sunward.png",
+        "assets/audit/f398/after/night.png",
+        "assets/audit/f398/after/noon.png",
+        "assets/audit/f398/before/canopy_leaves.png",
+        "assets/audit/f398/before/canopy_leaves_golden.png",
+        "assets/audit/f398/before/contact_afternoon.png",
+        "assets/audit/f398/before/contact_golden.png",
+        "assets/audit/f398/before/contact_noon.png",
+        "assets/audit/f398/before/contact_overcast.png",
+        "assets/audit/f398/before/dawn.png",
+        "assets/audit/f398/before/dawn_ridge.png",
+        "assets/audit/f398/before/dusk.png",
+        "assets/audit/f398/before/evening_sunward.png",
+        "assets/audit/f398/before/forest_evening_sunward.png",
+        "assets/audit/f398/before/forest_sunward.png",
+        "assets/audit/f398/before/golden_evening.png",
+        "assets/audit/f398/before/golden_morning.png",
+        "assets/audit/f398/before/golden_sunward.png",
+        "assets/audit/f398/before/late_night_ground.png",
+        "assets/audit/f398/before/midnight_ground.png",
+        "assets/audit/f398/before/midnight_moonward.png",
+        "assets/audit/f398/before/moonrise_moonward.png",
+        "assets/audit/f398/before/morning.png",
+        "assets/audit/f398/before/morning_sunward.png",
+        "assets/audit/f398/before/night.png",
+        "assets/audit/f398/before/noon.png",
+        "assets/audit/menu/dock_1080p.png",
+        "assets/audit/menu/dock_deck.png",
+        "assets/audit/menu/title_1080p_creep000.png",
+        "assets/audit/menu/title_1080p_creep042.png",
+        "assets/audit/menu/title_1080p_creep150.png",
+        "assets/audit/menu/title_deck_creep000.png",
+        "assets/audit/menu/title_deck_creep042.png",
+        "assets/audit/menu/title_deck_creep150.png",
+        "assets/audit/terrain/biomes_20260819.png",
+        "assets/audit/terrain/biomes_4242.png",
+        "assets/audit/terrain/biomes_7.png",
+        "assets/audit/terrain/biomes_991.png",
+        "assets/audit/terrain/island_20260819.png",
+        "assets/audit/terrain/island_7.png",
+        "assets/audit/terrain/island_seed7.png",
+        "assets/audit/terrain/shape_20260819.png",
+        "assets/audit/terrain/shape_4242.png",
+        "assets/audit/terrain/shape_7.png",
+        "assets/audit/terrain/shape_991.png",
+        "assets/audit/trees/flora_hero.png",
+        "assets/audit/trees/flora_small_trees_sheet.png",
+        "assets/audit/trees/kit_hero.png",
+        "assets/audit/trees/kit_trees_sheet.png",
+        "assets/environment/catalog.json",
+        "assets/environment/exports/tree_bare_a.glb",
+        "assets/environment/exports/tree_bare_b.glb",
+        "assets/environment/exports/tree_bare_c.glb",
+        "assets/environment/exports/tree_bare_d.glb",
+        "assets/environment/exports/tree_birch_a.glb",
+        "assets/environment/exports/tree_birch_b.glb",
+        "assets/environment/exports/tree_birch_c.glb",
+        "assets/environment/exports/tree_birch_d.glb",
+        "assets/environment/exports/tree_crooked_a.glb",
+        "assets/environment/exports/tree_crooked_b.glb",
+        "assets/environment/exports/tree_crooked_c.glb",
+        "assets/environment/exports/tree_crooked_d.glb",
+        "assets/environment/exports/tree_pine_a.glb",
+        "assets/environment/exports/tree_pine_b.glb",
+        "assets/environment/exports/tree_pine_c.glb",
+        "assets/environment/exports/tree_pine_d.glb",
+        "assets/environment/exports/tree_pine_e.glb",
+        "assets/environment/exports/tree_pine_f.glb",
+        "assets/environment/preview/mire_map_kit_preview.png",
+        "assets/environment/preview/trees_preview.png",
+        "assets/flora/catalog.json",
+        "assets/flora/exports/tree_snag_a.glb",
+        "assets/flora/exports/tree_snag_b.glb",
+        "assets/flora/exports/tree_snag_c.glb",
+        "assets/flora/exports/tree_willow_a.glb",
+        "assets/flora/exports/tree_willow_b.glb",
+        "assets/flora/exports/tree_willow_c.glb",
+        "assets/flora/preview/flora_set_preview.png",
+        "assets/flora/preview/small_trees_preview.png",
+        "autoload/graphics_quality.gd",
+        "content/biomes/birchwood.tres",
+        "content/biomes/grassland.tres",
+        "content/biomes/heath.tres",
+        "content/biomes/highland.tres",
+        "content/biomes/marsh.tres",
+        "content/biomes/shore.tres",
+        "content/poi/station_camp.tres",
+        "content/scatter/birchwood_canopy.tres",
+        "content/scatter/birchwood_deadwood.tres",
+        "content/scatter/birchwood_floor.tres",
+        "content/scatter/birchwood_undergrowth.tres",
+        "content/scatter/forest_canopy.tres",
+        "content/scatter/forest_deadwood.tres",
+        "content/scatter/forest_floor.tres",
+        "content/scatter/forest_rocks.tres",
+        "content/scatter/forest_undergrowth.tres",
+        "content/scatter/grassland_meadow.tres",
+        "content/scatter/grassland_rocks.tres",
+        "content/scatter/grassland_shrubs.tres",
+        "content/scatter/grassland_trees.tres",
+        "content/scatter/grassland_turf.tres",
+        "content/scatter/heath_scrub.tres",
+        "content/scatter/heath_stones.tres",
+        "content/scatter/heath_trees.tres",
+        "content/scatter/heath_turf.tres",
+        "content/scatter/highland_floor.tres",
+        "content/scatter/highland_pines.tres",
+        "content/scatter/highland_rocks.tres",
+        "content/scatter/highland_scrub.tres",
+        "content/scatter/marsh_canopy.tres",
+        "content/scatter/marsh_deadwood.tres",
+        "content/scatter/marsh_floor.tres",
+        "content/scatter/marsh_reeds.tres",
+        "content/scatter/shore_beach.tres",
+        "content/scatter/shore_drift.tres",
+        "content/scatter/shore_rocks.tres",
+        "entities/props/camp_abandoned.tscn",
+        "entities/props/prop_group.gd",
+        "entities/props/prop_group.gd.uid",
+        "entities/props/standing_stone_circle.tscn",
+        "levels/greybox_test.tscn",
+        "levels/hollowmere.tscn",
+        "levels/playtest_hollow.tscn",
+        "levels/procedural_island.tscn",
+        "tools/atmosphere_look_shot.gd",
+        "tools/biome_terrain_check.gd",
+        "tools/blender/build_flora_set.py",
+        "tools/blender/build_mire_map_kit.py",
+        "tools/grade_check.gd",
+        "tools/graphics_quality_check.gd",
+        "tools/terrain_map_render.gd",
+        "tools/terrain_texture_check.gd",
+        "world/chunk/chunk_mesher.gd",
+        "world/chunk/terrain_flat.gdshader",
+        "world/environment/playtest_atmosphere.gd",
+        "world/gen/biome_def.gd",
+        "world/gen/biome_map.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-21T05:03:25+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    }
+  },
   "recent": {
     ".agent/bin/agent": {
       "agent": "galef95fa6",
@@ -120,13 +1250,6 @@
       "hash": "326acab23823295dee1f6d14d282e62e7ef8a646a213ce620b84204a140a72c3",
       "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
-    },
-    "assets/terrain_accents/README.md": {
-      "agent": "lm",
-      "at": "2026-08-20T05:07:23+00:00",
-      "hash": "21dc07498d81521a4137e3f76b42095f6215b1e87f813f32ba64ea69a55b6bb8",
-      "task": "F-255",
-      "token": null
     },
     "autoload/attunement_service.gd": {
       "agent": "lm",
@@ -443,13 +1566,6 @@
       "task": "F-273",
       "token": null
     },
-    "docs/ASSET_TRACKER.md": {
-      "agent": "lm",
-      "at": "2026-08-20T05:07:23+00:00",
-      "hash": "25c32b0e4a3e45a068620376c9011d9e08df5841606dc345e387da2874117ee5",
-      "task": "F-255",
-      "token": null
-    },
     "docs/COMMANDS.md": {
       "agent": "lp",
       "at": "2026-08-20T10:21:34+00:00",
@@ -646,13 +1762,6 @@
       "task": "F-266",
       "token": null
     },
-    "tools/asset_scope_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T05:07:23+00:00",
-      "hash": "2458596d0962169d5ad13adc07d97bb20caec9ff5896ec9301b1c14b85243d15",
-      "task": "F-255",
-      "token": null
-    },
     "tools/attunement_restart_check.gd": {
       "agent": "lm",
       "at": "2026-08-20T06:50:30+00:00",
@@ -708,13 +1817,6 @@
       "hash": "5be8daed1ba06c562f6b58cc0ee618e8cb7fbcafa91f622dde9da18b3f2a39d0",
       "task": "F-329",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "tools/blender/build_terrain_accents.py": {
-      "agent": "lm",
-      "at": "2026-08-20T05:07:23+00:00",
-      "hash": "2bdc341d281e1aa8534c04c09f660268945e542b66dbb397283800301fb38736",
-      "task": "F-255",
-      "token": null
     },
     "tools/blender/crafting_stations_repro_check.py": {
       "agent": "ivy1bcae0",
@@ -1620,7 +2722,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 295,
+  "rev": 460,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -6591,7 +7693,7 @@
     "F-401": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "The island has three biomes that differ almost entirely by a single moisture threshold, so nothing reads as a distinct place"
     },
@@ -6615,6 +7717,13 @@
       "status": "todo",
       "tier": "F",
       "title": "step_height is 0.4 m but nothing below it is actually climbable \u2014 the capsule's rounded bottom catches the kerb edge and the is_on_floor() guard kills the next attempt"
+    },
+    "F-406": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "agent claim with more than one file stores the whole list as a single dictionary key, so the pre-commit hook never sees any of them as claimed"
     }
   },
   "version": 1
