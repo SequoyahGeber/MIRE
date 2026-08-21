@@ -2,9 +2,11 @@
 
 [ext_resource type="Script" path="res://systems/building/buildable_def.gd" id="1_buildabledef"]
 [ext_resource type="PackedScene" path="res://scenes/buildables/ward_post.tscn" id="2_scene"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_build_ward_post.png" id="ic_ward_post"]
 
 [resource]
 script = ExtResource("1_buildabledef")
+icon = ExtResource("ic_ward_post")
 id = &"ward_post"
 display_name = "Ward Post"
 description = "Holds the Mire back for twelve metres. The radius is authored here; 4.11 is the task that makes the Mire respect it."

@@ -2,9 +2,11 @@
 
 [ext_resource type="Script" path="res://systems/building/buildable_def.gd" id="1_buildabledef"]
 [ext_resource type="PackedScene" path="res://scenes/buildables/dock.tscn" id="2_scene"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_build_dock.png" id="ic_dock"]
 
 [resource]
 script = ExtResource("1_buildabledef")
+icon = ExtResource("ic_dock")
 id = &"dock"
 display_name = "Dock Section"
 description = "A metre of deck over the water, on four piles. Weed already growing at the waterline."

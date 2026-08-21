@@ -207,7 +207,7 @@
     "elevation_deg": 21.0,
     "roll_deg": 45.0,
     "ortho_scale_m": 1.2575,
-    "source_polygons": 406
+    "source_polygons": 374
   },
   {
     "id": "skewer",
@@ -258,5 +258,135 @@
     "roll_deg": 45.0,
     "ortho_scale_m": 1.3672,
     "source_polygons": 1000
+  },
+  {
+    "id": "build_wall",
+    "source": "assets/construction/exports/wall_wood.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 3.8593,
+    "source_polygons": 356
+  },
+  {
+    "id": "build_door",
+    "source": "assets/construction/exports/door_wood_frame.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 3.8802,
+    "source_polygons": 240
+  },
+  {
+    "id": "build_gate",
+    "source": "assets/construction/exports/gate_double_frame.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 4.3546,
+    "source_polygons": 444
+  },
+  {
+    "id": "build_ladder",
+    "source": "assets/construction/exports/ladder.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 3.4658,
+    "source_polygons": 420
+  },
+  {
+    "id": "build_ramp",
+    "source": "assets/construction/exports/ramp.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 3.2868,
+    "source_polygons": 160
+  },
+  {
+    "id": "build_bridge",
+    "source": "assets/construction/exports/bridge_straight.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 3.2868,
+    "source_polygons": 532
+  },
+  {
+    "id": "build_dock",
+    "source": "assets/construction/exports/dock_straight.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 3.2868,
+    "source_polygons": 432
+  },
+  {
+    "id": "build_palisade",
+    "source": "assets/construction/exports/palisade_straight.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 3.6884,
+    "source_polygons": 496
+  },
+  {
+    "id": "build_palisade_gate",
+    "source": "assets/construction/exports/palisade_gate_frame.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 3.7879,
+    "source_polygons": 236
+  },
+  {
+    "id": "build_barricade",
+    "source": "assets/construction/exports/barricade.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 2.304,
+    "source_polygons": 208
+  },
+  {
+    "id": "build_barricade_spike",
+    "source": "assets/construction/exports/barricade_spike.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 2.5707,
+    "source_polygons": 448
+  },
+  {
+    "id": "build_ward",
+    "source": "assets/wards/exports/ward_healthy.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 2.8212,
+    "source_polygons": 1010
+  },
+  {
+    "id": "build_ward_post",
+    "source": "assets/wards/exports/ward_boundary_post.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 2.3228,
+    "source_polygons": 208
   }
 ]

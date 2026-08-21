@@ -2,9 +2,11 @@
 
 [ext_resource type="Script" path="res://systems/building/buildable_def.gd" id="1_buildabledef"]
 [ext_resource type="PackedScene" path="res://scenes/buildables/palisade_gate.tscn" id="2_scene"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_build_palisade_gate.png" id="ic_palisade_gate"]
 
 [resource]
 script = ExtResource("1_buildabledef")
+icon = ExtResource("ic_palisade_gate")
 id = &"palisade_gate"
 display_name = "Palisade Gate"
 description = "The hole you leave in your own wall on purpose. Barred, so you can see what is waiting."

@@ -1,9 +1,13 @@
 [gd_resource type="Resource" script_class="BuildableDef" format=3]
 
 [ext_resource type="Script" path="res://systems/building/buildable_def.gd" id="1_buildabledef"]
+[ext_resource type="PackedScene" path="res://scenes/buildables/wall.tscn" id="2_wallscene"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_build_wall.png" id="ic_wall"]
 
 [resource]
 script = ExtResource("1_buildabledef")
+icon = ExtResource("ic_wall")
+scene = ExtResource("2_wallscene")
 id = &"wall_wood"
 display_name = "Wooden Wall"
 description = "Two metres of plank between you and whatever is out there. Snaps to the metre grid so a run of them actually lines up."

@@ -2,9 +2,11 @@
 
 [ext_resource type="Script" path="res://systems/building/buildable_def.gd" id="1_buildabledef"]
 [ext_resource type="PackedScene" path="res://scenes/buildables/barricade_spike.tscn" id="2_scene"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_build_barricade_spike.png" id="ic_barricade_spike"]
 
 [resource]
 script = ExtResource("1_buildabledef")
+icon = ExtResource("ic_barricade_spike")
 id = &"barricade_spike"
 display_name = "Spike Barricade"
 description = "Six sharpened stakes fanned out of a log. Do not walk into it. You will walk into it."

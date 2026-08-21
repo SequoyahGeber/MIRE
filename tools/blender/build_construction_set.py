@@ -135,6 +135,7 @@ EXPECTED_NAMES = [
     "bridge_rope",
     "dock_straight",
     "dock_corner",
+    "wall_wood",
     "palisade_straight",
     "palisade_corner",
     "palisade_gate_frame",
@@ -156,6 +157,7 @@ FAMILY: dict[str, str] = {
     "bridge_rope": GROUND,
     "dock_straight": GROUND,
     "dock_corner": GROUND,
+    "wall_wood": GROUND,
     "palisade_straight": GROUND,
     "palisade_corner": JOINT,
     "palisade_gate_frame": GROUND,
@@ -177,6 +179,7 @@ RUN_SPAN: dict[str, float] = {
     "bridge_broken": MODULE,
     "dock_straight": MODULE,
     "dock_corner": MODULE,
+    "wall_wood": MODULE,
     "palisade_straight": MODULE,
     "palisade_gate_frame": MODULE,
 }
@@ -793,6 +796,67 @@ def palisade_logs(mats: dict[str, bpy.types.Material], prefix: str, x0: float, x
         sharpened(f"{prefix}_{index}", x, yy, 0.0, top, 0.125, mats["bark_dark"], mats["cut"])
 
 
+def build_wall_wood(mats: dict[str, bpy.types.Material]) -> None:
+    """A board-and-batten wall, one MODULE wide and WALL_H tall.
+
+    F-427: `content/buildables/wall.tres` is the FIRST thing most players build
+    and it was the one buildable with no `scene` at all, so `BuildGhost` fell
+    through to its generated grey box and every wooden wall in the game was a
+    placeholder cube. It also happens to be the piece the palisade, the door
+    frame and the gate all butt against, so it was the placeholder everything
+    else was measured next to.
+
+    Built as what a survivor with a saw and no nails to spare actually makes:
+    two corner posts, a sill and a top plate, a run of sawn boards between them,
+    and battens over the seams. The battens are not decoration — board-and-batten
+    exists because green boards shrink and open gaps, and covering the seam is
+    the cheapest way to keep the weather out. Board widths vary on purpose; a run
+    of identical planks is a fence panel from a hardware shop, not something cut
+    out of the woods.
+
+    The POSTS define the mating plane, at exactly ±HALF, so a run of walls butts
+    plane to plane the way `RUN_SPAN` requires — the boards sit inboard of them.
+    """
+    post_r = 0.105
+    for index, x in enumerate((-HALF + post_r, HALF - post_r)):
+        upright(f"Post_{index}", x, 0.0, 0.0, WALL_H, post_r, mats["bark_dark"], taper=0.97)
+    box("Sill", (0.0, 0.0, 0.075), (MODULE, 0.20, 0.15), mats["timber"])
+    box("Top_Plate", (0.0, 0.0, WALL_H - 0.085), (MODULE, 0.20, 0.17), mats["timber"])
+
+    # Boards, inboard of the posts and of mixed width. The pitch is derived from
+    # whatever widths come out so the run always fills the bay exactly, rather
+    # than leaving a sliver at one end that reads as a mistake.
+    widths = (0.27, 0.22, 0.30, 0.24, 0.29, 0.21, 0.26)
+    span = MODULE - post_r * 2.0
+    scale = span / sum(widths)
+    cursor = -span * 0.5
+    seams: list[float] = []
+    for index, width in enumerate(widths):
+        wide = width * scale
+        centre = cursor + wide * 0.5
+        box(f"Board_{index}", (centre, 0.0, WALL_H * 0.5), (wide - 0.012, 0.055, WALL_H - 0.24),
+            mats["plank"] if index % 2 else mats["plank_light"])
+        cursor += wide
+        if index < len(widths) - 1:
+            seams.append(cursor)
+    for index, x in enumerate(seams):
+        box(f"Batten_{index}", (x, -0.052, WALL_H * 0.5), (0.075, 0.048, WALL_H - 0.30),
+            mats["timber"])
+
+    # Two rails on the inside face and the ironwork holding the lot to the posts.
+    for index, z in enumerate((0.95, 2.15)):
+        box(f"Rail_{index}", (0.0, 0.105, z), (span, 0.075, 0.13), mats["bark"])
+    for index, (x, z) in enumerate(((-HALF + post_r, 0.95), (HALF - post_r, 0.95),
+                                    (-HALF + post_r, 2.15), (HALF - post_r, 2.15))):
+        strap(f"Strap_{index}", (x, 0.06, z), (0.11, 0.20, 0.075), mats["iron_dark"])
+    # The rope wraps sit INBOARD of the posts. A lashing is naturally wider than
+    # the post it goes round, and at the mating plane that 25 mm of rope is what
+    # a run of these walls would show as a gap — the build contract caught it at
+    # 2.05 m against a 2.00 m module. Nothing may stand proud of the post face.
+    for index, x in enumerate((-HALF + post_r + 0.06, HALF - post_r - 0.06)):
+        lashing(f"Post_Lash_{index}", (x, 0.0, 0.30), 0.095, mats["rope"], "z", 0.07)
+
+
 def build_palisade_straight(mats: dict[str, bpy.types.Material]) -> None:
     """One module of sharpened-log wall, WALL_H tall.
 
@@ -1313,6 +1377,7 @@ def main() -> None:
         ("bridge_rope", lambda: build_bridge_rope(mats)),
         ("dock_straight", lambda: build_dock_straight(mats)),
         ("dock_corner", lambda: build_dock_corner(mats)),
+        ("wall_wood", lambda: build_wall_wood(mats)),
         ("palisade_straight", lambda: build_palisade_straight(mats)),
         ("palisade_corner", lambda: build_palisade_corner(mats)),
         ("palisade_gate_frame", lambda: build_palisade_gate_frame(mats)),

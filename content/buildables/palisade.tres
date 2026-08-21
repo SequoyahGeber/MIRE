@@ -2,9 +2,11 @@
 
 [ext_resource type="Script" path="res://systems/building/buildable_def.gd" id="1_buildabledef"]
 [ext_resource type="PackedScene" path="res://scenes/buildables/palisade.tscn" id="2_scene"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_build_palisade.png" id="ic_palisade"]
 
 [resource]
 script = ExtResource("1_buildabledef")
+icon = ExtResource("ic_palisade")
 id = &"palisade"
 display_name = "Palisade"
 description = "Two metres of sharpened log. Crawlers do not climb; that is the entire pitch."

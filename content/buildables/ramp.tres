@@ -2,9 +2,11 @@
 
 [ext_resource type="Script" path="res://systems/building/buildable_def.gd" id="1_buildabledef"]
 [ext_resource type="PackedScene" path="res://scenes/buildables/ramp.tscn" id="2_scene"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_build_ramp.png" id="ic_ramp"]
 
 [resource]
 script = ExtResource("1_buildabledef")
+icon = ExtResource("ic_ramp")
 id = &"ramp"
 display_name = "Ramp"
 description = "Rises exactly one deck over one module, at an angle your legs agree with."

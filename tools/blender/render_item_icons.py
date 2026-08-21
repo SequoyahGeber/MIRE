@@ -65,6 +65,27 @@ SOURCES: list[tuple[str, str]] = [
     ("arrow", "tools_weapons/exports/arrow_world.glb"),
     ("repair_hammer", "tools_weapons/exports/repair_hammer_world.glb"),
     ("iron_sword", "tools_weapons/exports/iron_sword_world.glb"),
+    # --- buildables (F-427) ---------------------------------------------------
+    #
+    # The build menu had thirteen empty icon slots, and these are rendered from
+    # the SAME GLB the piece places, for the same reason every other icon here
+    # is: an icon drawn separately is an icon that can quietly stop matching what
+    # the button builds. Where a piece is a frame plus swinging leaves — the
+    # door, both gates — the icon takes the FRAME, because the opening is what
+    # the player is choosing and a closed leaf is a wall.
+    ("build_wall", "construction/exports/wall_wood.glb"),
+    ("build_door", "construction/exports/door_wood_frame.glb"),
+    ("build_gate", "construction/exports/gate_double_frame.glb"),
+    ("build_ladder", "construction/exports/ladder.glb"),
+    ("build_ramp", "construction/exports/ramp.glb"),
+    ("build_bridge", "construction/exports/bridge_straight.glb"),
+    ("build_dock", "construction/exports/dock_straight.glb"),
+    ("build_palisade", "construction/exports/palisade_straight.glb"),
+    ("build_palisade_gate", "construction/exports/palisade_gate_frame.glb"),
+    ("build_barricade", "construction/exports/barricade.glb"),
+    ("build_barricade_spike", "construction/exports/barricade_spike.glb"),
+    ("build_ward", "wards/exports/ward_healthy.glb"),
+    ("build_ward_post", "wards/exports/ward_boundary_post.glb"),
 ]
 
 #: Yaw applied before framing, for assets whose default face is not their best one.
@@ -107,6 +128,25 @@ ELEVATION = 21.0
 ROLL_OVERRIDE_DEG: dict[str, float] = {
     "wooden_axe": 45.0,
     "stone_axe": 45.0,
+    # F-427: every buildable is forced UPRIGHT. The roll contest exists to pack an
+    # arbitrary prop's silhouette into a square, and for a loose object that is
+    # the right question — nobody has an opinion about which way a flint lies.
+    # Architecture is different: a wall, a dock and a ramp all have a known
+    # up, and a wall tipped 45 degrees to save 3% of a 256 px slot reads as a wall
+    # that has fallen over. Packing loses to legibility here.
+    "build_wall": 0.0,
+    "build_door": 0.0,
+    "build_gate": 0.0,
+    "build_ladder": 0.0,
+    "build_ramp": 0.0,
+    "build_bridge": 0.0,
+    "build_dock": 0.0,
+    "build_palisade": 0.0,
+    "build_palisade_gate": 0.0,
+    "build_barricade": 0.0,
+    "build_barricade_spike": 0.0,
+    "build_ward": 0.0,
+    "build_ward_post": 0.0,
 }
 
 

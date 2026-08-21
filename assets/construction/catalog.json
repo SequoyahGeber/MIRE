@@ -347,6 +347,39 @@
     "deck_z_m": 1.0
   },
   {
+    "name": "wall_wood",
+    "family": "ground",
+    "width_m": 2.0,
+    "depth_m": 0.265,
+    "height_m": 3.0,
+    "origin": "ground_centred",
+    "min_z_m": 0.0,
+    "mesh_parts": 25,
+    "polygons": 164,
+    "triangles": 356,
+    "materials": [
+      "MIRE_IronDark",
+      "MIRE_Rope",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkDark",
+      "MIRE_WoodTimber",
+      "MIRE_WoodTimberLight"
+    ],
+    "run_span_m": 2.0,
+    "mates_m": [
+      [
+        -2.0,
+        0.0,
+        0.0
+      ],
+      [
+        2.0,
+        0.0,
+        0.0
+      ]
+    ]
+  },
+  {
     "name": "palisade_straight",
     "family": "ground",
     "width_m": 2.0,
