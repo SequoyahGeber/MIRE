@@ -41,11 +41,15 @@ import sys
 import tempfile
 from pathlib import Path
 
+sys.path.append(str(Path(__file__).resolve().parent))
+from asset_tree_guard import asset_tree_guard  # noqa: E402
+
 BLENDER = "/Applications/Blender.app/Contents/MacOS/Blender"
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "tools" / "blender" / "build_crafting_stations.py"
-EXPORT_DIR = ROOT / "assets" / "crafting_stations" / "exports"
-CATALOG = ROOT / "assets" / "crafting_stations" / "catalog.json"
+ASSET_DIR = ROOT / "assets" / "crafting_stations"
+EXPORT_DIR = ASSET_DIR / "exports"
+CATALOG = ASSET_DIR / "catalog.json"
 
 failures: list[str] = []
 
@@ -58,11 +62,15 @@ def check(label: str, condition: bool) -> None:
         print(f"FAIL: {label}")
 
 
-def rebuild_and_snapshot(tmp: Path, tag: str) -> Path:
-    subprocess.run(
-        [BLENDER, "--background", "--python", str(SCRIPT)],
-        check=True, capture_output=True, text=True, cwd=ROOT,
-    )
+def rebuild_and_snapshot(guard, tmp: Path, tag: str) -> Path:
+    # `guard.builder_run()` brackets ONLY the Blender launch: the builder holds the Godot import
+    # lock for its whole write, so nothing else can touch the tree inside this window and any
+    # out-of-root change really is this builder's (F-329).
+    with guard.builder_run():
+        subprocess.run(
+            [BLENDER, "--background", "--python", str(SCRIPT)],
+            check=True, capture_output=True, text=True, cwd=ROOT,
+        )
     dest = tmp / tag
     dest.mkdir()
     for glb in sorted(EXPORT_DIR.glob("*.glb")):
@@ -74,14 +82,24 @@ def rebuild_and_snapshot(tmp: Path, tag: str) -> Path:
 def main() -> None:
     with tempfile.TemporaryDirectory(prefix="mire_crafting_stations_repro_") as raw_tmp:
         tmp = Path(raw_tmp)
-        run1 = rebuild_and_snapshot(tmp, "run1")
-        run2 = rebuild_and_snapshot(tmp, "run2")
+        with asset_tree_guard([ASSET_DIR], label="crafting_stations repro") as guard:
+            run1 = rebuild_and_snapshot(guard, tmp, "run1")
+            run2 = rebuild_and_snapshot(guard, tmp, "run2")
 
-        names = sorted(p.name for p in run1.glob("*.glb"))
-        check(f"{len(names)} GLBs exported, both runs agree on the set", names == sorted(p.name for p in run2.glob("*.glb")))
-        for name in names:
-            check(f"{name}: byte-identical across two re-renders", (run1 / name).read_bytes() == (run2 / name).read_bytes())
-        check("catalog.json: byte-identical across two re-renders", (run1 / "catalog.json").read_bytes() == (run2 / "catalog.json").read_bytes())
+            names = sorted(p.name for p in run1.glob("*.glb"))
+            check(f"{len(names)} GLBs exported, both runs agree on the set", names == sorted(p.name for p in run2.glob("*.glb")))
+            for name in names:
+                check(f"{name}: byte-identical across two re-renders", (run1 / name).read_bytes() == (run2 / name).read_bytes())
+            check("catalog.json: byte-identical across two re-renders", (run1 / "catalog.json").read_bytes() == (run2 / "catalog.json").read_bytes())
+
+    print(f"asset tree guard: {guard.summary()}")
+    for path in guard.restored:
+        print(f"  restored {path}")
+    for path in guard.removed:
+        print(f"  removed  {path}")
+    check("no builder wrote outside the declared asset roots", not guard.strays)
+    for path in guard.strays:
+        print(f"  STRAY    {path}")
 
     verdict = "PASS" if not failures else f"FAIL ({len(failures)})"
     print(f"\nCRAFTING_STATIONS_REPRO_CHECK {verdict}")
