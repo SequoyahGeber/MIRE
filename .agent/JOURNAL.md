@@ -8479,3 +8479,15 @@ Island radius 295->590 m; lobes are area-preserving ellipses (4-6, smaller, body
 Files: `world/gen/island_heightmap.gd`, `tools/terrain_check.gd`, `tools/hill_slope_check.gd`, `tools/biome_region_check.gd`, `tools/blight_ground_check.gd`, `tools/chunk_stream_check.gd`
 
 Commit at time of writing: `dfe38e6`
+
+---
+
+### DONE · F-449 · quill26e3d7 · 2026-08-21T19:47:17+00:00
+
+**Task 5.3's ranged-weapon content was authored but never committed — the longbow, crossbow, sling and bolt existed only in the working tree**
+
+Committed 5.3's orphaned ranged-weapon content plus the FocusPrompt autoload; verified via Registry headless.
+
+Files: `content/items/bolt.tres`, `content/items/crossbow.tres`, `content/items/longbow.tres`, `content/items/sling.tres`, `content/ranged_weapons/crossbow.tres`, `content/ranged_weapons/longbow.tres`, `content/ranged_weapons/sling.tres`
+
+Commit at time of writing: `f5b75b0`

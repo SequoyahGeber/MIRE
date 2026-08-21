@@ -36,48 +36,6 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "content/items/bolt.tres": {
-      "agent": "quill26e3d7",
-      "at": "2026-08-21T19:46:46+00:00",
-      "task": "F-449",
-      "token": "CLAUDE_CODE_SESSION_ID:f97215fe-2359-4eab-a329-74522e35831e"
-    },
-    "content/items/crossbow.tres": {
-      "agent": "quill26e3d7",
-      "at": "2026-08-21T19:46:46+00:00",
-      "task": "F-449",
-      "token": "CLAUDE_CODE_SESSION_ID:f97215fe-2359-4eab-a329-74522e35831e"
-    },
-    "content/items/longbow.tres": {
-      "agent": "quill26e3d7",
-      "at": "2026-08-21T19:46:46+00:00",
-      "task": "F-449",
-      "token": "CLAUDE_CODE_SESSION_ID:f97215fe-2359-4eab-a329-74522e35831e"
-    },
-    "content/items/sling.tres": {
-      "agent": "quill26e3d7",
-      "at": "2026-08-21T19:46:46+00:00",
-      "task": "F-449",
-      "token": "CLAUDE_CODE_SESSION_ID:f97215fe-2359-4eab-a329-74522e35831e"
-    },
-    "content/ranged_weapons/crossbow.tres": {
-      "agent": "quill26e3d7",
-      "at": "2026-08-21T19:46:46+00:00",
-      "task": "F-449",
-      "token": "CLAUDE_CODE_SESSION_ID:f97215fe-2359-4eab-a329-74522e35831e"
-    },
-    "content/ranged_weapons/longbow.tres": {
-      "agent": "quill26e3d7",
-      "at": "2026-08-21T19:46:46+00:00",
-      "task": "F-449",
-      "token": "CLAUDE_CODE_SESSION_ID:f97215fe-2359-4eab-a329-74522e35831e"
-    },
-    "content/ranged_weapons/sling.tres": {
-      "agent": "quill26e3d7",
-      "at": "2026-08-21T19:46:46+00:00",
-      "task": "F-449",
-      "token": "CLAUDE_CODE_SESSION_ID:f97215fe-2359-4eab-a329-74522e35831e"
-    },
     "docs/ASSET_TRACKER.md": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:13:34+00:00",
@@ -121,21 +79,6 @@
       "notes": [],
       "started": "2026-08-21T17:13:34+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
-    },
-    "F-449": {
-      "agent": "quill26e3d7",
-      "files": [
-        "content/items/bolt.tres",
-        "content/items/crossbow.tres",
-        "content/items/longbow.tres",
-        "content/items/sling.tres",
-        "content/ranged_weapons/crossbow.tres",
-        "content/ranged_weapons/longbow.tres",
-        "content/ranged_weapons/sling.tres"
-      ],
-      "notes": [],
-      "started": "2026-08-21T19:46:46+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:f97215fe-2359-4eab-a329-74522e35831e"
     }
   },
   "recent": {
@@ -1518,6 +1461,13 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "content/items/bolt.tres": {
+      "agent": "quill26e3d7",
+      "at": "2026-08-21T19:47:17+00:00",
+      "hash": "46f697a5f79e635062ab5ca56f57e9d6d2b424902e77b33ea884554f96e89f7d",
+      "task": "F-449",
+      "token": "CLAUDE_CODE_SESSION_ID:f97215fe-2359-4eab-a329-74522e35831e"
+    },
     "content/items/branch.tres": {
       "agent": "gale43d16e",
       "at": "2026-08-21T08:34:48+00:00",
@@ -1538,6 +1488,13 @@
       "hash": "6338e50776a0e639158a52ac118fe1fe84dbcb1e61fee0b983c575547f665f7b",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "content/items/crossbow.tres": {
+      "agent": "quill26e3d7",
+      "at": "2026-08-21T19:47:17+00:00",
+      "hash": "774038983baa6e4d24bf63ebc2d67b88168b24dc7e0ebf5cba97599fbdfc8ff7",
+      "task": "F-449",
+      "token": "CLAUDE_CODE_SESSION_ID:f97215fe-2359-4eab-a329-74522e35831e"
     },
     "content/items/fibre_bundle.tres": {
       "agent": "gale43d16e",
@@ -1573,6 +1530,20 @@
       "hash": "d2cb079cc951559f8be0404d997f8cd191e619e2743ecdbe1633226025867c55",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "content/items/longbow.tres": {
+      "agent": "quill26e3d7",
+      "at": "2026-08-21T19:47:17+00:00",
+      "hash": "d97f3fffee4bd4e337fde7d0eb9d780453b29fbec5c29e352f3928eff922700c",
+      "task": "F-449",
+      "token": "CLAUDE_CODE_SESSION_ID:f97215fe-2359-4eab-a329-74522e35831e"
+    },
+    "content/items/sling.tres": {
+      "agent": "quill26e3d7",
+      "at": "2026-08-21T19:47:17+00:00",
+      "hash": "a4c15414cdecae61d6df40309bb1cc51229db2d28e19a9e4b48a21dc0a19dea7",
+      "task": "F-449",
+      "token": "CLAUDE_CODE_SESSION_ID:f97215fe-2359-4eab-a329-74522e35831e"
     },
     "content/items/stone.tres": {
       "agent": "gale43d16e",
@@ -2133,6 +2104,27 @@
       "hash": "735a55770876f6d12e50583fa2fc1556632207b5f7417e259b96a777d400f898",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "content/ranged_weapons/crossbow.tres": {
+      "agent": "quill26e3d7",
+      "at": "2026-08-21T19:47:17+00:00",
+      "hash": "0ae2c4d4e937a2850a0b9676754322e0f955032e8ea53c08d2da33a207ffdaf7",
+      "task": "F-449",
+      "token": "CLAUDE_CODE_SESSION_ID:f97215fe-2359-4eab-a329-74522e35831e"
+    },
+    "content/ranged_weapons/longbow.tres": {
+      "agent": "quill26e3d7",
+      "at": "2026-08-21T19:47:17+00:00",
+      "hash": "ad7a1f969f80d49b7de73d66710bfd61b861240fb575736c0ddd3454ab9f7c88",
+      "task": "F-449",
+      "token": "CLAUDE_CODE_SESSION_ID:f97215fe-2359-4eab-a329-74522e35831e"
+    },
+    "content/ranged_weapons/sling.tres": {
+      "agent": "quill26e3d7",
+      "at": "2026-08-21T19:47:17+00:00",
+      "hash": "7464fc8288058daac74dfd1f7e7b6ee2064affb177b0b0efec78aaad97448465",
+      "task": "F-449",
+      "token": "CLAUDE_CODE_SESSION_ID:f97215fe-2359-4eab-a329-74522e35831e"
     },
     "content/scatter/birchwood_canopy.tres": {
       "agent": "kilnd3a089",
@@ -3815,7 +3807,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     }
   },
-  "rev": 825,
+  "rev": 826,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9130,9 +9122,11 @@
       "title": "chunk_stream_check's union-of-interest assertions fail at HEAD: neither anchor gets a LOD0 collider or a live Harvestable"
     },
     "F-449": {
+      "done_at": "2026-08-21T19:47:17+00:00",
+      "done_by": "quill26e3d7",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Task 5.3's ranged-weapon content was authored but never committed \u2014 the longbow, crossbow, sling and bolt existed only in the working tree"
     }
