@@ -42,6 +42,12 @@ extends RefCounted
 
 const CHUNK_MESHER := preload("res://world/chunk/chunk_mesher.gd")
 const ISLAND_HEIGHTMAP := preload("res://world/gen/island_heightmap.gd")
+
+## How far apart the two probes that measure a candidate's slope sit (F-471). Roughly the footprint
+## of the things being placed: measured over a shorter run the number is the terrain's detail noise
+## rather than the ground a trunk sits on, and a metre of chatter would flicker trees in and out of
+## a whole hillside between one seed and the next.
+const SLOPE_PROBE_M: float = 1.5
 const BIOME_MAP := preload("res://world/gen/biome_map.gd")
 const SCATTER_DEF := preload("res://world/gen/scatter_def.gd")
 ## F-445: `MireGridSim` is a `class_name`, preloaded for the same F-016 reason as the others above.
@@ -124,6 +130,9 @@ static func placements_for_chunk(
 		plan.max_corruption = float(def.get(&"max_corruption"))
 		plan.min_height = float(def.get(&"min_height"))
 		plan.max_height = float(def.get(&"max_height"))
+		plan.reads_slope = bool(def.call(&"reads_slope"))
+		plan.min_slope_deg = float(def.get(&"min_slope_deg"))
+		plan.max_slope_deg = float(def.get(&"max_slope_deg"))
 		for gx: int in cells_per_side:
 			for gz: int in cells_per_side:
 				var placement: Dictionary = _placement_at(
@@ -153,6 +162,9 @@ class DefPlan extends RefCounted:
 	var max_corruption: float = 0.0
 	var min_height: float = 0.0
 	var max_height: float = 0.0
+	var reads_slope: bool = false
+	var min_slope_deg: float = 0.0
+	var max_slope_deg: float = 90.0
 
 
 static func _placement_at(
@@ -217,6 +229,28 @@ static func _placement_at(
 	# other point's rolls.
 	if height < plan.min_height or height > plan.max_height:
 		return {}
+
+	# F-471, the slope band. Two more surface samples, and only for a point that has already
+	# survived every cheaper gate — the order is the same argument the corruption and height gates
+	# make above. Stream-safe for the same reason too: no `rng` is touched here, so a rejection
+	# cannot shift any other point's rolls.
+	#
+	# Measured on the SHIPPED surface (`surface_from_set`, the one `ChunkMesher` meshes), not on the
+	# biome-blind heightmap: a prop stands on the mesh, and the two differ by the biome's own detail
+	# and ridge amplitudes — which is exactly the roughness that decides whether a given square metre
+	# is a bank or a face.
+	if plan.reads_slope:
+		var east: float = BIOME_MAP.surface_from_set(
+			world_x + SLOPE_PROBE_M, world_z, noise_set, world_seed, table)
+		var north: float = BIOME_MAP.surface_from_set(
+			world_x, world_z + SLOPE_PROBE_M, noise_set, world_seed, table)
+		# The steeper of the two axes, not their vector sum: a prop on a face fails on whichever
+		# direction the ground actually falls away, and a diagonal average would let a point sitting
+		# on a 45-degree wall pass by being flat along the other axis.
+		var rise: float = maxf(absf(east - height), absf(north - height))
+		var slope_deg: float = rad_to_deg(atan2(rise, SLOPE_PROBE_M))
+		if slope_deg < plan.min_slope_deg or slope_deg > plan.max_slope_deg:
+			return {}
 
 	var entry: Resource = plan.def.call(&"pick_entry", rng.randf() * plan.total_weight)
 	if entry == null:

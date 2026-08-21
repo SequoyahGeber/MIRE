@@ -54,6 +54,28 @@ const ANY_BIOME: StringName = &"*"
 ## chunk's placements are generated once, cached, and identical on every peer forever, which a
 ## field that moves every two seconds could never be. The spreading half of the Mire is shown by
 ## `MireGrid`'s ground shader (F-435); this half is the permanent growth at its heart.
+## SLOPE BAND, in degrees of ground tilt (F-471). The default REJECTS anything past
+## [constant DEFAULT_MAX_SLOPE_DEG], and that default applies to every table that does not mention
+## slope — which is all of them, and is the point.
+##
+## Before this there was no slope term anywhere in scatter: a candidate on a cliff face passed the
+## biome, height, moisture and spacing gates exactly as one on a meadow did, and `cliff_8102602.png`
+## caught the result — birch standing at right angles out of a 60-degree rock face with their roots
+## in mid-air. Opting every existing table in by DEFAULT rather than authoring a band into 31 `.tres`
+## files is deliberate: a table that forgot to think about slope wants the safe answer, and the
+## unsafe answer is the one that was shipping.
+##
+## The ceiling is `ChunkMesher.ROCK_START_SLOPE_DEG` — where the terrain shader starts painting
+## ground as bare rock (F-464). The two numbers agreeing is the whole idea: a tree may stand exactly
+## where the ground still reads as soil, and nowhere the ground has already been declared stone.
+## Move one and move the other.
+##
+## A table that WANTS steep ground — scree, rubble, anything belonging to a cliff rather than
+## growing on one — raises `max_slope_deg` and usually sets a floor as well.
+const DEFAULT_MAX_SLOPE_DEG: float = 34.0
+
+@export_range(0.0, 90.0, 0.5) var min_slope_deg: float = 0.0
+@export_range(0.0, 90.0, 0.5) var max_slope_deg: float = DEFAULT_MAX_SLOPE_DEG
 @export_range(0.0, 1.0, 0.01) var min_corruption: float = 0.0
 @export_range(0.0, 1.0, 0.01) var max_corruption: float = 1.0
 @export var entries: Array[SCATTER_ENTRY] = []
@@ -63,6 +85,14 @@ const ANY_BIOME: StringName = &"*"
 ## for a corruption sample per candidate point.
 func reads_corruption() -> bool:
 	return min_corruption > 0.0 or max_corruption < 1.0
+
+
+## Does this table gate on slope at all? A table that accepts every slope must not pay for the two
+## extra surface samples the gradient costs. With the default ceiling in place the honest answer is
+## "yes" for essentially every table — the escape hatch is `max_slope_deg = 90`, which a table sets
+## when it genuinely means anywhere.
+func reads_slope() -> bool:
+	return min_slope_deg > 0.0 or max_slope_deg < 90.0
 
 
 func total_weight() -> float:
@@ -94,10 +124,15 @@ func validation_errors() -> PackedStringArray:
 		errors.append("biome_id is empty")
 	if max_corruption < min_corruption:
 		errors.append("max_corruption must be >= min_corruption")
-	if biome_id == ANY_BIOME and not reads_corruption():
+	if max_slope_deg < min_slope_deg:
+		errors.append("max_slope_deg must be >= min_slope_deg")
+	# A slope band counts as the narrow gate here for the same reason a corruption band does: steep
+	# ground is a small, specific share of the island (`cliff_check` measures it at 0.4-2.2%), so a
+	# biome-blind table gated on it dresses a landform rather than the world.
+	if biome_id == ANY_BIOME and not reads_corruption() and min_slope_deg <= 0.0:
 		errors.append(
-			"biome_id is \"%s\" but no corruption band is set — a table with neither gate " % ANY_BIOME
-			+ "would place its assets over the entire island")
+			"biome_id is \"%s\" but neither a corruption band nor a slope floor is set — a table " % ANY_BIOME
+			+ "with none of those gates would place its assets over the entire island")
 	if entries.is_empty():
 		errors.append("entries is empty")
 	if total_weight() <= 0.0:

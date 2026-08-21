@@ -95,7 +95,18 @@ const WORST_KNOWN_CHUNK := Vector2i(3, -4)
 ## `ChunkMesher.SKIRT_DEPTH` was a fraction of `HEIGHT_SCALE` and the uplands are not in
 ## `HEIGHT_SCALE`. That constant is a fraction of `MAX_HEIGHT` now (33.2 m), so the margin is back
 ## to 2.5x and it tracks the hills automatically.
-const WORST_KNOWN_DIVERGENCE_M: float = 13.5104
+##
+## Re-swept for F-464 (the river ramps out of its corridor instead of clipping at it): **0.3995 m**
+## here, 1.7912 m island-wide worst. The tripwire fell by a factor of 34, and the direction is the
+## interesting part — the paragraph above expected steeper cliffs to make this climb, and F-464 made
+## the cliffs steeper on average while removing the one thing that was genuinely off the scale.
+##
+## That is not a coincidence: this named spot WAS the wall. A vertical step is the pathological case
+## for a halved sampling rate — LOD1 either lands on the top of it or on the bottom, and the whole
+## step is the divergence. Nothing this generator produces now is discontinuous, so the worst a
+## coarse mesh can miss is a real gradient over a real distance. The skirt clears the island-wide
+## worst by 18x.
+const WORST_KNOWN_DIVERGENCE_M: float = 0.3995
 ## Chunk radius the seam/harvestable sweeps scan. `IslandHeightmap.ISLAND_RADIUS` is 118 m
 ## (CHUNK_SIZE 32 m -> ~4 chunks), so 10 chunks (320 m) is a wide margin past the falloff shoulder
 ## into open water — cheap because water contributes ~0 divergence and no harvestable placements,

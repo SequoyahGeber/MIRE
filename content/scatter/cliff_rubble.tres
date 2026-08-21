@@ -1,0 +1,73 @@
+[gd_resource type="Resource" script_class="ScatterDef" format=3]
+
+; F-464/F-471 — the rubble a cliff sheds.
+;
+; A-016a built the rock vocabulary a year of terrain never placed: until this table,
+; `terrain_accents` appeared in exactly one script in the whole repo, and that script was its own
+; check. This is the first thing in the shipped game that puts one on the island.
+;
+; Biome-blind on purpose (`biome_id = "*"`): a cliff is a LANDFORM, not a biome, and the same face
+; can run out of forest and into meadow along its own length. The slope floor is what makes that
+; legitimate — see `ScatterDef.validation_errors()`. It sits at 30 degrees, a little under
+; `ChunkMesher.ROCK_START_SLOPE_DEG` (40), so the rubble starts just before the ground itself turns
+; to stone and there is no line where one begins and the other ends.
+;
+; Sparse (`coverage = 0.3` on a 7 m cell) and deliberately not dense: this dresses a face, it does not pave one. Steep
+; ground is 0.4-2.2% of the island by `cliff_check`'s measure, so even at this density the table
+; places a handful of pieces per cliff — which is what "the rock that fell off it" looks like.
+
+[ext_resource type="Script" path="res://world/gen/scatter_entry.gd" id="1_entry"]
+[ext_resource type="Script" path="res://world/gen/scatter_def.gd" id="2_def"]
+
+[sub_resource type="Resource" id="Resource_00_scree_pile"]
+script = ExtResource("1_entry")
+asset = &"scree_pile"
+kit = "terrain_accents"
+weight = 1.6
+min_scale = 0.7
+max_scale = 1.5
+
+[sub_resource type="Resource" id="Resource_01_rocky_slope"]
+script = ExtResource("1_entry")
+asset = &"rocky_slope"
+kit = "terrain_accents"
+weight = 1.1
+min_scale = 0.8
+max_scale = 1.35
+
+[sub_resource type="Resource" id="Resource_02_cliff_overhang"]
+script = ExtResource("1_entry")
+asset = &"cliff_overhang"
+kit = "terrain_accents"
+weight = 0.45
+min_scale = 0.85
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_03_boulder_e"]
+script = ExtResource("1_entry")
+asset = &"boulder_e"
+kit = "environment"
+weight = 0.8
+min_scale = 0.7
+max_scale = 1.3
+
+[sub_resource type="Resource" id="Resource_04_rock_cluster_d"]
+script = ExtResource("1_entry")
+asset = &"rock_cluster_d"
+kit = "environment"
+weight = 0.7
+min_scale = 0.8
+max_scale = 1.25
+
+[resource]
+script = ExtResource("2_def")
+id = &"cliff_rubble"
+biome_id = &"*"
+cell_size_m = 7
+jitter_fraction = 0.8
+coverage = 0.3
+min_height = 0.5
+max_height = 1000
+min_slope_deg = 30.0
+max_slope_deg = 90.0
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_scree_pile"), SubResource("Resource_01_rocky_slope"), SubResource("Resource_02_cliff_overhang"), SubResource("Resource_03_boulder_e"), SubResource("Resource_04_rock_cluster_d")])

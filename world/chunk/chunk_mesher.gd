@@ -200,6 +200,32 @@ static func blend_ground_albedo(
 	return Color(red * inverse, green * inverse, blue * inverse, 1.0)
 
 
+## F-464 · HOW MUCH OF THIS VERTEX IS BARE ROCK, 0..1, from the emitted surface's own tilt.
+##
+## Travels in `ARRAY_COLOR`'s alpha, which the biome blend was leaving at a constant 1.0 — so it
+## costs nothing in the vertex buffer, needs no second attribute, and the skirt inherits it with the
+## rest of the colour exactly as it already did. `terrain_flat.gdshader` is the only reader.
+##
+## The two angles are where ground stops holding what grows on it. Grass and litter sit on anything
+## up to about the angle of repose of soil; past that a slope sheds, and by the high number it is a
+## face. The low number straddles the river cliff's own 52-degree mean (F-464) rather than sitting
+## well under it: rock has to start before the cliff proper does, or the face gets a hard green line
+## along its rim — but the first cut at 34/56 painted half the island's ordinary hillsides grey,
+## which is the same mistake in the other direction and much more visible, because there is far more
+## hillside than there is cliff.
+const ROCK_START_SLOPE_DEG: float = 40.0
+const ROCK_FULL_SLOPE_DEG: float = 62.0
+## `cos()` of those, because a unit normal's y IS the cosine of the slope and comparing there costs
+## no trig per vertex. GDScript will not fold `cos()` into a const, hence the literals — recompute
+## both together if either angle moves.
+const _ROCK_START_COS: float = 0.766    # cos(40 deg)
+const _ROCK_FULL_COS: float = 0.469     # cos(62 deg)
+
+
+static func _rock_exposure(normal_y: float) -> float:
+	return 1.0 - smoothstep(_ROCK_FULL_COS, _ROCK_START_COS, normal_y)
+
+
 static func verts_per_side(lod: int) -> int:
 	return CHUNK_SIZE / LOD_STEPS[lod] + 1
 
@@ -505,6 +531,26 @@ static func build_mesh(
 	# is the mesh's own data, which is a trap for anything that reads it (a check, a tool, any future
 	# material without the derivative trick) and was wrong for no reason.
 	_accumulate_normals(vertices, indices, normals, count)
+	# F-464: rock exposure, into the alpha the biome colour left at 1.0.
+	#
+	# Steep ground is bare rock, everywhere, for the same reason it is in the world: soil and the
+	# things that root in it do not stay on a face. So this is not a river-cliff special case —
+	# a lobe's sea cliff and a placed hill's scarp get it too, off the one property they share.
+	#
+	# It has to be HERE and not in the vertex loop, because the honest slope is the one the emitted
+	# triangles actually form (F-339's whole point), and that is not known until they exist. It is
+	# also why this costs no samples at all: `normals` is already built and already paid for.
+	#
+	# Per VERTEX rather than per fragment. `terrain_flat.gdshader` could derive a facet slope from
+	# the same screen-space derivatives it lights with, at two more instructions on every terrain
+	# pixel on the screen; this is 1,089 lerps per chunk, once, at build time, on a thread. On the
+	# machine docs/PERFORMANCE.md targets that is not a close call. The cost is that a cliff meshed
+	# at LOD2 reads its slope across 4 m instead of 1 m and comes out a little greener — which is
+	# the correct direction to be wrong in, since LOD2 chunks are the far ones.
+	for i in count:
+		var colour: Color = colors[i]
+		colour.a = _rock_exposure(normals[i].y)
+		colors[i] = colour
 
 	# Skirt: a thin wall hanging SKIRT_DEPTH metres straight down from the chunk's outer border,
 	# appended AFTER the terrain so `collision_faces()` can slice the terrain off the front. Both

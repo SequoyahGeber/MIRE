@@ -3222,44 +3222,6 @@ F-462 is somebody else's benchmark finding. This entry, F-463, is the one it mea
 
 ---
 
-### F-464 · The river's carve ends in a vertical wall wherever it crosses a hill, and nothing on the island reads as rock
-
-**Area:** worldgen · **Severity:** high · **Found:** 2026-08-21 by onyx059945
-
-Reported from play (Sequoyah, 2026-08-21): "when a river generates through the middle of the map and
-cuts through a hill it just drops from the top of the hill straight down to the bottom of the river
-and leaves a straight vertical wall that is unnatural."
-
-### Why it happens
-
-`IslandHeightmap._carve()` is `min(surface, channel)`, and `_river_channel()` returns a 1.0e9
-sentinel the instant a sample is further than `width * RIVER_CORRIDOR` from the polyline. So the
-carve is applied at FULL strength right up to the corridor edge and then stops dead. The height
-difference the carve was still holding down at that edge becomes a vertical step of exactly that
-size, between two adjacent samples.
-
-On the flat interior that step is nearly nothing: the channel ceiling at the corridor edge is
-`bed + RIVER_CORRIDOR^2 * RIVER_BANK_RISE` = bed + 7.5 m, which is above the ~3 m plateau, so the
-carve had already faded to zero on its own and F-372's bank tuning is what you see. Through a placed
-hill or a ridge crest the surface at the corridor edge is well above bed + 7.5 m, the carve is still
-pushing metres of rock down when the clip fires, and the remainder appears as a wall.
-
-The file's own comment predicted this ("if the walls have not reached the surface by then the clip
-itself becomes a hard vertical step — the ravine, back, at the corridor edge instead of at the bed")
-and treated widening the corridor as the fix. Widening cannot fix it: no fixed corridor is wide
-enough for an arbitrary hill, because the required half-width is `sqrt(depth / rise)` and `depth` is
-whatever terrain the river happens to cross.
-
-### The second half
-
-A river cutting a hill SHOULD leave something steep — that is a gorge, and it is good. What it may
-not leave is a mathematically vertical clip wearing the same grass as the meadow above it. A-016a
-already built the rock vocabulary for this (cliff_face, cliff_corner, cliff_overhang, rocky_slope,
-scree_pile, stone_steps in `assets/terrain_accents/`) and nothing in the shipped game places a
-single one of them: `terrain_accents` appears in exactly one script, its own check.
-
----
-
 ### F-465 · The preset calibration cannot resolve presets on a machine with headroom
 
 **Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
@@ -3419,7 +3381,102 @@ its own path instead of rebuilding it.
 
 ---
 
-### F-471 · Scatter has no slope gate at all, so trees grow straight out of cliff faces
+## Resolved
+
+### F-464 · The river's carve ends in a vertical wall wherever it crosses a hill, and nothing on the island reads as rock — **fixed**
+
+**Area:** worldgen · **Severity:** high · **Found:** 2026-08-21 by onyx059945
+
+Reported from play (Sequoyah, 2026-08-21): "when a river generates through the middle of the map and
+cuts through a hill it just drops from the top of the hill straight down to the bottom of the river
+and leaves a straight vertical wall that is unnatural."
+
+### Why it happens
+
+`IslandHeightmap._carve()` is `min(surface, channel)`, and `_river_channel()` returns a 1.0e9
+sentinel the instant a sample is further than `width * RIVER_CORRIDOR` from the polyline. So the
+carve is applied at FULL strength right up to the corridor edge and then stops dead. The height
+difference the carve was still holding down at that edge becomes a vertical step of exactly that
+size, between two adjacent samples.
+
+On the flat interior that step is nearly nothing: the channel ceiling at the corridor edge is
+`bed + RIVER_CORRIDOR^2 * RIVER_BANK_RISE` = bed + 7.5 m, which is above the ~3 m plateau, so the
+carve had already faded to zero on its own and F-372's bank tuning is what you see. Through a placed
+hill or a ridge crest the surface at the corridor edge is well above bed + 7.5 m, the carve is still
+pushing metres of rock down when the clip fires, and the remainder appears as a wall.
+
+The file's own comment predicted this ("if the walls have not reached the surface by then the clip
+itself becomes a hard vertical step — the ravine, back, at the corridor edge instead of at the bed")
+and treated widening the corridor as the fix. Widening cannot fix it: no fixed corridor is wide
+enough for an arbitrary hill, because the required half-width is `sqrt(depth / rise)` and `depth` is
+whatever terrain the river happens to cross.
+
+### The second half
+
+A river cutting a hill SHOULD leave something steep — that is a gorge, and it is good. What it may
+not leave is a mathematically vertical clip wearing the same grass as the meadow above it. A-016a
+already built the rock vocabulary for this (cliff_face, cliff_corner, cliff_overhang, rocky_slope,
+scree_pile, stone_steps in `assets/terrain_accents/`) and nothing in the shipped game places a
+single one of them: `terrain_accents` appears in exactly one script, its own check.
+
+---
+
+**Resolved 2026-08-21 by onyx059945.** Three parts, all verified headlessly.
+
+THE SHAPE. `_river_channel()` no longer clips to a sentinel at `width * RIVER_CORRIDOR`. Past the
+corridor the channel ceiling RAMPS at a fixed gradient (`CLIFF_RISE_PER_M`, tan 52 degrees) until it
+meets the ground, for as far as that takes, so the width of the cut follows the depth of what the
+river crossed instead of a constant no one can pick correctly. A hard cap at `CLIFF_MAX_RUN_M`
+(44 m, enough ramp to climb more than `MAX_HEIGHT`) bounds the cost, and a taper over its last 28%
+means that even if it ever fires the failure is a shallower gorge, not a step.
+
+Measured island-wide by the new `tools/cliff_check.gd`, scanning for the steepest ground rather than
+sampling the transects the fix was tuned on:
+
+    seed        before      after (carved)   uncarved control
+    20260818    86.4 deg    68.4 deg         64.1 deg
+    8102602     88.9 deg    69.9 deg         55.7 deg
+    4242        88.5 deg    67.3 deg         62.2 deg
+    90210       88.8 deg    88.8 -> 61.9     69.0 deg
+
+Before was vertical to within a degree, which is the reported defect exactly. After is a gorge, and
+a gorge is what a river cutting a hill should leave — the control column is there because a number
+for the cut means nothing without the number for the island it cut through.
+
+On the interior plateau nothing moved at all: the parabola crosses a ~3 m surface several metres
+inside the corridor, so the ramp branch is never reached and F-372's bank tuning is untouched to the
+decimal. `terrain_check` passes, bed monotonicity included. Strata benching (a twice-applied soft
+quantise of world height — flat tread, steep riser, continuous surface, nothing for `NavBaker` to
+choke on) and a wander driven by the coast noise the sample had already paid for are gated on the
+cut being deeper than `CLIFF_DEPTH_MIN`, so no stream bank is touched.
+
+THE MATERIAL. `ChunkMesher._rock_exposure()` derives a 0..1 rock mask from the slope of the
+triangles a chunk actually emits and ships it in `ARRAY_COLOR`'s alpha, which the biome blend was
+leaving at a constant 1.0 — no new attribute, no extra sample, and the skirt inherits it with the
+rest of the colour. `terrain_flat.gdshader` blends `mire_art.py`'s own `stone`/`stone_dark` swatches
+over it, banded on world height at the same 1.35 m rhythm the geometry is benched at, with the phase
+drifting along the face so a long wall does not read as corduroy. `cliff_check` asserts the coverage
+stays a landform rather than a colour the island wears: 0.4-2.2% of land across the four seeds,
+against a 14% ceiling.
+
+THE ASSETS. A-016a's rock is on the island — see F-471, which this work turned up and which made it
+possible.
+
+A HAPPY SIDE EFFECT, recorded because it is counter-intuitive: the LOD seam tripwire in
+`chunk_stream_check` FELL from 13.5104 m to 0.3995 m, and the island-wide worst to 1.7912 m against
+a 33 m skirt. That named spot WAS the wall — a vertical step is the pathological case for a halved
+sampling rate, since LOD1 lands on the top of it or the bottom and the whole step is the divergence.
+The constant is re-swept with that reasoning written down.
+
+NOT DONE HERE: the decision record. `docs/DECISIONS.md` is claimed by another session (3.18) for the
+whole of this one, so the "why a ramp and not a wider corridor" argument lives in the CLIFFS block at
+the top of `island_heightmap.gd` instead, which is where anyone retuning it will actually be.
+
+STILL A TASTE CALL: whether the rock is too bright. The swatch is scaled to 0.72 because a hillside
+of flat-shaded facets returns its albedo far less attenuated than a boulder does, and the sunlit
+faces in `assets/audit/cliffs/` still read pale. That is Sequoyah's call, and it is one constant.
+
+### F-471 · Scatter has no slope gate at all, so trees grow straight out of cliff faces — **fixed**
 
 **Area:** worldgen · **Severity:** medium · **Found:** 2026-08-21 by onyx059945
 
@@ -3444,9 +3501,26 @@ mask's own `ROCK_START_SLOPE_DEG` (34) for anything that roots, and left open fo
 scree, which belong on a face. Not filed as part of F-464 because both scatter files are claimed by
 F-461 and this is a scatter rule, not a terrain one.
 
----
+**Resolved 2026-08-21 by onyx059945.** `ScatterDef` gates on slope now, and the gate is ON BY DEFAULT: `max_slope_deg` defaults to 34
+degrees — `ChunkMesher.ROCK_START_SLOPE_DEG`, the angle at which the terrain shader starts painting
+ground as bare rock (F-464). So all 31 shipped tables got the gate without one `.tres` being edited,
+which was the point: a table that never thought about slope wants the safe answer, and the unsafe
+answer was the one shipping.
 
-## Resolved
+`ResourceScatter._placement_at()` measures the slope from two extra `surface_from_set()` samples
+1.5 m out, on the SHIPPED surface the mesher builds rather than the biome-blind heightmap, and only
+for a candidate that has already survived the biome, corruption and height gates. Stream-safe like
+the gates around it — no `rng` is touched, so a rejection cannot shift another point's rolls.
+
+Verified in `assets/audit/cliffs/cliff_8102602.png`: the birch that stood at right angles out of the
+rock face are gone, and the treeline now stops at the rim. `tools/resource_scatter_check.gd` passes.
+
+The gate also made `content/scatter/cliff_rubble.tres` possible — a biome-blind table with a 30
+degree FLOOR that puts A-016a's scree, rocky slope and overhang on cliff faces, which is the first
+time anything in the shipped game has placed a `terrain_accents` asset at all. `cliff_check` asserts
+it lands: 10-38 pieces per island across the four check seeds before the density bump, and
+`ScatterDef.validation_errors()` now accepts a slope floor as the narrow gate a `biome_id = "*"`
+table must have, alongside the corruption band that was previously the only one.
 
 ### F-462 · The benchmark shows a progress bar and no numbers, and never says how long is left — **fixed**
 

@@ -35,6 +35,8 @@ extends SceneTree
 ## past it a face is a wall, and no natural slope of loose or bedded material stands there.
 
 const IslandHeightmap = preload("res://world/gen/island_heightmap.gd")
+const ChunkMesher = preload("res://world/chunk/chunk_mesher.gd")
+const ResourceScatter = preload("res://world/gen/resource_scatter.gd")
 
 ## Coarse locating pass. 4 m is a quarter of the narrowest cliff face the carve can produce (the
 ## band is `RIVER_CORRIDOR - RIVER_BANK_HOLD` = 4 half-widths, and the narrowest half-width is 3 m),
@@ -54,6 +56,17 @@ const MAX_SLOPE_DEG: float = 72.0
 ## Sea level. Below it the seabed's own falloff is not a slope anybody stands on, and the ocean
 ## floor drop is deliberately steep — measuring it would be measuring OCEAN_FLOOR_DEPTH.
 const MIN_HEIGHT_M: float = 0.2
+
+## Bare rock has to stay a LANDFORM, not a colour the island wears. `ChunkMesher._rock_exposure()`
+## paints anything past its slope thresholds, and those thresholds are tuned by eye against a render
+## — which is exactly the kind of tuning that drifts until half the island is grey and nobody
+## noticed it happening one degree at a time. So the coverage is asserted, in the same spirit as
+## `hill_slope_check`'s "cliffs stay local: under 18% of land is past the walk limit".
+##
+## Measured on the same coarse grid, over LAND only, at the same slope thresholds the mesher uses —
+## read from `ChunkMesher` rather than copied, so retuning them there moves this measurement with
+## them and can only fail on the COVERAGE, which is the property that actually matters.
+const MAX_ROCK_SHARE: float = 0.14
 
 const SEEDS: Array[int] = [20260818, 8102602, 4242, 90210]
 
@@ -102,6 +115,7 @@ func _initialize() -> void:
 		var hot_deg := PackedFloat32Array()
 		var floor_deg: float = 0.0
 		var control_deg: float = 0.0
+		var rocky: int = 0
 		var samples: int = 0
 		var slope_sum: float = 0.0
 		var x: float = -radius
@@ -115,6 +129,10 @@ func _initialize() -> void:
 					continue
 				samples += 1
 				slope_sum += deg
+				# `cos()` of the slope IS the y of the unit normal the mesher reads, so this asks
+				# `_rock_exposure()` the same question with the same units.
+				if ChunkMesher._rock_exposure(cos(deg_to_rad(deg))) > 0.5:
+					rocky += 1
 				if not carved:
 					control_deg = maxf(control_deg, deg)
 					continue
@@ -157,9 +175,55 @@ func _initialize() -> void:
 		_check("seed %d: the river's cut stays under %.0f deg" % [world_seed, MAX_SLOPE_DEG],
 			worst < MAX_SLOPE_DEG,
 			"measured %.1f deg at (%.0f, %.0f)" % [worst, worst_at.x, worst_at.y])
+		var rock_share: float = float(rocky) / maxf(float(samples), 1.0)
+		_check("seed %d: bare rock stays a landform — %.1f%% of land (limit %.0f%%)"
+			% [world_seed, rock_share * 100.0, MAX_ROCK_SHARE * 100.0],
+			rock_share < MAX_ROCK_SHARE)
+
+	_check_rubble_lands()
 
 	print("\n%d failure(s)" % _failures)
 	quit(1 if _failures > 0 else 0)
+
+
+## F-464's other half: A-016a's rock actually reaching the island.
+##
+## Until this, `terrain_accents` appeared in exactly one script in the repo — its own build check —
+## so six authored cliff assets existed and none of them had ever been placed. `cliff_rubble` is the
+## table that places them, and what makes it possible is F-471's slope gate, so this asserts the two
+## together: the table has to survive validation, and it has to put something on real ground.
+##
+## Content is loaded directly rather than through `Registry`, because a `--script` harness's
+## `_initialize()` runs before autoloads are ready (F-011) and this check has no reason to become
+## asynchronous over a `load()`.
+func _check_rubble_lands() -> void:
+	print("\n-- F-464 · the cliff table reaches the island --")
+	var def: Resource = load("res://content/scatter/cliff_rubble.tres")
+	if def == null:
+		_check("cliff_rubble.tres loads", false)
+		return
+	var errors: PackedStringArray = def.call(&"validation_errors")
+	_check("cliff_rubble passes ScatterDef validation", errors.is_empty(), ", ".join(errors))
+
+	var biome_defs: Array = []
+	for file: String in (DirAccess.get_files_at("res://content/biomes") as PackedStringArray):
+		if file.ends_with(".tres"):
+			biome_defs.append(load("res://content/biomes/%s" % file))
+
+	# Around the steepest carved point found above, which is where a cliff table is supposed to
+	# work. A sweep of the whole island would prove less: a table with no slope gate at all would
+	# also pass that, by dressing the meadows.
+	for world_seed: int in SEEDS:
+		var placed: int = 0
+		var chunks: int = 0
+		for cx in range(-6, 7):
+			for cz in range(-6, 7):
+				chunks += 1
+				var list: Array = ResourceScatter.placements_for_chunk(
+					cx, cz, world_seed, [def], biome_defs)
+				placed += list.size()
+		_check("seed %d: cliff_rubble places rock (%d piece(s) over %d chunks)"
+			% [world_seed, placed, chunks], placed > 0)
 
 
 ## Indices of `values`, steepest first.

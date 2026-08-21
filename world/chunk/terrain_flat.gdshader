@@ -172,6 +172,55 @@ const vec3 BLIGHT_TINT = vec3(0.66, 0.24, 1.22);
 // facets is a mirrored polygon, which is worse than no cue at all.
 const float BLIGHT_ROUGHNESS = 0.76;
 
+// ---------------------------------------------------------------------------------------------
+// F-464 · BARE ROCK ON STEEP GROUND.
+//
+// Play, on a river cutting a hill: "it just drops from the top of the hill straight down to the
+// river and leaves a straight vertical wall that is unnatural." `IslandHeightmap`'s CLIFFS block
+// fixed the SHAPE — the drop ramps out over as much ground as its depth needs, and its face is
+// benched into strata. This is the other half of that sentence: the face was also wearing the same
+// grass as the meadow above it, and a green cliff reads as a wall no matter what angle it stands at.
+//
+// The mask arrives in COLOR.a, which the biome blend was leaving at a constant 1.0 —
+// `ChunkMesher._rock_exposure()`, taken from the slope of the triangles the chunk actually emits.
+// So it is not a river feature: a sea cliff on a lobe and a placed hill's scarp get the same
+// treatment off the same property, which is the only way the island stays one place.
+//
+// Nothing is sampled for it. The strata come from the world height that is already interpolated
+// across the facet, and the mottling reuses the detail fields F-399 computed above.
+//
+// The two stone colours are `tools/blender/mire_art.py`'s `stone` (#818E93) and `stone_dark`
+// (#59656C) — literally the swatches A-016a's cliff modules are built from, in linear, so a
+// `cliff_face` prop pushed into a carved face is the same rock as the ground it sits on rather
+// than a slightly different grey stuck to it.
+// Both are the swatch value scaled by 0.72. A prop is lit as one object with its own shading; a
+// hillside is thousands of flat-shaded facets, of which the ones facing the sun all return the
+// albedo nearly unattenuated, so the same number that reads as mid grey stone on a boulder reads as
+// chalk across a whole face. The RATIO between the two is what the swatches actually decide, and
+// that is untouched.
+const vec3 ROCK_ALBEDO = vec3(0.1580, 0.1948, 0.2101);
+const vec3 ROCK_ALBEDO_DARK = vec3(0.0719, 0.0937, 0.1080);
+// Metres per bedding plane. The SAME rhythm as `IslandHeightmap.CLIFF_BENCH_HEIGHT`, deliberately:
+// the geometry already steps the face at this interval, and shading it at any other interval would
+// put two unrelated stripe patterns on one wall. If that constant moves, move this with it.
+const float ROCK_STRATA_M = 1.35;
+// How dark the underside of each band goes. This is what makes the benching legible at a distance —
+// on flat-shaded low-poly geometry a tread and its riser can catch nearly the same light, and
+// without a value break the whole face flattens out into one grey slab.
+const float ROCK_STRATA_DEPTH = 0.62;
+// Per-facet mottling on the rock, reusing F-399's fields. Stronger than the ground's, because that
+// one is fighting to stay subtle under grass and this one is standing in for the grain of stone.
+const float ROCK_MOTTLE = 0.30;
+// How far the bedding planes drift in and out of phase along a face, in metres, driven by the broad
+// 58 m detail field. Without it every band on the island is at the same absolute height and a long
+// face reads as corduroy — a manufactured stripe rather than rock that bedded and then tilted. Kept
+// well under one band: the point is that neighbouring stretches of the same face disagree slightly
+// about where the course sits, not that the courses stop being roughly level.
+const float ROCK_STRATA_DRIFT = 0.55;
+// Rock is matte and slightly damp. Just under the ground's 1.0 so a face separates from the meadow
+// in specular as well as in colour, and nowhere near low enough to make a facet a mirror.
+const float ROCK_ROUGHNESS = 0.94;
+
 uniform sampler2D mire_field : hint_default_black, filter_linear, repeat_disable;
 uniform float mire_field_half_extent = 118.0;
 // One dial for the whole effect, for an A/B and for a future look pass. At 0 this shader is
@@ -193,6 +242,12 @@ varying flat float facet_detail;
 // per-fragment. This is the opposite of `broad_detail`'s situation and the reason that one is
 // restricted to wavelengths far above the vertex spacing while this one is not restricted at all.
 varying vec2 mire_uv;
+// F-464. How much of this vertex is bare rock, 0..1 — `ChunkMesher._rock_exposure()`, in the alpha
+// the biome blend was not using.
+varying float rock_exposure;
+// World height, for the strata bands. Affine in the vertex position, so the interpolation across a
+// facet is exact and the bands are genuinely horizontal planes rather than a per-vertex staircase.
+varying float world_height;
 
 // Hash without sine (integer-free, so it behaves the same on a GPU that flushes denormals and does
 // not need a transcendental unit). Fed lattice coordinates in roughly +/-20 after the scales above,
@@ -230,7 +285,10 @@ void vertex() {
 	// F-399. World space, not model space: chunk meshes are authored chunk-local (0..32) and placed
 	// at their chunk origin, so anything computed from VERTEX alone would repeat every 32 m with a
 	// seam at every chunk border — the exact failure the chunk-local UVs already have.
-	vec2 world_xz = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xz;
+	vec3 world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	vec2 world_xz = world_position.xz;
+	rock_exposure = COLOR.a;
+	world_height = world_position.y;
 	// 30 degrees of rotation baked into the two constant pairs (cos30, sin30 = 0.866, 0.5), so the
 	// lattices of the two layers line up with neither the world axes nor each other.
 	broad_detail = detail_noise(vec2(
@@ -258,6 +316,16 @@ void fragment() {
 
 	vec3 base = ground_albedo * albedo_color * detail;
 
+	// F-464. Bedding planes: a sawtooth on world height, softened at the top of each band so the
+	// dark edge sits UNDER the ledge the geometry already put there, the way a weathered bench
+	// shadows the course below it.
+	float band = fract((world_height + (broad_detail - 0.5) * ROCK_STRATA_DRIFT)
+		/ ROCK_STRATA_M);
+	float bedding = 1.0 - ROCK_STRATA_DEPTH * (1.0 - smoothstep(0.0, 0.55, band));
+	vec3 rock = mix(ROCK_ALBEDO_DARK, ROCK_ALBEDO, bedding)
+		* (1.0 + (value_field + facet_field) * ROCK_MOTTLE * ground_detail_strength);
+	base = mix(base, rock, rock_exposure);
+
 	// F-435. `value_field` and `facet_field` are the terrain's own detail noise, reused here so the
 	// Mire's boundary is ragged at the scale of the ground rather than a clean bilinear circle.
 	float corruption = texture(mire_field, mire_uv).r
@@ -269,7 +337,7 @@ void fragment() {
 	vec3 tainted = mix(base, vec3(grey), BLIGHT_DESATURATE) * BLIGHT_TINT;
 
 	ALBEDO = mix(base, tainted, blight);
-	ROUGHNESS = mix(1.0, BLIGHT_ROUGHNESS, blight);
+	ROUGHNESS = mix(mix(1.0, ROCK_ROUGHNESS, rock_exposure), BLIGHT_ROUGHNESS, blight);
 	// dFdy x dFdx (not the other order): VERTEX is view-space, and this order faces the normal
 	// toward the camera the way Godot's own flat-shade examples do.
 	NORMAL = normalize(cross(dFdy(VERTEX), dFdx(VERTEX)));
