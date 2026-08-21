@@ -7,7 +7,7 @@ extends Node
 ## a wall a client can conjure is a wall a client can conjure for free, inside you, on the extraction
 ## pad. Protocol 12 carries three RPCs:
 ##
-##   · `net_request_place`   client -> host, piece id + transform. Reliable: a dropped build request
+##   · `net_request_place`   client -> host, piece id + transform + snap toggle. Reliable: a dropped
 ##                           is a player pressing the button and nothing happening.
 ##   · `net_request_destroy` client -> host, the piece's node name. The host resolves the
 ##                           requester's own body and re-enforces the piece def's
@@ -151,12 +151,18 @@ func _physics_process(delta: float) -> void:
 ## Returns a local request id immediately; the answer always arrives through `build_confirmed`.
 ## Same shape as InventoryService.request_remove() and Chest.request_open() — a build is a round
 ## trip and pretending otherwise is how a UI ends up lying about what it owns.
-func request_place(piece_id: StringName, placement: Transform3D) -> int:
+## `snapping` is the player's snap toggle at the moment they pressed place, and it travels with the
+## request because the host re-resolves the transform and the two modes are not refinements of each
+## other (D-202). A host that assumed snapping was on would drag a deliberately angled barricade
+## flush against the nearest wall; one that assumed it was off would leave the gaps the toggle exists
+## to close.
+func request_place(piece_id: StringName, placement: Transform3D, snapping: bool = true) -> int:
 	var request_id: int = _take_request_id()
 	if _owns_mutation():
-		_process_place(_local_peer_id(), piece_id, placement, request_id)
+		_process_place(_local_peer_id(), piece_id, placement, snapping, request_id)
 	elif bool(_transport().call("is_active")):
-		net_request_place.rpc_id(NetConfig.HOST_PEER_ID, String(piece_id), placement, request_id)
+		net_request_place.rpc_id(
+			NetConfig.HOST_PEER_ID, String(piece_id), placement, snapping, request_id)
 	else:
 		build_confirmed.emit(request_id, false, "no authoritative session")
 	return request_id
@@ -179,7 +185,7 @@ func request_destroy(piece_name: StringName) -> int:
 ## The whole authority story in one function. Nothing above it is trusted and nothing below it runs
 ## unless every rule passed.
 func _process_place(
-	peer_id: int, piece_id: StringName, placement: Transform3D, request_id: int
+	peer_id: int, piece_id: StringName, placement: Transform3D, snapping: bool, request_id: int
 ) -> void:
 	if not _owns_mutation():
 		return
@@ -188,11 +194,14 @@ func _process_place(
 		_answer(peer_id, request_id, false, VALIDATOR.reason_text(VALIDATOR.Reason.UNKNOWN_PIECE))
 		return
 
-	# Re-snap rather than trusting the client's transform. A client that sends an unsnapped or
-	# absurd transform gets it corrected, not honoured — and snapping is pure, so the host's answer
-	# is the same one an honest client already computed for itself.
-	var snapped: Transform3D = VALIDATOR.snap_transform(
-		def, placement.origin, placement.basis.get_euler().y)
+	# Re-resolve rather than trusting the client's transform. A client that sends an absurd one gets
+	# it corrected, not honoured. Unlike the pure grid snap this replaced, neighbour snapping reads
+	# the HOST's physics world — so this is the host's own answer about the host's own pieces, not a
+	# recomputation of the client's. It is safe to run over an already-resolved transform because
+	# `resolve_placement` is idempotent by construction (see its doc comment): an honest client's
+	# transform is a fixed point of it, and lands back exactly where the ghost showed it.
+	var snapped: Transform3D = VALIDATOR.resolve_placement(
+		def, placement.origin, placement.basis.get_euler().y, snapping, _space_state(), QUERY_MASK)
 
 	var reason: int = VALIDATOR.evaluate(
 		_space_state(), def, snapped, _builder_position(peer_id, snapped.origin), QUERY_MASK)
@@ -502,14 +511,16 @@ func _generated_piece(def: Resource) -> Node3D:
 
 
 @rpc("any_peer", "call_remote", "reliable")
-func net_request_place(piece_id: String, placement: Transform3D, request_id: int) -> void:
+func net_request_place(
+	piece_id: String, placement: Transform3D, snapping: bool, request_id: int
+) -> void:
 	if not bool(_transport().call("is_host")):
 		return
 	var sender_id: int = multiplayer.get_remote_sender_id()
 	if not _rate_limiter.allow(sender_id, RATE_LIMIT_INTERVAL_MSEC):
 		_answer(sender_id, request_id, false, "requests too frequent — slow down")
 		return
-	_process_place(sender_id, StringName(piece_id), placement, request_id)
+	_process_place(sender_id, StringName(piece_id), placement, snapping, request_id)
 
 
 @rpc("any_peer", "call_remote", "reliable")
@@ -648,7 +659,11 @@ func _cmd_build(ctx: Dictionary, args: Dictionary) -> Dictionary:
 	var at: Vector3 = _ground_command_placement(args.get("at", Vector3.ZERO) as Vector3)
 	var placement := Transform3D(Basis.IDENTITY, at)
 	var request_id: int = _take_request_id()
-	_process_place(peer_id, piece_id, placement, request_id)
+	# Snapping ON, which is what this command has always effectively had: before D-202 the host
+	# unconditionally grid-snapped every placement, including this one. Passing false here would
+	# silently change `build` from "put it on the grid near these coordinates" to "put it exactly
+	# here", which is a different command than the one already documented and checked.
+	_process_place(peer_id, piece_id, placement, true, request_id)
 	return {"ok": true, "message": "build %s requested (#%d)" % [piece_id, request_id],
 		"data": {"piece": String(piece_id), "request": request_id}}
 

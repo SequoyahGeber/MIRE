@@ -9694,3 +9694,65 @@ fourteenth piece needed no HUD change and none was made.
 same pieces (`wall.tres`'s id is `wall_wood` in anticipation, but no stone variant is authored), and
 no roof or half-height piece. Both are content, not mechanics — the module contract and the placement
 path take either without change.
+
+### 2026-08-21 — F-472: snapping is a toggle that mates pieces to each other (coil26)
+
+Raised by Sequoyah while reviewing 3.7: *"they should be able to be placed anywhere but when
+building pieces near each other I want there to be a snapping toggle so that it's easy to build
+structures without little gaps and stuff."* The system had a fixed 1 m world grid, always on, and no
+piece-to-piece mating at all — F-472 has the account, **D-202** has the design and the reasoning.
+
+**The API the next task builds against.** One function turns an aim point into a transform, and it
+is the only one either side should call:
+
+```gdscript
+PlacementValidator.resolve_placement(
+    def: Resource, origin: Vector3, yaw_radians: float, snapping: bool,
+    space: PhysicsDirectSpaceState3D = null, collision_mask: int = 1) -> Transform3D
+```
+
+`snap_transform()` still exists and is unchanged — it is now the *grid fallback* inside the above,
+not something to call directly. `space` may be null (pure callers, harnesses): neighbour mating is
+skipped and the grid answer comes back, exactly the old behaviour.
+
+`resolve_placement` is **idempotent by construction**, and anything built on it must keep it that
+way — `BuildService._process_place()` re-resolves every client request, so a non-idempotent rule
+makes pieces jump on confirmation. D-202 explains the trap that already caught this once.
+
+Other seams:
+
+| Seam | Shape |
+| --- | --- |
+| `BuildService.request_place(piece_id, placement, snapping := true)` | the bool travels to the host |
+| `net_request_place(piece_id, placement, snapping, request_id)` | `PROTOCOL_VERSION` **22 → 23**, manifest re-recorded |
+| `BuildGhost.toggle_snapping() / is_snapping() / set_snapping(bool)` | client-local mode, ON by default |
+| `BuildBar.set_snapping(bool) / is_snapping()` | display only, pushed by the player, never polled |
+| InputMap `build_snap_toggle` | **V** on keyboard, **D-pad left** on gamepad |
+| `PlacementValidator.SNAP_TOLERANCE_M` (0.75) / `SNAP_SEARCH_RADIUS_M` (4.0) | the two numbers worth tuning |
+
+Neighbours are found through the **physics world**, not `BuildService._placed`, and that is
+load-bearing: `_placed` is host-only, so a client ghost reading it would find nothing to mate to in a
+real session and would behave like the host's single-player case. A piece's definition comes from the
+`buildable_id` metadata `_net_spawn_piece()` already stamps on every peer.
+
+**Verified headless at HEAD, ten checks, 0 failures each:**
+
+```
+agent godot --script tools/build_snap_check.gd   # NEW — free placement, the five mate faces, a
+                                                 # turned neighbour, and idempotence over 400 seeded aims
+agent godot --script tools/build_check.gd
+agent godot --script tools/build_net_check.gd
+agent godot --script tools/buildable_content_check.gd
+agent godot --script tools/construction_check.gd
+agent godot --script tools/command_craft_build_net_check.gd
+agent godot --script tools/gamepad_check.gd      # the toggle through the real input path, ghost + bar
+agent godot --script tools/rpc_manifest_check.gd
+agent godot --script tools/handshake_check.gd    # was RED at HEAD on a stale version literal — F-473
+agent godot --script tools/loop_audit_check.gd
+```
+
+**Known limits, so nobody looks for them here.** Mate points are whole faces plus the top — no
+thirds, no corner posts, no staggered half-offsets; `_mate_points()` is where those go and D-202
+records what that costs. Snapping does not yet mate to terrain features or to world-gen props, only
+to placed pieces. And `SNAP_TOLERANCE_M` has had no playtest: 0.75 m against a 2.00 m module is a
+reasoned starting value, not a tuned one.

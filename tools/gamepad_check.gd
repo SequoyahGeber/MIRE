@@ -293,6 +293,21 @@ func _check_build_cycle_via_gamepad() -> void:
 		player.queue_free()
 		return
 
+	# The snap toggle (F-472/D-202) on its own gamepad binding, D-pad left. Asserted through the real
+	# _unhandled_input path rather than by calling toggle_snapping() directly, because the thing that
+	# breaks is the wiring, not the boolean: an action missing from the InputMap, or a branch that
+	# never fires because build mode was not checked, both leave the ghost's default in place and
+	# look exactly like a working toggle to anything that asks the ghost.
+	check(bool(ghost.call(&"is_snapping")), "snapping starts on, which is what build mode defaults to")
+	player.call(&"_unhandled_input", _joy_button_event(JOY_BUTTON_DPAD_LEFT, true))
+	check(not bool(ghost.call(&"is_snapping")), "gamepad D-pad left turns snapping off")
+	var snap_bar: Node = player.get_node_or_null(^"BuildBar")
+	check(snap_bar != null and not bool(snap_bar.call(&"is_snapping")),
+		"and the bar was told, so the player can see which mode they are in")
+	player.call(&"_unhandled_input", _joy_button_event(JOY_BUTTON_DPAD_LEFT, true))
+	check(bool(ghost.call(&"is_snapping")) and bool(snap_bar.call(&"is_snapping")),
+		"pressing it again turns snapping back on, ghost and bar together")
+
 	# A bare toggle-on auto-selects Registry's first buildable (build_bar.gd's own doc note) which is
 	# not necessarily "wall_wood" or affordable with only the log this check funded — pin the piece
 	# explicitly through the real selection API (the same one BuildBar's slot click uses) so the

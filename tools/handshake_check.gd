@@ -69,8 +69,16 @@ func _initialize() -> void:
 	# bumped 18 -> 19 for wellspring.gd's net_request_toggle_channel plus its own SceneReplicationConfig.
 	# A hard-coded expectation here is deliberate: this check's whole point is to fail loudly the day
 	# someone adds a wire-shape change and forgets the bump.
-	_check("PROTOCOL_VERSION reflects the F-161/165/169/178 catch-up bump",
-		NetVersion.PROTOCOL_VERSION == 21, str(NetVersion.PROTOCOL_VERSION))
+	# 21 -> 22 was F-411's god_mode_service.gd net_set_local_enabled; 22 -> 23 is F-472/D-202's
+	# `snapping` bool on build_service.gd's net_request_place.
+	#
+	# This line was RED at HEAD before F-472 touched it, asserting 21 against a repo already on 22:
+	# F-411 bumped the version and re-recorded core/net/rpc_manifest.gd, which is the check that
+	# fails loudly, and nothing pointed at this second hard-coded copy of the same number. That is
+	# worth knowing rather than just fixing — two independent expectations of one constant means the
+	# quiet one drifts, and only the noisy one gets maintained. Filed as F-473.
+	_check("PROTOCOL_VERSION reflects every bump through F-472's snap toggle",
+		NetVersion.PROTOCOL_VERSION == 23, str(NetVersion.PROTOCOL_VERSION))
 
 	call_deferred(&"_run_wire_checks")
 

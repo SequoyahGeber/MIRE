@@ -507,6 +507,17 @@ func _unhandled_input(event: InputEvent) -> void:
 		_request_build_destroy()
 		get_viewport().set_input_as_handled()
 		return
+	# Snap toggle (F-472/D-202). Client-local and instant: it changes nothing but how the NEXT
+	# resolve reads, and update_aim() runs on the physics tick, so the ghost jumps flush or comes
+	# free within a frame of the press. Gated on build mode like rotate/destroy — outside it the key
+	# has no meaning and must fall through rather than be swallowed.
+	if is_build_mode_active() and event.is_action_pressed(&"build_snap_toggle") \
+			and gameplay_input_allowed():
+		var snapping: bool = bool(_build_ghost.call(&"toggle_snapping"))
+		if _build_bar != null:
+			_build_bar.call(&"set_snapping", snapping)
+		get_viewport().set_input_as_handled()
+		return
 
 	# Dodge (task 3.8b): a discrete press, not a held/buffered action like jump — the dash either
 	# commits now or it doesn't, so there is nothing to buffer. gameplay_input_allowed() gates it the

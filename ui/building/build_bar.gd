@@ -34,6 +34,11 @@ const COLOUR_ERROR := Color(0.96, 0.47, 0.39, 1.0)
 ## "focused but not necessarily the active one" state — distinct from COLOUR_READY, which marks the
 ## piece build mode is actually placing.
 const COLOUR_FOCUS := Color(0.55, 0.85, 0.95, 1.0)
+## Snapping ON. Deliberately the same amber as COLOUR_READY: snapping on is the normal, expected
+## state of build mode, so it reads as "armed" rather than as a warning.
+const COLOUR_SNAP_ON := COLOUR_READY
+## Snapping OFF — muted, because free placement is the quieter mode, not an error.
+const COLOUR_SNAP_OFF := Color(0.60, 0.69, 0.62, 1.0)
 
 
 ## One registered buildable. Selecting never places anything — it only tells the player which piece
@@ -180,6 +185,10 @@ var _row: HBoxContainer
 var _hint_label: Label
 var _status_label: Label
 var _slots: Array[PieceSlot] = []
+## Mirrors BuildGhost's own `_snapping`, pushed in through set_snapping(). Same default, because the
+## bar is built before the player ever presses the toggle and must not open showing the wrong mode.
+var _snapping: bool = true
+var _snap_label: Label
 var _selected_piece_id: StringName = &""
 
 
@@ -187,6 +196,7 @@ func _ready() -> void:
 	layer = 41
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_ui()
+	_present_snapping()
 	_populate_slots()
 	var service: Node = get_node_or_null(^"/root/BuildService")
 	if service != null:
@@ -203,7 +213,7 @@ func _exit_tree() -> void:
 func set_active(active: bool) -> void:
 	_bar_center.visible = active
 	if active:
-		_show_status("R rotate  ·  click place  ·  right-click destroy", false)
+		_show_status("R rotate  ·  V snapping  ·  click place  ·  right-click destroy", false)
 
 
 func set_selected_piece(piece_id: StringName) -> void:
@@ -225,6 +235,28 @@ func _grab_focus_for_selected() -> void:
 		if slot.piece_id == _selected_piece_id:
 			slot.grab_focus()
 			return
+
+
+## Pushed by player_controller.gd when the player presses the snap toggle, and never decided here —
+## `BuildGhost` owns that state and this only shows it, the same one-way contract `set_active()` and
+## `set_selected_piece()` already follow. Called with the ghost's answer, not with a guess, so the
+## bar cannot drift out of step with what the ghost is actually doing.
+func set_snapping(enabled: bool) -> void:
+	_snapping = enabled
+	_present_snapping()
+
+
+func is_snapping() -> bool:
+	return _snapping
+
+
+func _present_snapping() -> void:
+	if _snap_label == null:
+		return
+	_snap_label.text = "SNAP ON — pieces mate to their neighbours" if _snapping \
+		else "SNAP OFF — free placement"
+	_snap_label.add_theme_color_override(
+		"font_color", COLOUR_SNAP_ON if _snapping else COLOUR_SNAP_OFF)
 
 
 ## Fed every physics tick the player is in build mode, straight from BuildGhost's own
@@ -298,6 +330,15 @@ func _build_ui() -> void:
 	_hint_label.add_theme_font_size_override("font_size", 12)
 	_hint_label.add_theme_color_override("font_color", COLOUR_MUTED)
 	stack.add_child(_hint_label)
+
+	# Its OWN label rather than a phrase inside the hint: set_ghost_status() rewrites the hint every
+	# physics tick from the ghost's verdict, so a mode indicator living there would be erased within a
+	# frame of being set. A player toggling snapping has to be able to see the state they toggled to.
+	_snap_label = Label.new()
+	_snap_label.name = "SnapState"
+	_snap_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_snap_label.add_theme_font_size_override("font_size", 11)
+	stack.add_child(_snap_label)
 
 	_status_label = Label.new()
 	_status_label.name = "Status"

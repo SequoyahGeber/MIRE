@@ -53,6 +53,11 @@ var _material: StandardMaterial3D
 ## The piece's own art, ghosted. Freed and rebuilt whenever the selected piece changes.
 var _art: Node3D
 var _yaw: float = 0.0
+## The player's snap toggle (D-202). ON by default because gapless is what someone building a
+## structure wants nine times in ten, and the toggle exists for the tenth — a barricade laid at an
+## angle across a path, a piece deliberately set off the grid. Client-local state: it is not a
+## setting, it is a mode the player flips mid-build and sees in the ghost immediately.
+var _snapping: bool = true
 var _last_reason: int = VALIDATOR.Reason.UNKNOWN_PIECE
 var _placement: Transform3D = Transform3D()
 var _evaluated_placement: Transform3D = Transform3D()
@@ -151,6 +156,28 @@ func current_piece_id() -> StringName:
 	return &"" if _def == null else StringName(String(_def.get(&"id")))
 
 
+## Flips snapping and reports the new state. Nothing is re-aimed here — `update_aim()` runs every
+## physics tick and will resolve the next one under the new mode, which is what makes the toggle read
+## as instant: the ghost visibly jumps flush against the wall you were near, or comes free of it.
+func toggle_snapping() -> bool:
+	_snapping = not _snapping
+	# The cached verdict belongs to the old mode's transform. Without this the ghost can hold a stale
+	# green for a position the new mode no longer places it at.
+	_has_evaluated = false
+	return _snapping
+
+
+func is_snapping() -> bool:
+	return _snapping
+
+
+func set_snapping(enabled: bool) -> void:
+	if enabled == _snapping:
+		return
+	_snapping = enabled
+	_has_evaluated = false
+
+
 ## Turns the piece by one authored step. Rotation is snapped in `PlacementValidator.snap_transform`,
 ## so accumulating a raw angle here is fine and keeps the input simple.
 func rotate_step(steps: int = 1) -> void:
@@ -183,7 +210,10 @@ func update_aim(
 		if not hit.is_empty():
 			target = hit["position"]
 
-	_placement = VALIDATOR.snap_transform(_def, target, _yaw)
+	# One rule, both modes, and the same function the host re-runs on the request (D-202). It needs
+	# the space state because neighbour mating is a question about the world, not arithmetic — which
+	# is the one way this differs from the pure grid snap it replaced.
+	_placement = VALIDATOR.resolve_placement(_def, target, _yaw, _snapping, space, QUERY_MASK)
 	global_transform = _placement
 
 	# F-105: evaluate() is the expensive part (5 support raycasts + a shape cast, fresh query/shape
@@ -240,7 +270,9 @@ func confirm() -> int:
 	var service: Node = get_node_or_null(^"/root/BuildService")
 	if service == null:
 		return -1
-	return int(service.call(&"request_place", current_piece_id(), _placement))
+	# The mode goes with the request: the host re-resolves, and it must re-resolve the same way this
+	# ghost did or the piece lands somewhere the player was not shown.
+	return int(service.call(&"request_place", current_piece_id(), _placement, _snapping))
 
 
 func _space_state() -> PhysicsDirectSpaceState3D:

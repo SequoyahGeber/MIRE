@@ -6749,3 +6749,60 @@ the two that are already re-derived on every peer.
 
 **Would change my mind:** playtesters reporting the line is patronising rather than useful. The fix is
 fewer authored steps, not a second line.
+
+### D-202 · 2026-08-21 · Snapping is a toggle that mates pieces to each other, not a finer world grid — and it must be idempotent
+
+Sequoyah, on the building system: *"they should be able to be placed anywhere but when building
+pieces near each other I want there to be a snapping toggle so that it's easy to build structures
+without little gaps and stuff."*
+
+What shipped before this was a world grid: `PlacementValidator.snap_transform()` rounded x and z to
+the piece's authored `snap_step` (1.0 m everywhere), always, with no way to turn it off. Two walls
+lined up only because both happened to land on the same metre lines, and a 2.00 m wall on a 1.00 m
+grid could sit half-overlapping its neighbour or a metre clear of it with nothing pulling it flush.
+F-472 has the full account.
+
+**The rule now.** One function, `PlacementValidator.resolve_placement()`, is the only way an aim
+point becomes a transform, and both the ghost and the host call it:
+
+- **Snapping off** — the aim point, untouched on all three axes. Yaw still quantises, because yaw
+  never came from the aim: the player builds it up in whole rotate presses.
+- **Snapping on** — the nearest *mate* on a neighbouring piece if one is within 0.75 m, otherwise
+  the world grid, which is preserved unchanged so an empty field still builds on metres.
+
+A mate is a real face of a real neighbour: flush on each of its four sides, or squarely on top of
+it. Offsets are computed in the **neighbour's own frame** and rotated out, so a fort built at 45
+degrees is as gapless as one built on the axes; and the piece being placed contributes its *rotated*
+footprint, so a wall turned across another meets it on its thickness rather than leaving 1.75 m of
+air. The piece also adopts the neighbour's facing, quantised in whole steps *from that facing*
+rather than from world zero — the player still chooses which way it points and can still turn a
+corner, they just cannot end up three degrees off a wall they are building onto. Adopting the facing
+is most of what closes the gaps: two walls a hair out of parallel leave a wedge no snap of the
+origin alone can close.
+
+**The toggle travels with the request.** `net_request_place` gained a `snapping` bool
+(`PROTOCOL_VERSION` 22 → 23). The two modes are not refinements of each other, so a host that
+assumed one would be wrong half the time: assume on, and a deliberately angled barricade gets
+dragged flush against the nearest wall; assume off, and the gaps come back.
+
+**Idempotence is a hard requirement, not a nicety.** `BuildService._process_place()` re-resolves
+whatever a client sends, because the host trusts nobody — and the client's ghost has already
+resolved it once. If re-resolving a resolved transform moved it at all, every placement would jump
+on confirmation, landing somewhere the player was never shown; the symptom would read as "it doesn't
+go where I aim" and would be diagnosed as a snapping bug rather than an authority one. So
+`resolve_placement` is built to be a projection: each of its three exits is a fixed point of itself.
+
+That property was not free, and getting it wrong is subtle. The first implementation fell back to
+the grid whenever the raw aim had no mate — and rounding to the metre can carry an origin from just
+*outside* the 0.75 m tolerance to just *inside* it, so the client showed a grid placement and the
+host's re-resolve found a mate the client never saw. The fix is to ask once more from the
+grid-snapped point before committing to it; two looks are provably enough, because a mated origin's
+nearest candidate is itself at distance zero. `tools/build_snap_check.gd` asserts the property
+directly — six hand-picked aims plus 400 seeded ones around a turned neighbour — rather than
+trusting the argument, because that band is exactly where no round-numbered test case ever lands.
+
+**Would change my mind:** if players want mate points finer than whole faces (thirds of a wall,
+corner posts, half-offsets for staggered joins), `_mate_points()` is where they go, and the
+idempotence argument survives unchanged as long as the candidate set stays a finite function of the
+neighbour. A continuous "slide along the face" rule would break it and would need a different
+authority story.

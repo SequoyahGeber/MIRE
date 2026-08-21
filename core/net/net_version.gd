@@ -99,7 +99,11 @@ extends RefCounted
 ## 22 (F-411): autoload/god_mode_service.gd added net_set_local_enabled (host -> the approved
 ## owning peer). Reliable: losing the enable leaves host-side immunity on while the owner cannot
 ## fly; losing the disable leaves flight on while host-side immunity is already gone.
-const PROTOCOL_VERSION: int = 22
+## 23 (F-472/D-202): autoload/build_service.gd's net_request_place gained a `snapping` bool.
+## The player's snap toggle has to travel with the request because the host re-resolves the
+## placement, and the two modes are not refinements of each other — a v22 client's request read by
+## a v23 host would shift the bool out of the request_id slot and place pieces at request numbers.
+const PROTOCOL_VERSION: int = 23
 
 ## Wire-format tag for the client→host hello RPC, kept separate from the reason string format so a
 ## mismatch renders identically everywhere it's read (a log line, a UI error, a check-tool assertion).

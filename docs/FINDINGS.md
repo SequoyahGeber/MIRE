@@ -69,6 +69,27 @@ do is worth as much as the record of what we did.
 
 ## Open
 
+### F-473 · PROTOCOL_VERSION has two independent hard-coded expectations, and only the loud one gets maintained
+
+**Area:** tooling/net · **Severity:** low · **Found:** 2026-08-21 by coil26502f during F-472
+
+`tools/handshake_check.gd` asserted `NetVersion.PROTOCOL_VERSION == 21` while the repo had been on
+22 since F-411. It had been red at a clean HEAD ever since, which is the same class of problem
+F-293 records about the check suite generally: nothing enumerates and runs `tools/`, so a red check
+sits there.
+
+The cause is narrower than "nobody ran it", though, and worth separating out. There are **two**
+hard-coded copies of the protocol number: `core/net/rpc_manifest.gd`'s `RECORDED_PROTOCOL_VERSION`
+and this assertion. The first is load-bearing — `rpc_manifest_check.gd` refuses to pass unless the
+version moves with the wire, so anyone changing an RPC is forced through it and updates it. The
+second asserts the same fact with no such pressure, so it is the one that silently rots. F-411 did
+everything right by the manifest and never learned this line existed.
+
+Bumped to 23 as part of F-472, which is a fix to the symptom. **The real fix** is to stop stating
+the number twice: `handshake_check.gd` should assert the invariant the manifest already enforces
+(`NetVersion.PROTOCOL_VERSION == RpcManifest.RECORDED_PROTOCOL_VERSION`) rather than restating a
+literal that has to be hand-maintained in a second place.
+
 ### F-472 · Placement snaps to a fixed world grid with no toggle and no piece-to-piece mating, so a structure lines up only where the grid happens to agree
 
 **Area:** systems/building · **Severity:** medium · **Found:** 2026-08-21 by coil26502f, raised by Sequoyah
@@ -3378,6 +3399,66 @@ Also fixed alongside: `--tag` (added so a sequence of ablation runs does not ove
 reports) changed the ledger's filename, but `_check_ledger()` still asserted against the untagged
 path, so `discard() removes the ledger` failed on any tagged run. The check now asks the writer for
 its own path instead of rebuilding it.
+
+---
+
+### F-473 · The tier-4 and tier-5 tools ship on placeholder art, and the bogsilver seam has none at all
+
+**Area:** assets · **Severity:** medium · **Found:** 2026-08-21 by birche6b40e
+
+Task 3.18 authored the top two rungs of the tool ladder (`docs/PROGRESSION.md` §2, D-200) as correct
+data ahead of their art, which is the right posture — but the placeholders are load-bearing enough to
+be worth naming rather than discovering in a playtest.
+
+**Tools on borrowed art.** `bogsilver_axe` and `wellglass_axe` both point at `stone_axe_world.glb` /
+`stone_axe_viewmodel.glb` and `icon_stone_axe.png`; `bogsilver_pickaxe` and `wellglass_pickaxe` both
+point at the `iron_pickaxe` exports and icon. `iron_axe` — which is new too, task 3.1 shipped an iron
+pickaxe and no iron axe — is also on the stone axe's art. So five tools currently look like two, and
+a player who forges wellglass gets a fanfare and a stone axe in their hands. The `.tres` grip offsets
+were copied from the borrowed asset and will need re-tuning per model, not reusing.
+
+`bogsilver_ore` / `bogsilver_ingot` borrow the iron ore/ingot art, `wellglass_shard` borrows flint's,
+and `guardian_core` borrows the iron ingot's.
+
+**The bogsilver seam has no art at all.** `content/harvestables/bogsilver_node.tres` is authored and
+`HarvestLibrary`'s rule table has its `bogsilver_node_*` prefix, but no export matches that prefix, so
+the rule claims nothing and the seam never appears. Tier 4 is still reachable — a Wellspring cap grants
+`bogsilver_ore` outright through `content/loot/wellspring.tres`'s new `guaranteed` list — but mining is
+meant to be the bulk source, and until the model exists the only bogsilver in a run is objective payout.
+
+**What is actually needed**, in the order it pays off:
+1. `bogsilver_node_intact` + damaged/depleted states, matching the `iron_node_*` family's four-state
+   shape (the definition already expects `active_state_scenes` and will use its own visual until then).
+2. `iron_axe`, `bogsilver_axe`, `bogsilver_pickaxe`, `wellglass_axe`, `wellglass_pickaxe` world +
+   viewmodel exports, plus icons through `render_item_icons.py`.
+3. Pickup meshes and icons for `bogsilver_ore`, `bogsilver_ingot`, `wellglass_shard`, `guardian_core`.
+
+Wellglass should read as a material, not as a colour swap — it is what a Wellspring leaves behind, and
+it is the only thing in the kit that is not metal, wood or stone.
+
+---
+
+### F-474 · Bogsilver is a plain item, so tier 4 lost its two-player carry
+
+**Area:** gameplay · **Severity:** medium · **Found:** 2026-08-21 by birche6b40e
+
+`docs/PROGRESSION.md` §2.1 makes a specific promise about the fourth rung: *"T4 is the co-op rung. Its
+ore drops as a Heavy Chunk (`ITEMS.md` §4.8, task 3.10): two players carry it fast, one player drags it
+slowly. The tier the mid-game hangs on is the tier that is meaningfully better with a friend."*
+
+What shipped is a plain stackable `bogsilver_ore` item. `HarvestableDef` can only name a
+`yield_item_id`, and a haulable is a spawned world object rather than an inventory item, so the drop
+would need a seam that does not exist: either a `yields_haulable` field on `HarvestableDef`, or a
+`HaulService` hook that `Harvestable` calls on depletion instead of granting to inventory. That is
+system work, not authoring, which is why 3.18 shipped the plain item rather than half of it.
+
+The rung's OBJECTIVE gate is unaffected and intact — the anvil still costs a Wellglass Shard, so tier 4
+still cannot be mined toward (`tools/progression_check.gd` proves it). What is missing is only the
+CO-OP texture: right now one player can carry an unlimited amount of bogsilver home in a pocket.
+
+Whoever picks this up should decide between the two seams above before writing either; the
+`HarvestableDef` field is smaller, the `HaulService` hook is more reusable (a boss corpse, a chest
+too heavy to open where it stands). `content/haulables/` has exactly one definition to pattern from.
 
 ---
 

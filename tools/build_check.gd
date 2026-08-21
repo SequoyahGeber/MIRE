@@ -350,12 +350,49 @@ func _check_host_placement() -> void:
 
 	# The host re-runs the validator: a second wall in the same place must be refused even though
 	# the client "asked nicely" with a transform that was valid a moment ago.
+	#
+	# Snapping OFF for this one, and that is the point rather than a convenience (F-472/D-202). With
+	# snapping ON the request no longer LANDS in the same spot — the piece already standing there is
+	# a neighbour, so the aim point mates to its edge and the placement legitimately succeeds beside
+	# it. That is the feature. Proving the overlap rule therefore needs a placement that cannot snap
+	# away from the obstruction, which is exactly what free placement is.
 	_confirmations.clear()
-	service.call(&"request_place", &"wall_wood", clear_spot)
+	service.call(&"request_place", &"wall_wood", clear_spot, false)
 	await process_frame
 	check(_confirmations.size() == 1 and not bool(_confirmations[0]["accepted"]),
-		"a second piece in the same spot is refused — the host revalidates from scratch")
+		"a second unsnapped piece in the same spot is refused — the host revalidates from scratch")
 	check(int(service.call(&"placed_count")) == 1, "and still exactly one piece exists")
+
+	# ...and the other half of the same fact: aimed NEAR the standing wall's end with snapping on,
+	# the next piece mates flush to that end instead of landing wherever the aim happened to be.
+	#
+	# The aim point matters and is worth stating. A wall is 2.00 m across and 0.25 m thick, so its
+	# four mate points are 1.0 m away along its length and 0.125 m away through its faces. Aiming at
+	# its CENTRE therefore mates to a face — a wall built back-to-back against it, which is a real
+	# thing a player does and the nearest candidate by a wide margin. Extending the RUN means aiming
+	# out past the end, which is what this does: 1.3 m along x from the standing wall, where the
+	# end mate is 0.70 m away and the face mate is 1.31 m away.
+	var extend_aim := Transform3D(Basis(), Vector3(3.3, 0.0, 0.0))
+	_confirmations.clear()
+	service.call(&"request_place", &"wall_wood", extend_aim, true)
+	await process_frame
+	check(_confirmations.size() == 1 and bool(_confirmations[0]["accepted"]),
+		"the same aim WITH snapping is accepted — it mates beside the neighbour instead")
+	check(int(service.call(&"placed_count")) == 2, "and now two pieces exist")
+	var mated: Array = get_nodes_in_group(&"buildable_piece")
+	if mated.size() == 2:
+		var gap: float = (mated[0] as Node3D).global_position.distance_to(
+			(mated[1] as Node3D).global_position)
+		check(absf(gap - 2.0) < 0.001,
+			"the mated piece sits exactly one 2.00 m module away (%.4f m) — no gap, no overlap" % gap)
+		check(absf((mated[1] as Node3D).global_position.z) < 0.001
+				and absf((mated[0] as Node3D).global_position.z) < 0.001,
+			"and it mated along the run rather than through the wall's face")
+	_confirmations.clear()
+	service.call(&"request_destroy", StringName((mated[1] as Node).name))
+	await process_frame
+	check(int(service.call(&"placed_count")) == 1,
+		"the mated piece is cleared again so the teardown case below starts from one piece")
 
 	# Destroy it and get materials back.
 	var piece_name := StringName((pieces[0] as Node).name)

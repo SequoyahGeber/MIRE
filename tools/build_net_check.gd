@@ -253,8 +253,9 @@ func _run_client() -> void:
 				"forge":
 					# The host's own decision function, run on a client. _owns_mutation() is false
 					# here, so it must return immediately without spawning anything.
+					# F-472/D-202 added the snap toggle between the transform and the request id.
 					service.call(&"_process_place", 1, &"wall_wood",
-						Transform3D(Basis(), _vec(signal_data.get("forge", []))), 9999)
+						Transform3D(Basis(), _vec(signal_data.get("forge", []))), true, 9999)
 					_forge_done = true
 		_write_client_snapshot()
 		await create_timer(0.1).timeout

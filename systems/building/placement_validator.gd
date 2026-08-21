@@ -54,6 +54,30 @@ const MIN_GROUND_CLEARANCE_M: float = 0.12
 ## emits ground collision must put it here too, or its slopes will read every placement as blocked.
 const TERRAIN_LAYER: int = 2
 
+## Group every placed piece is in (`BuildService.PIECE_GROUP`). Neighbour snapping finds its mates
+## through the physics world rather than through `BuildService._placed`, and that is not a stylistic
+## choice: `_placed` is populated on the HOST only (`_process_place`), while clients learn about a
+## piece purely by the replicated spawn. A client ghost that consulted `_placed` would find nothing
+## to snap to in a real session and would silently behave like the host's single-player case.
+const PIECE_GROUP: StringName = &"buildable_piece"
+## Metadata `BuildService._net_spawn_piece()` already stamps on every piece root, on every peer,
+## naming the definition it was built from. Without it a neighbour is an anonymous collider with no
+## footprint and the mate points below cannot be computed — which is why snapping reads this rather
+## than adding a stamp of its own.
+const PIECE_DEF_META: StringName = &"buildable_id"
+
+## How far from the aim point to look for a piece worth mating to. Generous, because the candidate
+## mate positions it produces are themselves filtered by SNAP_TOLERANCE_M — this radius only has to
+## reach the NEIGHBOUR, and a 2 m piece's far mate sits a full piece-width away from its centre.
+const SNAP_SEARCH_RADIUS_M: float = 4.0
+## How close the raw aim point must already be to a candidate mate for the mate to win. Roughly a
+## third of a module: close enough that snapping feels like a magnet you aimed at, far enough that
+## you do not have to be precise. Beyond it the aim point is used as-is.
+const SNAP_TOLERANCE_M: float = 0.75
+## Cap on how many neighbours one snap resolves against. A player building a fort has hundreds of
+## pieces; only the nearest few can plausibly win, and this runs every physics tick inside the ghost.
+const SNAP_MAX_NEIGHBOURS: int = 12
+
 
 ## Grid- and rotation-snapped placement for a raw aim point. Pure: no physics, no world, so it is
 ## identical on every peer by construction and the check can assert it without a scene.
@@ -81,6 +105,195 @@ static func snap_transform(def: Resource, origin: Vector3, yaw_radians: float) -
 		var step_radians: float = deg_to_rad(rotation_step)
 		yaw = snappedf(yaw_radians, step_radians)
 	return Transform3D(Basis(Vector3.UP, yaw), snapped_origin)
+
+
+## The placement rule the ghost previews and the host enforces, and the ONLY function either should
+## call to turn an aim point into a transform (D-202).
+##
+## `snapping` is the player's toggle. It is passed across the wire with the request rather than being
+## inferred, because the two modes are not refinements of each other — one is "put it exactly where I
+## am pointing" and the other is "pull it flush against what is already there", and a host that
+## guessed would override a deliberate off-grid placement.
+##
+##   snapping OFF -> the aim point, untouched in x/y/z. Rotation still quantises to the piece's own
+##                   `rotation_step_degrees`, because yaw does not come from the aim at all — it
+##                   comes from the player pressing rotate, already in whole steps.
+##   snapping ON  -> the nearest MATE on a neighbouring piece if one is within SNAP_TOLERANCE_M,
+##                   otherwise the world grid `snap_transform()` has always used.
+##
+## **Idempotent, and it has to be.** `BuildService._process_place()` re-resolves whatever a client
+## sent. Re-running this on a transform it already produced must return that transform, or every
+## placement would visibly jump on confirmation: a mated origin's nearest candidate is itself at
+## distance 0, and a grid-snapped origin is already on the grid. The check asserts this directly
+## rather than trusting the argument.
+##
+## `space` may be null (a caller with no physics world, and every pure unit case): neighbour snapping
+## is skipped and the grid answer is returned, which is exactly the old behaviour.
+static func resolve_placement(
+	def: Resource,
+	origin: Vector3,
+	yaw_radians: float,
+	snapping: bool,
+	space: PhysicsDirectSpaceState3D = null,
+	collision_mask: int = 1
+) -> Transform3D:
+	if def == null:
+		return Transform3D(Basis(Vector3.UP, yaw_radians), origin)
+	if not snapping:
+		return Transform3D(Basis(Vector3.UP, _snap_yaw(def, yaw_radians)), origin)
+	# The RAW yaw goes to _nearest_mate, not a pre-quantised one. Quantising to world axes first
+	# destroys the very thing the mate is about to measure: beside a wall turned 45 degrees, a raw
+	# 132 would round to 90 and the neighbour-relative angle would read 45 — half a step, which
+	# rounds back to a piece facing the world grid rather than the wall it is being built onto.
+	var mate: Dictionary = _nearest_mate(def, origin, yaw_radians, space, collision_mask)
+	if not mate.is_empty():
+		return Transform3D(Basis(Vector3.UP, float(mate["yaw"])), mate["origin"] as Vector3)
+
+	# No mate for the raw aim, so fall back to the world grid — but ask ONE more time from the
+	# grid-snapped point before committing to it. This second look is not thoroughness, it is what
+	# makes the whole function idempotent, and without it the host visibly moves pieces:
+	# rounding to the metre can carry an origin that was just outside SNAP_TOLERANCE_M to just
+	# INSIDE it, so the client would show a grid placement, send it, and the host's re-resolve would
+	# find the mate the client never saw and snap the piece somewhere else.
+	#
+	# Two looks are provably enough. Each of the three returns below is a fixed point of this
+	# function: a mated origin's nearest candidate is itself at distance 0, and a grid origin that
+	# reached this last line has already been shown to have no mate and is already on the grid. So
+	# resolving any output again returns that same output, which is the property
+	# `tools/build_snap_check.gd` asserts directly rather than trusting this comment.
+	var grid: Transform3D = snap_transform(def, origin, yaw_radians)
+	var grid_mate: Dictionary = _nearest_mate(
+		def, grid.origin, grid.basis.get_euler().y, space, collision_mask)
+	if not grid_mate.is_empty():
+		return Transform3D(
+			Basis(Vector3.UP, float(grid_mate["yaw"])), grid_mate["origin"] as Vector3)
+	return grid
+
+
+## The best mate across every nearby piece, or empty if none is close enough. Returns the WHOLE
+## transform (origin and yaw), not just a position: adopting the neighbour's facing is most of what
+## removes the gaps, because two walls a millimetre out of parallel leave a wedge no snap of the
+## origin alone can close.
+static func _nearest_mate(
+	def: Resource,
+	origin: Vector3,
+	yaw: float,
+	space: PhysicsDirectSpaceState3D,
+	collision_mask: int
+) -> Dictionary:
+	if space == null:
+		return {}
+	var best: Dictionary = {}
+	var best_distance: float = SNAP_TOLERANCE_M
+	for neighbour: Node3D in _neighbours(origin, space, collision_mask):
+		var other: Resource = _def_of(neighbour)
+		if other == null:
+			continue
+		# The facing this piece would take beside that neighbour: the player's own rotation, but
+		# counted in whole steps FROM the neighbour's yaw rather than from world zero. The player
+		# still chooses which way the piece faces; they just cannot choose to be 3 degrees off it.
+		var neighbour_yaw: float = neighbour.global_transform.basis.get_euler().y
+		var mate_yaw: float = neighbour_yaw + _snap_yaw(def, yaw - neighbour_yaw)
+		for candidate: Vector3 in _mate_points(def, other, neighbour, mate_yaw):
+			var distance: float = candidate.distance_to(origin)
+			if distance < best_distance:
+				best_distance = distance
+				best = {"origin": candidate, "yaw": mate_yaw}
+	return best
+
+
+## Where this piece can sit against one neighbour: flush on each of the neighbour's four sides, and
+## squarely on top of it. Every offset is measured in the NEIGHBOUR's own frame and then rotated into
+## the world, so a neighbour placed at any angle still mates along its own faces rather than along
+## the world axes — which is the difference between a fort you can turn and a fort that must be
+## axis-aligned to be gapless.
+##
+## The extent used for this piece is its footprint rotated into the neighbour's frame, not its raw
+## `size`: a wall turned 90 degrees against another wall meets it across its THICKNESS, and using
+## `size.x` there would leave a 1.75 m gap on every corner.
+static func _mate_points(
+	def: Resource, other: Resource, neighbour: Node3D, mate_yaw: float
+) -> Array[Vector3]:
+	var basis: Basis = neighbour.global_transform.basis
+	var neighbour_yaw: float = basis.get_euler().y
+	var size: Vector3 = def.get(&"size")
+	var other_size: Vector3 = other.get(&"size")
+	# Half-extents of this piece along the neighbour's local x and z, under the relative rotation.
+	var relative: float = mate_yaw - neighbour_yaw
+	var cos_r: float = absf(cos(relative))
+	var sin_r: float = absf(sin(relative))
+	var half_x: float = (size.x * cos_r + size.z * sin_r) * 0.5
+	var half_z: float = (size.x * sin_r + size.z * cos_r) * 0.5
+	var base: Vector3 = neighbour.global_position
+	var forward: Vector3 = basis.z.normalized()
+	var right: Vector3 = basis.x.normalized()
+	var points: Array[Vector3] = [
+		base + right * (other_size.x * 0.5 + half_x),
+		base - right * (other_size.x * 0.5 + half_x),
+		base + forward * (other_size.z * 0.5 + half_z),
+		base - forward * (other_size.z * 0.5 + half_z),
+		# Straight on top. The origin is the piece's FLOOR centre everywhere in this system, so
+		# stacking is the neighbour's floor plus the neighbour's full height and nothing else.
+		base + Vector3.UP * other_size.y,
+	]
+	return points
+
+
+## Nearby pieces, nearest first and capped. A sphere shape query rather than a ray: the aim point is
+## usually ON a surface, and a ray from it would find whatever it is already touching and nothing
+## else — the neighbour worth mating to is frequently the one BESIDE the aim, not under it.
+static func _neighbours(
+	origin: Vector3, space: PhysicsDirectSpaceState3D, collision_mask: int
+) -> Array[Node3D]:
+	var sphere := SphereShape3D.new()
+	sphere.radius = SNAP_SEARCH_RADIUS_M
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = sphere
+	query.transform = Transform3D(Basis.IDENTITY, origin)
+	query.collision_mask = collision_mask
+	query.collide_with_bodies = true
+	query.margin = 0.0
+	var found: Array[Node3D] = []
+	for hit: Dictionary in space.intersect_shape(query, SNAP_MAX_NEIGHBOURS * 3):
+		var piece: Node3D = _piece_root(hit.get("collider") as Node)
+		if piece != null and not found.has(piece):
+			found.append(piece)
+	found.sort_custom(func(a: Node3D, b: Node3D) -> bool:
+		return a.global_position.distance_squared_to(origin) \
+			< b.global_position.distance_squared_to(origin))
+	return found.slice(0, SNAP_MAX_NEIGHBOURS)
+
+
+## Walks up from a collider to the piece root, the same defensive shape `BuildGhost`'s destroy ray
+## uses: a generated piece IS its own collider, but an authored scene wraps one in a child holder.
+static func _piece_root(collider: Node) -> Node3D:
+	var cursor: Node = collider
+	while cursor != null:
+		if cursor.is_in_group(PIECE_GROUP):
+			return cursor as Node3D
+		cursor = cursor.get_parent()
+	return null
+
+
+## The definition a placed piece was built from, via the metadata `BuildService` stamps at spawn.
+## Returns null for a piece that predates the stamp or whose id is no longer in the Registry, and a
+## null neighbour is simply skipped — an unknown neighbour must not block snapping to a known one.
+static func _def_of(piece: Node3D) -> Resource:
+	if not piece.has_meta(PIECE_DEF_META):
+		return null
+	var registry: Node = piece.get_node_or_null(^"/root/Registry")
+	if registry == null:
+		return null
+	return registry.call(&"get_buildable", StringName(piece.get_meta(PIECE_DEF_META))) as Resource
+
+
+## Yaw quantised to the piece's own authored step. Shared by both modes so that turning snapping off
+## never changes which way a piece faces — only where it sits.
+static func _snap_yaw(def: Resource, yaw_radians: float) -> float:
+	var rotation_step: float = float(def.get(&"rotation_step_degrees"))
+	if rotation_step <= 0.0:
+		return yaw_radians
+	return snappedf(yaw_radians, deg_to_rad(rotation_step))
 
 
 ## The verdict. `placement` is the snapped transform whose origin sits at the piece's FLOOR centre,
