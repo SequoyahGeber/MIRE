@@ -152,7 +152,7 @@ MATERIAL_ALLOWANCE = {"poison_berry_bush": 5,
 #: The three berry bushes are the game's signature forage node and the ONE thing
 #: they have to do is read as fruiting or picked from across a clearing. The 900
 #: cap was met by the version that hid its fruit under the canopy, where it cost
-#: almost nothing and communicated almost nothing (F-429). Seventy-odd berries on
+#: almost nothing and communicated almost nothing (F-441). Seventy-odd berries on
 #: exposed canes is what the read costs; it is spent on the asset's entire point.
 TRIANGLE_ALLOWANCE = {"berry_bush_full": 1300, "poison_berry_bush": 1300,
                       "berry_bush_harvested": 1000,
@@ -285,7 +285,7 @@ def berry_sites(seed: int) -> list[tuple[Vector, float, int]]:
     the picked bush's leftover stalks and the poison bush's fruit are in exactly
     the same places.
 
-    F-429: these now sit on the OUTER THIRD OF EACH CANE, hanging just below it,
+    F-441: these now sit on the OUTER THIRD OF EACH CANE, hanging just below it,
     which is where a bramble or a blueberry actually fruits. The first version
     placed them on the surface of the foliage masses with the elevation biased
     downward — under the canopy, in its shadow, from every angle a player is
@@ -332,7 +332,7 @@ def berry_cluster(batch: Batch, rng: random.Random, centre: Vector, radius: floa
 def build_bush_frame(seed: int, leaf_token: str, leaf_highlight: str) -> list:
     """The woody frame and foliage every berry-bush state shares.
 
-    Rebuilt for F-429. The first version was three overlapping foliage blobs with
+    Rebuilt for F-441. The first version was three overlapping foliage blobs with
     four short stems buried inside them, and it read as a heap of green rocks:
     the preview render shows three of them side by side and the only difference
     between the fruiting bush and the picked one is a few red specks along the
@@ -710,7 +710,7 @@ def build_resin_node(seed: int) -> None:
 
 
 # ---------------------------------------------------------------------------
-# The apple tree (F-429)
+# The apple tree (F-441)
 # ---------------------------------------------------------------------------
 #
 # Sequoyah asked for "a beautiful apple tree", and the way to get one is to build
@@ -755,7 +755,7 @@ def apple_limb_tips(seed: int) -> list[tuple[Vector, Vector]]:
 
     Shared by the frame builder and by `apple_sites`, so the fruit hangs on the
     limbs the tree actually has rather than at a guessed radius — the same
-    mistake `berry_sites` was making before F-429, one scale up.
+    mistake `berry_sites` was making before F-441, one scale up.
     """
     rng = random.Random(seed + 3)
     tips = []
@@ -911,7 +911,7 @@ def build_apple_tree_picked(_seed: int) -> None:
 
 
 # ---------------------------------------------------------------------------
-# The mushroom patch (F-429)
+# The mushroom patch (F-441)
 # ---------------------------------------------------------------------------
 #
 # The kit already had toadstools — six `mushroom_cluster_*` in the environment

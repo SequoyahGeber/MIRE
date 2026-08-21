@@ -316,6 +316,7 @@ SCALE: dict[str, float] = {
     "pickup_coin_stack": 0.12,      # stacked column plus a few loose
     "pickup_berry": 0.09,           # handful of ~7 berries, each 0.019
     "pickup_mushroom": 0.16,        # pair of caps, larger 0.11 across
+    "pickup_apple": 0.17,           # two apples plus a twig, each 0.086 across
     "pickup_raw_meat": 0.30,        # a cut off the bone, not a whole carcass
     "pickup_stone": 0.18,
     "pickup_flint": 0.13,

@@ -2,59 +2,42 @@
   {
     "name": "pickup_log",
     "family": "wood",
-    "width_m": 1.236,
-    "depth_m": 0.309,
-    "height_m": 0.321,
+    "width_m": 1.2,
+    "depth_m": 0.292,
+    "height_m": 0.311,
     "mesh_parts": 18,
     "polygons": 184,
     "materials": [
       "MIRE_WoodBark",
-      "MIRE_WoodBark.001",
-      "MIRE_WoodBark.002",
-      "MIRE_WoodBark.003",
-      "MIRE_WoodBark.004",
       "MIRE_WoodBarkDark",
-      "MIRE_WoodBarkDark.001",
-      "MIRE_WoodBarkDark.002",
-      "MIRE_WoodBarkDark.003",
-      "MIRE_WoodBarkDark.004",
       "MIRE_WoodBarkLight",
-      "MIRE_WoodBarkLight.001",
-      "MIRE_WoodBarkLight.002",
-      "MIRE_WoodCut",
-      "MIRE_WoodCut.001",
-      "MIRE_WoodCut.002",
-      "MIRE_WoodCut.003",
-      "MIRE_WoodCut.004"
+      "MIRE_WoodCut"
     ]
   },
   {
     "name": "pickup_branch",
     "family": "wood",
-    "width_m": 0.832,
-    "depth_m": 0.261,
-    "height_m": 0.137,
+    "width_m": 0.85,
+    "depth_m": 0.258,
+    "height_m": 0.138,
     "mesh_parts": 5,
     "polygons": 44,
     "materials": [
-      "MIRE_WoodBark.005",
-      "MIRE_WoodBark.006",
-      "MIRE_WoodBark.007",
-      "MIRE_WoodBarkLight.003",
-      "MIRE_WoodCut.005"
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkLight",
+      "MIRE_WoodCut"
     ]
   },
   {
     "name": "pickup_stone",
     "family": "mineral",
-    "width_m": 0.185,
-    "depth_m": 0.187,
-    "height_m": 0.152,
+    "width_m": 0.175,
+    "depth_m": 0.18,
+    "height_m": 0.135,
     "mesh_parts": 4,
     "polygons": 80,
     "materials": [
       "MIRE_Stone",
-      "MIRE_Stone.001",
       "MIRE_StoneDark",
       "MIRE_StoneLight"
     ]
@@ -62,35 +45,29 @@
   {
     "name": "pickup_flint",
     "family": "mineral",
-    "width_m": 0.129,
-    "depth_m": 0.102,
-    "height_m": 0.122,
+    "width_m": 0.13,
+    "depth_m": 0.125,
+    "height_m": 0.116,
     "mesh_parts": 5,
     "polygons": 40,
     "materials": [
-      "MIRE_Stone.002",
-      "MIRE_Stone.003",
-      "MIRE_StoneDark.001",
-      "MIRE_StoneLight.001",
-      "MIRE_StoneLight.002"
+      "MIRE_Stone",
+      "MIRE_StoneDark",
+      "MIRE_StoneLight"
     ]
   },
   {
     "name": "pickup_iron_ore",
     "family": "mineral",
-    "width_m": 0.199,
-    "depth_m": 0.192,
-    "height_m": 0.178,
+    "width_m": 0.2,
+    "depth_m": 0.153,
+    "height_m": 0.143,
     "mesh_parts": 7,
     "polygons": 140,
     "materials": [
       "MIRE_Brass",
-      "MIRE_Brass.001",
       "MIRE_Iron",
-      "MIRE_Iron.001",
-      "MIRE_Iron.002",
-      "MIRE_Iron.003",
-      "MIRE_StoneDark.002"
+      "MIRE_StoneDark"
     ]
   },
   {
@@ -102,67 +79,48 @@
     "mesh_parts": 4,
     "polygons": 44,
     "materials": [
-      "MIRE_Iron.004",
-      "MIRE_IronDark",
-      "MIRE_IronDark.001",
-      "MIRE_IronDark.002"
+      "MIRE_Iron",
+      "MIRE_IronDark"
     ]
   },
   {
     "name": "pickup_coal",
     "family": "mineral",
-    "width_m": 0.15,
-    "depth_m": 0.15,
-    "height_m": 0.122,
+    "width_m": 0.16,
+    "depth_m": 0.148,
+    "height_m": 0.114,
     "mesh_parts": 6,
     "polygons": 120,
     "materials": [
       "MIRE_Coal",
-      "MIRE_Coal.001",
-      "MIRE_Coal.002",
-      "MIRE_Coal.003",
-      "MIRE_StoneDark.003",
-      "MIRE_StoneDark.004"
+      "MIRE_StoneDark"
     ]
   },
   {
     "name": "pickup_fibre_bundle",
     "family": "organic",
-    "width_m": 0.301,
-    "depth_m": 0.118,
-    "height_m": 0.08,
+    "width_m": 0.32,
+    "depth_m": 0.125,
+    "height_m": 0.085,
     "mesh_parts": 11,
     "polygons": 83,
     "materials": [
       "MIRE_Fibre",
-      "MIRE_Fibre.001",
-      "MIRE_Fibre.002",
-      "MIRE_Fibre.003",
-      "MIRE_Fibre.004",
-      "MIRE_Fibre.005",
       "MIRE_GrassDry",
-      "MIRE_GrassDry.001",
-      "MIRE_GrassDry.002",
-      "MIRE_Rope",
-      "MIRE_Rope.001"
+      "MIRE_Rope"
     ]
   },
   {
     "name": "pickup_berry",
     "family": "food",
-    "width_m": 0.08,
-    "depth_m": 0.064,
-    "height_m": 0.052,
+    "width_m": 0.09,
+    "depth_m": 0.071,
+    "height_m": 0.059,
     "mesh_parts": 10,
     "polygons": 187,
     "materials": [
       "MIRE_Blood",
-      "MIRE_Blood.001",
-      "MIRE_Blood.002",
-      "MIRE_Blood.003",
       "MIRE_ClothRed",
-      "MIRE_ClothRed.001",
-      "MIRE_ClothRed.002",
       "MIRE_GrassDark",
       "MIRE_Leaf",
       "MIRE_LeafLight"
@@ -171,38 +129,30 @@
   {
     "name": "pickup_mushroom",
     "family": "food",
-    "width_m": 0.169,
-    "depth_m": 0.124,
-    "height_m": 0.089,
+    "width_m": 0.16,
+    "depth_m": 0.11,
+    "height_m": 0.092,
     "mesh_parts": 26,
     "polygons": 426,
     "materials": [
-      "MIRE_FleshFat",
-      "MIRE_FleshFat.001",
-      "MIRE_FleshFat.002",
-      "MIRE_FleshFat.003",
-      "MIRE_FleshFat.004",
-      "MIRE_FleshFat.005",
-      "MIRE_FleshFat.006",
-      "MIRE_FleshFat.007",
-      "MIRE_FleshFat.008",
-      "MIRE_FleshFat.009",
-      "MIRE_FleshFat.010",
-      "MIRE_FleshFat.011",
-      "MIRE_FleshFat.012",
-      "MIRE_FleshFat.013",
-      "MIRE_FleshFat.014",
-      "MIRE_FleshFat.015",
-      "MIRE_FleshFat.016",
-      "MIRE_FleshFat.017",
-      "MIRE_FleshFat.018",
-      "MIRE_FleshFat.019",
-      "MIRE_FleshFat.020",
-      "MIRE_FleshFat.021",
-      "MIRE_FleshFat.022",
-      "MIRE_FleshFat.023",
-      "MIRE_MireFlesh",
-      "MIRE_MireLight"
+      "MIRE_FungusEdible",
+      "MIRE_FungusGill"
+    ]
+  },
+  {
+    "name": "pickup_apple",
+    "family": "food",
+    "width_m": 0.17,
+    "depth_m": 0.11,
+    "height_m": 0.084,
+    "mesh_parts": 11,
+    "polygons": 279,
+    "materials": [
+      "MIRE_Apple",
+      "MIRE_AppleShade",
+      "MIRE_Leaf",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkDark"
     ]
   },
   {
@@ -215,82 +165,49 @@
     "polygons": 61,
     "materials": [
       "MIRE_Bone",
-      "MIRE_FleshFat.024",
-      "MIRE_FleshFat.025",
-      "MIRE_FleshFat.026",
-      "MIRE_FleshFat.027",
-      "MIRE_FleshFat.028",
-      "MIRE_FleshFat.029",
+      "MIRE_FleshFat",
       "MIRE_FleshRaw"
     ]
   },
   {
     "name": "pickup_coin",
     "family": "currency",
-    "width_m": 0.084,
-    "depth_m": 0.101,
-    "height_m": 0.026,
+    "width_m": 0.079,
+    "depth_m": 0.1,
+    "height_m": 0.028,
     "mesh_parts": 10,
     "polygons": 140,
     "materials": [
-      "MIRE_Brass.002",
-      "MIRE_Brass.003",
-      "MIRE_Brass.004",
-      "MIRE_Brass.005",
-      "MIRE_Brass.006",
-      "MIRE_Gold",
-      "MIRE_Gold.001",
-      "MIRE_Gold.002",
-      "MIRE_Gold.003",
-      "MIRE_Gold.004"
+      "MIRE_Brass",
+      "MIRE_Gold"
     ]
   },
   {
     "name": "pickup_coin_stack",
     "family": "currency",
-    "width_m": 0.084,
-    "depth_m": 0.121,
+    "width_m": 0.079,
+    "depth_m": 0.12,
     "height_m": 0.019,
     "mesh_parts": 20,
     "polygons": 280,
     "materials": [
-      "MIRE_Brass.007",
-      "MIRE_Brass.008",
-      "MIRE_Brass.009",
-      "MIRE_Brass.010",
-      "MIRE_Brass.011",
-      "MIRE_Brass.012",
-      "MIRE_Brass.013",
-      "MIRE_Brass.014",
-      "MIRE_Brass.015",
-      "MIRE_Brass.016",
-      "MIRE_Gold.005",
-      "MIRE_Gold.006",
-      "MIRE_Gold.007",
-      "MIRE_Gold.008",
-      "MIRE_Gold.009",
-      "MIRE_Gold.010",
-      "MIRE_Gold.011",
-      "MIRE_Gold.012",
-      "MIRE_Gold.013",
-      "MIRE_Gold.014"
+      "MIRE_Brass",
+      "MIRE_Gold"
     ]
   },
   {
     "name": "pickup_salvage_fragment",
     "family": "salvage",
     "width_m": 0.19,
-    "depth_m": 0.181,
-    "height_m": 0.063,
+    "depth_m": 0.179,
+    "height_m": 0.065,
     "mesh_parts": 6,
     "polygons": 120,
     "materials": [
-      "MIRE_Brass.017",
-      "MIRE_Iron.005",
-      "MIRE_IronDark.003",
-      "MIRE_MireGlow",
-      "MIRE_MireGlow.001",
-      "MIRE_MireGlow.002"
+      "MIRE_Brass",
+      "MIRE_Iron",
+      "MIRE_IronDark",
+      "MIRE_MireGlow"
     ]
   }
 ]

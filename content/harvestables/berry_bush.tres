@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="HarvestableDef" format=3]
+
+[ext_resource type="Script" path="res://systems/harvesting/harvestable_def.gd" id="1_def"]
+[ext_resource type="PackedScene" path="res://assets/gatherables/exports/berry_bush_full.glb" id="2_full"]
+[ext_resource type="PackedScene" path="res://assets/gatherables/exports/berry_bush_harvested.glb" id="3_picked"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"berry_bush"
+display_name = "Berry Bush"
+max_health = 3
+required_tool = 0
+yield_item_id = &"berry"
+yield_amount = 2
+respawn_seconds = 120.0
+request_range_m = 3.0
+active_state_scenes = Array[PackedScene]([ExtResource("2_full")])
+depleted_scene = ExtResource("3_picked")

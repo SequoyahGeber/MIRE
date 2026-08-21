@@ -6,7 +6,7 @@
     "azimuth_deg": 55.0,
     "elevation_deg": 21.0,
     "roll_deg": 0.0,
-    "ortho_scale_m": 1.0374,
+    "ortho_scale_m": 1.0071,
     "source_polygons": 424
   },
   {
@@ -16,7 +16,7 @@
     "azimuth_deg": 55.0,
     "elevation_deg": 21.0,
     "roll_deg": 0.0,
-    "ortho_scale_m": 0.6699,
+    "ortho_scale_m": 0.685,
     "source_polygons": 116
   },
   {
@@ -26,7 +26,7 @@
     "azimuth_deg": 35.0,
     "elevation_deg": 21.0,
     "roll_deg": 45.0,
-    "ortho_scale_m": 0.2851,
+    "ortho_scale_m": 0.3034,
     "source_polygons": 200
   },
   {
@@ -36,7 +36,7 @@
     "azimuth_deg": 35.0,
     "elevation_deg": 21.0,
     "roll_deg": 45.0,
-    "ortho_scale_m": 0.1661,
+    "ortho_scale_m": 0.1978,
     "source_polygons": 80
   },
   {
@@ -46,7 +46,7 @@
     "azimuth_deg": 35.0,
     "elevation_deg": 21.0,
     "roll_deg": 45.0,
-    "ortho_scale_m": 0.1052,
+    "ortho_scale_m": 0.1391,
     "source_polygons": 40
   },
   {
@@ -56,7 +56,7 @@
     "azimuth_deg": 35.0,
     "elevation_deg": 21.0,
     "roll_deg": 45.0,
-    "ortho_scale_m": 0.1649,
+    "ortho_scale_m": 0.1966,
     "source_polygons": 120
   },
   {
@@ -66,7 +66,7 @@
     "azimuth_deg": 35.0,
     "elevation_deg": 21.0,
     "roll_deg": 45.0,
-    "ortho_scale_m": 0.1735,
+    "ortho_scale_m": 0.2164,
     "source_polygons": 140
   },
   {
@@ -86,7 +86,7 @@
     "azimuth_deg": 35.0,
     "elevation_deg": 21.0,
     "roll_deg": 45.0,
-    "ortho_scale_m": 0.1608,
+    "ortho_scale_m": 0.1684,
     "source_polygons": 168
   },
   {
@@ -96,7 +96,7 @@
     "azimuth_deg": 35.0,
     "elevation_deg": 21.0,
     "roll_deg": 0.0,
-    "ortho_scale_m": 0.0799,
+    "ortho_scale_m": 0.0956,
     "source_polygons": 196
   },
   {
@@ -106,8 +106,18 @@
     "azimuth_deg": 35.0,
     "elevation_deg": 21.0,
     "roll_deg": 45.0,
-    "ortho_scale_m": 0.157,
+    "ortho_scale_m": 0.1631,
     "source_polygons": 552
+  },
+  {
+    "id": "apple",
+    "source": "assets/pickups/exports/pickup_apple.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.1394,
+    "source_polygons": 336
   },
   {
     "id": "raw_meat",
@@ -126,7 +136,7 @@
     "azimuth_deg": 35.0,
     "elevation_deg": 21.0,
     "roll_deg": 45.0,
-    "ortho_scale_m": 0.0964,
+    "ortho_scale_m": 0.1014,
     "source_polygons": 440
   },
   {
@@ -136,7 +146,7 @@
     "azimuth_deg": 35.0,
     "elevation_deg": 21.0,
     "roll_deg": 0.0,
-    "ortho_scale_m": 0.0814,
+    "ortho_scale_m": 0.0834,
     "source_polygons": 880
   },
   {

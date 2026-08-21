@@ -85,6 +85,7 @@ EXPECTED_NAMES = [
     "pickup_fibre_bundle",
     "pickup_berry",
     "pickup_mushroom",
+    "pickup_apple",
     "pickup_raw_meat",
     "pickup_coin",
     "pickup_coin_stack",
@@ -265,18 +266,62 @@ def build_mushroom() -> None:
         ((0.055, 0.026, 0.052, (-0.026, 0.008)), (0.036, 0.018, 0.034, (0.038, -0.012)))
     ):
         ox, oy = offset
-        cone(f"Stem_{i + 1}", 0.013, 0.010, stem_h, (ox, oy, stem_h * 0.5), mat("flesh_fat"), 9)
+        cone(f"Stem_{i + 1}", 0.013, 0.010, stem_h, (ox, oy, stem_h * 0.5), mat("fungus_gill"), 9)
+        # F-441: these caps were `mire_flesh` and `mire_light` — the Mire's own
+        # corruption purples, which the palette reserves to mean "this grew out of
+        # the corruption", on the mushroom the player is meant to EAT. The
+        # gatherable patch this pickup comes off wears `fungus_edible`, and an
+        # item that does not match the node it was picked from teaches the player
+        # the wrong colour twice.
         ico(f"Cap_{i + 1}", (ox, oy, stem_h + cap_h * 0.42), (cap_r, cap_r * 0.94, cap_h),
-            mat("mire_flesh" if i == 0 else "mire_light"), (0.0, 0.0, 0.18 * (i + 1)), 2)
+            mat("fungus_edible"), (0.0, 0.0, 0.18 * (i + 1)), 2)
         # Radial gills under the cap — the underside was a blank dome before.
         for j, (angle, rad) in enumerate(radial(7, cap_r * 0.62, seed=1070 + i * 7, jitter=0.12)):
             g = around((ox, oy, stem_h + cap_h * 0.06), angle, rad)
-            blade = box(f"Gill_{i + 1}_{j + 1}", g, (cap_r * 0.60, 0.0035, cap_h * 0.30), mat("flesh_fat"))
+            blade = box(f"Gill_{i + 1}_{j + 1}", g, (cap_r * 0.60, 0.0035, cap_h * 0.30), mat("fungus_gill"))
             blade.rotation_euler[2] = angle
         # Spots wrapped round the cap rather than pasted on the front.
         for j, (angle, rad) in enumerate(radial(4, cap_r * 0.58, seed=1180 + i * 11, jitter=0.40)):
             s = around((ox, oy, stem_h + cap_h * 0.80), angle, rad)
-            ico(f"Spot_{i + 1}_{j + 1}", s, (0.008, 0.008, 0.004), mat("flesh_fat"), subdivisions=1)
+            ico(f"Spot_{i + 1}_{j + 1}", s, (0.008, 0.008, 0.004), mat("fungus_gill"), subdivisions=1)
+
+
+def build_apple() -> None:
+    """0.17 m: two apples and a leafy twig, because one apple is 8 cm.
+
+    The kit's own rule (`mire_art.READABILITY_FLOOR_M`) is that a small item is
+    made legible by QUANTITY rather than by inflating it — the same reason the
+    coin pickup is a spill of five and the berry pickup a handful of seven. A
+    single true-size apple on the ground is a pixel; two of them with a twig is a
+    thing you can see and is still honest next to a 1.8 m player.
+
+    Both apples get the blush and the cheek, as on the tree: one flat red sphere
+    at this size reads as a cherry, and the item has to match the fruit hanging on
+    `apple_tree_full` or the player learns two different apples.
+    """
+    for index, (ox, oy, radius, spin) in enumerate(
+            ((-0.036, 0.008, 0.043, 0.30), (0.041, -0.014, 0.038, -0.55))):
+        ico(f"Apple_{index + 1}", (ox, oy, radius * 0.92), (radius, radius * 0.96, radius * 0.90),
+            mat("apple"), (0.0, 0.0, spin), 2)
+        # The cheek: the side that never turned to the sun. Sunk into the body so
+        # it reads as the same fruit rather than as something stuck to it.
+        ico(f"Apple_Cheek_{index + 1}",
+            (ox + math.cos(spin) * radius * 0.42, oy + math.sin(spin) * radius * 0.42,
+             radius * 0.96),
+            (radius * 0.66, radius * 0.62, radius * 0.60), mat("apple_shade"),
+            (0.0, 0.0, spin), 1)
+        # A stalk and the little dimple it sits in.
+        cone(f"Apple_Well_{index + 1}", radius * 0.30, radius * 0.22, radius * 0.16,
+             (ox, oy, radius * 1.70), mat("wood_bark_dark"), 7)
+        cylinder_between(f"Apple_Stalk_{index + 1}", (ox, oy, radius * 1.72),
+                         (ox + 0.008, oy + 0.005, radius * 2.28), 0.0045,
+                         mat("wood_bark"), 5)
+    twig = ((0.062, 0.030, 0.010), (0.115, 0.052, 0.016))
+    cylinder_between("Twig", twig[0], twig[1], 0.0055, mat("wood_bark"), 5)
+    for index, (angle, size) in enumerate(((0.9, 0.030), (2.6, 0.026))):
+        leaf = ico(f"Leaf_{index + 1}",
+                   (0.088 + math.cos(angle) * 0.022, 0.040 + math.sin(angle) * 0.022, 0.016),
+                   (size, size * 0.44, 0.005), mat("leaf"), (0.0, 0.0, angle), 1)
 
 
 def build_meat() -> None:
@@ -362,6 +407,43 @@ def create_asset(name: str, family: str, build_fn: Callable[[], None],
         obj.parent = root
     bpy.context.view_layer.update()
     minimum, maximum = world_bounds(made)
+
+    # Normalise to the declared true size (F-440). Every other kit in the repo
+    # already scales its finished assets onto a size table; this one asserted
+    # against `mire_art.SCALE` and did not enforce it, and that gap opened the
+    # moment `world_bounds` was fixed to measure VERTICES instead of
+    # `obj.bound_box`. The old bound-box ruler was inflated — an axis-aligned box
+    # round a rotated cone is strictly larger than the cone — so five pickups had
+    # been passing at 0.76-0.84x of their stated size while measuring "correct"
+    # with the same wrong ruler that built them. Nothing shrank; the tape measure
+    # got honest, and the contract has been red ever since.
+    #
+    # Scaling here rather than hand-growing five builders keeps the SCALE table
+    # the single source of truth: an asset is the size the table says it is, and
+    # a builder's job is its SHAPE.
+    target = SCALE.get(name)
+    if target is not None:
+        longest = max((maximum - minimum).x, (maximum - minimum).y, (maximum - minimum).z)
+        if longest > 1e-6 and abs(longest / target - 1.0) > 1e-4:
+            factor = target / longest
+            for obj in made:
+                obj.scale = (factor, factor, factor)
+                obj.location = obj.location * factor
+            bpy.ops.object.select_all(action="DESELECT")
+            for obj in made:
+                obj.select_set(True)
+            bpy.context.view_layer.objects.active = made[0]
+            bpy.ops.object.transform_apply(scale=True)
+            bpy.ops.object.select_all(action="DESELECT")
+            bpy.context.view_layer.update()
+            minimum, maximum = world_bounds(made)
+            offset = Vector((-(minimum.x + maximum.x) * 0.5,
+                             -(minimum.y + maximum.y) * 0.5, -minimum.z))
+            for obj in made:
+                obj.location += offset
+            bpy.context.view_layer.update()
+            minimum, maximum = world_bounds(made)
+
     dimensions = maximum - minimum
     polygons = sum(len(obj.data.polygons) for obj in made if obj.type == "MESH")
     materials = sorted({m.name for obj in made if obj.type == "MESH" for m in obj.data.materials if m})
@@ -460,6 +542,7 @@ def main() -> None:
         ("pickup_fibre_bundle", "organic", build_fibre),
         ("pickup_berry", "food", build_berry),
         ("pickup_mushroom", "food", build_mushroom),
+        ("pickup_apple", "food", build_apple),
         ("pickup_raw_meat", "food", build_meat),
         ("pickup_coin", "currency", build_coin),
         ("pickup_coin_stack", "currency", build_coin_stack),
@@ -508,7 +591,8 @@ def main() -> None:
     # Scale preview: a 1.80 m human bar so nothing can quietly drift again.
     for record in records:
         set_visible(record, record["name"] in {"pickup_log", "pickup_iron_ingot", "pickup_stone",
-                                               "pickup_mushroom", "pickup_berry", "pickup_coin"})
+                                               "pickup_mushroom", "pickup_berry", "pickup_coin",
+                                               "pickup_apple"})
     # The reference stands clear of the row rather than on top of it, and the
     # frame holds all 1.80 m of it — a scale shot that crops the yardstick is
     # how the old kit passed inspection at ten times life size.

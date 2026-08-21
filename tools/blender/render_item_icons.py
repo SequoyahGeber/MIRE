@@ -50,6 +50,7 @@ SOURCES: list[tuple[str, str]] = [
     ("salvage_fragment", "pickups/exports/pickup_salvage_fragment.glb"),
     ("berry", "pickups/exports/pickup_berry.glb"),
     ("mushroom", "pickups/exports/pickup_mushroom.glb"),
+    ("apple", "pickups/exports/pickup_apple.glb"),
     ("raw_meat", "pickups/exports/pickup_raw_meat.glb"),
     ("coin", "pickups/exports/pickup_coin.glb"),
     ("coin_stack", "pickups/exports/pickup_coin_stack.glb"),

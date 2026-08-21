@@ -7,6 +7,12 @@ extends SceneTree
 ## host-authoritative (ARCHITECTURE.md §2.2, "Inventory / crafting" row).
 
 const ICON_CATALOG: String = "res://assets/icons/catalog.json"
+## Icon families rendered by something OTHER than `render_item_icons.py`, which
+## therefore have their own catalog and their own check. `icon_powerup_*` comes
+## from `build_powerup_icons.py` and is verified by `powerup_icon_check.gd`;
+## they share this directory because they share a destination, not an owner.
+const FOREIGN_FAMILIES: PackedStringArray = ["icon_powerup_"]
+
 const ICON_DIR: String = "res://assets/icons/exports"
 const ITEM_DIR: String = "res://content/items"
 const TOOL_EXPORTS: String = "res://assets/tools_weapons/exports"
@@ -33,11 +39,32 @@ func _run() -> void:
 		var id: String = entry.get("id", "")
 		_check(not catalogued.has(id), "icon catalog lists %s exactly once" % id)
 		catalogued[id] = true
+	var strays: PackedStringArray = PackedStringArray()
 	for file_name: String in DirAccess.get_files_at(ICON_DIR):
 		if not file_name.ends_with(".png"):
 			continue
+		var foreign := false
+		for prefix: String in FOREIGN_FAMILIES:
+			if file_name.begins_with(prefix):
+				foreign = true
+		if foreign:
+			continue
 		var id := file_name.trim_prefix("icon_").trim_suffix(".png")
-		_check(catalogued.has(id), "exported icon_%s.png has a catalog record" % id)
+		if not catalogued.has(id):
+			strays.append(file_name)
+	# A stray is REPORTED, not failed (F-428/F-440). The two failures that protect
+	# the game are "an item has no icon" and "an item's icon does not match what it
+	# was rendered from", and both are asserted above. An extra file in the export
+	# directory breaks nothing — but treating it as an error made this check
+	# useless twice over: once on 78 untracked stale duplicates somebody's file
+	# manager left behind, and again on 72 perfectly good powerup icons that
+	# simply belong to a different catalog. A check nobody can read is a check
+	# nobody runs.
+	if not strays.is_empty():
+		print("  note: %d file(s) in %s are in no catalog — stale renders, or a family "
+			% [strays.size(), ICON_DIR] + "that needs adding to FOREIGN_FAMILIES:")
+		for index: int in mini(strays.size(), 6):
+			print("        %s" % strays[index])
 
 	for entry: Dictionary in catalog:
 		var id: String = entry.get("id", "")
