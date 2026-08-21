@@ -126,6 +126,10 @@ const BUILD_BAR := preload("res://ui/building/build_bar.gd")
 ## wall on purpose: `_apply_step_up()`'s forward probe from the raised height still collides with it,
 ## so raising this number is the one documented way to change what counts as "a step" project-wide.
 @export_range(0.0, 1.0, 0.01) var step_height: float = 0.4
+## F-405: how long an accepted step may keep stepping after the body leaves the floor. Long enough to
+## cross a lip at walking pace (a few ticks), far too short to read as flight — and only ever set by
+## an accepted step, never by falling.
+const STEP_CONTINUE_GRACE_SEC: float = 0.12
 
 @export_group("Downed")
 ## Ground speed while downed. Far below walk_speed on purpose — DESIGN.md §4.5's "downed, not dead"
@@ -183,6 +187,9 @@ var net_sync: MultiplayerSynchronizer
 
 var _gravity: float = 9.8
 var _time_since_grounded: float = INF
+## F-405: counts down after an accepted step, letting the next tick finish a climb already begun.
+## Only ever set by an accepted step, so it cannot become a general "step up while falling".
+var _step_grace: float = 0.0
 var _time_since_jump_pressed: float = INF
 var _was_on_floor: bool = true
 
@@ -850,7 +857,21 @@ func _try_jump(input_allowed: bool, downed: bool, dead: bool) -> void:
 ## lets Godot's own shape sweep — which already accounts for the whole capsule, not its centre point —
 ## find the true first contact, so `travel` can never leave the capsule embedded in the step.
 func _apply_step_up(delta: float) -> void:
-	if not is_on_floor():
+	# F-405: a step already under way may continue for a moment after the body leaves the floor.
+	#
+	# The bare `is_on_floor()` guard was right for STARTING a step and wrong for finishing one. A lip
+	# is climbed over several ticks — one tick of motion at walking pace is ~67 mm, far less than the
+	# capsule's 0.4 m radius, so the first step lands the body on the lip's top EDGE, balanced on the
+	# curve of its bottom hemisphere and momentarily airborne. This guard then made the next tick a
+	# no-op, gravity returned the body to the bottom, and the player creeped at the kerb without ever
+	# getting up it. Measured: a 0.3 m kerb, well under `step_height`, stalled the player at y=0.014
+	# before F-403 and y=0.084 after it, where getting up means reaching 0.3.
+	#
+	# The grace window is short and only ever opened by an accepted step, so it cannot become a
+	# general "step up while falling" — walking off a cliff still gets the ordinary refusal on the
+	# first tick, because nothing set it.
+	_step_grace = maxf(_step_grace - delta, 0.0)
+	if not is_on_floor() and _step_grace <= 0.0:
 		return
 	var motion: Vector3 = Vector3(velocity.x, 0.0, velocity.z) * delta
 	if motion.length_squared() < 0.0001:
@@ -898,6 +919,7 @@ func _apply_step_up(delta: float) -> void:
 		return
 
 	global_position = stepped.origin + travel
+	_step_grace = STEP_CONTINUE_GRACE_SEC
 
 
 # ── Dodge (task 3.8b) ─────────────────────────────────────────────────────────────────────────────

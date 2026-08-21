@@ -2128,50 +2128,6 @@ steering in air no longer reduces speed, and that a given drop height produces a
 
 ---
 
-### F-405 · step_height is 0.4 m but nothing below it is actually climbable — the capsule's rounded bottom catches the kerb edge and the is_on_floor() guard kills the next attempt
-
-**Area:** gameplay · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
-
-Found by `tools/step_up_check.gd` while fixing F-403, and **pre-existing** — it is not a consequence
-of that fix.
-
-`PlayerController.step_height` is 0.4 m and documents itself as "roughly knee height ... comfortably
-above the 60 mm door threshold". A 0.3 m kerb is therefore supposed to be walked over. It is not.
-
-Instrumented, one physics tick at a time, walking into a 0.3 m box:
-
-    flat_blocked=true  no_room=false  fwd_blocked=false  drop_hit=true  travel=(0, -0.286, 0)
-
-Every gate passes and the step is accepted — so the player DOES get lifted. But the settle lands at
-y=0.114, not 0.3. The cause is geometry: `stepped.origin` has advanced only one tick of motion
-(0.067 m at 4 m/s), so the capsule is barely over the kerb's leading edge, and its bottom HEMISPHERE
-rests on that edge rather than on the kerb's top face. The player ends the tick at 0.114 m and
-airborne — and `_apply_step_up()` opens with `if not is_on_floor(): return`, so the next tick is a
-no-op, gravity brings them back, and they creep without ever getting up.
-
-Measured over 40 ticks against a 0.3 m kerb, final resting position:
-
-    at HEAD                 x=0.618  y=0.014
-    with F-403's fix        x=0.648  y=0.084
-
-Better, still stuck. So `step_height` currently describes an intention rather than a behaviour, and
-every kerb, doorstep and rock the design assumes is walkable is a wall.
-
-Two things to fix, and they are separable:
-
-1. **Probe forward far enough to clear the edge.** One tick of motion is not enough for the capsule
-   to be over the kerb's top face. The forward probe should advance by at least the capsule radius,
-   or the settle should be taken at the point the sweep actually clears rather than at
-   `origin + motion`.
-2. **Do not require `is_on_floor()` for a step already in progress.** The guard is right for
-   starting a step and wrong for continuing one, which is what turns a partial step into a stall.
-
-Note for whoever takes this: `tools/step_up_check.gd` already drives the real seam and asserts the
-current (wrong) 0.135 m lift with a comment pointing here. Tighten that assertion to a real traversal
-when this lands — that is the proof this is fixed.
-
----
-
 ### F-406 · agent claim with more than one file stores the whole list as a single dictionary key, so the pre-commit hook never sees any of them as claimed
 
 **Area:** tooling · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
@@ -2221,7 +2177,122 @@ Close this through a bounded follow-on command roadmap rather than an unsafe gen
 
 ---
 
-### F-413 · God Mode is wired only to the obsolete SettingsMenu autoload
+### F-416 · Every settings checkbox is invisible when off — MireTheme.toggle() is unstyled
+
+**Area:** ui · **Severity:** high · **Found:** 2026-08-21 by coil995fd7
+
+`MireTheme.toggle()` builds a bare `CheckBox` and overrides only the font and the focus ring. It
+never overrides the `check`/`unchecked`/`radio_*` icons or supplies a panel, so the control falls
+back to Godot's default theme icons: a dark grey outline drawn against MIRE's near-black settings
+panel (`MireTheme.BG`). Against that background the OFF state renders as literally nothing, and the
+ON state as a barely-legible smudge.
+
+Rendered evidence at 1920x1080 (`tools/settings_render_check.gd`): on the DISPLAY tab, "VSync" (on)
+shows a faint glyph while "Dynamic resolution" (off) shows an empty gap. "Invert vertical look"
+(CONTROLS), "Reduce motion" (ACCESSIBILITY) and "God Mode" (PLAYTESTING) are all off by default and
+all render as a label with nothing beside it.
+
+This is what made the shipped God mode toggle (F-411) look absent: the control is present,
+focusable, correctly wired, and `tools/god_mode_check.gd` drives it successfully — it simply cannot
+be seen or aimed at with a mouse. Every check to date asserted the node exists, never that it draws.
+
+The fix belongs in `MireTheme.toggle()`, not in any one page: one styled control fixes all four
+existing toggles and every future one. The neighbouring `MireTheme.dropdown()` rows already read
+"ON"/"OFF" in a framed field, which is the visual language this should match.
+
+---
+
+## Resolved
+
+### F-405 · step_height is 0.4 m but nothing below it is actually climbable — the capsule's rounded bottom catches the kerb edge and the is_on_floor() guard kills the next attempt — **fixed**
+
+**Area:** gameplay · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Found by `tools/step_up_check.gd` while fixing F-403, and **pre-existing** — it is not a consequence
+of that fix.
+
+`PlayerController.step_height` is 0.4 m and documents itself as "roughly knee height ... comfortably
+above the 60 mm door threshold". A 0.3 m kerb is therefore supposed to be walked over. It is not.
+
+Instrumented, one physics tick at a time, walking into a 0.3 m box:
+
+    flat_blocked=true  no_room=false  fwd_blocked=false  drop_hit=true  travel=(0, -0.286, 0)
+
+Every gate passes and the step is accepted — so the player DOES get lifted. But the settle lands at
+y=0.114, not 0.3. The cause is geometry: `stepped.origin` has advanced only one tick of motion
+(0.067 m at 4 m/s), so the capsule is barely over the kerb's leading edge, and its bottom HEMISPHERE
+rests on that edge rather than on the kerb's top face. The player ends the tick at 0.114 m and
+airborne — and `_apply_step_up()` opens with `if not is_on_floor(): return`, so the next tick is a
+no-op, gravity brings them back, and they creep without ever getting up.
+
+Measured over 40 ticks against a 0.3 m kerb, final resting position:
+
+    at HEAD                 x=0.618  y=0.014
+    with F-403's fix        x=0.648  y=0.084
+
+Better, still stuck. So `step_height` currently describes an intention rather than a behaviour, and
+every kerb, doorstep and rock the design assumes is walkable is a wall.
+
+Two things to fix, and they are separable:
+
+1. **Probe forward far enough to clear the edge.** One tick of motion is not enough for the capsule
+   to be over the kerb's top face. The forward probe should advance by at least the capsule radius,
+   or the settle should be taken at the point the sweep actually clears rather than at
+   `origin + motion`.
+2. **Do not require `is_on_floor()` for a step already in progress.** The guard is right for
+   starting a step and wrong for continuing one, which is what turns a partial step into a stall.
+
+Note for whoever takes this: `tools/step_up_check.gd` already drives the real seam and asserts the
+current (wrong) 0.135 m lift with a comment pointing here. Tighten that assertion to a real traversal
+when this lands — that is the proof this is fixed.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** Fixed with the second of the two changes the finding named: **do not require `is_on_floor()` for a
+step already in progress.**
+
+`_apply_step_up()` opened with a bare `is_on_floor()` guard, which is right for STARTING a step and
+wrong for finishing one. A lip takes several ticks to cross — one tick of motion at walking pace is
+~67 mm against a 0.4 m capsule radius — so the first step lands the body on the lip's top EDGE,
+balanced on the curve of its bottom hemisphere and momentarily airborne. The guard then made the next
+tick a no-op, gravity returned the body to the bottom, and the player creeped without ever getting up.
+
+`STEP_CONTINUE_GRACE_SEC` (0.12 s) is opened only by an ACCEPTED step, so it cannot become a general
+"step up while falling" — walking off a cliff still gets the ordinary refusal on the first tick,
+because nothing set it.
+
+Measured by `tools/step_up_check.gd` against a 0.3 m kerb, well under `step_height` 0.4:
+
+    at HEAD (before F-403)   rise 0.014 m   advance 0.62 m
+    after F-403              rise 0.084 m   advance 0.63 m     <- still stalled at the kerb
+    now                      rise 0.301 m   advance 6.09 m     <- on top of it, and across
+
+The kerb is 0.300 m tall, so 0.301 is the player standing on it.
+
+The first fix the finding proposed — probing forward by at least the capsule radius — turned out to
+be unnecessary once the step could continue, and was not applied. Advancing the probe that far would
+also have made the clearance test stricter than the motion it authorises, which risks rejecting lips
+the player can actually cross.
+
+`step_up_check`'s kerb assertion was deliberately weak while F-403 was the only fix in place: it
+asserted the 0.135 m partial lift with a comment pointing here. Now tightened to demand the climb and
+the traverse, which is the proof this is closed. Wall behaviour unchanged: rise 0.000 m, 0
+oscillations.
+
+### F-414 · Graphics settings menu is incomplete — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill5df327
+
+ui/frontend/settings_screen.gd's DISPLAY tab exposes only graphics quality and FOV. docs/MENU.md section 7.1 explicitly requires window mode, resolution, vsync, and FPS cap, and docs/FINDINGS.md's performance record says the shipped game still has no retail vsync/frame-rate surface. Implement these as persisted local SettingsService values with DisplayServer/Engine application and round-trip/runtime checks.
+
+**Resolved 2026-08-21 by flinta92725.** Added complete display configuration to the live tabbed Settings screen: window mode, resolution, VSync, FPS cap, quality preset, SSAO override, MSAA, dynamic resolution, and brightness. SettingsService persists schema-v2 values, GraphicsQuality applies the renderer-facing controls, and the focused GraphicsSettingsPage keeps the live screen small while preserving F-413's PLAYTESTING/God Mode tab.
+
+Verified after takeover of quill5df327's completed handoff:
+- `.agent/bin/agent godot --script tools/settings_check.gd` -> SETTINGS_CHECK failures=0
+- `.agent/bin/agent godot --script tools/settings_screen_check.gd` -> SETTINGS_SCREEN_CHECK failures=0 (six tabs, expanded display controls, seven scroll-safe sliders, PLAYTESTING/God Mode retained)
+- `.agent/bin/agent godot --script tools/god_mode_check.gd` -> GOD_MODE_CHECK failures=0
+
+### F-413 · God Mode is wired only to the obsolete SettingsMenu autoload — **fixed**
 
 **Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by flinta92725
 
@@ -2229,15 +2300,27 @@ The live pause/title Settings flow builds ui/frontend/settings_screen.gd, whose 
 
 ---
 
-### F-414 · Graphics settings menu is incomplete
+**Resolved 2026-08-21 by flinta92725.** Removed the unused SettingsMenu autoload and deleted ui/menu/settings_menu.gd plus its UID (836 lines). Added PLAYTESTING/GodModeToggle to the single live ui/frontend/settings_screen.gd used by title and pause, and routed the remaining MainMenu SETTINGS entry through MenuStack to that same screen. Updated God-mode, settings-screen, MainMenu, focus and run-scope coverage so dead UI cannot satisfy the feature check again.
 
-**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill5df327
+Verified:
+- `.agent/bin/agent godot --script tools/settings_screen_check.gd` -> SETTINGS_SCREEN_CHECK failures=0 (6 live tabs; PLAYTESTING focusable; God toggle present)
+- `.agent/bin/agent godot --script tools/god_mode_check.gd` -> GOD_MODE_CHECK failures=0 (live screen toggles approved God mode on/off)
+- `.agent/bin/agent godot --script tools/main_menu_check.gd` -> MAIN_MENU_CHECK failures=0 (legacy seed menu routes to live SettingsScreen)
+- `.agent/bin/agent godot --script tools/verify_setup.gd` -> all checks passed with 64 autoloads and no SettingsMenu
+- `python3 tools/decision_ref_check.py` -> failures=0
+- `git diff --check` on F-413 paths -> clean
 
-ui/frontend/settings_screen.gd's DISPLAY tab exposes only graphics quality and FOV. docs/MENU.md section 7.1 explicitly requires window mode, resolution, vsync, and FPS cap, and docs/FINDINGS.md's performance record says the shipped game still has no retail vsync/frame-rate surface. Implement these as persisted local SettingsService values with DisplayServer/Engine application and round-trip/runtime checks.
+`menu_focus_check.gd` reaches the remaining menus after removing its dead SettingsMenu section but reports two unrelated crafting/inventory behavior failures. `run_scope_audit_check.gd` now classifies GodModeService correctly and reports only the unrelated pre-existing unclassified AmbientMusicDirector. F-414 migrated `tools/settings_check.gd` away from the removed autoload and its focused settings checks pass.
 
----
+### F-415 · Night should strongly reward a torch without making moonless navigation impossible — **fixed**
 
-## Resolved
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by emberd89a44
+
+Sequoyah's post-F-356 target is darker than the first readable-night pass: silhouettes, the path, and broad terrain should remain navigable by moonlight, but nearby detail, gathering, and threat recognition should strongly reward a torch. Preserve the approved daytime endpoint and F-356's indigo sky/moon directionality; lower ground midtones without returning to the old black frame.
+
+**Resolved 2026-08-21 by emberd89a44.** Darkened only the night endpoints after Sequoyah clarified the target: broad terrain and silhouettes remain navigable under moonlight, while fine detail, gathering, and threat recognition strongly reward a torch. Kept F-356's indigo sky, stars, cool moon directionality, and the approved daytime endpoint.
+
+Fixed-seed Forward+ proof `f415_12_dark_moonlit_night.png` measures luminance p05 0.0183, median 0.0835, p95 0.2596, with 8.66% below 0.02. That is deliberately darker than F-356's 0.1105 median without returning to the broken 0.0127 baseline. Verified atmosphere night, grade, graphics-quality, and findings-numbering checks at zero failures.
 
 ### F-356 · Night renders essentially black on the shipped grade — the ground is invisible, not merely dark — **fixed**
 

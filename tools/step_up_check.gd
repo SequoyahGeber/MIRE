@@ -59,18 +59,16 @@ func _run() -> void:
 	kerb_body.queue_free()
 
 	# The second half of the contract: the fix must not be "delete the feature". A kerb below
-	# `step_height` still has to produce upward progress that plain move_and_slide would not.
+	# `step_height` has to be climbed and crossed, not merely nudged.
 	#
-	# It is deliberately NOT asserted that the player gets fully on top of a 0.3 m kerb, because
-	# they do not — and that is F-405, a separate pre-existing defect this check found rather than
-	# caused. The capsule's rounded bottom catches the kerb's top EDGE, so the settle lands part way
-	# up, the player ends the tick airborne, and `_apply_step_up`'s own `is_on_floor()` guard makes
-	# it a no-op on the next one. Measured at HEAD the player reached y=0.014 and stalled; with
-	# F-403's fix, y=0.084. Better, still stuck. Asserting the real number keeps this honest and
-	# keeps the gate meaningful.
-	check(float(kerb_result["rise"]) > 0.05,
-		"a 0.3 m kerb still produces step-up lift, so the feature is not simply disabled "
-		+ "(rose %.3f m; full traversal is F-405)" % kerb_result["rise"])
+	# This assertion was deliberately weak while F-403 was the only fix in place — it asserted the
+	# 0.135 m partial lift that was all the controller could manage then, with a comment pointing at
+	# F-405. F-405 is fixed, so it now demands the real thing: on top of the kerb, and across it.
+	check(float(kerb_result["rise"]) > 0.28,
+		"a 0.3 m kerb is climbed, not stalled on (rose %.3f m)" % kerb_result["rise"])
+	check(float(kerb_result["advance"]) > 3.0,
+		"and the player carries on across it (advanced %.2f m; it used to stall at 0.63)"
+			% kerb_result["advance"])
 
 	print("STEP_UP_CHECK failures=%d wall_rise=%.3f wall_osc=%d kerb_rise=%.3f kerb_advance=%.2f" % [
 		failures, wall_result["rise"], wall_result["oscillations"],

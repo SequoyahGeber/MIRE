@@ -1,5 +1,11 @@
 {
   "claims": {
+    "assets/environment/catalog.json": {
+      "agent": "gale43d16e",
+      "at": "2026-08-21T06:53:08+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
     "content/biomes/birchwood.tres": {
       "agent": "kilnd3a089",
       "at": "2026-08-21T06:47:16+00:00",
@@ -42,11 +48,35 @@
       "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
+    "docs/ASSET_TRACKER.md": {
+      "agent": "gale43d16e",
+      "at": "2026-08-21T06:53:08+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "entities/player/player_controller.gd": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T06:50:22+00:00",
+      "task": "F-405",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
     "tools/biome_terrain_check.gd": {
       "agent": "kilnd3a089",
       "at": "2026-08-21T06:47:15+00:00",
       "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "tools/blender/build_mire_map_kit.py": {
+      "agent": "gale43d16e",
+      "at": "2026-08-21T06:53:08+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "tools/blender/mire_art.py": {
+      "agent": "gale43d16e",
+      "at": "2026-08-21T06:53:08+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
     "tools/settings_render_check.gd": {
       "agent": "coil995fd7",
@@ -59,6 +89,12 @@
       "at": "2026-08-21T06:47:05+00:00",
       "task": "F-416",
       "token": "CLAUDE_CODE_SESSION_ID:44f62a84-7862-455b-a776-2e1c5eb11d39"
+    },
+    "tools/step_up_check.gd": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T06:50:22+00:00",
+      "task": "F-405",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "ui/theme/mire_theme.gd": {
       "agent": "coil995fd7",
@@ -74,6 +110,24 @@
     }
   },
   "in_flight": {
+    "2.1d": {
+      "agent": "gale43d16e",
+      "files": [
+        "tools/blender/build_mire_map_kit.py",
+        "tools/blender/mire_art.py",
+        "assets/environment/catalog.json",
+        "docs/ASSET_TRACKER.md"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-21T06:53:13+00:00",
+          "by": "gale43d16e",
+          "text": "Fixing kit tree trunks (F-396 follow-up) at Sequoyah's direct request before taking the NEXT batch A-016b"
+        }
+      ],
+      "started": "2026-08-21T06:53:08+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
     "F-400": {
       "agent": "kilnd3a089",
       "files": [
@@ -89,6 +143,16 @@
       ],
       "notes": [],
       "started": "2026-08-21T05:25:41+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "F-405": {
+      "agent": "kilnd3a089",
+      "files": [
+        "entities/player/player_controller.gd",
+        "tools/step_up_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-21T06:50:22+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "F-416": {
@@ -1035,13 +1099,6 @@
       "task": "F-401",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
-    "autoload/attunement_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T06:50:30+00:00",
-      "hash": "bcb6bedff24d901446465302bde64125e976f060840c1f2cc85cdf135cd283df",
-      "task": "F-277",
-      "token": null
-    },
     "autoload/build_service.gd": {
       "agent": "ivy1bcae0",
       "at": "2026-08-21T01:08:42+00:00",
@@ -1770,13 +1827,6 @@
       "task": "F-415",
       "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
     },
-    "tools/attunement_restart_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T06:50:30+00:00",
-      "hash": "c9d5124423d8023e94b8ebd841e607ef8f35145d36dde62261d5a922ad1c8cab",
-      "task": "F-277",
-      "token": null
-    },
     "tools/bench_mire.gd": {
       "agent": "ivy1bcae0",
       "at": "2026-08-21T02:16:00+00:00",
@@ -2470,13 +2520,6 @@
       "task": "F-340",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
-    "ui/attunement/attunement_ui.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T06:50:30+00:00",
-      "hash": "587d7387ba616c8e0053af887c69dbbb457be24d68419cd3b8ef327c122363ad",
-      "task": "F-277",
-      "token": null
-    },
     "ui/crafting/crafting_ui.gd": {
       "agent": "kilnd3a089",
       "at": "2026-08-21T04:09:56+00:00",
@@ -2765,7 +2808,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 679,
+  "rev": 684,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -3082,7 +3125,7 @@
     "2.1d": {
       "est": "4",
       "milestone": "M2",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T0",
       "title": "Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close"
     },
@@ -7757,7 +7800,7 @@
     "F-405": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "step_height is 0.4 m but nothing below it is actually climbable \u2014 the capsule's rounded bottom catches the kerb edge and the is_on_floor() guard kills the next attempt"
     },

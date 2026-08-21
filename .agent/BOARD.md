@@ -8,8 +8,13 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
+| **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | gale43d16e | 2026-08-21 06:53 | `tools/blender/build_mire_map_kit.py`, `tools/blender/mire_art.py`, `assets/environment/catalog.json`, `docs/ASSET_TRACKER.md` |
 | **F-400** The island's hills are too low to read as landform at the new island size | kilnd3a089 | 2026-08-21 05:25 | `world/gen/island_heightmap.gd`, `content/biomes/shore.tres`, `content/biomes/marsh.tres`, `content/biomes/forest.tres`, `content/biomes/birchwood.tres`, `content/biomes/highland.tres`, `content/biomes/grassland.tres`, `content/biomes/heath.tres`, `tools/biome_terrain_check.gd` |
+| **F-405** step_height is 0.4 m but nothing below it is actually climbable — the capsule's rounded bottom catches the kerb edge and the is_on_floor() guard kills the next attempt | kilnd3a089 | 2026-08-21 06:50 | `entities/player/player_controller.gd`, `tools/step_up_check.gd` |
 | **F-416** Every settings checkbox is invisible when off — MireTheme.toggle() is unstyled | coil995fd7 | 2026-08-21 06:47 | `ui/theme/mire_theme.gd`, `tools/settings_screen_check.gd`, `tools/settings_render_check.gd` |
+
+**2.1d notes:**
+- Fixing kit tree trunks (F-396 follow-up) at Sequoyah's direct request before taking the NEXT batch A-016b
 
 ## Milestones
 
@@ -103,7 +108,7 @@
 | ⬜ | **F-394** world_contract_check reports wired_harvestables as a fact, but it varies more than 2x run to run on identical code | todo |
 | 🔵 | **F-400** The island's hills are too low to read as landform at the new island size | in_flight |
 | ⬜ | **F-404** Three separate movement-feel defects: stopping is near-instant, air control bleeds speed sideways, and gravity_scale 2.0 makes any real fall brutal | todo |
-| ⬜ | **F-405** step_height is 0.4 m but nothing below it is actually climbable — the capsule's rounded bottom catches the kerb edge and the is_on_floor() guard kills the next attempt | todo |
+| 🔵 | **F-405** step_height is 0.4 m but nothing below it is actually climbable — the capsule's rounded bottom catches the kerb edge and the is_on_floor() guard kills the next attempt | in_flight |
 | ⬜ | **F-406** agent claim with more than one file stores the whole list as a single dictionary key, so the pre-commit hook never sees any of them as claimed | todo |
 | ⬜ | **F-412** The command system does not yet meet the Minecraft-like capability bar | todo |
 | 🔵 | **F-416** Every settings checkbox is invisible when off — MireTheme.toggle() is unstyled | in_flight |
