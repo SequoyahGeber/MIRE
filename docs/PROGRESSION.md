@@ -263,3 +263,62 @@ Headless, through `agent godot` (never bare — F-044):
 - **No sixth tier.** Past T5 the run escalates through Cycle modifiers, Resonance and the Gleam pool
   — content, not another ingot. `ITEMS.md`'s original instinct here was right; it just stopped one
   rung too early.
+
+---
+
+## 9 · Current state — what shipped, what is left, and what is blocking it
+
+*Written 2026-08-21 (birche6b40e), at commit 5f115a8. This section is here rather than in
+`DELEGATION.md`'s Current state because a sibling holds an exact claim on that file; fold it across
+when the claim frees.*
+
+### Shipped and pushed — the code half of both tasks
+
+`ProgressionService` (autoload script, **not yet registered**) owns the party's high-water rung:
+
+```gdscript
+ProgressionService.tier_reached() -> int          # 0..5, party-wide, high-water
+ProgressionService.is_tier_reached(t) -> bool
+ProgressionService.tier_of_item(id) -> int        # reads ItemDef.tool_tier
+ProgressionService.tier_name(t) -> String         # "" / Wood / Stone / Iron / Bogsilver / Wellglass
+ProgressionService.host_raise_tier(t, item_id)    # HOST-only; idempotent, rises only
+ProgressionService.host_reset_run()
+EventBus.subscribe_tier_reached(func(tier: int, item_id: StringName) -> void)
+```
+
+Host-owned, replicated through `WorldDeltaLog` under `kind = &"progression"` and re-derived on every
+peer — **no new RPC, so no protocol bump.** `CraftingService._finish_craft()` is the one caller.
+`SalvageService` scores `TIER_REACHED_BONUS` per rung, which is the "tiers reached" milestone
+`DESIGN.md` §4.6 has always listed and never had a fact for.
+
+`GuideService` + `GuideHud` (both **not yet registered**) ship the objective line, the one-shot tips
+and the tier fanfare, over the `content/guide/*.tres` → `GuideStepDef` family that
+`Registry.guide_step_defs()` now indexes. `GuideService.evaluate()` is public so a check can step a
+scripted run without waiting out real seconds. Off switch: `SettingsService.guidance_mode()`
+(0 FULL / 1 OBJECTIVES ONLY / 2 OFF) plus `has_seen_tip()` / `mark_tip_seen()` / `reset_seen_tips()`,
+surfaced on Settings → Accessibility. **The settings save schema is now version 3.**
+
+Two small accessors were added for the conditions and are the reusable half: `CraftingService.station_count(id)`
+— a PARTY fact, any station anywhere, riding the F-286 cache — and `FocusPrompt.focus_is_blocked()`,
+which is whether the player is looking at something their held tool cannot chip.
+
+One new authored field: **`ItemDef.tool_tier` (0..5)**, 0 meaning "not a rung".
+
+### Left to do — all of it `.tres`, all of it editor-gated (D-031/D-021)
+
+The Godot editor was open for the whole of this session, so nothing below could be authored without
+risking the editor rewriting it on save.
+
+1. **`content/guide/`** — the objective ladder `tools/guide_check.gd` already names in order
+   (`gather_fibre`, `craft_first_axe`, `chop_a_tree`, `place_workbench`, then the Wellspring / anvil /
+   guardian rungs) plus the tips of §5.2.
+2. **T3's missing iron axe**, then all of T4 and T5: items, `WeaponDef`s, recipes, the **anvil**
+   station (tier 3, its recipe costing a Wellglass Shard), the **bogsilver outcrop** harvestable and
+   its scatter entries, `wellglass_shard` into the `wellspring` loot table and `guardian_core` into
+   the `boss` one.
+3. **Register three autoloads** — `agent autoload ProgressionService res://autoload/progression_service.gd`,
+   the same for `GuideService` and for `GuideHud` (`res://ui/hud/guide_hud.gd`). Order matters only in
+   that `GuideHud` must come after `GuideService`.
+
+`tools/progression_check.gd` and `tools/guide_check.gd` both fail at this commit, and they fail by
+**naming exactly what is unauthored** — run them first and treat the output as the worklist.
