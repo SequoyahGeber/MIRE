@@ -8,9 +8,17 @@
 #
 #   bash tools/bench_measure.sh
 #
-# Leave the window in front and do not move the mouse over other apps. The benchmark now detects
-# losing focus and stamps "THESE TIMINGS ARE NOT VALID" on any run that did, so an interrupted run
-# announces itself rather than lying.
+# WHAT MATTERS is that nothing ever COVERS the window. macOS stops drawing an occluded window, and
+# frame times from a window that was not being drawn describe the window manager rather than the
+# machine — that is what invalidated a whole session of numbers on 2026-08-21.
+#
+# Fullscreen on macOS opens its own Space, so switching to another app switches AWAY from that Space
+# and hides it. So: start this, let the window come up, and then leave the machine alone until it
+# prints the reports. Do not switch apps, do not Mission Control, do not let the display sleep.
+#
+# Focus is reported per run but is NOT the same thing as being covered, and is not treated as fatal:
+# a terminal-launched run keeps focus on the terminal while still being perfectly visible (F-470).
+# Read the focus line as a hint, and trust "was the window covered" — which only you can know.
 #
 # Run 1  baseline      what the shipped benchmark reports, fullscreen and honest
 # Run 2  --no-prewarm  tests F-459: does a location's FIRST visit still hitch?

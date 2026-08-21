@@ -1140,20 +1140,26 @@ func _settings_summary(state: Dictionary) -> String:
 		"on" if bool(state.get("vsync_enabled", true)) else "off"]
 
 
-## The loudest warning this report can carry: the window was not being drawn (F-466).
+## Reports that the window was not in front while it measured (F-466), and is careful about what
+## that does and does not prove.
 ##
-## On macOS a backgrounded or occluded window is throttled and may not composite at all, so its
-## frame times describe the window manager and not the game. This happens to a player who alt-tabs
-## during the four-minute run, and it happened for a whole session of agent testing — where it
-## produced numbers that were then explained with confident and entirely wrong causes.
+## What it detects is FOCUS. What actually ruins a measurement is OCCLUSION — macOS stops updating a
+## window that is fully covered, so it is throttled or not drawn at all. Those are different things
+## and the engine exposes only the first: `project.godot` sets no unfocused-fps cap and no
+## low-processor mode, so a window that is unfocused but still VISIBLE renders normally and its
+## numbers are fine.
 ##
-## Focus is a proxy, and an imperfect one: a window can be focused and still fully covered by
-## another, which the engine does not expose. So this catches the common case and its limit is
-## stated rather than implied away.
+## So this does not say "invalid". Claiming that would be over-strict — the first fullscreen harness
+## run flagged 884 frames while almost certainly on screen, because a terminal-launched process
+## keeps focus on the terminal (F-470) — and a guard that cries wolf is one people learn to ignore,
+## which is the lesson F-045 already paid for in this repo. It says exactly what it observed and
+## what would follow IF the window was covered, and leaves the reader to know which happened.
 func _focus_notes(results: Array) -> PackedStringArray:
 	var unfocused: int = 0
 	var scenes_affected: int = 0
+	var total: int = 0
 	for entry: Dictionary in results:
+		total += int(entry.get("frames", 0))
 		var count: int = int(entry.get("unfocused", 0))
 		if count > 0:
 			unfocused += count
@@ -1161,12 +1167,12 @@ func _focus_notes(results: Array) -> PackedStringArray:
 	if scenes_affected == 0:
 		return PackedStringArray()
 	return PackedStringArray([
-		"THESE TIMINGS ARE NOT VALID. The game window was not in front for %d frame(s) across %d "
-		% [unfocused, scenes_affected]
-		+ "scene(s). A window that is behind another is throttled by the operating system and may "
-		+ "not be drawn at all, so what was measured is the window manager rather than this "
-		+ "machine. Run it again and leave the window in front — the draw-call and memory figures "
-		+ "below are still good, the frame rates are not.",
+		"The game window was not in front for %d of %d measured frame(s), across %d scene(s). "
+		% [unfocused, total, scenes_affected]
+		+ "That is harmless if the window was still visible. If anything was COVERING it — another "
+		+ "app, or a fullscreen space switched away from — then the operating system throttled or "
+		+ "stopped drawing it, and every frame rate here describes the window manager rather than "
+		+ "this machine. The draw-call and memory figures are unaffected either way.",
 	])
 
 

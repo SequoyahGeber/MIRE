@@ -8,16 +8,18 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
-| **3.18** Five-tier tool ladder, gated inside the run — extend 3.1's three tiers to five (wood → stone → iron → bogsilver → wellglass), each tier unlocked by a world event rather than by time: node access, a station the party must build, a Wellspring cap, a guardian kill (`PROGRESSION.md` §2–4) | birche6b40e | 2026-08-21 22:49 | `docs/PROGRESSION.md`, `systems/inventory/item_def.gd`, `autoload/progression_service.gd`, `core/events/event_bus.gd`, `tools/progression_check.gd`, `autoload/crafting_service.gd`, `autoload/salvage_service.gd` |
+| **3.18** Five-tier tool ladder, gated inside the run — extend 3.1's three tiers to five (wood → stone → iron → bogsilver → wellglass), each tier unlocked by a world event rather than by time: node access, a station the party must build, a Wellspring cap, a guardian kill (`PROGRESSION.md` §2–4) | birche6b40e | 2026-08-21 22:49 | `docs/PROGRESSION.md`, `systems/inventory/item_def.gd`, `autoload/progression_service.gd`, `core/events/event_bus.gd`, `tools/progression_check.gd`, `autoload/crafting_service.gd`, `autoload/salvage_service.gd`, `docs/DECISIONS.md`, `docs/ITEMS.md` |
 | **3.19** In-run guidance — a `GuideService` + HUD that names the next objective and fires one-shot contextual tips, data-authored, client-local, skippable (`PROGRESSION.md` §5). The game currently ships no tutorial of any kind | birche6b40e | 2026-08-21 22:49 | `autoload/guide_service.gd`, `ui/hud/guide_hud.gd`, `systems/guide/guide_step_def.gd`, `tools/guide_check.gd`, `autoload/registry.gd`, `autoload/settings_service.gd`, `core/save/settings_save.gd`, `ui/hud/focus_prompt.gd`, `ui/frontend/settings_screen.gd` |
 | **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | gale43d16e | 2026-08-21 17:13 | `docs/ASSET_TRACKER.md`, `tools/blender/build_gatherable_plants.py`, `assets/gatherables/catalog.json`, `tools/blender/build_pickup_kit.py`, `assets/pickups/catalog.json`, `content/items/apple.tres`, `content/harvestables/berry_bush.tres`, `content/harvestables/apple_tree.tres`, `content/harvestables/mushroom_patch.tres`, `tools/item_icons_check.gd` |
 | **F-464** The river's carve ends in a vertical wall wherever it crosses a hill, and nothing on the island reads as rock | onyx059945 | 2026-08-21 22:45 | `world/gen/island_heightmap.gd`, `world/chunk/chunk_mesher.gd`, `world/chunk/terrain_flat.gdshader`, `world/gen/cliff_dresser.gd`, `world/gen/procedural_world.gd`, `tools/cliff_check.gd`, `tools/cliff_render.gd` |
+| **F-469** Four recent decisions use a heading shape decision_ref_check.py cannot see | coil26502f | 2026-08-21 23:06 | `systems/building/placement_validator.gd`, `systems/building/build_ghost.gd`, `autoload/build_service.gd`, `core/net/net_version.gd`, `core/net/rpc_manifest.gd`, `entities/player/player_controller.gd`, `ui/building/build_bar.gd` |
+| **F-472** Placement snaps to a fixed world grid with no toggle and no piece-to-piece mating, so a structure lines up only where the grid happens to agree | coil26502f | 2026-08-21 23:07 | `systems/building/placement_validator.gd`, `systems/building/build_ghost.gd`, `autoload/build_service.gd`, `core/net/net_version.gd`, `core/net/rpc_manifest.gd`, `entities/player/player_controller.gd`, `ui/building/build_bar.gd`, `project.godot`, `docs/FINDINGS.md`, `docs/DELEGATION.md` |
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `████████░░` 391/470 | 79 |
+| Findings | `████████░░` 391/476 | 85 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -130,6 +132,12 @@
 | 🔵 | **F-464** The river's carve ends in a vertical wall wherever it crosses a hill, and nothing on the island reads as rock | in_flight |
 | ⬜ | **F-465** The preset calibration cannot resolve presets on a machine with headroom | todo |
 | ⬜ | **F-466** The benchmark reports frame times taken while its window was not being rendered | todo |
+| ⬜ | **F-467** A level-2 heading inside a finding body hides every finding filed after it | todo |
+| ⬜ | **F-468** Re-running either art generator rewrites every asset it owns with no pixel or vertex change, so a one-piece addition looks like a 48-file rebuild | todo |
+| 🔵 | **F-469** Four recent decisions use a heading shape decision_ref_check.py cannot see | in_flight |
+| ⬜ | **F-470** The fullscreen benchmark harness does not take focus, so its own runs are void | todo |
+| ⬜ | **F-471** Scatter has no slope gate at all, so trees grow straight out of cliff faces | todo |
+| 🔵 | **F-472** Placement snaps to a fixed world grid with no toggle and no piece-to-piece mating, so a structure lines up only where the grid happens to agree | in_flight |
 
 ## Done
 

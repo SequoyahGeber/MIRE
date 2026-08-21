@@ -12,6 +12,12 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "autoload/build_service.gd": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:07:10+00:00",
+      "task": "F-472",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+    },
     "autoload/crafting_service.gd": {
       "agent": "birche6b40e",
       "at": "2026-08-21T22:52:32+00:00",
@@ -78,6 +84,18 @@
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "core/net/net_version.gd": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:07:10+00:00",
+      "task": "F-472",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+    },
+    "core/net/rpc_manifest.gd": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:07:10+00:00",
+      "task": "F-472",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+    },
     "core/save/settings_save.gd": {
       "agent": "birche6b40e",
       "at": "2026-08-21T22:56:36+00:00",
@@ -90,11 +108,59 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "docs/DECISIONS.md": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:05:04+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "docs/DELEGATION.md": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:07:10+00:00",
+      "task": "F-472",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+    },
+    "docs/FINDINGS.md": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:07:10+00:00",
+      "task": "F-472",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+    },
+    "docs/ITEMS.md": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:05:56+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
     "docs/PROGRESSION.md": {
       "agent": "birche6b40e",
       "at": "2026-08-21T22:49:29+00:00",
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "entities/player/player_controller.gd": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:07:10+00:00",
+      "task": "F-472",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+    },
+    "project.godot": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:07:10+00:00",
+      "task": "F-472",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+    },
+    "systems/building/build_ghost.gd": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:07:10+00:00",
+      "task": "F-472",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+    },
+    "systems/building/placement_validator.gd": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:07:10+00:00",
+      "task": "F-472",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "systems/guide/guide_step_def.gd": {
       "agent": "birche6b40e",
@@ -149,6 +215,12 @@
       "at": "2026-08-21T22:51:41+00:00",
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "ui/building/build_bar.gd": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:07:10+00:00",
+      "task": "F-472",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "ui/frontend/settings_screen.gd": {
       "agent": "birche6b40e",
@@ -227,7 +299,9 @@
         "core/events/event_bus.gd",
         "tools/progression_check.gd",
         "autoload/crafting_service.gd",
-        "autoload/salvage_service.gd"
+        "autoload/salvage_service.gd",
+        "docs/DECISIONS.md",
+        "docs/ITEMS.md"
       ],
       "notes": [],
       "started": "2026-08-21T22:49:29+00:00",
@@ -264,6 +338,39 @@
       "notes": [],
       "started": "2026-08-21T22:45:11+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
+    },
+    "F-469": {
+      "agent": "coil26502f",
+      "files": [
+        "systems/building/placement_validator.gd",
+        "systems/building/build_ghost.gd",
+        "autoload/build_service.gd",
+        "core/net/net_version.gd",
+        "core/net/rpc_manifest.gd",
+        "entities/player/player_controller.gd",
+        "ui/building/build_bar.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-21T23:06:31+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+    },
+    "F-472": {
+      "agent": "coil26502f",
+      "files": [
+        "systems/building/placement_validator.gd",
+        "systems/building/build_ghost.gd",
+        "autoload/build_service.gd",
+        "core/net/net_version.gd",
+        "core/net/rpc_manifest.gd",
+        "entities/player/player_controller.gd",
+        "ui/building/build_bar.gd",
+        "project.godot",
+        "docs/FINDINGS.md",
+        "docs/DELEGATION.md"
+      ],
+      "notes": [],
+      "started": "2026-08-21T23:07:10+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     }
   },
   "recent": {
@@ -2516,9 +2623,9 @@
     },
     "core/bench/benchmark_runner.gd": {
       "agent": "quill895277",
-      "at": "2026-08-21T23:03:29+00:00",
-      "hash": "67fae38a589a49d51774aec1f426b664cfad46af13eabcaffcc8aed67b545f14",
-      "task": "F-466",
+      "at": "2026-08-21T23:07:46+00:00",
+      "hash": "4d7671cc45ca277415faf0dba5c97dfecddb26df4ac96bc0345a1303f5f7c170",
+      "task": "F-470",
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "core/bench/benchmark_suite.gd": {
@@ -2922,9 +3029,9 @@
     },
     "tools/bench_measure.sh": {
       "agent": "quill895277",
-      "at": "2026-08-21T23:03:29+00:00",
-      "hash": "80c2387436f7317875dd26b3ca6fd8da0c0ab3c7c7270a2858e2bd63239c8b65",
-      "task": "F-466",
+      "at": "2026-08-21T23:07:46+00:00",
+      "hash": "d0113b2db52b60fb7fab644c16aa5349ede2e56023153af20d63e91aac6bbbee",
+      "task": "F-470",
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "tools/bench_mire.gd": {
@@ -2950,9 +3057,9 @@
     },
     "tools/benchmark_check.gd": {
       "agent": "quill895277",
-      "at": "2026-08-21T23:03:29+00:00",
-      "hash": "55c37d24792a3058aae6404525623ad7d2579b9da19e956a59d404aeb4d84098",
-      "task": "F-466",
+      "at": "2026-08-21T23:07:46+00:00",
+      "hash": "9c2cc14ed676fd2b6764075622083229484c147b2aaea655ee46ed6ab9d7e64d",
+      "task": "F-470",
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "tools/biome_region_check.gd": {
@@ -3866,7 +3973,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     }
   },
-  "rev": 924,
+  "rev": 933,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9341,6 +9448,48 @@
       "status": "todo",
       "tier": "F",
       "title": "The benchmark reports frame times taken while its window was not being rendered"
+    },
+    "F-467": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "A level-2 heading inside a finding body hides every finding filed after it"
+    },
+    "F-468": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Re-running either art generator rewrites every asset it owns with no pixel or vertex change, so a one-piece addition looks like a 48-file rebuild"
+    },
+    "F-469": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Four recent decisions use a heading shape decision_ref_check.py cannot see"
+    },
+    "F-470": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The fullscreen benchmark harness does not take focus, so its own runs are void"
+    },
+    "F-471": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Scatter has no slope gate at all, so trees grow straight out of cliff faces"
+    },
+    "F-472": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Placement snaps to a fixed world grid with no toggle and no piece-to-piece mating, so a structure lines up only where the grid happens to agree"
     }
   },
   "version": 1

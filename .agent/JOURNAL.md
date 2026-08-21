@@ -8716,3 +8716,15 @@ Buildable set completed with floor_wood (D-199); all six building checks green a
 Files: `tools/blender/build_construction_set.py`, `scenes/buildables/floor.tscn`, `content/buildables/floor.tres`, `docs/FINDINGS.md`, `tools/blender/mire_art.py`, `assets/construction/exports/floor_wood.glb`, `tools/blender/render_item_icons.py`, `assets/icons/exports/icon_build_floor.png`, `tools/construction_check.gd`, `docs/DECISIONS.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `f2c5852`
+
+---
+
+### HANDOFF · F-470 · quill895277 · 2026-08-21T23:07:46+00:00
+
+**The fullscreen benchmark harness does not take focus, so its own runs are void**
+
+Focus grab does not work from a terminal-launched process on macOS (window_move_to_foreground is refused), so the harness cannot claim focus for itself. Softened the report note accordingly — focus loss is now reported as a hint with its limits stated, not as an invalidation, because unfocused-but-visible renders fine (no unfocused-fps cap in project.godot) and only OCCLUSION actually throttles. The --tag ledger path bug is fixed. What is left: nothing detects occlusion, which is the thing that actually matters; if the engine ever exposes it, that is the signal this should use.
+
+Files: `tools/benchmark_check.gd`, `tools/bench_measure.sh`, `core/bench/benchmark_runner.gd`
+
+Commit at time of writing: `5179f9d`

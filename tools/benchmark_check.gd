@@ -317,9 +317,11 @@ func _check_advisor() -> void:
 func _check_ledger() -> void:
 	print("\n-- ledger --")
 	DirAccess.make_dir_recursive_absolute(SCRATCH_DIR)
-	var path: String = "%s/ledger.jsonl" % SCRATCH_DIR
-
+	# Ask the writer for its path rather than rebuilding it: `--tag` renames the ledger so a
+	# sequence of ablation runs does not overwrite each other's reports, and a second copy of the
+	# naming rule here silently broke `discard() removes the ledger` on every tagged run.
 	var writer: BenchmarkReport = _scratch_report()
+	var path: String = writer.ledger_path
 	_expect(writer.begin("sig-a").is_empty(), "a fresh ledger resumes nothing")
 	writer.append_scene(_scene_result("shore", 200.0, 210.0))
 	writer.append_scene(_scene_result("forest", 90.0, 110.0))
@@ -527,6 +529,13 @@ func _check_live() -> void:
 	if args.has("--fullscreen"):
 		root.mode = Window.MODE_FULLSCREEN
 		root.title = "MIRE benchmark — leave this window in front"
+		# Take focus, or the whole run is void. Launched from a terminal, macOS leaves focus with
+		# the terminal: the first fullscreen run measured 883 unfocused frames and flagged itself
+		# invalid, correctly. Walking away does not move focus, so the harness has to claim it.
+		# Focus-stealing prevention may still refuse, which is why the focus counter remains the
+		# authority — a failed grab produces a flagged run, not a quiet one.
+		DisplayServer.window_move_to_foreground()
+		await process_frame
 		await process_frame
 	var packed := load("res://levels/procedural_island.tscn") as PackedScene
 	if packed == null:
@@ -683,11 +692,11 @@ func _check_live() -> void:
 		unfocused += int(entry.get("unfocused", 0))
 	var focus_flagged: bool = false
 	for note: String in report.get("state_notes", []):
-		if note.contains("NOT VALID"):
+		if note.contains("was not in front"):
 			focus_flagged = true
 	_expect(unfocused == 0 or focus_flagged,
-		"a run measured while the window was not in front says so instead of reporting the "
-		+ "numbers as a result (%d unfocused frame(s))" % unfocused)
+		"a run measured while the window was not in front says so, and says what it does and "
+		+ "does not prove (%d unfocused frame(s))" % unfocused)
 	_expect(unfocused > 0 or not focus_flagged,
 		"and a run that WAS in front carries no such warning")
 	print("  focus: %d unfocused frame(s)%s" % [unfocused, " — FLAGGED" if focus_flagged else ""])
