@@ -7894,3 +7894,16 @@ Profiled, not fixed. The check's CV is unreproducible run to run (A: 0.661/0.570
 Files: `tools/interp_check.gd`
 
 Commit at time of writing: `7769020`
+
+---
+
+### DONE · F-361 · moss5523e3 · 2026-08-21T02:22:21+00:00
+
+**macOS release host lacks the Metal shader compiler**
+
+Xcode 27 beta 5 and Metal Toolchain installed and selected. Native Metal and metallib compilation passed; fresh Godot macOS release export produced 88 native Metal caches with the SPIR-V-only warning eliminated, strict signing passed, and exported-game smoke boot exited 0. Remaining MSL 3.1 fallback variants filed separately; incompatible unselected root-owned Xcode 26.6 remains pending optional admin cleanup.
+
+Notes along the way:
+- Installed Apple Xcode 27.0 beta 5 (27A5237l) at /Applications/Xcode-beta.app, installed optional Metal Toolchain 27A5237l, and selected it system-wide through Xcode Settings > Locations. xcode-select, xcodebuild, xcrun metal, and xcrun metallib all resolve correctly. Independent Metal source -> AIR -> metallib compile passed. Fresh Godot macOS Release export exited 0, strict codesign passed, produced 88 native Metal cache entries, and removed the prior SPIR-V-only warning; exported game boot exited 0. Ten MSL 3.1 target-mismatch variants remain and are separated as a new finding. The incompatible App Store Xcode 26.6 copy remains at /Applications/Xcode.app because it is root-owned and moving it to Trash requires administrator authentication; it is not selected.
+
+Commit at time of writing: `774f64c`

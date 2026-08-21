@@ -1,14 +1,6 @@
 {
   "claims": {},
-  "in_flight": {
-    "F-361": {
-      "agent": "moss5523e3",
-      "files": [],
-      "notes": [],
-      "started": "2026-08-21T02:09:31+00:00",
-      "token": "CODEX_SESSION_ID:01a021e9-16c4-79b1-aaa1-daca169c6136"
-    }
-  },
+  "in_flight": {},
   "recent": {
     ".agent/bin/agent": {
       "agent": "galef95fa6",
@@ -1481,7 +1473,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 257,
+  "rev": 260,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -6144,11 +6136,27 @@
       "title": "A concurrent agent's staging can silently drop files from your commit, not just add theirs"
     },
     "F-361": {
+      "done_at": "2026-08-21T02:22:21+00:00",
+      "done_by": "moss5523e3",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "macOS release host lacks the Metal shader compiler"
+    },
+    "F-362": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The game-loop audit still boots Hollowmere, so nothing proves the loop on the world that ships"
+    },
+    "F-363": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The Mire tick still costs most of a frame at saturation, on the host main thread"
     }
   },
   "version": 1
