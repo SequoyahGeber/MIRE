@@ -10,6 +10,7 @@
 [resource]
 script = ExtResource("5_f51r6")
 id = &"tree"
+display_name = "Tree"
 required_tool = 1
 max_health = 6
 yield_item_id = &"log"

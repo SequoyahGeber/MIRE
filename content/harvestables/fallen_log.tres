@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_fldef")
 id = &"fallen_log"
+display_name = "Fallen Log"
 max_health = 6
 required_tool = 1
 yield_item_id = &"log"

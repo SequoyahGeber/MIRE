@@ -121,6 +121,8 @@ const AUTOLOAD_SCOPE: Dictionary[String, String] = {
 	"ui/crafting/crafting_ui.gd": "derived — reads CraftingService",
 	"ui/loot/chest_ui.gd": "derived — reads the Chest node",
 	"ui/building/door_prompt.gd": "derived — reads the door it is aimed at",
+	"ui/hud/focus_prompt.gd":
+		"derived — every frame it re-targets from the camera and re-reads the prop it lands on; it caches nothing across a poll, let alone across a run",
 	"ui/lobby/lobby_menu.gd": "session-scoped — lobby chrome",
 	"ui/menu/main_menu.gd": "session-scoped — menu chrome",
 	"ui/menu/unlock_menu.gd": "session-scoped — meta chrome, reads UnlockService",

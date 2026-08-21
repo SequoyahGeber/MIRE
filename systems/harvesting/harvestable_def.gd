@@ -11,6 +11,11 @@ const HARVEST_LIBRARY := preload("res://systems/harvesting/harvest_library.gd")
 
 @export var id: StringName = &""
 
+## What the world prompt calls this prop when the player looks at it (`ui/hud/focus_prompt.gd`).
+## Empty falls back to the id with underscores opened out and each word capitalised, so a new
+## definition is never nameless on screen — but author it, because "Iron Node" is not "Iron Vein".
+@export var display_name: String = ""
+
 ## Authored in TOOL POWER, not in weapon damage (F-113). One swing of the tool this prop is meant
 ## for lands `WeaponDef.harvest_power` — 1 for a wooden tool, 2 for stone, 3 for iron — so a
 ## `max_health` of 6 is "three swings of a stone axe, two of an iron one", and stays that sentence
@@ -63,6 +68,13 @@ func damage_from_tool(tool_class: int, harvest_power: int) -> int:
 	if required_tool == HARVEST_LIBRARY.Tool.NONE or tool_class == required_tool:
 		return harvest_power
 	return floori(float(harvest_power) * wrong_tool_scale)
+
+
+## Title for the look-at prompt. See `display_name` for why the fallback exists.
+func label() -> String:
+	if not display_name.is_empty():
+		return display_name
+	return String(id).replace("_", " ").capitalize()
 
 
 ## True when this prop draws itself from the world builder's own geometry rather than from

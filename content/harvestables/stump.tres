@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_stdef")
 id = &"stump"
+display_name = "Tree Stump"
 max_health = 4
 required_tool = 1
 yield_item_id = &"log"

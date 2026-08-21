@@ -6,6 +6,7 @@
 [resource]
 script = ExtResource("2_bldef")
 id = &"boulder"
+display_name = "Boulder"
 max_health = 9
 required_tool = 2
 yield_item_id = &"stone"

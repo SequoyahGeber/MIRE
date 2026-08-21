@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_nettledef")
 id = &"nettle"
+display_name = "Nettle Patch"
 max_health = 2
 required_tool = 0
 yield_item_id = &"fibre_bundle"

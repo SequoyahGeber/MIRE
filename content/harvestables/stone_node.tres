@@ -10,6 +10,7 @@
 [resource]
 script = ExtResource("4_cwdwb")
 id = &"stone_node"
+display_name = "Stone Outcrop"
 required_tool = 2
 max_health = 6
 yield_item_id = &"stone"

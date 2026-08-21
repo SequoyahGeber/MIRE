@@ -10,6 +10,7 @@
 [resource]
 script = ExtResource("4_lwjyu")
 id = &"iron_node"
+display_name = "Iron Vein"
 required_tool = 2
 max_health = 9
 yield_item_id = &"iron_ore"

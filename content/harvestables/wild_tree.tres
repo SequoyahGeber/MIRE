@@ -6,6 +6,7 @@
 [resource]
 script = ExtResource("2_wtdef")
 id = &"wild_tree"
+display_name = "Tree"
 max_health = 6
 required_tool = 1
 yield_item_id = &"log"

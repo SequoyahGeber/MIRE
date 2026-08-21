@@ -61,8 +61,6 @@ var _panel_center: CenterContainer
 var _panel: PanelContainer
 var _reward_box: VBoxContainer
 var _status_label: Label
-var _prompt_center: CenterContainer
-var _prompt_label: Label
 var _open: bool = false
 var _poll_accumulator: float = 0.0
 var _nearest_chest: Node3D
@@ -157,8 +155,13 @@ func nearest_chest() -> Node3D:
 	return _nearest_chest
 
 
+## Delegates to FocusPrompt, which draws the prompt now. Still answers the question callers were
+## actually asking — "is the player being told this chest can be opened?"
 func is_prompt_visible() -> bool:
-	return _prompt_center.visible
+	var focus: Node = get_node_or_null(^"/root/FocusPrompt")
+	if focus == null:
+		return false
+	return bool(focus.call(&"is_prompt_visible")) and focus.call(&"focus_node") == _nearest_chest
 
 
 func status_text() -> String:
@@ -235,34 +238,6 @@ func _build_ui() -> void:
 	close_hint.add_theme_color_override("font_color", COLOUR_MUTED)
 	stack.add_child(close_hint)
 
-	_prompt_center = CenterContainer.new()
-	_prompt_center.name = "ChestPrompt"
-	_prompt_center.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	_prompt_center.offset_top = -152.0
-	_prompt_center.offset_bottom = -104.0
-	_prompt_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_prompt_center.visible = false
-	_root.add_child(_prompt_center)
-
-	var prompt_panel := PanelContainer.new()
-	prompt_panel.name = "PromptPanel"
-	prompt_panel.add_theme_stylebox_override("panel", _panel_style())
-	prompt_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_prompt_center.add_child(prompt_panel)
-
-	var prompt_margin := MarginContainer.new()
-	prompt_margin.add_theme_constant_override("margin_left", 12)
-	prompt_margin.add_theme_constant_override("margin_top", 6)
-	prompt_margin.add_theme_constant_override("margin_right", 12)
-	prompt_margin.add_theme_constant_override("margin_bottom", 6)
-	prompt_panel.add_child(prompt_margin)
-
-	_prompt_label = Label.new()
-	_prompt_label.text = "E   OPEN CHEST"
-	_prompt_label.add_theme_font_size_override("font_size", 14)
-	_prompt_label.add_theme_color_override("font_color", COLOUR_READY)
-	prompt_margin.add_child(_prompt_label)
-
 	get_viewport().size_changed.connect(_apply_responsive_layout)
 	_apply_responsive_layout()
 
@@ -302,14 +277,12 @@ func _refresh_nearest() -> void:
 	_refresh_prompt()
 
 
+## Kept as a no-op seam. The "[E] Open" panel this used to draw is now one case of the single
+## look-at prompt in `ui/hud/focus_prompt.gd` (F-431) — two panels for one chest, at two different
+## screen offsets, was the duplication that finding was filed about. Chest keeps the *input*: it
+## already owns the request, the in-flight state and the reward rows.
 func _refresh_prompt() -> void:
-	var showable: bool = (
-		_nearest_chest != null
-		and not bool(_nearest_chest.get("opened"))
-		and not _open
-		and not _other_blocking_ui()
-	)
-	_prompt_center.visible = showable
+	pass
 
 
 func _other_blocking_ui() -> bool:
@@ -381,4 +354,3 @@ func _apply_responsive_layout() -> void:
 	_panel.custom_minimum_size = Vector2(
 		clampf(viewport_width - 32.0, 260.0, 420.0 if not narrow else 320.0), 0.0
 	)
-	_prompt_label.add_theme_font_size_override("font_size", 12 if narrow else 14)

@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_sapdef")
 id = &"sapling"
+display_name = "Sapling"
 max_health = 4
 required_tool = 0
 yield_item_id = &"branch"

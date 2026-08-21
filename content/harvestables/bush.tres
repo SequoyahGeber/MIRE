@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_bushdef")
 id = &"bush"
+display_name = "Bush"
 max_health = 3
 required_tool = 0
 yield_item_id = &"branch"

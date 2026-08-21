@@ -8344,3 +8344,15 @@ Boot and restart are now a snap on both directors: the theme is audible before t
 Files: `autoload/ambient_music_director.gd`, `autoload/theme_music_director.gd`, `tools/ambient_music_check.gd`, `tools/theme_music_check.gd`
 
 Commit at time of writing: `b11191d`
+
+---
+
+### DONE · F-431 · wickc3d79c · 2026-08-21T17:37:48+00:00
+
+**No world-focus prompt: harvestables, haulables and chests give the player no indication they are interactable**
+
+FocusPrompt: one aim-driven prompt + crosshair for harvestables, haulables, chests and doors (D-187). HarvestableDef.display_name authored on all 11 defs. Haulable [E] wired — request_pickup had no caller. Rich inventory hover card. focus_prompt_check 0 failures.
+
+Files: `ui/hud/focus_prompt.gd`, `ui/hud/crosshair.gd`, `ui/inventory/inventory_ui.gd`, `ui/inventory/item_tooltip.gd`, `ui/building/door_prompt.gd`, `ui/loot/chest_ui.gd`, `tools/focus_prompt_check.gd`, `systems/harvesting/harvestable_def.gd`, `content/harvestables/boulder.tres`, `content/harvestables/bush.tres`, `content/harvestables/fallen_log.tres`, `content/harvestables/iron_node.tres`, `content/harvestables/nettle.tres`, `content/harvestables/rock_cluster.tres`, `content/harvestables/sapling.tres`, `content/harvestables/stone_node.tres`, `content/harvestables/stump.tres`, `content/harvestables/tree.tres`, `content/harvestables/wild_tree.tres`, `tools/run_scope_audit_check.gd`, `tools/focus_prompt_shot.gd`
+
+Commit at time of writing: `7ead697`

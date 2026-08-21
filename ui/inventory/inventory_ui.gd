@@ -12,6 +12,7 @@ const DESKTOP_INVENTORY_COLUMNS: int = 8
 const NARROW_INVENTORY_COLUMNS: int = 6
 const NARROW_BREAKPOINT_PX: float = 700.0
 const BLOCKING_UI_GROUP: StringName = &"blocks_gameplay_input"
+const ITEM_TOOLTIP := preload("res://ui/inventory/item_tooltip.gd")
 
 const COLOUR_SCREEN_SHADE := Color(0.018, 0.035, 0.028, 0.78)
 const COLOUR_PANEL := Color(0.055, 0.086, 0.070, 0.97)
@@ -126,6 +127,23 @@ class InventorySlot extends PanelContainer:
 		_item_label.add_theme_font_size_override("font_size", 11 if compact else 12)
 		_amount_label.add_theme_font_size_override("font_size", 11 if compact else 13)
 		_key_label.add_theme_font_size_override("font_size", 10 if compact else 11)
+
+
+	## The hover card (F-431). `tooltip_text` stays authored above — it is what `accessibility_name`
+	## is built from and what a screen reader reads — but a sighted player gets the real numbers off
+	## `ItemDef`/`WeaponDef` instead of a two-line string. Godot only calls this when `tooltip_text`
+	## is non-empty, which is why the empty-slot branch still sets one.
+	func _make_custom_tooltip(_for_text: String) -> Object:
+		return ITEM_TOOLTIP.build(_resolve_item(), amount)
+
+
+	## Re-read rather than cached: `present()` is handed the ItemDef already, but a slot can be
+	## repainted by a snapshot between the hover and the tooltip request, and a stale card is worse
+	## than a plain one.
+	func _resolve_item() -> ItemDef:
+		if item_id == &"" or amount <= 0:
+			return null
+		return Registry.get_item(item_id)
 
 
 	func _get_drag_data(_at_position: Vector2) -> Variant:

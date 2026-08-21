@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_rcdef")
 id = &"rock_cluster"
+display_name = "Rock Cluster"
 max_health = 6
 required_tool = 2
 yield_item_id = &"stone"
