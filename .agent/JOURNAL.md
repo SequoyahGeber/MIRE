@@ -7817,3 +7817,32 @@ Notes along the way:
 Files: `levels/procedural_island.tscn`, `levels/hollowmere.tscn`, `world/environment/playtest_atmosphere.gd`, `world/chunk/chunk_streamer.gd`, `tools/grade_probe.gd`, `world/chunk/terrain_flat.gdshader`, `tools/grade_check.gd`
 
 Commit at time of writing: `69c401f`
+
+---
+
+### DONE · F-347 · ivy1bcae0 · 2026-08-21T01:59:47+00:00
+
+**The navigation performance decision is no longer reproduced: the benchmark now records repeatable 39-43 ms streaming frames**
+
+instrument fixed, spike isolated to retirement
+
+Files: `tools/bench_navbake.gd`
+
+Commit at time of writing: `6dfbd69`
+
+---
+
+### DONE · F-355 · moss5523e3 · 2026-08-21T02:00:47+00:00
+
+**Godot project and export settings need a release-readiness audit**
+
+Godot 4.7.1 editor/project/export/template audit complete. Hardened all desktop release presets and transactional release exporter; clean three-platform exports passed, shrank by ~74 MB each, strict staged macOS signature passed, verify_setup passed, and exported-game smoke boot exited 0. Remaining identity/art/signing inputs stay with roadmap 8.0/8.5/8.10; smoke nav warnings filed F-359.
+
+Notes along the way:
+- Audit so far: engine and installed desktop export templates exactly match pinned 4.7.1; project effective physics/display values are covered by verify_setup and align with ARCHITECTURE 5a. Export presets have six debug/release targets but release presets still carry console-wrapper=true, macOS bundle id is placeholder test, and stock Godot icon remains. Signing/notarization and real store identity remain intentionally gated on tasks 8.1/8.2/8.10/8.11.
+- Live editor pass: Project Settings shows Jolt Physics + physics interpolation on; GDExtension tab lists GodotSteam minimum 4.4; Export dialog loads all six presets with no missing-template errors; Template Manager shows 4.7.1 desktop templates installed. Found release presets 4/5 marked Runnable, displacing Windows/Linux debug presets; all release Shader Baker toggles are off.
+- Final audit: live Godot 4.7.1 editor and Template Manager checked; 21 matching official desktop templates installed. Project settings already match D-001/D-019/D-031 (Jolt, interpolation, Forward+, 60 Hz/default max-steps/vsync) so project.godot was deliberately unchanged. Release presets now leave only macOS debug runnable, exclude developer/audit/editor-only payloads, bake shaders for macOS/Linux (Windows D3D12 baking remains off on this macOS build host), and release through clean staging with pre-publish macOS strict signature verification. Full three-platform export exited 0; payloads are Windows 124M, macOS 192M, Linux 93M versus 198M/266M/166M before filtering; forbidden-path scan passed all three; architectures and release GodotSteam libs passed; verify_setup all checks passed; exported macOS boot exited 0. Boot exposed navmesh edge warnings filed separately as F-359. Identity/icon/Developer ID notarization remain intentionally gated on roadmap 8.0/8.5/8.10 rather than guessed here.
+
+Files: `export_presets.cfg`, `tools/steam/export_release.sh`
+
+Commit at time of writing: `6dfbd69`
