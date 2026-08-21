@@ -1,12 +1,9 @@
 extends SceneTree
 
-## F-353: the daytime grade must stay clear and saturated, and must stay DAYTIME-only.
-##
-## Sequoyah's verdict on the shipped island was "super washed out… needs a coat of varnish to make
-## everything clear and saturated." Four things were flattening the frame, and each one is a single
-## number that anybody can put back without noticing. This guards all four, plus the property that
-## made the fix safe to ship at all: at `daylight` 0 the grade returns to the values the scene
-## author set, so a separately-broken night (F-356) is nobody's regression but its own.
+## F-410: the daytime grade is a neutral baseline, while night retains its authored grade.
+## Flat-shaded materials already carry strong albedo colour, so noon must not stack extra contrast
+## or saturation over them. This also guards the stylized procedural sky that replaces the grey
+## PhysicalSky horizon consistently in every level.
 ##
 ## Runs headless — every assertion is Environment state, not rendered pixels. To actually LOOK at
 ## the grade, use `tools/grade_probe.gd --windowed`, which poses any hour and saves PNGs.
@@ -85,7 +82,7 @@ func _check_level(level_path: String) -> void:
 		"authored contrast is the controller's night end (%.2f)"
 			% authored_values["adjustment_contrast"])
 
-	# NOON — the varnish is on.
+	# NOON — neutral authored colour, with highlight headroom and restrained contact shading.
 	var noon := await _environment_at(packed, NOON)
 	if noon == null:
 		return
@@ -94,17 +91,25 @@ func _check_level(level_path: String) -> void:
 			% noon.tonemap_white)
 	check(is_zero_approx(noon.glow_bloom),
 		"noon has no whole-frame glow bloom (%.3f)" % noon.glow_bloom)
-	check(noon.adjustment_saturation > authored_values["adjustment_saturation"],
-		"noon is more saturated than the authored night grade (%.2f > %.2f)"
-			% [noon.adjustment_saturation, authored_values["adjustment_saturation"]])
-	check(noon.adjustment_contrast > authored_values["adjustment_contrast"],
-		"noon carries more contrast than the authored night grade (%.2f > %.2f)"
-			% [noon.adjustment_contrast, authored_values["adjustment_contrast"]])
-	# The fill that erases D-184's flat-shaded facets. 0.62 made a facet turned 30 deg off the sun
-	# read the same as one facing it; anything back near that value is the regression.
-	check(noon.ambient_light_energy <= ATMOSPHERE.DAY_AMBIENT_ENERGY + 0.001,
-		"noon ambient fill stays low enough for facets to separate (%.2f)"
+	check(is_equal_approx(noon.adjustment_saturation, 1.0),
+		"noon adds no global saturation over authored albedo (%.2f)"
+			% noon.adjustment_saturation)
+	check(is_equal_approx(noon.adjustment_contrast, 1.0),
+		"noon adds no global contrast curve (%.2f)" % noon.adjustment_contrast)
+	check(is_equal_approx(noon.ambient_light_energy, ATMOSPHERE.DAY_AMBIENT_ENERGY),
+		"noon uses the shared readable-shadow fill (%.2f)"
 			% noon.ambient_light_energy)
+	check(is_equal_approx(
+			noon.ambient_light_sky_contribution, ATMOSPHERE.DAY_AMBIENT_SKY_CONTRIBUTION),
+		"noon fill is primarily cool sky bounce (%.2f)" % noon.ambient_light_sky_contribution)
+	var noon_sky := noon.sky.sky_material as ProceduralSkyMaterial
+	check(noon_sky != null, "noon installs the shared ProceduralSkyMaterial")
+	if noon_sky != null:
+		check(noon_sky.sky_horizon_color.b > noon_sky.sky_horizon_color.r,
+			"the horizon is coloured blue-green instead of achromatic grey (%s)"
+				% noon_sky.sky_horizon_color)
+		check(not noon_sky.sky_top_color.is_equal_approx(noon_sky.sky_horizon_color),
+			"the sky has a readable top-to-horizon gradient")
 	# Aerial perspective, the half of the fog trade that has to exist for the other half to be safe:
 	# the haze belongs at range, not on the player's feet.
 	check(noon.fog_density > 0.0,
@@ -123,14 +128,10 @@ func _check_level(level_path: String) -> void:
 		"the controller's AO radius reaches the Environment (%.2f m)" % noon.ssao_radius)
 	check(is_equal_approx(noon.ssao_intensity, ATMOSPHERE.SSAO_INTENSITY),
 		"the controller's AO intensity reaches the Environment (%.2f)" % noon.ssao_intensity)
-	# Ambient is held down to DAY_AMBIENT_ENERGY so the flat-shaded facets separate, which leaves
-	# ambient-only AO with almost nothing to subtract from in full sun. A direct-light term is what
-	# makes the occlusion visible at noon at all.
-	check(noon.ssao_light_affect > 0.0,
-		"AO subtracts from direct light too, so it reads in full sun (%.2f)"
-			% noon.ssao_light_affect)
+	check(is_equal_approx(noon.ssao_light_affect, ATMOSPHERE.SSAO_LIGHT_AFFECT),
+		"AO has only a restrained direct-light term (%.2f)" % noon.ssao_light_affect)
 
-	# MIDNIGHT — the varnish is off, and every value is back where the scene author put it.
+	# MIDNIGHT — every grade value is back where the scene author put it.
 	var night := await _environment_at(packed, MIDNIGHT)
 	if night == null:
 		return

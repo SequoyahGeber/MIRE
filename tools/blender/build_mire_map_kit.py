@@ -625,7 +625,9 @@ def main() -> None:
         # whole trunk. A birch's read is a long clean bole and then all the leaves
         # at once; the first pass spread five small masses from 58% upward and got
         # lollipops on wires instead.
-        leaf_palette = (mats["leaf"], mats["leaf_light"], mats["leaf"], mats["leaf_gold"])
+        # The standing world baseline is summer-green. Seasonal gold belongs in an explicit
+        # biome/season variant; isolated orange crown facets read as missing materials in play.
+        leaf_palette = (mats["leaf"], mats["leaf_light"], mats["leaf"], mats["leaf_light"])
         crown_radius = height * 0.175
         for index, (angle, rad) in enumerate(radial(7, crown_radius * 0.50, seed=seed + 503,
                                                     jitter=0.34, radius_jitter=0.30)):
@@ -668,12 +670,10 @@ def main() -> None:
             taper_power=1.05,
         )
 
-        # `leaf_gold` one time in five, never on the biggest mass: the palette
-        # says "autumn accent; use sparingly", and picking it one time in three
-        # for a full-size crown mass gave the tree a giant mustard boulder on one
-        # side that read as a different object entirely.
+        # Keep crown variation within the standing summer-green palette. Seasonal gold can return
+        # through an explicit variant where a whole tree/biome supports the read.
         leaf_palette = (mats["leaf"], mats["leaf_light"], mats["leaf"], mats["leaf_light"],
-                        mats["leaf_gold"])
+                        mats["leaf"])
         crown_radius = height * 0.26
         # One lopsided crown, offset toward the lean, built from four overlapping
         # masses rather than one ball — the offset is what makes it read as a tree

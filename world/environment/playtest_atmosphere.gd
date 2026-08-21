@@ -37,79 +37,47 @@ const STARS_FULL_ELEVATION: float = -16.0
 const STARS_GONE_ELEVATION: float = -1.0
 ## Sun elevation window over which the SKY MATERIAL itself turns to its night colours. Deliberately
 ## later than `daylight`: at elevation 0 the sun is on the horizon, which is when the sky and the
-## cloud deck should be at their warmest, not already grey. Driving the sky's mie/rayleigh colours
-## off `daylight` (which is ~0.3 by then) washed the sunset out entirely — the first night render
+## cloud deck should be at their warmest, not already grey. Driving the sky gradient colours off
+## `daylight` (which is ~0.3 by then) washed the sunset out entirely — the first night render
 ## showed a grey 18:00 with pale clouds, which is F-065 again, just an hour earlier.
 const SKY_NIGHT_FULL_ELEVATION: float = -14.0
 const SKY_NIGHT_START_ELEVATION: float = -1.0
 ## Half-width, in degrees of elevation, of the golden hour either side of the horizon.
 const GOLDEN_HALF_WIDTH: float = 18.0
 ## F-090: DayNight advances time every physics tick, and a sun transform that dirties every
-## tick keeps the PhysicalSky radiance perpetually regenerating for ~0.001° of motion no eye
+## tick keeps the sky radiance perpetually regenerating for ~0.001° of motion no eye
 ## can see. The applied hour is stepped instead: at the default 900 s day this moves the sun
 ## about five times a second in ~0.1° increments — under the sun's own 1.1 shadow blur.
 const SUN_STEP_HOURS: float = 0.005
-## Night ends of the sky-material lerps. Their day ends are read off the authored resource in
-## _ready() rather than written here, so noon renders exactly as the scene author tuned it and this
-## fix can only change how dusk and night look.
-const NIGHT_RAYLEIGH_COLOR := Color(0.07, 0.11, 0.29)
-const NIGHT_MIE_COLOR := Color(0.14, 0.18, 0.31)
-const NIGHT_GROUND_COLOR := Color(0.017, 0.022, 0.036)
-## The 26% of ambient that does not come from the sky (see the level's
-## ambient_light_sky_contribution). With the night sky now genuinely dark, this is the floor that
-## keeps a night you can still fight in — night should be dangerous, not unreadable.
+## F-410 resets the accumulated physical-sky tuning to one authored low-poly gradient. The
+## PhysicalSkyMaterial's achromatic scattering lobe remained a flat grey band at the horizon even
+## when turbidity, Mie, Rayleigh, fog sky-affect and ground colour were isolated. A procedural
+## gradient is also closer to the target: a clear blue upper sky, a deliberately coloured horizon,
+## and a warm transition at golden hour rather than photographic haze controlling the palette.
+const DAY_SKY_TOP := Color(0.357, 0.525, 0.631)
+const DAY_SKY_HORIZON := Color(0.702, 0.773, 0.769)
+const DAY_GROUND_HORIZON := Color(0.569, 0.667, 0.639)
+const DAY_GROUND_BOTTOM := Color(0.192, 0.275, 0.235)
+const GOLDEN_SKY_TOP := Color(0.40, 0.49, 0.59)
+const GOLDEN_SKY_HORIZON := Color(0.92, 0.58, 0.34)
+const GOLDEN_GROUND_HORIZON := Color(0.69, 0.50, 0.34)
+const NIGHT_SKY_TOP := Color(0.028, 0.045, 0.12)
+const NIGHT_SKY_HORIZON := Color(0.075, 0.10, 0.20)
+const NIGHT_GROUND_HORIZON := Color(0.035, 0.05, 0.10)
+const NIGHT_GROUND_BOTTOM := Color(0.012, 0.018, 0.04)
+const SKY_CURVE: float = 0.18
+const SKY_SUN_ANGLE_MAX_DEG: float = 1.5
+const SKY_SUN_CURVE: float = 0.08
+const DAY_SKY_ENERGY: float = 1.0
+const NIGHT_SKY_ENERGY: float = 0.35
+## The non-sky ambient floor keeps a moonlit night playable without flattening the terrain.
 const NIGHT_AMBIENT_COLOR := Color(0.34, 0.42, 0.62)
+const NIGHT_AMBIENT_SKY_CONTRIBUTION: float = 0.68
+const DAY_AMBIENT_SKY_CONTRIBUTION: float = 0.78
 
-## ── The sun's disc (F-378) ────────────────────────────────────────────────────────────────────
-## Sequoyah, from play: "the sun doesnt have a clear circle form in the sky its more of a faded haze
-## thats way to wide."
-##
-## MEASURED FIRST, because the obvious answer was wrong. `tools/_tmp_sun_halo_probe.gd` (throwaway,
-## not committed) rendered the same sunward frame under nine variants in one run and reported how far
-## out the frame is still pure white. The result that decided everything below: with the sun's disc
-## turned OFF ENTIRELY (`light_angular_distance = 0`), the white region did not shrink by a single
-## pixel — 6.22 deg either way. Disabling `glow` did not move it either. **The blob was never the
-## disc and never the bloom; it was the SKY, blown past the white point across 6 degrees of solid
-## angle, with the disc invisible inside it because both sides of its edge tonemapped to 1.0.**
-##
-## So the fix is not to draw a bigger sun, it is to stop the sky around it clipping — and then the
-## disc's own hard edge (the sky shader's `smoothstep` is razor-sharp) has something to be an edge
-## AGAINST. Three numbers, in the order they matter:
-##
-##   · SKY ENERGY. `energy_multiplier` scales the whole sky, disc and halo alike, and at the 0.9 it
-##     ran at, everything within 6 deg of the sun was over 1.0. At 0.45 the white region is 3.5 deg
-##     and the rest of the sky comes back as a deeper blue instead of the pale wash it was — the
-##     same washed-out sky F-357 is still open about, improved as a side effect rather than by
-##     chasing it.
-##   · MIE. `mie_coefficient` sets the peak of the forward-scattering lobe and `mie_eccentricity`
-##     its width. Raising eccentricity alone is a trap and this file fell in it once: the
-##     Henyey-Greenstein peak scales as roughly 1/(1-g)^2, so going 0.74 -> 0.86 narrowed the lobe
-##     from a 13 deg half-width to 6.6 deg while making it 3.7x BRIGHTER, and the blown region did
-##     not move. The coefficient comes down by the same factor the peak went up.
-##   · THE DISC. Now that the sky's white stops at ~3.5 deg, the disc has to be bigger than that or
-##     it is still inside it — measured, 6.8 deg apparent is where a circle with a visible edge
-##     appears. That is thirteen times the real sun, and it is the number the frame asked for.
-##
-## The two angular knobs stay split, which is what makes a 6.8 deg sun affordable at all.
-## `light_angular_distance` is ALSO the shadow penumbra — a 6.8 deg light would blur every shadow on
-## the map into a smear — while `sun_disk_scale` is sky-shader-only and costs nothing anywhere else.
-## So the light keeps a near-real 0.85 deg and the sky does all of the exaggerating.
-##
-## Written here rather than read off the level: this is one look decision for the whole game, the
-## same standing `turbidity` already had, and a level that authors its own is a level whose sun is a
-## different size for no reason anyone chose.
+## Keep the light's angular size small for useful shadow definition. The visible disc is authored
+## separately by ProceduralSkyMaterial, so it can read clearly without turning every shadow soft.
 const SUN_ANGULAR_DIAMETER_DEG: float = 0.85
-const SUN_DISK_SCALE: float = 8.0
-const MIE_ECCENTRICITY: float = 0.86
-const MIE_COEFFICIENT: float = 0.0013
-## Day end of the sky's own `energy_multiplier`. The night end stays where F-065 put it.
-const DAY_SKY_ENERGY: float = 0.45
-const NIGHT_SKY_ENERGY: float = 0.055
-## `turbidity` multiplies the mie term outright, and it used to be lerped UP to 10.0 at night — so
-## the haze was thickest exactly across dusk and dawn, the two hours a player is most likely to be
-## looking straight at the sun, and the hours the verdict came from.
-const DAY_TURBIDITY: float = 4.6
-const NIGHT_TURBIDITY: float = 3.4
 
 ## ── The moon (F-378, and the answer to F-356) ─────────────────────────────────────────────────
 ## Sequoyah, same session: "night time could be slightly less dark but only because of moonlight so
@@ -143,121 +111,36 @@ const MOON_SHADOW_OPACITY: float = 0.55
 ## cheap" half of the trade that lets the sun's own shadows switch off at the same time.
 const MOON_SHADOW_DISTANCE_M: float = 48.0
 
-## ── Contact shading (F-398) ───────────────────────────────────────────────────────────────────
-## Sequoyah, from play: "can we add ambient occulusion to the game maybe? the game lighting/color
-## grading looks really bad."
-##
-## Nothing in the project configured SSAO at all, so a trunk, a rock or a workbench met the terrain
-## with no contact darkening whatever — every prop read as sitting ON the ground rather than IN it,
-## and the only thing separating a silhouette from the surface behind it was its albedo. That is
-## also a real part of why the frame reads as one flat hue band (F-397/F-379): an occlusion term is
-## the cheapest source of value difference a scene of untextured flat-shaded forms has.
-##
-## **The split is deliberate and matches how glow and volumetric fog already work.** The numbers
-## below — the LOOK of the occlusion — live here, because AO radius and strength are one decision
-## for the whole game and four level scenes each authoring their own would drift the same way
-## F-378 found the sun's size drifting. The `ssao_enabled` FLAG lives in each level's authored
-## Environment instead, and this file never writes it, because that flag is what
-## `autoload/graphics_quality.gd` captures and overrides: LOW turns SSAO off for the worst machines
-## we target, HIGH restores the level's authored value exactly. If this file forced the flag on it
-## would fight LOW every time the controller re-applied, and the preset would silently stop being
-## an override.
-##
-## What each number is, and why it is not the engine default:
-##
-##   · RADIUS is world-space metres, and it is the one that decides whether this is contact shading
-##     or a grey wash. The terrain is flat-shaded with facets metres across (D-184), so the engine's
-##     1.0 m barely reaches off a trunk before it runs out — but anything past ~2 m starts sampling
-##     the far side of a facet and darkens whole hillsides, which is the flat hue band again with
-##     extra steps. 1.5 m is a trunk-base radius at eye height.
-##   · LIGHT AFFECT is how much the occlusion multiplies DIRECT light as well as ambient. Zero is
-##     the physically honest answer and it is the wrong one here: F-353 deliberately holds ambient
-##     down to DAY_AMBIENT_ENERGY so the flat-shaded facets can separate, which leaves ambient-only
-##     AO with almost nothing to subtract from in full sun. A small direct term is the standard
-##     cheat and it is what makes the shading read at noon; kept low because at high values the
-##     shadow side of every object develops a dark rim that no light source explains.
-##   · HORIZON is the self-occlusion bias, and flat shading is exactly the case it exists for: with
-##     hard per-facet normals a lower bias draws a dark seam along every facet edge on open ground.
-##     The engine default holds, stated here so a future radius change knows it is load-bearing.
-##   · POWER, DETAIL and SHARPNESS are the engine defaults, stated for the same reason — this block
-##     is the whole AO configuration in one place rather than three defaults and four overrides.
-const SSAO_RADIUS_M: float = 3.0
-const SSAO_INTENSITY: float = 8.0
+## ── Contact shading (F-398/F-410) ─────────────────────────────────────────────────────────────
+## A restrained trunk-base radius anchors props without turning broad terrain facets into dirty
+## halos. Only ten percent reaches direct light, so AO still reads at noon without outlining every
+## object. The enable flag remains level/quality-owned; this controller owns only the shared look.
+const SSAO_RADIUS_M: float = 1.25
+const SSAO_INTENSITY: float = 1.4
 const SSAO_POWER: float = 1.0
 const SSAO_DETAIL: float = 0.5
 const SSAO_HORIZON: float = 0.06
 const SSAO_SHARPNESS: float = 0.98
-const SSAO_LIGHT_AFFECT: float = 1.0
+const SSAO_LIGHT_AFFECT: float = 0.1
 ## Zero, and it stays zero until something in the project ships a baked AO map: this is the weight
 ## of a material's own red-channel AO texture, and every mesh here is untextured flat colour.
 const SSAO_AO_CHANNEL_AFFECT: float = 0.0
 
-## ── The daytime varnish (F-353) ────────────────────────────────────────────────────────────────
-## Sequoyah, on the shipped island: "it looks super washed out and looks like it needs a coat of
-## varnish to make everything clear and saturated." Measured, the frame lived in a 0.48-0.71
-## luminance band with nothing black, nothing white, and a saturation median of 0.24.
-##
-## Every constant below is the DAY end of a lerp whose NIGHT end is the value the scene author
-## already set, so this is a daytime change and only a daytime change — at `daylight` 0 the grade
-## comes back byte-identical to what shipped, which is what keeps a separately-broken night (F-356)
-## out of this fix's blast radius. They are hard-coded ends rather than captured exports for the
-## same reason `ambient_light_energy` and `tonemap_exposure` already were: this block is a tuned
-## curve, and reading half of it off the resource would hide half the tuning.
-##
-## What each one was doing to the frame:
-##
-##   · WHITE POINT. ACES normalises by the tonemapped white, so `tonemap_white = 3.0` mapped the
-##     scene's real 0..1 range into the toe of the curve — blacks lifted, highlights never
-##     arrived. 1.0 gives the range back.
-##   · GLOW BLOOM. `glow_bloom` applies glow to the whole frame BELOW the HDR threshold; at 0.14 it
-##     is a milk pass over every pixel regardless of brightness. Dropping it took the darkest pixel
-##     in the frame from 0.164 to 0.070 — that is where the blacks had gone. The threshold goes to
-##     1.0 and the intensity down with it so the sun disk stops smearing across a quarter of the sky.
-##   · AMBIENT FILL. D-184's terrain is flat-shaded with no texture and no normal map, so
-##     facet-to-facet radiance difference is the ONLY thing that gives the ground form. At 0.62 a
-##     facet turned 30 deg off the sun read the same as one facing it: two ground samples 150 px
-##     apart measured one 1/255 step apart. The sky contribution stays at the authored 0.68, so what
-##     is left of the fill is blue — warm light against cool shadow is most of the perceived chroma.
-##   · SATURATION AND CONTRAST. The grade's own last word, once the three above stopped fighting it.
-## F-408: 1.8, not 1.0.
-##
-## The note above is right that 3.0 buried the scene in the toe of the ACES curve — blacks lifted,
-## highlights never arriving. But 1.0 is the opposite overcorrection: with ACES normalising by the
-## white point, it leaves NO highlight headroom at all, so anything the sun lights past luminance
-## 1.0 clips flat. On a saturated albedo that clips PER CHANNEL — grassland is
-## Color(0.373, 0.588, 0.235), so under a 1.55-energy sun the green channel pins while red and blue
-## do not, and the ground goes radioactive lime. Then DAY_ADJUSTMENT_SATURATION multiplied what was
-## left. Reported from play as "the colour is wrong", twice.
-##
-## 1.8 keeps most of the range 1.0 recovered while giving sunlit highlights somewhere to roll off
-## into instead of a wall.
-const DAY_TONEMAP_WHITE: float = 1.8
-const DAY_TONEMAP_EXPOSURE: float = 0.95
-## F-378 raised this from F-353's 0.30, and it is NOT a walk-back of that fix — it is what keeps it.
-## 68% of the ambient term is the sky (the level's own `ambient_light_sky_contribution`), and F-378
-## halved the sky's radiance to stop it blowing out around the sun. That silently halved the fill
-## F-353 tuned, and the first render after it showed exactly what F-353's own note predicts: with
-## the blue sky bounce gone, warm sunlight was the only thing left on the ground and a khaki forest
-## floor came back reading as desert. This puts most of that fill back — "warm light against cool
-## shadow is most of the perceived chroma" is the sentence being preserved here, not overruled.
-##
-## PARTIAL, not a full restoration, and the difference was rendered rather than reasoned. A full
-## compensation is about 0.45, and at 0.45 the ground came back BRIGHTER and FLATTER instead of
-## cooler: only 68% of the fill is the sky, the other 32% is `ambient_light_color` at whatever the
-## level authored (white, on both shipped levels), so scaling the whole term to make up a halved sky
-## overshoots on the half that never changed — and washing out the flat-shaded facets is precisely
-## what F-353 lowered this number to stop.
-const DAY_AMBIENT_ENERGY: float = 0.36
-const DAY_ADJUSTMENT_CONTRAST: float = 1.14
-## F-408: 1.10, down from 1.30. A 30% boost is a sensible correction for photographic footage that
-## arrives desaturated; it is the wrong instinct for flat-shaded low-poly, whose albedos are authored
-## saturated to begin with (see content/biomes/*.tres). Stacked on a clipping white point it was
-## driving the lit ground off the top of the gamut rather than adding chroma to it.
-const DAY_ADJUSTMENT_SATURATION: float = 1.10
+## ── Neutral daytime baseline (F-353/F-408/F-410) ──────────────────────────────────────────────
+## This deliberately removes the accumulated "varnish" stack. Flat-shaded albedos already carry
+## colour; neutral contrast and saturation let authored materials speak for themselves. ACES keeps
+## modest highlight headroom, the sun stays below clipping, and cool sky fill preserves readable
+## facets. Future look changes should be judged from renders against this baseline, one knob at a
+## time, rather than stacking another correction over it.
+const DAY_TONEMAP_WHITE: float = 1.5
+const DAY_TONEMAP_EXPOSURE: float = 0.92
+const DAY_AMBIENT_ENERGY: float = 0.48
+const DAY_ADJUSTMENT_CONTRAST: float = 1.0
+const DAY_ADJUSTMENT_SATURATION: float = 1.0
 const DAY_GLOW_BLOOM: float = 0.0
 const DAY_GLOW_HDR_THRESHOLD: float = 1.0
 const DAY_GLOW_INTENSITY: float = 0.70
-const DAY_SUN_ENERGY: float = 1.55
+const DAY_SUN_ENERGY: float = 1.15
 ## Night ends — the values `levels/procedural_island.tscn` and `levels/hollowmere.tscn` author, kept
 ## here so the lerp is readable in one place. A scene that authors different ones is not wrong, it
 ## just stops being the night end of this particular curve; nothing downstream depends on the match.
@@ -275,7 +158,7 @@ const NIGHT_GLOW_INTENSITY: float = 1.05
 ## into everything below y=6 AT EVERY DISTANCE, the player's own feet included. The heights are off
 ## in the scenes now and this puts the haze back where it belongs: 1.6% at 10 m, 15% at 100 m,
 ## nothing you can see up close and real aerial perspective on a far shore.
-const DAY_FOG_DENSITY: float = 0.0016
+const DAY_FOG_DENSITY: float = 0.0014
 
 ## ── Ground mist (F-115) ───────────────────────────────────────────────────────────────────────
 ## Mist is a dawn and dusk thing. It burns off through the morning, is thinnest at noon, and comes
@@ -307,17 +190,13 @@ const FOG_GOLDEN_EMISSION := Color(1.0, 0.62, 0.34)
 @onready var sun := get_node(^"../Sun") as DirectionalLight3D
 
 var _environment: Environment
-var _sky_material: PhysicalSkyMaterial
+var _sky_material: ProceduralSkyMaterial
 var _local_fog_materials: Array[FogMaterial] = []
 var _local_fog_densities: Array[float] = [0.24, 0.07, 0.09]
 var _cloud_deck: Node = null
 var _star_field: Node3D = null
 var _ground_fog: FogVolume = null
 var _moon: DirectionalLight3D = null
-# Authored day ends, captured once so the night lerps cannot drift the tuned daytime look.
-var _day_rayleigh_color := Color(0.2, 0.4, 0.9)
-var _day_mie_color := Color(0.94, 0.7, 0.48)
-var _day_ground_color := Color(0.06, 0.085, 0.07)
 var _day_ambient_color := Color(1.0, 1.0, 1.0)
 # The driver values the last full apply ran with — empty forces the first apply through. F-090:
 # DayNight re-applies ~60x/s, and outside dawn/dusk every driver below is a saturated constant,
@@ -340,22 +219,9 @@ func _ready() -> void:
 	_environment = world_environment.environment
 	_day_ambient_color = _environment.ambient_light_color
 	_apply_ssao_look()
-	if _environment.sky != null:
-		_sky_material = _environment.sky.sky_material as PhysicalSkyMaterial
-	if _sky_material != null:
-		_day_rayleigh_color = _sky_material.rayleigh_color
-		_day_mie_color = _sky_material.mie_color
-		_day_ground_color = _sky_material.ground_color
-		# F-378: the disc's size and the halo's WIDTH are standing look decisions, not per-hour
-		# ones, so they are written once here rather than re-lerped 60 times a second. See the
-		# SUN_* block for why the two angular knobs are separate.
-		_sky_material.sun_disk_scale = SUN_DISK_SCALE
-		_sky_material.mie_eccentricity = MIE_ECCENTRICITY
-		_sky_material.mie_coefficient = MIE_COEFFICIENT
+	_install_stylized_sky()
 	# F-378: the sun's angular size was never set from here, so how big the game's sun is depended on
-	# which level you were standing in. It is a light property rather than a sky one because it is
-	# also the shadow penumbra, which is exactly why it is kept tight and `sun_disk_scale` above does
-	# the exaggerating.
+	# which level you were standing in. It is also the shadow penumbra, so it stays tight.
 	sun.light_angular_distance = SUN_ANGULAR_DIAMETER_DEG
 	# The sky shader only ever reads LIGHT0, and the moon below sets SKY_MODE_LIGHT_ONLY so it can
 	# never become that light. Stating the sun's own mode explicitly is the other half of that
@@ -371,6 +237,30 @@ func _ready() -> void:
 	_ground_fog = _resolve_ground_fog()
 	apply_atmosphere()
 	set_process(cycle_enabled)
+
+
+## Replaces scene-specific physical-sky resources with the same authored low-poly gradient in every
+## world. This is presentation-only and intentionally leaves the Environment resource itself in
+## place so quality settings keep ownership of their feature flags.
+func _install_stylized_sky() -> void:
+	if _environment.sky == null:
+		_environment.sky = Sky.new()
+	_sky_material = ProceduralSkyMaterial.new()
+	_sky_material.sky_top_color = DAY_SKY_TOP
+	_sky_material.sky_horizon_color = DAY_SKY_HORIZON
+	_sky_material.sky_curve = SKY_CURVE
+	_sky_material.sky_energy_multiplier = DAY_SKY_ENERGY
+	_sky_material.ground_horizon_color = DAY_GROUND_HORIZON
+	_sky_material.ground_bottom_color = DAY_GROUND_BOTTOM
+	_sky_material.ground_curve = SKY_CURVE
+	_sky_material.ground_energy_multiplier = DAY_SKY_ENERGY
+	_sky_material.sun_angle_max = SKY_SUN_ANGLE_MAX_DEG
+	_sky_material.sun_curve = SKY_SUN_CURVE
+	_environment.sky.sky_material = _sky_material
+	# Fog colours distance without repainting the sky into the old flat grey horizon band.
+	_environment.fog_sky_affect = 0.12
+	_environment.fog_aerial_perspective = 0.40
+	_environment.volumetric_fog_sky_affect = 0.12
 
 
 ## F-398: writes the SSAO LOOK and nothing else. Once, in `_ready()`, because none of it moves with
@@ -451,7 +341,7 @@ func _resolve_moon() -> DirectionalLight3D:
 	created.light_color = MOONLIGHT_COLOR
 	created.light_energy = 0.0
 	created.light_angular_distance = MOON_ANGULAR_DIAMETER_DEG
-	# LIGHT_ONLY, and this is load-bearing rather than tidy: `PhysicalSkyMaterial` draws its sun disc
+	# LIGHT_ONLY, and this is load-bearing rather than tidy: `ProceduralSkyMaterial` draws its sun disc
 	# for LIGHT0, Godot picks LIGHT0 from the directional lights that contribute to the sky, and a
 	# moon that qualified could take that slot — which would paint the sun's disc on the moon and
 	# leave the real sun blank. The moon's own disc is geometry in `star_field.gd` instead.
@@ -539,11 +429,9 @@ func apply_atmosphere() -> void:
 		return
 	_applied_drivers = drivers
 
-	# Warmer than neutral daylight even at noon, and holding the sunrise tint further up the sky
-	# (0.58 rather than 0.72 of it burned off) — the difference between "correctly lit" and the
-	# warm hour Sequoyah asked for. Colour is the cheapest half of that look; the other half is the
-	# shafts below.
-	var daylight_color := Color(1.0, 0.94, 0.815)
+	# Noon stays close to neutral so authored low-poly colours do not skew yellow. The warmth belongs
+	# at the horizon, where the sky gradient and shafts reinforce it together.
+	var daylight_color := Color(1.0, 0.97, 0.90)
 	var sunrise_color := Color(1.0, 0.55, 0.27)
 	var horizon_mix := sunrise_color.lerp(daylight_color, 1.0 - warm_horizon * 0.58)
 	# F-378: the sun stays the sun all the way down. It used to lerp toward MOONLIGHT_COLOR as the
@@ -581,20 +469,15 @@ func apply_atmosphere() -> void:
 		_moon.light_volumetric_fog_energy = god_ray_strength * 0.25 * moonlight
 
 	_environment.background_energy_multiplier = lerpf(0.12, 0.9, daylight)
-	# The day end is the floor under everything the sun is NOT hitting, and F-353 took it from 0.62
-	# down to DAY_AMBIENT_ENERGY. The old value's own comment worried that 0.5 "crushed a hillside
-	# facing away from a low sun to pure black" — but it was measured under `tonemap_white = 3.0`,
-	# which lifted the blacks that were doing the crushing, and the fill it chose to compensate is
-	# what erased the flat-shaded facets. With the white point back at 1.0 the curve is different and
-	# the shadow is dark AND coloured, which is what that comment actually wanted. The colour half of
-	# it is unchanged: ambient stays 68% sky (the level's own ambient_light_sky_contribution), so the
-	# fill that remains is blue and reads as sky bouncing into shade rather than as grey.
+	# The ambient term is a readable-shadow floor, not a second key light. Most of it comes from the
+	# authored blue-green sky, keeping unlit facets cool while the sun provides their warm edge.
 	_environment.ambient_light_energy = lerpf(NIGHT_AMBIENT_ENERGY, DAY_AMBIENT_ENERGY, daylight)
 	_environment.ambient_light_color = NIGHT_AMBIENT_COLOR.lerp(_day_ambient_color, daylight)
+	_environment.ambient_light_sky_contribution = lerpf(
+		NIGHT_AMBIENT_SKY_CONTRIBUTION, DAY_AMBIENT_SKY_CONTRIBUTION, daylight
+	)
 	_environment.tonemap_exposure = lerpf(NIGHT_TONEMAP_EXPOSURE, DAY_TONEMAP_EXPOSURE, daylight)
-	# F-353's four remaining knobs, all on the same `daylight` curve as everything above so night
-	# lands on the authored values and this stays a daytime change. See the DAY_* block's header for
-	# what each was doing to the frame.
+	# All grade knobs follow the same daylight curve, so midnight still lands on the authored values.
 	_environment.tonemap_white = lerpf(NIGHT_TONEMAP_WHITE, DAY_TONEMAP_WHITE, daylight)
 	_environment.glow_bloom = lerpf(NIGHT_GLOW_BLOOM, DAY_GLOW_BLOOM, daylight)
 	_environment.glow_hdr_threshold = lerpf(
@@ -640,20 +523,27 @@ func apply_atmosphere() -> void:
 			golden * 0.22 * daylight
 		)
 	if _sky_material != null:
-		# PhysicalSkyMaterial already dims itself as LIGHT0 drops, so let it do that work while the
-		# sun is up and only force the night colours once the sun is actually below the horizon.
-		# F-378: the day end came down from 0.9. That single number is what was blowing six degrees
-		# of sky past the white point around the sun, and lowering it is what lets the disc's edge be
-		# seen at all — see the SUN_* block for the measurement.
-		_sky_material.energy_multiplier = lerpf(NIGHT_SKY_ENERGY, DAY_SKY_ENERGY, 1.0 - sky_night)
-		# F-378: this used to run to 10.0 at night. Turbidity multiplies the mie term outright, so
-		# the haze around the sun was at its thickest across dusk and dawn — the two hours a player
-		# is most likely to be looking straight at it, and the hours the "faded haze thats way to
-		# wide" verdict came from. Both ends are down, and the night end further than the day one.
-		_sky_material.turbidity = lerpf(NIGHT_TURBIDITY, DAY_TURBIDITY, daylight)
-		_sky_material.rayleigh_color = _day_rayleigh_color.lerp(NIGHT_RAYLEIGH_COLOR, sky_night)
-		_sky_material.mie_color = _day_mie_color.lerp(NIGHT_MIE_COLOR, sky_night)
-		_sky_material.ground_color = _day_ground_color.lerp(NIGHT_GROUND_COLOR, sky_night)
+		# Golden-hour warmth is deliberately confined to the horizon. Once the sun is below it, the
+		# whole gradient fades toward the moonlit night palette without a grey intermediate band.
+		var golden_amount := golden * daylight
+		var day_top := DAY_SKY_TOP.lerp(GOLDEN_SKY_TOP, golden_amount * 0.35)
+		var day_horizon := DAY_SKY_HORIZON.lerp(
+			GOLDEN_SKY_HORIZON, golden_amount * 0.72
+		)
+		var day_ground_horizon := DAY_GROUND_HORIZON.lerp(
+			GOLDEN_GROUND_HORIZON, golden_amount * 0.65
+		)
+		_sky_material.sky_top_color = day_top.lerp(NIGHT_SKY_TOP, sky_night)
+		_sky_material.sky_horizon_color = day_horizon.lerp(NIGHT_SKY_HORIZON, sky_night)
+		_sky_material.ground_horizon_color = day_ground_horizon.lerp(
+			NIGHT_GROUND_HORIZON, sky_night
+		)
+		_sky_material.ground_bottom_color = DAY_GROUND_BOTTOM.lerp(
+			NIGHT_GROUND_BOTTOM, sky_night
+		)
+		var sky_energy := lerpf(DAY_SKY_ENERGY, NIGHT_SKY_ENERGY, sky_night)
+		_sky_material.sky_energy_multiplier = sky_energy
+		_sky_material.ground_energy_multiplier = sky_energy
 	if _cloud_deck != null:
 		_cloud_deck.call(&"set_sky_light", daylight, golden)
 	if _star_field != null:

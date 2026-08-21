@@ -10,17 +10,12 @@ extends SceneTree
 ## star field is geometry and not a sky-shader texture (D-042): every claim below is readable
 ## without a display.
 ##
-## The load-bearing assertion is _check_daytime_is_untouched(). Everything else here is new
-## behaviour; that one is the promise that adding it did not re-tune somebody's daylight.
+## F-410 deliberately replaces the old physical sky, so the daytime assertion now guards the shared
+## procedural baseline rather than treating scene-authored physical scattering as immutable.
 
 const ATMOSPHERE_SCRIPT := preload("res://world/environment/playtest_atmosphere.gd")
 const CLOUDS_SCRIPT := preload("res://world/environment/low_poly_clouds.gd")
 const STAR_FIELD_SCRIPT := preload("res://world/environment/star_field.gd")
-
-## Copied from levels/hollowmere.tscn's PhysicalSkyMaterial, so the harness sky is the real one.
-const AUTHORED_RAYLEIGH := Color(0.2, 0.4, 0.9, 1.0)
-const AUTHORED_MIE := Color(0.94, 0.7, 0.48, 1.0)
-const AUTHORED_GROUND := Color(0.06, 0.085, 0.07, 1.0)
 
 ## Mirrors star_field.gd's own fan width; a star is one centre vertex plus this many rim triangles.
 const STAR_RIM_POINTS: int = 6
@@ -43,7 +38,7 @@ func _run() -> void:
 	await process_frame
 	_check_dusk_is_a_fade()
 	await process_frame
-	_check_daytime_is_untouched()
+	_check_daytime_uses_shared_baseline()
 	await process_frame
 	_check_sun_has_a_disc()
 	await process_frame
@@ -134,9 +129,9 @@ func _check_night_and_day_states() -> void:
 			night_cloud_tint.r, night_cloud_tint.b])
 
 	var sky := _sky_material(level)
-	check(sky.energy_multiplier < 0.1,
-		"the night sky itself dims (energy_multiplier %.3f)" % sky.energy_multiplier)
-	check(sky.rayleigh_color.b > sky.rayleigh_color.r,
+	check(is_equal_approx(sky.sky_energy_multiplier, ATMOSPHERE_SCRIPT.NIGHT_SKY_ENERGY),
+		"the night sky itself dims (energy %.3f)" % sky.sky_energy_multiplier)
+	check(sky.sky_top_color.b > sky.sky_top_color.r,
 		"the night sky stays blue rather than washing to grey")
 	level.queue_free()
 
@@ -173,36 +168,33 @@ func _check_dusk_is_a_fade() -> void:
 		"sunset clouds go properly warm, not pale grey (r %.3f, b %.3f)" % [
 			sunset_tint.r, sunset_tint.b])
 	var sunset_sky := _sky_material(level)
-	check(sunset_sky.mie_color.is_equal_approx(AUTHORED_MIE),
-		"the sun on the horizon keeps the authored warm scattering (%s)" % sunset_sky.mie_color)
-	# Against the controller's own day end rather than a hard-coded 0.8. What this asserts is that
-	# `sky_night` has not kicked in early — the sun is still on the horizon at 18:00 and the sky
-	# should be at full DAY brightness — and F-378 changed what "full day brightness" is (0.9 -> 0.45,
-	# because 0.9 blew six degrees of sky around the sun past the white point and hid the disc
-	# inside it). Comparing to the constant keeps the claim and drops the stale number.
-	check(sunset_sky.energy_multiplier > ATMOSPHERE_SCRIPT.DAY_SKY_ENERGY * 0.99,
+	check(sunset_sky.sky_horizon_color.r > sunset_sky.sky_horizon_color.b,
+		"the sun on the horizon warms the gradient (%s)" % sunset_sky.sky_horizon_color)
+	# `sky_night` must not kick in early: at 18:00 the sun is still on the horizon, so the gradient
+	# keeps full day energy while its colours turn warm.
+	check(sunset_sky.sky_energy_multiplier > ATMOSPHERE_SCRIPT.DAY_SKY_ENERGY * 0.99,
 		"the sky is not force-dimmed while the sun is still up (%.3f of a %.3f day)" % [
-			sunset_sky.energy_multiplier, ATMOSPHERE_SCRIPT.DAY_SKY_ENERGY])
+			sunset_sky.sky_energy_multiplier, ATMOSPHERE_SCRIPT.DAY_SKY_ENERGY])
 	atmosphere.call(&"set_time_of_day", 19.5)
 	var after_dark := _sky_material(level)
-	check(after_dark.mie_color.b > after_dark.mie_color.r,
-		"once the sun is down the scattering turns cold (%s)" % after_dark.mie_color)
+	check(after_dark.sky_horizon_color.b > after_dark.sky_horizon_color.r,
+		"once the sun is down the horizon turns cold (%s)" % after_dark.sky_horizon_color)
 	level.queue_free()
 
 
-## The one regression this change could plausibly cause: re-tuning a daylight somebody signed off on.
-## Every day-end value is read off the authored resource rather than written in the script, so at
-## full daylight the sky material must come back byte-identical to what the scene author set.
-func _check_daytime_is_untouched() -> void:
-	print("\n== full daylight restores the authored sky exactly ==")
+## F-410's reset is intentionally controller-owned so every current and future level gets one sky.
+func _check_daytime_uses_shared_baseline() -> void:
+	print("\n== full daylight uses the shared stylized sky baseline ==")
 	var level := _build_level(NOON)
 	var sky := _sky_material(level)
-	check(sky.rayleigh_color.is_equal_approx(AUTHORED_RAYLEIGH),
-		"rayleigh_color returns to the authored value (%s)" % sky.rayleigh_color)
-	check(sky.mie_color.is_equal_approx(AUTHORED_MIE),
-		"mie_color returns to the authored value (%s)" % sky.mie_color)
-	check(sky.ground_color.is_equal_approx(AUTHORED_GROUND),
-		"ground_color returns to the authored value (%s)" % sky.ground_color)
+	check(sky.sky_top_color.is_equal_approx(ATMOSPHERE_SCRIPT.DAY_SKY_TOP),
+		"the sky top returns to the shared day colour (%s)" % sky.sky_top_color)
+	check(sky.sky_horizon_color.is_equal_approx(ATMOSPHERE_SCRIPT.DAY_SKY_HORIZON),
+		"the horizon returns to the shared day colour (%s)" % sky.sky_horizon_color)
+	check(sky.ground_horizon_color.is_equal_approx(ATMOSPHERE_SCRIPT.DAY_GROUND_HORIZON),
+		"the lower horizon returns to the shared day colour (%s)" % sky.ground_horizon_color)
+	check(is_equal_approx(sky.sky_energy_multiplier, ATMOSPHERE_SCRIPT.DAY_SKY_ENERGY),
+		"the day sky returns to shared energy (%.2f)" % sky.sky_energy_multiplier)
 	level.queue_free()
 
 
@@ -229,31 +221,10 @@ func _check_sun_has_a_disc() -> void:
 	check(sun.light_angular_distance <= 1.0,
 		"the sun's own angle stays tight, because it is also the shadow penumbra (%.2f deg)"
 			% sun.light_angular_distance)
-	# The lower bound is the one that matters and it is a MEASURED number, not a tasteful one: the
-	# sky around the sun is blown past the white point out to ~3.5 deg even after F-378 darkened it,
-	# so a disc smaller than that is invisible inside its own glow no matter how hard its edge is.
-	# The upper bound is only there to catch someone "fixing" a future haze complaint by inflating
-	# the sun until it IS the haze.
-	var apparent: float = sun.light_angular_distance * sky.sun_disk_scale
-	check(apparent > 4.0 and apparent < 12.0,
-		"the disc is bigger than the sky's own blown region, so its edge shows: %.2f deg apparent (angle %.2f x disk scale %.2f)" % [
-			apparent, sun.light_angular_distance, sky.sun_disk_scale])
-	check(sky.energy_multiplier < 0.7,
-		"the day sky is not blown out around the sun (energy %.2f)" % sky.energy_multiplier)
-	# The halo's WIDTH. Henyey-Greenstein falls to half its peak around 13 deg at the 0.74 both
-	# levels authored, which is the "way to wide" in one number.
-	check(sky.mie_eccentricity >= 0.82,
-		"the mie lobe is forward-tight, so the glow hugs the disc (eccentricity %.2f)"
-			% sky.mie_eccentricity)
-	var day_turbidity: float = sky.turbidity
-
-	# The halo's DENSITY, which used to run UP as the sun went down — thickest exactly across dusk
-	# and dawn, which is when a player is looking at the sun.
-	var atmosphere: Node = level.get_node(^"Atmosphere")
-	atmosphere.call(&"set_time_of_day", MIDNIGHT)
-	check(sky.turbidity < day_turbidity,
-		"night thins the haze rather than thickening it (%.2f at night vs %.2f by day)" % [
-			sky.turbidity, day_turbidity])
+	check(sky.sun_angle_max > 0.5 and sky.sun_angle_max < 3.0,
+		"the procedural sky draws a compact visible disc (%.2f deg)" % sky.sun_angle_max)
+	check(sky.sun_curve <= 0.1,
+		"the sun edge stays defined rather than becoming a broad haze (curve %.2f)" % sky.sun_curve)
 	level.queue_free()
 
 
@@ -276,7 +247,7 @@ func _check_there_is_a_moon() -> void:
 	if moon == null:
 		level.queue_free()
 		return
-	# LIGHT_ONLY is not tidiness: PhysicalSkyMaterial draws its disc for LIGHT0, and a moon that
+	# LIGHT_ONLY is not tidiness: ProceduralSkyMaterial draws its disc for LIGHT0, and a moon that
 	# contributed to the sky could take that slot and be handed the SUN's disc.
 	check(moon.sky_mode == DirectionalLight3D.SKY_MODE_LIGHT_ONLY,
 		"the moon never contributes to the sky, so it can never be given the sun's disc")
@@ -402,15 +373,10 @@ func _check_missing_cloud_deck_is_silent() -> void:
 # ── Harness ──────────────────────────────────────────────────────────────────────────────────────
 
 
-## The real WorldEnvironment/Sun/CloudDeck/Atmosphere shape, with hollowmere.tscn's authored sky
-## values, built in code so this check needs no scene file and no claim on one.
+## The real WorldEnvironment/Sun/CloudDeck/Atmosphere shape, starting from a physical sky to prove
+## the controller replaces scene-local sky tuning without requiring a scene edit.
 func _build_level(hour: float, with_clouds: bool = true) -> Node3D:
 	var sky_material := PhysicalSkyMaterial.new()
-	sky_material.rayleigh_color = AUTHORED_RAYLEIGH
-	sky_material.mie_color = AUTHORED_MIE
-	sky_material.ground_color = AUTHORED_GROUND
-	sky_material.energy_multiplier = 0.92
-	sky_material.turbidity = 6.0
 	var sky := Sky.new()
 	sky.sky_material = sky_material
 	var environment := Environment.new()
@@ -465,9 +431,9 @@ func _dome_visible(atmosphere: Node) -> bool:
 	return dome != null and dome.visible
 
 
-func _sky_material(level: Node3D) -> PhysicalSkyMaterial:
+func _sky_material(level: Node3D) -> ProceduralSkyMaterial:
 	var world_environment := level.get_node(^"WorldEnvironment") as WorldEnvironment
-	return world_environment.environment.sky.sky_material as PhysicalSkyMaterial
+	return world_environment.environment.sky.sky_material as ProceduralSkyMaterial
 
 
 func check(condition: bool, description: String) -> void:
