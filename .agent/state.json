@@ -1,10 +1,22 @@
 {
   "claims": {
+    "assets/construction/exports/floor_wood.glb": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T22:56:10+00:00",
+      "task": "3.7",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+    },
     "assets/gatherables/catalog.json": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:16:22+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "assets/icons/exports/icon_build_floor.png": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T22:58:12+00:00",
+      "task": "3.7",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "assets/pickups/catalog.json": {
       "agent": "gale43d16e",
@@ -24,16 +36,16 @@
       "task": "3.19",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "autoload/harvest_world.gd": {
-      "agent": "quillcfd8d7",
-      "at": "2026-08-21T22:13:12+00:00",
-      "task": "F-461",
-      "token": "CLAUDE_CODE_SESSION_ID:ef18b3c8-16fb-47c5-852c-09d362e8f2c4"
-    },
     "autoload/progression_service.gd": {
       "agent": "birche6b40e",
       "at": "2026-08-21T22:51:41+00:00",
       "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "autoload/registry.gd": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T22:55:54+00:00",
+      "task": "3.19",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
     "autoload/salvage_service.gd": {
@@ -41,6 +53,18 @@
       "at": "2026-08-21T22:52:32+00:00",
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "autoload/settings_service.gd": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T22:56:36+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/buildables/floor.tres": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T22:54:44+00:00",
+      "task": "3.7",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "content/harvestables/apple_tree.tres": {
       "agent": "gale43d16e",
@@ -72,17 +96,47 @@
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "core/save/settings_save.gd": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T22:56:36+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
     "docs/ASSET_TRACKER.md": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:13:34+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "docs/DECISIONS.md": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:01:28+00:00",
+      "task": "3.7",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+    },
+    "docs/DELEGATION.md": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:01:28+00:00",
+      "task": "3.7",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+    },
+    "docs/FINDINGS.md": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T22:54:44+00:00",
+      "task": "3.7",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+    },
     "docs/PROGRESSION.md": {
       "agent": "birche6b40e",
       "at": "2026-08-21T22:49:29+00:00",
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "scenes/buildables/floor.tscn": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T22:54:44+00:00",
+      "task": "3.7",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "systems/guide/guide_step_def.gd": {
       "agent": "birche6b40e",
@@ -96,6 +150,12 @@
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "tools/blender/build_construction_set.py": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T22:54:44+00:00",
+      "task": "3.7",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+    },
     "tools/blender/build_gatherable_plants.py": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:16:22+00:00",
@@ -108,6 +168,18 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "tools/blender/mire_art.py": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T22:56:10+00:00",
+      "task": "3.7",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+    },
+    "tools/blender/render_item_icons.py": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T22:58:12+00:00",
+      "task": "3.7",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+    },
     "tools/cliff_check.gd": {
       "agent": "onyx059945",
       "at": "2026-08-21T22:45:11+00:00",
@@ -119,6 +191,12 @@
       "at": "2026-08-21T22:45:11+00:00",
       "task": "F-464",
       "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
+    },
+    "tools/construction_check.gd": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:00:30+00:00",
+      "task": "3.7",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "tools/guide_check.gd": {
       "agent": "birche6b40e",
@@ -138,11 +216,11 @@
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "tools/traversal_profile.gd": {
-      "agent": "quillcfd8d7",
-      "at": "2026-08-21T22:20:01+00:00",
-      "task": "F-461",
-      "token": "CLAUDE_CODE_SESSION_ID:ef18b3c8-16fb-47c5-852c-09d362e8f2c4"
+    "ui/hud/focus_prompt.gd": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T22:58:41+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
     "ui/hud/guide_hud.gd": {
       "agent": "birche6b40e",
@@ -155,18 +233,6 @@
       "at": "2026-08-21T22:45:11+00:00",
       "task": "F-464",
       "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
-    },
-    "world/chunk/chunk_streamer.gd": {
-      "agent": "quillcfd8d7",
-      "at": "2026-08-21T22:20:01+00:00",
-      "task": "F-461",
-      "token": "CLAUDE_CODE_SESSION_ID:ef18b3c8-16fb-47c5-852c-09d362e8f2c4"
-    },
-    "world/chunk/nav_baker.gd": {
-      "agent": "quillcfd8d7",
-      "at": "2026-08-21T22:27:06+00:00",
-      "task": "F-461",
-      "token": "CLAUDE_CODE_SESSION_ID:ef18b3c8-16fb-47c5-852c-09d362e8f2c4"
     },
     "world/chunk/terrain_flat.gdshader": {
       "agent": "onyx059945",
@@ -191,18 +257,6 @@
       "at": "2026-08-21T22:45:11+00:00",
       "task": "F-464",
       "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
-    },
-    "world/gen/resource_scatter.gd": {
-      "agent": "quillcfd8d7",
-      "at": "2026-08-21T22:27:06+00:00",
-      "task": "F-461",
-      "token": "CLAUDE_CODE_SESSION_ID:ef18b3c8-16fb-47c5-852c-09d362e8f2c4"
-    },
-    "world/gen/resource_scatter_field.gd": {
-      "agent": "quillcfd8d7",
-      "at": "2026-08-21T22:13:12+00:00",
-      "task": "F-461",
-      "token": "CLAUDE_CODE_SESSION_ID:ef18b3c8-16fb-47c5-852c-09d362e8f2c4"
     }
   },
   "in_flight": {
@@ -245,25 +299,34 @@
         "autoload/guide_service.gd",
         "ui/hud/guide_hud.gd",
         "systems/guide/guide_step_def.gd",
-        "tools/guide_check.gd"
+        "tools/guide_check.gd",
+        "autoload/registry.gd",
+        "autoload/settings_service.gd",
+        "core/save/settings_save.gd",
+        "ui/hud/focus_prompt.gd"
       ],
       "notes": [],
       "started": "2026-08-21T22:49:29+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "F-461": {
-      "agent": "quillcfd8d7",
+    "3.7": {
+      "agent": "coil26502f",
       "files": [
-        "world/gen/resource_scatter_field.gd",
-        "autoload/harvest_world.gd",
-        "world/chunk/chunk_streamer.gd",
-        "tools/traversal_profile.gd",
-        "world/gen/resource_scatter.gd",
-        "world/chunk/nav_baker.gd"
+        "tools/blender/build_construction_set.py",
+        "scenes/buildables/floor.tscn",
+        "content/buildables/floor.tres",
+        "docs/FINDINGS.md",
+        "tools/blender/mire_art.py",
+        "assets/construction/exports/floor_wood.glb",
+        "tools/blender/render_item_icons.py",
+        "assets/icons/exports/icon_build_floor.png",
+        "tools/construction_check.gd",
+        "docs/DECISIONS.md",
+        "docs/DELEGATION.md"
       ],
       "notes": [],
-      "started": "2026-08-21T22:13:12+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:ef18b3c8-16fb-47c5-852c-09d362e8f2c4"
+      "started": "2026-08-21T22:54:44+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "F-464": {
       "agent": "onyx059945",
@@ -1319,11 +1382,11 @@
       "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
     "autoload/harvest_world.gd": {
-      "agent": "kiln384569",
-      "at": "2026-08-21T18:28:32+00:00",
-      "hash": "01b45c297cd9ceed1abd4d0b9864e5ed4149d200ad261398b6f2546511b5cbb7",
-      "task": "F-432",
-      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
+      "agent": "quillcfd8d7",
+      "at": "2026-08-21T23:01:17+00:00",
+      "hash": "cbfefb0f4ea5c6fabe74bbb66c825e6a8ab7fe65d2226d7c852ab98fe659b047",
+      "task": "F-461",
+      "token": "CLAUDE_CODE_SESSION_ID:ef18b3c8-16fb-47c5-852c-09d362e8f2c4"
     },
     "autoload/ranged_combat_service.gd": {
       "agent": "ivy1bcae0",
@@ -2503,16 +2566,16 @@
     },
     "core/bench/benchmark_report.gd": {
       "agent": "quill895277",
-      "at": "2026-08-21T22:53:18+00:00",
+      "at": "2026-08-21T23:03:29+00:00",
       "hash": "c48baebf042e0e89af06eb914b378a853ccf0ce085a213e82f23b53137241a92",
-      "task": "F-462",
+      "task": "F-466",
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "core/bench/benchmark_runner.gd": {
       "agent": "quill895277",
-      "at": "2026-08-21T22:53:18+00:00",
-      "hash": "a380982e2e5b5ef8e57e3b229b31cf8f8cb510e28e5fb656c7d65dadd5752bd0",
-      "task": "F-462",
+      "at": "2026-08-21T23:03:29+00:00",
+      "hash": "67fae38a589a49d51774aec1f426b664cfad46af13eabcaffcc8aed67b545f14",
+      "task": "F-466",
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "core/bench/benchmark_suite.gd": {
@@ -2524,9 +2587,9 @@
     },
     "core/bench/frame_sampler.gd": {
       "agent": "quill895277",
-      "at": "2026-08-21T22:53:18+00:00",
-      "hash": "17bb20fede63cee1cbc41277c91e9dc69d224459665121383ae2df7fdfaaedd5",
-      "task": "F-462",
+      "at": "2026-08-21T23:03:29+00:00",
+      "hash": "c70d9d273da303c3544a71473c784fd6a4e402345a29857ec8c3cdfc839a4434",
+      "task": "F-466",
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "core/bench/machine_probe.gd": {
@@ -2907,6 +2970,13 @@
       "task": "7.2",
       "token": "CLAUDE_CODE_SESSION_ID:079ec6c8-3025-4d18-9503-6b15fbd8d6f2"
     },
+    "tools/bench_measure.sh": {
+      "agent": "quill895277",
+      "at": "2026-08-21T23:03:29+00:00",
+      "hash": "80c2387436f7317875dd26b3ca6fd8da0c0ab3c7c7270a2858e2bd63239c8b65",
+      "task": "F-466",
+      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
+    },
     "tools/bench_mire.gd": {
       "agent": "ivy1bcae0",
       "at": "2026-08-21T02:16:00+00:00",
@@ -2930,9 +3000,9 @@
     },
     "tools/benchmark_check.gd": {
       "agent": "quill895277",
-      "at": "2026-08-21T22:53:18+00:00",
-      "hash": "3e85560b75496bd1534b6daafbd3164e905d8089d3b1a2c400d4cf2009583c1b",
-      "task": "F-462",
+      "at": "2026-08-21T23:03:29+00:00",
+      "hash": "55c37d24792a3058aae6404525623ad7d2579b9da19e956a59d404aeb4d84098",
+      "task": "F-466",
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "tools/biome_region_check.gd": {
@@ -3489,11 +3559,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "tools/traversal_profile.gd": {
-      "agent": "wick5e2d04",
-      "at": "2026-08-21T21:52:49+00:00",
-      "hash": "07d593f53c10285507fd86798b825eb6a1f529d2a071cf4abe6fed50490a76b9",
-      "task": "F-454",
-      "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
+      "agent": "quillcfd8d7",
+      "at": "2026-08-21T23:01:17+00:00",
+      "hash": "dc2e17f1f69adb3251fc011789ace71ce5c02a7a02513cf3aaee065a3e7d4013",
+      "task": "F-461",
+      "token": "CLAUDE_CODE_SESSION_ID:ef18b3c8-16fb-47c5-852c-09d362e8f2c4"
     },
     "tools/tree_collider_check.gd": {
       "agent": "kiln384569",
@@ -3706,18 +3776,18 @@
       "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
     },
     "world/chunk/chunk_streamer.gd": {
-      "agent": "wick5e2d04",
-      "at": "2026-08-21T21:52:49+00:00",
-      "hash": "ffbe981dc1c4f996fb9b088d558f0538d4ecdd8131d058ecfd9808b2f49af60c",
-      "task": "F-454",
-      "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
+      "agent": "quillcfd8d7",
+      "at": "2026-08-21T23:01:17+00:00",
+      "hash": "07b7dfe6bae42ecc02936e0f1ab7a816ed43801fd7ffa22380378e35cfbefb0f",
+      "task": "F-461",
+      "token": "CLAUDE_CODE_SESSION_ID:ef18b3c8-16fb-47c5-852c-09d362e8f2c4"
     },
     "world/chunk/nav_baker.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T02:04:32+00:00",
-      "hash": "5e26de2111b4253ed0f1b2199253c53f6bcd4406ca00523157b7a076049ff32f",
-      "task": "F-346",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+      "agent": "quillcfd8d7",
+      "at": "2026-08-21T23:01:17+00:00",
+      "hash": "da9edb0c9c9fa6e7b8c1b7891b1d344528b5cd111df7eaccf0f36149c2898a9e",
+      "task": "F-461",
+      "token": "CLAUDE_CODE_SESSION_ID:ef18b3c8-16fb-47c5-852c-09d362e8f2c4"
     },
     "world/chunk/terrain_flat.gdshader": {
       "agent": "hollow80855f",
@@ -3797,18 +3867,18 @@
       "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
     "world/gen/resource_scatter.gd": {
-      "agent": "kilnf96279",
-      "at": "2026-08-21T19:17:13+00:00",
-      "hash": "1bb8eaa20d7bc6793bf1a3c3362122ededf34870c72fa7324ff17e6cfb2d050d",
-      "task": "F-445",
-      "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
+      "agent": "quillcfd8d7",
+      "at": "2026-08-21T23:01:17+00:00",
+      "hash": "928e589b5243725d76cf99aa2e4223b75ae7252de067eaa4644e559cd9ee1c86",
+      "task": "F-461",
+      "token": "CLAUDE_CODE_SESSION_ID:ef18b3c8-16fb-47c5-852c-09d362e8f2c4"
     },
     "world/gen/resource_scatter_field.gd": {
-      "agent": "wick5e2d04",
-      "at": "2026-08-21T21:52:49+00:00",
-      "hash": "755855ec391d2ac1da1810aca9b601c6eb165d372af7ec26ea997a6ad5f065bf",
-      "task": "F-454",
-      "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
+      "agent": "quillcfd8d7",
+      "at": "2026-08-21T23:01:17+00:00",
+      "hash": "e6e25f418683f97d95ad832a7a99f1d18b1c72ed65fe66673ede22d7719da833",
+      "task": "F-461",
+      "token": "CLAUDE_CODE_SESSION_ID:ef18b3c8-16fb-47c5-852c-09d362e8f2c4"
     },
     "world/gen/scatter_def.gd": {
       "agent": "kilnf96279",
@@ -3839,7 +3909,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     }
   },
-  "rev": 903,
+  "rev": 922,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -4518,7 +4588,7 @@
     "3.7": {
       "est": "4",
       "milestone": "M3",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T0",
       "title": "Buildable pieces (walls/floors/ramps/doors) + Ward structures"
     },
@@ -9268,9 +9338,11 @@
       "title": "The benchmark is only reachable from inside the graphics settings"
     },
     "F-461": {
+      "done_at": "2026-08-21T23:01:17+00:00",
+      "done_by": "quillcfd8d7",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Chunk LOD transitions rebuild every prop in already-dressed chunks, and each holder re-sweeps HarvestWorld"
     },
@@ -9296,6 +9368,20 @@
       "status": "in_flight",
       "tier": "F",
       "title": "The river's carve ends in a vertical wall wherever it crosses a hill, and nothing on the island reads as rock"
+    },
+    "F-465": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The preset calibration cannot resolve presets on a machine with headroom"
+    },
+    "F-466": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The benchmark reports frame times taken while its window was not being rendered"
     }
   },
   "version": 1

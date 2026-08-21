@@ -163,6 +163,16 @@ signal failed(message: String)
 ## and the run resumes from there.
 var cancelled: bool = false
 
+## Set false to skip the warm-up pass, which is how F-459 (a location's first visit hitching) is
+## re-checked: with this off, a location's first sample and its second should agree, and if they do
+## not the first-visit cost is still there. Production always leaves it true.
+var prewarm_enabled: bool = true
+
+## Set false to suppress the live readout entirely, which is how the instrument-cost correction is
+## validated: with no repaints there is nothing to drop, so a run with this off is the reference
+## that `INSTRUMENT_SKIP_FRAMES` is supposed to reproduce.
+var readout_enabled: bool = true
+
 var _world: Node3D
 var _player: Node3D
 var _viewport: Viewport
@@ -250,7 +260,8 @@ func run(world: Node3D, target_fps: int = SettingsAdvisor.DEFAULT_TARGET_FPS,
 	var scenes: Array[Dictionary] = scene_override if not scene_override.is_empty() \
 		else BenchmarkSuite.scenes()
 	_calibration_candidates = 3 if calibrate else 0
-	await _prewarm(scenes)
+	if prewarm_enabled:
+		await _prewarm(scenes)
 	var results: Array = []
 	_scenes_total = scenes.size()
 	for index: int in scenes.size():
@@ -305,7 +316,7 @@ func run(world: Node3D, target_fps: int = SettingsAdvisor.DEFAULT_TARGET_FPS,
 		# Everything about the machine's condition that makes the table below less trustworthy:
 		# what was already wrong when the player pressed RUN, plus what went wrong during the run.
 		"state_notes": _state_notes(power_before, MachineProbe.drift(power_before, power_after))
-			+ _refresh_cap_notes(results),
+			+ _focus_notes(results) + _refresh_cap_notes(results),
 		"viewport": "%dx%d" % [_viewport.get_visible_rect().size.x,
 			_viewport.get_visible_rect().size.y],
 		"settings": settings_state,
@@ -444,7 +455,8 @@ func _run_scene(scene: Dictionary) -> Dictionary:
 				RenderingServer.viewport_get_measured_render_time_gpu(_viewport_rid),
 				RenderingServer.viewport_get_measured_render_time_cpu(_viewport_rid),
 				Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
-				Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME))
+				Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME),
+				DisplayServer.window_is_focused())
 		last = now
 		if _tick_telemetry(sampler, true,
 				BenchmarkSuite.SAMPLE_SECONDS - float(now - start) / 1e6):
@@ -559,7 +571,8 @@ func _sample_calibration(scene: Dictionary) -> float:
 				RenderingServer.viewport_get_measured_render_time_gpu(_viewport_rid),
 				RenderingServer.viewport_get_measured_render_time_cpu(_viewport_rid),
 				Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
-				Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME))
+				Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME),
+				DisplayServer.window_is_focused())
 		last = now
 		if _tick_telemetry(sampler, true, seconds - float(now - start) / 1e6):
 			skip_frames = INSTRUMENT_SKIP_FRAMES
@@ -782,6 +795,8 @@ func _travel() -> void:
 ## and the readout still has to show something rather than freezing on the last scene's numbers, so
 ## it falls back to the engine's own frame counter.
 func _tick_telemetry(sampler: FrameSampler, sampling: bool, scene_seconds_left: float) -> bool:
+	if not readout_enabled:
+		return false
 	var now: int = Time.get_ticks_usec()
 	if float(now - _telemetry_usec) / 1e6 < 1.0 / TELEMETRY_HZ:
 		return false
@@ -1123,6 +1138,36 @@ func _settings_summary(state: Dictionary) -> String:
 		SettingsAdvisor.PRESET_NAMES[preset], int(state.get("anti_aliasing", -1)),
 		"on" if bool(state.get("dynamic_resolution", false)) else "off",
 		"on" if bool(state.get("vsync_enabled", true)) else "off"]
+
+
+## The loudest warning this report can carry: the window was not being drawn (F-466).
+##
+## On macOS a backgrounded or occluded window is throttled and may not composite at all, so its
+## frame times describe the window manager and not the game. This happens to a player who alt-tabs
+## during the four-minute run, and it happened for a whole session of agent testing — where it
+## produced numbers that were then explained with confident and entirely wrong causes.
+##
+## Focus is a proxy, and an imperfect one: a window can be focused and still fully covered by
+## another, which the engine does not expose. So this catches the common case and its limit is
+## stated rather than implied away.
+func _focus_notes(results: Array) -> PackedStringArray:
+	var unfocused: int = 0
+	var scenes_affected: int = 0
+	for entry: Dictionary in results:
+		var count: int = int(entry.get("unfocused", 0))
+		if count > 0:
+			unfocused += count
+			scenes_affected += 1
+	if scenes_affected == 0:
+		return PackedStringArray()
+	return PackedStringArray([
+		"THESE TIMINGS ARE NOT VALID. The game window was not in front for %d frame(s) across %d "
+		% [unfocused, scenes_affected]
+		+ "scene(s). A window that is behind another is throttled by the operating system and may "
+		+ "not be drawn at all, so what was measured is the window manager rather than this "
+		+ "machine. Run it again and leave the window in front — the draw-call and memory figures "
+		+ "below are still good, the frame rates are not.",
+	])
 
 
 ## Warns when the measured frame rates cluster on the display's refresh rate, which means something

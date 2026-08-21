@@ -45,6 +45,10 @@ var _primitives_total: float = 0.0
 var _discarded: int = 0
 var _stalls: int = 0
 var _skipped: int = 0
+## Recorded frames during which the game window did not have focus. On macOS an unfocused or
+## occluded window is throttled and may not composite at all, so any frame counted here describes
+## the window manager rather than the game (F-466).
+var _unfocused: int = 0
 ## The single worst frame recorded, tracked as it goes so the live readout can show the hitch at the
 ## moment the player is watching it happen rather than only in the report afterwards.
 var _worst_ms: float = 0.0
@@ -55,7 +59,8 @@ var _render_time_scale: float = 1.0
 
 ## Records one frame. `delta_ms` is wall-clock time since the previous recorded frame; the renderer
 ## counters are this frame's, read by the caller from `RenderingServer`/`Performance`.
-func record(delta_ms: float, gpu_ms: float, cpu_ms: float, draws: float, primitives: float) -> void:
+func record(delta_ms: float, gpu_ms: float, cpu_ms: float, draws: float, primitives: float,
+		focused: bool = true) -> void:
 	if _discarded < DISCARD_FRAMES:
 		_discarded += 1
 		return
@@ -64,6 +69,8 @@ func record(delta_ms: float, gpu_ms: float, cpu_ms: float, draws: float, primiti
 		return
 	_deltas.append(delta_ms)
 	_worst_ms = maxf(_worst_ms, delta_ms)
+	if not focused:
+		_unfocused += 1
 	_gpu_ms_total += _normalise_render_time(gpu_ms)
 	_cpu_ms_total += _normalise_render_time(cpu_ms)
 	_draws_total += draws
@@ -83,6 +90,10 @@ func skip() -> void:
 
 func skipped_frames() -> int:
 	return _skipped
+
+
+func unfocused_frames() -> int:
+	return _unfocused
 
 
 func frame_count() -> int:
@@ -115,7 +126,7 @@ func stats() -> Dictionary:
 	var count: int = _deltas.size()
 	if count == 0:
 		return {
-			"frames": 0, "stalls": _stalls, "skipped": _skipped, "fps": 0.0, "median_ms": 0.0, "p95_ms": 0.0,
+			"frames": 0, "stalls": _stalls, "skipped": _skipped, "unfocused": _unfocused, "fps": 0.0, "median_ms": 0.0, "p95_ms": 0.0,
 			"low1_ms": 0.0, "low1_fps": 0.0, "gpu_ms": 0.0, "cpu_ms": 0.0,
 			"draws": 0.0, "mprims": 0.0,
 		}
@@ -129,6 +140,8 @@ func stats() -> Dictionary:
 		"frames": count,
 		"stalls": _stalls,
 		"skipped": _skipped,
+		# Any value above zero invalidates every timing in this row. See `_unfocused`.
+		"unfocused": _unfocused,
 		# Frames divided by the time those frames actually took, so a scene that lost time to a
 		# stall reports the rate it rendered at rather than one diluted by the suspension.
 		"fps": 1000.0 * float(count) / maxf(total_ms, 0.001),

@@ -8680,3 +8680,27 @@ Countdown, live metrics, instrument-frame exclusion, vsync disabled. 317 asserti
 Files: `core/bench/frame_sampler.gd`, `core/bench/benchmark_runner.gd`, `ui/frontend/benchmark_screen.gd`, `tools/benchmark_check.gd`, `core/bench/benchmark_report.gd`, `core/bench/settings_advisor.gd`
 
 Commit at time of writing: `1e95da5`
+
+---
+
+### DONE · F-461 · quillcfd8d7 · 2026-08-21T23:01:17+00:00
+
+**Chunk LOD transitions rebuild every prop in already-dressed chunks, and each holder re-sweeps HarvestWorld**
+
+Completed.
+
+Files: `world/gen/resource_scatter_field.gd`, `autoload/harvest_world.gd`, `world/chunk/chunk_streamer.gd`, `tools/traversal_profile.gd`, `world/gen/resource_scatter.gd`, `world/chunk/nav_baker.gd`
+
+Commit at time of writing: `337bdda`
+
+---
+
+### HANDOFF · F-466 · quill895277 · 2026-08-21T23:03:29+00:00
+
+**The benchmark reports frame times taken while its window was not being rendered**
+
+Focus detection built and green (239 assertions, 0 failures headless). What is NOT done is the measurement: every frame-time number in this repo from 2026-08-21 was taken in a backgrounded window and is void. tools/bench_measure.sh runs the three fullscreen passes needed to replace them — baseline, --no-prewarm (re-tests F-459), --no-readout (re-tests F-462's instrument-cost correction). Needs Sequoyah's display, in front, machine untouched, ~25 minutes. Until that runs, treat F-457, F-459, F-462's artifact numbers and F-465 as unverified.
+
+Files: `core/bench/benchmark_runner.gd`, `core/bench/frame_sampler.gd`, `core/bench/benchmark_report.gd`, `tools/benchmark_check.gd`, `tools/bench_measure.sh`
+
+Commit at time of writing: `337bdda`

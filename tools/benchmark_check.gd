@@ -520,7 +520,14 @@ func _check_live() -> void:
 		print("  SKIPPED — no framebuffer. Re-run with `agent godot --windowed` to measure.")
 		return
 
-	var full: bool = OS.get_cmdline_user_args().has("--full")
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	var full: bool = args.has("--full")
+	# Fullscreen on the real display is the only way to get frame times that mean anything (F-466,
+	# and docs/PERFORMANCE.md §1). The offscreen 64x64 harness is fine for everything structural.
+	if args.has("--fullscreen"):
+		root.mode = Window.MODE_FULLSCREEN
+		root.title = "MIRE benchmark — leave this window in front"
+		await process_frame
 	var packed := load("res://levels/procedural_island.tscn") as PackedScene
 	if packed == null:
 		_fail("could not load the benchmark world")
@@ -543,6 +550,10 @@ func _check_live() -> void:
 	_expect(bool(settled.get("settled", true)), "the world settles inside the frame budget")
 
 	var runner := BenchmarkRunner.new()
+	# Ablations for the follow-up measurements: `--no-prewarm` re-checks F-459's first-visit hitch,
+	# `--no-readout` produces the reference the instrument-frame correction has to reproduce.
+	runner.prewarm_enabled = not args.has("--no-prewarm")
+	runner.readout_enabled = not args.has("--no-readout")
 	runner.report_writer = _scratch_report()
 	root.add_child(runner)
 
@@ -664,6 +675,23 @@ func _check_live() -> void:
 		"the run recorded the machine's power state at the start")
 	_expect(report.has("power_after") and report.has("power_drift"),
 		"and again at the end, with the drift between them")
+	# F-466: the run must say whether it was actually on screen. This check normally runs in an
+	# offscreen 64x64 window, so the EXPECTED result here is "not focused, and flagged" — the
+	# assertion is that the flag tracks reality, not that the window happened to be in front.
+	var unfocused: int = 0
+	for entry: Dictionary in scenes:
+		unfocused += int(entry.get("unfocused", 0))
+	var focus_flagged: bool = false
+	for note: String in report.get("state_notes", []):
+		if note.contains("NOT VALID"):
+			focus_flagged = true
+	_expect(unfocused == 0 or focus_flagged,
+		"a run measured while the window was not in front says so instead of reporting the "
+		+ "numbers as a result (%d unfocused frame(s))" % unfocused)
+	_expect(unfocused > 0 or not focus_flagged,
+		"and a run that WAS in front carries no such warning")
+	print("  focus: %d unfocused frame(s)%s" % [unfocused, " — FLAGGED" if focus_flagged else ""])
+
 	_expect(_saw_vsync == DisplayServer.VSYNC_DISABLED,
 		"vsync was off while the benchmark measured — with it on, every scene that can hold the "
 		+ "refresh rate reports the refresh rate and the numbers describe the display")
@@ -755,12 +783,24 @@ func _picker_visible() -> bool:
 	return not (picker is CanvasLayer) or (picker as CanvasLayer).visible
 
 
+## `-- --tag NAME` writes this run's report to its own file, so a sequence of runs comparing
+## ablations against each other does not have each one overwrite the last.
 func _scratch_report() -> BenchmarkReport:
 	var writer := BenchmarkReport.new()
-	writer.ledger_path = "%s/ledger.jsonl" % SCRATCH_DIR
-	writer.report_json_path = "%s/report.json" % SCRATCH_DIR
-	writer.report_text_path = "%s/report.txt" % SCRATCH_DIR
+	var tag: String = _string_arg("--tag", "")
+	var suffix: String = "" if tag.is_empty() else "_%s" % tag
+	writer.ledger_path = "%s/ledger%s.jsonl" % [SCRATCH_DIR, suffix]
+	writer.report_json_path = "%s/report%s.json" % [SCRATCH_DIR, suffix]
+	writer.report_text_path = "%s/report%s.txt" % [SCRATCH_DIR, suffix]
 	return writer
+
+
+func _string_arg(name: String, fallback: String) -> String:
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	for i: int in args.size():
+		if args[i] == name and i + 1 < args.size():
+			return args[i + 1]
+	return fallback
 
 
 func _scene_result(id: String, low1_fps: float, fps: float) -> Dictionary:
