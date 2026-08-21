@@ -8,12 +8,11 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
-| **7.2** Music: 4–6 tracks (act themes, boss, menu). CC0/licensed or commissioned. | ash843af8 | 2026-08-21 07:14 | `tools/audio/render_theme.py`, `tools/audio/render_sfx_options.py`, `tools/audio/mire_voices.py`, `docs/AUDIO.md`, `tools/audio/audio_check.py` |
-| **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | gale43d16e | 2026-08-21 06:53 | `tools/blender/build_mire_map_kit.py`, `tools/blender/mire_art.py`, `assets/environment/catalog.json`, `docs/ASSET_TRACKER.md`, `tools/tree_collider_check.gd`, `tools/blender/trunk_inspect.py`, `tools/blender/build_flora_set.py`, `assets/flora/catalog.json` |
+| **7.2** Music: 4–6 tracks (act themes, boss, menu). CC0/licensed or commissioned. | ash843af8 | 2026-08-21 07:40 | `tools/audio/render_theme.py`, `docs/AUDIO.md`, `autoload/ambient_music_director.gd`, `autoload/theme_music_director.gd`, `tools/theme_music_check.gd`, `assets/audio/music/menu_theme.ogg`, `assets/audio/music/theme_landfall.ogg`, `assets/audio/music/theme_cycle.ogg` |
+| **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | gale43d16e | 2026-08-21 06:53 | `tools/blender/build_mire_map_kit.py`, `tools/blender/mire_art.py`, `assets/environment/catalog.json`, `docs/ASSET_TRACKER.md`, `tools/tree_collider_check.gd`, `tools/blender/trunk_inspect.py`, `tools/blender/build_flora_set.py`, `assets/flora/catalog.json`, `tools/blender/build_harvestable_resources.py`, `assets/harvestables/catalog.json`, `content/harvestables/tree.tres`, `content/harvestables/stone_node.tres`, `content/harvestables/iron_node.tres` |
 | **F-400** The island's hills are too low to read as landform at the new island size | kilnd3a089 | 2026-08-21 05:25 | `world/gen/island_heightmap.gd`, `content/biomes/shore.tres`, `content/biomes/marsh.tres`, `content/biomes/forest.tres`, `content/biomes/birchwood.tres`, `content/biomes/highland.tres`, `content/biomes/grassland.tres`, `content/biomes/heath.tres`, `tools/biome_terrain_check.gd` |
 | **F-404** Three separate movement-feel defects: stopping is near-instant, air control bleeds speed sideways, and gravity_scale 2.0 makes any real fall brutal | kilnd3a089 | 2026-08-21 07:03 | `entities/player/player_controller.gd`, `tools/movement_feel_check.gd` |
 | **F-405** step_height is 0.4 m but nothing below it is actually climbable — the capsule's rounded bottom catches the kerb edge and the is_on_floor() guard kills the next attempt | kilnd3a089 | 2026-08-21 06:50 | `entities/player/player_controller.gd`, `tools/step_up_check.gd` |
-| **F-421** Quitting from the in-game menu crashes the process on shutdown (macOS) | mossb81aeb | 2026-08-21 07:12 | `tools/quit_crash_probe.gd` |
 
 **2.1d notes:**
 - Fixing kit tree trunks (F-396 follow-up) at Sequoyah's direct request before taking the NEXT batch A-016b
@@ -22,7 +21,7 @@
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `█████████░` 367/426 | 59 |
+| Findings | `█████████░` 367/428 | 61 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -114,7 +113,9 @@
 | ⬜ | **F-406** agent claim with more than one file stores the whole list as a single dictionary key, so the pre-commit hook never sees any of them as claimed | todo |
 | ⬜ | **F-412** The command system does not yet meet the Minecraft-like capability bar | todo |
 | ⬜ | **F-420** The settings screen has two contradictory row layouts, so the value column jumps between tabs | todo |
-| 🔵 | **F-421** Quitting from the in-game menu crashes the process on shutdown (macOS) | in_flight |
+| ⬜ | **F-421** Quitting from the in-game menu crashes the process on shutdown (macOS) | todo |
+| ⬜ | **F-422** Kit tree trunks were a stack of frusta, and every trunk defect followed from the stack | todo |
+| ⬜ | **F-424** Named natural assets were built to the kit's default shapes, not to the real species — the willow was a generic tree wearing a name | todo |
 
 ## Done
 

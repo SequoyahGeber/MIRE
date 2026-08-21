@@ -8250,3 +8250,27 @@ Both menu_focus_check failures fixed — CRAFT ui_accept (grid navigation) and t
 Files: `levels/procedural_island.tscn`, `assets/audit/lighting/f419/noon.png`, `assets/audit/lighting/f419/golden_evening.png`, `assets/audit/lighting/f419/morning.png`, `assets/audit/lighting/f419/forest_sunward.png`, `tools/menu_focus_check.gd`
 
 Commit at time of writing: `c1dfefa`
+
+---
+
+### HANDOFF · 7.2 · ash843af8 · 2026-08-21T07:32:49+00:00
+
+**Music: 4–6 tracks (act themes, boss, menu). CC0/licensed or commissioned.**
+
+Five theme candidates and 11x3 SFX takes are rendered and objectively clean (audio_check green on both dirs); what is left is the taste call. Sequoyah picks, then: 'render_theme.py --ship <name>' writes assets/audio/music/menu_theme.ogg and 'render_sfx_options.py --ship family=TAKE ...' copies the winning SFX into assets/audio/sfx/. Only the --ship paths touch assets/ and only they take the F-196 import lock. After a theme is chosen the menu MusicDirector autoload can be written against the fixed name menu_theme.ogg. Candidates live in the build dir (mire_audio_build/), which is temp — re-render if it has been cleaned; renders are seeded and reproducible.
+
+Files: `tools/audio/render_theme.py`, `tools/audio/render_sfx_options.py`, `tools/audio/mire_voices.py`, `docs/AUDIO.md`, `tools/audio/audio_check.py`
+
+Commit at time of writing: `024749a`
+
+---
+
+### HANDOFF · F-421 · mossb81aeb · 2026-08-21T07:44:05+00:00
+
+**Quitting from the in-game menu crashes the process on shutdown (macOS)**
+
+Cause not yet proven. Thirteen reproductions from agent godot are all clean, including the full shipped quit path with a real click on QUIT, and including a LaunchServices bundle launch. The remaining suspect is Godot's live scene edit (Debug -> Synchronize Scene Changes, on by default), which only arms when the real editor sends its setup messages — a fake --remote-debug listener does not reproduce it. Next step is the two-click editor test in the note above; it needs the editor, so it is Sequoyah's. tools/quit_crash_probe.gd is committed and now drives the whole path correctly (answers the attunement picker, clears a blocking MenuStack, captures the mouse, foregrounds the window, clicks the real button) — reuse it rather than rebuilding it. Do not try to symbolicate the .ips: the shipped Godot binary is stripped and every tool resolves those offsets to nonsense.
+
+Files: `tools/quit_crash_probe.gd`
+
+Commit at time of writing: `a6567cd`

@@ -1,5 +1,23 @@
 {
   "claims": {
+    "assets/audio/music/menu_theme.ogg": {
+      "agent": "ash843af8",
+      "at": "2026-08-21T07:43:54+00:00",
+      "task": "7.2",
+      "token": "CLAUDE_CODE_SESSION_ID:4cd6e8b1-20ed-494f-89b5-5bbf9904d4e2"
+    },
+    "assets/audio/music/theme_cycle.ogg": {
+      "agent": "ash843af8",
+      "at": "2026-08-21T07:43:54+00:00",
+      "task": "7.2",
+      "token": "CLAUDE_CODE_SESSION_ID:4cd6e8b1-20ed-494f-89b5-5bbf9904d4e2"
+    },
+    "assets/audio/music/theme_landfall.ogg": {
+      "agent": "ash843af8",
+      "at": "2026-08-21T07:43:54+00:00",
+      "task": "7.2",
+      "token": "CLAUDE_CODE_SESSION_ID:4cd6e8b1-20ed-494f-89b5-5bbf9904d4e2"
+    },
     "assets/environment/catalog.json": {
       "agent": "gale43d16e",
       "at": "2026-08-21T06:53:08+00:00",
@@ -11,6 +29,24 @@
       "at": "2026-08-21T07:19:49+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "assets/harvestables/catalog.json": {
+      "agent": "gale43d16e",
+      "at": "2026-08-21T07:40:22+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "autoload/ambient_music_director.gd": {
+      "agent": "ash843af8",
+      "at": "2026-08-21T07:40:57+00:00",
+      "task": "7.2",
+      "token": "CLAUDE_CODE_SESSION_ID:4cd6e8b1-20ed-494f-89b5-5bbf9904d4e2"
+    },
+    "autoload/theme_music_director.gd": {
+      "agent": "ash843af8",
+      "at": "2026-08-21T07:43:54+00:00",
+      "task": "7.2",
+      "token": "CLAUDE_CODE_SESSION_ID:4cd6e8b1-20ed-494f-89b5-5bbf9904d4e2"
     },
     "content/biomes/birchwood.tres": {
       "agent": "kilnd3a089",
@@ -54,6 +90,24 @@
       "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
+    "content/harvestables/iron_node.tres": {
+      "agent": "gale43d16e",
+      "at": "2026-08-21T07:40:22+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "content/harvestables/stone_node.tres": {
+      "agent": "gale43d16e",
+      "at": "2026-08-21T07:40:22+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "content/harvestables/tree.tres": {
+      "agent": "gale43d16e",
+      "at": "2026-08-21T07:40:22+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
     "docs/ASSET_TRACKER.md": {
       "agent": "gale43d16e",
       "at": "2026-08-21T06:53:08+00:00",
@@ -62,7 +116,7 @@
     },
     "docs/AUDIO.md": {
       "agent": "ash843af8",
-      "at": "2026-08-21T07:14:29+00:00",
+      "at": "2026-08-21T07:40:57+00:00",
       "task": "7.2",
       "token": "CLAUDE_CODE_SESSION_ID:4cd6e8b1-20ed-494f-89b5-5bbf9904d4e2"
     },
@@ -72,27 +126,9 @@
       "task": "F-404",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
-    "tools/audio/audio_check.py": {
-      "agent": "ash843af8",
-      "at": "2026-08-21T07:28:12+00:00",
-      "task": "7.2",
-      "token": "CLAUDE_CODE_SESSION_ID:4cd6e8b1-20ed-494f-89b5-5bbf9904d4e2"
-    },
-    "tools/audio/mire_voices.py": {
-      "agent": "ash843af8",
-      "at": "2026-08-21T07:14:29+00:00",
-      "task": "7.2",
-      "token": "CLAUDE_CODE_SESSION_ID:4cd6e8b1-20ed-494f-89b5-5bbf9904d4e2"
-    },
-    "tools/audio/render_sfx_options.py": {
-      "agent": "ash843af8",
-      "at": "2026-08-21T07:14:29+00:00",
-      "task": "7.2",
-      "token": "CLAUDE_CODE_SESSION_ID:4cd6e8b1-20ed-494f-89b5-5bbf9904d4e2"
-    },
     "tools/audio/render_theme.py": {
       "agent": "ash843af8",
-      "at": "2026-08-21T07:14:29+00:00",
+      "at": "2026-08-21T07:40:57+00:00",
       "task": "7.2",
       "token": "CLAUDE_CODE_SESSION_ID:4cd6e8b1-20ed-494f-89b5-5bbf9904d4e2"
     },
@@ -105,6 +141,12 @@
     "tools/blender/build_flora_set.py": {
       "agent": "gale43d16e",
       "at": "2026-08-21T07:19:49+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "tools/blender/build_harvestable_resources.py": {
+      "agent": "gale43d16e",
+      "at": "2026-08-21T07:40:22+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
@@ -132,17 +174,17 @@
       "task": "F-404",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
-    "tools/quit_crash_probe.gd": {
-      "agent": "mossb81aeb",
-      "at": "2026-08-21T07:12:37+00:00",
-      "task": "F-421",
-      "token": "CLAUDE_CODE_SESSION_ID:53027a2a-9613-416b-bd3c-e7a62777eff1"
-    },
     "tools/step_up_check.gd": {
       "agent": "kilnd3a089",
       "at": "2026-08-21T06:50:22+00:00",
       "task": "F-405",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "tools/theme_music_check.gd": {
+      "agent": "ash843af8",
+      "at": "2026-08-21T07:43:54+00:00",
+      "task": "7.2",
+      "token": "CLAUDE_CODE_SESSION_ID:4cd6e8b1-20ed-494f-89b5-5bbf9904d4e2"
     },
     "tools/tree_collider_check.gd": {
       "agent": "gale43d16e",
@@ -168,7 +210,12 @@
         "tools/tree_collider_check.gd",
         "tools/blender/trunk_inspect.py",
         "tools/blender/build_flora_set.py",
-        "assets/flora/catalog.json"
+        "assets/flora/catalog.json",
+        "tools/blender/build_harvestable_resources.py",
+        "assets/harvestables/catalog.json",
+        "content/harvestables/tree.tres",
+        "content/harvestables/stone_node.tres",
+        "content/harvestables/iron_node.tres"
       ],
       "notes": [
         {
@@ -184,13 +231,16 @@
       "agent": "ash843af8",
       "files": [
         "tools/audio/render_theme.py",
-        "tools/audio/render_sfx_options.py",
-        "tools/audio/mire_voices.py",
         "docs/AUDIO.md",
-        "tools/audio/audio_check.py"
+        "autoload/ambient_music_director.gd",
+        "autoload/theme_music_director.gd",
+        "tools/theme_music_check.gd",
+        "assets/audio/music/menu_theme.ogg",
+        "assets/audio/music/theme_landfall.ogg",
+        "assets/audio/music/theme_cycle.ogg"
       ],
       "notes": [],
-      "started": "2026-08-21T07:14:29+00:00",
+      "started": "2026-08-21T07:40:57+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:4cd6e8b1-20ed-494f-89b5-5bbf9904d4e2"
     },
     "F-400": {
@@ -229,15 +279,6 @@
       "notes": [],
       "started": "2026-08-21T06:50:22+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
-    },
-    "F-421": {
-      "agent": "mossb81aeb",
-      "files": [
-        "tools/quit_crash_probe.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-21T07:12:37+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:53027a2a-9613-416b-bd3c-e7a62777eff1"
     }
   },
   "recent": {
@@ -1697,6 +1738,13 @@
       "task": "F-273",
       "token": null
     },
+    "docs/AUDIO.md": {
+      "agent": "ash843af8",
+      "at": "2026-08-21T07:32:49+00:00",
+      "hash": "43b8c55552b49c0b57773682185b7887804a4d31ddd920d15fa934b4ed2ca5cd",
+      "task": "7.2",
+      "token": "CLAUDE_CODE_SESSION_ID:4cd6e8b1-20ed-494f-89b5-5bbf9904d4e2"
+    },
     "docs/COMMANDS.md": {
       "agent": "lp",
       "at": "2026-08-20T10:21:34+00:00",
@@ -1927,6 +1975,34 @@
       "hash": "7727467ed067f9171380f60a5557b006a9e5526f34fcc305cca47e8c3bbde05f",
       "task": "F-415",
       "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
+    },
+    "tools/audio/audio_check.py": {
+      "agent": "ash843af8",
+      "at": "2026-08-21T07:32:49+00:00",
+      "hash": "b6affbe5a883e2293b27dab859e48e6f12c4a5acce691777bd4d5f7d7b2be240",
+      "task": "7.2",
+      "token": "CLAUDE_CODE_SESSION_ID:4cd6e8b1-20ed-494f-89b5-5bbf9904d4e2"
+    },
+    "tools/audio/mire_voices.py": {
+      "agent": "ash843af8",
+      "at": "2026-08-21T07:32:49+00:00",
+      "hash": "6d7ecdb3012906cc2e12d8f45275eeb0d8267b7cc9f13cfbff93559473ad67f9",
+      "task": "7.2",
+      "token": "CLAUDE_CODE_SESSION_ID:4cd6e8b1-20ed-494f-89b5-5bbf9904d4e2"
+    },
+    "tools/audio/render_sfx_options.py": {
+      "agent": "ash843af8",
+      "at": "2026-08-21T07:32:49+00:00",
+      "hash": "2e0dd63482e27926fd39db402e122c8cade300dc0e4db0715a4b9207de55d190",
+      "task": "7.2",
+      "token": "CLAUDE_CODE_SESSION_ID:4cd6e8b1-20ed-494f-89b5-5bbf9904d4e2"
+    },
+    "tools/audio/render_theme.py": {
+      "agent": "ash843af8",
+      "at": "2026-08-21T07:32:49+00:00",
+      "hash": "88147666d33d04b600606f0a69dd75df5e2c76a5c593035e8211ea1ed1e0c20c",
+      "task": "7.2",
+      "token": "CLAUDE_CODE_SESSION_ID:4cd6e8b1-20ed-494f-89b5-5bbf9904d4e2"
     },
     "tools/bench_mire.gd": {
       "agent": "ivy1bcae0",
@@ -2410,6 +2486,13 @@
       "hash": "e2d76ab75d7d93b1fe50d4921eace59bf36a3cf10e441fd89e4602369e96da11",
       "task": "F-301",
       "token": null
+    },
+    "tools/quit_crash_probe.gd": {
+      "agent": "mossb81aeb",
+      "at": "2026-08-21T07:44:05+00:00",
+      "hash": "00649978080a5fe10fee99348d305d19a06230836e5022fcddbbcdd880e4e96e",
+      "task": "F-421",
+      "token": "CLAUDE_CODE_SESSION_ID:53027a2a-9613-416b-bd3c-e7a62777eff1"
     },
     "tools/ranged_combat_net_check.gd": {
       "agent": "ivy1bcae0",
@@ -2916,7 +2999,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 705,
+  "rev": 714,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -8022,9 +8105,23 @@
     "F-421": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "F",
       "title": "Quitting from the in-game menu crashes the process on shutdown (macOS)"
+    },
+    "F-422": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Kit tree trunks were a stack of frusta, and every trunk defect followed from the stack"
+    },
+    "F-424": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Named natural assets were built to the kit's default shapes, not to the real species \u2014 the willow was a generic tree wearing a name"
     }
   },
   "version": 1

@@ -2215,6 +2215,53 @@ here to cover the four kit species) measures 0.50-0.61 m radius with zero overha
 
 ---
 
+### F-424 · Named natural assets were built to the kit's default shapes, not to the real species — the willow was a generic tree wearing a name
+
+**Area:** art · **Severity:** medium · **Found:** 2026-08-21 by gale43d16e
+
+Sequoyah, on the shipped willows: *"the leaves don't really fit a willow tree and the trunk is wayyy
+too skinny for a willow tree — try to do some research of the real life thing that you're designing in
+low poly and model the asset after the real thing"*, and immediately after: *"that's not limited to
+the willows btw, model everything after realistic irl versions."*
+
+`tree_willow` was the flora kit's standard slim trunk (0.46 m base radius, forking at 62% of its
+height) carrying the kit's standard round canopy hull, with six fat teardrops hung off the rim. Held
+next to a photograph of `Salix babylonica`, essentially every proportion was wrong:
+
+| | shipped | the real tree |
+|---|---|---|
+| bole | slim, forks at 62% of height | short and **very** thick, forks at a fifth to a third |
+| bark | smooth taper | deeply furrowed, coarse vertical ridges |
+| crown | smooth capping dome | no dome at all — its surface IS the hanging strands |
+| foliage | 6 fat teardrops | ~80 slender whips, 1-3 m, falling nearly to the ground |
+| spread | capped at 11 m under a 12.5 m height | equals or exceeds the tree's own height |
+| colour | forest green | pale — narrow leaves, silvery undersides, and a curtain shows a lot of underside |
+
+Rebuilt to those numbers. Two things it turned up that are not about willows:
+
+* **`hull()` could not taper downward.** `taper` narrows the top, and a NEGATIVE taper flares the top
+  — which the camp set's pot rims and the food set's loaves already depend on, so the sign was not
+  free to repurpose. Added `taper_low`, which narrows the bottom. Anything hanging wants it: a
+  stalactite, an icicle, a vine, a wasp nest.
+* **Building an asset shorter than its size band re-opens F-390.** `create_asset` scales the finished
+  asset UNIFORMLY to land inside `SIZE_BANDS`. The willow's geometry stopped at 10.3 m and was
+  stretched to 13.6 m, and that took its ROOT FLARE with it — measured 1.70 m wide at 0.6 m, i.e.
+  straight through `COLLIDER_TRUNK_BAND_MIN_M`, which is the precise defect F-390 lifted that band
+  off the floor to kill, and which was reported from play as "the collision box doesn't let you get
+  close to the tree". Its collider was 1.32 m around a bole under 1.0 m. Building the crown up to the
+  tree's stated height keeps the scale factor near 1.0; the collider is now 1.02 m around a bole that
+  really is that thick. **Any asset whose builder stops short of its band is silently inflating every
+  proportion the band does not check, and the flare is the one that costs gameplay.**
+
+The standing instruction from this is broader than the asset: the name is a specification. If it is
+called `tree_willow` its proportions are the willow's, not the family default; if it is called
+`crossbow` it has a prod, a stock and a nut, not a bow glued to a stick. Reference is for
+understanding, never for copying (D-142 / the reference-art rule still holds). Judge the finished
+asset against the real thing, not against the rest of the kit — an asset can be perfectly consistent
+with its siblings and still be wrong, which is exactly how a willow ended up with a birch's trunk.
+
+---
+
 ## Resolved
 
 ### F-423 · The procedural island has never had ground shadows — shadow_normal_bias is 2.4, roughly double the authored maps, and the flat-shaded terrain cannot afford it — **fixed**
