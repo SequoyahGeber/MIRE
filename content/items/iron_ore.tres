@@ -11,3 +11,7 @@ display_name = "Iron Ore"
 description = "Dense ore ready for smelting."
 icon = ExtResource("3_iconiro")
 world_model = ExtResource("2_1fd5o")
+view_model = ExtResource("2_1fd5o")
+grip_offset = Vector3(0.25, -0.29, -0.37)
+grip_rotation_degrees = Vector3(-11.0, 169.0, 5.0)
+grip_scale = 1.0

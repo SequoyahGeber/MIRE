@@ -1,8 +1,10 @@
 [gd_resource type="Resource" script_class="HaulableDef" format=3]
 
 [ext_resource type="Script" path="res://systems/hauling/haulable_def.gd" id="1_cs4bi"]
+[ext_resource type="PackedScene" path="res://scenes/haulables/heavy_ore_crate.tscn" id="2_cratescene"]
 
 [resource]
 script = ExtResource("1_cs4bi")
+scene = ExtResource("2_cratescene")
 id = &"heavy_ore_crate"
 display_name = "Heavy Ore Crate"

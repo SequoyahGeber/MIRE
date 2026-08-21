@@ -78,6 +78,27 @@
       ]
     },
     {
+      "name": "ore_crate_heavy",
+      "file": "exports/ore_crate_heavy.glb",
+      "width_m": 1.0739,
+      "depth_m": 0.9757,
+      "height_m": 1.5,
+      "target_m": 1.5,
+      "axis": "height",
+      "frame": null,
+      "parts": 1,
+      "polygons": 468,
+      "triangles": 900,
+      "materials": [
+        "MIRE_Iron",
+        "MIRE_IronDark",
+        "MIRE_Rope",
+        "MIRE_StoneDark",
+        "MIRE_WoodTimber",
+        "MIRE_WoodTimberLight"
+      ]
+    },
+    {
       "name": "crate_broken",
       "file": "exports/crate_broken.glb",
       "width_m": 0.9902,

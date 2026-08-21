@@ -11,3 +11,7 @@ display_name = "Branch"
 description = "A stick with ambitions. Handles, arrows, kindling."
 icon = ExtResource("3_icon")
 world_model = ExtResource("2_model")
+view_model = ExtResource("2_model")
+grip_offset = Vector3(0.3, -0.34, -0.46)
+grip_rotation_degrees = Vector3(-10.0, 158.0, -16.0)
+grip_scale = 0.46

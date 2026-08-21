@@ -91,6 +91,11 @@ FREEFORM: dict[str, tuple[str, ...]] = {
     "rack_tool": ("tool_head",),
     "rack_weapon": ("weapon_blade",),
     "crate_broken": ("crate_spill",),
+    # The rope beckets are bent stock, and the corner irons and eyes are plate — none
+    # of them is a sawn board or a pole, which is what the stock helpers exist to keep
+    # honest. The load is a Batch, same as the broken crate's spill.
+    "ore_crate_heavy": ("ore_crate_becket_", "ore_crate_corner_", "ore_crate_eye_",
+                        "ore_crate_load"),
     "barrel_small": ("barrel_lid",),
     "barrel_large": ("barrel_lid",),
     "table": ("table_cloth",),
@@ -100,6 +105,11 @@ SIZE: dict[str, tuple[float, str, float]] = {
     "barrel_small": (0.58, "height", 0.52),
     "barrel_large": (0.88, "height", 0.72),
     "crate": (0.560, "spread", 0.68),
+    # 1.5 m tall including the load standing proud of the rim.
+    # The footprint cap allows for the rope beckets. The crate BODY is 1.0 m, which is
+    # what `heavy_ore_crate.tres` sizes its collider to; the handles stand proud of it
+    # because a crate you carry has to show where it is carried from.
+    "ore_crate_heavy": (1.500, "height", 1.12),
     "crate_broken": (0.560, "spread", 0.86),
     "sack": (0.54, "height", 0.50),
     "bucket": (0.34, "height", 0.36),
@@ -123,6 +133,10 @@ MATERIAL_ALLOWANCE = {
     # only thing separating four assets that are deliberately the same frame.
     "rack_weapon": 5, "rack_tool": 5, "rack_drying": 5, "rack_storage": 5,
     "lantern": 5,   # glass, flame, iron, timber, rope — a lantern IS its parts
+    # Two timbers, two irons (banding and plate), rope for the beckets, and the ore
+    # itself. Cutting any of them costs the prop the thing it is for: without the ore
+    # it is a box, without the rope there is nowhere to carry it from.
+    "ore_crate_heavy": 6,
 }
 
 #: Shared frames: centred and scaled on these prefixes, never on their own bounds.
@@ -145,6 +159,7 @@ FRAME_SEED = {"crate": 3301, "rack": 5507}
 LAYOUT: dict[str, tuple[float, float]] = {
     "barrel_small": (-1.55, 0.0), "barrel_large": (-0.75, 0.0), "crate": (0.05, 0.0),
     "crate_broken": (0.85, 0.0), "sack": (1.60, 0.0), "bucket": (2.20, 0.0),
+    "ore_crate_heavy": (3.20, 0.0),
     "stool": (-2.10, 4.0), "bench": (-0.90, 4.0), "table": (0.90, 4.0),
     "shelf": (2.50, 4.0), "bedroll": (4.20, 4.0),
     "rack_storage": (-2.10, 8.0), "rack_weapon": (-0.70, 8.0), "rack_tool": (0.70, 8.0),
@@ -153,7 +168,8 @@ LAYOUT: dict[str, tuple[float, float]] = {
 
 SHEETS: list[tuple[str, float, float, float, tuple[str, ...]]] = [
     ("camp_storage_preview.png", 0.0, -2.35, 2.60,
-     ("barrel_small", "barrel_large", "crate", "crate_broken", "sack", "bucket")),
+     ("barrel_small", "barrel_large", "crate", "crate_broken", "sack", "bucket",
+      "ore_crate_heavy")),
     ("camp_furniture_preview.png", 4.0, -2.90, 5.00,
      ("stool", "bench", "table", "shelf", "bedroll")),
     ("camp_racks_preview.png", 8.0, -2.95, 3.90,
@@ -286,6 +302,101 @@ def crate_frame(broken: bool) -> None:
     for index, height in enumerate((0.085, 0.55)):
         band(f"crate_frame_band_{index}", (0.0, 0.0, height), half * 1.48, BAND_T, "iron_dark", 4,
              (0.0, 0.0, math.radians(45.0)))
+
+
+def build_ore_crate_heavy(seed: int) -> None:
+    """The two-person haul crate: 1.0 x 1.0 x 1.5 m of banded timber, full of ore.
+
+    F-427. `content/haulables/heavy_ore_crate.tres` was the last definition in the
+    game with no art, so `HaulableSystem` fell through to its generated
+    placeholder box — and this is a prop TWO PLAYERS walk a long way with, in
+    front of both of them the whole time.
+
+    Everything here is doing a job the ordinary camp crate's does not:
+
+    * **Rope beckets at both ends, at hand height.** This is the only haulable in
+      the game, and a crate you carry has to show WHERE it is carried from. Two
+      handles at opposite ends is also the read for "this needs two of you",
+      which is the mechanic.
+    * **Iron banding on the corners as well as round the body.** A crate this
+      size full of ore fails at its corners first, which is exactly why real
+      shipping crates are cornered in metal.
+    * **It is FULL, and the ore is above the rim.** A container built as a solid
+      block looks identical loaded and empty, and anything sitting on the floor
+      of a crate is hidden behind its own front wall (ASSET_TRACKER's own rule,
+      learned on the chests). The ore has to break the top line or the crate is
+      just a box.
+    """
+    rng = random.Random(seed)
+    half = 0.44
+    height = 1.42
+    for index, (x, y) in enumerate(((-half, -half), (half, -half), (half, half), (-half, half))):
+        post(f"ore_crate_post_{index}", (x, y, 0.0), (x, y, height), "wood_timber", 0.046)
+    for index in range(4):
+        plank(f"ore_crate_base_{index}", (0.0, -0.30 + index * 0.20, PLANK_T * 0.5),
+              half * 2.0, "x", 0.19, "wood_timber_light")
+    # VERTICAL staves, not horizontal slats. `plank`'s width is its across-the-face
+    # dimension and its THICKNESS is fixed, so a horizontal board on a 1.4 m wall
+    # is a 30 mm batten however wide it is: the first cut of this looked like a
+    # drying rack and you could see straight through the crate to the black
+    # inside. Standing the boards up puts the fixed dimension across the face
+    # where it belongs, and full-height staves are how a tall crate is actually
+    # built — the same reason a barrel has staves rather than hoops of plank.
+    for index, side in enumerate((-1.0, 1.0)):
+        for column in range(5):
+            offset = -0.352 + column * 0.176
+            plank(f"ore_crate_wall_y{index}_{column}", (offset, side * half, height * 0.5),
+                  height - 0.06, "z", 0.185,
+                  "wood_timber" if column % 2 == 0 else "wood_timber_light")
+            plank(f"ore_crate_wall_x{index}_{column}", (side * half, offset, height * 0.5),
+                  height - 0.06, "z", 0.185,
+                  "wood_timber_light" if column % 2 == 0 else "wood_timber",
+                  rotation=(0.0, 0.0, math.pi * 0.5))
+    # A rim rail round the top so the staves end on a line rather than in a row of
+    # loose ends, and so the ore has something to sit proud of.
+    for index, (x, y, axis) in enumerate(((0.0, -half, "x"), (0.0, half, "x"))):
+        plank(f"ore_crate_rim_{index}", (x, y, height - 0.02), half * 2.0 + 0.10, axis, 0.10,
+              "wood_timber")
+    for index, x in enumerate((-half, half)):
+        plank(f"ore_crate_rim_side_{index}", (x, 0.0, height - 0.02), half * 2.0 + 0.10, "y", 0.10,
+              "wood_timber")
+    for index, z in enumerate((0.16, 0.72, 1.28)):
+        band(f"ore_crate_band_{index}", (0.0, 0.0, z), half * 1.50, BAND_T, "iron_dark", 4,
+             (0.0, 0.0, math.radians(45.0)))
+    # Corner irons, where a loaded crate actually splits.
+    for index, (x, y) in enumerate(((-half, -half), (half, -half), (half, half), (-half, half))):
+        for step, z in enumerate((0.09, height - 0.09)):
+            box(f"ore_crate_corner_{index}_{step}", (x, y, z), (0.13, 0.13, 0.10),
+                mat("iron_dark"))
+    # The beckets: a rope loop through an iron eye, at carrying height, one at
+    # each end. Two of them, facing opposite ways, is the whole "needs two
+    # players" read in one detail.
+    for index, side in enumerate((-1.0, 1.0)):
+        box(f"ore_crate_eye_{index}", (side * (half + 0.02), 0.0, 0.92), (0.07, 0.24, 0.09),
+            mat("iron_dark"))
+        for step in range(7):
+            angle = math.pi * (0.12 + 0.76 * step / 6.0)
+            nxt = math.pi * (0.12 + 0.76 * (step + 1) / 6.0)
+            cylinder_between(
+                f"ore_crate_becket_{index}_{step}",
+                (side * (half + 0.04 + math.sin(angle) * 0.055), math.cos(angle) * 0.16, 0.92),
+                (side * (half + 0.04 + math.sin(nxt) * 0.055), math.cos(nxt) * 0.16, 0.92),
+                0.022, mat("rope"), 5, 0.95)
+    # The load, proud of the rim.
+    batch = Batch()
+    for index, (angle, radius) in enumerate(
+            radial(7, 0.30, seed=seed + 17, jitter=0.6, radius_jitter=0.45)):
+        batch.blob("stone_dark",
+                   (math.cos(angle) * abs(radius), math.sin(angle) * abs(radius),
+                    height - 0.02 + rng.uniform(0.0, 0.09)),
+                   (0.11, 0.095, 0.075), rng)
+    for index, (angle, radius) in enumerate(
+            radial(4, 0.22, seed=seed + 29, jitter=0.7, radius_jitter=0.4)):
+        batch.blob("iron",
+                   (math.cos(angle) * abs(radius), math.sin(angle) * abs(radius),
+                    height + 0.04 + rng.uniform(0.0, 0.06)),
+                   (0.055, 0.048, 0.040), rng)
+    batch.emit("ore_crate_load")
 
 
 def build_crate(_seed: int) -> None:
@@ -706,6 +817,7 @@ SPECS: list[tuple[str, Callable[[int], None]]] = [
     ("barrel_small", build_barrel_small),
     ("barrel_large", build_barrel_large),
     ("crate", build_crate),
+    ("ore_crate_heavy", build_ore_crate_heavy),
     ("crate_broken", build_crate_broken),
     ("sack", build_sack),
     ("bucket", build_bucket),

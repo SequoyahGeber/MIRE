@@ -11,3 +11,7 @@ display_name = "Fibre Bundle"
 description = "Twisted plant fibre. Rope, string, and everything that ties."
 icon = ExtResource("3_icon")
 world_model = ExtResource("2_model")
+view_model = ExtResource("2_model")
+grip_offset = Vector3(0.26, -0.3, -0.4)
+grip_rotation_degrees = Vector3(-4.0, 166.0, -8.0)
+grip_scale = 0.72

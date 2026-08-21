@@ -11,3 +11,7 @@ display_name = "Stone"
 description = "Rough stone used for tools and structures."
 icon = ExtResource("3_iconsto")
 world_model = ExtResource("2_58wb0")
+view_model = ExtResource("2_58wb0")
+grip_offset = Vector3(0.24, -0.28, -0.36)
+grip_rotation_degrees = Vector3(-12.0, 170.0, 6.0)
+grip_scale = 1.05

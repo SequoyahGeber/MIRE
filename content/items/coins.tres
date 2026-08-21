@@ -12,3 +12,7 @@ description = "The run's universal currency. Chests and rewards pay out in coins
 icon = ExtResource("3_iconcoins")
 world_model = ExtResource("2_coins")
 stack_size = 999
+view_model = ExtResource("2_coins")
+grip_offset = Vector3(0.23, -0.27, -0.46)
+grip_rotation_degrees = Vector3(-16.0, 174.0, 8.0)
+grip_scale = 0.85

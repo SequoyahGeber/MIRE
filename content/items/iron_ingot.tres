@@ -11,3 +11,7 @@ display_name = "Iron Ingot"
 description = "Smelted iron, ready for the anvil."
 icon = ExtResource("1_grceu")
 world_model = ExtResource("3_u0atk")
+view_model = ExtResource("3_u0atk")
+grip_offset = Vector3(0.26, -0.3, -0.38)
+grip_rotation_degrees = Vector3(-8.0, 162.0, -4.0)
+grip_scale = 0.9

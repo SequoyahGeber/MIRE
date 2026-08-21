@@ -11,3 +11,7 @@ display_name = "Coal"
 description = "Burns hot enough to smelt. Mined from seams, or charred from logs."
 icon = ExtResource("3_icon")
 world_model = ExtResource("2_model")
+view_model = ExtResource("2_model")
+grip_offset = Vector3(0.25, -0.29, -0.37)
+grip_rotation_degrees = Vector3(-10.0, 168.0, 4.0)
+grip_scale = 1.1

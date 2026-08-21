@@ -11,3 +11,7 @@ display_name = "Log"
 description = "Sturdy timber harvested from Mire pines."
 icon = ExtResource("3_iconlog")
 world_model = ExtResource("2_ndaxd")
+view_model = ExtResource("2_ndaxd")
+grip_offset = Vector3(0.34, -0.4, -0.52)
+grip_rotation_degrees = Vector3(-6.0, 152.0, -22.0)
+grip_scale = 0.34
