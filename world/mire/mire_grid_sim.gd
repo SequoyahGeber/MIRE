@@ -104,23 +104,78 @@ static func _stamp_cluster(
 ## "no wards", which is what 4.9 ships with on its own.
 static func tick(grid: PackedFloat32Array, ward_circles: Array, spread_rate: float) -> PackedFloat32Array:
 	var next: PackedFloat32Array = grid.duplicate()
+	# F-338: the ward test is resolved ONCE per tick into a per-cell mask, instead of scanning every
+	# circle for every neighbour of every corrupted cell. The old shape cost
+	# `corrupted x 4 x wards` distance checks — 687 ms on a saturated grid with 16 wards, a
+	# 41-frame freeze on the host, and 248 ms with only four. Stamping the mask costs the sum of the
+	# wards' areas, which is a few hundred cells.
+	var ward_mask: PackedByteArray = _ward_mask(ward_circles)
+	var warded: bool = not ward_circles.is_empty()
+
+	# Flat index arithmetic, and the four neighbours written out. `NEIGHBOR_OFFSETS` iterated
+	# `Vector2i` objects and re-derived `cell_index()` per neighbour, which in GDScript is most of
+	# the per-cell cost. The ORDER is identical to the offsets table — north, south, west, east —
+	# because `next[i] += spread` is float accumulation and reordering it would change results that
+	# `mire_grid_check`'s determinism assertion pins.
+	var row: int = 0
 	for cell_z: int in CELLS_PER_SIDE:
 		for cell_x: int in CELLS_PER_SIDE:
-			var value: float = grid[cell_index(cell_x, cell_z)]
+			var index: int = row + cell_x
+			var value: float = grid[index]
 			if value <= MIN_CORRUPTION:
 				continue
 			var spread: float = value * spread_rate
-			for offset: Vector2i in NEIGHBOR_OFFSETS:
-				var neighbor_x: int = cell_x + offset.x
-				var neighbor_z: int = cell_z + offset.y
-				if neighbor_x < 0 or neighbor_x >= CELLS_PER_SIDE \
-						or neighbor_z < 0 or neighbor_z >= CELLS_PER_SIDE:
-					continue
-				if _is_warded(neighbor_x, neighbor_z, ward_circles):
-					continue
-				var neighbor_idx: int = cell_index(neighbor_x, neighbor_z)
-				next[neighbor_idx] = clampf(next[neighbor_idx] + spread, 0.0, 1.0)
+			if cell_z > 0:
+				var n: int = index - CELLS_PER_SIDE
+				if not (warded and ward_mask[n] == 1):
+					next[n] = clampf(next[n] + spread, 0.0, 1.0)
+			if cell_z < CELLS_PER_SIDE - 1:
+				var sth: int = index + CELLS_PER_SIDE
+				if not (warded and ward_mask[sth] == 1):
+					next[sth] = clampf(next[sth] + spread, 0.0, 1.0)
+			if cell_x > 0:
+				var w: int = index - 1
+				if not (warded and ward_mask[w] == 1):
+					next[w] = clampf(next[w] + spread, 0.0, 1.0)
+			if cell_x < CELLS_PER_SIDE - 1:
+				var e: int = index + 1
+				if not (warded and ward_mask[e] == 1):
+					next[e] = clampf(next[e] + spread, 0.0, 1.0)
+		row += CELLS_PER_SIDE
 	return next
+
+
+## One byte per cell, 1 where a ward covers it — the same test `_is_warded()` makes, resolved once
+## per tick instead of once per (corrupted cell, neighbour, ward).
+##
+## Only the cells inside each circle's bounding box are examined, so this costs the wards' area
+## rather than the grid's. Empty ward list returns an empty array and the caller skips the lookup
+## entirely, which keeps the unwarded path free of it.
+static func _ward_mask(ward_circles: Array) -> PackedByteArray:
+	var mask := PackedByteArray()
+	if ward_circles.is_empty():
+		return mask
+	mask.resize(CELL_COUNT)
+	for circle: Dictionary in ward_circles:
+		var radius: float = float(circle.get("radius", 0.0))
+		if radius <= 0.0:
+			continue
+		var position: Vector2 = circle.get("position", Vector2.ZERO)
+		# Bounding box in cell space, clamped to the grid. `world_to_cell` is the same mapping
+		# `cell_to_world_center` inverts, so the box cannot miss a cell whose centre is in range.
+		var low: Vector2i = world_to_cell(position.x - radius, position.y - radius)
+		var high: Vector2i = world_to_cell(position.x + radius, position.y + radius)
+		var min_x: int = maxi(low.x - 1, 0)
+		var min_z: int = maxi(low.y - 1, 0)
+		var max_x: int = mini(high.x + 1, CELLS_PER_SIDE - 1)
+		var max_z: int = mini(high.y + 1, CELLS_PER_SIDE - 1)
+		for cell_z: int in range(min_z, max_z + 1):
+			for cell_x: int in range(min_x, max_x + 1):
+				# The identical distance test, on the identical cell centre, so the mask and the
+				# old per-neighbour scan agree cell for cell.
+				if cell_to_world_center(cell_x, cell_z).distance_to(position) <= radius:
+					mask[cell_index(cell_x, cell_z)] = 1
+	return mask
 
 
 static func _is_warded(cell_x: int, cell_z: int, ward_circles: Array) -> bool:

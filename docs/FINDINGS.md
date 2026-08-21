@@ -1563,14 +1563,6 @@ Two smaller gaps found alongside, worth folding into the same task:
 
 ---
 
-### F-338 · The full 256 by 256 Mire simulation has no saturated late-run performance gate
-
-**Area:** performance · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
-
-`world/mire/mire_grid_sim.gd:108-132` duplicates a 65,536-float array, visits every cell, examines four neighbours for each corrupted cell, and for warded runs linearly scans every ward circle per neighbour. `world/mire/mire_grid.gd` executes this synchronously on the host main thread every 2 seconds and then scans changes for replication. Existing checks prove correctness/determinism but no benchmark covers a near-saturated grid plus realistic ward count—the worst state occurs late in the longest sessions, where a periodic hitch is most damaging. Add a measured budget probe for sparse/mid/saturated grids and optimize with an active frontier/spatial ward lookup if it misses frame budget.
-
----
-
 ### F-344 · Remote interpolation misses its own smoothness budget in both synthetic and live phases
 
 **Area:** netcode/performance · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
@@ -1964,7 +1956,102 @@ comparison stays available, and settle the streamer before phase one.
 
 ---
 
+### F-363 · The Mire tick still costs most of a frame at saturation, on the host main thread
+
+**Area:** performance · **Severity:** medium · **Found:** 2026-08-21 by ivy1bcae0
+
+Found 2026-08-20 by ivy1bcae0, as the residue of F-338.
+
+F-338 added `tools/bench_mire.gd` and optimised `MireGridSim.tick()` — a per-tick ward mask instead
+of a linear circle scan per neighbour, and flat index arithmetic instead of `Vector2i` offsets. That
+was worth 4x to 41x:
+
+    case                        before      after
+    seeded start,  0 wards    14.317 ms   3.387 ms
+    seeded start, 16 wards   119.471 ms   4.632 ms
+    saturated,     4 wards   248.033 ms  15.045 ms
+    saturated,    16 wards   687.424 ms  16.578 ms
+
+The ward term is gone: 16 wards now cost ~28% more than none, where they used to cost 11x. What is
+left is the full 65,536-cell pass, and at saturation it is **~16 ms — a whole frame, every 2 seconds,
+synchronously on the host main thread**, measured on an M5 Pro. The low-end target this project ships
+to (F-174, docs/PERFORMANCE.md) will be several times that.
+
+It also is not only the terminal state: "late run" at 80% fill measures 12-14 ms, which is most of a
+frame during ordinary deep-Cycle play.
+
+**Why it was not pushed further here.** The remaining cost is the pass itself. The two ways to reduce
+it are both out of scope for a benchmark task:
+
+1. **Off the main thread.** `MireGrid` runs `tick()` synchronously in `_physics_process`. The result
+   feeds replication (`WorldDeltaLog`) and ward/Wellspring reads, so moving it to `WorkerThreadPool`
+   is an authority and ordering change, not a code move — it needs an ARCHITECTURE.md §2.2 decision.
+2. **Time-slice it.** Spread one tick across the 2-second interval. Cheaper to reason about, but it
+   changes when corruption becomes visible to other systems mid-tick, so it needs a decision about
+   what a half-applied grid means to `MireGrid.corruption_at()` and its consumers.
+
+An active frontier — the other half of F-338's suggestion — was considered and does NOT help here:
+at saturation every cell is the frontier, so it improves the early and mid cases (already 3-8 ms)
+and does nothing for the case that misses.
+
+**What must not happen:** `bench_mire.gd` prints an AMBER line naming this gap on every run, and
+gates regressions at a 22 ms ceiling. Raising `TICK_BUDGET_MS` to silence the amber would convert a
+measured, known problem back into an unmeasured one — which is the exact history F-338 was filed to
+end.
+
+---
+
 ## Resolved
+
+### F-338 · The full 256 by 256 Mire simulation has no saturated late-run performance gate — **fixed**
+
+**Area:** performance · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
+
+`world/mire/mire_grid_sim.gd:108-132` duplicates a 65,536-float array, visits every cell, examines four neighbours for each corrupted cell, and for warded runs linearly scans every ward circle per neighbour. `world/mire/mire_grid.gd` executes this synchronously on the host main thread every 2 seconds and then scans changes for replication. Existing checks prove correctness/determinism but no benchmark covers a near-saturated grid plus realistic ward count—the worst state occurs late in the longest sessions, where a periodic hitch is most damaging. Add a measured budget probe for sparse/mid/saturated grids and optimize with an active frontier/spatial ward lookup if it misses frame budget.
+
+---
+
+**Resolved 2026-08-21 by ivy1bcae0.** **Fixed 2026-08-20 by ivy1bcae0** — the gate exists, and building it found the tick was already far
+over budget.
+
+**New `tools/bench_mire.gd`** measures `MireGridSim.tick()` across the fill levels a run passes
+through (seeded start, mid, late, saturated) crossed with 0/4/16 wards, and exits nonzero on a miss —
+a benchmark that reports a missed budget and exits 0 is one the battery treats as passing, which is
+the mistake F-347's instrument made for months.
+
+**What it found was worse than the finding suspected.** The audit said there was no worst-case gate.
+There was also no acceptable worst case:
+
+    fill            wards   median      % of a 16.7 ms frame
+    seeded start        0   14.317 ms     86%
+    saturated           4  248.033 ms   1488%
+    saturated          16  687.424 ms   4124%
+
+687 ms is a 41-frame freeze on the host. And a *fresh* run's very first tick already ate 86% of a
+frame, on an M5 Pro.
+
+**Optimised, since it missed by 86x.** Two changes to `tick()`, both preserving the exact float
+accumulation order that `mire_grid_check`'s determinism assertion pins:
+
+- **A per-tick ward mask.** `_ward_mask()` stamps each circle's cells once, costing the wards' area
+  rather than the grid's, and the neighbour test becomes an array lookup. This replaced
+  `corrupted x 4 x wards` distance checks — the entire ward multiplier.
+- **Flat index arithmetic.** The four neighbours are written out instead of iterating `Vector2i`
+  offsets and re-deriving `cell_index()` per neighbour, which in GDScript was most of the per-cell
+  cost. Same order — north, south, west, east — because reordering `next[i] += spread` would change
+  results.
+
+Result: **4.2x to 41.5x faster**, saturated-with-16-wards from 687.424 ms to 16.578 ms, and 16 wards
+now cost ~28% more than none rather than 11x. `mire_grid_check failures=0` throughout.
+
+**What remains, stated rather than hidden.** 16 ms at saturation is still a whole frame, and the
+remainder is the 65,536-cell pass itself; closing it needs the tick off the main thread or
+time-sliced, both of which are authority/ordering decisions rather than code moves. So the check
+gates regressions at a 22 ms ceiling and prints an AMBER line naming the gap on every run, with an
+explicit instruction not to silence it by raising the goal. An active frontier — F-338's other
+suggestion — was considered and rejected for this case: at saturation every cell is the frontier.
+
+Filed as its own finding with the numbers and the two architectural options.
 
 ### F-334 · The end-to-end loop passes every phase and then aborts in engine teardown — **fixed**
 
