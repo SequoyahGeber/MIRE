@@ -14,6 +14,8 @@ extends SceneTree
 ##   · a theme ducks the ambient bed harder than a boss stinger does, and the bed comes back
 ##   · the duck never reaches zero — a stopped bed would rewind a 3:44 loop to its head
 ##   · a run restart drops whatever was playing and returns to landfall
+##   · a hard boundary is a SNAP on both sides — the theme is audible before a frame has run, and
+##     the bed comes up already ducked underneath it rather than blaring first (F-430)
 ##
 ##   .agent/bin/agent godot --script tools/theme_music_check.gd
 
@@ -52,6 +54,7 @@ func _run() -> void:
 	_check_cycle_cue()
 	_check_ambient_duck()
 	_check_run_restart()
+	_check_hard_boundary_is_a_snap()
 
 	director.set_process(true)
 	ambient.set_process(true)
@@ -191,6 +194,50 @@ func _check_run_restart() -> void:
 		"restart returns to landfall (got %s)" % director.active_cue())
 	var cycle_player: AudioStreamPlayer = _player(THEME_SCRIPT.CUE_CYCLE)
 	check(cycle_player != null and not cycle_player.playing, "the old cycle cue was stopped")
+
+
+## F-430, as a regression test. The bug was a boot that opened on `ambient_day.ogg` at full volume
+## for the length of the world-gen stall and then CUT to the theme, and both halves of it were the
+## same mistake: a hard boundary was being treated as something to fade across.
+##
+## A restart is the one hard boundary this harness can replay — it runs the identical code (the theme
+## snaps its cue in `_on_run_restarted()`, the bed re-arms `_boot_pending`), and unlike the real boot
+## it happens while the harness owns the clock, so "before a single frame has run" is observable
+## rather than already gone by the time `_run()` starts.
+##
+## The two assertions that would have failed before the fix: the theme is at FULL gain with no frame
+## elapsed (it was at 0.0, which `_apply_channel()` renders as a STOPPED player — silence, not a
+## quiet fade-in), and one frame is enough to put the bed at exactly `THEME_DUCK_GAIN` (it used to
+## start at full and ramp down over `DUCK_ATTACK_SEC`, and on the real boot that ramp was crossed in
+## one enormous `delta` — the audible cut).
+func _check_hard_boundary_is_a_snap() -> void:
+	print("\n== a hard boundary is a snap, not a fade (F-430) ==")
+	for cue: StringName in THEME_SCRIPT.CUE_PATHS:
+		var player: AudioStreamPlayer = _player(cue)
+		if player != null:
+			player.stop()
+	for i: int in 60:
+		ambient.advance(0.1)
+
+	EVENT_BUS.emit_run_restarted()
+
+	# Not one `advance()` on either director yet — this is the state a real boot spends its whole
+	# world-gen stall in.
+	var landfall: AudioStreamPlayer = _player(THEME_SCRIPT.CUE_LANDFALL)
+	check(landfall != null and landfall.playing,
+		"the theme is already sounding before a frame has run")
+	check(landfall != null and absf(landfall.volume_db) < 0.01,
+		"and at full gain, not the head of a %.1fs fade-in (%.2f dB)"
+			% [THEME_SCRIPT.FADE_IN_SEC, landfall.volume_db if landfall != null else -99.0])
+	var day: AudioStreamPlayer = ambient.call("day_player")
+	check(day != null and not day.playing,
+		"the bed is not the thing scoring the boundary")
+
+	# One frame — the first `_process` of the new run — and the bed is where it belongs, in one step.
+	ambient.advance(1.0 / 60.0)
+	check(is_equal_approx(float(ambient._duck), AMBIENT_SCRIPT.THEME_DUCK_GAIN),
+		"one frame puts the bed at THEME_DUCK_GAIN, no ramp (%.3f)" % float(ambient._duck))
+	check(day != null and day.playing, "the bed is audible under the theme, not stopped")
 
 
 func finish() -> void:

@@ -104,6 +104,20 @@ var _day_night_node: Node
 var _boss_director_node: Node
 var _theme_director_node: Node
 
+## True until the first `advance()`, which is the first moment this director can see the rest of the
+## boot. F-430: the bed used to be started from `_ready()` at full gain, and `_ready()` is too early
+## to know anything — autoloads ready in `project.godot` order and `ThemeMusicDirector` is registered
+## BELOW this one, so `_duck_target()` asked at that instant reads "no theme playing" and snaps the
+## duck to 1.0. Nothing then moves until the first `_process`, and the first frame of a real boot is
+## the one that instantiates `run/main_scene` and compiles its shaders — 347 ms headless, seconds on
+## a real machine. The whole of that stall was scored by this bed, alone, at full volume, which is
+## what Sequoyah heard as "the old theme song plays for 2-3 seconds". So the bed now waits one frame
+## and comes up already sitting wherever the theme director wants it.
+##
+## Set again by `_on_run_restarted()`, for the same reason in miniature: a restart is dispatched to
+## every subscriber in turn, and this one is reached before the theme director is.
+var _boot_pending: bool = true
+
 
 func _ready() -> void:
 	# The bed must survive the pause menu. Autoloads inherit from the root, which resolves to
@@ -124,7 +138,8 @@ func _ready() -> void:
 
 	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
 	set_process(true)
-	_apply_mix()
+	# Deliberately NOT `_apply_mix()` here — see `_boot_pending`. Starting the bed from `_ready()` is
+	# what F-430 was. The first `advance()` is one frame away and starts it correctly ducked.
 
 
 func _exit_tree() -> void:
@@ -144,8 +159,27 @@ func advance(delta: float) -> void:
 	# unconditionally, so a client (which never gets the two signals) and a host that jumped its clock
 	# with `time set` both converge on the same target within a frame.
 	_target_mix = 1.0 if _clock_is_night() else 0.0
+	if _boot_pending:
+		_boot_pending = false
+		_snap()
+		return
 	_step_mix(delta)
 	_step_duck(delta)
+	_apply_mix()
+
+
+## The bed's whole state, put where it belongs in one step rather than ramped there. Used at the two
+## hard boundaries — the first frame of the process, and a run restart — and nowhere else, because
+## everywhere else a ramp is the point.
+##
+## The duck is the half that matters (F-430). By the time this runs, every autoload has readied, so
+## `_duck_target()` can actually see whether a theme owns the mix, and the bed opens at the depth the
+## theme asked for instead of ramping down from full over `DUCK_ATTACK_SEC`. Ramping was audible for
+## a second reason too: the first frame's `delta` is the entire boot stall, which `move_toward` spends
+## in a single step, so the intended fade was heard as a cut.
+func _snap() -> void:
+	_night_mix = _target_mix
+	_duck = _duck_target()
 	_apply_mix()
 
 
@@ -311,16 +345,21 @@ func _theme_director() -> Node:
 ## `core/events/event_bus.gd`'s `subscribe_run_restarted` note).
 func _on_run_restarted() -> void:
 	_target_mix = 1.0 if _clock_is_night() else 0.0
-	_night_mix = _target_mix
-	_duck = 1.0
-	# Stop both, then let `_apply_mix()` start whichever channel the new run needs. The players
-	# themselves are created once, in `_ready()`, and never replaced — a restart or a reseed must not
-	# leave two AmbientDay nodes stacked and phasing against each other.
+	# Stop both, then let `_snap()` start whichever channel the new run needs. The players themselves
+	# are created once, in `_ready()`, and never replaced — a restart or a reseed must not leave two
+	# AmbientDay nodes stacked and phasing against each other.
 	if _day_player != null:
 		_day_player.stop()
 	if _night_player != null:
 		_night_player.stop()
-	_apply_mix()
+	# Deferred to the next `advance()` rather than snapped here, which is the one thing the boot case
+	# and this one genuinely share: at THIS instant the answer is not knowable yet. `ThemeMusicDirector`
+	# subscribes to `run_restarted` too and puts itself straight back on landfall, but EventBus
+	# dispatches in subscription order — autoload registration order (D-021) — and it sits BELOW this
+	# entry, so its handler has not run. Asking `_duck_target()` now reads the dying run's state and
+	# would open the new run with the bed at full over the top of its own theme: F-430's shape again,
+	# at the restart boundary. One frame later every subscriber has run and the answer is real.
+	_boot_pending = true
 
 
 # ── Construction / plumbing ──────────────────────────────────────────────────────────────────────

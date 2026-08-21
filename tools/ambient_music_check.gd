@@ -57,6 +57,7 @@ func _run() -> void:
 	# `tools/wave_spawner_check.gd`'s `day_night.set_physics_process(false)`.
 	day_night.set_physics_process(false)
 	director.set_process(false)
+	_retire_the_boot_theme()
 
 	_check_streams()
 	_check_day_bed()
@@ -90,6 +91,42 @@ func _check_wiring() -> bool:
 	check(cycle_service != null and defeat_service != null,
 		"CycleService and DefeatService are registered — the real restart path")
 	return director != null and day_night != null
+
+
+## Every bed measurement below is a gain reading, and `ThemeMusicDirector` multiplies exactly that:
+## a theme ducks the bed to `THEME_DUCK_GAIN`. Booting with no front end starts the landfall cue
+## (that IS the shipped boot — `run/main_scene` is still the world), so unless the cue is retired
+## first, "the day bed is at full gain" is measuring the duck instead of the bed.
+##
+## This file used to pass anyway, by luck: the theme started at gain 0 and only became audible a
+## frame or two in, and the whole check runs inside one frame. F-430's fix takes the boot cue to full
+## immediately — correctly, it is the first thing the process should play — which turned that luck
+## into eleven failures and exposed the missing setup. So retire it explicitly: one `advance()` past
+## the cue's own length ends the bounded cue and, with `FADE_OUT_SEC` of travel in the same step,
+## takes its gain to zero and stops the player. Then freeze it, so it stays retired.
+func _retire_the_boot_theme() -> void:
+	var theme: Node = _silence_theme()
+	if theme == null:
+		return
+	check(String(theme.call("active_cue")) == "",
+		"the boot theme is retired before the bed is measured (cue=%s)" % theme.call("active_cue"))
+	check(not bool(theme.call("is_playing")), "no theme is audible for these measurements")
+
+
+## The mechanism, without the assertions, because a restart puts a theme back and every restart
+## assertion below is also a bed-gain reading. Returns the director so callers can assert on it.
+func _silence_theme() -> Node:
+	var theme: Node = root.get_node_or_null(^"ThemeMusicDirector")
+	if theme == null:
+		return null
+	var longest: float = 0.0
+	for child: Node in theme.get_children():
+		var player := child as AudioStreamPlayer
+		if player != null and player.stream != null:
+			longest = maxf(longest, player.stream.get_length())
+	theme.call("advance", longest + DIRECTOR_SCRIPT.CROSSFADE_SEC)
+	theme.set_process(false)
+	return theme
 
 
 func _check_streams() -> void:
@@ -260,6 +297,12 @@ func _check_restart() -> void:
 	var night_after: AudioStreamPlayer = director.call("night_player")
 	check(night_after == night_before, "the players are the same instances, not rebuilt")
 
+	# The restart handler defers its snap by one `advance()` — it cannot read the duck until every
+	# other `run_restarted` subscriber has run (F-430). This harness owns the clock, so it has to be
+	# the one to tick that frame; and the theme director is one of those subscribers, so it is put
+	# back to rest first or the readings below measure its duck rather than the bed.
+	_settle_new_run()
+
 	# DayNight resets the clock to the run-start morning, so the new run opens on the DAY bed, snapped
 	# rather than faded — and above all not silent.
 	check(is_equal_approx(float(director.call("night_mix")), 0.0),
@@ -274,6 +317,7 @@ func _check_restart() -> void:
 	await process_frame
 	check(_player_count() == 2,
 		"a second restart still leaves two players (%d)" % _player_count())
+	_settle_new_run()
 	_check_audible(director.call("day_player"), "AmbientDay")
 
 
@@ -281,6 +325,13 @@ func _check_restart() -> void:
 
 ## More than one full crossfade, so a single `advance()` settles whatever it was doing.
 const CROSSFADE_SEC_HEADROOM: float = 12.0
+
+
+## Everything a restart needs before the bed can be measured: the theme the restart just started is
+## retired, and the director is given the one frame its deferred snap is waiting for.
+func _settle_new_run() -> void:
+	_silence_theme()
+	director.call("advance", 1.0 / 60.0)
 
 
 ## Puts the clock at `fraction` through the host's own jump seam (which crosses thresholds on the

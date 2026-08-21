@@ -8308,3 +8308,39 @@ Root cause: frontend.gd's _enter_world() shadowed a Node3D engine virtual, so en
 Files: `ui/frontend/frontend.gd`, `tools/quit_crash_probe.gd`, `tools/_f421_frontend_stage.gd`, `tools/virtual_shadow_check.gd`
 
 Commit at time of writing: `a79c31c`
+
+---
+
+### HANDOFF · 2.1d · gale43d16e · 2026-08-21T08:34:48+00:00
+
+**Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close**
+
+A-050 done: art coverage 211 slots / 0 missing / 0 broken. 72 powerup icons + 4 attunement sigils, the wooden wall's real art + 13 build-menu icons, 9 raw-material viewmodels, the heavy ore crate. New instruments: art_coverage_check, powerup_icon_check, harvest_state_chain_check, trunk_inspect. A-016b is still NEXT and unstarted. F-428 is open: item_icons_check is red at HEAD on 78 untracked stale 'icon_* 2.png' duplicates dated 2026-08-18 that predate this work — one rm fixes it, left alone because they are another session's untracked files.
+
+Files: `tools/blender/build_mire_map_kit.py`, `tools/blender/mire_art.py`, `assets/environment/catalog.json`, `docs/ASSET_TRACKER.md`, `tools/tree_collider_check.gd`, `tools/blender/trunk_inspect.py`, `tools/blender/build_flora_set.py`, `assets/flora/catalog.json`, `tools/blender/build_harvestable_resources.py`, `assets/harvestables/catalog.json`, `content/harvestables/tree.tres`, `content/harvestables/stone_node.tres`, `content/harvestables/iron_node.tres`, `tools/harvest_state_chain_check.gd`, `tools/art_coverage_check.gd`, `tools/blender/build_powerup_icons.py`, `tools/powerup_icon_check.gd`, `content/powerups`, `content/attunements`, `content/attunements/forager.tres`, `content/attunements/reaver.tres`, `content/attunements/tinker.tres`, `content/attunements/warden.tres`, `content/powerups/adrenal_bloom.tres`, `content/powerups/air_writ.tres`, `content/powerups/ashen_temper.tres`, `content/powerups/attunement_forager.tres`, `content/powerups/attunement_reaver.tres`, `content/powerups/attunement_tinker.tres`, `content/powerups/attunement_warden.tres`, `content/powerups/bellows_lung.tres`, `content/powerups/bottomless_quiver.tres`, `content/powerups/cat_fall.tres`, `content/powerups/cauter_seal.tres`, `content/powerups/cellar_cache.tres`, `content/powerups/chill_edge.tres`, `content/powerups/cinder_tithe.tres`, `content/powerups/coin_worm.tres`, `content/powerups/damp_stride.tres`, `content/powerups/deep_frost.tres`, `content/powerups/deep_pocket.tres`, `content/powerups/eggshell_warlord.tres`, `content/powerups/ember_knuckle.tres`, `content/powerups/empty_vessel.tres`, `content/powerups/far_grasp.tres`, `content/powerups/flashover.tres`, `content/powerups/fletchers_debt.tres`, `content/powerups/foremans_whistle.tres`, `content/powerups/forge_blood.tres`, `content/powerups/fruiting_call.tres`, `content/powerups/gaunt_frame.tres`, `content/powerups/grave_due.tres`, `content/powerups/hollow_bargain.tres`, `content/powerups/iron_tongue.tres`, `content/powerups/long_bound.tres`, `content/powerups/loping_gait.tres`, `content/powerups/moss_shroud.tres`, `content/powerups/night_pyre.tres`, `content/powerups/numb_skin.tres`, `content/powerups/open_flame.tres`, `content/powerups/pack_frame.tres`, `content/powerups/pact_cut.tres`, `content/powerups/pale_guard.tres`, `content/powerups/patient_draw.tres`, `content/powerups/quiet_bloom.tres`, `content/powerups/red_quench.tres`, `content/powerups/rich_marrow.tres`, `content/powerups/rime_shell.tres`, `content/powerups/root_hold.tres`, `content/powerups/rot_chew.tres`, `content/powerups/sanctum_frost.tres`, `content/powerups/scab_feast.tres`, `content/powerups/sealed_veins.tres`, `content/powerups/second_glance.tres`, `content/powerups/second_sunrise.tres`, `content/powerups/second_wind.tres`, `content/powerups/seven_league_waders.tres`, `content/powerups/skip_step.tres`, `content/powerups/slow_gut.tres`, `content/powerups/spent_spring.tres`, `content/powerups/spore_sole.tres`, `content/powerups/steady_hands.tres`, `content/powerups/still_breath.tres`, `content/powerups/stubborn_heart.tres`, `content/powerups/swift_stride.tres`, `content/powerups/the_landlord.tres`, `content/powerups/thick_hide.tres`, `content/powerups/thin_step.tres`, `content/powerups/tinder_snap.tres`, `content/powerups/unseen_seam.tres`, `content/powerups/warm_marrow.tres`, `content/powerups/wellspring_heart.tres`, `content/powerups/whetted_thirst.tres`, `content/powerups/white_quiet.tres`, `content/powerups/wide_cap.tres`, `tools/blender/build_construction_set.py`, `assets/construction/catalog.json`, `scenes/buildables/wall.tscn`, `content/buildables/wall.tres`, `tools/blender/render_item_icons.py`, `content/buildables/barricade.tres`, `content/buildables/barricade_spike.tres`, `content/buildables/bridge.tres`, `content/buildables/dock.tres`, `content/buildables/door.tres`, `content/buildables/gate.tres`, `content/buildables/ladder.tres`, `content/buildables/palisade.tres`, `content/buildables/palisade_gate.tres`, `content/buildables/ramp.tres`, `content/buildables/ward.tres`, `content/buildables/ward_post.tres`, `content/items/branch.tres`, `content/items/coal.tres`, `content/items/coins.tres`, `content/items/fibre_bundle.tres`, `content/items/flint.tres`, `content/items/iron_ingot.tres`, `content/items/iron_ore.tres`, `content/items/log.tres`, `content/items/stone.tres`, `tools/blender/build_camp_set.py`, `assets/camp/catalog.json`, `scenes/haulables/heavy_ore_crate.tscn`, `content/haulables/heavy_ore_crate.tres`
+
+Commit at time of writing: `d87efcf`
+
+---
+
+### HANDOFF · 7.1 · ash843af8 · 2026-08-21T08:53:46+00:00
+
+**Audio pass: SFX for every action, ambience per biome, mix, buses**
+
+SFX v2 shipped and wired: 131 sounds / 266 files in assets/audio/sfx/, all rendered from tools/audio/mire_material.py (material loss factors, real mode ratios, contact-time excitation, Minnaert bubbles) and played by the new SfxDirector autoload. 128 of 131 cues fire; the three that do not (equip_blade/tool/bow) need an equip system the game does not have. Verified by tools/sfx_check.gd (wiring, handler arity, catalogue-vs-disk in both directions, coverage floor, footstep stride logic, biome pools) and tools/sfx_runtime_probe.gd (boots the real world and reads SfxDirector.play_counts). Approach recorded as D-188; docs/AUDIO.md rewritten. Two findings opened along the way: F-427 (cloud sync duplicates assets as '<name> 2.wav'; render_sfx.py now prunes and sfx_check fails on drift, but every tools/blender writer is still exposed) and F-429 (a headless boot never streams terrain collision, so the player falls to y=-64 forever and is_on_floor is never true — this silently affects any check that boots the world expecting the player to be somewhere sensible). Remaining audio work: ambience per biome is done as spot effects but there are still no per-biome looping BEDS; no weather system so no rain; combat-intensity music stems (7.2's remainder) not started; the_long_sink and still_water are rendered theme candidates held for act/boss use.
+
+Files: `tools/audio/mire_material.py`, `tools/audio/render_sfx.py`, `tools/audio/render_sfx_options.py`, `tools/audio/audio_check.py`, `docs/AUDIO.md`, `autoload/sfx_director.gd`, `autoload/sfx_catalogue.gd`, `tools/sfx_check.gd`
+
+Commit at time of writing: `b11191d`
+
+---
+
+### DONE · F-430 · ivye199f8 · 2026-08-21T17:23:46+00:00
+
+**The ambient bed plays alone at full volume across the whole boot, then cuts to the theme**
+
+Boot and restart are now a snap on both directors: the theme is audible before the first frame, the bed comes up already ducked under it. Regression section added to theme_music_check; ambient_music_check's bed measurements no longer pass by luck.
+
+Files: `autoload/ambient_music_director.gd`, `autoload/theme_music_director.gd`, `tools/ambient_music_check.gd`, `tools/theme_music_check.gd`
+
+Commit at time of writing: `b11191d`

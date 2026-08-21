@@ -114,6 +114,7 @@ func _ready() -> void:
 		# No front end anywhere at boot — either the 4.19 cutover has not landed and the process went
 		# straight to the world, or this is a headless check. Landfall has already happened.
 		_start_bounded(CUE_LANDFALL)
+	_snap_active_gain()
 
 	EVENT_BUS.subscribe_cycle_advanced(_on_cycle_advanced)
 	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
@@ -155,6 +156,26 @@ func is_playing() -> bool:
 ## Which cue currently owns the mix, or &"" for none. Checks assert on this rather than on gains.
 func active_cue() -> StringName:
 	return _active
+
+
+## Takes the active cue straight to its full gain instead of leaving it at zero for `FADE_IN_SEC` to
+## ramp up. Used at the two moments there is nothing to fade FROM — boot, and a run restart — which
+## is the identical argument `AmbientMusicDirector._ready()` makes for snapping its own mix ("nothing
+## was playing to fade from").
+##
+## F-430 is what the ramp cost. A cue at gain 0 is not merely quiet: `_apply_channel()` STOPS a
+## channel below `AUDIBLE_EPSILON`, so a fading-in theme makes no sound whatsoever until the first
+## `_process` frame moves its gain off zero. The first frame of a real boot is the one that
+## instantiates `run/main_scene` and compiles its shaders — seconds, during which the ambient bed
+## (started from ITS `_ready()`, at full, because no theme was playing yet to duck it) was the entire
+## soundtrack. Then that frame's `delta` — the whole stall — arrived at once, which is large enough
+## for `move_toward` to finish the fade in a single step, so the intended 1.5 s crossfade was heard
+## as a cut. Snapping here means the theme is the first thing the process plays, and the bed comes up
+## underneath it already ducked (see `AmbientMusicDirector.advance()`'s boot branch).
+func _snap_active_gain() -> void:
+	if _active == &"":
+		return
+	_gain[_active] = _active_target()
 
 
 # ── State ────────────────────────────────────────────────────────────────────────────────────────
@@ -286,6 +307,10 @@ func _on_run_restarted() -> void:
 			player.stop()
 		_gain[cue] = 0.0
 	_start_bounded(CUE_LANDFALL)
+	# Snap, for the same reason boot does: this handler just stopped every player above, so there is
+	# nothing left to cross-fade against, and a restart that loads a fresh world stalls exactly like a
+	# boot does (F-430).
+	_snap_active_gain()
 	_apply()
 
 
