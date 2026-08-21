@@ -54,6 +54,126 @@
       "task": "3.19",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "content/buildables/anvil.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:13:35+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/guide/build_anvil.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:18:07+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/guide/cap_wellspring.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:18:07+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/guide/chop_a_tree.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:18:07+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/guide/craft_first_axe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:18:07+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/guide/craft_stone_tools.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:18:07+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/guide/find_bog_iron.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:18:07+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/guide/forge_bogsilver.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:18:07+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/guide/forge_wellglass.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:18:07+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/guide/gather_fibre.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:18:07+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/guide/kill_guardian.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:18:07+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/guide/place_workbench.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:18:07+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/guide/push_or_leave.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:18:07+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/guide/smelt_iron.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:18:07+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/guide/tip_corrupted_ground.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:18:07+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/guide/tip_downed.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:18:07+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/guide/tip_enemy_close.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:18:07+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/guide/tip_first_night.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:18:07+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/guide/tip_ship_ready.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:18:07+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/guide/tip_tool_blocked.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:18:07+00:00",
+      "task": "3.19",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
     "content/harvestables/apple_tree.tres": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:45:13+00:00",
@@ -66,6 +186,12 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "content/harvestables/bogsilver_node.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:20:15+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
     "content/harvestables/mushroom_patch.tres": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:45:13+00:00",
@@ -77,6 +203,222 @@
       "at": "2026-08-21T17:45:13+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "content/items/bogsilver_axe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:11:41+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/bogsilver_ingot.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:11:41+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/bogsilver_ore.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:11:41+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/bogsilver_pickaxe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:11:41+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/cleaver.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:11:08+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/crossbow.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:11:08+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/guardian_core.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:11:41+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/iron_axe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:11:41+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/iron_pickaxe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:11:08+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/iron_sword.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:11:08+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/longbow.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:11:08+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/repair_hammer.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:11:08+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/short_bow.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:11:08+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/skewer.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:11:08+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/sling.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:11:08+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/stone_axe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:11:08+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/stone_pickaxe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:11:08+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/wellglass_axe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:11:41+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/wellglass_pickaxe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:11:41+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/wellglass_shard.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:11:41+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/wooden_axe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:11:08+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/wooden_pickaxe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:11:08+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/loot/boss.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:15:28+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/loot/wellspring.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:15:28+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/recipes/bogsilver_axe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:13:55+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/recipes/bogsilver_ingot.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:13:55+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/recipes/bogsilver_pickaxe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:13:55+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/recipes/iron_axe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:13:55+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/recipes/wellglass_axe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:13:55+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/recipes/wellglass_pickaxe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:13:55+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/stations/anvil.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:13:35+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/weapons/bogsilver_axe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:12:28+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/weapons/bogsilver_pickaxe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:12:28+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/weapons/iron_axe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:12:28+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/weapons/wellglass_axe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:12:28+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/weapons/wellglass_pickaxe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:12:28+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
     "core/events/event_bus.gd": {
       "agent": "birche6b40e",
@@ -150,6 +492,12 @@
       "task": "F-472",
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
+    "scenes/buildables/anvil.tscn": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:13:35+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
     "systems/building/build_ghost.gd": {
       "agent": "coil26502f",
       "at": "2026-08-21T23:07:10+00:00",
@@ -168,9 +516,21 @@
       "task": "3.19",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "systems/harvesting/harvest_library.gd": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:20:15+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
     "systems/inventory/item_def.gd": {
       "agent": "birche6b40e",
       "at": "2026-08-21T22:51:41+00:00",
+      "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "systems/loot/loot_table_def.gd": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:14:57+00:00",
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
@@ -186,17 +546,23 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "tools/cliff_check.gd": {
-      "agent": "onyx059945",
-      "at": "2026-08-21T22:45:11+00:00",
-      "task": "F-464",
-      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
+    "tools/build_check.gd": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:13:09+00:00",
+      "task": "F-472",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
-    "tools/cliff_render.gd": {
-      "agent": "onyx059945",
-      "at": "2026-08-21T22:45:11+00:00",
-      "task": "F-464",
-      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
+    "tools/build_net_check.gd": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:13:09+00:00",
+      "task": "F-472",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+    },
+    "tools/build_snap_check.gd": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:16:36+00:00",
+      "task": "F-472",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "tools/guide_check.gd": {
       "agent": "birche6b40e",
@@ -214,6 +580,12 @@
       "agent": "birche6b40e",
       "at": "2026-08-21T22:51:41+00:00",
       "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "tools/settings_check.gd": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:19:43+00:00",
+      "task": "3.19",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
     "ui/building/build_bar.gd": {
@@ -239,36 +611,6 @@
       "at": "2026-08-21T22:49:29+00:00",
       "task": "3.19",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
-    },
-    "world/chunk/chunk_mesher.gd": {
-      "agent": "onyx059945",
-      "at": "2026-08-21T22:45:11+00:00",
-      "task": "F-464",
-      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
-    },
-    "world/chunk/terrain_flat.gdshader": {
-      "agent": "onyx059945",
-      "at": "2026-08-21T22:45:11+00:00",
-      "task": "F-464",
-      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
-    },
-    "world/gen/cliff_dresser.gd": {
-      "agent": "onyx059945",
-      "at": "2026-08-21T22:45:11+00:00",
-      "task": "F-464",
-      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
-    },
-    "world/gen/island_heightmap.gd": {
-      "agent": "onyx059945",
-      "at": "2026-08-21T22:45:11+00:00",
-      "task": "F-464",
-      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
-    },
-    "world/gen/procedural_world.gd": {
-      "agent": "onyx059945",
-      "at": "2026-08-21T22:45:11+00:00",
-      "task": "F-464",
-      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
     }
   },
   "in_flight": {
@@ -301,9 +643,56 @@
         "autoload/crafting_service.gd",
         "autoload/salvage_service.gd",
         "docs/DECISIONS.md",
-        "docs/ITEMS.md"
+        "docs/ITEMS.md",
+        "content/items/wooden_axe.tres",
+        "content/items/wooden_pickaxe.tres",
+        "content/items/sling.tres",
+        "content/items/short_bow.tres",
+        "content/items/stone_axe.tres",
+        "content/items/stone_pickaxe.tres",
+        "content/items/iron_pickaxe.tres",
+        "content/items/iron_sword.tres",
+        "content/items/cleaver.tres",
+        "content/items/skewer.tres",
+        "content/items/repair_hammer.tres",
+        "content/items/longbow.tres",
+        "content/items/crossbow.tres",
+        "content/items/iron_axe.tres",
+        "content/items/bogsilver_ore.tres",
+        "content/items/bogsilver_ingot.tres",
+        "content/items/bogsilver_axe.tres",
+        "content/items/bogsilver_pickaxe.tres",
+        "content/items/wellglass_shard.tres",
+        "content/items/guardian_core.tres",
+        "content/items/wellglass_axe.tres",
+        "content/items/wellglass_pickaxe.tres",
+        "content/weapons/iron_axe.tres",
+        "content/weapons/bogsilver_axe.tres",
+        "content/weapons/bogsilver_pickaxe.tres",
+        "content/weapons/wellglass_axe.tres",
+        "content/weapons/wellglass_pickaxe.tres",
+        "content/stations/anvil.tres",
+        "content/buildables/anvil.tres",
+        "scenes/buildables/anvil.tscn",
+        "content/recipes/iron_axe.tres",
+        "content/recipes/bogsilver_ingot.tres",
+        "content/recipes/bogsilver_axe.tres",
+        "content/recipes/bogsilver_pickaxe.tres",
+        "content/recipes/wellglass_axe.tres",
+        "content/recipes/wellglass_pickaxe.tres",
+        "systems/loot/loot_table_def.gd",
+        "content/loot/wellspring.tres",
+        "content/loot/boss.tres",
+        "content/harvestables/bogsilver_node.tres",
+        "systems/harvesting/harvest_library.gd"
       ],
-      "notes": [],
+      "notes": [
+        {
+          "at": "2026-08-21T23:08:36+00:00",
+          "by": "birche6b40e",
+          "text": "Code half committed (5f115a8). Content half (.tres) blocked all session by an open Godot editor \u2014 D-031. Worklist and API in docs/PROGRESSION.md \u00a79."
+        }
+      ],
       "started": "2026-08-21T22:49:29+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
@@ -318,26 +707,37 @@
         "autoload/settings_service.gd",
         "core/save/settings_save.gd",
         "ui/hud/focus_prompt.gd",
-        "ui/frontend/settings_screen.gd"
+        "ui/frontend/settings_screen.gd",
+        "content/guide/build_anvil.tres",
+        "content/guide/cap_wellspring.tres",
+        "content/guide/chop_a_tree.tres",
+        "content/guide/craft_first_axe.tres",
+        "content/guide/craft_stone_tools.tres",
+        "content/guide/find_bog_iron.tres",
+        "content/guide/forge_bogsilver.tres",
+        "content/guide/forge_wellglass.tres",
+        "content/guide/gather_fibre.tres",
+        "content/guide/kill_guardian.tres",
+        "content/guide/place_workbench.tres",
+        "content/guide/push_or_leave.tres",
+        "content/guide/smelt_iron.tres",
+        "content/guide/tip_corrupted_ground.tres",
+        "content/guide/tip_downed.tres",
+        "content/guide/tip_enemy_close.tres",
+        "content/guide/tip_first_night.tres",
+        "content/guide/tip_ship_ready.tres",
+        "content/guide/tip_tool_blocked.tres",
+        "tools/settings_check.gd"
       ],
-      "notes": [],
+      "notes": [
+        {
+          "at": "2026-08-21T23:08:36+00:00",
+          "by": "birche6b40e",
+          "text": "Same: GuideService/GuideHud/GuideStepDef shipped, content/guide/*.tres and the three autoload registrations still to do."
+        }
+      ],
       "started": "2026-08-21T22:49:29+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
-    },
-    "F-464": {
-      "agent": "onyx059945",
-      "files": [
-        "world/gen/island_heightmap.gd",
-        "world/chunk/chunk_mesher.gd",
-        "world/chunk/terrain_flat.gdshader",
-        "world/gen/cliff_dresser.gd",
-        "world/gen/procedural_world.gd",
-        "tools/cliff_check.gd",
-        "tools/cliff_render.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-21T22:45:11+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
     },
     "F-469": {
       "agent": "coil26502f",
@@ -366,7 +766,10 @@
         "ui/building/build_bar.gd",
         "project.godot",
         "docs/FINDINGS.md",
-        "docs/DELEGATION.md"
+        "docs/DELEGATION.md",
+        "tools/build_check.gd",
+        "tools/build_net_check.gd",
+        "tools/build_snap_check.gd"
       ],
       "notes": [],
       "started": "2026-08-21T23:07:10+00:00",
@@ -408,6 +811,27 @@
       "hash": "a6dbde6ec3361aae472ae8eeea96723ed01379bf10a444a69c2bfe4837bd4457",
       "task": "7.2",
       "token": "CLAUDE_CODE_SESSION_ID:4cd6e8b1-20ed-494f-89b5-5bbf9904d4e2"
+    },
+    "assets/audit/cliffs/cliff_20260818.png": {
+      "agent": "onyx059945",
+      "at": "2026-08-21T23:21:42+00:00",
+      "hash": "5c6271ea32e7de145d51bc0551d0697ff4da4e5100149bd08b5e317debb416ea",
+      "task": "F-464",
+      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
+    },
+    "assets/audit/cliffs/cliff_4242.png": {
+      "agent": "onyx059945",
+      "at": "2026-08-21T23:21:42+00:00",
+      "hash": "ba8a5b7160317328956b48db7ad3459ed62cc61f9e352bd50297cfb9b259f308",
+      "task": "F-464",
+      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
+    },
+    "assets/audit/cliffs/cliff_8102602.png": {
+      "agent": "onyx059945",
+      "at": "2026-08-21T23:21:42+00:00",
+      "hash": "31ede49552c1edae5e491648c78291f69ddbc4b2cab8767ad2df4ee7dfcc9735",
+      "task": "F-464",
+      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
     },
     "assets/audit/f398/after/canopy_leaves.png": {
       "agent": "kilnd3a089",
@@ -2425,6 +2849,13 @@
       "task": "F-451",
       "token": "CLAUDE_CODE_SESSION_ID:496677a1-162a-4bfd-a57f-5ef81aacc0df"
     },
+    "content/scatter/cliff_rubble.tres": {
+      "agent": "onyx059945",
+      "at": "2026-08-21T23:21:06+00:00",
+      "hash": "551a34c261e834e31e8971767b47e2cf0a32ed79d1afef7566fcbe5c0b7f255e",
+      "task": "F-471",
+      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
+    },
     "content/scatter/forest_canopy.tres": {
       "agent": "kilnd3a089",
       "at": "2026-08-21T05:34:42+00:00",
@@ -3182,11 +3613,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:34f19dd1-60f4-4279-b7ba-e40ce133b27f"
     },
     "tools/chunk_stream_check.gd": {
-      "agent": "wick5e2d04",
-      "at": "2026-08-21T21:52:49+00:00",
-      "hash": "229bd5b57c880eff0fea3352309df96a165d963f898fa63667137b4c5690fab3",
-      "task": "F-454",
-      "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
+      "agent": "onyx059945",
+      "at": "2026-08-21T23:21:42+00:00",
+      "hash": "3e211da00911e14fa8faca4c6235fe9964d3f673b19c97cc85e39d2cb4e753d8",
+      "task": "F-464",
+      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
     },
     "tools/client_stream_budget_check.gd": {
       "agent": "ivy1bcae0",
@@ -3194,6 +3625,20 @@
       "hash": "084ec34f941d206cb5e195cf1bcc419395d4f005bc4c7d14aa063ff01cce58ed",
       "task": "F-330",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
+    "tools/cliff_check.gd": {
+      "agent": "onyx059945",
+      "at": "2026-08-21T23:21:42+00:00",
+      "hash": "7bbc105390d9f904f3f8b6aa1ceb1c0dbf5be0ae3fec68af468bf4db47679782",
+      "task": "F-464",
+      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
+    },
+    "tools/cliff_render.gd": {
+      "agent": "onyx059945",
+      "at": "2026-08-21T23:21:42+00:00",
+      "hash": "9e034bb93aaee7e82b320c6fce3f9f1026bd6c92953aa29792638a82580af730",
+      "task": "F-464",
+      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
     },
     "tools/construction_check.gd": {
       "agent": "coil26502f",
@@ -3833,11 +4278,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:44f62a84-7862-455b-a776-2e1c5eb11d39"
     },
     "world/chunk/chunk_mesher.gd": {
-      "agent": "birchcf39ce",
-      "at": "2026-08-21T20:14:02+00:00",
-      "hash": "18e6d0dec0ee8d36833fcde316225b309c8c2e6975a65ade5b704f8781f08087",
-      "task": "F-450",
-      "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
+      "agent": "onyx059945",
+      "at": "2026-08-21T23:21:42+00:00",
+      "hash": "109d1841c7b34c0a54f31c013ef640ab9fb1686be83cb5c50386cb9505ce4029",
+      "task": "F-464",
+      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
     },
     "world/chunk/chunk_streamer.gd": {
       "agent": "quillcfd8d7",
@@ -3854,11 +4299,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:ef18b3c8-16fb-47c5-852c-09d362e8f2c4"
     },
     "world/chunk/terrain_flat.gdshader": {
-      "agent": "hollow80855f",
-      "at": "2026-08-21T18:29:30+00:00",
-      "hash": "b068b5b6a7d82e6292b547714c677ee79013dd83085de51ba73e4f6b4c4139f1",
-      "task": "F-435",
-      "token": "CLAUDE_CODE_SESSION_ID:0e245ac7-67ca-4077-a49b-e1b4d92abe80"
+      "agent": "onyx059945",
+      "at": "2026-08-21T23:21:42+00:00",
+      "hash": "5f8b4492adf945290006790f79db089dae79a6b7eb94b37a087bd27d08f373be",
+      "task": "F-464",
+      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
     },
     "world/environment/ground_fog.gd": {
       "agent": "hollow80855f",
@@ -3909,19 +4354,26 @@
       "task": "F-401",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
+    "world/gen/cliff_dresser.gd": {
+      "agent": "onyx059945",
+      "at": "2026-08-21T23:21:42+00:00",
+      "hash": null,
+      "task": "F-464",
+      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
+    },
     "world/gen/island_heightmap.gd": {
-      "agent": "birchcf39ce",
-      "at": "2026-08-21T20:14:02+00:00",
-      "hash": "5a974e299dfb9394fa8d1334ef1a1df214ba5d9ca07771f7420e2cb64e58bff3",
-      "task": "F-450",
-      "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
+      "agent": "onyx059945",
+      "at": "2026-08-21T23:21:42+00:00",
+      "hash": "4c74798705a553ed1649f44d1495bafb41466f0578fe1969477752e54c9bb924",
+      "task": "F-464",
+      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
     },
     "world/gen/procedural_world.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T01:08:42+00:00",
+      "agent": "onyx059945",
+      "at": "2026-08-21T23:21:42+00:00",
       "hash": "d8ed2c1bae776b46d7f24add35dad041c99842eaa5c6351d6622223442c837bb",
-      "task": "F-345",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+      "task": "F-464",
+      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
     },
     "world/gen/prop_collider.gd": {
       "agent": "kiln384569",
@@ -3931,11 +4383,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
     "world/gen/resource_scatter.gd": {
-      "agent": "quillcfd8d7",
-      "at": "2026-08-21T23:01:17+00:00",
-      "hash": "928e589b5243725d76cf99aa2e4223b75ae7252de067eaa4644e559cd9ee1c86",
-      "task": "F-461",
-      "token": "CLAUDE_CODE_SESSION_ID:ef18b3c8-16fb-47c5-852c-09d362e8f2c4"
+      "agent": "onyx059945",
+      "at": "2026-08-21T23:21:06+00:00",
+      "hash": "261770c4a8aa5862bc36bcdf57622a71d9715e81d1ae3c32da442207ecee1bd4",
+      "task": "F-471",
+      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
     },
     "world/gen/resource_scatter_field.gd": {
       "agent": "quillcfd8d7",
@@ -3945,11 +4397,18 @@
       "token": "CLAUDE_CODE_SESSION_ID:ef18b3c8-16fb-47c5-852c-09d362e8f2c4"
     },
     "world/gen/scatter_def.gd": {
-      "agent": "kilnf96279",
-      "at": "2026-08-21T19:17:13+00:00",
-      "hash": "366a7247863d681280a74e71bfff63e666bbf7bc2c140df025d0e5585e6f82e5",
-      "task": "F-445",
-      "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
+      "agent": "onyx059945",
+      "at": "2026-08-21T23:21:06+00:00",
+      "hash": "0fe9ea65640fc6345cdaa705e675b66778bab59d35d7d99ced419194181d1f28",
+      "task": "F-471",
+      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
+    },
+    "world/gen/scatter_entry.gd": {
+      "agent": "onyx059945",
+      "at": "2026-08-21T23:21:06+00:00",
+      "hash": "a3d44c428c6c5cf87f048162bca54c5580432eaac660c248b3ebf718c1f8c595",
+      "task": "F-471",
+      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
     },
     "world/gen/undergrowth.gd": {
       "agent": "galeb0891e",
@@ -3973,7 +4432,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     }
   },
-  "rev": 933,
+  "rev": 957,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9429,9 +9888,11 @@
       "title": "agent ship silently drops force-added ignored files, so a music .import never lands"
     },
     "F-464": {
+      "done_at": "2026-08-21T23:21:42+00:00",
+      "done_by": "onyx059945",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "The river's carve ends in a vertical wall wherever it crosses a hill, and nothing on the island reads as rock"
     },
@@ -9478,9 +9939,11 @@
       "title": "The fullscreen benchmark harness does not take focus, so its own runs are void"
     },
     "F-471": {
+      "done_at": "2026-08-21T23:21:42+00:00",
+      "done_by": "onyx059945",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Scatter has no slope gate at all, so trees grow straight out of cliff faces"
     },
