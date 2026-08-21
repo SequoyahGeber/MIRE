@@ -3477,6 +3477,35 @@ too heavy to open where it stands). `content/haulables/` has exactly one definit
 
 ---
 
+### F-476 · Two sessions allocated F-473 at the same time, and the numbering check is red at HEAD
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
+
+`docs/FINDINGS.md` currently has two different open findings numbered **F-473**, filed minutes apart
+by two different sessions:
+
+    line   72  F-473 · PROTOCOL_VERSION has two independent hard-coded expectations
+               (coil26502f, during F-472)
+    line 3420  F-473 · The tier-4 and tier-5 tools ship on placeholder art
+               (birche6b40e)
+
+`agent godot --script tools/findings_numbering_check.gd` fails on it — `dupes: F-473` — so the
+repo's own structure check is RED at HEAD, which is exactly the state F-293 says goes unnoticed
+because nothing enumerates and runs the `tools/` suite.
+
+The cause is a race in `agent finding`: it reads the highest existing F-number and adds one, with
+nothing serialising two sessions doing that at the same moment. Several sessions file findings
+concurrently on this repo all day, so this is a matter of timing rather than bad luck — the same
+class of problem `state.json` already solved with transactional writes for claims (F-266/D-176),
+and the fix is likely the same lock.
+
+Not renumbering either entry here: both belong to other agents, both may already be referenced from
+their own commits and journal notes, and silently renaming somebody else's finding id is worse than
+the duplicate. Whichever of the two owners gets here first should take the next free number and move
+theirs with `agent resolve`/re-file, and the allocator should be made to hold a lock while it picks.
+
+---
+
 ## Resolved
 
 ### F-475 · The benchmark reports the 2D content-scale size as its resolution, and cries wolf about focus on a good fullscreen run — **fixed**
