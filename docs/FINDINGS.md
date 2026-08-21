@@ -2363,6 +2363,48 @@ field and both collider checks, and none of that belongs inside an asset batch.
 
 ---
 
+### F-427 · Files under assets/ are being silently duplicated with a ' 2' suffix on this machine
+
+**Area:** assets · **Severity:** medium · **Found:** 2026-08-21 by ash843af8
+
+While rendering the v2 SFX catalogue (task 7.1), `assets/audio/sfx/` ended up with **454 wavs where the
+renderer had written 227** — every file had a twin named `<name> 2.wav`, with a matching
+`<name> 2.wav.import` sidecar. The renderer writes each path exactly once
+(`ma.write_wav(os.path.join(sfx_dir, fname), ...)` inside a loop over unique names), so nothing in
+`tools/audio/` produced them.
+
+The duplicates were caught only because `git add -A` staged 461 wavs for a 227-file render and the
+count looked wrong. **A `git add` of the directory would otherwise have committed 227 junk assets**,
+and every one of them would have been imported by Godot as a real asset.
+
+The same pattern is present in `.godot/imported/` for files this task never touched —
+`palisade_corner 2.glb`, `leaf_litter_a 2.glb`, `nettle_c.glb-... 2.md5`, `trees_preview.png-... 2.ctex` —
+so this is **not specific to audio and not specific to this session**. That naming convention (a space
+and an integer appended before the extension) is what macOS Finder and cloud-sync clients
+(iCloud Drive, Dropbox, OneDrive) produce when they resolve a write conflict on a file that was
+deleted and immediately rewritten. The repo lives under `~/Desktop`, which iCloud Drive syncs by
+default when Desktop & Documents sync is enabled.
+
+**Why this matters beyond tidiness:** any writer that does delete-then-rewrite on an asset directory
+(`tools/audio/render_sfx.py`, and every `tools/blender/build_*.py` that re-exports a GLB over an
+existing one) is exposed. A duplicated GLB is a second copy of a mesh that Godot will import, that
+`agent check` will not flag because nobody claimed it, and that a later `git add -A` can commit.
+F-196's import-cache lock does not help here — the race is with the sync client, not with Godot.
+
+Cleaned up this session with `find assets/audio -name "* 2.*" -delete` (454 files), after which
+`audio_check.py` and `tools/audio_import_check.gd` are both green at 227 files.
+
+Suggested fixes, cheapest first:
+1. Add `* [0-9].*` (or at least `* 2.*`) to `.gitignore` so a conflicted copy can never be staged by
+   accident. This is a one-line guard and costs nothing.
+2. Add a duplicate sweep to `agent check` — a repo-wide `find` for that pattern under `assets/`,
+   failing the pre-commit hook if any exist. That turns a silent corruption into a blocked commit.
+3. If the machine really is syncing Desktop to iCloud, exclude the repo (or move it out of
+   `~/Desktop`). This is Sequoyah's call and his machine — it is the only fix that stops the
+   duplicates being created rather than catching them afterwards.
+
+---
+
 ## Resolved
 
 ### F-423 · The procedural island has never had ground shadows — shadow_normal_bias is 2.4, roughly double the authored maps, and the flat-shaded terrain cannot afford it — **fixed**

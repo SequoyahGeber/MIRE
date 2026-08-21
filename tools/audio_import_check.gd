@@ -87,7 +87,7 @@ func _run() -> void:
 
 	print("\n== sfx: mono wav streams ==")
 	var sfx_names: PackedStringArray = _list(SFX_DIR, ".wav")
-	check(sfx_names.size() >= 19, "found >= 19 sfx wavs (%d)" % sfx_names.size())
+	check(sfx_names.size() >= 200, "found >= 200 sfx wavs (%d)" % sfx_names.size())
 	for name in sfx_names:
 		var stream: AudioStream = load(SFX_DIR + "/" + name)
 		if stream == null:
@@ -98,8 +98,12 @@ func _run() -> void:
 		if wav != null:
 			check(not wav.stereo, "%s is mono" % name)
 			var length: float = wav.get_length()
-			check(length > 0.02 and length < 3.5,
-				"%s length %.2fs in (0.02, 3.5)" % [name, length])
+			# 6 s, not 3.5: `tree_fall` runs from the first fibre giving way to
+			# the ground impact, `extraction_arrive`/`_launch` are whole hull
+			# manoeuvres, and `furnace_loop` is a 4 s seamless bed. Truncating any
+			# of them to satisfy a rule would remove the part they exist for.
+			check(length > 0.02 and length < 6.0,
+				"%s length %.2fs in (0.02, 6.0)" % [name, length])
 
 	print("\nAUDIO_IMPORT_CHECK failures=%d" % failures)
 	quit(0 if failures == 0 else 1)

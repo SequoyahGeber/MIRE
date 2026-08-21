@@ -42,3 +42,7 @@ tools/blender/__pycache__/
 # `assets/audit/a009/sheets/`, and a fixed one-level path silently missed them — 6.4 MB sat
 # untracked-but-stageable. `**/` matches zero or more directories, so both shapes are covered.
 assets/audit/**/sheets/
+
+# Cloud-sync / Finder conflict copies (F-427). A delete-then-rewrite of an asset can
+# leave a "<name> 2.ext" twin behind; without this, `git add -A` commits it as a real asset.
+* [0-9].*

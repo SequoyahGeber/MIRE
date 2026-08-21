@@ -18,7 +18,8 @@ listening pass wastes the only scarce resource here.
 
 Rules:
   all files : no clipped samples, |DC offset| < 0.002, peak <= -0.9 dBFS
-  sfx       : mono, 0.03 s <= duration <= 3 s, RMS >= -40 dBFS
+  sfx       : mono, 0.03 s <= duration <= 6 s, peak short-term loudness in
+              [-40, -11] dBFS, and no two files more than 30 dB apart in it
   music wav : stereo, 3:30 <= duration <= 4:00, -26 <= RMS <= -14 dBFS,
               loop seam continuity (|first - last| within the track's own
               99.9th-percentile sample-to-sample delta, x2 headroom)
@@ -65,15 +66,44 @@ def common_checks(name: str, sig: np.ndarray) -> None:
     check(peak_db(sig) <= -0.9, f"{name}: peak {peak_db(sig):.2f} dBFS <= -0.9")
 
 
-def check_sfx(path: str) -> None:
+def short_term_loudness_db(sig: np.ndarray, window_s: float = 0.1) -> float:
+    """Peak short-term loudness — the loudest 100 ms, as RMS. The same measure
+    `render_sfx.py` normalises to, reimplemented here rather than imported so
+    this check would catch the renderer's own measure drifting.
+
+    Full-file RMS is not usable as a gate on this catalogue: a sound that is one
+    transient inside a long tail measures 20 dB below a continuous one at the
+    same perceived level, so an RMS floor would fail every sparse asset while
+    passing genuinely inaudible dense ones."""
+    mono = sig[0] if sig.ndim == 2 else sig
+    n = mono.shape[0]
+    w = min(int(window_s * ma.SR), n)
+    if w < 2:
+        return 20.0 * math.log10(max(float(np.sqrt(np.mean(mono ** 2))), 1e-9))
+    power = np.concatenate([[0.0], np.cumsum(mono ** 2)])
+    frames = np.sqrt(np.maximum((power[w:] - power[:-w]) / w, 0.0))
+    return 20.0 * math.log10(max(float(np.max(frames)), 1e-9))
+
+
+def check_sfx(path: str) -> float:
     name = os.path.basename(path)
     sig, sr = ma.read_wav(path)
     dur = sig.shape[1] / sr
     check(sr == ma.SR, f"{name}: sample rate {sr} == {ma.SR}")
     check(sig.shape[0] == 1, f"{name}: mono ({sig.shape[0]} ch)")
-    check(0.03 <= dur <= 3.0, f"{name}: duration {dur:.2f}s in [0.03, 3.0]")
-    check(ma.rms_db(sig) >= -40.0, f"{name}: rms {ma.rms_db(sig):.1f} dBFS >= -40")
+    # 6 s, not 3: a tree coming down genuinely takes four seconds from the first
+    # fibre giving way to the ground impact, and truncating it to fit a rule
+    # would remove the landing, which is the half the sound exists for.
+    check(0.03 <= dur <= 6.0, f"{name}: duration {dur:.2f}s in [0.03, 6.0]")
+    loud = short_term_loudness_db(sig)
+    # Floor at -40 rather than -36: a UI hover tick is 55 ms long, and a sound
+    # shorter than the measurement window legitimately reads a few dB under a
+    # longer one at the same peak. Moving the tick UP to satisfy the gate would
+    # distort the mix to please the meter — a hover should be barely there.
+    check(-40.0 <= loud <= -11.0,
+          f"{name}: short-term loudness {loud:.1f} dBFS in [-40, -11]")
     common_checks(name, sig)
+    return loud
 
 
 def check_theme(path: str) -> None:
@@ -139,8 +169,21 @@ def main() -> None:
     sfx_root = args.sfx_dir or os.path.join(repo, "assets", "audio", "sfx")
     sfx_paths = sorted(glob.glob(os.path.join(sfx_root, "*.wav")))
     check(len(sfx_paths) > 0, f"found {len(sfx_paths)} sfx wavs")
+    levels: dict[str, float] = {}
     for path in sfx_paths:
-        check_sfx(path)
+        levels[os.path.basename(path)] = check_sfx(path)
+
+    # The mix, as one assertion. v1 shipped everything peak-normalised into a
+    # 6 dB band, so a footstep was as loud as a falling tree; the failure mode
+    # this guards is the opposite one, a catalogue that has drifted so far apart
+    # that something is inaudible next to its neighbours.
+    if levels:
+        loudest = max(levels, key=levels.get)
+        quietest = min(levels, key=levels.get)
+        spread = levels[loudest] - levels[quietest]
+        check(spread <= 30.0,
+              f"mix spread {spread:.1f} dB <= 30 "
+              f"({loudest} {levels[loudest]:.1f} .. {quietest} {levels[quietest]:.1f})")
 
     if args.theme_dir:
         theme_paths = sorted(glob.glob(os.path.join(args.theme_dir, "*.wav")))
