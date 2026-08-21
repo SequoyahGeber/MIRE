@@ -172,6 +172,25 @@ Consequences for M4: one bake in flight at a time (16 fired in one frame blocks 
 stays at 0.25 m (scaling is steeply superlinear — 0.1 m costs 80.7 ms), per-chunk bakes rather than
 one large region (a 4×4 bake costs 7.3 ms/chunk vs 9.6 ms for a single chunk, so there is nothing to
 amortize), and map `async_iterations` stays on. Pathfinding is host-authoritative per §2.2.
+**AMBER as of 2026-08-20 (ivy1bcae0, F-347) — the 0.034 ms figure above no longer reproduces.**
+`tools/bench_navbake.gd` on the settled 4.7.1 tree records the streaming episode's worst main-thread
+block at **22-49 ms across five runs**, against the same 2 ms budget — three orders of magnitude off
+the number this decision rests on. Everything else here still holds and is re-measured green: a
+single async submission is 0.000-0.063 ms, attaching a region to a live map is 0.019 ms median, 16
+bakes fired at once cost 5.2 ms, and seams connect via radius 0.50 / margin 1.10.
+
+Profiled and isolated: it is **RETIREMENT**, not baking or attaching. Taking one region out of
+service on a live map costs ~25-35 ms, and it is not about `free_rid` — `region_set_map(RID())`,
+an empty navmesh, and `region_set_enabled(false)` all cost the same 25-26 ms, which points at the
+map's edge-connection rebuild rather than at RID lifetime. `world/chunk/nav_baker.gd._retire()`
+does exactly this per chunk as the world streams, so this is a shipped hitch, not a bench artifact.
+Filed as its own finding with the measurements; the benchmark now exits nonzero on a missed budget,
+so this cannot silently read green again.
+
+What does NOT change: async-only baking, one bake in flight, `cell_size` 0.25, per-chunk regions,
+the 1.10 m edge margin, and the grid-A* fallback staying unneeded. The risk R3 was about — can we
+bake at runtime at all — is still answered yes. What is open is the cost of giving a region back.
+
 **Would change my mind:** the block reappearing once real geometry — rocks, structures, `MultiMesh`
 scatter — is in the source data rather than a bare heightmap, or the 1.10 m margin bridging terrain
 that should stay separated once cliffs and water exist. Either pushes us to bake with
@@ -5940,3 +5959,71 @@ Proven by phase 3 of `tools/terminal_focus_check.gd`, against both `EndReason`s 
 `docs/SPECS.md` §F-307 for why the two children leave by different paths). The two siblings this
 turned up are F-321 (`AttunementUI`, the third mandatory panel, same bug) and F-322 (nothing shipped
 calls `end_session()`, which is why the ungraceful path costs 19 s).
+
+---
+
+### D-186 · 2026-08-20 · F-353: the daytime varnish is a `daylight`-driven grade, and every knob it moves is a DAY end whose night end is the value the scene author already set
+
+Sequoyah's verdict on the shipped procedural island: *"im not happy with the lighting of the game
+during the day, it looks super washed out and looks like it needs a coat of varnish to make
+everything clear and saturated."* Measured on `assets/audit/terrain/island_spawn_view.png`, the
+whole frame lived between luminance 0.477 and 0.710 with a saturation median of 0.238 — no blacks,
+no whites, no chroma — and two ground samples 150 px apart differed by one 1/255 step.
+
+**Four causes, each a single number, none of them the fog volumes everyone reaches for first:**
+
+1. **`fog_height_density = 0.06` in the level scenes.** Godot computes the exponential fog's height
+   term INDEPENDENTLY of `fog_density` and `max`es the two together, so F-115 setting
+   `fog_density = 0` to "keep the open routes clear" never disabled it. Everything below `fog_height`
+   (6 m — the ground, the props, the player's feet) was blended toward `fog_light_color` **at every
+   distance including zero**. Isolated by render: with the height term off, the blue channel two
+   metres from the camera moves 121 → 103 and ground saturation rises 0.072, while the far shore
+   does not move at all. A distance-independent blend is a coat of paint, not fog.
+2. **`glow_bloom = 0.14`.** This applies glow to the whole frame *below* the HDR threshold — a milk
+   pass over every pixel regardless of brightness. Dropping it took the darkest pixel in the frame
+   from 0.164 to 0.070. That is where the blacks had gone.
+3. **`tonemap_white = 3.0` under ACES.** Godot normalises by the tonemapped white, so a white point
+   of 3 maps the scene's real 0..1 range into the toe of the curve: blacks lift, highlights never
+   arrive, contrast dies everywhere at once.
+4. **`ambient_light_energy` running to 0.62.** D-184's terrain is flat-shaded with no texture and no
+   normal map, so facet-to-facet radiance difference is the ONLY thing giving the ground form. A
+   fill that strong makes a facet turned 30° off the sun read the same as one facing it.
+
+**The decision is the shape, not the numbers.** Every value moves in
+`world/environment/playtest_atmosphere.gd`'s existing `daylight`-driven block as the DAY end of a
+lerp whose NIGHT end is what the scene author set — so at `daylight` 0 the grade is byte-identical
+to what shipped. Three reasons this is the right shape and not just the cautious one:
+
+- **He asked about the day.** A change that also retunes night is a bigger change than the one
+  requested, judged against renders nobody looked at.
+- **It quarantines F-356.** Night renders essentially black *on the shipped grade* — verified by
+  rendering hour 22.0 as its own control before touching anything. Had the varnish been applied flat,
+  that pre-existing failure would have looked like this change's regression and been debugged as one.
+- **The file already worked this way.** `ambient_light_energy`, `tonemap_exposure`, sun energy and the
+  sky colours were all `daylight` lerps already; the four new knobs are the same idiom, in the same
+  driver-gated block, so they cost nothing per tick (the block early-outs whenever the drivers hold).
+
+Terrain albedo moved with the grade — `Color(0.35, 0.45, 0.3)` → `Color(0.26, 0.40, 0.19)` in both
+`chunk_streamer.gd` and the shader's own default. The old value was a greyed olive (sRGB saturation
+~0.20) chosen while the grade was washing everything out anyway; with the veils gone it rendered as
+a pale chartreuse sheet.
+
+**Result, same camera and same hour, shipped vs now:** luminance p05/p95 spread 0.281 → 0.626, frame
+minimum 0.164 → 0.020, saturation median 0.238 → 0.383, ground rgb(149,175,123) sat 0.24 →
+rgb(98,160,62) sat 0.44. Night measures identical to shipped at hour 22.0, which is the property that
+made this safe to ship.
+
+Guarded by `tools/grade_check.gd` (headless — it asserts the veil stays off, that noon carries the
+day grade, and that midnight returns to the authored values on BOTH shipped levels). Looked at with
+`tools/grade_probe.gd --windowed`, which poses any hour and renders variants for A/B.
+
+**Would change my mind:** Sequoyah walking a lit island and calling the greens too electric or the
+shadows too heavy. Both are one constant each (`DAY_ADJUSTMENT_SATURATION`, `DAY_AMBIENT_ENERGY`),
+and the golden-hour render at 17.2 is the frame to judge them on — it is the darkest daytime hour
+and the one where a further ambient cut would start crushing.
+
+**Two method traps this cost real time to learn, recorded for whoever tunes the look next:**
+`procedural_world` builds a DIFFERENT island per probe run, so shots from two runs are two different
+maps and cannot be compared — only variants within one run are comparable. And the first shot after
+the settle has not converged; it reads several units darker than the identical config rendered later
+in the same run, so lead with a throwaway variant or discard shot one.

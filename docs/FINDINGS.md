@@ -1595,14 +1595,6 @@ The stable `spawn_ground_check.gd` run emitted repeated `Navigation region synch
 
 ---
 
-### F-347 · The navigation performance decision is no longer reproduced: the benchmark now records repeatable 39-43 ms streaming frames
-
-**Area:** navigation/performance/testing · **Severity:** high · **Found:** 2026-08-20 by nettlea491cc
-
-`tools/bench_navbake.gd` was run twice on the settled Godot 4.7.1 working tree. Its 24-chunk realistic streaming episode recorded 39.457 ms and 42.536 ms of engine-frame block, both far above its 2 ms budget and the 0.034 ms result on which D-016 declares runtime navigation GREEN. Single async submissions remain cheap (0-0.092 ms), so this is specifically the attach/retire/map-iteration episode that the decision treats as proven safe. The harness also prints the factually wrong fallback verdict `hitches at runtime and seams do not join` when block is red but `_seam_ok` is true; its immediately preceding table correctly reports `YES via radius 0.50, margin 1.10`. Profile and isolate the repeatable streaming spike on the current engine/runtime geometry, make the benchmark exit nonzero on a missed budget, and fix verdict composition so navigation safety cannot remain documented green while its owning instrument prints contradictory red evidence.
-
----
-
 ### F-349 · Blight drains a standing player to death with no signal that anything is happening
 
 **Area:** systems · **Severity:** high · **Found:** 2026-08-21 by ivycc0920
@@ -1722,53 +1714,6 @@ owned by chunk streaming (they are under the streamer's own container and are re
 and report the remaining props separately, so the census can exit 0 on a world that manages LOD by
 streaming while still naming the scatter props that do not. Do not simply relax the tests — the
 scatter finding is the one worth keeping.
-
----
-
-### F-353 · Daytime lighting reads washed out: the frame lives in a 0.48-0.71 luminance band with no blacks and no saturation
-
-**Area:** render · **Severity:** high · **Found:** 2026-08-21 by gale47f1fe
-
-Sequoyah, 2026-08-20, on the shipped procedural island: "im not happy with the lighting of the game
-during the day, it looks super washed out and looks like it needs a coat of varnish to make
-everything clear and saturated."
-
-Measured on `assets/audit/terrain/island_spawn_view.png` (the 4.19 look probe's own spawn shot, the
-current shipped grade):
-
-  whole frame   luminance p05 0.477  median 0.575  p95 0.710   (min 0.195, max 0.972)
-                saturation p10 0.188 median 0.272  p90 0.314
-  ground near   rgb(155,182,133)
-  ground mid    rgb(155,181,134)
-
-The two ground samples are one 1/255 step apart across ~150 px of depth and a change of facet
-angle. That is the finding in one line: the flat-shaded terrain D-184 shipped is not being shaded
-at all, because everything that should have produced tonal separation has been cancelled out.
-
-Four contributors, all in the day half of the grade:
-
-1. HEIGHT FOG PAINTS A CONSTANT GREY VEIL OVER THE GROUND. `levels/procedural_island.tscn` sets
-   `fog_height = 6.0` / `fog_height_density = 0.06`, and Godot's exponential fog computes the
-   height term independently of `fog_density` and `max`es it in — so
-   `playtest_atmosphere.gd`'s `_environment.fog_density = 0.0` (F-115's "keep the open routes
-   clear") does NOT disable it. Everything below y=6 — which is the ground, the props on it and
-   the player's whole field of view — is blended toward `fog_light_color` at ALL distances,
-   including zero. A distance-independent grey blend is a coat of paint, not fog.
-
-2. `tonemap_white = 3.0` under ACES. A white point of 3 compresses the scene's real 0..1 range into
-   the toe of the curve: blacks lift, highlights never reach white, and contrast dies everywhere.
-   The measured 0.195 floor with a lit noon sun is that.
-
-3. AMBIENT FILL ERASES THE FACETS. `ambient_light_energy` runs to 0.62 by day against
-   `ambient_light_sky_contribution = 0.68` off a bright sky. Flat shading has no texture and no
-   normal map — facet-to-facet radiance difference is the ONLY thing that gives the terrain form,
-   and a fill that strong makes a facet turned 30 deg away read the same as one facing the sun.
-
-4. Albedo and grade are both slightly greyed: terrain base is `Color(0.35, 0.45, 0.3)` (sRGB
-   saturation ~0.20) and `adjustment_saturation = 1.14` is not enough to recover it after 1-3.
-
-Contributors 1 and 2 are the ones worth fixing first; they are global, they cost nothing, and each
-removes a flat multiply rather than adding a pass.
 
 ---
 
@@ -1893,7 +1838,204 @@ rendered later in the same run — put a throwaway variant first, or discard sho
 
 ---
 
+### F-358 · Retiring a navigation region costs 25-35 ms on the main thread, however it is done
+
+**Area:** navigation · **Severity:** high · **Found:** 2026-08-21 by ivy1bcae0
+
+Found 2026-08-20 by ivy1bcae0 while profiling F-347.
+
+`world/chunk/nav_baker.gd._retire()` calls `NavigationServer3D.free_rid(region)` for every chunk the
+world streams out. Measured on a live 9-region map through `tools/bench_navbake.gd`'s new phase 4f:
+
+    [attach   ] 1 region onto a live 9-region map    | median  0.019 | max  0.038 ms
+    [retire   ] free 1 region from a live map        | median 28.134 | max 44.575 ms
+
+Three orders of magnitude apart, on the same map, in the same benchmark, with
+`map_set_use_async_iterations` on for both. Adding a region is effectively free; giving one back is
+not. That is the whole of F-347's 22-49 ms streaming spike, and it happens on the host every time a
+chunk leaves the 3x3 navigation window — which, while a player is walking, is continuously.
+
+**It is not about `free_rid`.** All four ways of taking a region out of service cost the same:
+
+    free_rid     | median 25.150 | max 27.082 ms
+    unset_map    | median 25.074 | max 25.518 ms
+    empty_mesh   | median 25.720 | max 26.267 ms
+    disable      | median 26.525 | max 27.124 ms
+
+So an RID pool — the obvious fix, and the one worth NOT spending a session on — buys nothing. The
+cost is the map re-deriving its inter-region edge connections, which removal forces synchronously
+while addition apparently defers. `map_set_edge_connection_margin` is 1.10 m here (D-016 requires it
+above 2x agent radius or chunks cannot connect at all), and a wide margin means every region tests
+against more neighbours, so the margin and this cost are likely the same knob pulled in opposite
+directions.
+
+Directions worth measuring before committing to one, roughly in order of expected value:
+
+1. **Retire less often.** Hysteresis on the navigation window, or retiring on a timer rather than on
+   the streamer's eviction, turns a per-chunk cost into a rare one without changing its unit price.
+2. **Retire in batches.** `[add+retire] attach 1 and free 1 in the same step` measured a median of
+   0.000-0.019 ms against 25 ms for retire alone, which suggests the rebuild coalesces when other
+   work is already queued for the same iteration. If several retirements coalesce the same way, the
+   fix is to defer them to one drain per interval. This is the most promising line and the cheapest
+   to test.
+3. **Narrow the connection search.** Whether the cost scales with live region count or with margin
+   is unmeasured; if it is the margin, D-016's 1.10 m may be payable in a cheaper way.
+
+Not fixed here because F-347 was about the instrument lying, and this is a different piece of work
+with a real design choice in it. The instrument no longer lies: `bench_navbake.gd` exits nonzero on
+a missed budget, phase 4f isolates attach from retire, and D-016 is marked AMBER with these numbers.
+
+---
+
 ## Resolved
+
+### F-347 · The navigation performance decision is no longer reproduced: the benchmark now records repeatable 39-43 ms streaming frames — **fixed**
+
+**Area:** navigation/performance/testing · **Severity:** high · **Found:** 2026-08-20 by nettlea491cc
+
+`tools/bench_navbake.gd` was run twice on the settled Godot 4.7.1 working tree. Its 24-chunk realistic streaming episode recorded 39.457 ms and 42.536 ms of engine-frame block, both far above its 2 ms budget and the 0.034 ms result on which D-016 declares runtime navigation GREEN. Single async submissions remain cheap (0-0.092 ms), so this is specifically the attach/retire/map-iteration episode that the decision treats as proven safe. The harness also prints the factually wrong fallback verdict `hitches at runtime and seams do not join` when block is red but `_seam_ok` is true; its immediately preceding table correctly reports `YES via radius 0.50, margin 1.10`. Profile and isolate the repeatable streaming spike on the current engine/runtime geometry, make the benchmark exit nonzero on a missed budget, and fix verdict composition so navigation safety cannot remain documented green while its owning instrument prints contradictory red evidence.
+
+---
+
+**Resolved 2026-08-21 by ivy1bcae0.** **Fixed 2026-08-20 by ivy1bcae0.** All three of the finding's asks, and the spike is now attributed.
+
+**The verdict no longer contradicts its own evidence.** It was a fall-through ladder: with a 39 ms
+block and seams connecting, every branch failed its test and the `else` printed "RED — hitches at
+runtime and seams do not join", the second half flatly false and contradicting the table two lines
+above reading "seams connect across chunk regions: YES". It is now composed from two INDEPENDENT
+axes — the block graded against `HITCH_MS`/`FRAME_BUDGET_MS`, the seams graded on their own — with
+the overall grade the worse of the two and each clause stating what it actually found. It now reads:
+
+    VERDICT: RED — block 27.302 ms (over a whole 16.7 ms frame); seams connect via radius 0.50, margin 1.10
+
+**It exits nonzero on a missed budget** (verified: exit code 1). A benchmark that reports a missed
+budget and exits 0 is one the battery treats as passing, and D-016 declares runtime navigation GREEN
+on this instrument's own evidence — so the instrument has to be able to withdraw it.
+
+**Profiled and isolated — it is RETIREMENT, not baking or attaching.** New phase 4f measures the two
+halves of a streaming step apart, because a benchmark reporting one blended number for a two-part
+operation cannot tell anyone which part to fix:
+
+| operation, live 9-region map, async iterations on | median | max |
+|---|---:|---:|
+| attach 1 region | 0.019 ms | 0.038 ms |
+| **retire 1 region** | **28.134 ms** | **44.575 ms** |
+| attach 1 + retire 1 in one step | 0.000 ms | 27.628 ms |
+
+And it is not about `free_rid`: `region_set_map(RID())`, an empty navmesh and
+`region_set_enabled(false)` all cost the same 25-26 ms, so an RID pool — the obvious fix — buys
+nothing. The cost is the map re-deriving inter-region edge connections, which removal forces
+synchronously while addition defers. `NavBaker._retire()` does this per chunk as the world streams,
+so it is a shipped hitch rather than a bench artifact.
+
+Everything else re-measured green: single async submission 0.000-0.063 ms, 16 bakes at once 5.2 ms,
+attach 0.019 ms, seams connect with a 1.10 m margin. The risk R3 was actually about — can we bake at
+runtime at all — is still answered yes.
+
+Follow-ups recorded rather than folded in, because fixing the cost is a different piece of work with
+a real design choice in it: **F-358** carries the measurements and three ranked directions (retire
+less often; batch retirements, since add+retire coalesces to ~0 ms; or narrow the connection search).
+**D-016 is marked AMBER** with these numbers — navigation cannot stay documented green while its
+owning instrument prints red.
+
+### F-353 · Daytime lighting reads washed out: the frame lives in a 0.48-0.71 luminance band with no blacks and no saturation — **fixed**
+
+**Area:** render · **Severity:** high · **Found:** 2026-08-21 by gale47f1fe
+
+Sequoyah, 2026-08-20, on the shipped procedural island: "im not happy with the lighting of the game
+during the day, it looks super washed out and looks like it needs a coat of varnish to make
+everything clear and saturated."
+
+Measured on `assets/audit/terrain/island_spawn_view.png` (the 4.19 look probe's own spawn shot, the
+current shipped grade):
+
+  whole frame   luminance p05 0.477  median 0.575  p95 0.710   (min 0.195, max 0.972)
+                saturation p10 0.188 median 0.272  p90 0.314
+  ground near   rgb(155,182,133)
+  ground mid    rgb(155,181,134)
+
+The two ground samples are one 1/255 step apart across ~150 px of depth and a change of facet
+angle. That is the finding in one line: the flat-shaded terrain D-184 shipped is not being shaded
+at all, because everything that should have produced tonal separation has been cancelled out.
+
+Four contributors, all in the day half of the grade:
+
+1. HEIGHT FOG PAINTS A CONSTANT GREY VEIL OVER THE GROUND. `levels/procedural_island.tscn` sets
+   `fog_height = 6.0` / `fog_height_density = 0.06`, and Godot's exponential fog computes the
+   height term independently of `fog_density` and `max`es it in — so
+   `playtest_atmosphere.gd`'s `_environment.fog_density = 0.0` (F-115's "keep the open routes
+   clear") does NOT disable it. Everything below y=6 — which is the ground, the props on it and
+   the player's whole field of view — is blended toward `fog_light_color` at ALL distances,
+   including zero. A distance-independent grey blend is a coat of paint, not fog.
+
+2. `tonemap_white = 3.0` under ACES. A white point of 3 compresses the scene's real 0..1 range into
+   the toe of the curve: blacks lift, highlights never reach white, and contrast dies everywhere.
+   The measured 0.195 floor with a lit noon sun is that.
+
+3. AMBIENT FILL ERASES THE FACETS. `ambient_light_energy` runs to 0.62 by day against
+   `ambient_light_sky_contribution = 0.68` off a bright sky. Flat shading has no texture and no
+   normal map — facet-to-facet radiance difference is the ONLY thing that gives the terrain form,
+   and a fill that strong makes a facet turned 30 deg away read the same as one facing the sun.
+
+4. Albedo and grade are both slightly greyed: terrain base is `Color(0.35, 0.45, 0.3)` (sRGB
+   saturation ~0.20) and `adjustment_saturation = 1.14` is not enough to recover it after 1-3.
+
+Contributors 1 and 2 are the ones worth fixing first; they are global, they cost nothing, and each
+removes a flat multiply rather than adding a pass.
+
+---
+
+**Resolved 2026-08-21 by gale47f1fe.** Fixed and verified. D-186 records the shape of the fix and why it is daylight-driven; this is what
+landed and how it was proven.
+
+WHAT CHANGED
+
+  · levels/procedural_island.tscn, levels/hollowmere.tscn — `fog_height_density` 0.06 -> 0.0. The
+    distance-independent grey veil over everything below y=6. Godot maxes the height term in
+    independently of `fog_density`, which is why F-115's `fog_density = 0` never disabled it.
+  · world/environment/playtest_atmosphere.gd — `tonemap_white`, `glow_bloom`, `glow_hdr_threshold`,
+    `glow_intensity`, `adjustment_contrast` and `adjustment_saturation` now move on the same
+    `daylight` curve the file already used for ambient/exposure/sun; `ambient_light_energy`'s day
+    end 0.62 -> 0.30, `tonemap_exposure`'s 1.16 -> 0.95, sun energy 1.45 -> 1.55, and `fog_density`
+    restored to 0.0016 * haze so aerial perspective exists at range. Every DAY_* constant's night
+    end is the value the scene author set, so `daylight` 0 reproduces the shipped grade exactly.
+  · world/chunk/chunk_streamer.gd + world/chunk/terrain_flat.gdshader — terrain albedo
+    Color(0.35,0.45,0.3) -> Color(0.26,0.40,0.19), both copies kept in step.
+
+MEASURED, same camera and hour, shipped vs now
+
+  luminance p05/p95 spread   0.281 -> 0.626
+  frame minimum              0.164 -> 0.020
+  saturation median          0.238 -> 0.383
+  ground                     rgb(149,175,123) sat 0.24 -> rgb(98,160,62) sat 0.44
+
+VERIFIED
+
+  · tools/grade_check.gd (new, headless) — 38 assertions across BOTH shipped levels: the veil stays
+    off, noon carries the day grade, midnight returns to the authored values. All pass.
+  · tools/grade_probe.gd (new, windowed) — rendered the committed grade with NO overrides at four
+    hours: morning, noon, golden (17.2) and night (22.0). Golden is dark but readable with terrain
+    form intact and nothing crushing to a hole; night measures identical to the shipped baseline,
+    which is the property that made this safe to ship.
+  · atmosphere_night_check, ground_fog_check, day_night_check — all still 0 failures.
+
+Evidence in assets/audit/lighting/, trimmed to what is actually cited: 00_baseline vs
+50_final_morning is the before/after pair, 51/53/54/55 are the committed grade at shore, noon,
+golden and night, and 34/35 are the SHIPPED grade at golden and night — 35_baseline_night is the
+control that proves F-356 pre-dates this fix. 20_shore_final and 25_final_spawn carry F-357's band.
+
+LEFT DELIBERATELY ALONE, both filed rather than folded in
+
+  · F-356 — night renders essentially black. Pre-existing; the control render proves it. The
+    daylight-driven shape above exists partly to keep it out of this fix's blast radius.
+  · F-357 — the flat pale-grey band above the horizon. Pre-existing, survives this fix, and six
+    candidate causes are eliminated in the finding.
+
+NOTE ON THE WORKING TREE: partway through, the Godot editor was opened by hand and re-saved both
+level scenes, reverting the `fog_height_density` edit and overwriting levels/hollowmere.tscn with a
+copy of the procedural island (its World/Undergrowth/Player nodes replaced). Restored from HEAD and
+re-applied once the editor was closed; the committed hollowmere.tscn differs from HEAD by the single
+fog line and nothing else. D-031 is not a formality.
 
 ### F-340 · Terrain retuning landed without refreshing its deterministic and structural checks — **fixed**
 
