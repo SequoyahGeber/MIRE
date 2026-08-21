@@ -4083,6 +4083,231 @@
     "unapplied_transforms": [],
     "vertices": 2916
   },
+  "source/reference_imports/kenney_nature_kit/cliff_block_rock.glb": {
+    "_source_mtime": 1787301213.2028391,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "duplicate_vertices": 16,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "dirt",
+      "grass"
+    ],
+    "min_z_m": -0.05,
+    "ngons": 0,
+    "non_manifold_edges": 24,
+    "objects": 1,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      -0.05
+    ],
+    "polygons": 12,
+    "sheet": "sheets/source__reference_imports__kenney_nature_kit__cliff_block_rock.png",
+    "smooth_shaded_faces": 0,
+    "triangles": 12,
+    "unapplied_transforms": [],
+    "vertices": 24
+  },
+  "source/reference_imports/kenney_nature_kit/log.glb": {
+    "_source_mtime": 1787301213.2199566,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.234,
+      0.71,
+      0.1732
+    ],
+    "duplicate_vertices": 260,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "woodBark",
+      "woodInner"
+    ],
+    "min_z_m": -0.05,
+    "ngons": 0,
+    "non_manifold_edges": 312,
+    "objects": 1,
+    "open_surface_objects": [
+      "log"
+    ],
+    "origin_offset_m": [
+      0.0077,
+      0.0,
+      -0.05
+    ],
+    "polygons": 200,
+    "sheet": "sheets/source__reference_imports__kenney_nature_kit__log.png",
+    "smooth_shaded_faces": 19,
+    "triangles": 200,
+    "unapplied_transforms": [],
+    "vertices": 312
+  },
+  "source/reference_imports/kenney_nature_kit/rock_largeA.glb": {
+    "_source_mtime": 1787301213.2114046,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.7849,
+      1.0155,
+      0.2598
+    ],
+    "duplicate_vertices": 104,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "dirt.001",
+      "grass.001"
+    ],
+    "min_z_m": -0.05,
+    "ngons": 0,
+    "non_manifold_edges": 146,
+    "objects": 1,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      -0.05
+    ],
+    "polygons": 80,
+    "sheet": "sheets/source__reference_imports__kenney_nature_kit__rock_largeA.png",
+    "smooth_shaded_faces": 15,
+    "triangles": 80,
+    "unapplied_transforms": [],
+    "vertices": 146
+  },
+  "source/reference_imports/kenney_nature_kit/stump_old.glb": {
+    "_source_mtime": 1787301213.193584,
+    "degenerate_faces": 2,
+    "dimensions_m": [
+      0.3565,
+      0.371,
+      0.2665
+    ],
+    "duplicate_vertices": 146,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "woodBark.001"
+    ],
+    "min_z_m": -0.05,
+    "ngons": 0,
+    "non_manifold_edges": 208,
+    "objects": 1,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0176,
+      0.0,
+      -0.05
+    ],
+    "polygons": 120,
+    "sheet": "sheets/source__reference_imports__kenney_nature_kit__stump_old.png",
+    "smooth_shaded_faces": 11,
+    "triangles": 120,
+    "unapplied_transforms": [],
+    "vertices": 208
+  },
+  "source/reference_imports/kenney_nature_kit/tree_blocks.glb": {
+    "_source_mtime": 1787301213.1837504,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.6,
+      0.6,
+      1.185
+    ],
+    "duplicate_vertices": 140,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "leafsGreen",
+      "woodBark.002"
+    ],
+    "min_z_m": -0.05,
+    "ngons": 0,
+    "non_manifold_edges": 208,
+    "objects": 1,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      -0.05
+    ],
+    "polygons": 132,
+    "sheet": "sheets/source__reference_imports__kenney_nature_kit__tree_blocks.png",
+    "smooth_shaded_faces": 0,
+    "triangles": 132,
+    "unapplied_transforms": [],
+    "vertices": 208
+  },
+  "source/reference_imports/kenney_nature_kit/tree_default.glb": {
+    "_source_mtime": 1787301213.1628072,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.755,
+      0.6538,
+      1.7079
+    ],
+    "duplicate_vertices": 133,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "leafsGreen.001",
+      "woodBark.003"
+    ],
+    "min_z_m": -0.05,
+    "ngons": 0,
+    "non_manifold_edges": 192,
+    "objects": 1,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      -0.05
+    ],
+    "polygons": 114,
+    "sheet": "sheets/source__reference_imports__kenney_nature_kit__tree_default.png",
+    "smooth_shaded_faces": 10,
+    "triangles": 114,
+    "unapplied_transforms": [],
+    "vertices": 192
+  },
+  "source/reference_imports/kenney_nature_kit/tree_pineDefaultA.glb": {
+    "_source_mtime": 1787301213.1737065,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.532,
+      0.532,
+      1.5458
+    ],
+    "duplicate_vertices": 275,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "leafsDark",
+      "woodBarkDark"
+    ],
+    "min_z_m": -0.05,
+    "ngons": 0,
+    "non_manifold_edges": 392,
+    "objects": 1,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      -0.05
+    ],
+    "polygons": 230,
+    "sheet": "sheets/source__reference_imports__kenney_nature_kit__tree_pineDefaultA.png",
+    "smooth_shaded_faces": 122,
+    "triangles": 230,
+    "unapplied_transforms": [],
+    "vertices": 392
+  },
   "source/reference_imports/low_poly_tree_asset.glb": {
     "_source_mtime": 1786928588.702675,
     "degenerate_faces": 0,

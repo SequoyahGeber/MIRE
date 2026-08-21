@@ -823,8 +823,31 @@ def eevee_engine() -> str:
 #    across the 128 kit assets; two atlas'd materials rather than one keeps the
 #    foliage prefix match working and takes most of the win).
 #
+# **7. What the reference actually measures.** Sequoyah approved pulling the CC0
+#    packs down, so seven of Kenney's Nature Kit models sit under
+#    `assets/source/reference_imports/kenney_nature_kit/` (CC0, licence beside
+#    them) and were run through `audit_all_sides.py` like any shipped asset:
+#
+#      tree_default        114 tris   2 materials
+#      tree_blocks         132 tris   2 materials
+#      tree_pineDefaultA   230 tris   2 materials
+#      rock_largeA          80 tris   2 materials
+#      stump_old           120 tris   1 material
+#
+#    MIRE's own kit trees are 636-1,036 triangles on 4-6 materials. The triangle
+#    gap is mostly not a defect — those models are stylised miniatures 1.7 m tall
+#    and MIRE's are 15-20 m trees a player walks up to and swings an axe at, and
+#    the trunk detail F-422 added is the part that only exists close up. **The
+#    MATERIAL gap is the real finding.** Two materials carries a whole tree
+#    there; six carries one here, and every one of them is a separate surface, a
+#    separate MultiMeshInstance3D and a separate draw call in every chunk the
+#    asset appears in. That is F-426, and the reference is what makes it concrete
+#    rather than a preference.
+#
 # The reference packs are studied for METHOD only and never traced or shipped,
-# which is the standing rule for third-party art in this repo.
+# which is the standing rule for third-party art in this repo. Nothing under
+# `reference_imports/` is referenced by a scene, a scatter table or a catalog —
+# `.gdignore` keeps `assets/source/` out of Godot's importer entirely.
 
 
 def icosphere(subdivisions: int = 1) -> tuple[list[Vector], list[tuple[int, int, int]]]:
