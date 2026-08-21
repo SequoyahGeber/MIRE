@@ -78,12 +78,6 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "tools/menu_focus_check.gd": {
-      "agent": "coil995fd7",
-      "at": "2026-08-21T07:01:44+00:00",
-      "task": "F-418",
-      "token": "CLAUDE_CODE_SESSION_ID:44f62a84-7862-455b-a776-2e1c5eb11d39"
-    },
     "tools/movement_feel_check.gd": {
       "agent": "kilnd3a089",
       "at": "2026-08-21T07:03:08+00:00",
@@ -158,15 +152,6 @@
       "notes": [],
       "started": "2026-08-21T06:50:22+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
-    },
-    "F-418": {
-      "agent": "coil995fd7",
-      "files": [
-        "tools/menu_focus_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-21T07:01:44+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:44f62a84-7862-455b-a776-2e1c5eb11d39"
     }
   },
   "recent": {
@@ -2222,11 +2207,11 @@
       "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
     "tools/menu_focus_check.gd": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T06:17:58+00:00",
-      "hash": "7a95a4f024807e5689f37c94a75840391ae4f08d602b07c5ba0682b8e33b4aaa",
-      "task": "F-413",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
+      "agent": "coil995fd7",
+      "at": "2026-08-21T07:03:58+00:00",
+      "hash": "ea1e40bd76b19802973226898ae2a8250dcbc4ee0795b5969c88d3a3164ca050",
+      "task": "F-418",
+      "token": "CLAUDE_CODE_SESSION_ID:44f62a84-7862-455b-a776-2e1c5eb11d39"
     },
     "tools/menu_kit_check.gd": {
       "agent": "reed31c598",
@@ -2817,7 +2802,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 689,
+  "rev": 691,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -7896,9 +7881,11 @@
       "title": "Every settings checkbox is invisible when off \u2014 MireTheme.toggle() is unstyled"
     },
     "F-418": {
+      "done_at": "2026-08-21T07:03:58+00:00",
+      "done_by": "coil995fd7",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "F-413 deleted the settings focus-navigation proof and never replaced it"
     },

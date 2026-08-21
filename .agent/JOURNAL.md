@@ -8226,3 +8226,15 @@ MireTheme.toggle() now draws a real pill switch; guarded by tools/settings_rende
 Files: `ui/theme/mire_theme.gd`, `tools/settings_screen_check.gd`, `tools/settings_render_check.gd`
 
 Commit at time of writing: `0276463`
+
+---
+
+### DONE · F-418 · coil995fd7 · 2026-08-21T07:03:58+00:00
+
+**F-413 deleted the settings focus-navigation proof and never replaced it**
+
+settings focus proof restored; 32 assertions, all passing
+
+Files: `tools/menu_focus_check.gd`
+
+Commit at time of writing: `81c66d1`
