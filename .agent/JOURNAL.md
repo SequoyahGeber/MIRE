@@ -8491,3 +8491,15 @@ Committed 5.3's orphaned ranged-weapon content plus the FocusPrompt autoload; ve
 Files: `content/items/bolt.tres`, `content/items/crossbow.tres`, `content/items/longbow.tres`, `content/items/sling.tres`, `content/ranged_weapons/crossbow.tres`, `content/ranged_weapons/longbow.tres`, `content/ranged_weapons/sling.tres`
 
 Commit at time of writing: `f5b75b0`
+
+---
+
+### DONE · F-451 · galeb0891e · 2026-08-21T19:56:27+00:00
+
+**Ground cover reads 25% too dense — cut scatter coverage and undergrowth density**
+
+Ground cover cut 25%: scatter coverage x0.75 on floor/turf/undergrowth/scrub tables, Undergrowth.density 4200->3150 and hollowmere 18000->13500
+
+Files: `world/gen/undergrowth.gd`, `content/scatter/birchwood_floor.tres`, `content/scatter/birchwood_undergrowth.tres`, `content/scatter/forest_floor.tres`, `content/scatter/forest_undergrowth.tres`, `content/scatter/grassland_meadow.tres`, `content/scatter/grassland_shrubs.tres`, `content/scatter/grassland_turf.tres`, `content/scatter/heath_scrub.tres`, `content/scatter/heath_turf.tres`, `content/scatter/highland_floor.tres`, `content/scatter/highland_scrub.tres`, `content/scatter/marsh_floor.tres`, `content/scatter/marsh_reeds.tres`, `content/scatter/shore_beach.tres`, `levels/hollowmere.tscn`
+
+Commit at time of writing: `d92368f`

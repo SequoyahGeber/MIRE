@@ -2848,7 +2848,61 @@ timing, but the four above failed on every run of both revisions.
 
 ---
 
+### F-450 · The island is too flat, and its hills are domes when what it needs is broad flat-topped uplands
+
+**Area:** world-gen · **Severity:** high · **Found:** 2026-08-21 by birchcf39ce
+
+Playtest direction (2026-08-21, Sequoyah, verbatim): "taller hills please the map is wayy too flat,
+i do like big flat areas but i also like higher areas, i dont like narrow hills that make the map
+always go up and down if you know what i mean".
+
+Three things in one sentence, and the third is the structural one:
+  1. The island is too flat. F-447 raised crown lift to 6.9-13.1 m and the rendered high point is
+     ~20 m; against a 1.18 km island that is nothing.
+  2. He wants big flat areas AND higher areas — i.e. flat ground at more than one ELEVATION, not
+     flat ground with domes on it.
+  3. He does not want narrow hills. A hill whose whole footprint is slope makes the walk a
+     constant up-and-down; what he is describing is an upland — a broad rise with a flat top —
+     not a taller version of the mound that is there.
+
+The current profile cannot express (2) or (3): every placed hill is a smoothstep dome, so its
+crown is a single point and every metre of its footprint is sloping.
+
+---
+
 ## Resolved
+
+### F-451 · Ground cover reads 25% too dense — cut scatter coverage and undergrowth density — **fixed**
+
+**Area:** world · **Severity:** low · **Found:** 2026-08-21 by galeb0891e
+
+Sequoyah, playing the current build: "we can reduce the amount of shrubs/ground cover by 25% its just a bit too much".
+
+Ground-cover/shrub density is set in two places: the procedural island reads per-biome `coverage`
+from `content/scatter/*.tres` (ResourceScatter), and the authored playtest maps read
+`Undergrowth.density` in `world/gen/undergrowth.gd`. Both need the same cut so the two paths stay
+visually matched.
+
+Scope of the cut: floor/turf/undergrowth/scrub/shrub/meadow/reed/beach tables only. Tree, rock and
+deadwood tables are unchanged — the note was about shrubs and ground cover, not silhouette props.
+The Mire tables (mire_growth, mire_heart) are also unchanged: their density is the corruption
+reading dense on purpose.
+
+**Resolved 2026-08-21 by galeb0891e.** Cut applied. `content/scatter/*.tres` floor/turf/undergrowth/scrub/shrub/meadow/reed/beach tables
+had their `coverage` multiplied by 0.75 (e.g. forest_floor 0.42 -> 0.315, grassland_turf 0.48 ->
+0.36); `Undergrowth.density` fell 4200 -> 3150 in `world/gen/undergrowth.gd` and 18000 -> 13500 in
+the `Undergrowth` node of `levels/hollowmere.tscn`, which overrides the script default and is the
+value the authored map actually runs.
+
+Measured, not assumed. A scratch probe over the 7x7 chunks around the origin at world seed 12345
+counted ground-cover placements 3536 -> 2610 (-26.2%) with tree/rock/deadwood placements unchanged
+at 491, confirming the cut landed only on the intended tables. Loading `levels/hollowmere.tscn`
+headless reports `UNDERGROWTH placed=7628`, down from the ~10.2k the old budget produced.
+`resource_scatter_check.gd` and `mire_scatter_check.gd` both pass.
+
+The Mire tables were deliberately left alone: `mire_growth` (0.6) and `mire_heart` (0.5) are dense
+because corruption is meant to read as overgrown, and thinning them would weaken the one visual
+signal that separates the Mire from ordinary ground.
 
 ### F-449 · Task 5.3's ranged-weapon content was authored but never committed — the longbow, crossbow, sling and bolt existed only in the working tree — **fixed**
 

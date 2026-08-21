@@ -103,7 +103,7 @@ layout_path = "res://world/gen/layouts/hollowmere.json"
 
 [node name="Undergrowth" type="Node3D" parent="."]
 script = ExtResource("5_undergrowth")
-density = 18000
+density = 13500
 layout_path = "res://world/gen/layouts/hollowmere.json"
 prop_group = &"authored_world_prop"
 

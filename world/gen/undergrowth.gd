@@ -79,7 +79,10 @@ const RANGE_FADE_MARGIN: float = 8.0
 
 ## Total plants attempted across the whole map. Roughly a third are rejected for
 ## landing on a prop, a slope or outside the ring, so the visible count is lower.
-@export var density: int = 4200
+## F-451: cut 25% from 4200 — Sequoyah read the previous figure as a bit too much ground
+## cover. The matching cut on the procedural island is the `coverage` field of the
+## floor/turf/undergrowth/scrub tables in `content/scatter/`; keep the two in step.
+@export var density: int = 3150
 ## Turn the whole system off without touching the scene.
 @export var enabled: bool = true
 ## Which authored layout to dress. Any map that carries `zones`, `props`, `roads`
