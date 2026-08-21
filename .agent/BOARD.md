@@ -12,7 +12,7 @@ _Nothing in flight._
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `█████████░` 296/333 | 37 |
+| Findings | `████████░░` 296/355 | 59 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -83,6 +83,28 @@ _Nothing in flight._
 | ⬜ | **F-322** `NetSession.end_session()` has no shipped caller, so every real host quit costs its clients a 19-second rejoin ladder and the wrong end-of-session message | todo |
 | ⬜ | **F-323** SteamLobby has no member-metadata API, so the dock cannot show ready flags or per-player colours | todo |
 | ⬜ | **F-325** No system tallies per-player run stats, so the run summary has a headline but no scoreboard | todo |
+| ⬜ | **F-326** All five player-facing save writers truncate the only valid copy before replacement | todo |
+| ⬜ | **F-327** Ranged shot observers run before local recovery and hitstop are applied | todo |
+| ⬜ | **F-328** The run-scope totality audit already misses three newly registered autoloads | todo |
+| ⬜ | **F-329** Blender reproducibility checks mutate the shared tracked asset tree and do not restore it | todo |
+| ⬜ | **F-330** Every procedural client streams terrain around every replicated player | todo |
+| ⬜ | **F-331** Enemy attack-slot arbitration is quadratic and the documented per-kind cap counts every kind | todo |
+| ⬜ | **F-332** World snapshot decompression trusts an unbounded size supplied by the host | todo |
+| ⬜ | **F-333** Command rate limiting drops legitimate back-to-back operations instead of scheduling them | todo |
+| ⬜ | **F-334** The end-to-end loop passes every phase and then aborts in engine teardown | todo |
+| ⬜ | **F-335** Two verification checks no longer test the shipped contracts they claim | todo |
+| ⬜ | **F-336** GAMELOOP.md reports several pre-cutover states as current | todo |
+| ⬜ | **F-337** Wellspring re-corruption turns a 2-second ward census into a per-frame full build scan | todo |
+| ⬜ | **F-338** The full 256 by 256 Mire simulation has no saturated late-run performance gate | todo |
+| ⬜ | **F-339** Jittered terrain vertices keep normals derived from the unjittered height grid | todo |
+| ⬜ | **F-340** Terrain retuning landed without refreshing its deterministic and structural checks | todo |
+| ⬜ | **F-341** Sway material caching aliases meshes whose vertical origins differ | todo |
+| ⬜ | **F-342** Every renderer performance instrument still measures Hollowmere, not the shipped procedural world | todo |
+| ⬜ | **F-343** harvest_world_check is seed-dependent because live Mire can reduce its fixed-yield assertion | todo |
+| ⬜ | **F-344** Remote interpolation misses its own smoothness budget in both synthetic and live phases | todo |
+| ⬜ | **F-345** Procedural co-op spawn offsets are not placed on their own terrain surface | todo |
+| ⬜ | **F-346** Chunk navigation regions repeatedly report overlapping edge synchronization errors | todo |
+| ⬜ | **F-347** The navigation performance decision is no longer reproduced: the benchmark now records repeatable 39-43 ms streaming frames | todo |
 
 ## Done
 

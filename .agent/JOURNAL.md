@@ -7487,3 +7487,27 @@ Playtest round shipped: land rebased to sea level (very gentle hills), river is 
 Files: `world/gen/island_heightmap.gd`, `world/chunk/chunk_mesher.gd`, `levels/procedural_island.tscn`, `content/biomes/shore.tres`, `content/biomes/grassland.tres`, `content/biomes/forest.tres`, `tools/biome_terrain_check.gd`, `tools/chunk_stream_check.gd`, `world/environment/water_low_poly.gdshader`, `world/gen/resource_scatter.gd`, `world/gen/scatter_def.gd`, `content/scatter/grassland_meadow.tres`, `content/scatter/grassland_shrubs.tres`, `content/scatter/forest_floor.tres`, `content/scatter/shore_beach.tres`, `content/scatter/forest_canopy.tres`, `content/scatter/forest_undergrowth.tres`, `content/poi/standing_stones.tres`, `content/poi/wellspring.tres`, `content/poi/enemy_nest.tres`, `content/poi/station_camp.tres`, `tools/terrain_check.gd`
 
 Commit at time of writing: `2075ae3`
+
+---
+
+### REOPEN · 4.18 · quill5fa5c7 · 2026-08-21T00:09:26+00:00
+
+**Three-seed island-feel walk vs Hollowmere (tuning input, not a gate — D-125)**
+
+Reopened (was marked done 2026-08-20 by quill5fa5c7).
+
+Water material tweak: match the terrain's flat matte look, blue, confirm no collision.
+
+Commit at time of writing: `76f1244`
+
+---
+
+### DONE · 4.18 · quill5fa5c7 · 2026-08-21T00:10:24+00:00
+
+**Three-seed island-feel walk vs Hollowmere (tuning input, not a gate — D-125)**
+
+Water rematerialed to match the terrain: flat matte facets via the same derivative-normal trick, single blue albedo, waves stay as vertex geometry. No collision on the ocean plane (seabed terrain is the standable surface). Renders sent and committed.
+
+Files: `world/environment/water_low_poly.gdshader`, `assets/audit/terrain/island_orbit.png`, `assets/audit/terrain/island_shore_look.png`, `assets/audit/terrain/island_spawn_view.png`
+
+Commit at time of writing: `8b5310d`

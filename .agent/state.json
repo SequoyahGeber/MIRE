@@ -102,22 +102,22 @@
     },
     "assets/audit/terrain/island_orbit.png": {
       "agent": "quill5fa5c7",
-      "at": "2026-08-20T21:26:49+00:00",
-      "hash": "15d99d301553fc5fa9295bd073aba465f76725f472477ad1bae87b9dc30fc2b9",
+      "at": "2026-08-21T00:10:24+00:00",
+      "hash": "7e11e7602396b93a789a9e27838cb7d5aa9e8672beb5dca5f2cb4d641fa91daa",
       "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "assets/audit/terrain/island_shore_look.png": {
       "agent": "quill5fa5c7",
-      "at": "2026-08-20T21:26:49+00:00",
-      "hash": "abba2b04491d81866c57220ec0a4411fcaee9138c08af66c9760315c790d4e2c",
+      "at": "2026-08-21T00:10:24+00:00",
+      "hash": "da848a75587f1f0b27e406ef9852dfc505817a6e5e7786d7c740c6bac5bf151c",
       "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "assets/audit/terrain/island_spawn_view.png": {
       "agent": "quill5fa5c7",
-      "at": "2026-08-20T21:26:49+00:00",
-      "hash": "3fe9bbccbfbd459e59627b41b7ebe768f37d480dab06e737f38642ad1d89cb64",
+      "at": "2026-08-21T00:10:24+00:00",
+      "hash": "f6336910571556326ba00301ae70cc01cf72d5564ad882f143daffef01e1fc21",
       "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
@@ -156,20 +156,6 @@
       "task": "F-286",
       "token": null
     },
-    "autoload/defeat_service.gd": {
-      "agent": "bram1",
-      "at": "2026-08-19T22:14:05+00:00",
-      "hash": "435f5bcefc2658d558c35f67b11238cd85a5adc38c7d3d3796938cae4402738e",
-      "task": "F-243",
-      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
-    },
-    "autoload/enemy_world.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T22:11:38+00:00",
-      "hash": "c91a1dcc99018460d03fcfab13d51f222f87dd76d873f7ab0a1744d17f903437",
-      "task": "F-243",
-      "token": null
-    },
     "autoload/environment_vfx.gd": {
       "agent": "lp",
       "at": "2026-08-20T10:57:18+00:00",
@@ -204,13 +190,6 @@
       "hash": "e377732ae7f5bdd7c0313186c39b81b3ad2a597272998bc0579e19856ac70cfd",
       "task": "F-324",
       "token": "CLAUDE_CODE_SESSION_ID:dcf988c3-f81b-4177-97bb-d3f72dcb1927"
-    },
-    "autoload/powerup_service.gd": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:42:54+00:00",
-      "hash": "670c34417d7a9183bbae4deccaddf05b4e731586ad6e920e28db357b78907386",
-      "task": "F-245",
-      "token": null
     },
     "autoload/reward_service.gd": {
       "agent": "lp",
@@ -261,75 +240,12 @@
       "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
-    "content/cycle_modifiers/bloom.tres": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:42:54+00:00",
-      "hash": "22ff75d8a75536ec8201e9a78c242e9ad49ef57c5ce976e990ef45396ca40078",
-      "task": "F-245",
-      "token": null
-    },
-    "content/cycle_modifiers/drought.tres": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:42:54+00:00",
-      "hash": "c11636f87e7c004930c1be65eeda9e3373b5aba04e6ea2df9d418926526b6ebb",
-      "task": "F-245",
-      "token": null
-    },
-    "content/cycle_modifiers/long_night.tres": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:42:54+00:00",
-      "hash": "a5f79753d3fbc7957619de26689b0aec1c7e0ee61855940d93cb034c3a36330e",
-      "task": "F-245",
-      "token": null
-    },
-    "content/cycle_modifiers/rooted.tres": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:42:54+00:00",
-      "hash": "40eae1d29e278995f12ddeaf269556405a3e3d094bdf96eeb8c263ac734516ae",
-      "task": "F-245",
-      "token": null
-    },
-    "content/cycle_modifiers/static.tres": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:42:54+00:00",
-      "hash": "c4834e0f30279ac0fe6a73e60a818bf72e7324cbe7ae6d80c7ce577b1922d776",
-      "task": "F-245",
-      "token": null
-    },
-    "content/cycle_modifiers/the_hunt.tres": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:42:54+00:00",
-      "hash": "eac8225e5a47f913a75459005083aab4ea42992ea95a7cf11ee3e2d4fac692c5",
-      "task": "F-245",
-      "token": null
-    },
-    "content/cycle_modifiers/tithe.tres": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:42:54+00:00",
-      "hash": "3b9be28af5abb5320403f7ab6059a0cdc0688b0dcfdaf6d3d9f41899689fcf38",
-      "task": "F-245",
-      "token": null
-    },
     "content/poi/enemy_nest.tres": {
       "agent": "quill5fa5c7",
       "at": "2026-08-20T21:58:15+00:00",
       "hash": "f7f3a6db3de243286768bd95edbde1bf588ed36d428ca08638c82eeb9b9a67ed",
       "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
-    },
-    "content/poi/loot_cache.tres": {
-      "agent": "hollow7",
-      "at": "2026-08-19T22:12:05+00:00",
-      "hash": "32e615a6e49d874992dbcf07fb193c445b209079623794192acc84e5b56017ee",
-      "task": "4.16",
-      "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
-    },
-    "content/poi/shipwreck.tres": {
-      "agent": "hollow7",
-      "at": "2026-08-19T22:12:05+00:00",
-      "hash": "44ce45908d2135cd360835ce7ad3f4385e4712f5137e9f1855f0ba4011992f96",
-      "task": "4.16",
-      "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
     "content/poi/standing_stones.tres": {
       "agent": "quill5fa5c7",
@@ -420,13 +336,6 @@
       "at": "2026-08-20T16:38:19+00:00",
       "hash": "cce85b3fd6eb3625d2f229775a874be833e46da05344e66c5c1e3004928de40d",
       "task": "F-273",
-      "token": null
-    },
-    "core/net/net_config.gd": {
-      "agent": "lm3",
-      "at": "2026-08-19T22:35:43+00:00",
-      "hash": "a212fd3daffd9971b9d71d0505a5b028493751e440ae2c44c2e14ae272596dce",
-      "task": "F-257",
       "token": null
     },
     "core/save/run_record_save.gd": {
@@ -534,13 +443,6 @@
       "task": "4.19",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
-    "steam_appid.txt": {
-      "agent": "lm3",
-      "at": "2026-08-19T22:35:43+00:00",
-      "hash": "ddfe0e8d462af661f81db36589c39882dc0f2330785b5d80cd34f2f520ad618f",
-      "task": "F-257",
-      "token": null
-    },
     "systems/cycle/cycle_modifier_service.gd": {
       "agent": "lp",
       "at": "2026-08-20T05:24:46+00:00",
@@ -555,46 +457,11 @@
       "task": "F-280",
       "token": null
     },
-    "systems/enemies/boss.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T22:35:17+00:00",
-      "hash": "526a1f65074b56cbb53a4eb6d9df2bc9865e80d104610eee85c016fb8134aa13",
-      "task": "F-247",
-      "token": null
-    },
-    "systems/enemies/boss_move_def.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T22:35:17+00:00",
-      "hash": "662fcb0076647bae6b52b1e9c302a42a8237731b8df46583980e93193cd80e4a",
-      "task": "F-247",
-      "token": null
-    },
-    "systems/enemies/enemy.gd": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:42:54+00:00",
-      "hash": "f844cd4219e5298aa4c3ff02648d57cc42d019666ba38b88aed8b484fd9e328c",
-      "task": "F-245",
-      "token": null
-    },
     "systems/environment/day_night.gd": {
       "agent": "lp",
       "at": "2026-08-20T06:34:42+00:00",
       "hash": "da7230cb9350a1c8d5f5c576fe430a9f8ff6d83c0441ad72cb5c02b8d38c72dd",
       "task": "F-278",
-      "token": null
-    },
-    "systems/extraction/extraction_ship.gd": {
-      "agent": "bram1",
-      "at": "2026-08-19T22:14:05+00:00",
-      "hash": "ef7aa500a85e0c26df770a459b3c5fcea6099fcfb8f4420189a9cd9f0a2ae61c",
-      "task": "F-243",
-      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
-    },
-    "systems/harvesting/harvestable.gd": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:42:54+00:00",
-      "hash": "651c0d28405b52d4b9bc71a1f104e839026dcabf5ad7d2f53042f3f91a17847b",
-      "task": "F-245",
       "token": null
     },
     "systems/health/player_health.gd": {
@@ -630,13 +497,6 @@
       "at": "2026-08-20T15:52:40+00:00",
       "hash": "2922bc26c5bfbed427a1f2181e1a49429ec0173eb23fb6d7ad9dad3535d03328",
       "task": "F-282",
-      "token": null
-    },
-    "systems/wellspring/wellspring.gd": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:42:54+00:00",
-      "hash": "18b2c3e93794ebfcd39479dbc3fcbdb6151c99a9ca474fefd18d383d8e155950",
-      "task": "F-245",
       "token": null
     },
     "tools/agent_state_lock_check.py": {
@@ -693,13 +553,6 @@
       "at": "2026-08-20T05:07:23+00:00",
       "hash": "2bdc341d281e1aa8534c04c09f660268945e542b66dbb397283800301fb38736",
       "task": "F-255",
-      "token": null
-    },
-    "tools/boss_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T22:35:17+00:00",
-      "hash": "06f5090017bd5e27ce74f42c9265ad69c274e8c4aa76c73860b8d459a2fad7cc",
-      "task": "F-247",
       "token": null
     },
     "tools/check_determinism.gd": {
@@ -772,13 +625,6 @@
       "task": "F-290",
       "token": null
     },
-    "tools/cycle_modifier_net_check.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-20T00:02:22+00:00",
-      "hash": "3d681955861dfd364b71dd115c84dabf8ed14749e9d60392c5b7491e08a9da5b",
-      "task": "F-254",
-      "token": null
-    },
     "tools/day_night_restart_check.gd": {
       "agent": "lp",
       "at": "2026-08-20T06:34:42+00:00",
@@ -791,13 +637,6 @@
       "at": "2026-08-20T20:30:45+00:00",
       "hash": "3347f8981134be40c84e958ccb04cddc6972c79610783c7d2826013db36546bd",
       "task": "F-283",
-      "token": null
-    },
-    "tools/enemy_content_check.gd": {
-      "agent": "lm3",
-      "at": "2026-08-19T22:25:02+00:00",
-      "hash": "ebd755ae1556cfd57661cb7443cc5824144200b9cf5b99ace0d3c1d0d49b60b1",
-      "task": "F-246",
       "token": null
     },
     "tools/enemy_net_check.gd": {
@@ -1059,13 +898,6 @@
       "task": "F-273",
       "token": null
     },
-    "tools/seed_sync_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T22:24:02+00:00",
-      "hash": "0672e20b272cf1818f4cc02e8450b5e22920edfdf044759f4b360206f82b8bff",
-      "task": "F-253",
-      "token": null
-    },
     "tools/settings_screen_check.gd": {
       "agent": "reed31c598",
       "at": "2026-08-20T21:19:06+00:00",
@@ -1079,41 +911,6 @@
       "hash": "62eb5b1f87adff8c13586a3ff4aa15b3fd719558f5087b472a6122d59d48a30f",
       "task": "F-324",
       "token": "CLAUDE_CODE_SESSION_ID:dcf988c3-f81b-4177-97bb-d3f72dcb1927"
-    },
-    "tools/steam/DEPOT_SETUP.md": {
-      "agent": "lm3",
-      "at": "2026-08-19T22:35:43+00:00",
-      "hash": "ff9fd817028e45bd3b7e9b37905962d413cb5da67077ec3dd2938300f262e9d7",
-      "task": "F-257",
-      "token": null
-    },
-    "tools/steam/apply_ids.sh": {
-      "agent": "lm3",
-      "at": "2026-08-19T22:35:43+00:00",
-      "hash": "7f4648a0f87f2d4f580edb34b66f55a4663df136316ce25bca81254dfb8d0a65",
-      "task": "F-257",
-      "token": null
-    },
-    "tools/steam/depot_wiring_check.sh": {
-      "agent": "lm3",
-      "at": "2026-08-19T22:35:43+00:00",
-      "hash": "de0671a71604e064f26c703b785f6b51ed763e800529dc05d30bef5bb1f48c58",
-      "task": "F-257",
-      "token": null
-    },
-    "tools/steam/steam_upload.sh": {
-      "agent": "lm3",
-      "at": "2026-08-19T22:35:43+00:00",
-      "hash": "03862b4d1b7fb88917cce04bff75156f98bead13b936637b722df1b9a70accd8",
-      "task": "F-257",
-      "token": null
-    },
-    "tools/steam_check.gd": {
-      "agent": "lm3",
-      "at": "2026-08-19T22:35:43+00:00",
-      "hash": "5655e530a84324c747b8b7d4646251907ed40ba6362f271e3ce91a095bbb859c",
-      "task": "F-257",
-      "token": null
     },
     "tools/terminal_focus_check.gd": {
       "agent": "lp",
@@ -1170,13 +967,6 @@
       "hash": "3c81567ffbe5a9f234d424730b1712f8f1544e798baeed712863e2d54d1c1a4d",
       "task": "7.4",
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
-    },
-    "tools/undergrowth_check.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-19T22:12:05+00:00",
-      "hash": null,
-      "task": "4.16",
-      "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
     "tools/unlock_check.gd": {
       "agent": "lp",
@@ -1355,8 +1145,8 @@
     },
     "world/environment/water_low_poly.gdshader": {
       "agent": "quill5fa5c7",
-      "at": "2026-08-20T21:58:15+00:00",
-      "hash": "37d3feabbd8a33b3ebf2ae66f1c7eed3ffa759758b623c00141e1fe20ac2d20c",
+      "at": "2026-08-21T00:10:24+00:00",
+      "hash": "720e1e6d79c700c75c8588d84fc5bc36c40f19fcb206b40ace8eed7d8834a7f4",
       "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
@@ -1430,13 +1220,6 @@
       "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
-    "world/gen/undergrowth.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-19T22:12:05+00:00",
-      "hash": "c402a68314268f1a95a6c33d161451691ac29c7b8ee9cd3e5eb67563f02f86bb",
-      "task": "4.16",
-      "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
-    },
     "world/mire/mire_grid.gd": {
       "agent": "lp",
       "at": "2026-08-20T05:24:46+00:00",
@@ -1445,7 +1228,7 @@
       "token": null
     }
   },
-  "rev": 150,
+  "rev": 159,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -2273,7 +2056,7 @@
       "title": "Spike: one-time seeded erosion; cross-platform hash on the D-028 machine; adopt/reject with numbers"
     },
     "4.18": {
-      "done_at": "2026-08-20T21:58:15+00:00",
+      "done_at": "2026-08-21T00:10:24+00:00",
       "done_by": "quill5fa5c7",
       "est": "1",
       "milestone": "M4",
@@ -5809,6 +5592,160 @@
       "status": "todo",
       "tier": "F",
       "title": "No system tallies per-player run stats, so the run summary has a headline but no scoreboard"
+    },
+    "F-326": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "All five player-facing save writers truncate the only valid copy before replacement"
+    },
+    "F-327": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Ranged shot observers run before local recovery and hitstop are applied"
+    },
+    "F-328": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The run-scope totality audit already misses three newly registered autoloads"
+    },
+    "F-329": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Blender reproducibility checks mutate the shared tracked asset tree and do not restore it"
+    },
+    "F-330": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Every procedural client streams terrain around every replicated player"
+    },
+    "F-331": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Enemy attack-slot arbitration is quadratic and the documented per-kind cap counts every kind"
+    },
+    "F-332": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "World snapshot decompression trusts an unbounded size supplied by the host"
+    },
+    "F-333": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Command rate limiting drops legitimate back-to-back operations instead of scheduling them"
+    },
+    "F-334": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The end-to-end loop passes every phase and then aborts in engine teardown"
+    },
+    "F-335": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Two verification checks no longer test the shipped contracts they claim"
+    },
+    "F-336": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "GAMELOOP.md reports several pre-cutover states as current"
+    },
+    "F-337": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Wellspring re-corruption turns a 2-second ward census into a per-frame full build scan"
+    },
+    "F-338": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The full 256 by 256 Mire simulation has no saturated late-run performance gate"
+    },
+    "F-339": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Jittered terrain vertices keep normals derived from the unjittered height grid"
+    },
+    "F-340": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Terrain retuning landed without refreshing its deterministic and structural checks"
+    },
+    "F-341": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Sway material caching aliases meshes whose vertical origins differ"
+    },
+    "F-342": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Every renderer performance instrument still measures Hollowmere, not the shipped procedural world"
+    },
+    "F-343": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "harvest_world_check is seed-dependent because live Mire can reduce its fixed-yield assertion"
+    },
+    "F-344": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Remote interpolation misses its own smoothness budget in both synthetic and live phases"
+    },
+    "F-345": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Procedural co-op spawn offsets are not placed on their own terrain surface"
+    },
+    "F-346": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Chunk navigation regions repeatedly report overlapping edge synchronization errors"
+    },
+    "F-347": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The navigation performance decision is no longer reproduced: the benchmark now records repeatable 39-43 ms streaming frames"
     }
   },
   "version": 1
