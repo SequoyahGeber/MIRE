@@ -2133,7 +2133,34 @@ Close this through a bounded follow-on command roadmap rather than an unsafe gen
 
 ---
 
-### F-418 · F-413 deleted the settings focus-navigation proof and never replaced it
+### F-419 · menu_focus_check has been failing on main for days — CRAFT ui_accept and an inventory slot move
+
+**Area:** ui · **Severity:** high · **Found:** 2026-08-21 by coil995fd7
+
+`tools/menu_focus_check.gd` fails 2 on `main` and has been failing unnoticed. Both reproduce in a
+clean worktree via `agent baseline`, so neither is another session's uncommitted work.
+
+**`FAIL: ui_accept on the enabled CRAFT button fires the same request_craft() a click would have`**
+Bisected to `bd4de67` (F-380, "the crafting list is a width-derived grid, not one unscrollable
+column"). At `bd4de67~1` the check fails 1; at `bd4de67` it fails 2. Reflowing the recipe list from
+a column into a width-derived grid changed the focus wiring the check drives, and the CRAFT button's
+`ui_accept` path did not survive it. This is the exact defect class F-209 exists to prevent: the
+button is present and enabled, a mouse click still works, and a controller cannot press it.
+
+**`FAIL: slot 0 is empty after the move`**
+Older — already failing at `420b83e` (F-369), so it predates the crafting grid change and needs its
+own bisect. Possibly related to F-309's intermittent inventory grant timeout, but this one is
+deterministic across every run here, which F-309's is not.
+
+The process point matters as much as the two bugs: F-380 shipped with `menu_focus_check` already
+red, and three subsequent menu tasks shipped on top of it without the count being looked at. Nothing
+in the ship path runs this check, so "it was already failing" stayed true indefinitely.
+
+---
+
+## Resolved
+
+### F-418 · F-413 deleted the settings focus-navigation proof and never replaced it — **fixed**
 
 **Area:** ui · **Severity:** medium · **Found:** 2026-08-21 by coil995fd7
 
@@ -2163,32 +2190,20 @@ on that target. The retirement itself was right; only the coverage deletion was 
 
 ---
 
-### F-419 · menu_focus_check has been failing on main for days — CRAFT ui_accept and an inventory slot move
+**Resolved 2026-08-21 by coil995fd7.** `tools/menu_focus_check.gd` has a `_check_settings_screen()` section again, written against
+`ui/frontend/settings_screen.gd` and pushed through `MenuStack` so the stack's own
+`menu_default_focus()` grab is part of what is proved. 32 assertions, all passing: initial focus
+lands on a control that draws a visible ring; all six tab buttons exist and ui_right walks the bar
+as far as PLAYTESTING; every tab's default focus target actually takes focus when asked; a focused
+slider decrements on ui_left and is restored by ui_right and draws a FocusRingSlider ring (F-215);
+the God Mode toggle is focusable and flips on ui_accept; and both footer buttons — which live
+outside the scroll viewport — hold focus, with ui_right crossing from RESTORE DEFAULTS to SAVE.
 
-**Area:** ui · **Severity:** high · **Found:** 2026-08-21 by coil995fd7
-
-`tools/menu_focus_check.gd` fails 2 on `main` and has been failing unnoticed. Both reproduce in a
-clean worktree via `agent baseline`, so neither is another session's uncommitted work.
-
-**`FAIL: ui_accept on the enabled CRAFT button fires the same request_craft() a click would have`**
-Bisected to `bd4de67` (F-380, "the crafting list is a width-derived grid, not one unscrollable
-column"). At `bd4de67~1` the check fails 1; at `bd4de67` it fails 2. Reflowing the recipe list from
-a column into a width-derived grid changed the focus wiring the check drives, and the CRAFT button's
-`ui_accept` path did not survive it. This is the exact defect class F-209 exists to prevent: the
-button is present and enabled, a mouse click still works, and a controller cannot press it.
-
-**`FAIL: slot 0 is empty after the move`**
-Older — already failing at `420b83e` (F-369), so it predates the crafting grid change and needs its
-own bisect. Possibly related to F-309's intermittent inventory grant timeout, but this one is
-deterministic across every run here, which F-309's is not.
-
-The process point matters as much as the two bugs: F-380 shipped with `menu_focus_check` already
-red, and three subsequent menu tasks shipped on top of it without the count being looked at. Nothing
-in the ship path runs this check, so "it was already failing" stayed true indefinitely.
-
----
-
-## Resolved
+Worth recording plainly: everything passed first time. The screen F-413 shipped is genuinely
+controller-complete, including the tab bar's `wire_row()` and the disabled-active-tab behaviour. The
+defect was never the screen, only that nothing proved it, and three menu tasks then shipped on top
+of that gap. `menu_focus_check` still fails 2, both in CraftingUI/InventoryUI and both filed
+separately as F-419.
 
 ### F-404 · Three separate movement-feel defects: stopping is near-instant, air control bleeds speed sideways, and gravity_scale 2.0 makes any real fall brutal — **fixed**
 

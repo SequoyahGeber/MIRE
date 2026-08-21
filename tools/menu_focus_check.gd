@@ -1,7 +1,7 @@
 extends SceneTree
 
 ## F-209 proof: every menu that used to require a mouse click to open/select/close
-## (MainMenu/LobbyMenu/InventoryUI/CraftingUI/UnlockMenu — ChestUI needed no change,
+## (MainMenu/SettingsScreen/LobbyMenu/InventoryUI/CraftingUI/UnlockMenu — ChestUI needed no change,
 ## see its own note below) now supports real gamepad/keyboard focus navigation: an initial
 ## grab_focus() on open, a focus_neighbor_* chain reachable by ui_up/ui_down/ui_left/ui_right, and
 ## ui_accept doing what a click would have.
@@ -22,6 +22,9 @@ extends SceneTree
 ## above, since it has no Esc/dismiss path, so a bare controller could not get past it, full stop.
 ##
 ## Run with: .agent/bin/agent godot --script tools/menu_focus_check.gd
+
+const SettingsScreen := preload("res://ui/frontend/settings_screen.gd")
+const FocusRingSlider := preload("res://ui/menu/focus_ring_slider.gd")
 
 var failures: int = 0
 
@@ -45,6 +48,7 @@ func _run() -> void:
 	# script's run — going first is what makes every later check's own "players" group node safe.
 	await _check_attunement_ui()
 	await _check_main_menu()
+	await _check_settings_screen()
 	await _check_lobby_menu_idle()
 	await _check_unlock_menu()
 	await _check_crafting_ui()
@@ -404,6 +408,191 @@ func _check_attunement_ui() -> void:
 		"ui_accept on the focused CHOOSE button fires the same request_select() a click would have, closing the picker on acceptance — this is the only way past this screen with no mouse")
 
 	stand_in.queue_free()
+
+
+# ── SettingsScreen ────────────────────────────────────────────────────────────────────────────────
+
+
+## F-418 restores the coverage F-413 deleted. Retiring the legacy `SettingsMenu` panel was right;
+## deleting its focus proof along with it was not, because the tabbed screen that replaced it has
+## strictly MORE focus surface — six tab buttons, a scrolling page host, and a footer outside the
+## scroll viewport — and `settings_screen_check.gd` only reads `menu_default_focus()` back rather
+## than driving real input through it.
+##
+## Pushed through `MenuStack` and not parented to the root, because the stack is what calls
+## `menu_default_focus()` and grabs it (`menu_stack.gd:362-367`); a screen added any other way never
+## gets its initial focus and would make this whole section prove nothing.
+func _check_settings_screen() -> void:
+	print("\n== SettingsScreen: initial focus, tab traversal, slider ui_left/ui_right, footer reachable ==")
+	var stack: Node = root.get_node_or_null(^"MenuStack")
+	check(stack != null, "MenuStack autoload exists")
+	if stack == null:
+		return
+
+	var screen: Control = SettingsScreen.new()
+	stack.call(&"push", screen, false)
+	await process_frame
+	await process_frame
+
+	var opened: Control = _focused()
+	check(opened != null, "pushing the screen focuses a control rather than leaving focus nowhere")
+	check(opened != null and _has_visible_focus(opened),
+		"the control it lands on draws a visible focus ring")
+
+	# ── the tab bar ──
+	# `show_tab()` disables the ACTIVE tab's button, so the tab a controller can move to is always
+	# one of the others; the bar is wired with `wire_row()`, i.e. left/right only.
+	var tabs: Array[Button] = _settings_tab_buttons(screen)
+	check(tabs.size() == SettingsScreen.TABS.size(),
+		"every tab in TABS has a button (%d of %d)" % [tabs.size(), SettingsScreen.TABS.size()])
+
+	for index: int in tabs.size():
+		if tabs[index].disabled:
+			continue
+		tabs[index].grab_focus()
+		await process_frame
+		check(_focused() == tabs[index],
+			"the %s tab button can hold focus" % SettingsScreen.TABS[index])
+		break
+
+	# Walking the bar with ui_right has to reach the far tab, or the last tabs are mouse-only.
+	var start: Button = null
+	for button: Button in tabs:
+		if not button.disabled:
+			start = button
+			break
+	if start != null:
+		start.grab_focus()
+		await process_frame
+		var reached: Array[String] = []
+		for _hop: int in tabs.size() + 2:
+			var here: Control = _focused()
+			if here is Button and tabs.has(here as Button):
+				var name_of: String = SettingsScreen.TABS[tabs.find(here as Button)]
+				if not reached.has(name_of):
+					reached.append(name_of)
+			await _tap(JOY_BUTTON_DPAD_RIGHT)
+		check(reached.has(SettingsScreen.TABS[SettingsScreen.TABS.size() - 1]),
+			"ui_right walks the tab bar as far as %s — the last tabs are not mouse-only (reached %s)"
+				% [SettingsScreen.TABS[SettingsScreen.TABS.size() - 1], ", ".join(reached)])
+
+	# ── every tab hands a controller somewhere to stand ──
+	for index: int in SettingsScreen.TABS.size():
+		screen.call(&"show_tab", index)
+		await process_frame
+		var target: Control = screen.call(&"menu_default_focus") as Control
+		check(target != null and target.focus_mode != Control.FOCUS_NONE,
+			"tab %s names a focusable default" % SettingsScreen.TABS[index])
+		if target != null:
+			target.grab_focus()
+			await process_frame
+			check(_focused() == target,
+				"tab %s's default actually takes focus when asked" % SettingsScreen.TABS[index])
+
+	# ── a focused slider responds to ui_left/ui_right ──
+	# F-215: `Slider` has no "focus" theme item in this Godot version, so the proxy for "has a
+	# visible ring" is FocusRingSlider's own _draw()-based one being wired with a real style.
+	screen.call(&"show_tab", SettingsScreen.TABS.find("CONTROLS"))
+	await process_frame
+	var slider: HSlider = _first_of(screen, "HSlider") as HSlider
+	check(slider != null, "the CONTROLS tab has a slider to drive")
+	if slider != null:
+		slider.grab_focus()
+		await process_frame
+		check(slider is FocusRingSlider and (slider as FocusRingSlider).focus_ring_style != null,
+			"the slider draws its own focus ring (FocusRingSlider, F-215)")
+		var before: float = slider.value
+		await _tap(JOY_BUTTON_DPAD_LEFT)
+		var after: float = slider.value
+		check(after < before,
+			"ui_left on a focused slider decrements it (%.3f -> %.3f)" % [before, after])
+		await _tap(JOY_BUTTON_DPAD_RIGHT)
+		check(is_equal_approx(slider.value, before),
+			"ui_right restores the value ui_left just took off it")
+
+	# ── the toggle a controller has to be able to flip (F-411/F-416) ──
+	screen.call(&"show_tab", SettingsScreen.TABS.find("PLAYTESTING"))
+	await process_frame
+	var toggle: CheckBox = screen.find_child("GodModeToggle", true, false) as CheckBox
+	check(toggle != null, "the PLAYTESTING tab has the God Mode toggle")
+	if toggle != null:
+		check(toggle.focus_mode != Control.FOCUS_NONE, "the God Mode toggle is focusable")
+		toggle.grab_focus()
+		await process_frame
+		check(_focused() == toggle, "the God Mode toggle takes focus")
+		var was: bool = toggle.button_pressed
+		await _tap(JOY_BUTTON_A)
+		check(toggle.button_pressed != was,
+			"ui_accept flips the God Mode toggle the way a click would")
+		if toggle.button_pressed != was:
+			await _tap(JOY_BUTTON_A)
+
+	# ── the commit step, which lives OUTSIDE the scroll viewport ──
+	# A SAVE button a controller cannot land on is no commit step at all (F-386).
+	var footer: Array[Button] = _settings_footer_buttons(screen)
+	check(footer.size() == 2, "the footer has RESTORE DEFAULTS and SAVE (found %d)" % footer.size())
+	for button: Button in footer:
+		check(button.focus_mode != Control.FOCUS_NONE and not button.disabled,
+			"the footer's %s can hold focus" % button.text)
+		button.grab_focus()
+		await process_frame
+		check(_focused() == button, "the footer's %s actually takes focus when asked" % button.text)
+	if footer.size() == 2:
+		footer[0].grab_focus()
+		await process_frame
+		await _tap(JOY_BUTTON_DPAD_RIGHT)
+		check(_focused() == footer[1],
+			"ui_right crosses the footer from %s to %s" % [footer[0].text, footer[1].text])
+
+	stack.call(&"pop_all")
+	await process_frame
+	screen.queue_free()
+	await process_frame
+
+
+## The tab bar's buttons, in TABS order. Found by text rather than by node path so a restyle of the
+## screen's container hierarchy does not silently make this section check nothing.
+func _settings_tab_buttons(screen: Node) -> Array[Button]:
+	var out: Array[Button] = []
+	for label: String in SettingsScreen.TABS:
+		for node: Node in _descendants(screen):
+			if node is Button and (node as Button).text == label:
+				out.append(node as Button)
+				break
+	return out
+
+
+func _settings_footer_buttons(screen: Node) -> Array[Button]:
+	var out: Array[Button] = []
+	for label: String in ["RESTORE DEFAULTS", "SAVE"]:
+		for node: Node in _descendants(screen):
+			if node is Button and (node as Button).text == label:
+				out.append(node as Button)
+				break
+	return out
+
+
+func _first_of(screen: Node, class_wanted: String) -> Control:
+	for node: Node in _descendants(screen):
+		if node.is_class(class_wanted) and node is Control and (node as Control).is_visible_in_tree():
+			return node as Control
+	return null
+
+
+func _descendants(node: Node) -> Array[Node]:
+	var out: Array[Node] = []
+	for child: Node in node.get_children():
+		out.append(child)
+		out.append_array(_descendants(child))
+	return out
+
+
+## Every other control's proxy for "the player can see where focus is" is a focus stylebox override;
+## sliders carry theirs on FocusRingSlider instead (F-215).
+func _has_visible_focus(control: Control) -> bool:
+	if control is FocusRingSlider:
+		return (control as FocusRingSlider).focus_ring_style != null
+	return control.has_theme_stylebox_override(&"focus")
 
 
 func check(condition: bool, description: String) -> void:
