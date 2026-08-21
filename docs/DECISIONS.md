@@ -6660,3 +6660,31 @@ sees every byte of it that did not need to change.
 
 **Would change my mind:** if NODE harvestables ever became the majority of a chunk's placements, the
 narrow rebuild would stop being narrow and both representations would need to coexist instead.
+
+## D-199 — the floor is a deck piece, not a slab, and it stands at the height the ramp already climbs to
+
+Task 3.7 names "walls/floors/ramps/doors" and the shipped set had thirteen pieces without a floor in
+it. The gap mattered more than one missing row: the construction kit's whole contract is built around
+`DECK_Z = 1.00 m`, the plane every bridge and dock walks at and the exact rise of one ramp — and until
+now a ramp climbed that metre and arrived on nothing. Walls plus a ramp made a fence with a view.
+
+So `floor_wood` is authored as a deck piece rather than as a ground slab:
+
+- Its walking surface is `DECK_Z`, checked by `DECK_PIECES` in
+  `tools/blender/build_construction_set.py` and again from the `.tres` side by
+  `tools/construction_check.gd`'s `BUILDABLE_FRAME`. A floor run, a dock run, a bridge run and the top
+  of a ramp are therefore one continuous surface, not four surfaces that nearly agree.
+- It is 2.00 m square and tiles in **two** directions, unlike every other module in the kit, which
+  tiles along x only. That is why it carries no kerb and no fascia: the dock earns its kerb because a
+  boardwalk has an outside, whereas all four of a floor's edges are potential mating faces and a trim
+  board on a mating face doubles into a visible ridge the moment two modules butt.
+- It is framed, not faked — corner posts, bearers across them, joists over those at ~0.55 m centres,
+  decking last. The underside is visible from any ramp or shoreline, so each layer actually sits on
+  the one below it.
+- Collision is the deck slab alone (`BoxShape3D` 2.0 x 0.12 x 2.0 at y = 0.94), matching `dock.tscn`.
+  You walk **on** a floor and **under** it; the volume between the posts is not solid.
+
+The alternative considered was a ground-level slab at y = 0, the way a foundation works in games that
+grid their building in 3D. It was rejected because this kit has no foundation concept and one ramp is
+defined as exactly one storey: a slab on the ground would have made the ramp meaningless and given the
+floor a mating height nothing else in the kit shares.

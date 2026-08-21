@@ -36,6 +36,7 @@ const BUILDABLE_FRAME: Dictionary = {
 	"palisade": "palisade_straight",
 	"palisade_gate": "palisade_gate_frame",
 	"dock": "dock_straight",
+	"floor": "floor_wood",
 	"bridge": "bridge_straight",
 	"ladder": "ladder",
 }

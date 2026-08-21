@@ -69,6 +69,44 @@ do is worth as much as the record of what we did.
 
 ## Open
 
+### F-468 · Re-running either art generator rewrites every asset it owns with no pixel or vertex change, so a one-piece addition looks like a 48-file rebuild
+
+**Area:** tooling/assets · **Severity:** low · **Found:** 2026-08-21 by coil26502f during 3.7
+
+Adding a single piece (`floor_wood`) to the construction kit produced 48 modified binary files in
+`git status`. Every one of them was proven unchanged in the only sense that matters, and the two
+causes are separate:
+
+- **All 41 icons, plus `construction_door_preview.png`.** `tools/blender/render_item_icons.py` writes
+  Blender's default PNG metadata, which includes `tEXt Date` and `tEXt Time` chunks stamped with the
+  wall-clock time of the render. Decompressing the IDAT stream of `icon_log.png` before and after
+  gives **byte-identical pixel data** (262400 bytes each); the 34 differing bytes in the file are all
+  inside those two chunks. So every icon rebuild dirties every icon, forever, regardless of what
+  changed.
+- **The seven GLBs that happen to be built after the insertion point.** `wall_wood`, both palisade
+  gate halves, `palisade_straight`, `palisade_corner` and both barricades all changed, and they are
+  exactly the pieces whose builders run after `floor_wood` in `main()`'s list. Their glTF **binary
+  chunks are byte-identical**; the only difference is in the JSON chunk's mesh names, where Blender's
+  global datablock duplicate counter shifted (`Cube.184` -> `Cube.197`) because thirteen more `Cube`
+  datablocks were minted before the file was exported. `assets/construction/catalog.json` records no
+  changed measurement for any of them — the diff is a rebase of a naming counter.
+
+This matters more than tidiness. `build_construction_set.py`'s own header states that "this batch's
+contract includes a byte-identical rebuild" (the reason it forbids bevel modifiers, F-057). That
+contract currently holds only while the piece list is frozen: inserting anywhere but the end breaks
+it for every downstream asset, so the one property that would let a reviewer trust a regenerated
+asset cannot actually be used to check one.
+
+**Worked around, not fixed, this session.** The 47 cosmetic diffs were reverted with a pixel-level
+and binary-chunk-level comparison so 3.7's commit shows only the floor. That comparison is the
+workaround a future batch would otherwise have to reinvent, so it is worth keeping.
+
+**The fix, when someone takes this:** strip the date/time chunks on write in `render_item_icons.py`
+(Blender exposes no switch, so post-process the PNG — the chunks are trivially removable), and give
+`create_asset()` in `build_construction_set.py` a deterministic rename pass over each collection's
+mesh datablocks before it exports, so a mesh's name depends on its own asset and not on how many
+assets preceded it.
+
 ### F-444 · The ordinary ground mist still hangs off one world Y, and on a streamed island that Y is the waterline — it pools in the sea, not in the valleys
 
 **Area:** world/VFX · **Severity:** medium · **Found:** 2026-08-21 by hollow80855f during F-435
@@ -3165,7 +3203,7 @@ Reported from play (Sequoyah, 2026-08-21): "when a river generates through the m
 cuts through a hill it just drops from the top of the hill straight down to the bottom of the river
 and leaves a straight vertical wall that is unnatural."
 
-## Why it happens
+### Why it happens
 
 `IslandHeightmap._carve()` is `min(surface, channel)`, and `_river_channel()` returns a 1.0e9
 sentinel the instant a sample is further than `width * RIVER_CORRIDOR` from the polyline. So the
@@ -3185,7 +3223,7 @@ and treated widening the corridor as the fix. Widening cannot fix it: no fixed c
 enough for an arbitrary hill, because the required half-width is `sqrt(depth / rise)` and `depth` is
 whatever terrain the river happens to cross.
 
-## The second half
+### The second half
 
 A river cutting a hill SHOULD leave something steep — that is a gorge, and it is good. What it may
 not leave is a mathematically vertical clip wearing the same grass as the meadow above it. A-016a
@@ -3258,6 +3296,45 @@ proxy and its limits should be stated rather than implied away.
 
 Related, and the reason this went unnoticed for a whole session: several conclusions were drawn from
 these runs and are now unsafe — see the amendments on F-457, F-459 and F-465.
+
+---
+
+### F-467 · A level-2 heading inside a finding body hides every finding filed after it
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
+
+`_open_findings()` in `.agent/bin/agent` scans `docs/FINDINGS.md` and flips its "am I inside the
+open section" flag on **any** line starting with `## `:
+
+    if line.startswith("## "):
+        in_open = line.strip() == "## Open"
+
+So a finding whose BODY contains a level-2 heading silently ends the open section at that point, and
+every finding filed after it becomes invisible to the harness — not to the eye, and not to
+`tools/findings_numbering_check.gd`, which parses differently and still counts them. They are simply
+unclaimable: `agent claim`, `agent brief`, `agent note` and `agent done` all reject them with
+"unknown finding F-NNN — it is not under '## Open'", while the file plainly shows them under
+'## Open'.
+
+Hit on 2026-08-21. F-464's body used `## Why it happens` and `## The second half`, which hid F-465
+and F-466 — both freshly filed, both correctly placed. The failure mode is nasty because the error
+message states the exact opposite of what the file says, so the natural response is to doubt the
+file, re-read it, re-file the finding under a new number, and hide that one too. Worked around by
+demoting those two headings to `###` (harmless — the parser only gives meaning to `### F-`), which
+is a fix to the symptom in one file, not to the trap.
+
+Two things are wrong and either would fix it:
+
+1. **The scanner should only close the open section on a heading it recognises** — `## Resolved`, or
+   any `## ` that is one of the file's known top-level sections — rather than on any `## ` at all.
+   `_finding_body()` immediately below has the same shape and the same bug.
+2. **Nothing warns.** `findings_hygiene_check.py` is the right home for a check that the harness's
+   view of the open list matches the document's: if `_open_findings()` returns fewer ids than
+   `### F-` headings physically under `## Open`, something is eating them, and that is worth failing
+   loudly rather than discovering it when a claim is refused.
+
+Note this also silently shrinks the board and anything a director routes off it, which is the same
+class of problem as F-131 and F-269 — the doc and the state disagreeing, with no signal.
 
 ---
 

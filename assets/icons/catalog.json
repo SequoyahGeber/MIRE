@@ -340,6 +340,16 @@
     "source_polygons": 432
   },
   {
+    "id": "build_floor",
+    "source": "assets/construction/exports/floor_wood.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 3.2868,
+    "source_polygons": 420
+  },
+  {
     "id": "build_palisade",
     "source": "assets/construction/exports/palisade_straight.glb",
     "size_px": 256,

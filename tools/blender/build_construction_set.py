@@ -3,13 +3,14 @@
 Run with:
   Blender --background --python tools/blender/build_construction_set.py
 
-Outputs 18 individual metre-scale GLBs covering 14 assets, an editable Blender
+Outputs 19 individual metre-scale GLBs covering 15 assets, an editable Blender
 source, a JSON catalog, and four preview renders. Geometry is deterministic.
 
 What this batch is for
 ----------------------
 Everything here is a piece a player walks through, climbs, crosses or hides
-behind: doors, gates, ladders, ramps, bridges, docks, palisades, barricades.
+behind: doors, gates, ladders, ramps, bridges, docks, floors, palisades,
+barricades.
 `systems/building/buildable_def.gd` already ships the placement rules and task
 3.7 authors the real buildable set against them; this is the art that set needs,
 plus the spans world-gen puts over the river.
@@ -25,7 +26,8 @@ authored against a module contract, and the contract is what gets verified:
                       `content/buildables/wall.tres` (size.x = 2, snap_step = 1)
   WALL_H     3.00 m   that wall's height. Palisade, both gate frames, the door
                       frame and the ladder all reach exactly it
-  DECK_Z     1.00 m   the walking surface of every bridge and dock piece
+  DECK_Z     1.00 m   the walking surface of every bridge, dock and floor
+                      piece — the one plane a ramp arrives on
   RAMP_RISE  1.00 m   over a 2.00 m run: 26.3 degrees, and exactly one deck.
                       Three ramps stack to WALL_H
 
@@ -135,6 +137,7 @@ EXPECTED_NAMES = [
     "bridge_rope",
     "dock_straight",
     "dock_corner",
+    "floor_wood",
     "wall_wood",
     "palisade_straight",
     "palisade_corner",
@@ -157,6 +160,7 @@ FAMILY: dict[str, str] = {
     "bridge_rope": GROUND,
     "dock_straight": GROUND,
     "dock_corner": GROUND,
+    "floor_wood": GROUND,
     "wall_wood": GROUND,
     "palisade_straight": GROUND,
     "palisade_corner": JOINT,
@@ -179,13 +183,15 @@ RUN_SPAN: dict[str, float] = {
     "bridge_broken": MODULE,
     "dock_straight": MODULE,
     "dock_corner": MODULE,
+    "floor_wood": MODULE,
     "wall_wood": MODULE,
     "palisade_straight": MODULE,
     "palisade_gate_frame": MODULE,
 }
 
 #: Pieces whose walking surface must land exactly on DECK_Z.
-DECK_PIECES = ("bridge_straight", "bridge_broken", "dock_straight", "dock_corner", "ramp")
+DECK_PIECES = ("bridge_straight", "bridge_broken", "dock_straight", "dock_corner", "ramp",
+               "floor_wood")
 
 #: Doorway openings, as (centre_x, half_width, top_z). Checked by asserting no
 #: part of the frame intrudes into the volume — a doorway you cannot walk
@@ -774,6 +780,55 @@ def build_dock_corner(mats: dict[str, bpy.types.Material]) -> None:
     upright("Bollard", 0.80, -0.80, DECK_Z - 0.06, DECK_Z + 0.52, 0.085, mats["bark"], 7, 0.90)
     lashing("Bollard_Rope", (0.80, -0.80, DECK_Z + 0.34), 0.105, mats["rope"], "z", 0.11)
     lashing("Bollard_Coil", (0.80, -0.80, DECK_Z + 0.10), 0.135, mats["rope"], "z", 0.09)
+
+
+def build_floor_wood(mats: dict[str, bpy.types.Material]) -> None:
+    """One 2 x 2 m module of platform floor: posts, bearers, joists, decking.
+
+    This is the piece the rest of the kit was already implying and did not have.
+    The ramp climbs exactly RAMP_RISE to DECK_Z and then arrives on nothing; the
+    docks and bridges walk at DECK_Z but are spans, not rooms. A floor at that
+    same DECK_Z is what turns a ramp plus four walls into a structure, and it is
+    why the module contract is checked in x AND laid out square in y: unlike a
+    wall or a bridge, a floor tiles in two directions, so both of its mating
+    planes are the deck's own outer edges.
+
+    Framed the way a real timber platform is framed, from the ground up: four
+    corner posts, two bearers spanning across them, four joists laid over the
+    bearers at roughly 0.55 m centres, and the decking last. Nothing is a
+    decorative board pretending to be structure — each layer sits on the one
+    below it, which is what makes the underside read from a ramp or a shoreline.
+
+    No fascia and no kerb, deliberately. The dock earns its kerb because a
+    boardwalk has an outside; a floor's four edges are all potentially mating
+    faces, and a trim board on a mating face doubles up into a visible ridge the
+    moment two modules butt.
+    """
+    deck_under = DECK_Z - PLANK_T          # decking sits ON the joists
+    joist_h, bearer_h = 0.12, 0.14
+    joist_bottom = deck_under - joist_h
+    bearer_bottom = joist_bottom - bearer_h
+
+    for xi, x in enumerate((-0.78, 0.78)):
+        for yi, y in enumerate((-0.78, 0.78)):
+            tag = xi * 2 + yi
+            upright(f"Post_{tag}", x, y, 0.0, bearer_bottom, 0.10, mats["bark"], 7, 0.96)
+            lashing(f"Post_Wrap_{tag}", (x, y, bearer_bottom - 0.09), 0.122, mats["rope"], "z", 0.07)
+        box(f"Bearer_{xi}", (x, 0.0, bearer_bottom + bearer_h * 0.5), (0.16, 1.86, bearer_h),
+            mats["timber"])
+    # Joists run along x so the decking crosses them, and the outermost pair sit
+    # on the module edge: a neighbouring floor's edge joist lands beside this
+    # one rather than leaving a 2 m unsupported seam between two decks.
+    for index, y in enumerate((-0.925, -0.31, 0.31, 0.925)):
+        box(f"Joist_{index}", (0.0, y, joist_bottom + joist_h * 0.5), (MODULE, 0.09, joist_h),
+            mats["timber" if index in (0, 3) else "timber_light"])
+    deck_field("Deck", (-HALF, HALF), (-1.0, 1.0), 7, DECK_Z,
+               (mats["plank"], mats["dead"], mats["plank_light"]), "y")
+    # Two things stop 2 x 2 m of parallel board from reading as a texture swatch:
+    # the frame beneath it, and the fact that the ground goes on living under a
+    # platform that stands 0.7 m off it.
+    lashing("Post_Moss_0", (-0.78, -0.78, 0.06), 0.145, mats["moss"], "z", 0.12)
+    lashing("Post_Moss_3", (0.78, 0.78, 0.05), 0.132, mats["moss"], "z", 0.10)
 
 
 # ── Fortification ────────────────────────────────────────────────────────────
@@ -1377,6 +1432,7 @@ def main() -> None:
         ("bridge_rope", lambda: build_bridge_rope(mats)),
         ("dock_straight", lambda: build_dock_straight(mats)),
         ("dock_corner", lambda: build_dock_corner(mats)),
+        ("floor_wood", lambda: build_floor_wood(mats)),
         ("wall_wood", lambda: build_wall_wood(mats)),
         ("palisade_straight", lambda: build_palisade_straight(mats)),
         ("palisade_corner", lambda: build_palisade_corner(mats)),
@@ -1486,6 +1542,9 @@ def main() -> None:
         ("bridge_straight", (-1.0, 0.0, 0.0), quarter),
         ("bridge_broken", (3.4, -4.2, 0.0), quarter),
         ("ramp", (-7.0, -2.0, 0.0), math.pi),
+        ("ramp", (-7.0, -5.0, 0.0), 0.0),
+        ("floor_wood", (-5.0, -5.0, 0.0), 0.0),
+        ("floor_wood", (-3.0, -5.0, 0.0), 0.0),
         *hung("door_wood_leaf", (3.6, 2.0, 0.0), math.radians(-24.0), 62.0),
         *hung_pair("gate_double_leaf_left", "gate_double_leaf_right",
                    (5.4, -1.6, 0.0), math.radians(-8.0), 42.0),
@@ -1532,6 +1591,8 @@ def main() -> None:
         ("ramp", (0.6, 0.0, 0.0), 0.0),
         ("dock_straight", (2.6, 0.0, 0.0), 0.0),
         ("dock_straight", (4.6, 0.0, 0.0), 0.0),
+        ("floor_wood", (2.6, -2.0, 0.0), 0.0),
+        ("floor_wood", (4.6, -2.0, 0.0), 0.0),
         ("barricade", (-0.9, -2.2, 0.0), 0.0),
     ])
     figures = reference_figure(mats["scale"], (-1.6, 0.9, 0.0), 5)

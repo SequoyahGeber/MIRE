@@ -9596,3 +9596,44 @@ For 1.2 specifically: **sanity-check the interface snippet it gives you before s
 tasks get written against that shape, so changing it afterwards isn't a fix, it's a refactor across the
 milestone. Paste the snippet into a fresh chat and ask whether the API holds up, if you want a second
 read on it.
+
+### 2026-08-21 — Task 3.7 closed: the buildable set has a floor, and all six building checks are green (coil26)
+
+3.6 shipped the mechanics (BuildService / BuildGhost / PlacementValidator) and 3.7 had already
+authored twelve of its thirteen pieces plus both Ward structures. Auditing the set against the task's
+own wording — "walls/floors/ramps/doors" — found exactly one hole: **there was no floor**, and no
+floor art in the A-010 construction kit to make one from.
+
+**What shipped**
+
+| File | What it is |
+| --- | --- |
+| `tools/blender/build_construction_set.py` | `build_floor_wood()` plus its rows in `EXPECTED_NAMES`/`FAMILY`/`RUN_SPAN`/`DECK_PIECES`, and the piece staged into two of the four preview renders |
+| `assets/construction/exports/floor_wood.glb` | 2.00 x 2.00 x 1.00 m, 420 tris, 6 materials — at the GROUND family's material cap, under its 1400-tri budget |
+| `assets/icons/exports/icon_build_floor.png` | rendered by `render_item_icons.py`, forced upright with the other buildables (F-427) |
+| `scenes/buildables/floor.tscn` | `StaticBody3D` on layer 1, art + a deck-only collider |
+| `content/buildables/floor.tres` | `id = &"floor_wood"`, 6 logs, 35 hp, snaps to the metre grid |
+| `tools/construction_check.gd` | `BUILDABLE_FRAME` gains `"floor" -> "floor_wood"`, so the `.tres` is held to the engine-measured module span rather than being the one piece exempt from it |
+
+The design call — why a deck piece at `DECK_Z` rather than a ground slab — is **D-199**.
+
+**Current state, verified this session at HEAD.** All six checks that touch building pass, and they
+are the answer to "is it working in game", so re-run these rather than re-deriving:
+
+```
+agent godot --script tools/buildable_content_check.gd       # 14 defs, 14 with art, 0 failures
+agent godot --script tools/construction_check.gd            # PASS, BUILDABLE_DEFS checked=9
+agent godot --script tools/build_check.gd                   # 0 failures
+agent godot --script tools/build_net_check.gd               # 0 failures — host-authoritative place/destroy
+agent godot --script tools/command_craft_build_net_check.gd # 0 failures
+agent godot --script tools/gamepad_check.gd                 # 0 failures — D-pad up enters build mode with a real ghost
+agent godot --script tools/loop_audit_check.gd              # 0 failures — a piece is placed inside the real loop
+```
+
+`ui/building/build_bar.gd` builds its slots from `Registry.buildables` at boot with no cap, so the
+fourteenth piece needed no HUD change and none was made.
+
+**What 3.7 does not cover, so nobody looks for it here.** There is still no stone/iron tier of the
+same pieces (`wall.tres`'s id is `wall_wood` in anticipation, but no stone variant is authored), and
+no roof or half-height piece. Both are content, not mechanics — the module contract and the placement
+path take either without change.

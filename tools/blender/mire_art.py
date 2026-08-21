@@ -378,6 +378,7 @@ SCALE: dict[str, float] = {
     "gate_double_leaf_right": 2.58,
     "ladder": 3.00,                   # exactly a wall: it tops out level with one
     "ramp": 2.00,                     # one module of run for one deck of rise
+    "floor_wood": 2.00,               # one deck module square, the surface a ramp arrives on
     "bridge_straight": 2.00,
     "bridge_broken": 2.00,
     "bridge_rope": 4.00,              # two modules, because a slung span needs the length

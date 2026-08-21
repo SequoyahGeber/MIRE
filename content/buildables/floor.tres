@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="BuildableDef" format=3]
+
+[ext_resource type="Script" path="res://systems/building/buildable_def.gd" id="1_buildabledef"]
+[ext_resource type="PackedScene" path="res://scenes/buildables/floor.tscn" id="2_scene"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_build_floor.png" id="ic_floor"]
+
+[resource]
+script = ExtResource("1_buildabledef")
+icon = ExtResource("ic_floor")
+id = &"floor_wood"
+display_name = "Wooden Floor"
+description = "Two metres square of decking on posts, standing at the same height a ramp climbs to. Lay them edge to edge and they read as one surface; walk under them and you can see the joists."
+scene = ExtResource("2_scene")
+size = Vector3(2.0, 1.0, 2.0)
+snap_step = 1.0
+rotation_step_degrees = 90.0
+requires_support = true
+max_ground_slope_degrees = 30.0
+max_build_range_m = 6.0
+cost = Dictionary[StringName, int]({
+&"log": 6
+})
+refund_fraction = 0.5
+max_hp = 35
+ward_radius_m = 0.0

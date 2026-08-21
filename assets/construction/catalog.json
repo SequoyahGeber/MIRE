@@ -347,6 +347,40 @@
     "deck_z_m": 1.0
   },
   {
+    "name": "floor_wood",
+    "family": "ground",
+    "width_m": 2.0,
+    "depth_m": 2.0,
+    "height_m": 1.0,
+    "origin": "ground_centred",
+    "min_z_m": 0.0,
+    "mesh_parts": 23,
+    "polygons": 174,
+    "triangles": 420,
+    "materials": [
+      "MIRE_Moss",
+      "MIRE_Rope",
+      "MIRE_WoodBark",
+      "MIRE_WoodDead",
+      "MIRE_WoodTimber",
+      "MIRE_WoodTimberLight"
+    ],
+    "run_span_m": 2.0,
+    "mates_m": [
+      [
+        -2.0,
+        0.0,
+        0.0
+      ],
+      [
+        2.0,
+        0.0,
+        0.0
+      ]
+    ],
+    "deck_z_m": 1.0
+  },
+  {
     "name": "wall_wood",
     "family": "ground",
     "width_m": 2.0,
