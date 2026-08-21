@@ -8118,3 +8118,18 @@ Notes along the way:
 Files: `tools/f410_asset_material_check.gd`, `assets/audit/lighting/f410_probe.json`, `assets/audit/lighting/f410_00_warmup.png`, `assets/audit/lighting/f410_01_current.png`, `assets/audit/lighting/f410_02_sky_absurd.png`, `assets/audit/lighting/f410_03_physical_default.png`, `assets/audit/lighting/f410_04_soft_day.png`, `assets/audit/lighting/f410_05_airy_day.png`, `tools/f410_procedural_sky_probe.gd`, `assets/audit/lighting/f410_procedural_probe.jsonl`, `assets/audit/lighting/f410_10_procedural_current.png`, `assets/audit/lighting/f410_11_procedural_soft.png`, `assets/audit/lighting/f410_12_procedural_clear.png`, `assets/audit/lighting/f410_13_procedural_soft_green.png`, `world/environment/playtest_atmosphere.gd`, `tools/grade_check.gd`, `tools/atmosphere_night_check.gd`, `tools/graphics_quality_check.gd`, `tools/blender/build_mire_map_kit.py`, `assets/environment/exports/tree_birch_a.glb`, `assets/environment/exports/tree_birch_b.glb`, `assets/environment/exports/tree_birch_c.glb`, `assets/environment/exports/tree_birch_d.glb`, `assets/environment/exports/tree_crooked_a.glb`, `assets/environment/exports/tree_crooked_b.glb`, `assets/environment/exports/tree_crooked_c.glb`, `assets/environment/exports/tree_crooked_d.glb`, `assets/audit/lighting/f410_final_render.jsonl`, `assets/audit/lighting/f410_20_noon_baseline.png`, `assets/audit/lighting/f410_21_golden_hour.png`, `assets/audit/lighting/f410_22_moonlit_night.png`, `tools/f410_asset_material_check.gd.uid`, `tools/f410_procedural_sky_probe.gd.uid`
 
 Commit at time of writing: `fb1ee55`
+
+---
+
+### DONE · F-411 · flinta92725 · 2026-08-21T05:51:07+00:00
+
+**Add a playtesting God mode toggle**
+
+Settings now has a runtime God Mode toggle. Host/op-approved state makes the tester immune to direct, starvation and Blight damage, revives/heals on enable, and gives the owning player collision-preserving flight. Offline and real host/client checks both pass; protocol is v22.
+
+Notes along the way:
+- God mode is runtime-only, surfaced as a Settings PLAYTESTING checkbox but routed through the same HOST-scope/op-gated god command as the console. Host canonical state blocks direct, starvation, and Blight damage; the owning client alone applies collision-preserving flight. Future powers query GodModeService instead of adding flags.
+
+Files: `autoload/god_mode_service.gd`, `systems/health/player_health.gd`, `entities/player/player_controller.gd`, `project.godot`, `core/net/net_version.gd`, `core/net/rpc_manifest.gd`, `tools/god_mode_check.gd`, `ui/menu/settings_menu.gd`, `tools/god_mode_net_check.gd`
+
+Commit at time of writing: `b70a260`

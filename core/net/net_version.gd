@@ -96,7 +96,10 @@ extends RefCounted
 ## moves without this constant moving with it, so a fifth omission is a red check rather than a
 ## silent desync somebody diagnoses weeks later. Bumping this without re-recording the manifest
 ## (core/net/rpc_manifest.gd) leaves that check red on purpose.
-const PROTOCOL_VERSION: int = 21
+## 22 (F-411): autoload/god_mode_service.gd added net_set_local_enabled (host -> the approved
+## owning peer). Reliable: losing the enable leaves host-side immunity on while the owner cannot
+## fly; losing the disable leaves flight on while host-side immunity is already gone.
+const PROTOCOL_VERSION: int = 22
 
 ## Wire-format tag for the client→host hello RPC, kept separate from the reason string format so a
 ## mismatch renders identically everywhere it's read (a log line, a UI error, a check-tool assertion).

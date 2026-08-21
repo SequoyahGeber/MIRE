@@ -77,6 +77,7 @@ var _sensitivity_slider: HSlider
 var _fov_slider: HSlider
 var _invert_checkbox: CheckBox
 var _reduce_motion_checkbox: CheckBox
+var _god_mode_checkbox: CheckBox
 var _gamepad_sensitivity_slider: HSlider
 var _keybind_buttons: Dictionary = {}
 var _reset_keybind_button: Button
@@ -107,6 +108,10 @@ func _ready() -> void:
 	layer = 58
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_ui()
+	# GodModeService is append-only at the end of project.godot's autoload list, after this menu.
+	# Deferred binding runs once every autoload has completed `_ready()` without introducing an order
+	# dependency or a second persisted setting.
+	_bind_god_mode.call_deferred()
 
 
 func _input(event: InputEvent) -> void:
@@ -254,6 +259,7 @@ func _build_ui() -> void:
 	_build_audio_rows(stack)
 	_build_look_rows(stack)
 	_build_accessibility_rows(stack)
+	_build_playtesting_rows(stack)
 	_build_keybind_rows(stack)
 	_build_gamepad_bind_rows(stack)
 
@@ -300,7 +306,7 @@ func _build_ui() -> void:
 	# Button/OptionButton/CheckBox) — F-215 gives it one via FocusRingSlider's own _draw() override.
 	var chain: Array = [_graphics_option, _master_slider, _music_slider, _sfx_slider,
 		_sensitivity_slider, _gamepad_sensitivity_slider, _fov_slider, _invert_checkbox,
-		_reduce_motion_checkbox]
+		_reduce_motion_checkbox, _god_mode_checkbox]
 	chain.append_array(_keybind_buttons.values())
 	chain.append(_reset_keybind_button)
 	chain.append_array(_gamepad_keybind_buttons.values())
@@ -368,6 +374,69 @@ func _build_accessibility_rows(parent: VBoxContainer) -> void:
 	_reduce_motion_checkbox.toggled.connect(func(pressed: bool) -> void:
 		_settings_call("set_reduce_camera_motion", [pressed]))
 	parent.add_child(_reduce_motion_checkbox)
+
+
+## Runtime-only on purpose: God mode is a playtest session state, not a preference to persist and
+## silently re-enable on the next launch. It therefore bypasses SettingsService's Save/Cancel
+## preview and goes through GodModeService's op-gated HOST command immediately.
+func _build_playtesting_rows(parent: VBoxContainer) -> void:
+	_add_section_label(parent, "PLAYTESTING")
+	_god_mode_checkbox = CheckBox.new()
+	_god_mode_checkbox.name = "GodModeToggle"
+	_god_mode_checkbox.text = "God Mode — invulnerability + flight"
+	_god_mode_checkbox.tooltip_text = \
+		"Runtime only. Fly with movement/look; Jump rises, Dodge descends, Sprint accelerates."
+	_god_mode_checkbox.add_theme_color_override("font_color", COLOUR_TEXT)
+	_god_mode_checkbox.add_theme_stylebox_override("focus", _focus_style())
+	_god_mode_checkbox.toggled.connect(_on_god_mode_toggled)
+	parent.add_child(_god_mode_checkbox)
+
+	var hint := Label.new()
+	hint.text = "Fly: movement/look · Jump up · Dodge down · Sprint faster"
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.add_theme_font_size_override("font_size", 10)
+	hint.add_theme_color_override("font_color", COLOUR_MUTED)
+	parent.add_child(hint)
+
+
+func _bind_god_mode() -> void:
+	var service: Node = get_node_or_null(^"/root/GodModeService")
+	if service == null:
+		return
+	if not service.is_connected(&"god_mode_changed", _on_god_mode_changed):
+		service.connect(&"god_mode_changed", _on_god_mode_changed)
+	if not service.is_connected(&"god_mode_request_completed", _on_god_mode_request_completed):
+		service.connect(&"god_mode_request_completed", _on_god_mode_request_completed)
+	_refresh_god_mode_toggle()
+
+
+func _on_god_mode_toggled(enabled: bool) -> void:
+	var service: Node = get_node_or_null(^"/root/GodModeService")
+	if service == null or not service.has_method(&"request_local_enabled"):
+		_god_mode_checkbox.set_pressed_no_signal(not enabled)
+		_set_status("God mode is unavailable.")
+		return
+	_god_mode_checkbox.disabled = true
+	_set_status("Requesting God mode %s…" % ("ON" if enabled else "OFF"))
+	service.call(&"request_local_enabled", enabled)
+
+
+func _on_god_mode_changed(_peer_id: int, _enabled: bool) -> void:
+	_refresh_god_mode_toggle()
+
+
+func _on_god_mode_request_completed(_enabled: bool, accepted: bool, detail: String) -> void:
+	_refresh_god_mode_toggle()
+	_set_status(detail if accepted else "God mode refused: %s" % detail)
+
+
+func _refresh_god_mode_toggle() -> void:
+	if _god_mode_checkbox == null:
+		return
+	var service: Node = get_node_or_null(^"/root/GodModeService")
+	var enabled: bool = service != null and bool(service.call(&"is_local_enabled"))
+	_god_mode_checkbox.set_pressed_no_signal(enabled)
+	_god_mode_checkbox.disabled = false
 
 
 func _build_keybind_rows(parent: VBoxContainer) -> void:
@@ -560,6 +629,7 @@ func _refresh_from_settings() -> void:
 	for action: StringName in _gamepad_keybind_buttons.keys():
 		(_gamepad_keybind_buttons[action] as Button).text = \
 			String(settings.call("keybind_label_joypad", action))
+	_refresh_god_mode_toggle()
 	_set_status("")
 
 

@@ -60,6 +60,16 @@ const BUILD_BAR := preload("res://ui/building/build_bar.gd")
 ## Ground speed while the sprint action is held.
 @export_range(1.0, 25.0, 0.1) var sprint_speed: float = 6.0
 
+@export_group("God Mode Flight")
+## Playtesting flight speed while GodModeService has approved this peer. Flight stays in the own-
+## player-movement authority row: this controller is the only process that moves its body.
+@export_range(1.0, 50.0, 0.5) var god_flight_speed: float = 12.0
+## Sprint is a traversal accelerator in God mode rather than a stamina cost.
+@export_range(1.0, 5.0, 0.1) var god_flight_sprint_multiplier: float = 2.0
+## Acceleration/deceleration in every axis. High enough for precise playtest positioning without an
+## instantaneous velocity snap when God mode is toggled in mid-air.
+@export_range(1.0, 200.0, 1.0) var god_flight_acceleration: float = 48.0
+
 @export_group("Wade")
 ## F-375: how deep the water has to be over the feet before it costs any speed, metres. Sequoyah,
 ## from play: "the water should slow player movement down slightly".
@@ -224,6 +234,10 @@ var _health: Node = null
 ## player before the autoload tree exists.
 var _powerups: Node = null
 
+## Same lazy autoload-cache shape as `_health`/`_powerups`. A bare controller harness may not load
+## GodModeService; that means ordinary movement, never an error or accidental flight.
+var _god_mode: Node = null
+
 ## F-086: client-local building presentation, built only for the local player (see
 ## _build_building_presentation()). Neither ever decides anything — BuildService is the only
 ## authority (§2.2 world mutation row). "Build mode active" has no separate flag: it IS
@@ -374,6 +388,12 @@ func _powerup_service() -> Node:
 	return _powerups
 
 
+func _god_mode_enabled() -> bool:
+	if not is_instance_valid(_god_mode):
+		_god_mode = get_node_or_null(^"/root/GodModeService")
+	return _god_mode != null and bool(_god_mode.call(&"is_local_enabled"))
+
+
 ## A player spawned by PlayerNet is NAMED for the peer that owns it, and that name is in place on
 ## every peer before the node enters the tree — so both sides derive the same authority from it with
 ## nothing extra on the wire. Any other name (the level's hand-placed "Player", or anything offline)
@@ -464,7 +484,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	# commits now or it doesn't, so there is nothing to buffer. gameplay_input_allowed() gates it the
 	# same as attack/build; downed/dead block it the same way jump and sprint already are (crawl_speed
 	# leaves no dash to spend, and a dead player is mid-respawn with no body to move at all).
-	if event.is_action_pressed(&"dodge") and gameplay_input_allowed() \
+	if event.is_action_pressed(&"dodge") and gameplay_input_allowed() and not _god_mode_enabled() \
 			and not _is_downed() and not _is_dead():
 		_execute_dodge()
 		get_viewport().set_input_as_handled()
@@ -525,6 +545,10 @@ func _physics_process(delta: float) -> void:
 
 	_tick_timers(delta)
 	_tick_dodge(delta)
+	if _god_mode_enabled():
+		_apply_god_flight(delta, input_allowed)
+		move_and_slide()
+		return
 	# F-375, before movement reads it: how deep the water is over the feet decides this tick's speed
 	# cap, so it has to be sampled at the position the tick STARTS from, not left over from the last.
 	_tick_wade()
@@ -541,6 +565,42 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 	_detect_landing(fall_speed)
+
+
+## Approved playtesting flight. Horizontal input follows the full camera look vector (including
+## pitch), jump adds world-up and dodge adds world-down. Collision remains enabled: this is flight,
+## not noclip, so a tester cannot accidentally move inside terrain and invalidate what they see.
+func _apply_god_flight(delta: float, input_allowed: bool) -> void:
+	# A dodge that was already in flight when God mode turned on must not keep its i-frame flag or
+	# committed horizontal impulse alive behind this movement branch.
+	dodging = false
+	_dodge_time_remaining = 0.0
+	_iframe_time_remaining = 0.0
+	_dodge_velocity = Vector3.ZERO
+
+	var health: Node = _health_node()
+	if health != null:
+		health.call(&"local_tick_stamina", delta, false)
+
+	var wish: Vector3 = Vector3.ZERO
+	if input_allowed:
+		var input_2d: Vector2 = Input.get_vector(
+			&"move_left", &"move_right", &"move_forward", &"move_back"
+		)
+		var camera_basis: Basis = camera.global_transform.basis
+		wish = camera_basis.x * input_2d.x + (-camera_basis.z) * -input_2d.y
+		if Input.is_action_pressed(&"jump"):
+			wish += Vector3.UP
+		if Input.is_action_pressed(&"dodge"):
+			wish += Vector3.DOWN
+	if wish.length_squared() > 1.0:
+		wish = wish.normalized()
+
+	var sprinting: bool = input_allowed and Input.is_action_pressed(&"sprint") \
+		and wish != Vector3.ZERO
+	var speed: float = god_flight_speed * (god_flight_sprint_multiplier if sprinting else 1.0)
+	velocity = velocity.move_toward(wish * speed, god_flight_acceleration * delta)
+	camera.set_sprinting(sprinting)
 
 
 func _tick_timers(delta: float) -> void:

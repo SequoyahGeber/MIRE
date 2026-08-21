@@ -156,6 +156,9 @@ var _blight_accum: Dictionary[int, float] = {}
 ## Cached MireGrid ref (F-099 — _tick_blight runs every physics tick per tracked peer). Path-resolved
 ## since MireGrid registers after this autoload (F-011).
 var _mire_grid_node: Node
+## GodModeService is queried on every host damage path, including the per-peer hunger/Blight tick.
+## Cache the autoload instead of adding two path walks per living player per physics frame.
+var _god_mode_node: Node
 ## Host-owned, advisory only: the last stamina value each peer reported. Never used to gate anything
 ## — see the class doc's Stamina paragraph.
 var _host_stamina_reports: Dictionary[int, float] = {}
@@ -288,6 +291,9 @@ func _tick_hunger(peer_id: int, downed_state: DOWNED_STATE, delta: float) -> boo
 	if next_hunger > 0.0 or not downed_state.is_alive():
 		_starvation_accum[peer_id] = 0.0
 		return false
+	if _god_mode_enabled(peer_id):
+		_starvation_accum[peer_id] = 0.0
+		return false
 	var empty_seconds: float = delta
 	if previous_hunger > 0.0 and hunger_drain_per_sec > 0.0:
 		empty_seconds = maxf(delta - previous_hunger / hunger_drain_per_sec, 0.0)
@@ -312,6 +318,8 @@ func _tick_hunger(peer_id: int, downed_state: DOWNED_STATE, delta: float) -> boo
 ## treats false as a miss, not a phantom hit.
 func host_apply_damage(peer_id: int, amount: int, instigator_peer_id: int) -> bool:
 	if not _owns_mutation() or _run_over or amount <= 0 or not _states.has(peer_id):
+		return false
+	if _god_mode_enabled(peer_id):
 		return false
 	var downed_state: DOWNED_STATE = _states[peer_id]
 	if not downed_state.is_alive():
@@ -1121,6 +1129,9 @@ func _tick_blight(peer_id: int, downed_state: DOWNED_STATE, delta: float) -> boo
 	if not downed_state.is_alive():
 		_blight_accum[peer_id] = 0.0
 		return false
+	if _god_mode_enabled(peer_id):
+		_blight_accum[peer_id] = 0.0
+		return false
 	var body: Node3D = _player_body(peer_id)
 	var mire_grid: Node = _mire_grid()
 	if body == null or mire_grid == null:
@@ -1147,6 +1158,14 @@ func _mire_grid() -> Node:
 	if _mire_grid_node == null or not is_instance_valid(_mire_grid_node):
 		_mire_grid_node = get_node_or_null(^"/root/MireGrid")
 	return _mire_grid_node
+
+
+## Host-side authority answer. A missing service means ordinary damage behaviour, which keeps bare
+## PlayerHealth harnesses and partial scenes honest instead of accidentally making them invincible.
+func _god_mode_enabled(peer_id: int) -> bool:
+	if not is_instance_valid(_god_mode_node):
+		_god_mode_node = get_node_or_null(^"/root/GodModeService")
+	return _god_mode_node != null and bool(_god_mode_node.call(&"is_enabled", peer_id))
 
 
 func _registry() -> Node:

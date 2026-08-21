@@ -35,13 +35,13 @@ const SKIP_DIRS: PackedStringArray = [
 
 ## The `PROTOCOL_VERSION` in force when `RECORDED_SIGNATURE` below was taken. The check asserts these
 ## two move together: a signature re-recorded against an unchanged version is the omission itself.
-const RECORDED_PROTOCOL_VERSION: int = 21
+const RECORDED_PROTOCOL_VERSION: int = 22
 ## FNV-1a over the canonical manifest (see `signature()`). Regenerate with the check tool; never by
 ## hand, and never without also bumping the version above.
-const RECORDED_SIGNATURE: String = "46487d0ba06e8e31"
+const RECORDED_SIGNATURE: String = "44f02b280e4fd9cb"
 ## Carried alongside the hash purely so a failure can say "42 -> 45" before it says "the hash moved".
 ## A hash tells you something changed; a count tells you roughly what happened.
-const RECORDED_ENTRY_COUNT: int = 55
+const RECORDED_ENTRY_COUNT: int = 56
 
 
 ## One canonical line per RPC, sorted. The line is deliberately the parts that affect the WIRE and
