@@ -2250,6 +2250,22 @@ a stale joined key is indistinguishable from a legitimately-named file and will 
 
 ## Resolved
 
+### F-411 · Add a playtesting God mode toggle — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by flinta92725
+
+Playtesting needs a deliberate God mode that the local tester can toggle during a run. The first version must make that player invulnerable and able to fly, must declare and enforce its multiplayer authority rather than trusting an unprivileged client, and must expose one coherent state/seam where future requested God-mode powers can be added. Add focused automated coverage for toggle, damage immunity, flight entry/exit, and authority behavior. Likely surfaces: the existing typed developer console/CommandSpec system, player health/damage, and player movement.
+
+---
+
+**Resolved 2026-08-21 by flinta92725.** Added a runtime-only God Mode checkbox under Settings -> PLAYTESTING, backed by autoload/god_mode_service.gd and the HOST-scope/op-gated `god [toggle|on|off|status]` command. The host keeps canonical per-peer state; PlayerHealth rejects direct/shared, starvation, and Blight damage; enabling revives and fully heals; the owning PlayerController provides collision-preserving camera-relative flight (Jump up, Dodge down, Sprint faster). Future powers query the same service seam. Added the reliable host-to-owner state RPC, bumped protocol 21 -> 22, and re-recorded the 56-entry manifest.
+
+Verified:
+- `.agent/bin/agent godot --script tools/god_mode_check.gd` -> GOD_MODE_CHECK failures=0 (Settings toggle, command/op gate, recovery, immunity, flight, disable)
+- `.agent/bin/agent godot --script tools/god_mode_net_check.gd` -> GOD_MODE_NET_CHECK failures=0 (real host/client refusal-before-op, approval, remote immunity, disable)
+- `rpc_manifest_check.gd`, `verify_setup.gd`, `player_health_check.gd`, `settings_check.gd`, and `command_check.gd` -> failures=0 / all checks passed
+- `git diff --check` on F-411 paths and `python3 tools/decision_ref_check.py` -> clean
+
 ### F-410 · Three visual defects remain in the noon frame after the grade fix: pale grey trunks, orange canopy facets, and a flat grey horizon — **fixed**
 
 **Area:** render · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
