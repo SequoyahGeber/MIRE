@@ -25,6 +25,7 @@ const BenchmarkReport := preload("res://core/bench/benchmark_report.gd")
 const SettingsAdvisor := preload("res://core/bench/settings_advisor.gd")
 const BenchmarkRunner := preload("res://core/bench/benchmark_runner.gd")
 const MachineProbe := preload("res://core/bench/machine_probe.gd")
+const BenchmarkScreen := preload("res://ui/frontend/benchmark_screen.gd")
 
 const SCRATCH_DIR: String = "user://benchmark_check"
 
@@ -71,6 +72,7 @@ func _run() -> void:
 	_check_advisor()
 	_check_ledger()
 	_check_machine_probe()
+	await _check_screen()
 	await _check_live()
 
 	print("\n%d assertion(s), %d failure(s)" % [_checks, _failures.size()])
@@ -356,6 +358,65 @@ func _check_machine_probe() -> void:
 		{"supported": true, "cpu_speed_limit": 100, "ac_power": true, "battery_percent": 90})
 	_expect((steady.get("notes", []) as PackedStringArray).is_empty(),
 		"a clean run says nothing about its conditions")
+
+
+# ── the screen ────────────────────────────────────────────────────────────────────────────────
+
+
+## Builds the player-facing screen and checks the parts that are logic rather than looks: that it
+## comes up, that it offers the controls it promises, and that Esc means "stop the benchmark"
+## instead of "leave the screen" while one is running. It does NOT start a benchmark — that is
+## `_check_live()`'s job, through the runner directly.
+##
+## What this cannot check is whether the screen LOOKS right. That needs eyes.
+func _check_screen() -> void:
+	print("\n-- screen --")
+	var screen: Control = BenchmarkScreen.new()
+	root.add_child(screen)
+	await process_frame
+
+	var buttons: Array[Button] = []
+	_collect_buttons(screen, buttons)
+	var labels: PackedStringArray = []
+	for button: Button in buttons:
+		labels.append(button.text)
+	_expect(labels.has("RUN BENCHMARK"),
+		"the intro offers the run button (found: %s)" % ", ".join(labels))
+	_expect(labels.has("BACK"), "and a way out")
+	_expect(screen.call(&"menu_default_focus") != null,
+		"it names a default focus — a controller never lands nowhere")
+	_expect(not bool(screen.call(&"menu_dims_background")),
+		"it paints its own shade, so the benchmark world is not dimmed while it is measured")
+	_expect(bool(screen.call(&"menu_allows_cancel")),
+		"Esc leaves the screen when nothing is running")
+
+	# The state that matters: while a benchmark is in flight Esc must cancel the benchmark and
+	# refuse to pop, or the stack would free the screen out from under a running measurement and
+	# leave a world parented to the tree.
+	screen.set(&"_state", 1)
+	_expect(not bool(screen.call(&"menu_allows_cancel")),
+		"and cancels the benchmark instead of popping while one is running")
+	screen.set(&"_state", 0)
+
+	var target_dropdowns: int = _count_option_buttons(screen)
+	_expect(target_dropdowns >= 1, "the target frame rate is selectable")
+
+	screen.queue_free()
+	await process_frame
+
+
+func _collect_buttons(node: Node, into: Array[Button]) -> void:
+	if node is Button:
+		into.append(node as Button)
+	for child: Node in node.get_children():
+		_collect_buttons(child, into)
+
+
+func _count_option_buttons(node: Node) -> int:
+	var count: int = 1 if node is OptionButton else 0
+	for child: Node in node.get_children():
+		count += _count_option_buttons(child)
+	return count
 
 
 # ── one real scene ────────────────────────────────────────────────────────────────────────────
