@@ -770,6 +770,63 @@ def eevee_engine() -> str:
 # to make the detail part of the surface rather than a thing standing on it.
 
 
+# ---------------------------------------------------------------------------
+# What the wider low-poly craft actually agrees on (2026-08-21)
+# ---------------------------------------------------------------------------
+#
+# Sequoyah asked for a research pass on low-poly technique rather than more
+# opinions. Read across Imphenzia's and Grant Abbitt's workflows, RetroStyle's
+# and Saved Pixel's write-ups, the Blender manual on normals, and the CC0 packs
+# (Quaternius, Kenney) the study assets under `assets/source/reference_imports/`
+# came from. Almost nothing in it contradicts what this file already does; what
+# follows is the part that is worth holding onto, and where MIRE sits on it.
+#
+# **1. Silhouette is the entire budget.** The agreed definition of optimisation
+#    is "remove vertices and hidden geometry, simplify forms, but never damage
+#    silhouette recognition". Detail that does not change the outline is the
+#    first thing to cut. MIRE follows this — and F-422 is a case of the same rule
+#    used the other way: the trunk's bark grain is not surface decoration, it is
+#    flutes in the silhouette, which is why it survives at distance.
+#
+# **2. Colour carries what texture would.** The style's texturing answer is a
+#    limited palette of flat colours, applied per face — vertex colours, or UV
+#    islands parked on a tiny palette image. No surface detail, no albedo
+#    variation, shading from lighting and silhouette alone. `PALETTE` is exactly
+#    this and predates the research; `paint_faces()` is the same idea per face.
+#
+# **3. Flat shading is split normals, not a shading mode.** glTF stores flat
+#    shading by splitting per-vertex normals, which is why every mesh here sets
+#    `use_smooth = False` and why the audit tool's note about re-imported GLBs
+#    reading as "smooth with custom normals" is not a defect. Nothing to change.
+#
+# **4. `Decimate` is not a low-poly button.** Its ratio operates on TRIANGLES, so
+#    a quad-heavy mesh keeps more faces than the number implies unless Triangulate
+#    runs first — and it wrecks silhouettes besides. MIRE has never used it and
+#    should not start; every asset here is built at its final density.
+#
+# **5. Leaf cards with alpha are the standard canopy answer, and MIRE
+#    deliberately declines it.** The common technique is bulbous masses of
+#    alpha-cut leaf cards. That is a texture-fetch and overdraw cost per pixel on
+#    exactly the machines MIRE targets (docs/ROADMAP's low-end goal), and it needs
+#    a transparent material where this project has none. Solid faceted masses cost
+#    triangles instead, which the target hardware has more of. Deliberate
+#    divergence, recorded so it is not "fixed" later by someone who read the same
+#    tutorials.
+#
+# **6. One material per scene is the draw-call ceiling, and MIRE cannot reach
+#    it.** The palette-atlas workflow's real prize is that an entire scene shares
+#    ONE material and therefore one draw call. MIRE cannot take it as-is:
+#    `ResourceScatterField._is_foliage()` decides which surfaces a tree collides
+#    on by MATERIAL NAME, so collapsing the palette to one material would collide
+#    trees on their leaves. See the finding filed alongside this note — the fix is
+#    real but it is a pipeline change, not an asset change (F-426: 369 surfaces
+#    across the 128 kit assets; two atlas'd materials rather than one keeps the
+#    foliage prefix match working and takes most of the win).
+#
+# The reference packs are studied for METHOD only and never traced or shipped,
+# which is the standing rule for third-party art in this repo.
+
+
 def icosphere(subdivisions: int = 1) -> tuple[list[Vector], list[tuple[int, int, int]]]:
     """Unit icosphere as plain data: 80 faces at 1, 320 at 2.
 
