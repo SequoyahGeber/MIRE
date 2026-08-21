@@ -37,6 +37,40 @@ const COLOUR_TEAMMATE := Color(0.96, 0.78, 0.30, 1.0)
 ## centre is where the crosshair and whatever is trying to kill you both are.
 const BANNER_HEIGHT_FRACTION: float = 0.32
 
+## ── Blight readout (F-349) ────────────────────────────────────────────────────────────────────────
+##
+## Reported from play twice, in the same words both times: "the player health just starts dropping
+## after a bit and then i die", and then "health starts randomly draining right after starting the
+## game". It is not a bug — `PlayerHealth._tick_blight()` drains hp wherever
+## `MireGrid.corruption_at()` is at or above `BLIGHT_CORRUPTION_THRESHOLD` — but NOTHING on screen
+## said so, and from the inside an unexplained drain is indistinguishable from a defect.
+##
+## This is the missing half. It is pure presentation and needs no new event or RPC:
+## `MireGrid.corruption_at()` documents itself as working on any peer (the host reads its live
+## simulation, a client reads WorldDeltaLog's replicated deltas), so every peer can sample the
+## ground under its own player and draw the answer. ARCHITECTURE.md §2.2, "VFX, audio, camera, UI":
+## client-local, never networked.
+##
+## The thresholds are READ OFF PlayerHealth rather than copied, so a retune of the mechanic cannot
+## silently desync the warning from the damage.
+const BLIGHT_VIGNETTE_SHADER := preload("res://ui/hud/blight_vignette.gdshader")
+
+## Ground this corrupted is tainted but not yet draining. Showing it is the point: a player who only
+## ever sees the warning at the moment damage starts learns nothing about where it is safe to stand.
+## Below PlayerHealth.BLIGHT_CORRUPTION_THRESHOLD by design.
+const BLIGHT_WARN_CORRUPTION: float = 0.05
+
+## F-099 warns that anything sampling MireGrid per tick per peer is a cost. 8 Hz is far more often
+## than a spreading grid changes and far cheaper than every frame; the tint lerps between samples so
+## the eye never sees the step.
+const BLIGHT_SAMPLE_INTERVAL_SEC: float = 0.125
+## How fast the tint chases a new sample. Slow enough to read as fog rolling over you, fast enough
+## that stepping out of Blight is visibly the thing that stopped it.
+const BLIGHT_TINT_LERP_PER_SEC: float = 3.5
+
+const COLOUR_BLIGHT := Color(0.62, 0.80, 0.28, 1.0)
+const COLOUR_BLIGHT_WARN := Color(0.74, 0.78, 0.52, 1.0)
+
 var _column: VBoxContainer
 var _hp_fill: ColorRect
 var _hunger_fill: ColorRect
@@ -70,6 +104,16 @@ var _downed_peers: Dictionary[int, bool] = {}
 ## change detectors so _process rebuilds strings only when what they show moves (F-099).
 var _hint_slot: int = -1
 var _banner_seconds_shown: int = -1
+
+## F-349 state. `_blight_shown` is the smoothed value actually on screen; `_blight_corruption` is the
+## last raw sample. Kept apart so the lerp has somewhere to go.
+var _blight_vignette: ColorRect
+var _blight_material: ShaderMaterial
+var _blight_label: Label
+var _blight_corruption: float = 0.0
+var _blight_shown: float = 0.0
+var _blight_sample_timer: float = 0.0
+var _mire_grid_node: Node
 
 
 func _ready() -> void:
@@ -133,6 +177,7 @@ func _process(delta: float) -> void:
 		_hint_slot = selected
 		_refresh_hint()
 	_tick_banner_countdown(delta)
+	_tick_blight(delta)
 
 
 # ── Build ──────────────────────────────────────────────────────────────────────────────────────────
@@ -175,7 +220,36 @@ func _build_ui() -> void:
 	_hint_label.visible = false
 	_column.add_child(_hint_label)
 
+	# F-349: the persistent half of the Blight readout. A tint alone does not survive looking away
+	# from it, and "why is my health going down" is exactly the question a player asks while looking
+	# somewhere else. This row names the cause in words, right under the bar that is falling.
+	_blight_label = Label.new()
+	_blight_label.name = "BlightStatus"
+	_blight_label.add_theme_color_override("font_color", COLOUR_BLIGHT)
+	_blight_label.add_theme_font_size_override("font_size", 13)
+	_blight_label.visible = false
+	_column.add_child(_blight_label)
+
+	_build_blight_vignette(root)
 	_build_banner(root)
+
+
+## F-349's screen-edge tint. Behind the column and the banner in draw order (added before them), and
+## mouse-transparent, so it can never take a click or hide a number.
+func _build_blight_vignette(root: Control) -> void:
+	_blight_material = ShaderMaterial.new()
+	_blight_material.shader = BLIGHT_VIGNETTE_SHADER
+	_blight_material.set_shader_parameter(&"intensity", 0.0)
+
+	_blight_vignette = ColorRect.new()
+	_blight_vignette.name = "BlightVignette"
+	_blight_vignette.color = Color(1.0, 1.0, 1.0, 1.0)
+	_blight_vignette.material = _blight_material
+	_blight_vignette.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_blight_vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_blight_vignette.visible = false
+	root.add_child(_blight_vignette)
+	root.move_child(_blight_vignette, 0)
 
 
 ## F-064: the downed/dead state used to be readable only as "the hp bar is empty and the controls
@@ -358,6 +432,126 @@ func _refresh_banner_text() -> void:
 
 ## The bound key rather than a hard-coded letter — the prompt should not start lying the first time
 ## anyone rebinds interact.
+## ── Blight (F-349) ────────────────────────────────────────────────────────────────────────────────
+
+
+## Samples the ground under the local player and drives the tint and the status row from it.
+##
+## The two numbers that decide what the player sees are read off PlayerHealth, not copied here:
+## `BLIGHT_CORRUPTION_THRESHOLD` is where the drain starts and
+## `BLIGHT_HP_DRAIN_PER_SEC_AT_FULL_CORRUPTION` is what it costs at corruption 1.0. Retuning the
+## mechanic therefore retunes the warning, which is the whole point — a warning that can drift out
+## of step with the damage is worse than none, because it teaches the wrong ground.
+func _tick_blight(delta: float) -> void:
+	if _blight_material == null:
+		return
+
+	_blight_sample_timer -= delta
+	if _blight_sample_timer <= 0.0:
+		_blight_sample_timer = BLIGHT_SAMPLE_INTERVAL_SEC
+		_blight_corruption = _sample_local_corruption()
+
+	# Nothing to show while dead: the defeat overlay owns the screen, and a tint under it reads as a
+	# rendering fault rather than as a cause of death.
+	var target: float = _blight_corruption if _state == DownedState.State.ALIVE else 0.0
+	_blight_shown = move_toward(
+		_blight_shown, target, BLIGHT_TINT_LERP_PER_SEC * delta * maxf(1.0, absf(target - _blight_shown))
+	)
+
+	var threshold: float = float(PlayerHealth.BLIGHT_CORRUPTION_THRESHOLD)
+	# Remap so the vignette is barely there on merely-tainted ground and unmistakable once the drain
+	# has started. Two ranges rather than one, because the interesting boundary is the threshold and
+	# a single linear ramp puts almost no visual distance either side of it.
+	var display: float = 0.0
+	if _blight_shown >= threshold:
+		display = 0.42 + 0.58 * clampf(
+			inverse_lerp(threshold, 1.0, _blight_shown), 0.0, 1.0)
+	elif _blight_shown > BLIGHT_WARN_CORRUPTION:
+		display = 0.34 * clampf(
+			inverse_lerp(BLIGHT_WARN_CORRUPTION, threshold, _blight_shown), 0.0, 1.0)
+
+	# Always write the parameter, not just while visible: a hidden rect holding the last intensity
+	# flashes that stale value for one frame the moment it comes back, which is the exact failure
+	# mode this readout must not have — a flicker on the edge of the screen reads as a rendering
+	# fault, and the player has been told that pattern means "you are being damaged".
+	_blight_material.set_shader_parameter(&"intensity", display)
+	var showing: bool = display > 0.005
+	if _blight_vignette.visible != showing:
+		_blight_vignette.visible = showing
+
+	_refresh_blight_label(threshold)
+
+
+func _refresh_blight_label(threshold: float) -> void:
+	if _blight_label == null:
+		return
+	if _state != DownedState.State.ALIVE or _blight_corruption <= BLIGHT_WARN_CORRUPTION:
+		if _blight_label.visible:
+			_blight_label.visible = false
+		return
+
+	if _blight_corruption < threshold:
+		_blight_label.add_theme_color_override("font_color", COLOUR_BLIGHT_WARN)
+		_blight_label.text = "Tainted ground"
+	else:
+		# The rate is the number that turns "random damage" into a mechanic you can reason about:
+		# it tells you both that the ground is the cause and that moving to cleaner ground helps.
+		var rate: float = float(
+			PlayerHealth.BLIGHT_HP_DRAIN_PER_SEC_AT_FULL_CORRUPTION) * _blight_corruption
+		_blight_label.add_theme_color_override("font_color", COLOUR_BLIGHT)
+		_blight_label.text = "BLIGHT  −%.1f hp/s   ·   move to clean ground" % rate
+	_blight_label.visible = true
+	_apply_layout()
+
+
+## Corruption under this peer's own player, or 0 when there is no player or no grid to ask. Works on
+## host and client alike — see MireGrid.corruption_at()'s own header.
+func _sample_local_corruption() -> float:
+	var body: Node3D = _local_player_body()
+	if body == null:
+		return 0.0
+	var grid: Node = _mire_grid()
+	if grid == null:
+		return 0.0
+	return clampf(float(grid.call(&"corruption_at", body.global_position)), 0.0, 1.0)
+
+
+func _local_player_body() -> Node3D:
+	for node: Node in get_tree().get_nodes_in_group(&"players"):
+		var player := node as Node3D
+		if player != null and player.is_multiplayer_authority():
+			return player
+	return null
+
+
+## Path-resolved and cached, not preloaded: MireGrid registers after this autoload (the same F-011
+## ordering PlayerHealth's own `_mire_grid()` documents).
+func _mire_grid() -> Node:
+	if _mire_grid_node == null or not is_instance_valid(_mire_grid_node):
+		_mire_grid_node = get_node_or_null(^"/root/MireGrid")
+	return _mire_grid_node
+
+
+## Test seam: drive the readout without a MireGrid or a player body. Used by tools/blight_hud_check.gd.
+func force_blight_sample(corruption: float) -> void:
+	_blight_corruption = clampf(corruption, 0.0, 1.0)
+	_blight_shown = _blight_corruption
+	_blight_sample_timer = BLIGHT_SAMPLE_INTERVAL_SEC
+	_tick_blight(0.0)
+
+
+func blight_vignette_intensity() -> float:
+	if _blight_material == null:
+		return 0.0
+	return float(_blight_material.get_shader_parameter(&"intensity"))
+
+
+func blight_status_text() -> String:
+	if _blight_label == null or not _blight_label.visible:
+		return ""
+	return _blight_label.text
+
+
 func _interact_key_label() -> String:
 	for event: InputEvent in InputMap.action_get_events(&"interact"):
 		var key := event as InputEventKey

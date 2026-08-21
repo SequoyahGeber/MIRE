@@ -7991,3 +7991,15 @@ fixed and verified with a three-seed placement census
 Files: `content/harvestables/nettle.tres`, `systems/harvesting/harvest_library.gd`
 
 Commit at time of writing: `0a5326b`
+
+---
+
+### DONE · F-349 · kilnd3a089 · 2026-08-21T03:23:26+00:00
+
+**Blight drains a standing player to death with no signal that anything is happening**
+
+Blight is now legible: edge vignette + persistent status row, thresholds read off PlayerHealth. blight_hud_check failures=0.
+
+Files: `ui/hud/vitals_hud.gd`, `ui/hud/blight_vignette.gdshader`, `tools/blight_hud_check.gd`
+
+Commit at time of writing: `581eabc`

@@ -709,6 +709,13 @@
       "task": "F-329",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
+    "tools/blight_hud_check.gd": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T03:23:26+00:00",
+      "hash": "f8876194e48da69fdcef4304f6899a702a0b173723f85b21d82ee9155407fc85",
+      "task": "F-349",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
     "tools/blight_timeline_check.gd": {
       "agent": "ivycc0920",
       "at": "2026-08-21T01:01:06+00:00",
@@ -1367,6 +1374,13 @@
       "task": "7.4",
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
+    "ui/hud/blight_vignette.gdshader": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T03:23:26+00:00",
+      "hash": "c6512fd0f32e286620dd7ea267c130a33faabdfb3e830e7a0b91a1b88b1f11ea",
+      "task": "F-349",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
     "ui/hud/defeat_hud.gd": {
       "agent": "kilnd3a089",
       "at": "2026-08-21T03:12:29+00:00",
@@ -1380,6 +1394,13 @@
       "hash": "f7884848b90209b2ab8a06410312257f0949956311c75958f2a65eef774bce52",
       "task": "F-307",
       "token": null
+    },
+    "ui/hud/vitals_hud.gd": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T03:23:26+00:00",
+      "hash": "65cae3effd943406937aef91475fe993f456ee6fb2a18d29c18124730a1ef05a",
+      "task": "F-349",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "ui/inventory/inventory_ui.gd": {
       "agent": "kilnd3a089",
@@ -1557,7 +1578,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 279,
+  "rev": 281,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -6128,9 +6149,11 @@
       "title": "Procedural trees collide as canopy-wide cylinders, not trunks"
     },
     "F-349": {
+      "done_at": "2026-08-21T03:23:26+00:00",
+      "done_by": "kilnd3a089",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Blight drains a standing player to death with no signal that anything is happening"
     },

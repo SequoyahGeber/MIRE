@@ -1609,42 +1609,6 @@ smooth the result is remains unmeasured.
 
 ---
 
-### F-349 · Blight drains a standing player to death with no signal that anything is happening
-
-**Area:** systems · **Severity:** high · **Found:** 2026-08-21 by ivycc0920
-
-Reported from play (2026-08-20): "the player health just starts dropping after a bit and then i die."
-
-`systems/health/player_health.gd:_tick_blight()` drains hp whenever
-`MireGrid.corruption_at(player_position)` is at or above `BLIGHT_CORRUPTION_THRESHOLD` (0.15),
-at `BLIGHT_HP_DRAIN_PER_SEC_AT_FULL_CORRUPTION` (4.0) x corruption. The Mire spreads on its own
-(`world/mire/mire_grid.gd`: a tick every 2 s at `BASE_SPREAD_RATE` 0.06, from four seeded clusters,
-escalated per Cycle), and `MireGridSim.tick()` is purely additive — corruption never decays, so any
-ground not inside a ward or the wellspring's 48 m clear radius eventually crosses the threshold and
-stays there.
-
-The mechanic is intended. What is missing is that NOTHING tells the player it is happening. Grepping
-`ui/` for blight/corruption finds only `ui/frontend/backdrop.gd` (the title screen's shader) and
-`ui/hud/wellspring_hud.gd` (a wellspring-recorruption timer). There is no screen tint, no damage
-direction, no status icon, no log line the player sees, and `core/events/event_bus.gd` carries no
-blight event at all. The player watches the health bar fall with no cause on screen, which is
-indistinguishable from a bug — and was in fact reported as one.
-
-Two things are separately worth deciding:
-
-1. Feedback. Standing in Blight needs to read instantly — a vignette/tint that scales with
-   `corruption`, plus something persistent enough to survive looking away. This is the part that
-   turns "random death" into a mechanic.
-2. Whether unbounded, non-decaying spread is the intent. `MireGridSim.tick()` gives a corrupted cell
-   `value * spread_rate` into each orthogonal neighbour every tick and never removes any, so the
-   steady state of an unwarded island is total saturation at 1.0 — 4 hp/sec everywhere, everywhere,
-   forever. Wards and the wellspring are the counterplay, but a player who has not built one yet has
-   no survivable ground on a long enough run.
-
-See also F-350 for how fast this actually arrives.
-
----
-
 ### F-350 · The Mire saturates the whole island in 30 minutes and nothing ever pushes it back
 
 **Area:** world · **Severity:** high · **Found:** 2026-08-21 by ivycc0920
@@ -2668,6 +2632,81 @@ client-side filter.
 ---
 
 ## Resolved
+
+### F-349 · Blight drains a standing player to death with no signal that anything is happening — **fixed**
+
+**Area:** systems · **Severity:** high · **Found:** 2026-08-21 by ivycc0920
+
+Reported from play (2026-08-20): "the player health just starts dropping after a bit and then i die."
+
+`systems/health/player_health.gd:_tick_blight()` drains hp whenever
+`MireGrid.corruption_at(player_position)` is at or above `BLIGHT_CORRUPTION_THRESHOLD` (0.15),
+at `BLIGHT_HP_DRAIN_PER_SEC_AT_FULL_CORRUPTION` (4.0) x corruption. The Mire spreads on its own
+(`world/mire/mire_grid.gd`: a tick every 2 s at `BASE_SPREAD_RATE` 0.06, from four seeded clusters,
+escalated per Cycle), and `MireGridSim.tick()` is purely additive — corruption never decays, so any
+ground not inside a ward or the wellspring's 48 m clear radius eventually crosses the threshold and
+stays there.
+
+The mechanic is intended. What is missing is that NOTHING tells the player it is happening. Grepping
+`ui/` for blight/corruption finds only `ui/frontend/backdrop.gd` (the title screen's shader) and
+`ui/hud/wellspring_hud.gd` (a wellspring-recorruption timer). There is no screen tint, no damage
+direction, no status icon, no log line the player sees, and `core/events/event_bus.gd` carries no
+blight event at all. The player watches the health bar fall with no cause on screen, which is
+indistinguishable from a bug — and was in fact reported as one.
+
+Two things are separately worth deciding:
+
+1. Feedback. Standing in Blight needs to read instantly — a vignette/tint that scales with
+   `corruption`, plus something persistent enough to survive looking away. This is the part that
+   turns "random death" into a mechanic.
+2. Whether unbounded, non-decaying spread is the intent. `MireGridSim.tick()` gives a corrupted cell
+   `value * spread_rate` into each orthogonal neighbour every tick and never removes any, so the
+   steady state of an unwarded island is total saturation at 1.0 — 4 hp/sec everywhere, everywhere,
+   forever. Wards and the wellspring are the counterplay, but a player who has not built one yet has
+   no survivable ground on a long enough run.
+
+See also F-350 for how fast this actually arrives.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** The mechanic was never the problem — the silence was. `PlayerHealth._tick_blight()` drains hp
+wherever `MireGrid.corruption_at()` is at or above `BLIGHT_CORRUPTION_THRESHOLD`, and nothing on
+screen said so, which is why it was reported as a bug twice by the same player.
+
+Shipped the missing half, as pure presentation with no new event and no RPC. `MireGrid.corruption_at()`
+already documents itself as working on any peer — the host reads its live simulation, a client reads
+WorldDeltaLog's replicated deltas — so every peer samples the ground under its own player and draws
+the answer. ARCHITECTURE.md §2.2, "VFX, audio, camera, UI": client-local, never networked.
+
+- `ui/hud/blight_vignette.gdshader` — a screen-EDGE tint, not a full-screen wash, because the middle
+  of the screen is where the crosshair and whatever is trying to kill you both are. Scales radius and
+  opacity together so faint really is faint, with a very shallow slow pulse so it reads as alive
+  rather than as an overlay artefact.
+- `ui/hud/vitals_hud.gd` — drives it, plus a persistent status row directly under the falling hp bar.
+  The row matters as much as the tint: a tint does not survive looking away from it, and "why is my
+  health going down" is exactly the question a player asks while looking somewhere else. Two bands,
+  because the interesting boundary is the damage threshold: below it, "Tainted ground" (a warning
+  that deliberately does NOT claim a drain rate); at or above it, "BLIGHT −N.N hp/s · move to clean
+  ground". Sampled at 8 Hz rather than per frame (F-099's cost note) and lerped between samples.
+
+**Both thresholds are read off PlayerHealth rather than copied**, so retuning the mechanic retunes
+the warning. A warning that can drift out of step with the damage is worse than none, because it
+teaches the wrong ground — `tools/blight_hud_check.gd` asserts that link directly: the quoted rate
+must equal `BLIGHT_HP_DRAIN_PER_SEC_AT_FULL_CORRUPTION` at corruption 1.0.
+
+Verified: `agent godot --script tools/blight_hud_check.gd` failures=0, 17 assertions —
+clean ground draws nothing, sub-threshold warns without claiming damage, crossing the threshold steps
+the vignette 0.08 -> 0.42, full corruption reads 1.00 and quotes 4.0 hp/s, and stepping back to clean
+ground clears both. `tools/player_vitals_check.gd` failures=0.
+
+**Not closed by this:** F-349's second question — whether unbounded non-decaying spread is the intent
+at all — is untouched and stays F-350's. This makes the mechanic legible; it does not make it
+survivable.
+
+**Note for whoever runs the next sweep:** `tools/vitals_hud_check.gd` and `player_health_check.gd`
+were green before and after this change in isolation, then went red mid-session because a concurrent
+agent had `entities/player/player_controller.gd` broken in the shared tree. `agent godot` flags this
+itself. Not this finding's.
 
 ### F-366 · fibre_bundle has no harvestable source, so both starter tools are uncraftable and the procedural run has no way out of bare hands — **fixed**
 
