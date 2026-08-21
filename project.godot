@@ -82,6 +82,7 @@ RunRecord="*res://autoload/run_record.gd"
 AmbientMusicDirector="*res://autoload/ambient_music_director.gd"
 GodModeService="*res://autoload/god_mode_service.gd"
 ThemeMusicDirector="*res://autoload/theme_music_director.gd"
+SfxDirector="*res://autoload/sfx_director.gd"
 
 [display]
 

@@ -6,7 +6,7 @@ recipe/score is the source of truth and the committed `.ogg`/`.wav` files are re
 products. Steam AI-disclosure note: these are code-generated assets — disclose accordingly at
 store-page time.
 
-## What exists (v1, tasks 7.1/7.2)
+## What exists
 
 | Asset | File | What it is |
 |---|---|---|
@@ -16,7 +16,11 @@ store-page time.
 | Landfall theme | `assets/audio/music/theme_landfall.ogg` | "Wake the Deep", 1:57 loop. Heroic A-B-A: horns take the tune from the strings over choir and drums. One pass at run start, then an 8 s fade (cue `landfall`) |
 | Cycle theme | `assets/audio/music/theme_cycle.ogg` | "Mire Rites", 1:11 loop. Percussive 6/8 building across four stages to a hard stop. One pass on `cycle_advanced` at Cycle 2+ (cue `cycle`) |
 | Boss stinger | `assets/audio/music/boss_stinger.ogg` | ~7.2s non-looping one-shot (task 5.5), NIGHT's own palette — a low FM groan rises into a sub thump and a dissonant pair of detuned FM bells, then rings out on the same reverb IR shape. Played by `BossMusicDirector` (client-local autoload) on `EventBus.boss_engaged`/`boss_phase_changed`/`boss_defeated` |
-| 19 SFX | `assets/audio/sfx/*.wav` | mono 16-bit 44.1 kHz: axe/pick hits (3 variants each), tree/stone breaks, melee whoosh+hit (2 each), mud footsteps (3), item pickup, chest open, ui click, build place |
+| 113 SFX | `assets/audio/sfx/*.wav` | mono 16-bit 44.1 kHz, 227 files. Twelve systems: harvesting, movement, melee, ranged, creatures, the player, building, crafting, items and loot, UI, progression, ambient spot effects. `python3 tools/audio/render_sfx.py --list` prints the catalogue with a one-line intent per sound |
+
+All of it is played by three client-local autoloads — `AmbientMusicDirector` (the day/night bed),
+`ThemeMusicDirector` (the three authored themes, D-187), and `SfxDirector` (every sound effect) —
+routed to the Master/Music/SFX buses `SettingsService` creates at runtime.
 
 Palette rules that keep it one game: both tracks share the same pad/pluck/bell voices; reward
 sounds (pickup, chest sparkle) are tuned in **D**, the day track's home, so loot always rings in
@@ -144,12 +148,118 @@ rather than as wood, stone, or bone. `grain_scatter` does the same job for debri
 frequency curve into phase. Modulating a fixed-phase sine's argument instead modulates *position*,
 not pitch, and clicks on every zero crossing.
 
+## SFX v2 — objects, not waveforms (2026-08-21)
+
+The v1 SFX were layered by ear from a click, a sine drop and a noise bed, with every resonance and
+decay time hand-picked. Sequoyah's verdict on hearing them was that most were "wildly inaccurate",
+and the research says exactly why: **frequency-dependent decay rate, not spectral content, is the
+dominant perceptual cue for material** (Klatzky, Pai & Krotkov, *Presence* 9(4), 2000). Choosing one
+decay per partial is what destroys that cue, so every v1 impact read as an unnamed substance.
+
+`tools/audio/mire_material.py` replaces that approach. A recipe now names a **material** and a
+**geometry** and lets the physics do the rest:
+
+- **Decay is derived, never authored.** A material is a loss factor η; every mode decays at
+  `τ = 1/(π·f·η)`. High modes die faster than low ones at a rate set by the substance and nothing
+  else, which is what makes wood sound like wood at any pitch or size. Anchored on published loss
+  factors (steel ~1e-3, aluminium ~6e-3, gypsum ~3e-2, neoprene ~2e-1).
+- **Mounting damping is added on top**, because published figures are for a specimen ringing freely
+  and almost nothing in a game is: a trunk is rooted, a plank is nailed in, a blade is gripped.
+  Without it a struck dry plank rings for 0.7 s — a xylophone bar on a stand, not a palisade.
+- **Excitation is a contact time, not a click.** A collision force is a half-sine of duration `T_c`,
+  so its spectrum rolls off above `1/(2·T_c)`. A padded mallet cannot make a bright sound however
+  hard it is swung. `hardness` therefore changes *timbre*, not volume.
+- **Mode ratios come from real geometry**: free-free bar `1 : 2.756 : 5.404` (the xylophone series),
+  circular membrane `1 : 1.593 : 2.135`, stopped tube odd-harmonics; irregular solids get
+  quasi-random incommensurate ratios, which is the honest model for a rock and is why one clacks
+  rather than rings.
+- **Water is the Minnaert bubble model** throughout: `f = 3.26/r`, and the pitch *rises* as the
+  bubble collapses. That rising chirp is the entire signature of water, and a swamp game gets it
+  wrong at its peril.
+
+Measured separation, one struck object per material: iron 2.1 s, mire crystal 266 ms, dry wood
+83 ms, granite 33 ms, bone 19 ms, mud 39 ms. v1 had no mechanism that could produce that spread.
+
+Layering follows Tsugi's GameSynth foley breakdowns and what a foley stage actually does — a **body**
+(mass moving), a **resonance** (the object's modes), a **texture** (crush, splinter, grit, water),
+and a **mechanism** where a real one exists (a latch, a bowstring, a ratchet) — with layers offset a
+few milliseconds so they do not mask each other into one thick click. Foley practice also decided
+several materials outright: bone snaps are celery, so `hit_bone` is a bright bar mode over a fibrous
+tear; wet flesh is a sodden chamois, so `hit_flesh` is a heavily damped membrane with no ring; dead
+vegetation is unspooled cassette tape, so plant harvest is dense fine grains rather than noise.
+
+### The mix is loudness, not peak
+
+v1 peak-normalised everything into a −2.5..−8 dBFS band, which put a footstep within 6 dB of a
+falling tree. Peak normalisation also rates three cricket chirps across two seconds as loud as a
+gunshot while leaving them inaudible, because one sample says nothing about what the ear integrates.
+
+The catalogue's level column is now **peak short-term loudness** — the loudest 100 ms, as RMS — with
+a soft limiter before a −1.2 dBFS true-peak ceiling. (Recipes built on impulse trains have >25 dB
+crest; without limiting, one spike costs the whole file 12 dB.) Bands:
+
+| Band | What lives there |
+|---|---|
+| −13 .. −16 | once-per-event world sounds: a tree falling, a boss, a rare drop |
+| −17 .. −21 | the player's own actions: chopping, hitting, building, looting |
+| −22 .. −27 | things that fire every second or two: swings, steps, ambience |
+| −28 .. −34 | things that fire constantly or sit behind everything: UI, insects |
+
+`audio_check.py` gates the band and asserts the whole catalogue's spread stays under 30 dB.
+
+## `SfxDirector` — the thing that plays them
+
+Before it, `assets/audio/sfx/` was referenced by nothing outside a check: rendered, imported,
+loudness-checked, documented, and silent. That is F-373's failure at 227× the scale, and it reports
+no error.
+
+**The wiring lives in one autoload and edits no gameplay code.** Nearly every event worth a sound is
+already a signal on an autoload service that already carries a world position
+(`CombatService.attack_landed`, `BuildService.piece_placed`, `PlayerHealth.player_downed`,
+`EventBus.cycle_advanced`, …), so `SfxDirector` subscribes rather than asking each system to call it.
+Three reasons, in order of importance: it makes ARCHITECTURE.md §2.2's "client-local presentation"
+row structurally true instead of a convention; those signals are already replicated-event-driven, so
+every peer hears the same sounds with **no audio RPC** (and there must never be one); and it does not
+fight file claims on combat, building and the player controller.
+
+Two things have no signal and are **driven** instead:
+
+- **Footsteps.** Distance travelled while grounded, one step per `STEP_STRIDE_M`, surface chosen by a
+  downward raycast (buildable/rock by group and name, otherwise water level → mud level → grass by
+  height). Distance-based rather than timed, so sprinting and the movement powerups stay correct
+  without knowing audio exists. Below the water line it plays `swim_stroke` instead.
+- **Ambient life.** A cue every 5–16 s at 7–26 m around the player, from a day pool (birds, insects,
+  leaves) or a night pool (frogs, something further off), the phase re-derived from the replicated
+  `time_of_day` — *not* from `DayNight`'s signals, which are host-only, the same trap
+  `AmbientMusicDirector` documents.
+
+The **whole UI** is wired without a line in any UI file: `gui_focus_changed` is the hover and every
+`BaseButton` reports its own press, both picked up through `SceneTree.node_added`.
+
+Material selection is keyed on def **id** (`HARVEST_HIT_CUE`, `TARGET_MATERIAL_CUE`,
+`WEAPON_SWING_CUE`), never on a scene or a level — release worlds are procedurally generated. Sound
+fields on the defs themselves are the eventual right home; those tables are the seam until
+`weapon_def`/`harvestable_def` grow them, and they are one file to move.
+
+`autoload/sfx_catalogue.gd` is **generated** by `render_sfx.py`. Hand-maintaining it would let the
+two halves drift silently — the game would ask for a variant that is not there, get null, and play
+nothing. `tools/sfx_check.gd` asserts every catalogue file loads, that the catalogue and the
+directory agree exactly in both directions, and that **every cue name in every mapping table exists**
+— a typo there is a sound that never plays and that nothing else would notice.
+
 ## Adding a sound
 
-Add a recipe function in `tools/audio/render_sfx.py` composing `mire_audio` primitives
-(`ks_pluck`, `fm_bell`, `burst_train`, `swept_bandpass`, `thump`, `click`…), register it in
-`RECIPES` with variant count + reverb send + peak, re-render, run both checks. For repetitive
-actions ship 3 seeded variants; play sites should round-robin them with ±4% `pitch_scale` scatter.
+1. Write a recipe in `tools/audio/render_sfx.py` composing `mire_material` voices — `struck()`,
+   `strike_noise()`, `body()`, `splash()`, `bubble_cloud()`, `friction()`, `granular()`, `air_arc()`,
+   `cloth()`, `crackle()` — plus `mire_voices` for anything with a pitch and `mire_audio` for the
+   primitives underneath. Name a material and a geometry; do not hand-pick decay times.
+2. Register it in `CATALOGUE` with variant count, reverb send, target loudness and system.
+3. Re-render (this also regenerates `autoload/sfx_catalogue.gd`), then add a play site — usually one
+   line in `SfxDirector._connect_events()` plus a handler.
+4. Run `python3 tools/audio/audio_check.py` and `.agent/bin/agent godot --script tools/sfx_check.gd`.
+
+For anything the player triggers repeatedly ship 3–4 seeded variants; `SfxDirector` round-robins them
+with ±4% pitch scatter automatically.
 
 ## Who plays what
 
@@ -161,6 +271,7 @@ governs all of them:
 | `AmbientMusicDirector` (F-373) | the day/night bed, 8 s crossfade at dusk | a boss stinger (to 0.28) or any theme (to 0.10) |
 | `ThemeMusicDirector` (D-187) | the three authored themes | nothing — a theme owns the mix |
 | `BossMusicDirector` (5.5) | the boss stinger | nothing |
+| `SfxDirector` | all 113 sound effects, on the SFX bus | nothing |
 
 The bed's duck floor of 0.10 is deliberate rather than zero: `_apply_channel()` *stops* a channel
 below `AUDIBLE_EPSILON`, and a stopped `AudioStreamPlayer` resumes at the head of a 3:44 loop — so a
@@ -183,8 +294,14 @@ audio RPCs and must never be any.
   the world while task 4.19's cutover is in flight, so nothing puts the `mire_frontend` group on
   screen in the shipped path. `ThemeMusicDirector` already handles it — when 4.19 flips the boot
   scene the menu theme starts working with no change here.
-- **SFX v2 picks.** `render_sfx_options.py` has A/B/C rendered for all 11 families and none of them
-  are chosen yet; `assets/audio/sfx/` still holds the v1 takes. One `--ship` per pick.
+- **Cues rendered but not yet triggered**, because the game has no event to hang them on:
+  `equip_blade`/`equip_tool`/`equip_bow` (no equip signal), `haul_lift`/`haul_drop` (`HaulService`
+  exposes none), `craft_work` (no crafting-progress signal), `furnace_light` (no ignition event),
+  `ward_activate`, `creature_chitter`/`creature_alert` (enemy AI state is a property, not a signal),
+  `tusker_snort` and `broodcaller_call` as idle vocals. Each is one signal away.
+- **`assets/audio/sfx/` is ~49 MB** of uncompressed PCM. That is right at runtime — short SFX should
+  not pay a decode cost — but every re-render writes 227 new blobs into git history. Worth a look
+  before the catalogue is tuned many more times.
 - **More music** (7.2's remainder): combat-intensity stems for escalation. `the_long_sink` is already
   rendered and is the obvious act/boss bed if that lands. Boss (5.5) is
   done — one shared stinger cue, not per-boss stems; a future task can add per-boss/per-phase cues
