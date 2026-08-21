@@ -3058,6 +3058,39 @@ Reproduce: comment out the `_prewarm()` call in `BenchmarkRunner.run()` and run
 
 ## Resolved
 
+### F-460 · The benchmark is only reachable from inside the graphics settings — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
+
+`ui/frontend/benchmark_screen.gd` (F-453) is pushed from one place: Settings → DISPLAY → RUN
+BENCHMARK, a button sitting under the quality dropdowns. The title screen offers PLAY, UNLOCKS,
+SETTINGS and QUIT and says nothing about it.
+
+That is backwards for what the feature is for. The benchmark exists for a player who does not yet
+know what their settings should be — the point of it is to answer that question — so putting it
+behind the graphics menu means the only people who find it are the ones already confident enough to
+be adjusting graphics by hand. Someone on the low-end target (F-174) who launches the game, finds it
+stuttering, and does not know whether that is their machine or the game has no signposted way to
+find out.
+
+It belongs on the title screen as its own entry, alongside SETTINGS rather than inside it. The
+Settings → DISPLAY entry should stay: that one is for someone already looking at the knobs, which is
+a different moment and a legitimate second door.
+
+**Resolved 2026-08-21 by quill895277.** BENCHMARK is now its own entry on the title screen, between SETTINGS and QUIT —
+`TitleScreen.benchmark_requested` → `Frontend.request_benchmark()` → pushes
+`ui/frontend/benchmark_screen.gd`, through the same `_push_screen()` late-binding path every other
+title entry uses. It joins the gamepad focus chain in that position.
+
+The Settings → DISPLAY entry stays. Two doors for two different moments: that one is for a player
+already looking at the graphics knobs, this one is for a player who has not found them yet, which is
+who the benchmark is actually for.
+
+Verified: `.agent/bin/agent godot --windowed --script tools/title_check.gd` — TITLE_CHECK
+failures=0, including three new assertions ("the title offers BENCHMARK", "the benchmark screen the
+title routes to exists", "BENCHMARK pushes the benchmark screen"). `main_menu_check` and
+`menu_focus_check` re-run green.
+
 ### F-458 · The benchmark seed is arbitrary, its day/night split is 7:2, and nothing flies over the island — **fixed**
 
 **Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
