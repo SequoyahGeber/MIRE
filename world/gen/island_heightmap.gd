@@ -567,6 +567,84 @@ const RIVER_BANK_RISE: float = 0.30          # how fast the channel ceiling rise
 const RIVER_CORRIDOR: float = 5.0           # carve influence ends at width x this
 const RIVER_SALT: int = 0x71E5B
 
+## CLIFFS (F-464) — what happens where the river crosses ground the corridor is too narrow for.
+##
+## Everything above tunes the river on the INTERIOR PLATEAU, and on the plateau it is right: the
+## channel ceiling at the corridor edge is `bed + RIVER_CORRIDOR^2 * RIVER_BANK_RISE` = bed + 7.5 m,
+## which is already above a ~3 m plateau, so the carve had faded to nothing of its own accord long
+## before the clip fired and F-372's measured 35-degree banks are what a player walks down.
+##
+## Through a placed hill or a ridge crest it is not right. There the surface at the corridor edge is
+## metres ABOVE the ceiling, the carve is still holding down real rock when `_river_channel()`
+## returns its sentinel, and the whole remainder appears between two adjacent samples: a straight
+## vertical wall from the hilltop to the water, which is what play reported.
+##
+## **Widening the corridor cannot fix that, and this is worth stating once so nobody tries.** Walls
+## need `sqrt(depth / rise)` half-widths to land, and through a hill `depth` is whatever terrain the
+## river happened to cross — there is no fixed corridor wide enough for an arbitrary one. The fix
+## has to be in the SHAPE of the clip, not in where it sits.
+##
+## So the carve is no longer `min()` clipped at a boundary: it is `min()` faded to zero across the
+## outer corridor by `_bank_fade()`, an S-curve. Continuity is then automatic — the carve is worth
+## exactly nothing at the corridor edge no matter how tall the ground there is, so there is no step
+## left to be vertical. What is left instead is a steep FACE whose gradient is roughly
+## `depth / (corridor - hold) * width`: about 45-55 degrees through a 15 m hill on a 7 m-wide mouth.
+##
+## **That face is supposed to be steep. A river cutting a hill is a gorge, and a gorge is good.**
+## The failure play reported was never "steep", it was "vertical, and wearing the same grass as the
+## meadow above it". Steep is handled here; rock is handled by `ChunkMesher`'s slope-driven vertex
+## alpha and by `world/gen/cliff_dresser.gd`, which runs A-016a's cliff modules along the contour.
+##
+## THE BENCHING is the third piece. A smooth S-curve face reads as a ramp, because real rock does
+## not erode evenly: it fails along its bedding planes and leaves treads and risers. `_carve()`
+## soft-quantises the FINISHED WORLD HEIGHT to `CLIFF_BENCH_HEIGHT` bands on the face — world
+## height, not local depth, so the ledges are horizontal and continuous across chunk and LOD
+## boundaries the way strata are, and free of any noise sample.
+##
+## Soft-quantised, twice, rather than floored: `f*f*(3-2f)` applied to the fractional part flattens
+## the tread and steepens the riser while leaving the surface CONTINUOUS. A true `floor()` staircase
+## would put genuine vertical risers back into the heightfield — the exact defect this is fixing,
+## only smaller and repeated — and would give `NavBaker` a run of unwalkable steps to choke on.
+const RIVER_BANK_HOLD: float = 1.0          # inside this many half-widths nothing here applies
+## THE CLIFF RAMP, in metres of rise per metre of ground — `tan(52 degrees)`, which is the angle a
+## cut face stands at once the parabola has run out.
+##
+## This is the number that replaced the clip. Past `width * RIVER_CORRIDOR` the ceiling no longer
+## stops; it climbs at a FIXED GRADIENT until it meets the ground, wherever that is. A 38 m hill
+## therefore gets a 24 m run of cliff and a 3 m plateau gets none at all, because the parabola has
+## already crossed the surface long before the corridor edge there — which is why F-372's tuning
+## survives this untouched, to the last decimal, everywhere it was ever measured.
+##
+## Chosen at 52 rather than steeper because the BENCHING below lands on top of it: soft-quantising
+## the face pushes the local riser well past the mean, and the mean is what this sets. Steeper than
+## about 55 and the risers reach the vertical the whole change exists to remove.
+const CLIFF_RISE_PER_M: float = 1.28
+## The hard end of the carve, in metres past the corridor edge. At the ramp above this is enough to
+## climb 56 m — more than `MAX_HEIGHT` — so in a shipped island the ceiling always meets the ground
+## before this and the cap is never what ends the carve. It exists so the cost of a sample is
+## bounded and so no future retune of the island's height can quietly re-create the wall.
+const CLIFF_MAX_RUN_M: float = 44.0
+## Where the safety taper starts, as a fraction of that run. If the cap ever DOES fire, the carve is
+## already faded to nothing when it does, so the failure mode is a shallower gorge and not a step.
+const CLIFF_TAPER_FROM: float = 0.72
+## The cliff line WANDERS: the ramp's effective distance is stretched and squeezed by this fraction,
+## driven by the coast noise the sample already paid for in `shape_into()`. It is the difference
+## between a face at a constant 52 degrees for its whole length — which reads as a moulding — and
+## one with buttresses and re-entrants. Nothing extra is sampled for it anywhere in this file.
+const CLIFF_WANDER: float = 0.30
+## How deep the cut has to be before any of the cliff treatment applies. Below the first number the
+## carve is a stream bank and F-372 already decided what those look like; a bench in one would be
+## the "random ravine" verdict again in miniature.
+const CLIFF_DEPTH_MIN: float = 3.5
+const CLIFF_DEPTH_FULL: float = 8.0
+## Metres per ledge. Around a human step-up: small enough to read as strata rather than as terraces,
+## large enough to survive LOD2's 4 m vertex spacing as something other than a shimmer.
+const CLIFF_BENCH_HEIGHT: float = 1.35
+## How much of the face is benched. Under half on purpose — this is a modulation of the ramp, not a
+## replacement for it.
+const CLIFF_BENCH_MIX: float = 0.45
+const NO_CHANNEL := Vector3(1.0e9, 0.0, 0.0)
+
 ## The outer bound of ALL land, as a function rather than a constant: GDScript will not evaluate
 ## `maxf()` in a const expression, and the alternative — a hand-computed literal — is exactly what
 ## went wrong the first time. The original was `ISLAND_RADIUS * (ISLET_DISTANCE +
@@ -936,13 +1014,13 @@ static func river_polyline(world_seed: int) -> PackedVector2Array:
 ## point is outside the river's corridor. `t` is the 0..1 fraction along the whole polyline —
 ## width and bed depth both grow with it, and the bed is LINEAR in t, which is the monotonic-
 ## downhill guarantee terrain_check asserts.
-static func _river_channel(bent: Vector2, world_seed: int) -> float:
+static func _river_channel(bent: Vector2, world_seed: int, wander: float = 0.0) -> Vector3:
 	var points: PackedVector2Array = river_polyline(world_seed)
 	var total_length: float = 0.0
 	for index in range(points.size() - 1):
 		total_length += points[index].distance_to(points[index + 1])
 	if total_length <= 0.0:
-		return 1.0e9
+		return NO_CHANNEL
 
 	var best_distance: float = 1.0e9
 	var best_t: float = 0.0
@@ -962,11 +1040,29 @@ static func _river_channel(bent: Vector2, world_seed: int) -> float:
 		walked += segment_length
 
 	var width: float = lerpf(RIVER_WIDTH_SOURCE, RIVER_WIDTH_MOUTH, best_t)
-	if best_distance >= width * RIVER_CORRIDOR:
-		return 1.0e9
 	var bed: float = lerpf(RIVER_BED_SOURCE, RIVER_BED_MOUTH, best_t)
-	var lateral: float = best_distance / width
-	return bed + lateral * lateral * RIVER_BANK_RISE
+	var corridor_m: float = width * RIVER_CORRIDOR
+	if best_distance <= corridor_m:
+		# F-372's parabola, unchanged. On the interior plateau this is the whole story: the ceiling
+		# crosses the surface a few metres out and the carve ends itself, exactly as it did.
+		var lateral: float = best_distance / width
+		var face_in: float = clampf((lateral - RIVER_BANK_HOLD) / 0.6, 0.0, 1.0)
+		return Vector3(bed + lateral * lateral * RIVER_BANK_RISE, 1.0,
+			face_in * face_in * (3.0 - 2.0 * face_in))
+	# F-464. Past the corridor the ceiling used to stop dead, which is what left a wall wherever the
+	# ground was still above it. It ramps instead — at a fixed gradient, for as far as it takes.
+	var over: float = (best_distance - corridor_m) * (1.0 + wander * CLIFF_WANDER)
+	if over >= CLIFF_MAX_RUN_M:
+		return NO_CHANNEL
+	var ceiling: float = bed + RIVER_CORRIDOR * RIVER_CORRIDOR * RIVER_BANK_RISE \
+		+ over * CLIFF_RISE_PER_M
+	var taper: float = 1.0
+	var taper_from: float = CLIFF_MAX_RUN_M * CLIFF_TAPER_FROM
+	if over > taper_from:
+		var t: float = (over - taper_from) / (CLIFF_MAX_RUN_M - taper_from)
+		var inv: float = 1.0 - t
+		taper = inv * inv * (3.0 - 2.0 * inv)
+	return Vector3(ceiling, taper, taper)
 
 
 ## `min(surface, channel)`, faded by the island mask so the carve ends where the land does.
@@ -979,11 +1075,34 @@ static func _river_channel(bent: Vector2, world_seed: int) -> float:
 ## `_river_channel()` is the expensive half and is cached on `Shape` (F-274), so the carve itself
 ## takes the channel rather than the point: two carves of the same point — the continent's and the
 ## finished surface's — share one polyline walk instead of paying for two.
-static func _carve(channel: float, surface: float, mask: float) -> float:
-	if channel >= surface:
+## F-464 rewrote the second half of this. `channel` is now `_river_channel()`'s
+## `(ceiling, fade, face)` triple rather than a bare ceiling, and the carve is scaled by `fade` as
+## well as by the mask — which is the whole fix for the vertical wall, because a carve worth zero at
+## the corridor edge cannot leave a step there however tall the ground is. Inside the water channel
+## `fade` is exactly 1.0 and `face` exactly 0.0, so the bed is bit-for-bit what it was.
+static func _carve(channel: Vector3, surface: float, mask: float) -> float:
+	var drop: float = channel.x - surface
+	if drop >= 0.0:
 		return surface
-	var carve_strength: float = smoothstep(0.0, 0.35, mask)
-	return surface + (channel - surface) * carve_strength
+	var carve_strength: float = smoothstep(0.0, 0.35, mask) * channel.y
+	if carve_strength <= 0.0:
+		return surface
+	var carved: float = surface + drop * carve_strength
+	# How much of a CLIFF this cross-section is, from the cut the channel is asking for here —
+	# `-drop`, the unfaded depth, so the whole face shares one verdict instead of the benching
+	# petering out toward the brow where the fade has already thinned the carve.
+	var bench: float = channel.z * CLIFF_BENCH_MIX \
+		* smoothstep(CLIFF_DEPTH_MIN, CLIFF_DEPTH_FULL, -drop)
+	if bench <= 0.0:
+		return carved
+	# Strata. Soft-quantise the WORLD height (see the CLIFFS block) — flat tread, steep riser, still
+	# a continuous surface.
+	var band: float = carved / CLIFF_BENCH_HEIGHT
+	var whole: float = floorf(band)
+	var f: float = band - whole
+	f = f * f * (3.0 - 2.0 * f)
+	f = f * f * (3.0 - 2.0 * f)
+	return lerpf(carved, (whole + f) * CLIFF_BENCH_HEIGHT, bench)
 
 
 ## Falloff for one circular landmass.
@@ -1094,14 +1213,19 @@ class Shape:
 	## The continent BEFORE the river carve. The rough layers ride on this and `ridge_mask()` reads
 	## it, so ridge placement stays stable on either side of the valley (4.14).
 	var raw_continent: float = 0.0
-	## The river channel's ceiling at `bent` (or `_river_channel()`'s no-corridor sentinel).
+	## `_river_channel()` at `bent`: `(ceiling, fade, face)`, or `NO_CHANNEL` outside the corridor.
+	##
+	## A `Vector3` rather than the bare ceiling it was before F-464, because the carve now needs the
+	## bank fade (what stops the corridor edge from being a vertical wall) and the face weight (what
+	## decides where the strata benching applies) at the same point, and a builtin value type costs
+	## no allocation to carry all three.
 	##
 	## Cached here because the carve is applied TWICE per biome-shaped sample — once to the continent
 	## the biome is classified from, once to the finished surface — and the channel is a function of
 	## `bent` and `world_seed` alone, so the two applications cannot disagree. Walking the polyline
 	## twice was measured at roughly a third of a sample's cost: `_river_channel()` rebuilds the
 	## polyline (which rebuilds `lobes()`), sums its length and then walks its segments again.
-	var channel: float = 0.0
+	var channel: Vector3 = NO_CHANNEL
 
 
 ## Builds the four fields that decide the island's SHAPE — the ones `continent()` reads. Split out
@@ -1163,7 +1287,11 @@ static func _make_continent_noise(world_seed: int) -> FastNoiseLite:
 ## apart under a later edit, which is the same reason `_continent_with()` existed before F-274
 ## folded it in here.
 static func shape_into(x: float, z: float, set: NoiseSet, world_seed: int, out: Shape) -> void:
-	var jitter: float = set.coast_noise.get_noise_2d(x, z) * COAST_JITTER
+	# One sample, two consumers: the coast's own jitter in metres, and (F-464) the -1..1 field that
+	# wanders the cliff line so it is not a parabolic offset from the polyline. Nothing extra is
+	# sampled for the cliffs anywhere in this file.
+	var coast: float = set.coast_noise.get_noise_2d(x, z)
+	var jitter: float = coast * COAST_JITTER
 	out.bent = _warp_point_with(x, z, set.warp_x, set.warp_z)
 	out.mask = _island_mask_bent(out.bent, set.lobe_list, set.islet_list, jitter)
 	# Plateau + placed hills (D-184 second pass): the noise is damped to an undulation on a
@@ -1181,7 +1309,7 @@ static func shape_into(x: float, z: float, set: NoiseSet, world_seed: int, out: 
 	out.raw_continent = ((set.base_noise.get_noise_2d(x, z) * BASE_NOISE_WEIGHT + LAND_BIAS)
 		* HEIGHT_SCALE + _hill_lift(out.bent, set.hill_list)) * out.mask \
 		- OCEAN_FLOOR_DEPTH * offshore * offshore * offshore
-	out.channel = _river_channel(out.bent, world_seed)
+	out.channel = _river_channel(out.bent, world_seed, coast)
 
 
 ## The carved continent from an already-filled `Shape` — what `continent()` returns.
