@@ -3086,35 +3086,6 @@ Two independent causes, both found by reading, not guessed:
 
 ---
 
-### F-462 · The benchmark shows a progress bar and no numbers, and never says how long is left
-
-**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
-
-While the benchmark runs (F-453), the panel on screen shows the current scene's name, one line of
-prose about what it stresses, and a bar that fills as scenes complete. That is everything.
-
-Two things are missing and Sequoyah asked for both.
-
-**There is no countdown.** The intro says "about four minutes" and then the player is on their own
-for four minutes with a bar that moves nine times. Nothing on screen answers "how much longer",
-which is the only question anybody has while watching a progress bar. A wall-clock estimate is not
-trivial to give honestly here: the per-scene settle waits on the chunk streamer and takes as long as
-it takes, so a countdown computed from the nominal sample and settle constants would drift and
-would be a lie by the end of the run.
-
-**There is no live performance data.** The benchmark is sampling frame times, draw calls, GPU and
-CPU render time continuously and showing the player none of it until the run ends. That is a waste
-of the one design decision that makes this benchmark watchable — the world is deliberately visible
-while it measures (F-453) precisely so a player can SEE the night wave stutter — and right now they
-can see it stutter without being shown the number that says it did. Every other benchmark a player
-has used puts a live readout on screen, and here it is free: the numbers already exist, they are
-just not being emitted.
-
-The readout must not distort what it reports: updating labels every frame is canvas work inside the
-sample window, so it needs to be throttled and the throttle rate stated.
-
----
-
 ### F-463 · agent ship silently drops force-added ignored files, so a music .import never lands
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-21 by slate977821
@@ -3155,7 +3126,157 @@ F-462 is somebody else's benchmark finding. This entry, F-463, is the one it mea
 
 ---
 
+### F-464 · The river's carve ends in a vertical wall wherever it crosses a hill, and nothing on the island reads as rock
+
+**Area:** worldgen · **Severity:** high · **Found:** 2026-08-21 by onyx059945
+
+Reported from play (Sequoyah, 2026-08-21): "when a river generates through the middle of the map and
+cuts through a hill it just drops from the top of the hill straight down to the bottom of the river
+and leaves a straight vertical wall that is unnatural."
+
+## Why it happens
+
+`IslandHeightmap._carve()` is `min(surface, channel)`, and `_river_channel()` returns a 1.0e9
+sentinel the instant a sample is further than `width * RIVER_CORRIDOR` from the polyline. So the
+carve is applied at FULL strength right up to the corridor edge and then stops dead. The height
+difference the carve was still holding down at that edge becomes a vertical step of exactly that
+size, between two adjacent samples.
+
+On the flat interior that step is nearly nothing: the channel ceiling at the corridor edge is
+`bed + RIVER_CORRIDOR^2 * RIVER_BANK_RISE` = bed + 7.5 m, which is above the ~3 m plateau, so the
+carve had already faded to zero on its own and F-372's bank tuning is what you see. Through a placed
+hill or a ridge crest the surface at the corridor edge is well above bed + 7.5 m, the carve is still
+pushing metres of rock down when the clip fires, and the remainder appears as a wall.
+
+The file's own comment predicted this ("if the walls have not reached the surface by then the clip
+itself becomes a hard vertical step — the ravine, back, at the corridor edge instead of at the bed")
+and treated widening the corridor as the fix. Widening cannot fix it: no fixed corridor is wide
+enough for an arbitrary hill, because the required half-width is `sqrt(depth / rise)` and `depth` is
+whatever terrain the river happens to cross.
+
+## The second half
+
+A river cutting a hill SHOULD leave something steep — that is a gorge, and it is good. What it may
+not leave is a mathematically vertical clip wearing the same grass as the meadow above it. A-016a
+already built the rock vocabulary for this (cliff_face, cliff_corner, cliff_overhang, rocky_slope,
+scree_pile, stone_steps in `assets/terrain_accents/`) and nothing in the shipped game places a
+single one of them: `terrain_accents` appears in exactly one script, its own check.
+
+---
+
+### F-465 · The preset calibration cannot resolve presets on a machine with headroom
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
+
+The benchmark chooses a graphics preset by re-measuring one scene at each preset and taking the
+highest that clears the target (D-193). On a fast machine that comparison does not resolve:
+
+    The Mire — night at preset HIGH:   62 fps (1% low)
+    The Mire — night at preset MEDIUM: 58 fps (1% low)
+    The Mire — night at preset LOW:    69 fps (1% low)
+
+MEDIUM slower than HIGH is not a physical result. The differences between presets are inside the
+1% low's own run-to-run variance on a machine with this much headroom: the metric is the mean of
+the worst 1% of a ~560-frame sample, so it is five frames, and presets are mostly fill-rate levers
+while the tail here is dominated by streaming spikes that no preset touches.
+
+**The recommendation was still correct** — the highest preset that cleared the target is the right
+answer whichever way the noise fell, and the report now says the presets measured within noise of
+each other rather than presenting the ladder as a result. So this is a limitation, not a live bug.
+
+It also matters least exactly where the benchmark matters most. On the low-end target (F-174) the
+spread between presets is roughly 3.6x (`core/render/hardware_tier.gd` quotes 7.18 / 4.40 / 2.00 ms
+for HIGH / MEDIUM / LOW), which is far outside any noise floor, so the calibration discriminates
+cleanly on the machines whose owners actually need it to. On an M5 Pro every preset clears 60 fps
+and the choice is nearly arbitrary anyway.
+
+Worth improving if someone is in here: rank presets by MEDIAN frame time, which is stable and which
+presets genuinely move, while keeping the 1% low as the pass/fail against the target. That would
+give a monotonic ladder and keep the strictness D-193 wanted. It is a real change to the advisor's
+contract, which is why it is filed rather than done in passing.
+
+Reproduce: `.agent/bin/agent godot --windowed --script tools/benchmark_check.gd -- --full` on a
+machine well above the target, and read the calibration rows in `user://benchmark/report.txt`.
+
+---
+
 ## Resolved
+
+### F-462 · The benchmark shows a progress bar and no numbers, and never says how long is left — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
+
+While the benchmark runs (F-453), the panel on screen shows the current scene's name, one line of
+prose about what it stresses, and a bar that fills as scenes complete. That is everything.
+
+Two things are missing and Sequoyah asked for both.
+
+**There is no countdown.** The intro says "about four minutes" and then the player is on their own
+for four minutes with a bar that moves nine times. Nothing on screen answers "how much longer",
+which is the only question anybody has while watching a progress bar. A wall-clock estimate is not
+trivial to give honestly here: the per-scene settle waits on the chunk streamer and takes as long as
+it takes, so a countdown computed from the nominal sample and settle constants would drift and
+would be a lie by the end of the run.
+
+**There is no live performance data.** The benchmark is sampling frame times, draw calls, GPU and
+CPU render time continuously and showing the player none of it until the run ends. That is a waste
+of the one design decision that makes this benchmark watchable — the world is deliberately visible
+while it measures (F-453) precisely so a player can SEE the night wave stutter — and right now they
+can see it stutter without being shown the number that says it did. Every other benchmark a player
+has used puts a live readout on screen, and here it is free: the numbers already exist, they are
+just not being emitted.
+
+The readout must not distort what it reports: updating labels every frame is canvas work inside the
+sample window, so it needs to be throttled and the throttle rate stated.
+
+---
+
+**Resolved 2026-08-21 by quill895277.** Both built, plus three real defects the work exposed.
+
+**Countdown.** Top-right of the panel, M:SS. It projects from how long the scenes SO FAR actually
+took, not from the nominal constants — a scene is `SAMPLE_SECONDS` of sampling plus a settle that
+waits on the chunk streamer for as long as it needs, and on a slow machine that settle is the larger
+and more variable half. A countdown from constants would run fast on exactly the machines this
+exists for. Shown with a `~` until a scene has been timed, so a guess is never dressed as a
+measurement. `BenchmarkRunner.has_measured_pace()` is what the screen asks.
+
+**Live metrics**, two rows: FPS · 1% LOW · FRAME ms · WORST ms · GPU ms · CPU ms, then DRAWS ·
+PRIMS M · VRAM MB · PHYS ms · NODES · CHUNKS. `1% LOW` and `WORST` carry the accent colour because
+they are what "how it feels" means. `CHUNKS` is there over any engine counter because the moving
+scenes stress the streamer and watching it climb is what makes the hitch legible as it happens.
+Zero reads as an em dash, never as 0 fps.
+
+Three defects found while doing it:
+
+1. **The readout polluted what it reported.** Adding it collapsed every stationary scene's 1% low
+   to a flat 48-59 fps, where the same scenes had ranged 63-81 and varied by content — a number
+   identical across nine views is an artifact. The panel repaint costs several ms and at 5 Hz that
+   is 30 spikes inside a sample whose worst 1% is 9 frames. Fixed by dropping the frames that pay
+   for the repaint (`FrameSampler.skip()`, `INSTRUMENT_SKIP_FRAMES = 2`, determined by measurement:
+   one frame recovered 51-77, two recovered 66-81). Same rule the sampler already applies to
+   post-transition frames and OS stalls — instrument cost is not game cost. The count is printed in
+   the report so a shrunk sample is never invisible.
+2. **vsync was never disabled.** `Engine.max_fps = 0` was applied and vsync was not, which is half
+   of docs/PERFORMANCE.md §1 rule 4. Fourteen of eighteen scenes were reporting a median of 8.2 ms
+   — 120.0 fps, this display's refresh rate. Capped, a machine with 2.5x the headroom it needs and
+   one a frame from stuttering both read 120 and both get told HIGH is comfortable. Now disabled for
+   the duration and restored after, with a report warning if rates still cluster on the refresh rate
+   (something outside the game pacing it).
+3. **Mouse look survived the input block.** The controller applies mouse look whenever the cursor
+   is CAPTURED, independently of `gameplay_input_allowed()`, so releasing the cursor is what
+   actually stops it. It was released in `_begin_measurement()` — and then
+   `AttunementUI._close_picker()`, which runs afterwards during setup, restores the captured mode it
+   saved on the way in, silently re-enabling look for the whole run. The release now happens after
+   the picker is dealt with and is re-asserted through staging, because several things in the game
+   capture the cursor back. Worth knowing for anything else that needs the cursor released during
+   gameplay: `_close_picker()` will undo it.
+
+Verified: `.agent/bin/agent godot --windowed --script tools/benchmark_check.gd -- --full` —
+**317 assertions, 0 failures**. The advisor's noisy-ladder note added afterwards is covered by the
+pure half (237 assertions, 0 failures); it changes reason text only.
+
+Left open: F-465 (the calibration cannot resolve presets on a machine with headroom — the
+recommendation is still right, and the report now says the presets measured within noise).
 
 ### F-460 · The benchmark is only reachable from inside the graphics settings — **fixed**
 
