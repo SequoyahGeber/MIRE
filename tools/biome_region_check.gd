@@ -27,13 +27,30 @@ const SEEDS: Array[int] = [20260819, 7, 4242, 991]
 const TRANSECTS: int = 8
 const STEP_M: float = 4.0
 
-## A clustered island crosses a handful of boundaries per traverse. The shipped field measured
-## 3.5-4.7 while tuning; 12 is well clear of that and still far below what a noise-assigned island
-## would produce, where every few samples can flip.
-const MAX_CHANGES_PER_TRANSECT: float = 12.0
-## ...and it must not collapse the other way either. Under 1.0 would mean a transect typically
-## crosses NO boundary, i.e. one biome covering the island — F-401's original complaint restated.
-const MIN_CHANGES_PER_TRANSECT: float = 1.0
+## Crossings are counted PER KILOMETRE of traverse, not per transect (F-447).
+##
+## The transect spans the island — `-ISLAND_RADIUS` to `+ISLAND_RADIUS` — so a per-transect count
+## silently means something different at every island size, and the biome regions it is judging do
+## NOT scale with the island (they are the size a region should be on the ground, like the terrain
+## texture layers). Doubling the radius to 590 m therefore doubled every count and failed this
+## check at 13.7 per transect against a 12.0 bound, with a field that had not changed at all. A
+## rate is the thing the check was always trying to express.
+##
+## The bounds are the old per-transect ones carried across at the SAME headroom, measured rather
+## than derived: this metric run against the pre-F-447 generator (295 m island, a throwaway
+## worktree at HEAD) reports 33.1 crossings per km where the old metric reported 10.5 per transect
+## against a 12.0 bound. Scaling by that 1.14x headroom puts the bound at 37.8 per km and the floor
+## at 3.1. Nothing about how strict this check is has moved — only what it is a count OF.
+##
+## Dividing the old numbers by the transect LENGTH instead would have been wrong by a factor of
+## about 2.8, because only the on-land part of a transect can change biome and a transect across a
+## lobed island is mostly water. That mistake set the bound at 20.3 and failed a field that had
+## just got BETTER: the F-447 island measures 25.9 per km, so doubling the radius made the walk
+## between biome boundaries longer, not shorter.
+const MAX_CHANGES_PER_KM: float = 37.8
+## ...and it must not collapse the other way either. Under 3.1 per km would mean a transect
+## typically crosses NO boundary, i.e. one biome covering the island — F-401's complaint restated.
+const MIN_CHANGES_PER_KM: float = 3.1
 
 var failures: int = 0
 
@@ -53,6 +70,7 @@ func _run() -> void:
 
 	var seen: Dictionary = {}
 	var changes_total: float = 0.0
+	var traversed_km: float = 0.0
 	var transects_total: int = 0
 
 	for world_seed: int in SEEDS:
@@ -82,19 +100,22 @@ func _run() -> void:
 			if samples < 10:
 				continue   # transect barely clipped the island — not a meaningful traverse
 			changes_total += float(changes)
+			# The traversed LENGTH, not the transect count: only the samples that were on land
+			# were eligible to change biome, so that is the distance the rate is per.
+			traversed_km += float(samples) * STEP_M / 1000.0
 			transects_total += 1
 
 	check(transects_total > 0, "transects crossed real ground (%d)" % transects_total)
-	var mean: float = changes_total / float(maxi(transects_total, 1))
+	var mean: float = changes_total / maxf(traversed_km, 0.001)
 
-	check(mean <= MAX_CHANGES_PER_TRANSECT,
-		"biomes are CLUSTERED, not noise — %.1f boundary crossings per transect (max %.1f)"
-			% [mean, MAX_CHANGES_PER_TRANSECT],
+	check(mean <= MAX_CHANGES_PER_KM,
+		"biomes are CLUSTERED, not noise — %.1f boundary crossings per km (max %.1f)"
+			% [mean, MAX_CHANGES_PER_KM],
 		"a high count means you flicker between biomes as you walk, which is F-401's smear with "
 		+ "more colours in it")
-	check(mean >= MIN_CHANGES_PER_TRANSECT,
-		"...and the island is not ONE biome — %.1f crossings per transect (min %.1f)"
-			% [mean, MIN_CHANGES_PER_TRANSECT])
+	check(mean >= MIN_CHANGES_PER_KM,
+		"...and the island is not ONE biome — %.1f crossings per km (min %.1f)"
+			% [mean, MIN_CHANGES_PER_KM])
 
 	for def: Resource in biome_defs:
 		var id: StringName = def.get(&"id")
@@ -102,7 +123,7 @@ func _run() -> void:
 			"biome '%s' actually appears somewhere across %d seeds" % [String(id), SEEDS.size()],
 			"a biome nothing selects is content that ships and is never seen")
 
-	print("BIOME_REGION_CHECK failures=%d mean_crossings=%.1f biomes_seen=%d/%d transects=%d"
+	print("BIOME_REGION_CHECK failures=%d crossings_per_km=%.1f biomes_seen=%d/%d transects=%d"
 		% [failures, mean, seen.size(), biome_defs.size(), transects_total])
 	quit(0 if failures == 0 else 1)
 

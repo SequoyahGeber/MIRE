@@ -195,7 +195,7 @@ func _run() -> void:
 	await _shoot(streamer, clean, view, NEAR_M, "clean_near", false)
 
 	# Leave the world as the game ships it.
-	_terrain.set_shader_parameter(&"blight_strength", 1.0)
+	_set_terrain_parameter(&"blight_strength", 1.0)
 	_fog.set_shader_parameter(&"blight_strength", 1.0)
 	print("BLIGHT_GROUND dir=%s" % ProjectSettings.globalize_path(OUT_DIR))
 	finish()
@@ -301,31 +301,59 @@ func _shoot(
 	streamer: Node, target: Vector3, view_dir: Vector3, distance: float,
 	label: String, corrupted: bool
 ) -> void:
-	var eye: Vector3 = target - view_dir * distance
-	eye.y = _height(eye.x, eye.z) + EYE_M
-	await _stream_around(streamer, [eye, target])
-	_camera.projection = Camera3D.PROJECTION_PERSPECTIVE
-	_camera.fov = 72.0
-	_camera.global_position = eye
-	await process_frame
-	_camera.look_at(target, Vector3.UP)
-	# `GroundFog._process()` slides its evaluation window onto `get_viewport().get_camera_3d()` —
-	# the MAIN viewport's camera, which is correct in the shipped game and null here, because this
-	# check renders through a SubViewport of its own. Without this the FogVolume sits at the world
-	# origin and every fog frame below is a photograph of no fog at all, which is exactly how the
-	# first run of this check read. Only XZ, matching what that method does.
-	if _fog_volume != null and _fog_volume.has_method(&"place_window"):
-		_fog_volume.call(&"place_window", eye)
+	# The pose is CHOSEN, not assumed: several bearings onto the same ground are tried and the first
+	# one whose crop actually shows ground is kept (F-447).
+	#
+	# `_pick_ground()` guarantees dry, standable ground — it says nothing about what is growing on
+	# it, and the camera stands 22 or 70 m back from the aim point on whatever bearing the sun
+	# happens to give. When the island's shape changed, the control site's near camera came down
+	# INSIDE A TREE TRUNK: every pixel of the frame was bark, the ground mask was empty, and the
+	# check reported "0 of 45504 px" terrain — a true statement about a photograph of the inside of
+	# a tree, and a useless one about the shader under test. Its own saved PNG showed it instantly
+	# and no assertion could.
+	#
+	# Rotating the bearing is the right retry because nothing this check measures depends on which
+	# way the camera faces: every frame in a shot is taken from ONE pose and compared against the
+	# others from that same pose. Yaw is stepped in both directions from the lit bearing so the
+	# accepted pose stays as close to it as the trees allow.
+	var yaw_steps: Array[float] = [0.0, 0.5, -0.5, 1.0, -1.0, 1.6, -1.6, 2.4]
+	var off: Image
+	var crop: Rect2i
+	var mask := PackedByteArray()
+	var ground_fraction: float = 0.0
+	var eye: Vector3 = Vector3.ZERO
+	for yaw: float in yaw_steps:
+		var bearing: Vector3 = view_dir.rotated(Vector3.UP, yaw)
+		eye = target - bearing * distance
+		eye.y = _height(eye.x, eye.z) + EYE_M
+		await _stream_around(streamer, [eye, target])
+		_camera.projection = Camera3D.PROJECTION_PERSPECTIVE
+		_camera.fov = 72.0
+		_camera.global_position = eye
+		await process_frame
+		_camera.look_at(target, Vector3.UP)
+		# `GroundFog._process()` slides its evaluation window onto `get_viewport().get_camera_3d()` —
+		# the MAIN viewport's camera, which is correct in the shipped game and null here, because
+		# this check renders through a SubViewport of its own. Without this the FogVolume sits at
+		# the world origin and every fog frame below is a photograph of no fog at all, which is
+		# exactly how the first run of this check read. Only XZ, matching what that method does.
+		if _fog_volume != null and _fog_volume.has_method(&"place_window"):
+			_fog_volume.call(&"place_window", eye)
 
-	var off: Image = await _frame(0.0, 0.0, "%s_off" % label)
+		off = await _frame(0.0, 0.0, "%s_off" % label)
+		crop = _crop_around(target)
+		mask = await _ground_mask(off, crop)
+		ground_fraction = float(_mask_count(mask)) / float(mask.size())
+		if ground_fraction >= 0.3:
+			break
+		print("  info  %s: %.0f%% ground at yaw %+.2f rad — turning and retrying"
+			% [label, ground_fraction * 100.0, yaw])
+
 	var ground_only: Image = await _frame(1.0, 0.0, "%s_ground" % label)
 	var fog_only: Image = await _frame(0.0, 1.0, "%s_fog" % label)
 	var both: Image = await _frame(1.0, 1.0, "%s_both" % label)
 
-	var crop: Rect2i = _crop_around(target)
 	print("CROP %s = %s" % [label, crop])
-	var mask: PackedByteArray = await _ground_mask(off, crop)
-	var ground_fraction: float = float(_mask_count(mask)) / float(mask.size())
 	check(ground_fraction >= 0.3,
 		"%s: the crop is mostly terrain (%d of %d px)"
 			% [label, _mask_count(mask), mask.size()])
@@ -374,7 +402,7 @@ func _shoot(
 
 ## Renders the current camera pose with the two halves at the given strengths and writes the PNG.
 func _frame(ground_strength: float, fog_strength: float, shot_name: String) -> Image:
-	_terrain.set_shader_parameter(&"blight_strength", ground_strength)
+	_set_terrain_parameter(&"blight_strength", ground_strength)
 	_fog.set_shader_parameter(&"blight_strength", fog_strength)
 	# Volumetric fog reprojects temporally and foliage sways, so a frame taken immediately after a
 	# change is a smear of the previous one. Thirty frames is what the other look checks settled on.
@@ -441,11 +469,36 @@ func _build_viewport() -> void:
 ## Reached through a resident chunk rather than the streamer's private field: this is the object
 ## every chunk on the island binds, so it also proves the shipped terrain renders through it.
 func _find_terrain_material() -> ShaderMaterial:
+	var found: Array[ShaderMaterial] = _terrain_materials()
+	return found[0] if not found.is_empty() else null
+
+
+## EVERY resident terrain chunk's material, re-scanned on each call (F-447).
+##
+## Terrain chunks do not share one `ShaderMaterial`: each carries its own `material_override`, so a
+## parameter written to the first one found is written to exactly one chunk. That was invisible
+## while every shot this check takes happened to include that chunk — and it stopped being
+## invisible when the island doubled and the control site moved out of its view. `_ground_mask()`
+## blackens the ground to find which pixels are terrain; with only one chunk blackened and that
+## chunk offscreen, the mask came back EMPTY and the control shot failed as "0 of 45504 px" terrain
+## while its own saved PNG plainly shows grass.
+##
+## Re-scanned rather than cached because the streamer builds and frees chunks as the camera moves
+## between shots, so a list taken at boot goes stale exactly when the camera travels — which is the
+## same bug one level up.
+func _terrain_materials() -> Array[ShaderMaterial]:
+	var out: Array[ShaderMaterial] = []
 	for node: Node in get_nodes_in_group(&"authored_world_terrain"):
 		var mi := node as MeshInstance3D
 		if mi != null and mi.material_override is ShaderMaterial:
-			return mi.material_override as ShaderMaterial
-	return null
+			out.append(mi.material_override as ShaderMaterial)
+	return out
+
+
+## Write one shader parameter to every resident terrain chunk. See `_terrain_materials()`.
+func _set_terrain_parameter(name: StringName, value: Variant) -> void:
+	for material: ShaderMaterial in _terrain_materials():
+		material.set_shader_parameter(name, value)
 
 
 func _find_fog_material() -> ShaderMaterial:
@@ -553,9 +606,9 @@ func _pick_ground(preferred: Vector2) -> Vector3:
 ## `base`, so a black base is black at every corruption value. The mask is the same pixels with the
 ## Mire on or off.
 func _ground_mask(baseline: Image, crop: Rect2i) -> PackedByteArray:
-	_terrain.set_shader_parameter(&"albedo_color", Color(0, 0, 0))
+	_set_terrain_parameter(&"albedo_color", Color(0, 0, 0))
 	var black: Image = await _frame(0.0, 0.0, "")
-	_terrain.set_shader_parameter(&"albedo_color", Color(1, 1, 1))
+	_set_terrain_parameter(&"albedo_color", Color(1, 1, 1))
 	var mask := PackedByteArray()
 	mask.resize(crop.size.x * crop.size.y)
 	var i: int = 0

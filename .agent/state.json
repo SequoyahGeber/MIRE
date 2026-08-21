@@ -54,29 +54,11 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "tools/hill_slope_check.gd": {
-      "agent": "birchcf39ce",
-      "at": "2026-08-21T19:10:36+00:00",
-      "task": "F-447",
-      "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
-    },
     "tools/item_icons_check.gd": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:52:45+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
-    },
-    "tools/terrain_check.gd": {
-      "agent": "birchcf39ce",
-      "at": "2026-08-21T19:10:05+00:00",
-      "task": "F-447",
-      "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
-    },
-    "world/gen/island_heightmap.gd": {
-      "agent": "birchcf39ce",
-      "at": "2026-08-21T18:59:43+00:00",
-      "task": "F-447",
-      "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
     }
   },
   "in_flight": {
@@ -97,17 +79,6 @@
       "notes": [],
       "started": "2026-08-21T17:13:34+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
-    },
-    "F-447": {
-      "agent": "birchcf39ce",
-      "files": [
-        "world/gen/island_heightmap.gd",
-        "tools/terrain_check.gd",
-        "tools/hill_slope_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-21T18:59:43+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
     }
   },
   "recent": {
@@ -2730,11 +2701,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "tools/biome_region_check.gd": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T05:34:42+00:00",
-      "hash": "c233d5488b27b5cd1924bb57f53c29842a64d9010dd8ed8a00b0cfb30266f1e5",
-      "task": "F-401",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "birchcf39ce",
+      "at": "2026-08-21T19:40:33+00:00",
+      "hash": "3fb6617dd5596dbad043298c0625459359d4e92efeffcf43b6eec13072e946c4",
+      "task": "F-447",
+      "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
     },
     "tools/biome_region_probe.gd": {
       "agent": "kilnd3a089",
@@ -2828,11 +2799,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
     "tools/blight_ground_check.gd": {
-      "agent": "hollow80855f",
-      "at": "2026-08-21T18:29:30+00:00",
-      "hash": "3790bd54b1d69c791e57ce8a311c5c93d5f23b6d735afa133d563b96e4ae62e6",
-      "task": "F-435",
-      "token": "CLAUDE_CODE_SESSION_ID:0e245ac7-67ca-4077-a49b-e1b4d92abe80"
+      "agent": "birchcf39ce",
+      "at": "2026-08-21T19:40:33+00:00",
+      "hash": "6c56be374fd7eb778d22a0040505d15edb10115ee51df3fe9123624ff65c6686",
+      "task": "F-447",
+      "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
     },
     "tools/blight_hud_check.gd": {
       "agent": "kilnd3a089",
@@ -2856,11 +2827,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "tools/chunk_stream_check.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T01:49:16+00:00",
-      "hash": "1da2d76c7cb580c421bd7eaaa1f2f26d197be8160b863328956b17dd419322b5",
-      "task": "F-340",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+      "agent": "birchcf39ce",
+      "at": "2026-08-21T19:40:33+00:00",
+      "hash": "1cfcd494da0a32fa98a9e04e84c77fc4921558fa6b6cad2a8a0a38b6a9e1223a",
+      "task": "F-447",
+      "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
     },
     "tools/client_stream_budget_check.gd": {
       "agent": "ivy1bcae0",
@@ -3078,6 +3049,13 @@
       "hash": "96f6f233a04cd803d978538a4c8c372628588685317101f3decf96fce937f57d",
       "task": "F-443",
       "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
+    },
+    "tools/hill_slope_check.gd": {
+      "agent": "birchcf39ce",
+      "at": "2026-08-21T19:40:33+00:00",
+      "hash": "6bc78ccab33543897dd1fa251e8bdf131b8ff13e197acf5316d2baaff57da2f1",
+      "task": "F-447",
+      "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
     },
     "tools/interp_check.gd": {
       "agent": "ivy1bcae0",
@@ -3339,11 +3317,11 @@
       "token": null
     },
     "tools/terrain_check.gd": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T21:58:15+00:00",
-      "hash": "4111b2095c336bb0a93527fe8055efacb4ee14e7754d4011344e7790c49b39f4",
-      "task": "4.18",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+      "agent": "birchcf39ce",
+      "at": "2026-08-21T19:40:33+00:00",
+      "hash": "ffb578452d14cdaa9a3ef15722e8c6795d963fb0b94ecdaf2dfe5ca90620a63c",
+      "task": "F-447",
+      "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
     },
     "tools/terrain_look_check.gd": {
       "agent": "ivy1bcae0",
@@ -3724,11 +3702,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "world/gen/island_heightmap.gd": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T03:44:40+00:00",
-      "hash": "b433df71ff2e5051d8e810c5f9f4833cb2b4cb7610e6f702643b88c6eb72a2c0",
-      "task": "F-372",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "birchcf39ce",
+      "at": "2026-08-21T19:40:33+00:00",
+      "hash": "92d5ef395841afa22901f860d59f424507de33ef11603d4c30ed41003819a94d",
+      "task": "F-447",
+      "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
     },
     "world/gen/procedural_world.gd": {
       "agent": "ivy1bcae0",
@@ -3780,7 +3758,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     }
   },
-  "rev": 813,
+  "rev": 816,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9079,9 +9057,11 @@
       "title": "Deep Forest is 3.5% of the island's dry land, so the richest scatter tables in the game are almost never seen"
     },
     "F-447": {
+      "done_at": "2026-08-21T19:40:33+00:00",
+      "done_by": "birchcf39ce",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "The island is half the size it should be, its outline is still round, and every hill is the same symmetric dome"
     }

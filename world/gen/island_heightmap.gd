@@ -19,9 +19,10 @@ extends RefCounted
 
 ## Island radius in metres, measured from world origin.
 ##
-## **295 m — an island about 590 m across.** Raised 2.5x from 118 m on the 2026-08-20 playtest
-## verdict, "the island should be 2-3x larger" (F-368), and the number is 2.5x rather than 2x
-## because 118 m was not merely cramped, it was too small to hold its own content:
+## **590 m — an island about 1.18 km across.** Doubled from 295 m on the 2026-08-21 playtest
+## verdict, "the island should be maybe twice as big" (F-447). 295 m was itself a 2.5x raise from
+## 118 m at the previous playtest (F-368), for reasons that are still worth reading because they
+## are why the number has only ever moved one way:
 ##
 ##  · `content/poi/loot_cache.tres` asks for 8 sites at `min_spacing_m` 70. Eight mutually-70 m-
 ##    separated points do not EXIST inside a 118 m disc's placeable band, so `PoiMap`'s relaxation
@@ -32,10 +33,15 @@ extends RefCounted
 ##  · There was no room for a dense forest AND open ground, so the whole island read as one
 ##    continuous field (F-369).
 ##
-## The original 512 m cut was rejected for a good reason that still holds — rendered top-down it was
-## "a landmass filling the whole frame, which is a continent with a shoreline, not an island in an
-## ocean" — and 295 m keeps that read: the Mire grid still covers more ground than the island, so
-## most of its cells are still open water, which is the right way round.
+## The original 512 m cut was rejected for a good reason — rendered top-down it was "a landmass
+## filling the whole frame, which is a continent with a shoreline, not an island in an ocean" — and
+## 590 m does not reopen it, because the thing that produced that read was the FRAME, not the
+## radius. What the top-down render actually shows is the ratio of land to visible water, and the
+## island mask covers well under half the disc `ISLAND_RADIUS` names: measured over four seeds at
+## 295 m, land was 6.3-8.3% of a 1600 m square, against 27% for a full disc of that radius. The
+## lobe union is a scatter of headlands and bays inside the nominal circle, not the circle. At
+## 590 m the same seeds put roughly a quarter of a 2400 m square under land, which is an island in
+## an ocean at the scale a player walks it — about 20 minutes of coast to round instead of 10.
 ##
 ## **What moves with this number, and what does not.** `FREQUENCY_SCALE` below is defined against a
 ## fixed 512 m reference precisely so terrain frequency stays put when the radius moves — the island
@@ -45,13 +51,13 @@ extends RefCounted
 ## Two things did NOT scale for free and were handled explicitly:
 ##  · `world/mire/mire_grid_sim.gd` derives `CELL_SIZE_M` from this radius over a FIXED 256x256
 ##    grid, so a bigger island means coarser cells and — at an unchanged per-tick spread rate — a
-##    Mire that advances ~2.5x faster in metres per second. `MireGrid.BASE_SPREAD_RATE` is now
+##    Mire that advances faster in metres per second at an unchanged per-tick rate. `MireGrid.BASE_SPREAD_RATE` is now
 ##    normalised against cell size to hold the metres-per-second rate constant. See its comment.
 ##  · Per-POI `target_count`/`min_spacing_m` pairs were tuned against 118 m and are now generous
 ##    rather than impossible. That is the right direction, but it means the ore-node density in
 ##    `content/scatter/*_rocks.tres` wants a re-look now that there is more ground to spread over
 ##    (noted on F-365).
-const ISLAND_RADIUS: float = 295.0
+const ISLAND_RADIUS: float = 590.0
 
 ## The SHAPE layers — continental noise, its domain warp, and the coastline jitter — are authored
 ## against a 512 m island and scaled to whatever `ISLAND_RADIUS` actually is, so a smaller island
@@ -80,24 +86,124 @@ const HEIGHT_SCALE: float = 11.0
 ## landforms below (`HILL_*`), countable the way he counted them.
 const BASE_NOISE_WEIGHT: float = 0.25
 
-## THE HILLS (D-184, second pass) — 3 to 5 per island, placed, not emergent.
+## THE HILLS (D-184, second pass) — placed landforms, not emergent ones.
 ##
 ## Same recipe as `lobes()`/`islet_centres()`: positions from integer mixing on the direction
 ## table, radii and heights from modulo spreads, all inside the D-017 safe set. Each hill is a
-## smooth radial mound (`t*t*(3-2t)` — smoothstep's polynomial, no libm); overlapping hills take
-## `maxf` like the lobe masks do, so two neighbours merge into a broader rise instead of stacking
-## into a peak. Slope stays around 7 m over 35+ m of run — a place you walk up without thinking.
-const HILL_COUNT_MIN: int = 3
-const HILL_COUNT_MAX: int = 5
-## Centre offset from the island's middle, as a fraction of ISLAND_RADIUS. Capped at 0.62 so a
-## hill's toe stays on the plateau rather than sliding into the coastal falloff.
-const HILL_OFFSET_MAX: float = 0.62
-## Radii up, heights down at the playtest verdict ("very very gentle"): ~3.5 m over 30+ m of run
-## is a rise you jog over, visibly a hill only because the ground around it is nearly flat.
-const HILL_RADIUS_MIN: float = 30.0     # metres
-const HILL_RADIUS_MAX: float = 60.0
-const HILL_HEIGHT_MIN: float = 5.5      # metres of lift at the crown
-const HILL_HEIGHT_MAX: float = 10.5
+## smooth radial mound; overlapping hills take `maxf` like the lobe masks do, so two neighbours
+## merge into a broader rise instead of stacking into a peak.
+##
+## **The count is 5-8, raised from 3-5 with the island's radius (F-447), and that number is a
+## judgement call worth flagging.** "3-5 hills on the whole island" was Sequoyah's own count on
+## 2026-08-20, and it was a count for a 295 m island. Doubling the radius quadruples the ground; at
+## an unchanged 3-5 the same island reads as a plain with a few bumps on it, which is not what he
+## approved either. Holding the DENSITY would have meant 12-20, which is plainly not what he said.
+## 5-8 splits the difference toward his number: an island still countable at a glance, with more
+## ground between hills than before rather than less. If the next playtest says "too many hills",
+## this constant is the one to move — not the sizes or the profiles below.
+const HILL_COUNT_MIN: int = 5
+const HILL_COUNT_MAX: int = 8
+## **Hills are placed inside a LOBE, not at a bearing from the island's middle** — the biggest
+## single correction in the F-447 pass, and the one that was invisible until the hills were
+## measured rather than looked at.
+##
+## An offset-from-centre placement assumes the island fills the disc `ISLAND_RADIUS` names. It does
+## not: the lobe union is an irregular scatter of headlands inside that circle, so a bearing with no
+## lobe on it is open sea, and a hill placed there is multiplied by a zero island mask and simply
+## does not exist. Probed on seed 20260821, **two of five hills sat on the ocean floor** — a seed
+## that nominally had five had three, and which three depended on the lobes.
+##
+## Choosing a lobe first and offsetting within it makes "on land" structural rather than lucky. It
+## costs nothing: `lobes()` is the same integer arithmetic `hills()` already is, no noise is
+## sampled, and the D-017 safe set is untouched.
+##
+## The offset is a fraction of the chosen lobe's radius, measured in that lobe's own elliptical
+## frame so a stretched lobe scatters its hills along its length rather than bunching them across
+## its waist. Capped short of the lobe's edge so a hill's toe stays off the coastal falloff, which
+## is what the old cap against ISLAND_RADIUS was for.
+const HILL_LOBE_OFFSET_MAX: float = 0.58
+## A hill may be no broader than this fraction of its lobe's SHORT half-axis. Without it a 95 m
+## hill on a small outer lobe is wider than the land it stands on, and its flanks are underwater on
+## three sides — the asymmetry is authored into a shape nobody can walk round.
+const HILL_LOBE_FIT: float = 0.70
+## Minimum centre separation between two hills, as a fraction of the sum of their radii. Below this
+## they read as one landform, so `hills()` pushes the later one out — deterministically, along the
+## line between them, no RNG and no iteration to convergence.
+const HILL_MIN_SEPARATION: float = 0.80
+## Heights are +25% on F-447 ("hills can be a bit taller maybe 25%"), applied to both ends of the
+## spread so the range keeps its shape: 5.5-10.5 m of crown lift becomes 6.9-13.1 m.
+##
+## The RADIUS spread widened at the same time, and much further at the top than the bottom, because
+## the ask was for variety and a spread of 30-60 m is a spread of one hill size. 34-95 m puts a
+## broad, gentle swell and a compact steep knoll on the same island, and — with the asymmetry below
+## — makes the steepness of a given hill something you have to look at rather than assume.
+const HILL_RADIUS_MIN: float = 34.0     # metres
+const HILL_RADIUS_MAX: float = 95.0
+const HILL_HEIGHT_MIN: float = 6.9      # metres of lift at the crown
+const HILL_HEIGHT_MAX: float = 13.1
+## HILL ASYMMETRY — the cliff side (F-447).
+##
+## Sequoyah's direction: "some more variety in steepness, like one side of the hill could be more
+## steep than the other kinda making a cliff type area." A symmetric radial mound cannot do that at
+## any amplitude: every hill in the game had the same gradient at the same distance from its crown
+## on every bearing, so "steep" was a property of the hill and never of the side you approached
+## from. Two independent per-hill terms fix that, and they are separate because they do different
+## things and the seed picks them independently:
+##
+##  · `scarp_run` sets the steep face's RADIUS from the hill's own height and a chosen gradient,
+##    so the same crown height is spent over as much or as little run as that gradient asks for,
+##    while the lee keeps the hill's nominal radius. A 13 m hill with a 90 m radius and a 1.0 scarp
+##    run is a swell you stroll up from the south and an 13 m bluff on its north side.
+##  · `sharpness` changes the PROFILE, and only on the steep side (it fades out with the same
+##    bearing term, so the lee stays a smoothstep swell). It blends the mound's curve toward one
+##    that does its rising at the toe instead of at the middle, which is what turns a steep slope
+##    into something with a lip at the bottom — the "cliff type area" read rather than just a
+##    steeper hill.
+##
+## The two compose: a short scarp run with high sharpness gives a short, front-loaded face, and
+## the steepest ground on the island lives there. That ground is INTENDED to be near the edge of
+## walkable (the player's floor limit is 46 degrees, F-136) — a cliff you route around is the
+## feature. `tools/hill_slope_check.gd` measures how much of the island lands past that limit and
+## fails if the cliffs stop being local features and start being a wall around the high ground.
+## **The steep face is specified as an ANGLE, not as a fraction of the hill's footprint**, and that
+## is the second thing the first cut of this got wrong. Squeezing the radius by a bias fraction ties
+## the face's steepness to a radius and a height the seed drew independently, so a tall hill that
+## happened to draw a broad radius came out gentle on both sides no matter how large the bias was.
+## Measured that way, the steepest hill face across three seeds was 20.3 degrees — asymmetric, and
+## nowhere near "a cliff type area".
+##
+## `scarp_run` is METRES OF RUN PER METRE OF RISE on the steep face, so it IS the face's gradient
+## and the seed picks it directly: 1.0 is a 45-degree average (and, because the profile's steepest
+## point is about 1.5x its average, near 57 degrees at the middle of the face — past the player's
+## 46-degree floor limit, which is what makes it a cliff you route around rather than a slope you
+## grind up).
+##
+## The hill's own `radius` still sets the LEE flank and therefore the footprint, so a hill can be a
+## broad 90 m swell that happens to end in a bluff on its north side. That combination is the one
+## the direction is really asking for, and it is unreachable from a bias fraction.
+##
+## **The top of the range is deliberately past the point where the scarp stops existing, and that
+## is the feature, not sloppiness in the number.** `_hill_lift()` clamps the scarp's radius to the
+## hill's own, so any run long enough that `height * run >= radius` gives a hill that is
+## symmetric — a plain rolling dome with no steep side at all. At 8.0 most hills clear that bar,
+## so the spread runs from bluff through mildly-lopsided to perfectly ordinary.
+##
+## The first cut of this had a floor under the spread so that every hill on every seed had a
+## discernible steep face, on the reasoning that a symmetric hill was the thing being fixed.
+## Sequoyah corrected it the same day: "i dont want every single hill to have a cliff, some hills
+## can be very gentle and rolling and others can have a steeper side or whatever, just variety."
+## The plain hills are what the dramatic ones are read against; a cliff on every hill is a terrain
+## style, not a landmark. `tools/hill_slope_check.gd` asserts the SPREAD for this reason — that
+## some hills come out near-symmetric and some come out as cliffs — rather than a floor, which a
+## uniform treatment would satisfy just as well.
+const HILL_SCARP_RUN_MIN: float = 1.0
+const HILL_SCARP_RUN_MAX: float = 8.0
+## How much the steep face front-loads its rise: 0 is the same smoothstep curve the lee has, 1 puts
+## the steepest part at the TOE, which is what gives a scarp a lip at the bottom instead of easing
+## into the ground. Spread from zero for the same reason the run is: a gentle hill that also had a
+## front-loaded profile would be a scarp by another name.
+const HILL_SHARPNESS_MIN: float = 0.0
+const HILL_SHARPNESS_MAX: float = 1.0
 const HILL_SALT: int = 0x48C3D1
 ## Fraction of ISLAND_RADIUS where the falloff begins. Inside this, height is unmasked; outside,
 ## it tapers cubically to 0 at ISLAND_RADIUS.
@@ -239,20 +345,51 @@ const COAST_NOISE_SALT: int = 0x7A11C0
 ## they resolve differently across platforms and D-017/D-028 rest on this function being
 ## bit-identical), and their radii are chosen so the union always stays connected: every lobe
 ## overlaps the first one.
-const LOBE_COUNT_MIN: int = 3
-const LOBE_COUNT_MAX: int = 4
+const LOBE_COUNT_MIN: int = 4
+const LOBE_COUNT_MAX: int = 6
 ## How far a lobe's centre sits from the island's, and how big it is, as fractions of
 ## ISLAND_RADIUS. The ranges are deliberately wide: lobes of similar size at similar offsets
 ## average back out into the circle this exists to avoid.
-const LOBE_OFFSET_MIN: float = 0.28
-const LOBE_OFFSET_MAX: float = 0.88
-const LOBE_RADIUS_MIN: float = 0.40
-const LOBE_RADIUS_MAX: float = 0.72
+const LOBE_OFFSET_MIN: float = 0.24
+const LOBE_OFFSET_MAX: float = 0.95
+const LOBE_RADIUS_MIN: float = 0.26
+const LOBE_RADIUS_MAX: float = 0.62
 ## The centred lobe the others hang off. Deliberately NOT the biggest thing in the
 ## union: at 0.84 it was the island and everything else was a bump on it, which is
 ## how a "lobed" island still renders as a circle. At 0.60 no single lobe owns the
 ## outline, and the shape is whatever the union happens to be.
-const LOBE_BODY_RADIUS: float = 0.60
+const LOBE_BODY_RADIUS: float = 0.52
+## The body is itself pushed off the world origin by this fraction of ISLAND_RADIUS.
+##
+## Two jobs, and the second is the reason it exists. It breaks the one piece of symmetry the lobe
+## union could never break — a lobe centred exactly on the origin makes the origin the island's
+## middle on every seed — and it gives the body an offset DIRECTION, which is what
+## `_lobe_stretch_axis()` below elongates it along. A lobe at the origin has no direction to
+## elongate along, so without this the biggest single mass on the island would be the one thing
+## still guaranteed to be circular.
+const LOBE_BODY_OFFSET: float = 0.13
+## Lobes are ELLIPSES, not discs, and this is how far from round they are allowed to get.
+##
+## Sequoyah's direction (2026-08-21): "id like the shape to be a bit more random rather than
+## usually mostly round it would be cool if it could be more unique." The lobe union was already
+## meant to answer that (2026-08-19, "the islands are quite round"), and top-down renders at 295 m
+## show why it only half did: a union of DISCS is a rounded blob whatever the offsets are, because
+## every piece of the outline is an arc of a circle and arcs of circles are what "round" means. The
+## previous passes moved the circles around; none of them stopped the pieces being circles.
+##
+## Each lobe therefore gets a stretch factor and an axis, and its mask is measured in a frame
+## scaled along that axis. The transform is AREA-PRESERVING — the along component is divided by the
+## stretch and the across component multiplied by it — so elongating a lobe lengthens it into a
+## peninsula rather than simply inflating it, and the island's total land does not creep upward as
+## this constant rises. That matters for `world_radius()` too, which would otherwise have to
+## reserve the inflated reach on every axis.
+##
+## 1.0 is a disc; the max is deliberately high enough that a seed can produce a genuinely long,
+## narrow arm. Above about 2.0 the narrow axis of an outer lobe gets thin enough that the coastal
+## falloff band (which is absolute metres, `MIN_FALLOFF_BAND_M`) eats the whole thing and the arm
+## renders as a shoal rather than as land.
+const LOBE_STRETCH_MIN: float = 1.0
+const LOBE_STRETCH_MAX: float = 1.85
 ## Every lobe must overlap the body by at least this much of ISLAND_RADIUS, so an
 ## island is always one connected landmass however the seed falls. Enforced by
 ## clamping the offset rather than by choosing numbers that happen to work.
@@ -387,7 +524,11 @@ const RIVER_SALT: int = 0x71E5B
 ## the Mire grid all reason about the edge of the world, and a short edge is a culled coastline.
 ## Anything that adds a landform must appear in this expression or the bound stops being one.
 static func world_radius() -> float:
-	var lobe_reach: float = LOBE_OFFSET_MAX + LOBE_RADIUS_MAX
+	# The lobe reach is its LONG axis: an elliptical lobe stretched radially reaches
+	# `radius * stretch` outward, so the bound has to reserve that even though the same lobe is
+	# narrower than `radius` across. Deliberately not the clamped offset — this is an outer bound,
+	# and an over-estimate costs a little empty ocean while an under-estimate culls coastline.
+	var lobe_reach: float = LOBE_OFFSET_MAX + LOBE_RADIUS_MAX * LOBE_STRETCH_MAX
 	var islet_reach: float = ISLET_DISTANCE + ISLET_RADIUS_FRACTION
 	return ISLAND_RADIUS * maxf(lobe_reach, islet_reach) + SHAPE_WARP_AMPLITUDE + COAST_JITTER
 
@@ -419,12 +560,31 @@ static func _make_noise(noise_seed: int, frequency: float, octaves: int, lacunar
 ## radius, 0.0 beyond it. `t*t*t`, never `pow(t, 3.0)` — see the file header and D-017.
 ## How many islets this seed gets (one or two) and where they sit. Integer arithmetic only, so it
 ## is identical on every platform.
-## The lobe centres and radii this seed's island is built from. Integer arithmetic only.
-static func lobes(world_seed: int) -> Array[Vector3]:
+## The lobe centres, radii and stretch factors this seed's island is built from: one
+## `(centre.x, centre.y, radius, stretch)` per lobe, all in metres except the dimensionless
+## stretch. Integer arithmetic only, so it is identical on every platform.
+##
+## Returns `Vector4` rather than the `Vector3` it did before the ellipse pass (F-447). Nothing
+## outside this file reads it; `river_polyline()` below is the only other caller and takes the
+## centre and radius exactly as it did.
+static func lobes(world_seed: int) -> Array[Vector4]:
 	var mixed: int = (world_seed ^ LOBE_SALT) & 0x7FFFFFFF
 	var count: int = LOBE_COUNT_MIN + (mixed % (LOBE_COUNT_MAX - LOBE_COUNT_MIN + 1))
-	# The first lobe is the island's body, centred and large; the rest hang off it.
-	var out: Array[Vector3] = [Vector3(0.0, 0.0, ISLAND_RADIUS * LOBE_BODY_RADIUS)]
+	var stretch_span: float = LOBE_STRETCH_MAX - LOBE_STRETCH_MIN
+	# The first lobe is the island's body: the largest single mass, pushed slightly off the origin
+	# so that it HAS a direction to be elongated along (see LOBE_BODY_OFFSET).
+	var body_direction: Vector2 = ISLET_DIRECTIONS[(mixed / 3) % ISLET_DIRECTIONS.size()]
+	var body_centre: Vector2 = body_direction * (ISLAND_RADIUS * LOBE_BODY_OFFSET)
+	var body_stretch: float = LOBE_STRETCH_MIN + stretch_span * float(mixed % 31) / 30.0
+	var out: Array[Vector4] = [Vector4(body_centre.x, body_centre.y,
+		ISLAND_RADIUS * LOBE_BODY_RADIUS, body_stretch)]
+	# The narrowest half-width the body is guaranteed to have in ANY direction, as a fraction of
+	# ISLAND_RADIUS — its short axis, less the distance its centre has moved off the origin. The
+	# overlap clamp below is measured against this rather than against LOBE_BODY_RADIUS, because a
+	# stretched body is narrower than its nominal radius across the short axis and an outer lobe
+	# placed against the nominal figure could sit off the end of it. Being conservative here costs
+	# a little reach; being optimistic costs a disconnected island on some seeds.
+	var body_min_reach: float = LOBE_BODY_RADIUS / body_stretch - LOBE_BODY_OFFSET
 	for index in count:
 		var step: int = mixed / (11 + index * 17)
 		# Each lobe picks its own direction rather than stepping a fixed stride round
@@ -438,12 +598,45 @@ static func lobes(world_seed: int) -> Array[Vector3]:
 		var radius_span: float = LOBE_RADIUS_MAX - LOBE_RADIUS_MIN
 		var offset: float = LOBE_OFFSET_MIN + offset_span * float(step % 17) / 16.0
 		var radius: float = LOBE_RADIUS_MIN + radius_span * float(step % 23) / 22.0
+		var stretch: float = LOBE_STRETCH_MIN + stretch_span * float(step % 37) / 36.0
 		# Pull the lobe in if it would only graze the body: a tangent lobe reads as
 		# a separate island that happens to touch, and a gap reads as a bug.
-		offset = minf(offset, LOBE_BODY_RADIUS + radius - LOBE_MIN_OVERLAP)
+		# Both reaches are the SHORT-axis ones, for the reason `body_min_reach` documents.
+		offset = minf(offset, body_min_reach + radius / stretch - LOBE_MIN_OVERLAP)
 		var centre: Vector2 = direction * (ISLAND_RADIUS * offset)
-		out.append(Vector3(centre.x, centre.y, ISLAND_RADIUS * radius))
+		out.append(Vector4(centre.x, centre.y, ISLAND_RADIUS * radius, stretch))
 	return out
+
+
+## The unit axis a lobe is elongated along: outward from the island's middle, which is the
+## direction its own centre already names. Radial elongation is what makes peninsulas and waists —
+## a lobe stretched along its offset reaches further out to sea and stays narrow across, so the
+## union grows arms instead of growing fatter. No `sin`/`cos`: this is a normalised difference of
+## coordinates the caller already has, which stays inside the D-017 safe set.
+##
+## Degenerate only if a lobe sits exactly on the origin, which `LOBE_BODY_OFFSET` exists to
+## prevent; the fallback keeps the function total rather than relying on that.
+static func _lobe_stretch_axis(centre: Vector2) -> Vector2:
+	if centre.length() < 0.001:
+		return Vector2(1.0, 0.0)
+	return centre.normalized()
+
+
+## Distance from `point` to an ellipse's centre, measured in the ellipse's own frame: the component
+## along `axis` divided by `stretch`, the component across it multiplied by `stretch`. Comparing
+## that against the lobe's nominal radius is the same test as comparing a real distance against a
+## circle, so every mask, falloff and band in this file works on ellipses unchanged.
+##
+## Area-preserving by construction (the two scalings are reciprocal), which is what lets
+## `LOBE_STRETCH_MAX` rise without the island quietly gaining land.
+static func _elliptic_distance(point: Vector2, centre: Vector2, axis: Vector2,
+		stretch: float) -> float:
+	var to_point: Vector2 = point - centre
+	var along: float = to_point.dot(axis)
+	# The perpendicular component, via the axis's own perpendicular — no trig, no sqrt of a
+	# difference that could go negative under rounding.
+	var across: float = to_point.dot(Vector2(-axis.y, axis.x))
+	return Vector2(along / stretch, across * stretch).length()
 
 
 ## The point, bent, given already-built warp fields. Split out of `_warp_point` (F-241) so a
@@ -452,6 +645,21 @@ static func lobes(world_seed: int) -> Array[Vector3]:
 static func _warp_point_with(x: float, z: float, warp_x: FastNoiseLite, warp_z: FastNoiseLite) -> Vector2:
 	return Vector2(x + warp_x.get_noise_2d(x, z) * SHAPE_WARP_AMPLITUDE,
 		z + warp_z.get_noise_2d(x, z) * SHAPE_WARP_AMPLITUDE)
+
+
+## The point, bent — public, for instruments only (F-447).
+##
+## Every landform in this file lives in BENT space: `lobes()` centres, `hills()` centres and the
+## river polyline are all coordinates the shape warp has already been applied to. A tool that walks
+## "outward from this hill's crown along its cliff bearing" in WORLD coordinates is therefore
+## walking some other bearing entirely, and the warp's amplitude is ~67 m on a 590 m island, which
+## is several times a scarp's width. `tools/hill_slope_check.gd` measured a hill's steep flank as
+## GENTLER than its lee for exactly this reason, and the profile was correct the whole time.
+##
+## Nothing the game builds should call this — the shipped path bends once inside `shape_into()` and
+## shares the result. It exists so a check can invert the warp and put its probe where it meant to.
+static func bend(x: float, z: float, world_seed: int) -> Vector2:
+	return _warp_point(x, z, world_seed)
 
 
 ## The point, bent. Everything that measures a distance in this file measures it here.
@@ -463,37 +671,129 @@ static func _warp_point(x: float, z: float, world_seed: int) -> Vector2:
 	return _warp_point_with(x, z, warp_x, warp_z)
 
 
-## This seed's placed hills: (centre.x, centre.y, radius, height) per entry. Integer arithmetic
-## only, same portability contract as `lobes()`.
-static func hills(world_seed: int) -> Array[Vector4]:
+## One placed hill. A class rather than the `Vector4` this used before F-447 because a hill now
+## carries six numbers, not four — the two new ones are what make it asymmetric — and packing them
+## into vector components was already the least readable part of this file.
+##
+## Nothing here is state: `hills()` rebuilds the list from integer mixing on every call, so these
+## are values, and the D-017 portability contract is unchanged.
+class Hill:
+	var centre: Vector2 = Vector2.ZERO
+	var radius: float = 0.0
+	## Metres of lift at the crown.
+	var height: float = 0.0
+	## The unit bearing the STEEP face points along. Everything asymmetric about the hill is
+	## measured as a dot product against this.
+	var cliff_direction: Vector2 = Vector2(1.0, 0.0)
+	## The steep face's run in metres per metre of rise, from which its radius is derived. Never
+	## larger than `radius`: a "steep" face with more run than the lee is not a steep face.
+	var scarp_run: float = HILL_SCARP_RUN_MAX
+	## 0 = smoothstep everywhere. Toward `HILL_SHARPNESS_MAX` the steep face's profile front-loads
+	## its rise at the toe; the lee is untouched whatever this is.
+	var sharpness: float = 0.0
+
+
+## This seed's placed hills. Integer arithmetic only, same portability contract as `lobes()`.
+static func hills(world_seed: int) -> Array[Hill]:
 	var mixed: int = (world_seed ^ HILL_SALT) & 0x7FFFFFFF
 	var count: int = HILL_COUNT_MIN + (mixed % (HILL_COUNT_MAX - HILL_COUNT_MIN + 1))
-	var out: Array[Vector4] = []
+	var lobe_list: Array[Vector4] = lobes(world_seed)
+	var out: Array[Hill] = []
 	for index in count:
 		var step: int = mixed / (5 + index * 19)
-		# Independent direction and offset per hill, same reasoning as lobes(): a fixed stride
-		# spaces them into a ring, and a ring of hills reads as a crater rim.
+		# The lobe this hill stands on. Independent per hill, so a seed can pile three onto the
+		# body and leave an outer arm bare — which is landform variety, not a bug. Every lobe is
+		# land by construction, which is the whole point of choosing one.
+		var lobe: Vector4 = lobe_list[(step / (3 + index * 7)) % lobe_list.size()]
+		var lobe_centre := Vector2(lobe.x, lobe.y)
+		var axis: Vector2 = _lobe_stretch_axis(lobe_centre)
+		# Independent bearing and distance within the lobe, same reasoning as lobes(): a fixed
+		# stride spaces them into a ring, and a ring of hills reads as a crater rim.
 		var direction: Vector2 = ISLET_DIRECTIONS[(step / (7 + index * 3)) % ISLET_DIRECTIONS.size()]
-		var offset: float = HILL_OFFSET_MAX * float(step % 13) / 12.0
-		var radius: float = HILL_RADIUS_MIN \
+		var offset: float = HILL_LOBE_OFFSET_MAX * float(step % 13) / 12.0
+		# The offset is chosen in the lobe's elliptical frame and mapped back out of it — along the
+		# long axis it reaches `stretch` times further, across the short axis `1 / stretch`, which
+		# is exactly the inverse of `_elliptic_distance()` and therefore lands inside the ellipse
+		# whenever `offset` is inside the unit circle.
+		var local: Vector2 = direction * (lobe.z * offset)
+		var perpendicular := Vector2(-axis.y, axis.x)
+		var hill := Hill.new()
+		hill.centre = lobe_centre + axis * (local.dot(axis) * lobe.w) \
+			+ perpendicular * (local.dot(perpendicular) / lobe.w)
+		hill.radius = HILL_RADIUS_MIN \
 			+ (HILL_RADIUS_MAX - HILL_RADIUS_MIN) * float(step % 29) / 28.0
-		var lift: float = HILL_HEIGHT_MIN \
+		# ...but never broader than the lobe can carry. The SHORT half-axis is the binding one: a
+		# hill wider than that hangs off the lobe's waist however long the lobe is.
+		hill.radius = minf(hill.radius, lobe.z / lobe.w * HILL_LOBE_FIT)
+		hill.height = HILL_HEIGHT_MIN \
 			+ (HILL_HEIGHT_MAX - HILL_HEIGHT_MIN) * float(step % 7) / 6.0
-		var centre: Vector2 = direction * (ISLAND_RADIUS * offset)
-		out.append(Vector4(centre.x, centre.y, radius, lift))
+		# The cliff faces its OWN way, off the same table and a different divisor — deliberately
+		# not the hill's offset direction. Tying it to the offset would point every cliff either
+		# out to sea or back at the island's middle, and the whole island would read as a bowl or
+		# as a dome. An unrelated bearing is what makes one hill's bluff face the coast and its
+		# neighbour's face inland.
+		hill.cliff_direction = ISLET_DIRECTIONS[(step / (11 + index * 7)) % ISLET_DIRECTIONS.size()]
+		# Two independent modulo spreads. Both reach the ordinary end of their range, so a seed
+		# produces gentle rolling hills, lopsided ones and outright bluffs on the same island.
+		hill.scarp_run = HILL_SCARP_RUN_MIN \
+			+ (HILL_SCARP_RUN_MAX - HILL_SCARP_RUN_MIN) * float(step % 11) / 10.0
+		hill.sharpness = HILL_SHARPNESS_MIN \
+			+ (HILL_SHARPNESS_MAX - HILL_SHARPNESS_MIN) * float(step % 17) / 16.0
+		# Separation, in one deterministic pass against the hills already placed. A later hill that
+		# lands too close to an earlier one is pushed straight out along the line between them,
+		# exactly far enough; the earlier one never moves, so the result does not depend on
+		# iteration order beyond the order this loop already fixes, and no seed can loop forever.
+		for placed: Hill in out:
+			var gap: Vector2 = hill.centre - placed.centre
+			var needed: float = (hill.radius + placed.radius) * HILL_MIN_SEPARATION
+			var apart: float = gap.length()
+			if apart >= needed:
+				continue
+			# Coincident centres have no line to push along; fall back to the hill's own bearing.
+			var push: Vector2 = gap.normalized() if apart > 0.001 else direction
+			hill.centre = placed.centre + push * needed
+		out.append(hill)
 	return out
 
 
-## Metres of placed-hill lift at `bent`. Smooth radial mounds, merged with `maxf` so neighbours
-## read as one broader rise; the profile is smoothstep's own polynomial, nothing outside D-017.
-static func _hill_lift(bent: Vector2, world_seed: int) -> float:
+## Metres of placed-hill lift at `bent`. Overlapping hills merge with `maxf` so neighbours read as
+## one broader rise rather than stacking into a peak.
+##
+## The profile is asymmetric about `cliff_direction` (F-447). `facing` is the cosine of the bearing
+## from the hill's crown to the sample — +1 straight down the steep face, -1 straight down the lee,
+## and it is a plain normalised dot product, nothing outside the D-017 safe set. It does two jobs:
+##
+##  · it scales the RADIUS, so the steep face spends the crown height over less ground;
+##  · it gates the SHARPNESS, so only the steep face gets the front-loaded curve. `maxf(0, facing)`
+##    means the lee half is exactly the smoothstep mound it has always been, and the two halves
+##    meet continuously at `facing == 0` because both terms vanish there.
+##
+## Both curves are polynomials written out longhand — `t*t*(3-2t)` and `1-inv*inv*inv` — never
+## `pow()`, for the reason the file header gives.
+static func _hill_lift(bent: Vector2, hill_list: Array[Hill]) -> float:
 	var lift: float = 0.0
-	for hill: Vector4 in hills(world_seed):
-		var distance: float = bent.distance_to(Vector2(hill.x, hill.y))
-		if distance >= hill.z:
+	for hill: Hill in hill_list:
+		var to_point: Vector2 = bent - hill.centre
+		var distance: float = to_point.length()
+		# At the crown itself there is no bearing to speak of; the symmetric profile is the limit
+		# from every side, so take it rather than dividing by zero.
+		var facing: float = 0.0
+		if distance > 0.001:
+			facing = to_point.dot(hill.cliff_direction) / distance
+		# The effective radius at this bearing: the scarp's own radius straight down the steep
+		# face, the hill's nominal radius straight down the lee, blended by bearing. `facing`
+		# runs -1..1, so `(facing + 1) * 0.5` is the 0..1 the blend wants.
+		var scarp_radius: float = minf(hill.radius, hill.height * hill.scarp_run)
+		var toward: float = (facing + 1.0) * 0.5
+		var radius: float = hill.radius + (scarp_radius - hill.radius) * toward
+		if distance >= radius:
 			continue
-		var t: float = 1.0 - distance / hill.z
-		lift = maxf(lift, hill.w * t * t * (3.0 - 2.0 * t))
+		var t: float = 1.0 - distance / radius
+		var rounded: float = t * t * (3.0 - 2.0 * t)
+		var inv: float = 1.0 - t
+		var scarped: float = 1.0 - inv * inv * inv
+		var sharp: float = hill.sharpness * maxf(0.0, facing)
+		lift = maxf(lift, hill.height * (rounded + (scarped - rounded) * sharp))
 	return lift
 
 
@@ -520,9 +820,9 @@ static func river_polyline(world_seed: int) -> PackedVector2Array:
 	var source_dir := Vector2(1.0, 0.0)
 	var source_offset: float = ISLAND_RADIUS * LOBE_BODY_RADIUS * 0.5
 	var best_reach: float = 0.0
-	var lobe_list: Array[Vector3] = lobes(world_seed)
+	var lobe_list: Array[Vector4] = lobes(world_seed)
 	for index in range(1, lobe_list.size()):
-		var lobe: Vector3 = lobe_list[index]
+		var lobe: Vector4 = lobe_list[index]
 		var centre := Vector2(lobe.x, lobe.y)
 		var reach: float = centre.length() + lobe.z
 		if reach > best_reach:
@@ -627,24 +927,28 @@ static func _radial_mask(distance: float, radius: float) -> float:
 	return inv * inv * (3.0 - 2.0 * inv)
 
 
-static func _island_mask(x: float, z: float, world_seed: int, jitter: float = 0.0) -> float:
-	# Measured in bent space, so no mask below is measuring a circle in the first
-	# place; the jitter then roughens what is already an irregular edge.
-	return _island_mask_bent(_warp_point(x, z, world_seed), world_seed, jitter)
-
-
 ## The mask body, for a caller that already bent the point — `continent()`/`height()` bend once
 ## and share it between the mask and the river (4.14), keeping the per-sample noise count flat.
-static func _island_mask_bent(point: Vector2, world_seed: int, jitter: float = 0.0) -> float:
+## Takes the seed's landform lists rather than the seed, so the caller's `NoiseSet` supplies them
+## once per chunk instead of this rebuilding them once per vertex (see `NoiseSet.lobe_list`).
+static func _island_mask_bent(point: Vector2, lobe_list: Array[Vector4],
+		islet_list: Array[Vector2], jitter: float = 0.0) -> float:
 	var mask: float = 0.0
-	for lobe: Vector3 in lobes(world_seed):
+	for lobe: Vector4 in lobe_list:
 		var centre := Vector2(lobe.x, lobe.y)
-		mask = maxf(mask, _radial_mask(point.distance_to(centre) - jitter, lobe.z))
+		# Measured in the lobe's OWN elliptical frame (F-447), so the falloff, the taper band and
+		# the jitter all apply to an ellipse exactly as they applied to a disc. The jitter is
+		# subtracted in that frame too, which means a stretched lobe's coastline wobbles a little
+		# less along its long axis and a little more across it — the right way round, since that is
+		# also where its coast is shortest.
+		var distance: float = _elliptic_distance(point, centre,
+			_lobe_stretch_axis(centre), lobe.w)
+		mask = maxf(mask, _radial_mask(distance - jitter, lobe.z))
 	# The islets take the LARGER of the masks rather than adding, so where one
 	# overlaps the main island it merges into a headland instead of stacking into
 	# a spike offshore.
 	var islet_radius: float = ISLAND_RADIUS * ISLET_RADIUS_FRACTION
-	for centre: Vector2 in islet_centres(world_seed):
+	for centre: Vector2 in islet_list:
 		mask = maxf(mask, _radial_mask(point.distance_to(centre) - jitter * 0.5, islet_radius))
 	return mask
 
@@ -664,6 +968,22 @@ class NoiseSet:
 	var warp_z: FastNoiseLite
 	var detail_noise: FastNoiseLite
 	var ridge_noise: FastNoiseLite
+	## This seed's LANDFORMS, built once alongside the noise fields (F-447).
+	##
+	## `lobes()`, `islet_centres()` and `hills()` are pure integer arithmetic, but they ALLOCATE —
+	## an array, and for hills a `Hill` per entry — and `shape_into()` called all three on every
+	## sample. That was tolerable when a hill was four floats in a `Vector4` and there were three of
+	## them; with 5-8 asymmetric hills each carrying a bearing it is 5-8 object allocations per
+	## vertex, and `world/chunk/chunk_mesher.gd` takes ~1,089 vertices per chunk.
+	##
+	## Measured by `tools/noise_reuse_check.gd`, which times the shared-set path against rebuilding
+	## per sample: the F-447 hills dropped that ratio from 1.88x to 1.22x, tripping its 1.3x floor.
+	## Hoisting the three lists onto the set — where they belong, being per-seed constants exactly
+	## like the noise fields — put it back. Same threading rule as the rest of the set for the same
+	## reason: one set per `WorkerThreadPool` task, never shared.
+	var lobe_list: Array[Vector4] = []
+	var islet_list: Array[Vector2] = []
+	var hill_list: Array[Hill] = []
 
 
 ## Everything about a point that does NOT depend on which biome it is in, computed once: the
@@ -710,6 +1030,9 @@ static func _make_shape_noise_set(world_seed: int) -> NoiseSet:
 		BASE_NOISE_LACUNARITY, BASE_NOISE_GAIN)
 	set.warp_z = _make_noise(world_seed ^ SHAPE_WARP_SALT_Z, SHAPE_WARP_FREQUENCY, 3,
 		BASE_NOISE_LACUNARITY, BASE_NOISE_GAIN)
+	set.lobe_list = lobes(world_seed)
+	set.islet_list = islet_centres(world_seed)
+	set.hill_list = hills(world_seed)
 	return set
 
 
@@ -756,7 +1079,7 @@ static func _make_continent_noise(world_seed: int) -> FastNoiseLite:
 static func shape_into(x: float, z: float, set: NoiseSet, world_seed: int, out: Shape) -> void:
 	var jitter: float = set.coast_noise.get_noise_2d(x, z) * COAST_JITTER
 	out.bent = _warp_point_with(x, z, set.warp_x, set.warp_z)
-	out.mask = _island_mask_bent(out.bent, world_seed, jitter)
+	out.mask = _island_mask_bent(out.bent, set.lobe_list, set.islet_list, jitter)
 	# Plateau + placed hills (D-184 second pass): the noise is damped to an undulation on a
 	# near-flat interior, and the hills are seeded landforms — both ride the island mask so the
 	# coast still tapers into the sea wherever this seed put it. Where the mask runs out the
@@ -770,7 +1093,7 @@ static func shape_into(x: float, z: float, set: NoiseSet, world_seed: int, out: 
 	# the full OCEAN_FLOOR_DEPTH offshore where depth is scenery rather than something you cross.
 	var offshore: float = 1.0 - out.mask
 	out.raw_continent = ((set.base_noise.get_noise_2d(x, z) * BASE_NOISE_WEIGHT + LAND_BIAS)
-		* HEIGHT_SCALE + _hill_lift(out.bent, world_seed)) * out.mask \
+		* HEIGHT_SCALE + _hill_lift(out.bent, set.hill_list)) * out.mask \
 		- OCEAN_FLOOR_DEPTH * offshore * offshore * offshore
 	out.channel = _river_channel(out.bent, world_seed)
 

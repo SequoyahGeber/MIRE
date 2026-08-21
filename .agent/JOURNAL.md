@@ -8467,3 +8467,15 @@ Mire growth is scattered by corruption, not biome; one seed cluster (D-191); 10 
 Files: `world/gen/scatter_def.gd`, `world/gen/resource_scatter.gd`, `world/mire/mire_grid_sim.gd`, `content/scatter/forest_deadwood.tres`, `content/scatter/birchwood_deadwood.tres`, `content/scatter/marsh_deadwood.tres`, `content/scatter/mire_growth.tres`, `tools/resource_scatter_check.gd`, `tools/mire_scatter_check.gd`, `content/scatter/mire_heart.tres`, `docs/DECISIONS.md`, `docs/WORLDGEN.md`, `tools/world_contract_check.gd`
 
 Commit at time of writing: `d11b442`
+
+---
+
+### DONE · F-447 · birchcf39ce · 2026-08-21T19:40:33+00:00
+
+**The island is half the size it should be, its outline is still round, and every hill is the same symmetric dome**
+
+Island radius 295->590 m; lobes are area-preserving ellipses (4-6, smaller, body off-origin) so silhouettes differ per seed; hills +25% taller, 5-8 of them, placed inside lobes, with a per-hill scarp specified as a gradient and a spread that reaches the plain end. New tools/hill_slope_check.gd; terrain_check's river probe, biome_region_check's rate, chunk_stream_check's divergence tripwire and blight_ground_check's camera all re-calibrated. F-448 filed for pre-existing chunk_stream union-of-interest failures.
+
+Files: `world/gen/island_heightmap.gd`, `tools/terrain_check.gd`, `tools/hill_slope_check.gd`, `tools/biome_region_check.gd`, `tools/blight_ground_check.gd`, `tools/chunk_stream_check.gd`
+
+Commit at time of writing: `dfe38e6`

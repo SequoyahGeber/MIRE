@@ -106,6 +106,9 @@ func _initialize() -> void:
 	# the channel centre (bent-space centre is unknowable analytically, so probe the design-space
 	# centreline and take min over a small cross-tick — the warp moves the channel, never removes
 	# it), and require each step's bed to sit no higher than the last, within noise-free tolerance.
+	# One noise set for the whole walk: the disc probe below is ~800 samples per step over 21
+	# steps, and `height()` rebuilds six `FastNoiseLite` objects on every call (F-241).
+	var noise_set: IslandHeightmap.NoiseSet = IslandHeightmap.make_noise_set(SEED_A)
 	var previous_bed: float = 1.0e9
 	var monotonic: bool = true
 	var monotonic_detail: String = ""
@@ -114,13 +117,26 @@ func _initialize() -> void:
 		var t: float = float(step) / 20.0
 		var point: Vector2 = _polyline_point(line_a, t)
 		var bed: float = 1.0e9
-		# A 2-axis cross wide enough to cover the shape warp's amplitude (~14 m): the channel
-		# lives in bent space, and a centreline-only probe reads a BANK wherever the warp has
-		# shifted the valley sideways — which looks exactly like the bed climbing.
-		for tick in range(-8, 9):
-			var stride: float = float(tick) * 2.2
-			bed = minf(bed, IslandHeightmap.height(point.x + stride, point.y, SEED_A))
-			bed = minf(bed, IslandHeightmap.height(point.x, point.y + stride, SEED_A))
+		# The channel lives in BENT space and this walk is in design space, so the probe has to
+		# cover wherever the shape warp could have carried the valley. A centreline-only sample
+		# reads a bank — which looks exactly like the bed climbing.
+		#
+		# It is a filled DISC, sized off `SHAPE_WARP_AMPLITUDE` itself rather than the hard-coded
+		# ±17.6 m cross this used before F-447. Two things broke that cross when the island
+		# doubled: the amplitude is a fraction of the island's size (`58.0 / FREQUENCY_SCALE`), so
+		# it moved from ~33 m to ~67 m and outran the probe outright; and a cross only ever looks
+		# along two axes, while the warp displaces diagonally as readily as squarely. The old cross
+		# passed on the small island because the corridor (15-35 m wide) was broad enough to catch
+		# a 33 m diagonal miss by luck, not because two axes were ever the right shape to look in.
+		var reach: float = IslandHeightmap.SHAPE_WARP_AMPLITUDE * 1.25
+		var stride: float = reach / 16.0
+		for ux in range(-16, 17):
+			for uz in range(-16, 17):
+				var probe := Vector2(float(ux) * stride, float(uz) * stride)
+				if probe.length() > reach:
+					continue
+				bed = minf(bed, IslandHeightmap.height_from_set(
+					point.x + probe.x, point.y + probe.y, noise_set, SEED_A))
 		# The contract is a WATERCOURSE contract and it ends at the waterline: once the probe has
 		# been in open water (below sea level), the river has debouched, and the walk crossing a
 		# bay's seabed (the ocean floor sits at -OCEAN_FLOOR_DEPTH since the sea-level rebase) and

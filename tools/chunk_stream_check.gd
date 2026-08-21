@@ -67,9 +67,23 @@ const BENCH_SEED: int = 20260818
 ## is the intended effect rather than drift. `SKIRT_DEPTH` (10.2 m) now clears the island-wide
 ## worst by ~6x. That assertion — skirt deeper than the worst anywhere — is what carries the
 ## guarantee; this recorded spot only exists to catch silent drift.
+##
+## Re-measured for F-447 (island radius 295 -> 590 m, elliptical lobes, asymmetric hills):
+## **4.4004 m** here, 2.3049 m island-wide worst on the bench seed. The recorded spot moved a long
+## way UP, and for a structural reason rather than a worrying one — chunk (3, -4) on seed 4242 was
+## a coast chunk on a 295 m island and is interior ground on a 590 m one, so the number now
+## describes different terrain entirely. It is also no longer the island-wide worst, which is the
+## sign that this constant has become what its own last paragraph says it is: a drift tripwire on
+## one named spot, not a bound. `SKIRT_DEPTH` (18.7 m) clears the island-wide worst by ~8x and this
+## spot by ~4x, and both of those assertions are the ones that carry the guarantee.
+##
+## Asymmetric hills are the reason to keep watching it. A scarp is the sharpest feature this
+## generator makes, and a sharp feature is exactly what a halved LOD sampling rate misses; if a
+## later pass makes cliffs commoner or steeper, expect this to climb again and check it against
+## `SKIRT_DEPTH` rather than against its own history.
 const WORST_KNOWN_SEED: int = 4242
 const WORST_KNOWN_CHUNK := Vector2i(3, -4)
-const WORST_KNOWN_DIVERGENCE_M: float = 0.2196
+const WORST_KNOWN_DIVERGENCE_M: float = 4.4004
 ## Chunk radius the seam/harvestable sweeps scan. `IslandHeightmap.ISLAND_RADIUS` is 118 m
 ## (CHUNK_SIZE 32 m -> ~4 chunks), so 10 chunks (320 m) is a wide margin past the falloff shoulder
 ## into open water — cheap because water contributes ~0 divergence and no harvestable placements,
