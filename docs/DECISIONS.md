@@ -6509,3 +6509,36 @@ is more useful than a preset change that appears to and does not.
 the streamer between passes, so each preset genuinely meets the same unbuilt world. Then travelling
 scenes could calibrate too, and would be the better basis, because traversal is where the game
 actually lives.
+
+### D-195 · 2026-08-21 · The benchmark pairs every location across day and night, and warms up first
+Two changes to the benchmark suite (F-458), and the second exists because of the first.
+
+**Every situation is measured twice, once by day and once by night.** The shipped suite ran seven
+day scenes against two night ones. Night is not a minor variant of MIRE — it is when the waves come,
+when every point light refreshes its shadow, when the ground fog and stars are up — so a suite
+weighted seven-to-two toward daylight drew its recommendation from the easy half of the game.
+`BenchmarkSuite.scenes()` is now generated from `situations()` × {day, night}, so the split is equal
+by construction rather than by somebody counting rows, and `benchmark_check` asserts it. The whole
+day block runs, then the whole night block: crossing into darkness fires `night_started` and is
+one-way, so it happens exactly once.
+
+**And the runner warms up every destination before sampling any of them.** Pairing exposed something
+the old suite could not have seen: a location's FIRST visit hitches and its second does not.
+`Deep forest` measured a 22 fps 1% low by day and 74 by night — same trees, same place, minutes
+apart — and Marshland did the same (39 / 73). Filed as F-459, because it is a real cost players pay
+on every run of a game that generates a fresh island every run.
+
+Waiting on the chunk streamer does not cover it: `settle_world()` was satisfied before those samples
+started. So without a warm-up pass, the day half systematically eats every location's first-visit
+cost and the night half never does — the pairing would measure visit order rather than lighting,
+which is the one thing it exists to control for.
+
+The uncomfortable part, stated plainly: **the warm-up deliberately hides a defect that players
+experience.** That is the right trade for an instrument whose output is a settings recommendation —
+a number that changes depending on which scene ran first is not a measurement — but it must not
+become the reason nobody fixes F-459. The way to check that finding is to disable `_prewarm()` and
+confirm the first visit and the second agree.
+
+**Would change my mind:** F-459 being fixed at the source. If first sight of a material costs
+nothing, the warm-up is dead weight and should go, and the suite gets its most player-relevant
+measurement back.

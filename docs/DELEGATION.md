@@ -75,6 +75,52 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-21 — F-458: the benchmark suite is 9 situations x day/night, on a surveyed seed (quill895277)
+
+Three changes on top of F-453, all from Sequoyah: a seed chosen rather than guessed, equal day and
+night coverage, and a map flyover.
+
+**`BenchmarkRunner.BENCH_SEED` is now `20260024`, and it was chosen.** `tools/bench_seed_survey.gd`
+scores candidate seeds on what the suite depends on — every biome present and none vestigial, spread
+evenly, POI count and variety, island size and peak height — and ranks them. Deterministic and
+re-runnable, so re-make the choice whenever worldgen moves (it moved twice this month):
+
+```bash
+.agent/bin/agent godot --script tools/bench_seed_survey.gd -- --count 150 --top 8
+```
+
+Land size and peak are scored against the **median of the candidates**, not against constants — the
+benchmark wants a *typical* island, and typical is a property of the distribution. The two constants
+that used to be there (`IDEAL_LAND_FRACTION`, `TARGET_PEAK_M`) were already wrong when written: at
++-240 m every seed reported 83-97% land, because the sampling window sat entirely inside the
+coastline. If you add a scoring term, score it against the distribution too.
+
+**The suite is generated, not listed.** `BenchmarkSuite.situations()` holds nine situations;
+`scenes()` is that crossed with {day, night} = 18 scenes, ids `<situation>_day` / `<situation>_night`.
+Add a situation and you get both halves and the ids for free. `day_night_counts()` exists so the
+check can assert the split rather than trust a comment (D-195).
+
+**Motion is a three-way, not a bool.** `MOTION_STILL` / `MOTION_WALK` / `MOTION_FLY`, with
+`travel` derived as `motion != still`. `SettingsAdvisor.preset_basis()` still keys off `travel`, so
+the flyover is excluded from choosing a preset alongside the ground traversal — both are
+streaming-dominated and neither responds to a preset (D-194).
+
+**Camera pitch lives on the player's `CameraPivot`, not on the body.** The body owns yaw
+(`PlayerCamera._rotate_view()`), so a flyover that rotated only the body flies over the island
+staring at the horizon. `_set_camera_pitch()` is reset to level for every ground scene.
+
+**`_prewarm()` visits every destination before anything is sampled, and you must not remove it
+casually.** A location's first visit hitches and its second does not — `Deep forest` measured 22 fps
+by day and 74 by night, same trees, minutes apart — and `settle_world()` does not cover it, because
+the streamer has already reported idle. Without the warm-up the day half eats every location's
+first-visit cost and the night half never does, so the pairing measures visit order instead of
+lighting. That cost is real and players pay it every run: **F-459**, and disabling `_prewarm()` is
+how you check whether it has been fixed.
+
+Full run is ~4 minutes: `.agent/bin/agent godot --windowed --script tools/benchmark_check.gd --
+--full` — 285 assertions, 0 failures at this commit.
+
+
 ### 2026-08-21 — F-453: there is an in-game benchmark, and `core/bench/` is its API (quill895277)
 
 A player can now measure their own machine instead of being classified by

@@ -3010,36 +3010,6 @@ F-300..F-303, and the nav bake, which `tools/nav_bake_check.gd` has been failing
 
 ---
 
-### F-458 · The benchmark seed is arbitrary, its day/night split is 7:2, and nothing flies over the island
-
-**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
-
-Three gaps in the shipped benchmark (F-453), all reported by Sequoyah on 2026-08-21.
-
-**The seed is arbitrary.** `BenchmarkRunner.BENCH_SEED` is `20260821` — a date, picked because it
-had to be *some* fixed number. Nothing checked what island it produces. A benchmark whose whole
-purpose is representative coverage should not measure whichever island a date happens to generate:
-if that seed's island is short on highland, or has two POIs, or barely any marsh, then every scene
-in the suite that depends on those is measuring a substitute and the recommendation is drawn from a
-world that is not typical of the game. The seed should be CHOSEN — surveyed against candidates and
-picked for biome coverage, POI count and variety, land area and height range — and the survey kept
-as a tool so the choice can be re-made when worldgen changes.
-
-**The day/night split is 7:2.** Seven scenes run at `DAY_TIME_OF_DAY`, two at night. Night is not a
-minor variant in MIRE — it is when the game is played hard, when the waves come, when every point
-light refreshes its shadow, and when the frame is most likely to miss the target. Weighting the
-recommendation seven-to-two toward daylight measures the easy half of the game. Every location
-should be measured at both times of day, so the split is equal by construction rather than by
-somebody counting rows.
-
-**There is no flyover.** Every scene is either a stationary camera at head height or a sprint at
-ground level. Neither shows the island as a whole, and neither prices the thing a wide aerial view
-prices: the full draw distance with nothing culled by terrain, and the streamer building a large
-neighbourhood around a fast-moving anchor. It is also the one scene worth watching, which matters
-because the benchmark deliberately runs with the world visible.
-
----
-
 ### F-459 · First visit to a location hitches; the second visit to the same place does not
 
 **Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
@@ -3087,6 +3057,59 @@ Reproduce: comment out the `_prewarm()` call in `BenchmarkRunner.run()` and run
 ---
 
 ## Resolved
+
+### F-458 · The benchmark seed is arbitrary, its day/night split is 7:2, and nothing flies over the island — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
+
+Three gaps in the shipped benchmark (F-453), all reported by Sequoyah on 2026-08-21.
+
+**The seed is arbitrary.** `BenchmarkRunner.BENCH_SEED` is `20260821` — a date, picked because it
+had to be *some* fixed number. Nothing checked what island it produces. A benchmark whose whole
+purpose is representative coverage should not measure whichever island a date happens to generate:
+if that seed's island is short on highland, or has two POIs, or barely any marsh, then every scene
+in the suite that depends on those is measuring a substitute and the recommendation is drawn from a
+world that is not typical of the game. The seed should be CHOSEN — surveyed against candidates and
+picked for biome coverage, POI count and variety, land area and height range — and the survey kept
+as a tool so the choice can be re-made when worldgen changes.
+
+**The day/night split is 7:2.** Seven scenes run at `DAY_TIME_OF_DAY`, two at night. Night is not a
+minor variant in MIRE — it is when the game is played hard, when the waves come, when every point
+light refreshes its shadow, and when the frame is most likely to miss the target. Weighting the
+recommendation seven-to-two toward daylight measures the easy half of the game. Every location
+should be measured at both times of day, so the split is equal by construction rather than by
+somebody counting rows.
+
+**There is no flyover.** Every scene is either a stationary camera at head height or a sprint at
+ground level. Neither shows the island as a whole, and neither prices the thing a wide aerial view
+prices: the full draw distance with nothing culled by terrain, and the streamer building a large
+neighbourhood around a fast-moving anchor. It is also the one scene worth watching, which matters
+because the benchmark deliberately runs with the world visible.
+
+---
+
+**Resolved 2026-08-21 by quill895277.** Done. Seed surveyed and pinned, day/night split equal by construction, flyover added.
+
+`tools/bench_seed_survey.gd` (new) ranks candidate seeds on biome coverage and evenness, POI count
+and variety, island size and peak height — size and peak scored against the candidates' own median,
+so the tool needs no re-tuning when worldgen changes. `BENCH_SEED` is now `20260024`: 29% land
+against a 27% median, 46 m peak against 42 m, all seven biomes with the weakest (marsh) at 7.2%,
+evenness 0.97, 33 POI sites across all 8 kinds. Its survey row is quoted beside the constant.
+
+`BenchmarkSuite.scenes()` is generated from `situations()` x {day, night} — 9 and 9, asserted, not
+counted by hand. Day block then night block, since crossing into darkness is one-way. Both halves
+carry a wave, and enemies are despawned between scenes. Flyover crosses the island at 90 m and
+40 m/s, pitched 32 degrees down, altitude held above the terrain rather than sea level.
+
+Verified: `.agent/bin/agent godot --windowed --script tools/benchmark_check.gd -- --full` —
+**285 assertions, 0 failures**, ~4 minutes.
+
+The pairing immediately earned its keep by exposing F-459: a location's FIRST visit hitches and its
+second does not (Deep forest 22 fps day / 74 night; Marshland 39 / 73), which `settle_world()` does
+not cover because the streamer has already reported idle. `BenchmarkRunner._prewarm()` now visits
+every destination before sampling; with it, the same pairs read 71/80 and 76/80. D-195 records that
+the warm-up deliberately hides a real player-facing cost, and that disabling it is how F-459 gets
+checked.
 
 ### F-453 · No in-game benchmark: a player cannot measure their own machine — **fixed**
 
