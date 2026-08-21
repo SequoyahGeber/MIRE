@@ -2158,6 +2158,33 @@ in the ship path runs this check, so "it was already failing" stayed true indefi
 
 ---
 
+### F-420 · The settings screen has two contradictory row layouts, so the value column jumps between tabs
+
+**Area:** ui · **Severity:** low · **Found:** 2026-08-21 by coil995fd7
+
+`ui/frontend/settings_screen.gd:_row()` and `ui/frontend/graphics_settings_page.gd:_row()` are the
+same helper written twice with the layout inverted:
+
+  settings_screen.gd:290   label.custom_minimum_size.x = 300 ; control -> SIZE_EXPAND_FILL
+  graphics_settings_page.gd:142  label -> SIZE_EXPAND_FILL   ; control.custom_minimum_size.x = 300
+
+The first pins the LABEL column and lets the control fill; the second pins the CONTROL column and
+lets the label fill. So the value column starts at x=1145 on DISPLAY and at x=886 on CONTROLS,
+ACCESSIBILITY and PLAYTESTING — measured at 1920x1080 from `tools/settings_render_check.gd`'s
+shots. Switching tabs visibly shifts the column the eye is tracking.
+
+F-414 split the DISPLAY page out into its own file and gave the new file its own row helper rather
+than reusing or exporting the existing one, which is how the two came to disagree. Neither layout is
+wrong on its own and the DISPLAY one is the better of the two (right-aligned values read as a
+column); what is wrong is having both.
+
+Deliberately left for Sequoyah rather than settled here: reconciling them moves the CONTROLS tab's
+twelve rebind buttons from roughly 594px wide to 300px, which is a visible change to the look of a
+screen he has just signed off on. The mechanical part — one shared helper instead of two — is not in
+question; only which of the two layouts it should implement.
+
+---
+
 ## Resolved
 
 ### F-418 · F-413 deleted the settings focus-navigation proof and never replaced it — **fixed**
