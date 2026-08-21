@@ -253,6 +253,13 @@ func _check_mapping_tables() -> void:
 				var mapped: Variant = (value as Dictionary)[key]
 				if mapped is StringName and not CATALOGUE.CUES.has(mapped):
 					bad.append("%s[%s] -> %s" % [const_name, key, mapped])
+				elif mapped is Array:
+					# A pool: {biome -> [cue, cue, ...]}. Duplicates in a pool
+					# are weights, not mistakes, so they are checked not deduped.
+					for cue: Variant in (mapped as Array):
+						checked += 1
+						if not CATALOGUE.CUES.has(cue):
+							bad.append("%s[%s] -> %s" % [const_name, key, cue])
 		elif const_name.ends_with("_CUES") and value is Array:
 			tables += 1
 			for entry: Variant in (value as Array):
@@ -436,6 +443,33 @@ func _check_ambient_scatter() -> void:
 	director._tick_ambient()
 	check(not director.is_playing(),
 		"no ambient event without a local player to place it around")
+
+	# Task 7.1 asks for ambience per biome, and a biome with no pool silently
+	# falls back to the generic one — which looks like it works and is exactly
+	# the failure this catches.
+	var biome_ids: PackedStringArray = PackedStringArray(
+		["shore", "marsh", "forest", "birchwood", "grassland", "heath", "highland"])
+	var missing_day: PackedStringArray = PackedStringArray()
+	var missing_night: PackedStringArray = PackedStringArray()
+	for id: String in biome_ids:
+		if not DIRECTOR_SCRIPT.BIOME_DAY_CUES.has(StringName(id)):
+			missing_day.append(id)
+		if not DIRECTOR_SCRIPT.BIOME_NIGHT_CUES.has(StringName(id)):
+			missing_night.append(id)
+	check(missing_day.is_empty() and missing_night.is_empty(),
+		"all %d biomes have a day and a night pool (missing: %s / %s)"
+		% [biome_ids.size(), ", ".join(missing_day), ", ".join(missing_night)])
+
+	# And the pools must actually be distinct, or seven biomes are one biome.
+	var signatures: Dictionary[String, bool] = {}
+	for id: String in biome_ids:
+		var pool: Array = DIRECTOR_SCRIPT.BIOME_DAY_CUES[StringName(id)]
+		var sorted_pool: Array = pool.duplicate()
+		sorted_pool.sort()
+		signatures[str(sorted_pool)] = true
+	check(signatures.size() == biome_ids.size(),
+		"every biome's day pool is distinct (%d of %d)"
+		% [signatures.size(), biome_ids.size()])
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────

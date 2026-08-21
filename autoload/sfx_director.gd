@@ -46,6 +46,7 @@ extends Node
 
 const CATALOGUE := preload("res://autoload/sfx_catalogue.gd")
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
+const BIOME_MAP := preload("res://world/gen/biome_map.gd")
 
 const SFX_DIR := "res://assets/audio/sfx/"
 ## The bus `SettingsService._ensure_audio_buses()` creates at runtime and the SFX
@@ -71,7 +72,8 @@ const CLOSE_MAX_DISTANCE_M: float = 22.0
 const CLOSE_CUES: Array[StringName] = [
 	&"footstep_mud", &"footstep_water", &"footstep_grass", &"footstep_stone",
 	&"footstep_wood", &"jump", &"swim_stroke", &"inventory_move", &"item_pickup",
-	&"leaf_rustle", &"insect_chirp", &"water_lap",
+	&"leaf_rustle", &"insect_chirp", &"water_lap", &"creature_step",
+	&"creature_step_heavy",
 ]
 
 ## Footstep driving.
@@ -620,8 +622,18 @@ func _on_carriers_changed(carrier_ids: PackedInt32Array, node: Node) -> void:
 		_world_position_of(node))
 
 
+## A gate is not a door — twice the mass and a bar rather than a latch — and a
+## player should be able to tell which one a teammate just opened from across a
+## camp. `BuildableDoor` carries no def reference, so the piece's own node name
+## is the discriminator; `BuildService` names pieces after their def.
 func _on_door_toggled(open: bool, _by_peer_id: int, node: Node) -> void:
-	play_at(&"door_open" if open else &"door_close", _world_position_of(node))
+	var is_gate: bool = node.name.to_lower().contains("gate")
+	var cue: StringName
+	if is_gate:
+		cue = &"gate_open" if open else &"gate_close"
+	else:
+		cue = &"door_open" if open else &"door_close"
+	play_at(cue, _world_position_of(node))
 
 
 func _on_enemy_spawned(enemy: Node3D) -> void:
@@ -877,6 +889,8 @@ func _on_button_pressed(button: BaseButton) -> void:
 func _on_run_restarted() -> void:
 	_suppress_destroy_until = _clock + 1.5
 	_enemy_states.clear()
+	_enemy_positions.clear()
+	_enemy_step_accum.clear()
 	_last_hp = -1
 	_stamina_was_empty = false
 	_have_last_pos = false
@@ -1011,6 +1025,9 @@ const MIRE_LEVEL_M: float = 2.6
 # tied to spawn points, because MIRE's worlds are generated and there is nothing
 # authored to tie them to.
 
+## The default pools, used wherever the biome is unknown and as the base every
+## biome adds to. Duplicated entries are weights: `bird_call` twice is twice as
+## likely as `marsh_gas`, which is a weighting scheme that needs no extra code.
 const AMBIENT_DAY_CUES: Array[StringName] = [
 	&"bird_call", &"bird_call", &"insect_chirp", &"leaf_rustle",
 	&"branch_creak", &"wind_gust", &"water_lap", &"marsh_gas",
@@ -1019,6 +1036,45 @@ const AMBIENT_NIGHT_CUES: Array[StringName] = [
 	&"night_bird", &"frog_croak", &"frog_croak", &"insect_chirp",
 	&"marsh_gas", &"distant_call", &"branch_creak", &"wind_gust", &"water_lap",
 ]
+
+## Per-biome pools — task 7.1's "ambience per biome", at the resolution that
+## actually matters. Seven places should not sound alike, and the cheapest way to
+## make them differ is not a different bed but a different *cast*: gulls and
+## lapping water on the shore, frogs and gas in the marsh, a woodpecker in deep
+## forest, crows and thin wind on the heath, scree on the highland.
+##
+## Keyed on biome id, which `BiomeMap.biome_at()` returns for any world position,
+## so this works on a generated island with nothing authored.
+const BIOME_DAY_CUES: Dictionary[StringName, Array] = {
+	&"shore": [&"gull_call", &"gull_call", &"water_lap", &"water_lap", &"wind_gust",
+		&"dry_grass"],
+	&"marsh": [&"frog_croak", &"marsh_gas", &"marsh_gas", &"reed_rustle",
+		&"reed_rustle", &"insect_chirp", &"water_lap", &"bird_call"],
+	&"forest": [&"bird_call", &"bird_call", &"woodpecker", &"leaf_rustle",
+		&"leaf_rustle", &"branch_creak", &"insect_chirp"],
+	&"birchwood": [&"bird_call", &"woodpecker", &"woodpecker", &"leaf_rustle",
+		&"branch_creak", &"wind_gust"],
+	&"grassland": [&"dry_grass", &"dry_grass", &"insect_chirp", &"insect_chirp",
+		&"bird_call", &"wind_gust"],
+	&"heath": [&"crow_call", &"dry_grass", &"dry_grass", &"wind_high",
+		&"insect_chirp", &"stone_settle"],
+	&"highland": [&"wind_high", &"wind_high", &"crow_call", &"stone_settle",
+		&"stone_settle", &"distant_call"],
+}
+const BIOME_NIGHT_CUES: Dictionary[StringName, Array] = {
+	&"shore": [&"water_lap", &"water_lap", &"wind_gust", &"night_bird", &"distant_call"],
+	&"marsh": [&"frog_croak", &"frog_croak", &"frog_croak", &"marsh_gas", &"marsh_gas",
+		&"reed_rustle", &"insect_chirp", &"distant_call"],
+	&"forest": [&"night_bird", &"night_bird", &"branch_creak", &"leaf_rustle",
+		&"insect_chirp", &"distant_call"],
+	&"birchwood": [&"night_bird", &"branch_creak", &"leaf_rustle", &"wind_gust",
+		&"distant_call"],
+	&"grassland": [&"insect_chirp", &"insect_chirp", &"dry_grass", &"night_bird",
+		&"wind_gust"],
+	&"heath": [&"wind_high", &"dry_grass", &"distant_call", &"crow_call", &"night_bird"],
+	&"highland": [&"wind_high", &"wind_high", &"stone_settle", &"distant_call",
+		&"distant_call"],
+}
 ## Gaps, in seconds. Long enough that the world is mostly quiet — an ambient
 ## event every two seconds reads as a soundboard, not as a place.
 const AMBIENT_GAP_MIN_S: float = 5.0
@@ -1047,12 +1103,54 @@ func _tick_ambient() -> void:
 	var body: Node3D = _player_body(multiplayer.get_unique_id())
 	if body == null or not body.is_inside_tree():
 		return
-	var pool: Array[StringName] = AMBIENT_NIGHT_CUES if _clock_is_night() else AMBIENT_DAY_CUES
+	var pool: Array = _ambient_pool(body.global_position)
 	var cue: StringName = pool[randi() % pool.size()]
 	var angle: float = randf() * TAU
 	var distance: float = randf_range(AMBIENT_NEAR_M, AMBIENT_FAR_M)
 	var offset := Vector3(cos(angle) * distance, randf_range(-1.0, 4.0), sin(angle) * distance)
 	play_at(cue, body.global_position + offset)
+
+
+## Which cast of sounds this place has, by biome and time of day.
+##
+## The biome is resolved at most every `BIOME_REFRESH_S` rather than per event:
+## `BiomeMap.biome_at()` samples noise, and the answer cannot change meaningfully
+## in the time it takes to walk a few metres. Falls back to the generic pools
+## whenever the generator is not reachable — a harness, the front end, or a level
+## that was authored rather than generated — because being wrong about the biome
+## is worse than being generic about it.
+const BIOME_REFRESH_S: float = 4.0
+
+var _biome: StringName = &""
+var _biome_checked_at: float = -999.0
+
+
+func _ambient_pool(position: Vector3) -> Array:
+	var night: bool = _clock_is_night()
+	var biome: StringName = _biome_at(position)
+	var table: Dictionary = BIOME_NIGHT_CUES if night else BIOME_DAY_CUES
+	if biome != &"" and table.has(biome):
+		return table[biome]
+	return AMBIENT_NIGHT_CUES if night else AMBIENT_DAY_CUES
+
+
+func _biome_at(position: Vector3) -> StringName:
+	if _clock - _biome_checked_at < BIOME_REFRESH_S:
+		return _biome
+	_biome_checked_at = _clock
+	_biome = &""
+	var state: Node = get_node_or_null(^"/root/GameState")
+	var registry: Node = get_node_or_null(^"/root/Registry")
+	if state == null or registry == null:
+		return _biome
+	var seed_value: Variant = state.get(&"run_seed")
+	var biomes: Variant = registry.get(&"biomes")
+	if typeof(seed_value) != TYPE_INT or not (biomes is Dictionary) \
+			or (biomes as Dictionary).is_empty():
+		return _biome
+	var defs: Array = (biomes as Dictionary).values()
+	_biome = BIOME_MAP.biome_at(position.x, position.z, int(seed_value), defs)
+	return _biome
 
 
 ## Re-derived from `time_of_day` every call rather than taken off DayNight's
@@ -1080,8 +1178,8 @@ func _clock_float(property: StringName, fallback: float) -> float:
 # ── Station loops ────────────────────────────────────────────────────────────
 
 
-## A lit furnace is the only continuous sound source in the game, and it is
-## attached to the station node itself rather than played as a one-shot — a
+## The two continuous sound sources in the world. Attached to the node itself
+## rather than played as one-shots — a
 ## crackle that restarts every few seconds is unmistakably a loop, and a player
 ## standing at a workbench for a minute will hear it restart twenty times.
 ##
@@ -1091,6 +1189,7 @@ func _clock_float(property: StringName, fallback: float) -> float:
 ## hooks, and until then a furnace in a camp is a working furnace.
 const STATION_LOOP_CUES: Dictionary[String, StringName] = {
 	"furnace": &"furnace_loop",
+	"wellspring": &"wellspring_loop",
 }
 const STATION_LOOP_DISTANCE_M: float = 16.0
 
@@ -1125,10 +1224,11 @@ func _try_attach_station_loop(node: Node) -> void:
 		spatial.add_child(player)
 		player.play()
 		_station_loops[spatial.get_instance_id()] = player
-		# The station has no lit/unlit state yet, so the moment it enters the
-		# world IS its ignition. When it grows one, this moves to that signal.
-		play_at(&"furnace_light", spatial.global_position if spatial.is_inside_tree()
-			else Vector3.ZERO)
+		# A furnace has no lit/unlit state yet, so the moment it enters the world
+		# IS its ignition. A wellspring simply runs and needs no such moment.
+		if key == "furnace":
+			play_at(&"furnace_light", spatial.global_position if spatial.is_inside_tree()
+				else Vector3.ZERO)
 		return
 
 
@@ -1167,7 +1267,21 @@ const ENEMY_IDLE_CUES: Dictionary[StringName, StringName] = {
 }
 const DEFAULT_IDLE_VOCAL: StringName = &"creature_chitter"
 
+## Creature footsteps, driven exactly like the player's: distance travelled, not
+## a timer, so something closing on you sounds like it is closing on you. This is
+## arguably the most useful sound in a co-op survival game — hearing a thing
+## arrive before seeing it is what makes a swamp dangerous rather than dark.
+const CREATURE_STRIDE_M: float = 1.5
+const CREATURE_STEP_RANGE_M: float = 26.0
+## A single poll can never advance more than this. A spawn, a teleport or a
+## replication snap would otherwise dump a dozen steps in one frame.
+const CREATURE_STEP_MAX_JUMP_M: float = 3.0
+## Species with real mass get the heavy pad instead of the skitter.
+const HEAVY_STEP_SPECIES: Array[StringName] = [&"tusker", &"broodcaller"]
+
 var _enemy_states: Dictionary[int, int] = {}
+var _enemy_positions: Dictionary[int, Vector3] = {}
+var _enemy_step_accum: Dictionary[int, float] = {}
 var _next_enemy_poll: float = 0.0
 var _next_enemy_vocal: float = 6.0
 
@@ -1195,6 +1309,7 @@ func _tick_enemies() -> void:
 		var state: int = int(raw)
 		if state == ENEMY_STATE_IDLE:
 			idle_candidates.append(spatial)
+		_drive_creature_step(spatial, id, state)
 		var previous: int = int(_enemy_states.get(id, -1))
 		_enemy_states[id] = state
 		if previous < 0 or previous == state:
@@ -1210,8 +1325,41 @@ func _tick_enemies() -> void:
 	for id: int in _enemy_states.keys():
 		if not seen.has(id):
 			_enemy_states.erase(id)
+			_enemy_positions.erase(id)
+			_enemy_step_accum.erase(id)
 
 	_tick_enemy_vocal(idle_candidates)
+
+
+func _drive_creature_step(enemy: Node3D, id: int, state: int) -> void:
+	var pos: Vector3 = enemy.global_position
+	if not _enemy_positions.has(id):
+		_enemy_positions[id] = pos
+		return
+	var moved: Vector3 = pos - _enemy_positions[id]
+	_enemy_positions[id] = pos
+	if state >= ENEMY_STATE_TELL:
+		# Winding up, striking or dead: not walking. Reset so the first step
+		# after it starts moving again is a full stride away.
+		_enemy_step_accum[id] = 0.0
+		return
+	var flat: float = Vector2(moved.x, moved.z).length()
+	if flat > CREATURE_STEP_MAX_JUMP_M:
+		return
+	var accum: float = float(_enemy_step_accum.get(id, 0.0)) + flat
+	if accum < CREATURE_STRIDE_M:
+		_enemy_step_accum[id] = accum
+		return
+	_enemy_step_accum[id] = 0.0
+	# Out of earshot is silence, not a quiet sound: a dozen creatures stepping
+	# across an island is a wash of noise that hides the one that matters.
+	var body: Node3D = _player_body(multiplayer.get_unique_id())
+	if body == null or not body.is_inside_tree():
+		return
+	if pos.distance_to(body.global_position) > CREATURE_STEP_RANGE_M:
+		return
+	var heavy: bool = HEAVY_STEP_SPECIES.has(_def_id(enemy))
+	play_at(&"creature_step_heavy" if heavy else &"creature_step", pos)
 
 
 func _tick_enemy_vocal(idle: Array[Node3D]) -> void:

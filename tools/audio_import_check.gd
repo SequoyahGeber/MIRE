@@ -98,12 +98,14 @@ func _run() -> void:
 		if wav != null:
 			check(not wav.stereo, "%s is mono" % name)
 			var length: float = wav.get_length()
-			# 6 s, not 3.5: `tree_fall` runs from the first fibre giving way to
+			# 8 s, not 3.5: `tree_fall` runs from the first fibre giving way to
 			# the ground impact, `extraction_arrive`/`_launch` are whole hull
-			# manoeuvres, and `furnace_loop` is a 4 s seamless bed. Truncating any
-			# of them to satisfy a rule would remove the part they exist for.
-			check(length > 0.02 and length < 6.0,
-				"%s length %.2fs in (0.02, 6.0)" % [name, length])
+			# manoeuvres, and the two seamless beds (`furnace_loop` 4 s,
+			# `wellspring_loop` 6 s) are as long as they need to be to not repeat
+			# audibly. Truncating any of them to satisfy a rule would remove the
+			# part they exist for.
+			check(length > 0.02 and length <= 8.0,
+				"%s length %.2fs in (0.02, 8.0]" % [name, length])
 
 	print("\nAUDIO_IMPORT_CHECK failures=%d" % failures)
 	quit(0 if failures == 0 else 1)

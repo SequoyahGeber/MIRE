@@ -18,7 +18,7 @@ listening pass wastes the only scarce resource here.
 
 Rules:
   all files : no clipped samples, |DC offset| < 0.002, peak <= -0.9 dBFS
-  sfx       : mono, 0.03 s <= duration <= 6 s, peak short-term loudness in
+  sfx       : mono, 0.03 s <= duration <= 8 s, peak short-term loudness in
               [-40, -11] dBFS, and no two files more than 30 dB apart in it
   music wav : stereo, 3:30 <= duration <= 4:00, -26 <= RMS <= -14 dBFS,
               loop seam continuity (|first - last| within the track's own
@@ -94,7 +94,7 @@ def check_sfx(path: str) -> float:
     # 6 s, not 3: a tree coming down genuinely takes four seconds from the first
     # fibre giving way to the ground impact, and truncating it to fit a rule
     # would remove the landing, which is the half the sound exists for.
-    check(0.03 <= dur <= 6.0, f"{name}: duration {dur:.2f}s in [0.03, 6.0]")
+    check(0.03 <= dur <= 8.0, f"{name}: duration {dur:.2f}s in [0.03, 8.0]")
     loud = short_term_loudness_db(sig)
     # Floor at -40 rather than -36: a UI hover tick is 55 ms long, and a sound
     # shorter than the measurement window legitimately reads a few dB under a

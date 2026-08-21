@@ -54,6 +54,8 @@ const CUES: Dictionary[StringName, Array] = {
 	&"broodcaller_call": [1, &"creature"],
 	&"enemy_spawn": [2, &"creature"],
 	&"boss_roar": [1, &"creature"],
+	&"creature_step": [4, &"creature"],
+	&"creature_step_heavy": [3, &"creature"],
 	&"player_hurt": [3, &"player"],
 	&"player_death": [1, &"player"],
 	&"player_downed": [1, &"player"],
@@ -69,6 +71,8 @@ const CUES: Dictionary[StringName, Array] = {
 	&"build_denied": [1, &"building"],
 	&"door_open": [2, &"building"],
 	&"door_close": [2, &"building"],
+	&"gate_open": [2, &"building"],
+	&"gate_close": [2, &"building"],
 	&"structure_hit": [3, &"building"],
 	&"structure_destroy": [1, &"building"],
 	&"craft_work": [3, &"crafting"],
@@ -118,6 +122,14 @@ const CUES: Dictionary[StringName, Array] = {
 	&"leaf_rustle": [3, &"ambient"],
 	&"branch_creak": [3, &"ambient"],
 	&"distant_call": [2, &"ambient"],
+	&"reed_rustle": [3, &"ambient"],
+	&"gull_call": [3, &"ambient"],
+	&"crow_call": [3, &"ambient"],
+	&"woodpecker": [3, &"ambient"],
+	&"dry_grass": [3, &"ambient"],
+	&"stone_settle": [3, &"ambient"],
+	&"wind_high": [3, &"ambient"],
+	&"wellspring_loop": [1, &"progression"],
 }
 
 const SYSTEMS: Array[StringName] = [

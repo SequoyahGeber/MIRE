@@ -56,6 +56,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import zlib
 
 import numpy as np
 
@@ -2029,6 +2030,248 @@ def distant_call(rng: np.random.Generator) -> np.ndarray:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# CREATURE MOVEMENT — the most useful sound in a co-op survival game
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Hearing something approach before seeing it is what makes a swamp dangerous
+# rather than merely dark. These are driven the same way the player's footsteps
+# are (distance travelled, not a timer), so a creature that is closing on you
+# sounds like it is closing on you.
+
+
+def creature_step(rng: np.random.Generator) -> np.ndarray:
+    """An arthropod moving. The giveaway is that it has more than two legs: a
+    single step is three or four tiny chitin taps a few milliseconds apart, not
+    one. That stutter is the entire difference between something insectile and
+    something upright, and it costs one loop."""
+    out = buf(0.30)
+    t = 0.0
+    for i in range(int(rng.uniform(3, 6))):
+        f0 = rng.uniform(1500.0, 3200.0)
+        put(out, mm.struck(f0, "chitin", 0.08, rng, geometry="tube_closed",
+                           hardness=0.85, modes=3, mounting=0.09),
+            t, rng.uniform(0.45, 1.0) * (1.0 - 0.12 * i))
+        put(out, mm.strike_noise(0.02, rng, "chitin", hardness=0.9, brightness=1.4),
+            t, 0.3)
+        t += rng.uniform(0.012, 0.035)
+    put(out, mm.body(rng.uniform(120.0, 165.0), 0.05, drop=0.6, curve=0.5), 0.004, 0.3)
+    # dragged through wet ground between steps
+    put(out, mm.granular(0.10, rng, count=5, fc_low=1400.0, fc_high=7000.0,
+                         grain_s=(0.001, 0.004)), 0.02, 0.16)
+    return out
+
+
+def creature_step_heavy(rng: np.random.Generator) -> np.ndarray:
+    """A tusker. One large soft pad, real mass behind it, and the suck of wet
+    ground releasing — closer to the player's own bog step than to the skitter,
+    an octave down and twice the weight."""
+    out = buf(0.5)
+    put(out, mm.body(rng.uniform(52.0, 64.0), 0.20, drop=0.42, curve=0.5,
+                     tau_ratio=0.3), 0.0, 1.0)
+    n = ma.samples(0.20)
+    squelch = ma.swept_bandpass(ma.white(n, rng), np.geomspace(1600.0, 200.0, n),
+                                octaves=1.5, block=512)
+    squelch *= 0.4 + 0.6 * np.abs(ma.slow_noise(n, 26.0, rng))
+    put(out, squelch * ma.env_asr(n, 0.006, 0.1), 0.004, 0.5)
+    put(out, mm.bubble_cloud(0.24, rng, count=7, r_min=0.0008, r_max=0.005), 0.03, 0.24)
+    return out
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# BIOME AMBIENCE — seven places that should not sound alike
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+def reed_rustle(rng: np.random.Generator) -> np.ndarray:
+    """Marsh reeds. Longer and drier than forest leaves, and *tonal* — a hollow
+    stem is a stopped tube, so a stand of them hisses at a pitch. That faint
+    pitch is what separates marsh from forest with the eyes closed."""
+    out = buf(1.6)
+    dur = rng.uniform(0.7, 1.2)
+    n = ma.samples(dur)
+    put(out, mm.granular(dur, rng, count=int(rng.uniform(80, 140)), fc_low=2600.0,
+                         fc_high=13000.0, grain_s=(0.0005, 0.0022),
+                         density_curve=1.0, decay=0.0)
+        * (np.sin(np.pi * np.linspace(0, 1, n)) ** 1.2), 0.0, 0.85)
+    for _ in range(3):
+        put(out, mm.struck(rng.uniform(320.0, 620.0), "wood_dry", 0.4, rng,
+                           geometry="tube_closed", hardness=0.2, modes=3, mounting=0.18),
+            rng.uniform(0.1, dur), rng.uniform(0.06, 0.16))
+    return out
+
+
+def gull_call(rng: np.random.Generator) -> np.ndarray:
+    """A shore bird. Harsh and descending, with a rasp no songbird has — the
+    contour is a long fall with a break in the middle, which is the shape the
+    ear reads as *coast*."""
+    out = buf(1.8)
+    base = rng.uniform(900.0, 1400.0)
+    t = 0.0
+    for i in range(int(rng.uniform(2, 4))):
+        dur = rng.uniform(0.22, 0.4)
+        pts = [base * 1.25, base * 1.32, base * 0.95, base * 0.72]
+        call = _whistle(pts, dur, rng, breath=0.30, harm=0.42)
+        n = ma.samples(dur)
+        # the rasp: amplitude broken up at a rate slow enough to hear
+        call *= 0.55 + 0.45 * np.sin(2 * np.pi * rng.uniform(38.0, 58.0)
+                                     * ma.time_vector(n))
+        put(out, call * ma.env_asr(n, 0.02, 0.14), t, 0.95 - 0.18 * i)
+        t += dur + rng.uniform(0.12, 0.3)
+        base *= rng.uniform(0.94, 1.0)
+    return out
+
+
+def crow_call(rng: np.random.Generator) -> np.ndarray:
+    """Heath and highland. Not a whistle at all — a corvid uses a noisy pulsed
+    source, so this is the creature throat rather than the bird syrinx, kept
+    short and repeated two or three times."""
+    out = buf(1.8)
+    base = rng.uniform(340.0, 470.0)
+    t = 0.0
+    for i in range(int(rng.uniform(2, 4))):
+        dur = rng.uniform(0.14, 0.24)
+        n = ma.samples(dur)
+        voice = _throat(base, dur, rng, growl=0.9, vowel="ah", rasp=0.85)
+        fall = np.interp(np.linspace(0, 1, n), [0.0, 0.25, 1.0], [1.1, 1.0, 0.82])
+        voice = np.interp(np.cumsum(fall) * (n - 1) / np.sum(fall), np.arange(n), voice)
+        put(out, voice * ma.env_asr(n, 0.008, 0.09), t, 0.95 - 0.15 * i)
+        t += dur + rng.uniform(0.16, 0.34)
+    return out
+
+
+def woodpecker(rng: np.random.Generator) -> np.ndarray:
+    """Deep forest and birchwood. A drum roll on a dead trunk: a fast, EVEN
+    train of hard wood taps that slows very slightly as it ends. Nothing else in
+    a forest is periodic, which is why one bird makes a whole biome."""
+    out = buf(1.6)
+    f0 = rng.uniform(240.0, 400.0)
+    rate = rng.uniform(17.0, 24.0)
+    t = 0.0
+    count = int(rng.uniform(8, 16))
+    for i in range(count):
+        put(out, mm.struck(f0 * rng.uniform(0.97, 1.03), "wood_dry", 0.12, rng,
+                           geometry="bar_free", hardness=0.95, position=0.3,
+                           modes=4, mounting=0.10), t,
+            (1.0 - 0.5 * (i / float(count)) ** 2))
+        put(out, mm.strike_noise(0.02, rng, "wood_dry", hardness=0.95, brightness=1.5),
+            t, 0.3)
+        t += (1.0 / rate) * (1.0 + 0.35 * (i / float(count)))
+    return out
+
+
+def dry_grass(rng: np.random.Generator) -> np.ndarray:
+    """Grassland and heath in wind. Finer and higher than leaves, with no
+    stems knocking — the sound of a lot of very small things all moving at
+    once, which is why the grain count is triple everything else here."""
+    out = buf(2.6)
+    dur = rng.uniform(1.2, 2.0)
+    n = ma.samples(dur)
+    put(out, mm.granular(dur, rng, count=int(rng.uniform(220, 340)), fc_low=3200.0,
+                         fc_high=15000.0, grain_s=(0.0004, 0.0016),
+                         density_curve=1.0, decay=0.0)
+        * np.interp(np.linspace(0, 1, n), [0, 0.3, 0.65, 1.0], [0.15, 1.0, 0.8, 0.1]),
+        0.0, 0.9)
+    return out
+
+
+def stone_settle(rng: np.random.Generator) -> np.ndarray:
+    """Highland. Scree shifting somewhere out of sight — a few loose granite
+    pieces finding a new rest. Sparse and unhurried, and the only ambient cue in
+    the set with a real transient, which is what makes high ground feel exposed."""
+    out = buf(2.0)
+    for _ in range(int(rng.uniform(3, 7))):
+        at = rng.uniform(0.0, 1.2)
+        put(out, mm.struck(rng.uniform(700.0, 2400.0), "granite", 0.2, rng,
+                           geometry="irregular", hardness=0.8, modes=4, mounting=0.04),
+            at, rng.uniform(0.3, 1.0))
+        put(out, mm.granular(0.2, rng, count=5, fc_low=1500.0, fc_high=8000.0,
+                             grain_s=(0.001, 0.005)), at + 0.01, rng.uniform(0.1, 0.3))
+    return out
+
+
+def wind_high(rng: np.random.Generator) -> np.ndarray:
+    """Wind with nothing to break it. Thinner and higher than the lowland gust —
+    no canopy, so no low rumble and no leaf noise, just a narrow band that rises
+    and thins further as it strengthens."""
+    out = buf(4.0)
+    n = ma.samples(3.4)
+    env = np.interp(np.linspace(0, 1, n), [0.0, 0.4, 0.62, 1.0], [0.0, 1.0, 0.8, 0.0]) ** 1.2
+    centers = 620.0 * (1.0 + 2.4 * env)
+    gust = ma.swept_bandpass(ma.pink(n, rng), centers, octaves=1.2, block=2048)
+    put(out, gust * env, 0.0, 1.0)
+    # a faint tone: wind across an edge sheds a vortex, and high ground has edges
+    put(out, ma.sine_glide(rng.uniform(700.0, 1100.0), rng.uniform(1300.0, 1800.0), 3.4)
+        * (env ** 2.5), 0.0, 0.08)
+    return out
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# LANDMARKS
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+def gate_open(rng: np.random.Generator) -> np.ndarray:
+    """A gate, not a door. Twice the mass, a heavier bar to lift, and a much
+    lower panel — so the player can tell which one a teammate just opened from
+    across a camp."""
+    out = buf(2.0)
+    put(out, mm.struck(rng.uniform(900.0, 1200.0), "iron", 0.4, rng, geometry="bar_free",
+                       hardness=0.95, modes=4, mounting=0.05), 0.0, 0.6)
+    put(out, mm.body(120.0, 0.14, drop=0.45, curve=0.45), 0.002, 0.6)
+    hinge = ma.burst_train(0.9, 30.0, 9.0, rng, jitter=0.5)
+    hinge = ma.swept_bandpass(hinge, np.geomspace(560.0, 210.0, hinge.shape[0]),
+                              octaves=1.0, block=1024)
+    put(out, hinge * np.interp(np.linspace(0, 1, hinge.shape[0]), [0, 0.3, 1],
+                               [0.5, 1.0, 0.35]), 0.12, 0.6)
+    put(out, mm.struck(rng.uniform(72.0, 98.0), "wood_dry", 0.6, rng, geometry="bar_free",
+                       hardness=0.4, modes=6, mounting=0.11), 1.05, 0.6)
+    put(out, mm.body(66.0, 0.3, drop=0.4, curve=0.5), 1.05, 0.55)
+    return out
+
+
+def gate_close(rng: np.random.Generator) -> np.ndarray:
+    """The same gate shutting: hinge, a heavy seat, then the bar dropping into
+    its brackets — iron LAST, which is what makes it read as secured rather
+    than as struck."""
+    out = buf(1.8)
+    hinge = ma.burst_train(0.5, 12.0, 34.0, rng, jitter=0.5)
+    hinge = ma.swept_bandpass(hinge, np.geomspace(240.0, 640.0, hinge.shape[0]),
+                              octaves=1.0, block=1024)
+    put(out, hinge * np.linspace(0.35, 1.0, hinge.shape[0]), 0.0, 0.5)
+    put(out, mm.body(62.0, 0.34, drop=0.36, curve=0.45, tau_ratio=0.3), 0.52, 1.0)
+    put(out, mm.struck(rng.uniform(70.0, 95.0), "wood_dry", 0.6, rng, geometry="bar_free",
+                       hardness=0.7, position=0.42, modes=6, mounting=0.12), 0.522, 0.8)
+    put(out, mm.struck(rng.uniform(820.0, 1100.0), "iron", 0.5, rng, geometry="bar_free",
+                       hardness=0.97, modes=4, mounting=0.04), 0.72, 0.55)
+    put(out, mm.body(150.0, 0.1, drop=0.45, curve=0.4), 0.72, 0.4)
+    return out
+
+
+def wellspring_loop(rng: np.random.Generator) -> np.ndarray:
+    """A cleansed wellspring, as a seamless loop for standing near one. Water
+    running over stone under a held crystal fifth in D — the only sustained
+    tonal sound in the world, so a player can navigate to it by ear. Rendered
+    circularly like the furnace, so it never seams."""
+    loop_s = 6.0
+    n_loop = ma.samples(loop_s)
+    total = loop_s + 2.0
+    n = ma.samples(total)
+    raw = np.zeros(n)
+    # running water: dense small bubbles over a filtered rush
+    raw += 0.55 * mm.bubble_cloud(total, rng, count=460, r_min=0.0004, r_max=0.0035,
+                                  density_curve=1.0)
+    rush = ma.fft_filter(ma.white(n, rng), fc_low=900.0, fc_high=6500.0, order=2)
+    raw += 0.30 * rush * (0.6 + 0.4 * ma.slow_noise(n, 3.0, rng))
+    for note, gain in (("D3", 0.16), ("A3", 0.10), ("D4", 0.06)):
+        tone = ma.additive_pad(ma.note_hz(note), total, rng, detune_cents=3.0,
+                               shimmer=0.3, darkness=0.25)
+        raw += gain * tone * (1.0 + 0.25 * ma.slow_noise(n, 0.2, rng))
+    out = raw[:n_loop].copy()
+    out[: n - n_loop] += raw[n_loop:]      # circular fold
+    return out
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # THE CATALOGUE
 # ═══════════════════════════════════════════════════════════════════════════
 #
@@ -2114,6 +2357,8 @@ CATALOGUE: dict[str, tuple] = {
     "broodcaller_call":       (broodcaller_call, 1, 0.16, -15, "creature"),
     "enemy_spawn":            (enemy_spawn, 2, 0.12, -18, "creature"),
     "boss_roar":              (boss_roar, 1, 0.18, -13, "creature"),
+    "creature_step":          (creature_step, 4, 0.06, -26, "creature"),
+    "creature_step_heavy":    (creature_step_heavy, 3, 0.07, -22, "creature"),
 
     # ── the player ──────────────────────────────────────────────────────────
     "player_hurt":            (player_hurt, 3, 0.05, -19, "player"),
@@ -2133,6 +2378,8 @@ CATALOGUE: dict[str, tuple] = {
     "build_denied":           (build_denied, 1, 0.03, -26, "building"),
     "door_open":              (door_open, 2, 0.09, -21, "building"),
     "door_close":             (door_close, 2, 0.09, -20, "building"),
+    "gate_open":              (gate_open, 2, 0.1, -20, "building"),
+    "gate_close":             (gate_close, 2, 0.1, -19, "building"),
     "structure_hit":          (structure_hit, 3, 0.11, -17, "building"),
     "structure_destroy":      (structure_destroy, 1, 0.14, -15, "building"),
 
@@ -2192,6 +2439,14 @@ CATALOGUE: dict[str, tuple] = {
     "leaf_rustle":            (leaf_rustle, 3, 0.06, -27, "ambient"),
     "branch_creak":           (branch_creak, 3, 0.12, -28, "ambient"),
     "distant_call":           (distant_call, 2, 0.20, -24, "ambient"),
+    "reed_rustle":            (reed_rustle, 3, 0.06, -27, "ambient"),
+    "gull_call":              (gull_call, 3, 0.14, -25, "ambient"),
+    "crow_call":              (crow_call, 3, 0.15, -25, "ambient"),
+    "woodpecker":             (woodpecker, 3, 0.14, -26, "ambient"),
+    "dry_grass":              (dry_grass, 3, 0.05, -29, "ambient"),
+    "stone_settle":           (stone_settle, 3, 0.13, -27, "ambient"),
+    "wind_high":              (wind_high, 3, 0.06, -28, "ambient"),
+    "wellspring_loop":        (wellspring_loop, 1, 0.0, -28, "progression"),
 }
 
 SYSTEMS = ("harvest", "movement", "melee", "ranged", "creature", "player",
@@ -2199,9 +2454,22 @@ SYSTEMS = ("harvest", "movement", "melee", "ranged", "creature", "player",
 
 SEED_BASE = 940000
 
+
+def seed_for(name: str, variant: int) -> int:
+    """Deterministic per-sound seed, derived from the NAME rather than from the
+    sound's position in the catalogue.
+
+    Position-derived seeds look fine until the catalogue grows: inserting one
+    entry in the middle shifts every index after it, so every later sound
+    re-renders as a different (equally valid, but different) variant and 200
+    files churn in git for a one-line addition. `zlib.crc32` is used rather than
+    `hash()` because Python salts string hashing per process — the F-176 trap,
+    in a different disguise."""
+    return SEED_BASE + (zlib.crc32(name.encode("utf-8")) & 0x7FFFFFF) + variant
+
 ## Sounds that must loop seamlessly are rendered circularly by their own recipe
 ## and must NOT get a reverb tail bolted onto the end, which would break the loop.
-LOOPING = frozenset({"furnace_loop"})
+LOOPING = frozenset({"furnace_loop", "wellspring_loop"})
 
 
 ## True-peak ceiling. Every sound is normalised by loudness first; this only
@@ -2381,9 +2649,8 @@ def main() -> None:
     written = 0
     for idx, name in enumerate(wanted):
         fn, variants, wet, level_db, system = CATALOGUE[name]
-        catalogue_index = list(CATALOGUE).index(name)
         for v in range(variants):
-            rng = np.random.default_rng(SEED_BASE + catalogue_index * 97 + v)
+            rng = np.random.default_rng(seed_for(name, v))
             sig = render_one(name, rng, ir)
             fname = f"{name}_{v + 1:02d}.wav" if variants > 1 else f"{name}.wav"
             ma.write_wav(os.path.join(args.sfx_dir, fname), sig, dither)
