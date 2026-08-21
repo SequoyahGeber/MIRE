@@ -8039,3 +8039,15 @@ River banks 60.6 -> 35.0 deg against a 9.2 deg inland control; terrain_normal_ch
 Files: `world/gen/island_heightmap.gd`, `tools/terrain_normal_check.gd`
 
 Commit at time of writing: `a23472b`
+
+---
+
+### DONE · F-390 · kilnd3a089 · 2026-08-21T03:51:37+00:00
+
+**Running into a tree bounces the player and stops them well short of the trunk — prop colliders are cylinders sized to the whole canopy**
+
+Tree colliders now fit the trunk cross-section: willows 1.29 -> 0.59 m. Shipwreck split into its own finding.
+
+Files: `world/gen/resource_scatter_field.gd`
+
+Commit at time of writing: `9446c23`

@@ -2466,37 +2466,6 @@ All client-local presentation, no authority. Each bullet is independently shippa
 
 ---
 
-### F-390 · Running into a tree bounces the player and stops them well short of the trunk — prop colliders are cylinders sized to the whole canopy
-
-**Area:** physics · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "running into a tree still makes the play bounce up and
-down and the collision box doesnt let you get close to the tree", and the same symptom at the
-shipwreck: "going near the shipwreck causes the same weird collision issue with the player causing
-bouncing".
-
-Two properties of the same collider path.
-
-**Radius.** `world/gen/authored_world.gd:_add_shapes` (:919) builds each prop shape from the layout
-data — a `BoxShape3D` when `t == "box"`, otherwise a `CylinderShape3D` with `r`/`h` straight out of
-the record. Whatever produced those records sized them to the prop's full bounds, so a tree's cylinder
-is canopy-width, not trunk-width. That directly violates the standing rule for this project: **a
-tree's collider is its trunk; leaves and canopy never collide.** The shipwreck is the same story with
-a box that bounds the whole hull rather than its walls.
-
-**Bounce.** Vertical oscillation on contact is a `CharacterBody3D`-versus-static-body interaction, not
-a shape problem: it is what happens when the floor probe and the wall shape disagree about whether a
-surface is walkable, so the controller alternately snaps to it and falls off it, once per physics
-tick. A too-wide cylinder makes this far more likely because its curved side reads as a steep slope
-at the point of contact. Worth checking the player's `floor_max_angle`, `floor_snap_length` and
-whether `safe_margin` is at the default alongside the collider fix.
-
-Fix: size tree colliders to the trunk (a thin cylinder at the base, the canopy uncollidable), give the
-shipwreck real wall shapes instead of one bounding box, then re-test the bounce — if it survives a
-correct collider, it is a controller bug and deserves its own finding.
-
----
-
 ### F-391 · Harvesting a node produces no destruction feedback — the debris particles either never fire or read as noise
 
 **Area:** vfx · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
@@ -2553,7 +2522,128 @@ client-side filter.
 
 ---
 
+### F-393 · The extraction ship's collider is authored in its own scene and never went through F-390's trunk-band fit, so the shipwreck still bounces the player
+
+**Area:** physics · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Split out of F-390, which fixed the scattered-prop collider path and does not touch this one.
+
+Sequoyah reported two surfaces with the same symptom: "running into a tree still makes the play
+bounce up and down and the collision box doesnt let you get close to the tree", and "going near the
+shipwreck causes the same weird collision issue with the player causing bouncing". They look like one
+bug and they are not — the two props get their colliders from entirely different code.
+
+The tree is `world/gen/resource_scatter_field.gd`'s `_collider_for()`, now measured as a trunk-band
+cross-section (F-390).
+
+The ship is not. `content/poi/shipwreck.tres` has `scene_path = ""` — the procedural POI places a
+marker and no geometry at all — so the hull the player actually walked into is the **extraction
+ship** (`systems/extraction/extraction_ship.gd`), which `world_contract_check` reports as `ships=1`
+on the shipped map and which carries whatever collision its own scene was authored with. Nothing in
+that path fits a shape to the mesh.
+
+Two things to settle, and they are separable:
+
+1. **The shape.** A hull needs wall shapes you can board and walk inside, not one bounding box. If it
+   is currently a box, that alone explains being held well off it.
+2. **The bounce.** Vertical oscillation on contact is a `CharacterBody3D`-versus-static-body
+   interaction, not a shape problem — it is what happens when the floor probe and the wall shape
+   disagree about whether a surface is walkable, so the controller alternately snaps to it and falls
+   off, once per physics tick. Worth checking `floor_max_angle`, `floor_snap_length` and `safe_margin`
+   on the player controller. If the bounce survives a correct collider on BOTH props, it is a
+   controller bug and belongs to the controller, not to either prop.
+
+The second point is why this is filed rather than folded into F-390: narrowing the tree collider
+removes the most likely trigger, but nobody has yet proved the bounce is gone, and "the shape was
+wrong" and "the controller oscillates on contact" are different defects that happen to share a
+symptom.
+
+---
+
 ## Resolved
+
+### F-390 · Running into a tree bounces the player and stops them well short of the trunk — prop colliders are cylinders sized to the whole canopy — **fixed**
+
+**Area:** physics · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "running into a tree still makes the play bounce up and
+down and the collision box doesnt let you get close to the tree", and the same symptom at the
+shipwreck: "going near the shipwreck causes the same weird collision issue with the player causing
+bouncing".
+
+Two properties of the same collider path.
+
+**Radius.** `world/gen/authored_world.gd:_add_shapes` (:919) builds each prop shape from the layout
+data — a `BoxShape3D` when `t == "box"`, otherwise a `CylinderShape3D` with `r`/`h` straight out of
+the record. Whatever produced those records sized them to the prop's full bounds, so a tree's cylinder
+is canopy-width, not trunk-width. That directly violates the standing rule for this project: **a
+tree's collider is its trunk; leaves and canopy never collide.** The shipwreck is the same story with
+a box that bounds the whole hull rather than its walls.
+
+**Bounce.** Vertical oscillation on contact is a `CharacterBody3D`-versus-static-body interaction, not
+a shape problem: it is what happens when the floor probe and the wall shape disagree about whether a
+surface is walkable, so the controller alternately snaps to it and falls off it, once per physics
+tick. A too-wide cylinder makes this far more likely because its curved side reads as a steep slope
+at the point of contact. Worth checking the player's `floor_max_angle`, `floor_snap_length` and
+whether `safe_margin` is at the default alongside the collider fix.
+
+Fix: size tree colliders to the trunk (a thin cylinder at the base, the canopy uncollidable), give the
+shipwreck real wall shapes instead of one bounding box, then re-test the bounce — if it survives a
+correct collider, it is a controller bug and deserves its own finding.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** The tree half is fixed and measured. `world/gen/resource_scatter_field.gd`'s `_collider_for()` now
+fits the cylinder to the prop's **horizontal cross-section through a trunk band** (0.5 m to 1.8 m),
+taking the MEDIAN across nine slices.
+
+Three approaches were tried and the first two both failed on real content, which is why the code
+carries the reasoning:
+
+1. **Widest solid geometry below head height** (what shipped). Set by the ROOT FLARE at the base, so
+   `tree_willow_a` measured 1.29 m around a trunk nearer 0.3 — the player stopped over a metre from
+   bark they were walking at, exactly as reported.
+2. **A percentile of solid VERTEX radii inside the band.** Right in principle, blind in practice:
+   these are low-poly meshes and a willow's trunk is a cylinder with a vertex ring at its base and
+   the next above head height. *Nothing lands between 0.5 m and 1.8 m*, so two of three willows
+   contributed zero samples and silently fell back to (1) — passing a check while changing nothing.
+3. **Slicing.** Interpolate every triangle edge crossing each slice height: a true silhouette,
+   independent of where vertices happen to sit. The median across slices separates a trunk from a
+   rock without knowing which it is — a tree is narrow at almost every height with a couple of slices
+   catching a branch (outliers the median drops), a boulder is wide at every height.
+
+Measured, before -> after:
+
+    tree_willow_a   1.29 -> 0.59      tree_willow_b   0.86 -> 0.39
+    tree_willow_c   1.00 -> 0.40      tree_snag_a     1.06 -> 0.58
+    boulder_h       1.34 -> 1.29      boulder_a       1.56 -> 1.41
+    rock_cluster_d  0.86 -> 0.84      stone_node      1.11 -> 0.94
+
+Trees land at 0.23-0.31 of their full width (the canopy no longer collides, which is the standing
+rule for this project); rocks stay at 0.67-0.83 and keep their real width.
+
+Also added, defensively: a prop whose surfaces are ALL positively identified as foliage, or that is
+shorter than 0.4 m, now gets **no collision body at all** rather than the old fall-through to a
+foliage-measured or full-AABB cylinder.
+
+**Correcting my own diagnosis, because the wrong version is the more alarming one and should not
+survive in the record.** I first read that fallback as meaning every blade of grass on the island
+carried an invisible collision cylinder, and the audit numbers looked like it (`grass_short_c` fitting
+r=0.89, h=0.27). It does not. `_build_asset_group()` only reaches `_build_node_holder()` for
+`harvestable and represent == NODE`; decorative scatter becomes a MultiMesh with no holder and no
+body, so `_collider_for()` was never called on grass in a live world. A live census confirms it —
+135 collision bodies across 583 holders, every one a tree, snag, boulder, rock cluster or ore node.
+The guard is still correct (it protects the day someone makes a leafy prop harvestable) but it
+changes nothing today, and claiming a perf win here would have been fiction.
+
+Verified: resource_scatter_check 0, harvestable_check 0, harvest_batch_check 0 (batched=763),
+world_contract_check PASS.
+
+**Split out, not fixed: the shipwreck.** It is a different code path entirely — the procedural
+`shipwreck` POI has `scene_path = ""` and places no geometry, so the hull involved is the extraction
+ship with its own authored collision. Filed as its own finding, along with the open question of
+whether the BOUNCE survives a correct collider (a CharacterBody3D floor-probe/wall-shape disagreement
+would be a controller bug, not a prop one).
 
 ### F-372 · The river carve reads as a random ravine cut across open grassland, because nothing dresses its banks or fills its bed — **fixed**
 

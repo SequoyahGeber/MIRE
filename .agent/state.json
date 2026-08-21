@@ -1571,11 +1571,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "world/gen/resource_scatter_field.gd": {
-      "agent": "ivycc0920",
-      "at": "2026-08-21T00:49:15+00:00",
-      "hash": "55e31373dc829826c461ff31c83d27294e3d2c6816674209c11e3539a76bd1cd",
-      "task": "F-348",
-      "token": "CLAUDE_CODE_SESSION_ID:34f19dd1-60f4-4279-b7ba-e40ce133b27f"
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T03:51:37+00:00",
+      "hash": "da9259daee9bfe826eae43ff6ba80d33ee7c42365ad6d645b7fb6e0804625b82",
+      "task": "F-390",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "world/gen/scatter_def.gd": {
       "agent": "quill5fa5c7",
@@ -1599,7 +1599,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 288,
+  "rev": 290,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -6485,9 +6485,11 @@
       "title": "The game teaches nothing \u2014 there is no tutorial, no first-run guidance and no tooltips anywhere"
     },
     "F-390": {
+      "done_at": "2026-08-21T03:51:37+00:00",
+      "done_by": "kilnd3a089",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Running into a tree bounces the player and stops them well short of the trunk \u2014 prop colliders are cylinders sized to the whole canopy"
     },
