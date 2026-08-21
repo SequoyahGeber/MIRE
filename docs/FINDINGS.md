@@ -2003,57 +2003,6 @@ After F-361 installed Xcode 27 beta 5 plus Metal Toolchain 27A5237l, a fresh mac
 
 ---
 
-### F-367 · No chest reaches the procedural island: the loot_cache POI asks for 8 sites at 70 m spacing on a 118 m island
-
-**Area:** worldgen · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "theres no chests or loot placed around the map".
-
-`content/poi/loot_cache.tres` asks for `target_count = 8` with `min_spacing_m = 70.0` and
-`clearance_m = 12.0`. `world/gen/island_heightmap.gd:29` puts `ISLAND_RADIUS` at 118.0 m, and the
-placeable band is `radius_min_fraction 0.1 .. radius_max_fraction 0.9` with `height_min 2.0`. Eight
-mutually-70 m-separated points do not exist inside that band, so `PoiMap._place_kind`'s relaxation
-ladder (D-152) is the only thing placing anything, and it places far fewer than eight.
-
-This is F-319's defect ("Every multi-site POI badly under-places on the 118 m island") observed from
-the player's side, and it is filed separately because the *consequence* is bigger than a thin POI
-count: `autoload/chest_placement_service.gd` only ever builds a `Chest` on a marker it finds in the
-`authored_world_marker` group with `kind = "loot"`. No loot marker, no chest — anywhere, for the
-whole run. Combined with the fibre finding, the run has no loot economy and no tool tier.
-
-Fix is coupled to the island-size finding: a larger `ISLAND_RADIUS` makes the spacing satisfiable as
-written. Either way, add a check that fails when a REQUIRED POI kind places fewer than
-`target_count` after the ladder, instead of shrugging.
-
----
-
-### F-368 · The island is too small to hold its own content — ISLAND_RADIUS 118 m against a spec that wants dense forest, open ground and spaced POIs
-
-**Area:** worldgen · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
-
-Reported from play (2026-08-20, Sequoyah): "the island should be 2-3x larger".
-
-`world/gen/island_heightmap.gd:29` — `const ISLAND_RADIUS: float = 118.0`. Everything downstream is
-written as a fraction of it, so the constant is the single lever: `FREQUENCY_SCALE` at :40 is
-`512.0 / ISLAND_RADIUS`, the lobes (:224-231), islets (:264-268), river overshoot (:293) and the POI
-band (`radius_*_fraction`) all scale with it.
-
-Three separate findings bottom out here: `loot_cache`'s 8 sites at 70 m spacing (F-367), F-319's
-general POI under-placement, and the wellspring's 180 m spacing that makes a second one
-geometrically impossible. And the play complaint the size causes directly — there is no room for a
-dense forest *and* open ground, so the whole island reads as one continuous field.
-
-Raising it is not a one-line change even though it is a one-line edit: `FREQUENCY_SCALE` is defined
-against a 512 m reference specifically so terrain frequency stays put when the radius moves, but the
-POI `min_spacing_m`/`target_count` pairs, the wellspring's clear radius, the Mire's four seeded
-clusters and `world/gen/resource_scatter.gd`'s per-chunk budget were all tuned against 118 m. Expect
-to retune scatter counts and to re-measure chunk streaming cost — the surface area goes up 4-9x.
-
-Fix: raise to ~250-350 m, then re-run `tools/nav_bake_check.gd`, the perf probe and a POI census at
-several seeds.
-
----
-
 ### F-369 · Play shows near-bare ground across the whole island despite scatter defs that ask for 45-50% coverage
 
 **Area:** worldgen · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
@@ -2632,6 +2581,121 @@ client-side filter.
 ---
 
 ## Resolved
+
+### F-367 · No chest reaches the procedural island: the loot_cache POI asks for 8 sites at 70 m spacing on a 118 m island — **fixed**
+
+**Area:** worldgen · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "theres no chests or loot placed around the map".
+
+`content/poi/loot_cache.tres` asks for `target_count = 8` with `min_spacing_m = 70.0` and
+`clearance_m = 12.0`. `world/gen/island_heightmap.gd:29` puts `ISLAND_RADIUS` at 118.0 m, and the
+placeable band is `radius_min_fraction 0.1 .. radius_max_fraction 0.9` with `height_min 2.0`. Eight
+mutually-70 m-separated points do not exist inside that band, so `PoiMap._place_kind`'s relaxation
+ladder (D-152) is the only thing placing anything, and it places far fewer than eight.
+
+This is F-319's defect ("Every multi-site POI badly under-places on the 118 m island") observed from
+the player's side, and it is filed separately because the *consequence* is bigger than a thin POI
+count: `autoload/chest_placement_service.gd` only ever builds a `Chest` on a marker it finds in the
+`authored_world_marker` group with `kind = "loot"`. No loot marker, no chest — anywhere, for the
+whole run. Combined with the fibre finding, the run has no loot economy and no tool tier.
+
+Fix is coupled to the island-size finding: a larger `ISLAND_RADIUS` makes the spacing satisfiable as
+written. Either way, add a check that fails when a REQUIRED POI kind places fewer than
+`target_count` after the ladder, instead of shrugging.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** Root cause was the island's size, and F-368 fixes it: `loot_cache`'s 8 sites at 70 m spacing now all
+place, at every seed tested. Verified live rather than by inference — building `ProceduralWorld` and
+walking the tree finds real `Chest` nodes:
+
+    loot_markers=8  ->  chests=8
+
+**But 8 identical free caches is "chests", not "loot"**, so this also adds the tier spread the
+economy was already written for. `ChestPlacementService` has always parsed `Chest_<tier>_<n>` and
+carried `_ECONOMY_FOR_TIER` rows for bog/strongbox/gilded/sunken; nothing ever emitted such a marker.
+Two new POI defs do:
+
+- `content/poi/treasure_strongbox.tres` — 3 sites, 110 m spacing, `Chest_strongbox_poi` (60 coins)
+- `content/poi/treasure_gilded.tres` — 2 sites, 170 m spacing, well inland (`radius_min_fraction`
+  0.35) and on flat ground, `Chest_gilded_poi` (Gilded Key, no coin option)
+
+Gilded at 2 matches `docs/ITEMS.md` §6.4's stated 1-2/island budget exactly, and it is the tier that
+makes a run's luck swing — which is the intent: a chest should sometimes be worth crossing the island
+for.
+
+Live result: **13 chests, three tiers** — 8 small (free), 3 strongbox, 2 gilded.
+`world_contract_check` PASSes and reports `chests=13` on the shipped map, against 0 before.
+
+### F-368 · The island is too small to hold its own content — ISLAND_RADIUS 118 m against a spec that wants dense forest, open ground and spaced POIs — **fixed**
+
+**Area:** worldgen · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "the island should be 2-3x larger".
+
+`world/gen/island_heightmap.gd:29` — `const ISLAND_RADIUS: float = 118.0`. Everything downstream is
+written as a fraction of it, so the constant is the single lever: `FREQUENCY_SCALE` at :40 is
+`512.0 / ISLAND_RADIUS`, the lobes (:224-231), islets (:264-268), river overshoot (:293) and the POI
+band (`radius_*_fraction`) all scale with it.
+
+Three separate findings bottom out here: `loot_cache`'s 8 sites at 70 m spacing (F-367), F-319's
+general POI under-placement, and the wellspring's 180 m spacing that makes a second one
+geometrically impossible. And the play complaint the size causes directly — there is no room for a
+dense forest *and* open ground, so the whole island reads as one continuous field.
+
+Raising it is not a one-line change even though it is a one-line edit: `FREQUENCY_SCALE` is defined
+against a 512 m reference specifically so terrain frequency stays put when the radius moves, but the
+POI `min_spacing_m`/`target_count` pairs, the wellspring's clear radius, the Mire's four seeded
+clusters and `world/gen/resource_scatter.gd`'s per-chunk budget were all tuned against 118 m. Expect
+to retune scatter counts and to re-measure chunk streaming cost — the surface area goes up 4-9x.
+
+Fix: raise to ~250-350 m, then re-run `tools/nav_bake_check.gd`, the perf probe and a POI census at
+several seeds.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** `IslandHeightmap.ISLAND_RADIUS` 118.0 -> **295.0** (2.5x — an island 590 m across). 2.5x rather than
+2x because 118 m was not merely cramped, it was too small to hold its own content: three separate
+findings bottomed out in the geometry, and all three are now satisfiable.
+
+**What moved with it for free.** `FREQUENCY_SCALE` is defined against a fixed 512 m reference
+precisely so terrain frequency stays put when the radius moves — the island got bigger, not noisier.
+The POI band, lobes, islets and river overshoot are all authored as fractions.
+
+**What did NOT, and was handled explicitly.** `world/mire/mire_grid_sim.gd` derives `CELL_SIZE_M`
+from this radius over a FIXED 256x256 grid, so a bigger island means coarser cells (0.922 m ->
+2.305 m) and, at an unchanged per-cell spread rate, a Mire advancing 2.5x faster in metres per
+second. That would have made F-350 two and a half times worse as an invisible side effect of a
+terrain change. `MireGrid.BASE_SPREAD_RATE` is now `_AUTHORED_SPREAD_RATE * (_TUNED_CELL_SIZE_M /
+SIM.CELL_SIZE_M)` — 0.06 -> 0.024, holding the front's advance constant in metres per second across
+any future radius change. Retune the authored number, never the product.
+
+Measured, three seeds (7 / 4242 / 991):
+
+    loot_cache   8 / 8 / 8   of 8   (was under-placing; this is what F-367 needed)
+    wellspring   2 / 4 / 3   of 4   (a second one was geometrically impossible at 118 m — F-319)
+    enemy_nest   5 / 5 / 5   of 5
+    shipwreck    1 / 1 / 1   ·  station_camp 1 / 1 / 1
+
+**Performance, against the standing low-end target.** Chunk streaming is player-radius driven, not
+island driven, and the numbers say so — `chunk_stream_check --windowed` over the same 500 m traverse:
+
+    HEAD (118 m):  hitches=42  worst=38.98ms  own_cost_hitches=0  own_cost_mean=0.119ms
+    now  (295 m):  hitches=43  worst=34.99ms  own_cost_hitches=0  own_cost_mean=0.141ms
+
+The 0.02 ms rise in streaming's own mean is more chunks containing actual terrain rather than empty
+ocean. The Mire grid's cell COUNT is unchanged at 65536, so F-363's tick cost is untouched.
+
+Checks: poi_check 0, world_contract_check PASS (shipped map now reports wellsprings=3, chests=13,
+spawn_points=5, 567 wired harvestables), resource_scatter_check 0, mire_grid_check 0.
+**nav_bake_check is now failures=0** — it had 4 failures at HEAD (F-285/F-292, "the island has no
+gentle chunk-boundary strip"), and the larger island supplies exactly that. Someone should confirm
+that reading before closing those two.
+
+**Left open deliberately:** `standing_stones` still places 3-4 of its 6, and the ore weights in
+`content/scatter/*_rocks.tres` are now spread over 6.25x the area and want a re-look (noted on
+F-365). Both are density calls that should be made against the new size, not guessed alongside it.
 
 ### F-349 · Blight drains a standing player to death with no signal that anything is happening — **fixed**
 

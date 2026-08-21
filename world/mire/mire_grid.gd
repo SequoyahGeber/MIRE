@@ -31,7 +31,21 @@ const TICK_INTERVAL_SEC: float = 2.0
 ## "the current Cycle's rate" — task 6.1's `CycleService` now supplies the Cycle half of that via
 ## `set_cycle_spread_multiplier()` (`_cycle_spread_multiplier` below); this constant is still the
 ## un-escalated Cycle-1 base and still wants a real playtest to tune it.
-const BASE_SPREAD_RATE: float = 0.06
+##
+## F-368: this is a per-cell, per-tick fraction, and `MireGridSim.CELL_SIZE_M` is derived from
+## `IslandHeightmap.ISLAND_RADIUS` over a FIXED 256x256 grid. So growing the island coarsens the
+## cells and, at a fixed rate, silently speeds the Mire up in METRES per second — the units a player
+## experiences it in. Raising the radius 2.5x would have made F-350 ("saturates the whole island in
+## 30 minutes") two and a half times worse as a side effect of a terrain change, which is exactly
+## the kind of coupling nobody would think to look for later.
+##
+## So the authored number is normalised against the cell size it was tuned at. `_TUNED_CELL_SIZE_M`
+## is what `CELL_SIZE_M` evaluated to at `ISLAND_RADIUS` 118 (236 m / 256 cells), and the ratio holds
+## the front's advance constant in metres per second across any future radius change. Retune
+## `_AUTHORED_SPREAD_RATE`, never the product.
+const _AUTHORED_SPREAD_RATE: float = 0.06
+const _TUNED_CELL_SIZE_M: float = 236.0 / 256.0
+const BASE_SPREAD_RATE: float = _AUTHORED_SPREAD_RATE * (_TUNED_CELL_SIZE_M / SIM.CELL_SIZE_M)
 ## DESIGN.md §4.2: a Wellspring cap "reduces global spread rate" alongside its own local clear. No
 ## fixed fraction is written down anywhere else, so each additional cap this run further multiplies
 ## the effective rate by this factor (three caps: ~0.61x).

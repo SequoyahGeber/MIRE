@@ -19,14 +19,39 @@ extends RefCounted
 
 ## Island radius in metres, measured from world origin.
 ##
-## 118 m — an island about **236 m across**, in the same class as the hand-authored Hollowmere
-## (192 m, D-045) and the size a run of one evening can actually cover. The first procedural cut
-## used 512 m to match the Mire grid's 1024 m coverage (`docs/ARCHITECTURE.md` §5), and rendering it
-## top-down showed the mistake immediately: a landmass filling the whole frame, which is a continent
-## with a shoreline, not an island in an ocean. The grid still covers more ground than the island —
-## that is harmless, it simply means most cells are open water, and it is the right way round:
-## terrain sized to the run, not to the simulation's bookkeeping.
-const ISLAND_RADIUS: float = 118.0
+## **295 m — an island about 590 m across.** Raised 2.5x from 118 m on the 2026-08-20 playtest
+## verdict, "the island should be 2-3x larger" (F-368), and the number is 2.5x rather than 2x
+## because 118 m was not merely cramped, it was too small to hold its own content:
+##
+##  · `content/poi/loot_cache.tres` asks for 8 sites at `min_spacing_m` 70. Eight mutually-70 m-
+##    separated points do not EXIST inside a 118 m disc's placeable band, so `PoiMap`'s relaxation
+##    ladder was the only thing placing any, and `autoload/chest_placement_service.gd` — which only
+##    ever builds a `Chest` on a `loot` marker — therefore had nothing to build. No chests in a
+##    shipped run at all (F-367).
+##  · The Wellspring's 180 m spacing made a second one geometrically impossible (F-319).
+##  · There was no room for a dense forest AND open ground, so the whole island read as one
+##    continuous field (F-369).
+##
+## The original 512 m cut was rejected for a good reason that still holds — rendered top-down it was
+## "a landmass filling the whole frame, which is a continent with a shoreline, not an island in an
+## ocean" — and 295 m keeps that read: the Mire grid still covers more ground than the island, so
+## most of its cells are still open water, which is the right way round.
+##
+## **What moves with this number, and what does not.** `FREQUENCY_SCALE` below is defined against a
+## fixed 512 m reference precisely so terrain frequency stays put when the radius moves — the island
+## gets bigger, not noisier. The POI band (`radius_*_fraction`), the lobes, the islets and the river
+## overshoot are all authored as fractions and scale for free.
+##
+## Two things did NOT scale for free and were handled explicitly:
+##  · `world/mire/mire_grid_sim.gd` derives `CELL_SIZE_M` from this radius over a FIXED 256x256
+##    grid, so a bigger island means coarser cells and — at an unchanged per-tick spread rate — a
+##    Mire that advances ~2.5x faster in metres per second. `MireGrid.BASE_SPREAD_RATE` is now
+##    normalised against cell size to hold the metres-per-second rate constant. See its comment.
+##  · Per-POI `target_count`/`min_spacing_m` pairs were tuned against 118 m and are now generous
+##    rather than impossible. That is the right direction, but it means the ore-node density in
+##    `content/scatter/*_rocks.tres` wants a re-look now that there is more ground to spread over
+##    (noted on F-365).
+const ISLAND_RADIUS: float = 295.0
 
 ## The SHAPE layers — continental noise, its domain warp, and the coastline jitter — are authored
 ## against a 512 m island and scaled to whatever `ISLAND_RADIUS` actually is, so a smaller island

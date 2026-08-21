@@ -282,6 +282,20 @@
       "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
+    "content/poi/treasure_gilded.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T03:32:23+00:00",
+      "hash": "9f6b22bc8aed977b741a01c96a0a9e4d4461b6f32529eb962f928fca8e37c2d6",
+      "task": "F-367",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/poi/treasure_strongbox.tres": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T03:32:23+00:00",
+      "hash": "4962ddc4ed8120e16e1b43341b1d7d8ded8a781b1eefb09bd20e4b4fce63dbaa",
+      "task": "F-367",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
     "content/poi/wellspring.tres": {
       "agent": "quill5fa5c7",
       "at": "2026-08-20T21:58:15+00:00",
@@ -1515,11 +1529,11 @@
       "token": null
     },
     "world/gen/island_heightmap.gd": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-21T00:25:01+00:00",
-      "hash": "36f602de6efa0dc56a123297c1f116ff332fd39516e018adadaadd8bb74bb70b",
-      "task": "4.18",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T03:32:23+00:00",
+      "hash": "96cb9fa0e1d86d14784067580ea2422d0495e1fef6def4005de4a9ca6d2d5e40",
+      "task": "F-368",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "world/gen/poi_def.gd": {
       "agent": "lm",
@@ -1564,11 +1578,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "world/mire/mire_grid.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T05:24:46+00:00",
-      "hash": "e2ac304cd3ce687ea58b483f33768453ebfe3ceea3e63e9fc9695f6807485b3e",
-      "task": "F-258",
-      "token": null
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T03:32:23+00:00",
+      "hash": "dfce584caf5efb3a0274ae2e18e38c97203f1a34fa07fcecb13f04bdd64a3b98",
+      "task": "F-368",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "world/mire/mire_grid_sim.gd": {
       "agent": "ivy1bcae0",
@@ -1578,7 +1592,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 281,
+  "rev": 285,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -6289,16 +6303,20 @@
       "title": "fibre_bundle has no harvestable source, so both starter tools are uncraftable and the procedural run has no way out of bare hands"
     },
     "F-367": {
+      "done_at": "2026-08-21T03:32:23+00:00",
+      "done_by": "kilnd3a089",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "No chest reaches the procedural island: the loot_cache POI asks for 8 sites at 70 m spacing on a 118 m island"
     },
     "F-368": {
+      "done_at": "2026-08-21T03:32:23+00:00",
+      "done_by": "kilnd3a089",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "The island is too small to hold its own content \u2014 ISLAND_RADIUS 118 m against a spec that wants dense forest, open ground and spaced POIs"
     },

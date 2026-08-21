@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="PoiDef" format=3]
+
+[ext_resource type="Script" path="res://world/gen/poi_def.gd" id="1_strongbox"]
+
+[resource]
+script = ExtResource("1_strongbox")
+id = &"treasure_strongbox"
+display_name = "Strongbox"
+scene_path = ""
+marker_kind = &"loot"
+marker_name = "Chest_strongbox_poi"
+placement_priority = 66
+target_count = 3
+clearance_m = 14.0
+min_spacing_m = 110.0
+biomes = Array[StringName]([])
+height_min = 2.5
+height_max = 60.0
+radius_min_fraction = 0.25
+radius_max_fraction = 0.85
+max_slope_m = 2.5
+flatness_probe_m = 2.5

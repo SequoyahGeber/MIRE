@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="PoiDef" format=3]
+
+[ext_resource type="Script" path="res://world/gen/poi_def.gd" id="1_gilded"]
+
+[resource]
+script = ExtResource("1_gilded")
+id = &"treasure_gilded"
+display_name = "Gilded Hoard"
+scene_path = ""
+marker_kind = &"loot"
+marker_name = "Chest_gilded_poi"
+placement_priority = 62
+target_count = 2
+clearance_m = 16.0
+min_spacing_m = 170.0
+biomes = Array[StringName]([])
+height_min = 3.5
+height_max = 80.0
+radius_min_fraction = 0.35
+radius_max_fraction = 0.8
+max_slope_m = 2.0
+flatness_probe_m = 3.0

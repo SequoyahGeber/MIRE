@@ -8003,3 +8003,27 @@ Blight is now legible: edge vignette + persistent status row, thresholds read of
 Files: `ui/hud/vitals_hud.gd`, `ui/hud/blight_vignette.gdshader`, `tools/blight_hud_check.gd`
 
 Commit at time of writing: `581eabc`
+
+---
+
+### DONE · F-368 · kilnd3a089 · 2026-08-21T03:32:23+00:00
+
+**The island is too small to hold its own content — ISLAND_RADIUS 118 m against a spec that wants dense forest, open ground and spaced POIs**
+
+verified live: 8/8 loot caches, 13 chests across 3 tiers, streaming cost flat
+
+Files: `world/gen/island_heightmap.gd`, `world/mire/mire_grid.gd`
+
+Commit at time of writing: `3de13ac`
+
+---
+
+### DONE · F-367 · kilnd3a089 · 2026-08-21T03:32:23+00:00
+
+**No chest reaches the procedural island: the loot_cache POI asks for 8 sites at 70 m spacing on a 118 m island**
+
+verified live: 8/8 loot caches, 13 chests across 3 tiers, streaming cost flat
+
+Files: `content/poi/treasure_gilded.tres`, `content/poi/treasure_strongbox.tres`
+
+Commit at time of writing: `3de13ac`
