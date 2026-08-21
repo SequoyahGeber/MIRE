@@ -51,6 +51,7 @@ func _run() -> void:
 	await _check_events_reach_voices()
 	await _check_ui_hooks()
 	_check_ambient_scatter()
+	await _check_footstep_driver()
 
 	print("\nSFX_CHECK failures=%d" % failures)
 	finish()
@@ -416,6 +417,72 @@ func _check_ui_hooks() -> void:
 
 	_silence()
 	layer.queue_free()
+
+
+## The footstep driver, proven against a synthetic body.
+##
+## This cannot be proven end-to-end: `tools/sfx_runtime_probe.gd` boots the real
+## world and finds that headless never streams terrain collision, so the player
+## falls forever and `is_on_floor()` is never true. Driving the decision logic
+## directly is therefore the only real coverage the stride accumulator gets, and
+## it is worth having — a step every N metres is exactly the kind of arithmetic
+## that is silently off by a factor of two.
+func _check_footstep_driver() -> void:
+	print("\n== footstep driver ==")
+	var body := Node3D.new()
+	root.add_child(body)
+	await process_frame
+	body.global_position = Vector3(0.0, 10.0, 0.0)
+
+	var stride: float = DIRECTOR_SCRIPT.STEP_STRIDE_M
+	director._have_last_pos = false
+	director._step_accum = 0.0
+	_silence()
+	# First call only seeds the position — a step on frame one would mean the
+	# driver was reacting to spawning rather than to walking.
+	director._drive_footsteps(0.1, body)
+	check(not director.is_playing(), "no step on the first frame, only a position seed")
+
+	# Half a stride: still nothing.
+	body.global_position += Vector3(stride * 0.5, 0.0, 0.0)
+	director._drive_footsteps(0.1, body)
+	check(not director.is_playing(), "half a stride is not a step")
+
+	# Past the stride: exactly one step.
+	body.global_position += Vector3(stride * 0.6, 0.0, 0.0)
+	director._drive_footsteps(0.1, body)
+	check(director.is_playing(), "crossing the stride plays a step")
+
+	# Standing still must never step, however long it stands.
+	_silence()
+	director._drive_footsteps(0.1, body)
+	director._drive_footsteps(0.1, body)
+	check(not director.is_playing(), "standing still never steps")
+
+	# Falling is not walking: vertical travel alone must not accumulate.
+	_silence()
+	director._step_accum = 0.0
+	body.global_position += Vector3(0.0, -stride * 3.0, 0.0)
+	director._drive_footsteps(0.1, body)
+	check(not director.is_playing(), "a fall is not a walk")
+
+	# Below the water line it swims instead.
+	_silence()
+	director._have_last_pos = false
+	director._step_accum = 0.0
+	body.global_position = Vector3(0.0, DIRECTOR_SCRIPT.WATER_LEVEL_M - 1.0, 0.0)
+	director._drive_footsteps(0.1, body)
+	body.global_position += Vector3(stride * 1.2, 0.0, 0.0)
+	director._drive_footsteps(0.1, body)
+	var voice: AudioStreamPlayer3D = _first_3d_playing()
+	check(voice != null and voice.stream != null
+		and voice.stream.resource_path.contains("swim"),
+		"below the water line it swims (%s)"
+		% (voice.stream.resource_path.get_file() if voice != null and voice.stream != null
+			else "silence"))
+
+	_silence()
+	body.queue_free()
 
 
 func _check_ambient_scatter() -> void:

@@ -2566,6 +2566,43 @@ def render_one(name: str, rng: np.random.Generator, ir: np.ndarray) -> np.ndarra
     return sig if looping else ma.fade_edges(sig, 0.003)
 
 
+def expected_files() -> set:
+    """Every filename this catalogue claims."""
+    out = set()
+    for name, (_fn, variants, _wet, _level, _system) in CATALOGUE.items():
+        if variants <= 1:
+            out.add(f"{name}.wav")
+        else:
+            out.update(f"{name}_{v + 1:02d}.wav" for v in range(variants))
+    return out
+
+
+def prune_orphans(sfx_dir: str) -> list:
+    """Delete anything in the asset dir the catalogue does not claim.
+
+    Two things land here. Renames and removals leave the old file behind, which
+    Godot keeps importing and shipping. And F-427: this machine's cloud sync
+    resurrects deleted files as `<name> 2.wav` conflict copies, so a
+    delete-then-rewrite of the directory reliably doubles it — 520 files for a
+    260-file render, caught only because `tools/sfx_check.gd` compares the
+    directory against the catalogue in both directions.
+
+    Doing it here rather than by hand means the render is the fix: the invariant
+    "this directory is exactly what the catalogue says" is restored on every run
+    instead of depending on someone noticing."""
+    keep = expected_files()
+    removed = []
+    for name in sorted(os.listdir(sfx_dir)):
+        if not name.endswith(".wav") or name in keep:
+            continue
+        os.remove(os.path.join(sfx_dir, name))
+        removed.append(name)
+        sidecar = os.path.join(sfx_dir, name + ".import")
+        if os.path.exists(sidecar):
+            os.remove(sidecar)
+    return removed
+
+
 def write_catalogue_gd(path: str) -> None:
     """Emit the cue table `SfxDirector` reads, generated from this file.
 
@@ -2676,6 +2713,10 @@ def main() -> None:
     if not args.only:
         write_catalogue_gd(args.catalogue_gd)
         print(f"cue table -> {args.catalogue_gd}")
+        removed = prune_orphans(args.sfx_dir)
+        if removed:
+            print(f"pruned {len(removed)} orphan file(s): {', '.join(removed[:6])}"
+                  + (" …" if len(removed) > 6 else ""))
 
     print(f"\n{written} files -> {args.sfx_dir}")
     print(f"audition reels -> {args.build_dir}")

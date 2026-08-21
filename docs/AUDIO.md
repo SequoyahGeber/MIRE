@@ -274,7 +274,21 @@ directory agree exactly in both directions, and that **every cue name in every m
 2. Register it in `CATALOGUE` with variant count, reverb send, target loudness and system.
 3. Re-render (this also regenerates `autoload/sfx_catalogue.gd`), then add a play site — usually one
    line in `SfxDirector._connect_events()` plus a handler.
-4. Run `python3 tools/audio/audio_check.py` and `.agent/bin/agent godot --script tools/sfx_check.gd`.
+4. Run the checks:
+
+```bash
+python3 tools/audio/audio_check.py                                  # loudness band + mix spread
+.agent/bin/agent godot --script tools/sfx_check.gd                  # wiring, arity, coverage
+.agent/bin/agent godot --script tools/sfx_runtime_probe.gd -- host  # what a live world actually plays
+```
+
+`sfx_check` drives handlers directly and proves the plumbing; the runtime probe boots the real world
+and reads `SfxDirector.play_counts` to see what the game actually made a noise about. Both are
+needed, because every interesting failure — a grounded test that is always false, a biome lookup that
+throws, an enemy poll that never finds its group — passes the static check and produces silence.
+(The probe currently cannot assert on footsteps: a headless boot never streams terrain collision, so
+the player falls forever — F-429. It prints a NOTE rather than failing, and `sfx_check` covers the
+stride logic against a synthetic body instead.)
 
 For anything the player triggers repeatedly ship 3–4 seeded variants; `SfxDirector` round-robins them
 with ±4% pitch scatter automatically.

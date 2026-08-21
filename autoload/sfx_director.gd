@@ -94,6 +94,11 @@ var _players_flat: Array[AudioStreamPlayer] = []
 var _next_3d: int = 0
 var _next_flat: int = 0
 var _clock: float = 0.0
+## Per-cue play tally since boot. Costs one dictionary increment per sound and
+## it is what turns "the wiring compiles" into "the wiring fires" — the runtime
+## probe reads it, and it is the first thing to look at when a sound is missing
+## in play.
+var play_counts: Dictionary[StringName, int] = {}
 
 var _step_accum: float = 0.0
 var _last_player_pos: Vector3 = Vector3.ZERO
@@ -123,7 +128,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_clock += delta
-	_drive_footsteps(delta)
+	_drive_footsteps(delta, _player_body(multiplayer.get_unique_id()))
 	_tick_ambient()
 	_tick_enemies()
 
@@ -191,6 +196,7 @@ func _take(cue: StringName) -> AudioStream:
 	if now - last < DEDUPE_WINDOW_S:
 		return null
 	_last_played[cue] = now
+	play_counts[cue] = int(play_counts.get(cue, 0)) + 1
 
 	if not _streams.has(cue):
 		_streams[cue] = _load_variants(cue)
@@ -914,8 +920,12 @@ func _player_body(peer_id: int) -> Node3D:
 	return net.player_for(peer_id) as Node3D
 
 
-func _drive_footsteps(delta: float) -> void:
-	var body: Node3D = _player_body(multiplayer.get_unique_id())
+## The body is a parameter rather than looked up inside, so a check can drive
+## this with a synthetic node. That matters more than it looks: a headless boot
+## never streams terrain collision (the runtime probe measured the player falling
+## to y = -64 with `is_on_floor()` false forever), so an end-to-end run cannot
+## prove the stride logic, and without this seam nothing could.
+func _drive_footsteps(delta: float, body: Node3D) -> void:
 	if body == null or not body.is_inside_tree():
 		_have_last_pos = false
 		return
