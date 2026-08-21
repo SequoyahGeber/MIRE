@@ -123,6 +123,7 @@ func _process(delta: float) -> void:
 	_clock += delta
 	_drive_footsteps(delta)
 	_tick_ambient()
+	_tick_enemies()
 
 
 # ── Playback ─────────────────────────────────────────────────────────────────
@@ -249,6 +250,7 @@ const HARVEST_HIT_CUE: Dictionary[StringName, StringName] = {
 	&"rock_cluster": &"pick_hit_stone",
 	&"stone_node": &"pick_hit_stone",
 	&"iron_node": &"pick_hit_ore",
+	&"mire_crystal": &"pick_hit_crystal",
 }
 const HARVEST_BREAK_CUE: Dictionary[StringName, StringName] = {
 	&"tree": &"tree_fall",
@@ -262,6 +264,7 @@ const HARVEST_BREAK_CUE: Dictionary[StringName, StringName] = {
 	&"rock_cluster": &"stone_break",
 	&"stone_node": &"stone_break",
 	&"iron_node": &"ore_break",
+	&"mire_crystal": &"stone_break",
 }
 const DEFAULT_HARVEST_HIT: StringName = &"axe_hit_wood"
 const DEFAULT_HARVEST_BREAK: StringName = &"log_break"
@@ -273,8 +276,8 @@ const TARGET_MATERIAL_CUE: Array[Array] = [
 	["crawler", &"hit_carapace"],
 	["brood", &"hit_carapace"],
 	["strider", &"hit_carapace"],
-	["tusker", &"hit_flesh"],
-	["boss", &"hit_flesh"],
+	["boss", &"hit_bone"],
+	["tusker", &"hit_bone"],
 	["player", &"hit_flesh"],
 	["tree", &"hit_wood"],
 	["log", &"hit_wood"],
@@ -285,10 +288,19 @@ const TARGET_MATERIAL_CUE: Array[Array] = [
 	["stone", &"hit_stone"],
 	["iron", &"hit_metal"],
 	["ore", &"hit_metal"],
-	["wall", &"hit_wood"],
-	["palisade", &"hit_wood"],
-	["gate", &"hit_wood"],
-	["door", &"hit_wood"],
+	# A built panel is not a plank: it is large, mounted at its edges, and the
+	# whole structure moves. `structure_hit` models that and carries far more
+	# low end, which is also what makes it audible from inside a base.
+	["wall", &"structure_hit"],
+	["palisade", &"structure_hit"],
+	["gate", &"structure_hit"],
+	["door", &"structure_hit"],
+	["barricade", &"structure_hit"],
+	["ramp", &"structure_hit"],
+	["bridge", &"structure_hit"],
+	["dock", &"structure_hit"],
+	["ladder", &"structure_hit"],
+	["ward", &"structure_hit"],
 ]
 const DEFAULT_HIT_CUE: StringName = &"hit_flesh"
 
@@ -323,9 +335,6 @@ const RANGED_RELEASE_CUE: Dictionary[StringName, StringName] = {
 ## Buildables made of stone get the stone placement; everything else is timber.
 const STONE_BUILDABLES: Array[StringName] = [&"wall", &"ramp", &"dock", &"ward", &"ward_post"]
 
-const HARVESTABLE_GROUP: StringName = &"harvestable"
-const CHEST_GROUP: StringName = &"chest"
-const DOOR_GROUP: StringName = &"door"
 const ENEMY_GROUP: StringName = &"enemies"
 
 
@@ -353,30 +362,8 @@ func _connect_events() -> void:
 	EVENT_BUS.subscribe_run_extracted(_on_run_extracted)
 	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
 
-	_bind(^"/root/CombatService", &"swing_started", _on_swing_started)
-	_bind(^"/root/CombatService", &"attack_landed", _on_attack_landed)
-	_bind(^"/root/RangedCombatService", &"shot_started", _on_shot_started)
-	_bind(^"/root/RangedCombatService", &"shot_landed", _on_shot_landed)
-	_bind(^"/root/RangedCombatService", &"shot_missed", _on_shot_missed)
-	_bind(^"/root/BuildService", &"piece_placed", _on_piece_placed)
-	_bind(^"/root/BuildService", &"build_confirmed", _on_build_confirmed)
-	_bind(^"/root/BuildService", &"piece_destroyed", _on_piece_destroyed)
-	_bind(^"/root/CraftingService", &"craft_confirmed", _on_craft_confirmed)
-	_bind(^"/root/PlayerHealth", &"player_downed", _on_player_downed)
-	_bind(^"/root/PlayerHealth", &"revive_confirmed", _on_revive_confirmed)
-	_bind(^"/root/PlayerHealth", &"consume_confirmed", _on_consume_confirmed)
-	_bind(^"/root/PlayerHealth", &"local_health_changed", _on_local_health_changed)
-	_bind(^"/root/PlayerHealth", &"local_stamina_changed", _on_local_stamina_changed)
-	_bind(^"/root/EnemyWorld", &"enemy_spawned", _on_enemy_spawned)
-	_bind(^"/root/EnemyWorld", &"enemy_died", _on_enemy_died)
-	_bind(^"/root/PowerupService", &"resonance_changed", _on_resonance_changed)
-	_bind(^"/root/AttunementService", &"selection_confirmed", _on_attunement_confirmed)
-	_bind(^"/root/InventoryService", &"operation_confirmed", _on_inventory_operation)
-	_bind(^"/root/PlayerNet", &"player_spawned", _on_player_spawned)
-	_bind(^"/root/NetSession", &"peer_joined", _on_peer_joined)
-	_bind(^"/root/NetSession", &"peer_left", _on_peer_left)
-	_bind(^"/root/MenuStack", &"screen_pushed", _on_screen_pushed)
-	_bind(^"/root/MenuStack", &"screen_popped", _on_screen_popped)
+	for row: Array in BINDINGS:
+		_bind(NodePath(row[0]), row[1], Callable(self, row[2]))
 
 	# Per-instance signals: harvestables, chests, doors and enemies are spawned
 	# and freed constantly, so they are picked up as they enter the tree rather
@@ -392,12 +379,56 @@ func _connect_events() -> void:
 
 	if tree != null and not tree.node_added.is_connected(_on_node_added):
 		tree.node_added.connect(_on_node_added)
-		for node: Node in tree.get_nodes_in_group(HARVESTABLE_GROUP):
-			_on_node_added(node)
-		for node: Node in tree.get_nodes_in_group(CHEST_GROUP):
-			_on_node_added(node)
-		for node: Node in tree.get_nodes_in_group(DOOR_GROUP):
-			_on_node_added(node)
+		for row: Array in INSTANCE_BINDINGS:
+			for node: Node in tree.get_nodes_in_group(row[0]):
+				_on_node_added(node)
+
+
+## Every autoload signal this director listens to, as data: [autoload path,
+## signal, handler method].
+##
+## A table rather than a run of `_bind()` calls so `tools/sfx_check.gd` can walk
+## it and assert each handler's argument count matches the signal's. That check
+## exists because the mistake is silent and I made it twice: `landed` carries an
+## impact speed and `piece_destroyed` is `(def_id, owner, name, position)` — not
+## the `(piece, def_id, position, peer)` shape it looks like it should be — and a
+## handler with the wrong arity does not fail until the signal fires in a real
+## run, which for `piece_destroyed` might be an hour in.
+const BINDINGS: Array[Array] = [
+	["/root/CombatService", &"swing_started", "_on_swing_started"],
+	["/root/CombatService", &"attack_landed", "_on_attack_landed"],
+	["/root/RangedCombatService", &"shot_started", "_on_shot_started"],
+	["/root/RangedCombatService", &"shot_landed", "_on_shot_landed"],
+	["/root/RangedCombatService", &"shot_missed", "_on_shot_missed"],
+	["/root/BuildService", &"piece_placed", "_on_piece_placed"],
+	["/root/BuildService", &"build_confirmed", "_on_build_confirmed"],
+	["/root/BuildService", &"piece_destroyed", "_on_piece_destroyed"],
+	["/root/CraftingService", &"craft_confirmed", "_on_craft_confirmed"],
+	["/root/PlayerHealth", &"player_downed", "_on_player_downed"],
+	["/root/PlayerHealth", &"revive_confirmed", "_on_revive_confirmed"],
+	["/root/PlayerHealth", &"consume_confirmed", "_on_consume_confirmed"],
+	["/root/PlayerHealth", &"local_health_changed", "_on_local_health_changed"],
+	["/root/PlayerHealth", &"local_stamina_changed", "_on_local_stamina_changed"],
+	["/root/EnemyWorld", &"enemy_spawned", "_on_enemy_spawned"],
+	["/root/EnemyWorld", &"enemy_died", "_on_enemy_died"],
+	["/root/PowerupService", &"resonance_changed", "_on_resonance_changed"],
+	["/root/AttunementService", &"selection_confirmed", "_on_attunement_confirmed"],
+	["/root/InventoryService", &"operation_confirmed", "_on_inventory_operation"],
+	["/root/PlayerNet", &"player_spawned", "_on_player_spawned"],
+	["/root/NetTransport", &"peer_joined", "_on_peer_joined"],
+	["/root/NetTransport", &"peer_left", "_on_peer_left"],
+	["/root/MenuStack", &"screen_pushed", "_on_screen_pushed"],
+	["/root/MenuStack", &"screen_popped", "_on_screen_popped"],
+]
+
+## Per-instance signals, connected as nodes enter the tree: [group, signal, handler].
+## The handler is called with the signal's own arguments plus the node, via `bind()`.
+const INSTANCE_BINDINGS: Array[Array] = [
+	[&"harvestable", &"depleted", "_on_harvestable_depleted"],
+	[&"chest", &"open_confirmed", "_on_chest_opened"],
+	[&"door", &"toggled", "_on_door_toggled"],
+	[&"haulable", &"carriers_changed", "_on_carriers_changed"],
+]
 
 
 ## Connect one signal on an autoload that may not exist in this process (a
@@ -414,19 +445,19 @@ func _bind(path: NodePath, signal_name: StringName, handler: Callable) -> void:
 func _on_node_added(node: Node) -> void:
 	var button := node as BaseButton
 	if button != null:
-		if not button.pressed.is_connected(_on_button_pressed):
-			button.pressed.connect(_on_button_pressed)
+		var handler: Callable = _on_button_pressed.bind(button)
+		if not button.pressed.is_connected(handler):
+			button.pressed.connect(handler)
 		return
 	_try_attach_station_loop(node)
-	if node.is_in_group(HARVESTABLE_GROUP):
-		if node.has_signal(&"depleted") and not node.is_connected(&"depleted", _on_harvestable_depleted.bind(node)):
-			node.depleted.connect(_on_harvestable_depleted.bind(node))
-	elif node.is_in_group(CHEST_GROUP):
-		if node.has_signal(&"open_confirmed"):
-			node.open_confirmed.connect(_on_chest_opened.bind(node))
-	elif node.is_in_group(DOOR_GROUP):
-		if node.has_signal(&"toggled"):
-			node.toggled.connect(_on_door_toggled.bind(node))
+	for row: Array in INSTANCE_BINDINGS:
+		if not node.is_in_group(row[0]) or not node.has_signal(row[1]):
+			continue
+		# Bound to the node so the handler knows WHICH one fired — none of these
+		# signals carries a reference to its own emitter.
+		var handler: Callable = Callable(self, row[2]).bind(node)
+		if not node.is_connected(row[1], handler):
+			node.connect(row[1], handler)
 
 
 func _world_position_of(node: Node) -> Vector3:
@@ -463,13 +494,31 @@ func _on_harvestable_depleted(_peer_id: int, _item_id: StringName, _amount: int,
 	play_at(cue, _world_position_of(node))
 
 
+## `attack_landed` carries no weapon, so the last thing to swing is remembered
+## here. That is what lets an axe into a trunk sound like a chop rather than a
+## generic knock, and the repair hammer sound like work rather than like combat.
+var _last_swing_weapon: StringName = &""
+
+
 func _on_swing_started(weapon_id: StringName) -> void:
+	_last_swing_weapon = weapon_id
 	play(WEAPON_SWING_CUE.get(weapon_id, DEFAULT_SWING_CUE))
 
 
 func _on_attack_landed(_peer_id: int, position: Vector3, damage: int,
 		target_name: StringName) -> void:
 	var cue: StringName = _cue_for_target(target_name)
+	# The repair hammer is not a weapon and must not sound like one, whatever it
+	# lands on.
+	if _last_swing_weapon == &"repair_hammer":
+		play_at(&"repair_hit", position)
+		return
+	# An axe or a pick meeting wood or stone is a harvest stroke, not a combat
+	# impact — same tool, same material, so it should be the same sound.
+	if cue == &"hit_wood" and String(_last_swing_weapon).contains("axe"):
+		cue = &"axe_hit_wood"
+	elif cue == &"hit_stone" and String(_last_swing_weapon).contains("pick"):
+		cue = &"pick_hit_stone"
 	play_at(cue, position)
 	# Anything alive answers the blow. Without this the world is full of
 	# impacts that nothing reacts to, which is the single loudest tell that a
@@ -508,15 +557,43 @@ func _on_piece_placed(piece: Node3D, def_id: StringName, _owner_peer_id: int) ->
 	var cue: StringName = &"build_place_stone" if STONE_BUILDABLES.has(def_id) \
 		else &"build_place_wood"
 	play_at(cue, _world_position_of(piece))
+	if WARD_BUILDABLES.has(def_id):
+		play_at(&"ward_activate", _world_position_of(piece))
+
+
+const WARD_BUILDABLES: Array[StringName] = [&"ward", &"ward_post"]
+
+
+var _last_build_confirm: float = -999.0
+## Set on run restart: `BuildService` frees every placed piece on teardown and
+## emits `piece_destroyed` for each, which without this is a barrage of collapse
+## sounds over the first second of a fresh run.
+var _suppress_destroy_until: float = 0.0
 
 
 func _on_build_confirmed(_request_id: int, accepted: bool, _reason: String) -> void:
 	if not accepted:
 		play(&"build_denied")
+		return
+	_last_build_confirm = _clock
 
 
+## Crafting resolves instantly here, so the work and the result are one event.
+## Playing both — the tool strokes, then the chime a beat later — is what makes
+## it read as something being MADE rather than as a number changing.
 func _on_craft_confirmed(_request_id: int, accepted: bool, _detail: String) -> void:
-	play(&"craft_complete" if accepted else &"craft_denied")
+	if not accepted:
+		play(&"craft_denied")
+		return
+	play(&"craft_work")
+	_after(0.55, func() -> void: play(&"craft_complete"))
+
+
+## Fire a callable after a delay, on this director's own always-processing tree.
+## Used where one event is genuinely two sounds separated in time.
+func _after(delay_s: float, action: Callable) -> void:
+	var timer: SceneTreeTimer = get_tree().create_timer(delay_s, true, false, true)
+	timer.timeout.connect(action, CONNECT_ONE_SHOT)
 
 
 func _on_chest_opened(_request_id: int, accepted: bool, granted: Dictionary,
@@ -533,6 +610,14 @@ func _on_chest_opened(_request_id: int, accepted: bool, granted: Dictionary,
 		total += int(granted[key])
 	if total >= 12 or granted.size() >= 4:
 		play_at(&"loot_rare", position)
+
+
+## A haulable changing hands. Empty means it was set down, non-empty means it was
+## picked up — the same signal covers both, which is why this reads the array
+## rather than trusting a separate lift/drop pair that does not exist.
+func _on_carriers_changed(carrier_ids: PackedInt32Array, node: Node) -> void:
+	play_at(&"haul_lift" if carrier_ids.size() > 0 else &"haul_drop",
+		_world_position_of(node))
 
 
 func _on_door_toggled(open: bool, _by_peer_id: int, node: Node) -> void:
@@ -698,8 +783,18 @@ func _on_jumped() -> void:
 	play(&"jump")
 
 
-func _on_landed() -> void:
+## `landed` carries the downward speed at impact, and it is the whole reason
+## there is one landing sound rather than two: a gentle arrival is a footstep,
+## and only a real drop earns the heavy landing. A threshold on data the signal
+## already provides beats authoring a `land_soft` nobody would tune.
+func _on_landed(impact_speed: float) -> void:
+	if impact_speed < HARD_LANDING_SPEED:
+		play(&"footstep_mud")
+		return
 	play(&"land_hard")
+
+
+const HARD_LANDING_SPEED: float = 6.0
 
 
 func _on_peer_joined(_peer_id: int) -> void:
@@ -723,8 +818,17 @@ func _on_screen_popped(_screen: Control) -> void:
 	play(&"ui_close")
 
 
-func _on_piece_destroyed(_piece: Variant, _def_id: StringName, position: Vector3,
-		_by_peer_id: int) -> void:
+## A player tearing a piece down and an enemy breaking it are the same signal.
+## They are told apart by whether a build request was just answered: only
+## `BuildService._process_destroy()` routes through `_answer()`, so a
+## `build_confirmed` in the last few frames means a person did this on purpose.
+func _on_piece_destroyed(_def_id: StringName, _owner_peer_id: int,
+		_piece_name: StringName, position: Vector3) -> void:
+	if _clock < _suppress_destroy_until:
+		return
+	if _clock - _last_build_confirm < 0.15:
+		play_at(&"build_remove", position)
+		return
 	play_at(&"structure_destroy", position)
 
 
@@ -740,11 +844,39 @@ func _on_gui_focus_changed(control: Control) -> void:
 	play(&"ui_hover")
 
 
-func _on_button_pressed() -> void:
+## Buttons that mean accept, cancel or change-page get their own sound, read off
+## the button's own text and node name. A heuristic, but the alternative is a
+## line of audio code in every screen — and the words themselves are the most
+## stable thing about a button.
+const UI_CONFIRM_WORDS: Array[String] = ["confirm", "accept", "ok", "yes", "start",
+	"play", "apply", "buy", "purchase", "craft", "sail", "launch"]
+const UI_BACK_WORDS: Array[String] = ["back", "cancel", "close", "no", "return", "quit"]
+const UI_TAB_WORDS: Array[String] = ["tab", "next", "prev", "page"]
+
+
+func _on_button_pressed(button: BaseButton) -> void:
+	var words: String = button.name.to_lower()
+	var labelled := button as Button
+	if labelled != null:
+		words += " " + labelled.text.to_lower()
+	for word: String in UI_BACK_WORDS:
+		if words.contains(word):
+			play(&"ui_back")
+			return
+	for word: String in UI_CONFIRM_WORDS:
+		if words.contains(word):
+			play(&"ui_confirm")
+			return
+	for word: String in UI_TAB_WORDS:
+		if words.contains(word):
+			play(&"ui_tab")
+			return
 	play(&"ui_click")
 
 
 func _on_run_restarted() -> void:
+	_suppress_destroy_until = _clock + 1.5
+	_enemy_states.clear()
 	_last_hp = -1
 	_stamina_was_empty = false
 	_have_last_pos = false
@@ -804,6 +936,7 @@ func _drive_footsteps(delta: float) -> void:
 	if pos.y <= WATER_LEVEL_M - 0.25:
 		play_at(&"swim_stroke", pos)
 		return
+	_check_water_entry(pos)
 	play_at(_surface_cue(body), pos)
 
 
@@ -843,6 +976,19 @@ func _surface_cue(body: Node3D) -> StringName:
 	if height <= MIRE_LEVEL_M:
 		return &"footstep_mud"
 	return &"footstep_grass"
+
+
+var _was_in_water: bool = false
+
+
+## The moment the player breaks the surface, once — not every frame they are wet.
+## Checked in the step driver rather than on its own timer because it needs the
+## same position sample and the same "is there a local body" guard.
+func _check_water_entry(pos: Vector3) -> void:
+	var wet: bool = pos.y <= WATER_LEVEL_M
+	if wet and not _was_in_water:
+		play_at(&"water_enter", pos)
+	_was_in_water = wet
 
 
 ## Rough bands rather than a lookup into world gen: this file must not depend on
@@ -979,4 +1125,110 @@ func _try_attach_station_loop(node: Node) -> void:
 		spatial.add_child(player)
 		player.play()
 		_station_loops[spatial.get_instance_id()] = player
+		# The station has no lit/unlit state yet, so the moment it enters the
+		# world IS its ignition. When it grows one, this moves to that signal.
+		play_at(&"furnace_light", spatial.global_position if spatial.is_inside_tree()
+			else Vector3.ZERO)
 		return
+
+
+# ── Creature voices ──────────────────────────────────────────────────────────
+#
+# `Enemy.state` is a replicated property with a setter, not a signal, so there
+# is nothing to subscribe to — and `systems/enemies/enemy.gd` is not this task's
+# to edit. So the enemies group is polled a few times a second for transitions.
+# That is cheap (a handful of nodes, one integer compare each) and it keeps the
+# enemy script unaware that audio exists, which is the same trade the footstep
+# driver makes and for the same reason.
+#
+# The two transitions worth hearing are the ones that change what the player
+# should do: noticing them, and winding up to strike. Everything else is
+# already covered by the impact and death sounds.
+
+## Mirrors `Enemy.State`. Duplicated rather than preloaded because preloading the
+## enemy script from an autoload pulls its whole dependency tree into every
+## headless check; the values are an append-only enum and a drift would show up
+## as a missing alert rather than as a wrong sound.
+const ENEMY_STATE_IDLE: int = 0
+const ENEMY_STATE_CHASE: int = 1
+const ENEMY_STATE_TELL: int = 2
+
+const ENEMY_POLL_INTERVAL_S: float = 0.2
+## Idle vocals are rarer than ambient life — a creature that mutters every few
+## seconds stops being a threat and becomes scenery.
+const ENEMY_VOCAL_GAP_MIN_S: float = 9.0
+const ENEMY_VOCAL_GAP_MAX_S: float = 24.0
+const ENEMY_VOCAL_RANGE_M: float = 32.0
+
+## Which voice a species uses when it is simply present.
+const ENEMY_IDLE_CUES: Dictionary[StringName, StringName] = {
+	&"tusker": &"tusker_snort",
+	&"broodcaller": &"broodcaller_call",
+}
+const DEFAULT_IDLE_VOCAL: StringName = &"creature_chitter"
+
+var _enemy_states: Dictionary[int, int] = {}
+var _next_enemy_poll: float = 0.0
+var _next_enemy_vocal: float = 6.0
+
+
+func _tick_enemies() -> void:
+	if _clock < _next_enemy_poll:
+		return
+	_next_enemy_poll = _clock + ENEMY_POLL_INTERVAL_S
+	var tree: SceneTree = get_tree()
+	if tree == null:
+		return
+	var enemies: Array[Node] = tree.get_nodes_in_group(ENEMY_GROUP)
+	var idle_candidates: Array[Node3D] = []
+	var seen: Dictionary[int, bool] = {}
+
+	for node: Node in enemies:
+		var spatial := node as Node3D
+		if spatial == null or not spatial.is_inside_tree():
+			continue
+		var id: int = spatial.get_instance_id()
+		seen[id] = true
+		var raw: Variant = spatial.get(&"state")
+		if typeof(raw) != TYPE_INT:
+			continue
+		var state: int = int(raw)
+		if state == ENEMY_STATE_IDLE:
+			idle_candidates.append(spatial)
+		var previous: int = int(_enemy_states.get(id, -1))
+		_enemy_states[id] = state
+		if previous < 0 or previous == state:
+			continue
+		if state == ENEMY_STATE_CHASE and previous == ENEMY_STATE_IDLE:
+			play_at(&"creature_alert", spatial.global_position)
+		elif state == ENEMY_STATE_TELL:
+			# The wind-up, not the landing: this is the half-second of warning a
+			# player can actually act on, and it is the reason to poll at all.
+			play_at(&"creature_attack", spatial.global_position)
+
+	# Freed enemies would otherwise accumulate ids forever across a long run.
+	for id: int in _enemy_states.keys():
+		if not seen.has(id):
+			_enemy_states.erase(id)
+
+	_tick_enemy_vocal(idle_candidates)
+
+
+func _tick_enemy_vocal(idle: Array[Node3D]) -> void:
+	if _clock < _next_enemy_vocal or idle.is_empty():
+		return
+	_next_enemy_vocal = _clock + randf_range(ENEMY_VOCAL_GAP_MIN_S, ENEMY_VOCAL_GAP_MAX_S)
+	var body: Node3D = _player_body(multiplayer.get_unique_id())
+	if body == null or not body.is_inside_tree():
+		return
+	# Only something the player could plausibly hear. A creature muttering
+	# across the island is noise, and worse, a false threat cue.
+	var near: Array[Node3D] = []
+	for enemy: Node3D in idle:
+		if enemy.global_position.distance_to(body.global_position) <= ENEMY_VOCAL_RANGE_M:
+			near.append(enemy)
+	if near.is_empty():
+		return
+	var chosen: Node3D = near[randi() % near.size()]
+	var cue: StringName = ENEMY_IDLE_CUES.get(_def_id(chosen), DEFAULT_IDLE_VOCAL)
+	play_at(cue, chosen.global_position)

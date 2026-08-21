@@ -233,6 +233,11 @@ Two things have no signal and are **driven** instead:
   `time_of_day` — *not* from `DayNight`'s signals, which are host-only, the same trap
   `AmbientMusicDirector` documents.
 
+`Enemy.state` is a replicated property with no signal, so the enemies group is **polled** five times
+a second for the two transitions worth hearing — noticing the player, and winding up to strike — plus
+an occasional idle vocal from whichever nearby creature is standing still. Same trade as the footstep
+driver: the enemy script stays unaware that audio exists.
+
 The **whole UI** is wired without a line in any UI file: `gui_focus_changed` is the hover and every
 `BaseButton` reports its own press, both picked up through `SceneTree.node_added`.
 
@@ -294,11 +299,10 @@ audio RPCs and must never be any.
   the world while task 4.19's cutover is in flight, so nothing puts the `mire_frontend` group on
   screen in the shipped path. `ThemeMusicDirector` already handles it — when 4.19 flips the boot
   scene the menu theme starts working with no change here.
-- **Cues rendered but not yet triggered**, because the game has no event to hang them on:
-  `equip_blade`/`equip_tool`/`equip_bow` (no equip signal), `haul_lift`/`haul_drop` (`HaulService`
-  exposes none), `craft_work` (no crafting-progress signal), `furnace_light` (no ignition event),
-  `ward_activate`, `creature_chitter`/`creature_alert` (enemy AI state is a property, not a signal),
-  `tusker_snort` and `broodcaller_call` as idle vocals. Each is one signal away.
+- **110 of 113 cues are triggered.** The three that are not — `equip_blade`, `equip_tool`,
+  `equip_bow` — are waiting on a system that does not exist: the game has no equip/hotbar concept at
+  all, so there is nothing to hang them on. `tools/sfx_check.gd` prints the coverage every run and
+  fails if the unwired list grows past twelve, which is what stops it drifting quietly.
 - **`assets/audio/sfx/` is ~49 MB** of uncompressed PCM. That is right at runtime — short SFX should
   not pay a decode cost — but every re-render writes 227 new blobs into git history. Worth a look
   before the catalogue is tuned many more times.

@@ -40,6 +40,8 @@ func _run() -> void:
 		finish()
 		return
 
+	_check_binding_signatures()
+	_check_cue_coverage()
 	_check_catalogue_loads()
 	_check_catalogue_matches_disk()
 	_check_mapping_tables()
@@ -71,6 +73,101 @@ func _check_wiring() -> bool:
 	check(CATALOGUE.CUES.size() >= 100,
 		"catalogue has %d cues" % CATALOGUE.CUES.size())
 	return true
+
+
+## Every handler's arity must match its signal's. This is the check that pays
+## for itself: a mismatch is silent until the signal fires in a real run, and
+## two of them shipped in the first draft of `SfxDirector` — `landed` carries an
+## impact speed, and `piece_destroyed` is `(def_id, owner, name, position)`
+## rather than the `(piece, def_id, position, peer)` it looks like it should be.
+## An hour into a session is a bad time to find out.
+func _check_binding_signatures() -> void:
+	print("\n== handler signatures match their signals ==")
+	var methods: Dictionary[String, int] = {}
+	for entry: Dictionary in director.get_method_list():
+		methods[String(entry["name"])] = (entry["args"] as Array).size()
+
+	var bad: PackedStringArray = PackedStringArray()
+	var checked: int = 0
+	var unreachable: int = 0
+	for row: Array in DIRECTOR_SCRIPT.BINDINGS:
+		var node: Node = root.get_node_or_null(NodePath(String(row[0]).trim_prefix("/root/")))
+		if node == null:
+			unreachable += 1
+			continue
+		var signal_args: int = _signal_arg_count(node, row[1])
+		if signal_args < 0:
+			bad.append("%s has no signal %s" % [row[0], row[1]])
+			continue
+		if not methods.has(String(row[2])):
+			bad.append("SfxDirector has no method %s" % row[2])
+			continue
+		checked += 1
+		if methods[String(row[2])] != signal_args:
+			bad.append("%s(%d args) != %s(%d)"
+				% [row[1], signal_args, row[2], methods[String(row[2])]])
+
+	# Instance handlers take the signal's arguments PLUS the node they are bound to.
+	for row: Array in DIRECTOR_SCRIPT.INSTANCE_BINDINGS:
+		var sample: Node = _first_in_group(row[0])
+		if sample == null:
+			unreachable += 1
+			continue
+		var signal_args: int = _signal_arg_count(sample, row[1])
+		if signal_args < 0 or not methods.has(String(row[2])):
+			bad.append("%s / %s unresolvable" % [row[0], row[1]])
+			continue
+		checked += 1
+		if methods[String(row[2])] != signal_args + 1:
+			bad.append("%s(%d args + node) != %s(%d)"
+				% [row[1], signal_args, row[2], methods[String(row[2])]])
+
+	check(bad.is_empty(), "%d bindings have matching arity (%d bad: %s)"
+		% [checked, bad.size(), ", ".join(bad.slice(0, 4))])
+	# Not a failure — a harness legitimately registers only some autoloads, and
+	# no harvestable exists in an empty scene — but it must be visible, because
+	# an unreachable binding is one this check did NOT verify.
+	print("NOTE: %d binding(s) had no live emitter in this process to check against"
+		% unreachable)
+
+
+## Which catalogue cues are actually reachable from the director. A rendered
+## sound that no code path names is the F-373 failure one asset at a time, and
+## the only way to keep it visible is to count it every run.
+func _check_cue_coverage() -> void:
+	print("\n== cue coverage ==")
+	var file := FileAccess.open("res://autoload/sfx_director.gd", FileAccess.READ)
+	if file == null:
+		check(false, "sfx_director.gd is readable")
+		return
+	var source: String = file.get_as_text()
+	file.close()
+	var unwired: PackedStringArray = PackedStringArray()
+	for cue: StringName in CATALOGUE.CUES:
+		if not source.contains("&\"%s\"" % cue):
+			unwired.append(String(cue))
+	var wired: int = CATALOGUE.CUES.size() - unwired.size()
+	print("  %d of %d cues are named by SfxDirector" % [wired, CATALOGUE.CUES.size()])
+	if not unwired.is_empty():
+		print("  not yet triggered: %s" % ", ".join(unwired))
+	# A floor rather than "all of them": several cues are rendered ahead of the
+	# systems that will fire them (there is no equip signal, no crafting-progress
+	# signal, no furnace ignition event). The floor stops that list growing
+	# quietly, which is the actual risk.
+	check(wired >= CATALOGUE.CUES.size() - 12,
+		"at most 12 cues unwired (%d unwired)" % unwired.size())
+
+
+func _signal_arg_count(node: Node, signal_name: StringName) -> int:
+	for entry: Dictionary in node.get_signal_list():
+		if StringName(entry["name"]) == signal_name:
+			return (entry["args"] as Array).size()
+	return -1
+
+
+func _first_in_group(group: StringName) -> Node:
+	var nodes: Array[Node] = root.get_tree().get_nodes_in_group(group)
+	return nodes[0] if not nodes.is_empty() else null
 
 
 func _check_catalogue_loads() -> void:
