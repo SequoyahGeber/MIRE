@@ -2,11 +2,11 @@
   {
     "name": "tree_pine_a",
     "category": "trees",
-    "width_m": 6.911,
-    "depth_m": 6.378,
-    "height_m": 19.6,
+    "width_m": 5.683,
+    "depth_m": 5.761,
+    "height_m": 19.71,
     "mesh_parts": 1,
-    "polygons": 644,
+    "polygons": 581,
     "materials": [
       "MIRE_Pine",
       "MIRE_PineDark",
@@ -19,11 +19,11 @@
   {
     "name": "tree_pine_b",
     "category": "trees",
-    "width_m": 5.635,
-    "depth_m": 4.96,
-    "height_m": 15.983,
+    "width_m": 5.524,
+    "depth_m": 5.507,
+    "height_m": 16.082,
     "mesh_parts": 1,
-    "polygons": 634,
+    "polygons": 571,
     "materials": [
       "MIRE_Pine",
       "MIRE_PineDark",
@@ -36,11 +36,11 @@
   {
     "name": "tree_pine_c",
     "category": "trees",
-    "width_m": 5.688,
-    "depth_m": 6.382,
-    "height_m": 19.675,
+    "width_m": 6.227,
+    "depth_m": 7.599,
+    "height_m": 19.794,
     "mesh_parts": 1,
-    "polygons": 654,
+    "polygons": 591,
     "materials": [
       "MIRE_Pine",
       "MIRE_PineDark",
@@ -53,11 +53,11 @@
   {
     "name": "tree_pine_d",
     "category": "trees",
-    "width_m": 5.922,
-    "depth_m": 4.896,
-    "height_m": 17.433,
+    "width_m": 5.659,
+    "depth_m": 4.994,
+    "height_m": 17.546,
     "mesh_parts": 1,
-    "polygons": 644,
+    "polygons": 581,
     "materials": [
       "MIRE_Pine",
       "MIRE_PineDark",
@@ -70,11 +70,11 @@
   {
     "name": "tree_pine_e",
     "category": "trees",
-    "width_m": 5.816,
-    "depth_m": 6.911,
-    "height_m": 19.377,
+    "width_m": 6.128,
+    "depth_m": 7.324,
+    "height_m": 19.507,
     "mesh_parts": 1,
-    "polygons": 634,
+    "polygons": 571,
     "materials": [
       "MIRE_Pine",
       "MIRE_PineDark",
@@ -87,11 +87,11 @@
   {
     "name": "tree_pine_f",
     "category": "trees",
-    "width_m": 7.015,
-    "depth_m": 7.107,
-    "height_m": 19.383,
+    "width_m": 6.035,
+    "depth_m": 6.754,
+    "height_m": 19.492,
     "mesh_parts": 1,
-    "polygons": 654,
+    "polygons": 591,
     "materials": [
       "MIRE_Pine",
       "MIRE_PineDark",
@@ -104,11 +104,11 @@
   {
     "name": "tree_bare_a",
     "category": "trees",
-    "width_m": 6.077,
-    "depth_m": 5.831,
-    "height_m": 13.218,
+    "width_m": 5.664,
+    "depth_m": 6.796,
+    "height_m": 12.535,
     "mesh_parts": 1,
-    "polygons": 350,
+    "polygons": 269,
     "materials": [
       "MIRE_WoodBark",
       "MIRE_WoodBarkDark",
@@ -119,11 +119,11 @@
   {
     "name": "tree_bare_b",
     "category": "trees",
-    "width_m": 8.113,
-    "depth_m": 9.274,
-    "height_m": 16.099,
+    "width_m": 8.987,
+    "depth_m": 8.75,
+    "height_m": 14.562,
     "mesh_parts": 1,
-    "polygons": 301,
+    "polygons": 220,
     "materials": [
       "MIRE_WoodBark",
       "MIRE_WoodBarkDark",
@@ -134,11 +134,11 @@
   {
     "name": "tree_bare_c",
     "category": "trees",
-    "width_m": 8.725,
-    "depth_m": 7.03,
-    "height_m": 15.668,
+    "width_m": 10.629,
+    "depth_m": 7.046,
+    "height_m": 15.024,
     "mesh_parts": 1,
-    "polygons": 350,
+    "polygons": 269,
     "materials": [
       "MIRE_WoodBark",
       "MIRE_WoodBarkDark",
@@ -149,11 +149,11 @@
   {
     "name": "tree_bare_d",
     "category": "trees",
-    "width_m": 8.189,
-    "depth_m": 5.505,
-    "height_m": 13.01,
+    "width_m": 4.538,
+    "depth_m": 5.973,
+    "height_m": 13.216,
     "mesh_parts": 1,
-    "polygons": 301,
+    "polygons": 220,
     "materials": [
       "MIRE_WoodBark",
       "MIRE_WoodBarkDark",
@@ -164,14 +164,13 @@
   {
     "name": "tree_birch_a",
     "category": "trees",
-    "width_m": 3.856,
-    "depth_m": 3.428,
-    "height_m": 14.233,
+    "width_m": 4.091,
+    "depth_m": 3.476,
+    "height_m": 14.341,
     "mesh_parts": 1,
-    "polygons": 447,
+    "polygons": 438,
     "materials": [
       "MIRE_Leaf",
-      "MIRE_LeafGold",
       "MIRE_LeafLight",
       "MIRE_WoodBirch",
       "MIRE_WoodBirchMark"
@@ -180,14 +179,13 @@
   {
     "name": "tree_birch_b",
     "category": "trees",
-    "width_m": 4.34,
-    "depth_m": 3.499,
-    "height_m": 15.162,
+    "width_m": 4.405,
+    "depth_m": 3.417,
+    "height_m": 15.272,
     "mesh_parts": 1,
-    "polygons": 447,
+    "polygons": 438,
     "materials": [
       "MIRE_Leaf",
-      "MIRE_LeafGold",
       "MIRE_LeafLight",
       "MIRE_WoodBirch",
       "MIRE_WoodBirchMark"
@@ -196,14 +194,13 @@
   {
     "name": "tree_birch_c",
     "category": "trees",
-    "width_m": 4.261,
-    "depth_m": 4.374,
-    "height_m": 17.833,
+    "width_m": 4.581,
+    "depth_m": 4.21,
+    "height_m": 17.965,
     "mesh_parts": 1,
-    "polygons": 447,
+    "polygons": 438,
     "materials": [
       "MIRE_Leaf",
-      "MIRE_LeafGold",
       "MIRE_LeafLight",
       "MIRE_WoodBirch",
       "MIRE_WoodBirchMark"
@@ -212,14 +209,13 @@
   {
     "name": "tree_birch_d",
     "category": "trees",
-    "width_m": 4.524,
-    "depth_m": 4.582,
-    "height_m": 18.183,
+    "width_m": 4.887,
+    "depth_m": 4.291,
+    "height_m": 18.308,
     "mesh_parts": 1,
-    "polygons": 447,
+    "polygons": 438,
     "materials": [
       "MIRE_Leaf",
-      "MIRE_LeafGold",
       "MIRE_LeafLight",
       "MIRE_WoodBirch",
       "MIRE_WoodBirchMark"
@@ -228,16 +224,15 @@
   {
     "name": "tree_crooked_a",
     "category": "trees",
-    "width_m": 5.438,
-    "depth_m": 6.076,
-    "height_m": 10.087,
+    "width_m": 5.381,
+    "depth_m": 5.81,
+    "height_m": 10.15,
     "mesh_parts": 1,
-    "polygons": 450,
+    "polygons": 382,
     "materials": [
       "MIRE_Leaf",
-      "MIRE_LeafGold",
       "MIRE_LeafLight",
-      "MIRE_Moss",
+      "MIRE_MossDark",
       "MIRE_WoodBark",
       "MIRE_WoodBarkDark",
       "MIRE_WoodBarkLight"
@@ -246,16 +241,15 @@
   {
     "name": "tree_crooked_b",
     "category": "trees",
-    "width_m": 7.627,
-    "depth_m": 8.089,
-    "height_m": 13.514,
+    "width_m": 7.468,
+    "depth_m": 7.33,
+    "height_m": 13.574,
     "mesh_parts": 1,
-    "polygons": 450,
+    "polygons": 382,
     "materials": [
       "MIRE_Leaf",
-      "MIRE_LeafGold",
       "MIRE_LeafLight",
-      "MIRE_Moss",
+      "MIRE_MossDark",
       "MIRE_WoodBark",
       "MIRE_WoodBarkDark",
       "MIRE_WoodBarkLight"
@@ -264,16 +258,15 @@
   {
     "name": "tree_crooked_c",
     "category": "trees",
-    "width_m": 8.068,
-    "depth_m": 8.076,
-    "height_m": 12.582,
+    "width_m": 7.424,
+    "depth_m": 6.833,
+    "height_m": 12.619,
     "mesh_parts": 1,
-    "polygons": 450,
+    "polygons": 382,
     "materials": [
       "MIRE_Leaf",
-      "MIRE_LeafGold",
       "MIRE_LeafLight",
-      "MIRE_Moss",
+      "MIRE_MossDark",
       "MIRE_WoodBark",
       "MIRE_WoodBarkDark",
       "MIRE_WoodBarkLight"
@@ -282,16 +275,15 @@
   {
     "name": "tree_crooked_d",
     "category": "trees",
-    "width_m": 7.048,
-    "depth_m": 6.43,
-    "height_m": 12.755,
+    "width_m": 7.282,
+    "depth_m": 6.163,
+    "height_m": 12.837,
     "mesh_parts": 1,
-    "polygons": 450,
+    "polygons": 382,
     "materials": [
       "MIRE_Leaf",
-      "MIRE_LeafGold",
       "MIRE_LeafLight",
-      "MIRE_Moss",
+      "MIRE_MossDark",
       "MIRE_WoodBark",
       "MIRE_WoodBarkDark",
       "MIRE_WoodBarkLight"
@@ -1041,7 +1033,7 @@
     "polygons": 117,
     "materials": [
       "MIRE_Reed",
-      "MIRE_WoodBark.001"
+      "MIRE_WoodBark"
     ]
   },
   {
@@ -1054,7 +1046,7 @@
     "polygons": 67,
     "materials": [
       "MIRE_Reed",
-      "MIRE_WoodBark.001"
+      "MIRE_WoodBark"
     ]
   },
   {
@@ -1067,7 +1059,7 @@
     "polygons": 67,
     "materials": [
       "MIRE_Reed",
-      "MIRE_WoodBark.001"
+      "MIRE_WoodBark"
     ]
   },
   {
@@ -1080,7 +1072,7 @@
     "polygons": 117,
     "materials": [
       "MIRE_Reed",
-      "MIRE_WoodBark.001"
+      "MIRE_WoodBark"
     ]
   },
   {
@@ -1637,7 +1629,7 @@
     "mesh_parts": 32,
     "polygons": 192,
     "materials": [
-      "MIRE_Stone.001",
+      "MIRE_Stone",
       "MIRE_StoneLight"
     ]
   },
@@ -1650,7 +1642,7 @@
     "mesh_parts": 16,
     "polygons": 96,
     "materials": [
-      "MIRE_Stone.001",
+      "MIRE_Stone",
       "MIRE_StoneLight"
     ]
   },
@@ -1663,7 +1655,7 @@
     "mesh_parts": 40,
     "polygons": 240,
     "materials": [
-      "MIRE_Stone.001",
+      "MIRE_Stone",
       "MIRE_StoneLight"
     ]
   },
@@ -1676,7 +1668,7 @@
     "mesh_parts": 30,
     "polygons": 180,
     "materials": [
-      "MIRE_Stone.001",
+      "MIRE_Stone",
       "MIRE_StoneLight"
     ]
   },
@@ -1689,7 +1681,7 @@
     "mesh_parts": 25,
     "polygons": 150,
     "materials": [
-      "MIRE_Stone.001",
+      "MIRE_Stone",
       "MIRE_StoneLight"
     ]
   },
@@ -1702,7 +1694,7 @@
     "mesh_parts": 24,
     "polygons": 144,
     "materials": [
-      "MIRE_Stone.001",
+      "MIRE_Stone",
       "MIRE_StoneLight"
     ]
   },
@@ -1715,7 +1707,7 @@
     "mesh_parts": 8,
     "polygons": 48,
     "materials": [
-      "MIRE_Stone.001",
+      "MIRE_Stone",
       "MIRE_StoneLight"
     ]
   },
@@ -1728,7 +1720,7 @@
     "mesh_parts": 7,
     "polygons": 42,
     "materials": [
-      "MIRE_Stone.001",
+      "MIRE_Stone",
       "MIRE_StoneLight"
     ]
   },

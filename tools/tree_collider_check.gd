@@ -28,6 +28,14 @@ const SUBJECTS: Array[Array] = [
 	["flora", "tree_snag_a"],
 	["flora", "bush_round_a"],
 	["flora", "sapling_b"],
+	# F-422: the environment kit's own trees. F-395 scatters all eighteen of these, and F-422
+	# rebuilt every one of their trunks from a stack of frusta into a single tube with a lobed
+	# buttress base — which is exactly the geometry `_band_radius()` measures. One species per
+	# silhouette is enough to catch a regression; they share `tree_trunk()`.
+	["environment", "tree_pine_c"],
+	["environment", "tree_birch_a"],
+	["environment", "tree_bare_b"],
+	["environment", "tree_crooked_a"],
 ]
 
 
@@ -58,6 +66,14 @@ func _report(kit: String, asset: String) -> float:
 
 	# What the SHIPPED path now builds, called straight through so this cannot drift from it.
 	var fit: Dictionary = _field.call("_collider_for", kit, asset, parts)
+	# `_collider_for()` answers with an EMPTY dictionary for anything under
+	# `COLLIDER_MIN_HEIGHT_M` — deliberately, since you step over it (F-390). That is a result, not
+	# a failure, and reading `fit["radius"]` out of it is why this check used to die partway down
+	# its own subject list with a script error and still print a summary line as if it had finished.
+	if fit.is_empty():
+		print("%s  (%d mesh parts)" % [asset, parts.size()])
+		print("  no collider — shorter than %.1f m, walk-through by design" % FIELD.COLLIDER_MIN_HEIGHT_M)
+		return 0.0
 	var radius: float = float(fit["radius"])
 	# What the old full-AABB rule built, for the before/after.
 	var was: float = maxf(maxf(merged.size.x, merged.size.z) * 0.5, 0.05)
