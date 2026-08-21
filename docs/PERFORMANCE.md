@@ -11,13 +11,14 @@ Three findings referenced this file before it existed (F-352, F-363, F-426). It 
 
 ## 1. How to measure — and what each instrument is actually good for
 
-Three instruments, three different questions. Using the wrong one has cost this project real work
+Four instruments, four different questions. Using the wrong one has cost this project real work
 twice (F-342, F-452), so read this before quoting a number.
 
 | Instrument | Question it answers | How to run |
 |---|---|---|
 | `tools/perf_probe.gd` | **How fast is it?** Milliseconds, fullscreen, real display, one suspect toggled per row | `.agent/bin/agent godot --display-driver macos --script tools/perf_probe.gd` |
 | `tools/frame_cost_check.gd` | **What does the renderer do per frame?** Draw calls, primitives, VRAM, from the renderer's own counters | `.agent/bin/agent godot --windowed --script tools/frame_cost_check.gd` |
+| `tools/traversal_profile.gd` | **What is in a hitch frame?** Walks the anchor through unstreamed terrain and attributes the slow frames | `.agent/bin/agent godot --display-driver macos --script tools/traversal_profile.gd` |
 | `tools/render_census.gd` | **What is the scene made of?** Surfaces, meshes, LOD levels, attribution by asset | `.agent/bin/agent godot --script tools/render_census.gd` |
 
 **Run the millisecond probe fullscreen, on a quiet machine.** An offscreen, unfocused, downsized
@@ -256,28 +257,34 @@ synthetic machines, so the check does not report the classification of whatever 
 
 ## 5. What to do next, in order
 
-1. **Fix the traversal hitch** (F-454). Everything else on this list is a rounding error next to it:
-   13 fps 1% low under motion against 81 standing still, on the fastest machine in the project, and
-   no graphics preset reaches it. The work to audit is what happens per newly-resident chunk on the
-   main thread — `ChunkStreamer`'s 4 ms budget and whether motion actually respects it, the mesher's
-   `add_surface_from_arrays` pass, `ResourceScatterField`'s per-chunk placement, the nav bake, and
-   the repeated `Harvestable` re-wiring the probe log shows firing throughout traversal. A 74 ms
-   frame is a stall, not a budget overrun.
-2. **Time-slice the Mire tick** (F-363). The other known main-thread stall: ~16 ms synchronously,
+1. **Fix the traversal hitch** (F-454). Everything else on this list is a rounding error next to
+   it: 13 fps 1% low under motion against 81 standing still, and no graphics preset reaches it.
+   `tools/traversal_profile.gd` has taken it as far as a scene-tree instrument can. Two real
+   defects are found and fixed — `ResourceScatterField`'s LOD0 poll had no per-frame cap at all,
+   and the visual band budgeted *chunks* when a chunk is 200-500 nodes — which removed the
+   node-burst class of hitch (worst frame 217 ms -> 150 ms, no more 500-node frames) and did **not**
+   move total hitch time. What remains is ~90 ms per hitch frame that shows up in none of the
+   counters: 9 ms of `_process`, 1 ms of `_physics_process`, 0.3 ms of streamer cost, five nodes
+   added. That is a GPU/driver or resource-upload stall and it needs a real frame profiler —
+   Godot's visual profiler or a Metal capture — not another counter.
+2. **Find out why `ChunkStreamer` overruns its own 4 ms budget by 10x under motion** (F-456). 39 to
+   55 ms frames of its own reported cost, ~21% of all hitch time. Instrument inside the budgeted
+   loop before fixing: the shape of the fix depends on which work item is indivisible.
+3. **Time-slice the Mire tick** (F-363). The other known main-thread stall: ~16 ms synchronously,
    every two seconds, and several times that on the low-end target. Time-slicing needs no
    architecture decision; moving it to `WorkerThreadPool` does (ARCHITECTURE.md §2.2).
-3. **Get a low-end machine into the loop** (F-174). Every ratio here is from an M5 Pro, and the two
+4. **Get a low-end machine into the loop** (F-174). Every ratio here is from an M5 Pro, and the two
    most promising structural wins (§3.4, §3.6) are exactly the ones that measure as zero on fast
    hardware and matter on slow. This does not block the work; it blocks confidence.
-4. **Put anti-aliasing in the preset table** (§3.2). 3.44 ms of 1% low, unmanaged, shipped at MSAA
+5. **Put anti-aliasing in the preset table** (§3.2). 3.44 ms of 1% low, unmanaged, shipped at MSAA
    2x to every machine including the worst one. LOW should not be running it.
-5. **Give LOW and MEDIUM FSR instead of bilinear** (§3.1). Same measured cost, sharper image. One
+6. **Give LOW and MEDIUM FSR instead of bilinear** (§3.1). Same measured cost, sharper image. One
    line in the preset table plus a look on a moving camera.
-6. **Bound the volumetric fog to `FogVolume` shapes** (§3.5). Cheap on this GPU, not on a weak one,
+7. **Bound the volumetric fog to `FogVolume` shapes** (§3.5). Cheap on this GPU, not on a weak one,
    and it moves the look toward the localized ground fog the art direction asks for.
-7. **F-426's palette atlas** (§3.6) — 10,087 MultiMesh nodes at 2.2 instances each. Rank it once a
+8. **F-426's palette atlas** (§3.6) — 10,087 MultiMesh nodes at 2.2 instances each. Rank it once a
    low-end machine has measured it, not before.
-8. **Fix `render_census`'s LOD gap report** (F-352) so it attributes ring-based chunk LOD separately
+9. **Fix `render_census`'s LOD gap report** (F-352) so it attributes ring-based chunk LOD separately
    and stops flagging a lever the terrain manages a different way as missing.
 
 Anything added to this list needs a measurement next to it. This project has three times acted on a

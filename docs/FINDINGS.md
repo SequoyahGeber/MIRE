@@ -3010,6 +3010,82 @@ F-300..F-303, and the nav bake, which `tools/nav_bake_check.gd` has been failing
 
 ---
 
+### F-458 · The benchmark seed is arbitrary, its day/night split is 7:2, and nothing flies over the island
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
+
+Three gaps in the shipped benchmark (F-453), all reported by Sequoyah on 2026-08-21.
+
+**The seed is arbitrary.** `BenchmarkRunner.BENCH_SEED` is `20260821` — a date, picked because it
+had to be *some* fixed number. Nothing checked what island it produces. A benchmark whose whole
+purpose is representative coverage should not measure whichever island a date happens to generate:
+if that seed's island is short on highland, or has two POIs, or barely any marsh, then every scene
+in the suite that depends on those is measuring a substitute and the recommendation is drawn from a
+world that is not typical of the game. The seed should be CHOSEN — surveyed against candidates and
+picked for biome coverage, POI count and variety, land area and height range — and the survey kept
+as a tool so the choice can be re-made when worldgen changes.
+
+**The day/night split is 7:2.** Seven scenes run at `DAY_TIME_OF_DAY`, two at night. Night is not a
+minor variant in MIRE — it is when the game is played hard, when the waves come, when every point
+light refreshes its shadow, and when the frame is most likely to miss the target. Weighting the
+recommendation seven-to-two toward daylight measures the easy half of the game. Every location
+should be measured at both times of day, so the split is equal by construction rather than by
+somebody counting rows.
+
+**There is no flyover.** Every scene is either a stationary camera at head height or a sprint at
+ground level. Neither shows the island as a whole, and neither prices the thing a wide aerial view
+prices: the full draw distance with nothing culled by terrain, and the streamer building a large
+neighbourhood around a fast-moving anchor. It is also the one scene worth watching, which matters
+because the benchmark deliberately runs with the world visible.
+
+---
+
+### F-459 · First visit to a location hitches; the second visit to the same place does not
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
+
+Measured by the in-game benchmark's 18-scene suite (F-453/F-458), which visits nine locations by
+day and then the same nine by night. Every location's FIRST visit hitches and its second does not,
+by a wide margin:
+
+    Deep forest — day     1% low 22 fps   median 114 fps
+    Deep forest — night   1% low 74 fps   median 120 fps
+    Marshland  — day      1% low 39 fps   median  85 fps
+    Marshland  — night    1% low 73 fps   median 120 fps
+
+Same trees, same water, same place, minutes apart in one process. Shoreline, which is where the
+world is generated and therefore already warm, showed no such gap (82 day / 79 night). The gap is
+first-visit, not day-versus-night.
+
+Critically, **the chunk streamer has already reported itself idle** before these samples start —
+`BenchmarkRunner.settle_world()` waits for `pending_job_count() == 0` across 30 consecutive quiet
+frames, and it was satisfied. So whatever this cost is, it is not chunk streaming, or not only
+chunk streaming.
+
+Shader and render-pipeline compilation on first sight of an unseen material is the obvious suspect
+and would fit the shape exactly — a one-time per-material cost, paid the first time something is
+drawn, invisible to any "is the streamer busy" test. It is not the only candidate: first-time
+`ResourceLoader` work for a scattered asset, prop collider construction, and `EnvironmentVfx`
+emitter registration (which is already noisy in these logs) would all produce the same signature.
+**This finding is the measurement, not the diagnosis.**
+
+Why it matters beyond the benchmark: this is what a player feels the first time they walk into a
+new kind of terrain in a run, and MIRE generates a fresh island every run, so it is paid again on
+every single run rather than once per install. On a machine slower than the one this was measured
+on — an M5 Pro (F-174) — a 22 fps trough is a visible stutter.
+
+The benchmark now runs a warm-up pass over every destination before sampling
+(`BenchmarkRunner._prewarm()`) so that scene ordering does not decide the numbers. That makes the
+benchmark honest; it does not make the stutter go away for players, and it deliberately hides the
+one measurement that would have shown it. If this is fixed — precompiled pipelines, a warm-up on
+load, whatever it turns out to need — the way to prove it is to disable `_prewarm()` and check that
+the first visit and the second agree.
+
+Reproduce: comment out the `_prewarm()` call in `BenchmarkRunner.run()` and run
+`.agent/bin/agent godot --windowed --script tools/benchmark_check.gd -- --full`.
+
+---
+
 ## Resolved
 
 ### F-453 · No in-game benchmark: a player cannot measure their own machine — **fixed**
