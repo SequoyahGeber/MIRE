@@ -2848,34 +2848,6 @@ timing, but the four above failed on every run of both revisions.
 
 ---
 
-### F-453 · No in-game benchmark: a player cannot measure their own machine
-
-**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
-
-MIRE ships two ways to reason about performance and neither is reachable by a player.
-`core/render/hardware_tier.gd` classifies a machine from the driver's adapter string at first
-boot — a deliberate guess, biased safe, that never measures anything. `tools/perf_probe.gd`
-measures properly, but it is a `SceneTree` script launched from a shell with
-`--display-driver macos`, so it exists only for agents with a terminal.
-
-Between them there is nothing a player can run. Somebody on the low-end target
-(docs/DECISIONS.md, F-174) who lands on MEDIUM because their GPU reports as integrated has no
-way to find out whether HIGH would have held 60 fps, or whether LOW is what they actually
-needed — they get one classification and a settings menu with no feedback loop.
-
-What is missing is a player-facing benchmark that walks the shipped world's real areas
-(shore spawn, dense forest, traversal that forces the chunk streamer, a POI cluster, the Mire,
-night, a combat wave, a long-sightline vista), samples each with the discipline
-docs/PERFORMANCE.md §1 sets out — 1% low as the headline, pinned seed, settled streamer, no
-frame limiter, transient frames discarded — and ends in a settings recommendation the player
-can apply with one button.
-
-It also has to survive being stopped: a benchmark is a long list-processing run, so each scene's
-result belongs on disk the moment that scene finishes (AGENTS.md, "killable at any moment"),
-not in memory until the end.
-
----
-
 ### F-454 · The felt performance problem is chunk streaming, not rendering: traversal drops the 1% low from 81 fps to 13 fps, and no graphics preset touches it
 
 **Area:** performance · **Severity:** high · **Found:** 2026-08-21 by wick5e2d04
@@ -2928,7 +2900,190 @@ been aimed at the number a player actually feels, because until now nothing meas
 
 ---
 
+### F-455 · Benchmark machine probe reads power and thermal state on macOS only
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
+
+`core/bench/machine_probe.gd` records the machine's condition alongside every benchmark result —
+AC versus battery, battery percentage and charging state, the performance profile (macOS
+`powermode`: normal / Low Power Mode / High Power Mode), whether the CPU is currently being
+thermally speed-limited, the charger's wattage, the performance/efficiency core split, and the GPU
+core count and Metal level. That state is not decoration: a run taken on battery in Low Power Mode
+with the CPU held at 60% measures a machine the player never actually plays on, and the settings
+recommendation drawn from it is wrong for every minute they are plugged in.
+
+**All of it is macOS-only.** Every source is `pmset` or `system_profiler`, verified against this
+machine's real output. On Windows and Linux `read_power()` returns
+`{supported: false, reason: "..."}`, `warnings()` returns nothing, and the report prints the reason
+instead of a state line.
+
+Windows is the larger share of players and the equivalents exist: `powercfg /getactivescheme` for
+the power plan, WMI `Win32_Battery` for `BatteryStatus` (2 = on AC) and charge percentage,
+`Win32_Processor.CurrentClockSpeed` against `MaxClockSpeed` as a throttle indicator, and
+`Win32_VideoController` for adapter memory. Linux has `/sys/class/power_supply/*/{status,capacity}`
+and `/sys/class/thermal/thermal_zone*/temp`.
+
+They are absent because nobody here can run them, and an unverified parser that silently returns
+garbage is worse than a field marked unsupported — the garbage would be quoted in bug reports as
+fact. Adding a platform is one function (`_read_macos_power()` is the worked example) plus
+assertions in `tools/benchmark_check.gd`, which already asserts the unsupported branch is honest.
+It needs somebody with the machine in front of them.
+
+Temperature in degrees is deliberately absent on macOS too: SMC access needs root, and a game may
+not ask a player for their password. `pmset -g therm`'s `CPU_Speed_Limit` is reported instead — the
+effect rather than a proxy for it.
+
+---
+
+### F-456 · ChunkStreamer overruns its own 4 ms FRAME_BUDGET_MS by 10x under motion — 39 to 55 ms frames observed
+
+**Area:** performance · **Severity:** medium · **Found:** 2026-08-21 by wick5e2d04
+
+Found 2026-08-21 by wick5e2d04 while profiling F-454.
+
+`ChunkStreamer` reports its own per-frame issuing cost through `last_process_cost_ms()`, and it
+holds itself to `FRAME_BUDGET_MS = 4.0` (D-074, task 4.0a). Standing still it respects that. Walking
+at 7 m/s through unstreamed terrain, `tools/traversal_profile.gd` recorded these frames:
+
+    frame ms   streamer ms
+      94.80        54.90
+      94.78        53.10
+      84.44        39.73
+      79.99        47.75
+      77.71        36.15
+      76.64        42.98
+      74.05        38.74
+      73.54        43.28
+
+That is the streamer's OWN reported cost, not the frame's — 10x to 14x its stated budget, and
+across the 155 hitch frames of a 45-second walk it accounts for ~21% of all hitch time
+(1,650 ms of 7,556 ms).
+
+A budget that is checked between work items cannot bound a single work item that exceeds it, so the
+likely cause is one indivisible operation — most plausibly a collider cook, which the file's own
+header already flags as "~1.15-1.5 ms/chunk and NOT movable to WorkerThreadPool, because it calls
+PhysicsServer/Jolt". Eight of those in a frame is 12 ms, not 55, so either the per-chunk figure is
+much worse under motion than it was when measured, or something else in the budgeted section is.
+
+Worth measuring before fixing: instrument the inside of `_process()`'s budgeted loop to say which
+work item is overrunning, rather than assuming it is the collider. The fix shape depends entirely on
+the answer — a cheaper cook, a smaller work item, or a deadline checked more often.
+
+Filed separately from F-454 because it is a distinct defect with a distinct fix: F-454's dominant
+cost is ~90 ms per hitch frame that no scene-tree counter can see, and this is 4-8 ms of it.
+
+---
+
+### F-457 · Traversal hitches to a 17 fps 1% low on the fastest machine in the project
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
+
+The in-game benchmark (F-453) measures nine scenes across the shipped island. Eight of them, all
+sampled standing still, sit between a 63 and 80 fps 1% low against a ~119 fps median. The ninth —
+`Running inland`, which sprints at 7 m/s through ground the streamer has not built yet — reports a
+**17 fps 1% low against a 109 fps median**, reproducibly, across four separate full runs.
+
+That is not a slow frame. The median says the machine is drawing this world at 109-120 fps in every
+scene including the night wave. It is a periodic stall: the chunk streamer, the mesher and the nav
+baker doing main-thread work as the player moves, landing a handful of very large frames per
+sample window.
+
+Measured on an M5 Pro, macOS, Metal, Forward+, AC power, unthrottled, preset HIGH, at 1280x803 —
+the fastest machine in the project (F-174) at a small window size. Reproduce with:
+
+    .agent/bin/agent godot --windowed --script tools/benchmark_check.gd -- --full
+
+Two reasons this matters more than the number suggests. First, `docs/PERFORMANCE.md` §2 already
+identified the 11.7 ms tail against a 7.1 ms median as "the number that decides whether the game
+feels good, and the number that will break 60 fps first on the low-end target" — this locates it
+precisely, in the one scenario that produces it. Second, no graphics preset touches it: the
+benchmark's own calibration pass confirms the traversal 1% low does not respond to the preset
+table, which is why `SettingsAdvisor.preset_basis()` deliberately excludes travelling scenes from
+choosing a preset (D-194). A player who hits this cannot fix it in the settings menu, and neither
+can we.
+
+`tools/perf_probe.gd`'s traversal rows (T1-T3, added by the F-452 work) are the instrument for
+attributing it — this finding is the reproducible measurement, not the diagnosis. The likely
+suspects are already filed: F-294 (per-sample Array rebuilds under every surface sample), F-295,
+F-300..F-303, and the nav bake, which `tools/nav_bake_check.gd` has been failing on since 4.13
+(F-285/F-292).
+
+---
+
 ## Resolved
+
+### F-453 · No in-game benchmark: a player cannot measure their own machine — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
+
+MIRE ships two ways to reason about performance and neither is reachable by a player.
+`core/render/hardware_tier.gd` classifies a machine from the driver's adapter string at first
+boot — a deliberate guess, biased safe, that never measures anything. `tools/perf_probe.gd`
+measures properly, but it is a `SceneTree` script launched from a shell with
+`--display-driver macos`, so it exists only for agents with a terminal.
+
+Between them there is nothing a player can run. Somebody on the low-end target
+(docs/DECISIONS.md, F-174) who lands on MEDIUM because their GPU reports as integrated has no
+way to find out whether HIGH would have held 60 fps, or whether LOW is what they actually
+needed — they get one classification and a settings menu with no feedback loop.
+
+What is missing is a player-facing benchmark that walks the shipped world's real areas
+(shore spawn, dense forest, traversal that forces the chunk streamer, a POI cluster, the Mire,
+night, a combat wave, a long-sightline vista), samples each with the discipline
+docs/PERFORMANCE.md §1 sets out — 1% low as the headline, pinned seed, settled streamer, no
+frame limiter, transient frames discarded — and ends in a settings recommendation the player
+can apply with one button.
+
+It also has to survive being stopped: a benchmark is a long list-processing run, so each scene's
+result belongs on disk the moment that scene finishes (AGENTS.md, "killable at any moment"),
+not in memory until the end.
+
+---
+
+**Resolved 2026-08-21 by quill895277.** Built. Settings → DISPLAY → RUN BENCHMARK (front end only, D-192).
+
+`core/bench/` — `frame_sampler.gd` (statistics), `benchmark_suite.gd` (nine scenes as data),
+`benchmark_runner.gd` (staging, sampling, calibration), `settings_advisor.gd` (the recommendation),
+`benchmark_report.gd` (resumable JSONL ledger + report.json/report.txt), `machine_probe.gd` (what
+state the machine was in). UI in `ui/frontend/benchmark_screen.gd`, entry point in
+`ui/frontend/graphics_settings_page.gd`, routed by `ui/frontend/settings_screen.gd`.
+
+Verified with `.agent/bin/agent godot --windowed --script tools/benchmark_check.gd -- --full`:
+**159 assertions, 0 failures**, full nine-scene suite plus the calibration pass. Headless runs the
+pure half and prints SKIPPED for the live one. `tools/settings_screen_check.gd` re-run green after
+the settings-screen edit.
+
+Real report from that run (M5 Pro, 1280x803, preset HIGH, AC power, unthrottled):
+
+  Shoreline 80 | Deep forest 63 | Marshland 72 | Highland vista 63 | Ruins 69 | The Mire 68
+  Running inland 17 | Night 76 | Night wave 69      (1% low fps; medians all 103-120)
+
+  Recommended: HIGH — comfortably above 60 fps
+    HIGH holds 71 fps in Highland vista, the most demanding scene a graphics setting can do
+    anything about.
+    Running inland ran at 109 fps most of the time but dropped to 17 in its worst frames. That gap
+    is hitching rather than a slow frame ... a lower preset will not remove it.
+
+Four defects the benchmark found in ITSELF while being built, each now covered by an assertion:
+
+1. A fixed 2 s settle after each teleport measured the world still arriving — `Deep forest` read 21
+   fps standing still. Now waits on the streamer (`settle_world`). Guard: a stationary scene whose
+   1% low is under a fifth of its median fails.
+2. `The Mire` searched the corruption field including the sea and stood offshore — 632 draws against
+   4,000-5,500 everywhere else. Now restricted to ground above the waterline. Guard: a scene drawing
+   under a quarter of the suite's median draws fails.
+3. Calibrating on the traversal scene compared presets on samples that measured different worlds
+   (the first pass streams the ground in for the rest), and recommended a preset for a cost no
+   preset touches. Now `SettingsAdvisor.preset_basis()` — D-194.
+4. `tools/benchmark_check.gd` hung ten minutes on a completed run because a signal lambda assigned
+   to a captured local; GDScript closures capture by value. Now members, plus a bounded wait.
+
+Safety, both asserted during the run rather than after: the player is invulnerable via the shipped
+`GodModeService` (restored on every exit path), and the class picker never appears because the
+runner selects an attunement rather than fighting `AttunementUI`'s half-second re-open poll.
+
+Left open deliberately: F-455 (machine probe is macOS-only, with the Windows/Linux APIs named) and
+F-457 (the 17 fps traversal hitch — a finding about the game, not the benchmark).
 
 ### F-452 · render_census sees 388 surfaces in a world whose real frame is 4,908 draw calls — the structural instrument is blind to nearly all of the shipped cost — **fixed**
 

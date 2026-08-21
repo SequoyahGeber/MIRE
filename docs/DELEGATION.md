@@ -75,6 +75,72 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-21 — F-453: there is an in-game benchmark, and `core/bench/` is its API (quill895277)
+
+A player can now measure their own machine instead of being classified by
+`core/render/hardware_tier.gd`'s adapter-string guess. Settings → DISPLAY → **RUN BENCHMARK** (front
+end only — it never runs over a live run, D-192).
+
+**`core/bench/` is five plain scripts and one Node.** None of them is an autoload and none needs
+one:
+
+```gdscript
+FrameSampler.new()                      # record(delta_ms, gpu_ms, cpu_ms, draws, prims) -> stats()
+BenchmarkSuite.scenes()                 # the nine scenes, as data. estimated_seconds(), scene_by_id()
+MachineProbe.read_hardware()            # GPU/CPU/cores/RAM. read_power() -> volatile state
+MachineProbe.warnings(power)            # why this machine is not fit to be benchmarked, in player words
+MachineProbe.drift(before, after)       # what changed during the run (throttling, power source)
+SettingsAdvisor.recommend(baseline, calibration, target_fps, current_preset)
+SettingsAdvisor.worst_scene(results)    # the scene every recommendation is made against
+BenchmarkReport.new().begin(signature)  # resumable JSONL ledger; returns the completed prefix
+BenchmarkRunner.settle_world(world, tree)   # static; wait for the chunk streamer. USE THIS
+```
+
+`BenchmarkRunner.run(world, target_fps, resume, scene_override, calibrate)` wants a level that is
+already loaded and settled — it does no scene loading, deliberately, so a check can stage its own.
+`ui/frontend/benchmark_screen.gd` is the caller that owns the world.
+
+**`BenchmarkRunner.BENCH_SEED` is `20260821`, the same island `tools/probe_scene.gd` pins.** Keep
+them equal: the developer probe and the shipped benchmark describing different ground is how a
+player's report stops being comparable with ours.
+
+**Three rules are enforced in code, not by convention.** The headline metric is a **1% low**, never
+a median and never an average across scenes. A preset is only ever recommended after being
+*measured* on that machine — with an empty `calibration` the advisor returns verdict
+`&"unmeasured"` and changes nothing, rather than predicting from `docs/PERFORMANCE.md`'s table
+(D-193). And the preset is chosen against `SettingsAdvisor.preset_basis()` — the worst
+**non-travelling** scene — not against the worst scene overall, because the worst scene overall is
+the chunk streamer and no graphics lever touches it (D-194). `worst_scene()` is still what the
+hitch diagnostic talks about; the two are different scenes on this game and conflating them
+produced a report that contradicted itself.
+
+**The player cannot die during a run, and the class picker never appears.** The runner turns on the
+shipped `GodModeService` — which already gates enemy damage, Mire blight and starvation — and hands
+it back on every exit path, cancelled and failed included; leaving it on would put the player into
+their next real run invulnerable. It also selects `BENCH_ATTUNEMENT` (`warden`), because
+`AttunementUI` re-opens itself every half second while `local_selection()` is empty, so closing the
+picker does not keep it closed. Both are asserted *during* the run by `benchmark_check`, not after.
+
+**Every scene waits on the streamer, never on a clock.** `_run_scene()` calls `settle_world()` after
+each teleport before it samples. A fixed two-second wait was the first version and it reported
+`Deep forest` at a 21 fps 1% low against a 113 fps median while standing still — it was measuring
+the teleport. The check now fails any stationary scene whose 1% low drops below a fifth of its own
+median, and any scene drawing under a quarter of the suite's median draw calls (which caught `The
+Mire` pointing out to sea at 632 draws).
+
+**`MachineProbe` is macOS-only** and says so (`{supported: false, reason: ...}`) everywhere else —
+F-455 has the Windows/Linux APIs and what to assert. No temperature is reported on any platform;
+SMC access needs root, so `pmset -g therm`'s `CPU_Speed_Limit` stands in for it.
+
+**Watch out for GDScript closure capture.** `runner.finished.connect(func(v): my_local = v)` assigns
+to the lambda's own copy and the outer local never changes — this hung `tools/benchmark_check.gd`
+for ten minutes on a run that had completed perfectly. Use a member variable.
+
+Verify with `.agent/bin/agent godot --windowed --script tools/benchmark_check.gd` (add
+`-- --full` for the whole suite plus calibration, ~3 minutes). Headless still runs the pure half and
+prints `SKIPPED` for the live one rather than passing vacuously.
+
+
 ### 2026-08-21 — F-450: the hills are flat-topped uplands, and the terrain is three times as tall (birchcf39ce)
 
 Reported from play: *"taller hills please the map is wayy too flat, i do like big flat areas but i

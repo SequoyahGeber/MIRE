@@ -6428,3 +6428,84 @@ heart it spread from, which is exactly why there needs to be only one heart.
 **Would change my mind:** a second corruption origin that is a deliberate, authored event rather
 than a generation parameter (a Cycle escalation seeding a new front, say) — that is a different
 mechanic and would want its own decision, not a bigger `SEED_CLUSTER_COUNT`.
+
+### D-192 · 2026-08-21 · The benchmark runs in its own pinned world, never inside a player's run
+The in-game benchmark (F-453, `core/bench/`) always generates its own island on a fixed seed and is
+offered from the front end only. It is never available from the pause menu, and it never measures
+the run a player is in the middle of.
+
+Two of its nine scenes change the world permanently: the night scene crosses into darkness and fires
+`night_started`, and the combat scene spawns a wave whose enemies stay in the world afterwards. Run
+inside a live session, the benchmark would hand a player a night and six enemies they did not ask
+for, in the middle of a run they care about. The obvious alternative — a "safe mode" that drops
+those two scenes — is worse, because night and a live wave are most of where MIRE's frame budget
+actually goes, and a benchmark that skips them would recommend settings for a game nobody plays.
+
+The seed is pinned to `BenchmarkRunner.BENCH_SEED`, deliberately the same value
+`tools/probe_scene.gd` pins, for the reason docs/PERFORMANCE.md §1 rule 5 gives: `host_generate_seed()`
+draws real entropy, so an unpinned benchmark measures a different island every launch and two runs
+cannot be compared — not across a driver update, not across a settings change, and not between two
+players comparing numbers.
+
+The cost is that a benchmark takes a world generation before it takes a measurement, which is why
+the screen says so before the player commits to it.
+
+**Would change my mind:** a scene set that is genuinely non-mutating and still representative — if
+night and waves could be staged and fully reverted, an in-run "why is this hitching?" benchmark
+would be worth having, and it is the obvious thing to want while actually playing.
+
+### D-193 · 2026-08-21 · A settings recommendation is only ever made from numbers measured on that machine
+`core/bench/settings_advisor.gd` never predicts. It compares measurements taken minutes apart on the
+machine in front of the player, and the runner pays for that by re-sampling the worst scene at each
+candidate preset before the advisor is asked anything.
+
+The tempting alternative was arithmetic: docs/PERFORMANCE.md has a table of what every graphics lever
+costs, so measure once and subtract. Do not do this. Every row of that table came from the fastest
+machine in the project, the file says so in bold (F-174), and its own paired-versus-serial columns
+disagree about MEDIUM by roughly 4 ms depending on which reference you read them against. A
+prediction built on it would be a confident claim about hardware nobody has ever run this on — the
+exact failure F-342 filed, dressed up as a player-facing feature.
+
+Two rules follow and both are enforced in code. The pass condition is the **worst scene's 1% low**,
+not an average across scenes and not the median: averaging the shore into the night wave hides the
+one scene the player would have complained about. And ties go downward, the same way
+`core/render/hardware_tier.gd` breaks its ties — landing one preset too low costs a player five
+seconds in the settings menu, landing one too high costs them their opinion of the game.
+
+**Would change my mind:** enough real-hardware benchmark reports to fit a cost model that is
+validated against low-end machines rather than extrapolated from one fast one. That is a data
+problem, not a design one, and F-174 is the finding that has to close first.
+
+### D-194 · 2026-08-21 · A graphics preset is chosen against the hardest scene a preset can change
+`core/bench/settings_advisor.gd`'s `preset_basis()` excludes every scene flagged `travel` from the
+comparison that picks a preset. The verdict is made against the worst *stationary* scene; the worst
+scene overall is still reported, and its hitch is described on its own terms.
+
+This was not the first design, and the first one was wrong in two separate ways at once — both of
+which the benchmark's own output exposed, which is the argument for having built it.
+
+**It recommended a preset for a cost no preset touches.** `Running inland` is reliably the worst
+scene in the suite (F-457: a 17 fps 1% low against a 109 fps median), and what it measures is the
+chunk streamer, mesher and nav baker doing main-thread work as the player moves. Calibrating on it
+produced a report that contradicted itself inside three lines: *"MEDIUM holds 73 fps where HIGH
+managed 17"* printed directly above *"that gap is hitching, and a lower preset will not remove it."*
+docs/PERFORMANCE.md §2 had already established the general form of this — the draw-call knobs buy
+draw calls and not milliseconds — so a scene whose cost is not fill is the wrong instrument for
+choosing a fill lever.
+
+**And the comparison was not measuring presets at all.** Every calibration pass restarts the
+traversal from the same point and walks the same spiral, so the FIRST pass streams that ground in
+and every later pass runs across chunks that are already resident. Whichever preset was measured
+second won, by a factor of four. That is not sampling noise a longer window fixes; the two samples
+were measuring different worlds. Any repeated measurement of a streaming traversal has this
+property, so the rule is not "sample traversal for longer" — it is "do not compare presets on a
+traversal at all."
+
+The cost is that the recommendation is silent about the one scene a player is most likely to notice.
+That is paid for explicitly: the hitch gets its own reason line saying no preset will fix it, which
+is more useful than a preset change that appears to and does not.
+
+**Would change my mind:** a traversal that is repeatable — a fixed route through ground evicted from
+the streamer between passes, so each preset genuinely meets the same unbuilt world. Then travelling
+scenes could calibrate too, and would be the better basis, because traversal is where the game
+actually lives.
