@@ -1563,7 +1563,279 @@ Two smaller gaps found alongside, worth folding into the same task:
 
 ---
 
+### F-327 · Ranged shot observers run before local recovery and hitstop are applied
+
+**Area:** combat · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
+
+`autoload/ranged_combat_service.gd:398-409` emits `shot_landed`/`shot_missed` before `_enter_local_recovery()` and `_local_hitstop_remaining = weapon.hitstop_seconds`. Godot signal callbacks are synchronous, so a directly connected UI/feel listener observes a confirmed hit while the local clock still reads zero. The first audit sweep also exposed the adjacent timing weakness in `tools/ranged_combat_net_check.gd`: damage and the landing were correct but its later 50 ms-polled observation saw `hitstop_applied=false`; the final sweep passed, so that check result is intermittent and does not by itself prove the ordering defect. The source order does. Apply local state before emitting the resolved outcome, or document and expose a later signal that guarantees feel state is committed; separately make the 50 ms hitstop assertion observe the transition rather than race a 50 ms effect.
+
+---
+
+### F-328 · The run-scope totality audit already misses three newly registered autoloads
+
+**Area:** lifecycle/testing · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
+
+`project.godot` now registers 63 autoloads, but `tools/run_scope_audit_check.gd` still classifies the previous 60. It fails on `ui/menu_stack.gd`, `ui/menu/pause_menu.gd`, and `autoload/run_record.gd`. D-178 created this check specifically so new mutable autoloads cannot ship without an explicit run-scope decision, yet these three were registered without updating the tripwire. Classify all three and add the chosen reasoning to D-178; the checker must return to 63/63 coverage.
+
+---
+
+### F-330 · Every procedural client streams terrain around every replicated player
+
+**Area:** worldgen/performance · **Severity:** high · **Found:** 2026-08-20 by nettlea491cc
+
+`world/gen/procedural_world.gd:558-567` rebuilds an anchor list from the full `players` group every physics tick and passes it to `ChunkStreamer` on every peer. The host needs the union for authoritative world proxies, but a client only needs terrain around its locally controlled player. At six separated players, each client can request up to six 17x17 chunk neighborhoods, multiplying mesh/collision/scatter work and defeating interest management. Gate the union to the host; clients should anchor locally (plus any explicitly required transition margin), and add a multi-peer streamed-chunk budget check.
+
+---
+
+### F-331 · Enemy attack-slot arbitration is quadratic and the documented per-kind cap counts every kind
+
+**Area:** enemy/performance · **Severity:** high · **Found:** 2026-08-20 by nettlea491cc
+
+`systems/enemies/enemy.gd:483-497` calls `get_nodes_in_group(ENEMY_GROUP)` from every in-range enemy on every host physics tick. That is O(N^2) group traversal at the moment combat density is highest. The file/class comment describes a cap 'of one kind', but `_engaged_attackers()` does not compare `definition.id`, so crawlers, striders, bosses, and future types all consume one shared cap for a target. Maintain target/kind engagement counts in `EnemyWorld` (updated on phase/death/despawn) or otherwise make arbitration O(1), and assert mixed-kind behavior.
+
+---
+
+### F-332 · World snapshot decompression trusts an unbounded size supplied by the host
+
+**Area:** netcode/security · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
+
+`autoload/world_delta_log.gd:147-155` accepts `original_size` over RPC and passes it directly to `PackedByteArray.decompress()` with only `> 0` validation. A malicious/buggy host or corrupted payload can make a joining client attempt an arbitrarily large allocation before the decoded type is checked. Define a maximum snapshot byte budget derived from the world bounds, reject compressed and declared sizes above it, verify decompression length/result, and add hostile-input cases.
+
+---
+
+### F-333 · Command rate limiting drops legitimate back-to-back operations instead of scheduling them
+
+**Area:** commands/netcode · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
+
+`autoload/command_service.gd` rejects a second valid command from a peer inside a fixed 100 ms window with `commands too frequent — slow down`. The executable contract did not adopt that loss: `tools/command_net_check.gd`, `command_craft_build_net_check.gd`, and `entity_net_check.gd` now fail because normal sequential operations are discarded, including inventory grants, craft/build/demolish, and `tp`. Use a bounded per-peer queue/token bucket that limits abusive throughput without dropping ordinary ordered commands, or update callers and acceptance tests around an explicit retry protocol.
+
+---
+
+### F-334 · The end-to-end loop passes every phase and then aborts in engine teardown
+
+**Area:** stability/testing · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
+
+`tools/loop_audit_check.gd` completed boot, harvest, craft, build, eat, wave, chest, Wellspring, Mire, Cycle, extraction and reported no phase failure on 2026-08-20, but the process exited 250 with `libc++abi: terminating ... recursive_mutex lock failed: Invalid argument`. A green gameplay transcript is therefore not a clean lifecycle run and repeated CI/audit execution is unreliable. Isolate the remaining navigation/thread/resource teardown owner, explicitly stop/join it before quit, and require exit 0 plus no engine errors.
+
+---
+
+### F-335 · Two verification checks no longer test the shipped contracts they claim
+
+**Area:** verification · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
+
+`tools/title_check.gd` still reads `salvage_save.gd` and `data[\"last_run\"]`, while the shipped title uses `run_record_save.gd`/`user://last_run.json`; it fails even though product code follows MENU-7. `tools/poi_required_station_check.gd` proves all 132 positive seeds contain required sites, but clearing `required` now loses zero stations—including the historical failing seeds—so its negative control has no teeth and the check deliberately exits red. Update the title fixture to the real persistence boundary and redesign the POI mutation so it demonstrably removes the relax-ladder guarantee.
+
+---
+
+### F-337 · Wellspring re-corruption turns a 2-second ward census into a per-frame full build scan
+
+**Area:** performance · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
+
+`autoload/build_service.gd:350-365` deliberately rebuilds `ward_radii()` by scanning every placed piece because its documented consumer, MireGrid, calls it once per 2-second tick. `systems/wellspring/wellspring.gd:235-294` is an unaccounted second consumer: every active re-corruption Wellspring calls `_is_warded()` every rendered frame, and each call rebuilds the whole ward list, resolves every buildable definition, and looks up each node. With multiple Wellsprings and a built-up base this becomes O(active_wellsprings * placed_pieces * FPS) for minutes. Cache ward circles in BuildService and invalidate on place/destroy/reset, or throttle Wellspring ward checks to a gameplay-appropriate cadence.
+
+---
+
+### F-338 · The full 256 by 256 Mire simulation has no saturated late-run performance gate
+
+**Area:** performance · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
+
+`world/mire/mire_grid_sim.gd:108-132` duplicates a 65,536-float array, visits every cell, examines four neighbours for each corrupted cell, and for warded runs linearly scans every ward circle per neighbour. `world/mire/mire_grid.gd` executes this synchronously on the host main thread every 2 seconds and then scans changes for replication. Existing checks prove correctness/determinism but no benchmark covers a near-saturated grid plus realistic ward count—the worst state occurs late in the longest sessions, where a periodic hitch is most damaging. Add a measured budget probe for sparse/mid/saturated grids and optimize with an active frontier/spatial ward lookup if it misses frame budget.
+
+---
+
+### F-339 · Jittered terrain vertices keep normals derived from the unjittered height grid
+
+**Area:** rendering/worldgen · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
+
+`world/chunk/chunk_mesher.gd:268-299` moves each X/Z vertex by deterministic jitter and re-samples its Y at that new coordinate, but computes `dx`/`dz` from the original unjittered apron at `ai +/- 1`. Lighting normals therefore describe a different surface than the triangles actually rendered, most visibly on the deliberately faceted 4.18 terrain. Recompute normals from the emitted triangle geometry (or sample the analytic field around each jittered coordinate) and add an assertion comparing stored normals to generated face normals within a chosen smoothing tolerance.
+
+---
+
+### F-340 · Terrain retuning landed without refreshing its deterministic and structural checks
+
+**Area:** worldgen/testing · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
+
+After 4.18/D-184, `tools/biome_terrain_check.gd` still requires every border vertex to sit on the unjittered grid, `chunk_stream_check.gd` still assumes grid-ordered positions and pins an obsolete 3.0999 m divergence, `terrain_look_check.gd` pins pre-retune ridge/height conditions, and `worldgen_noise_reuse_check.gd` has 20 stale hashes across terrain/biome/scatter/POI outputs. This leaves the most recent worldgen change with a broadly red regression suite, so a future real drift cannot be distinguished from accepted retuning. Re-author invariants around deterministic shared jitter, independently review each new golden hash, and keep a negative mutation that proves the checks fail for actual seam/non-determinism regressions.
+
+---
+
+### F-341 · Sway material caching aliases meshes whose vertical origins differ
+
+**Area:** rendering · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
+
+`autoload/environment_vfx.gd:492-520` caches a `ShaderMaterial` key using color, roughness, sway profile, and `bounds.size.y`, then stores `bounds.position.y` in the shared `wind_root_y` uniform. Two meshes with identical height/material/profile but different AABB origins reuse the first mesh's root, so the second bends around the wrong vertical pivot. Include quantized `bounds.position.y` in the cache key or move root/inverse-height data to per-instance parameters; add a two-mesh fixture with equal height and different origins.
+
+---
+
+### F-342 · Every renderer performance instrument still measures Hollowmere, not the shipped procedural world
+
+**Area:** performance/testing · **Severity:** high · **Found:** 2026-08-20 by nettlea491cc
+
+`project.godot` now boots `levels/procedural_island.tscn`, but `tools/frame_cost_check.gd:18`, `tools/perf_probe.gd:18`, and `tools/render_census.gd:18` all hard-code `levels/hollowmere.tscn`. The reported 4,864 draw calls / 1.17M primitives / 278 MB VRAM / 9.35 ms on this M5 Pro therefore describe the retired authored fixture, while the new default's chunk streaming, per-client anchor behavior, scatter, terrain jitter, water, and main-thread costs have no renderer-grounded budget. Make the shipped main scene the default target (optionally accept an explicit fixture override) and record procedural startup, steady-state, traversal/streaming, six-peer client, and late-run Mire/wave rows before using 60 FPS claims.
+
+---
+
+### F-343 · harvest_world_check is seed-dependent because live Mire can reduce its fixed-yield assertion
+
+**Area:** verification · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
+
+On the final stable sweep, `tools/harvest_world_check.gd` failed its offline inventory assertion: the real tree emitted the expected authored yield of 3, but `Harvestable` correctly applied Mire rot and granted 2 (`peer 1 collected 2/3 log — the Mire rotted the rest`). The check boots global Mire state without pinning the harvested point clean, yet asserts exactly three inventory logs. It passed in the earlier sweep, so the same code can be green or red depending on run seed/corruption. Explicitly set the fixture point's corruption/modifier state or assert the post-rot contract from the same authoritative calculation; do not weaken the lifecycle assertions.
+
+---
+
+### F-344 · Remote interpolation misses its own smoothness budget in both synthetic and live phases
+
+**Area:** netcode/performance · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
+
+`tools/interp_check.gd` failed consistently in both audit sweeps on the settled code. Synthetic 30 Hz snapshots with jitter/loss produced motion CV 0.406 (limit 0.35); the live two-peer path produced CV 0.376. RemoteInterpolator removes almost all still frames (0.6%/0.3% versus 64-67% without it), so wiring is working, but frame-to-frame motion remains measurably more uneven than the acceptance budget and carries ~85 ms deliberate lag. Profile whether 120 Hz render timing/engine interpolation changed the measurement, then retune buffer/adaptation or justify a platform-aware threshold from repeated distributions; keep both synthetic and real-spawner phases.
+
+---
+
+### F-345 · Procedural co-op spawn offsets are not placed on their own terrain surface
+
+**Area:** worldgen/gameplay · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
+
+`tools/spawn_ground_check.gd` passes immediate collider construction, solo settling, void recovery, and reseed, but consistently fails the six co-op offsets: the worst slot is 0.37 m from its own ground. `ProceduralWorld` primes each offset yet retains a shared/base height closely enough for visible hover/sink on uneven jittered terrain. Resolve every slot with the physics/analytic surface at that offset after priming (preserving the player's collision clearance) and assert all six across multiple seeds.
+
+---
+
+### F-346 · Chunk navigation regions repeatedly report overlapping edge synchronization errors
+
+**Area:** navigation · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
+
+The stable `spawn_ground_check.gd` run emitted repeated `Navigation region synchronization had 3-10 edge error(s)` warnings: more than two edges occupy the same map rasterization space, which Godot labels a logical navigation-geometry error. Similar warnings appear while four chunk regions attach in `nav_bake_check.gd`, even though sampled cross-boundary paths currently work. The overlap can create ambiguous connections and log spam as chunks stream/rebuild. Eliminate duplicate/overlapping boundary geometry or tune cell size/geometry margin/merge rasterizer scale from measured path coverage, then make the warning count part of the nav check contract.
+
+---
+
+### F-347 · The navigation performance decision is no longer reproduced: the benchmark now records repeatable 39-43 ms streaming frames
+
+**Area:** navigation/performance/testing · **Severity:** high · **Found:** 2026-08-20 by nettlea491cc
+
+`tools/bench_navbake.gd` was run twice on the settled Godot 4.7.1 working tree. Its 24-chunk realistic streaming episode recorded 39.457 ms and 42.536 ms of engine-frame block, both far above its 2 ms budget and the 0.034 ms result on which D-016 declares runtime navigation GREEN. Single async submissions remain cheap (0-0.092 ms), so this is specifically the attach/retire/map-iteration episode that the decision treats as proven safe. The harness also prints the factually wrong fallback verdict `hitches at runtime and seams do not join` when block is red but `_seam_ok` is true; its immediately preceding table correctly reports `YES via radius 0.50, margin 1.10`. Profile and isolate the repeatable streaming spike on the current engine/runtime geometry, make the benchmark exit nonzero on a missed budget, and fix verdict composition so navigation safety cannot remain documented green while its owning instrument prints contradictory red evidence.
+
+---
+
 ## Resolved
+
+### F-336 · GAMELOOP.md reports several pre-cutover states as current — **fixed**
+
+**Area:** documentation/design · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
+
+`docs/GAMELOOP.md` says today's map is Hollowmere, the enemy roster has 2 definitions, Attunements are task 3.10, and the 6.8 run-summary ceremony is still missing. Current evidence is `project.godot` booting `levels/procedural_island.tscn`, Registry loading 5 enemy definitions, ROADMAP/SPECS assigning Attunements to 3.9, and MENU-7's `RunRecord`/summary surfaces registered. Because this document presents itself as the player loop 'as shipped', these are design/implementation inconsistencies rather than harmless history. Refresh every current-state claim after the procedural/menu cutovers and distinguish remaining aspirational per-player stats from the shipped summary.
+
+---
+
+**Resolved 2026-08-21 by ivy1bcae0.** **Fixed 2026-08-20 by ivy1bcae0.**
+
+Every current-state claim in `docs/GAMELOOP.md` re-checked against `project.godot`, the `content/`
+registry and the roadmap's own task status, and corrected in place:
+
+- **Landfall** no longer says "today Hollowmere's authored spawn". 4.15 is done and the project boots
+  `levels/procedural_island.tscn`. The remaining gap is named precisely: co-op offsets land up to
+  0.37 m off their own surface (F-345), while solo landfall, collider priming and void recovery are
+  proven.
+- **Enemy roster** no longer says "2 definitions live" or calls 5.2 the highest-leverage content
+  task. 5.2 is done and the registry loads five — `crawler`, `bog_crawler`, `strider`, `tusker`,
+  `broodcaller`. The honest remaining point is that five is the bottom of 5.2's own 8–12 band and the
+  faces the deep game lacks are the bosses (5.6–5.8, all todo).
+- **Attunements** are task 3.9, not 3.10; 3.10 is heavy hauling.
+- **Run summary** is no longer listed as missing. 6.8 and MENU-7 shipped: `run_summary_screen.gd` for
+  all three endings, `RunRecord` persistence for the title screen, `tools/run_summary_check.gd` as
+  the proof. What is genuinely still absent is the per-player rows (F-325), so the summary is a party
+  result rather than a post-match table — stated as such instead of as a missing ceremony.
+- **Gap register** rebuilt: 5.2, 6.8/MENU-7, 4.15, 4.16 and 4.18 removed as closed (listed
+  explicitly, so a reader can see they were closed rather than dropped); F-325 and F-345 added as the
+  two loop-relevant open findings; the balance row now says 5.2 has landed rather than gating on it.
+- **§2** now says 4.18's three-seed walk is done, and notes that the retune it drove is what left the
+  worldgen regression suite stale (F-340).
+
+A dated refresh note in the header records what was stale and why it mattered: this document presents
+itself as the loop "as shipped", so a stale claim here is a design inconsistency, not history.
+
+### F-329 · Blender reproducibility checks mutate the shared tracked asset tree and do not restore it — **fixed**
+
+**Area:** tooling/concurrency · **Severity:** high · **Found:** 2026-08-20 by nettlea491cc
+
+`tools/blender/asset_repro_check.py` and `tools/blender/crafting_stations_repro_check.py` launch each builder twice in the real repository and compare only exported GLBs/catalogs. Builders also write source `.blend` files and preview PNGs, which the check neither snapshots nor restores. During this audit, running the crafting check dirtied `assets/source/crafting_stations.blend` and two tracked previews even though the checker passed; those three audit-created deltas were restored exactly. With multiple agents, the same check can overwrite another lane's tuning or poison Godot imports. Run builders in an isolated copy/worktree, or snapshot and restore every declared output under the asset/import locks.
+
+---
+
+**Resolved 2026-08-21 by ivy1bcae0.** **Fixed 2026-08-20 by ivy1bcae0.**
+
+New `tools/blender/asset_tree_guard.py` wraps both reproducibility checks in a snapshot/restore
+context. It copies the declared roots — the family asset directory, plus `assets/source/`, which is
+added automatically because every builder saves its `.blend` there and forgetting it is the exact
+omission this finding filed — runs the builders, then restores every file whose bytes changed,
+re-creates every file deleted, and removes every file created. `shutil.copy2` preserves mtime, so
+untouched files are never rewritten and a clean family does not needlessly invalidate Godot's import
+cache. Restore happens in a `finally`, so a check that dies mid-run still cleans up. It runs under
+`import_cache_guard` (F-196) so no `agent godot` run can read a half-restored tree, and forces one
+`agent godot --import` only when the restore actually changed something inside the repository.
+
+`asset_repro_check.py` guards `--export-dir`'s parent (not just `exports/`) and takes repeatable
+`--guard-dir` for a family whose builder writes elsewhere. `crafting_stations_repro_check.py` guards
+`assets/crafting_stations`. Both docstrings' old claim — that a passing run "leaves the tree in the
+state a human running the build script once would" — was true of the GLBs and false of the `.blend`
+and previews; both now say so.
+
+**Stray detection, and a mistake worth recording.** The guard also hashes all of `assets/` around
+each builder launch and fails the check on any change outside the declared roots, so a builder
+writing somewhere its check does not know about is caught rather than silently repaired. The first
+version measured that window across the *whole check* and immediately failed a genuinely passing run,
+blaming the crafting-stations builder for eight `assets/audit/menu/*.png` that a concurrent lane
+(`quill5fa5c7`) rendered through `tools/title_render.gd` in the gap between the two Blender launches.
+The window is now per-builder via `guard.builder_run()`, which brackets only the Blender subprocess —
+a builder holds the Godot import lock for its entire write, so no `agent godot` writer can interleave
+inside it. In a repo where several agents work at once, a check that goes red because someone else
+was working is a check people learn to ignore.
+
+Verified:
+- `tools/blender/asset_tree_guard_check.py` (new, `PASS`) drives the real guard against a scratch
+  tree with a fake builder — no Blender needed. Covers restore-on-difference, no-rewrite-on-identical
+  bytes, mtime preservation, created-file removal, deleted-file restoration, builder strays reported,
+  concurrent-lane writes NOT reported, and restoration after the body raises. Its `watch_root`/
+  `source_dir` are injected so the check itself can never revert a real lane's work.
+- The real `crafting_stations_repro_check.py`: `PASS`, and the three tracked paths the audit restored
+  by hand — `assets/source/crafting_stations.blend` and both previews — are SHA-256-identical before
+  and after, with `git status` clean for `assets/source` and `assets/crafting_stations`.
+- The generic `asset_repro_check.py` driven at the same family: `PASS`, tree identical again.
+
+### F-326 · All five player-facing save writers truncate the only valid copy before replacement — **fixed**
+
+**Area:** persistence · **Severity:** high · **Found:** 2026-08-20 by nettlea491cc
+
+`core/save/{salvage,unlock,run_record,steam_stats,settings}_save.gd` each opens the final `user://` JSON path with `FileAccess.WRITE` and then serializes into it. That open truncates the previous valid save before the replacement is durable. A crash, disk-full result, or interrupted process between open and close leaves empty/partial JSON; the resilient loader then falls back to defaults, losing progression/settings. This is the same measured mechanism as `tools/json_result_race_check.gd` (plain writes were observed torn 64 times in this audit), but here there is no second process required: interruption alone is enough. Write to a sibling temp file, flush/close, and atomically rename over the target; add a failure-injection check that proves the old valid save survives an interrupted write.
+
+---
+
+**Resolved 2026-08-21 by ivy1bcae0.** **Fixed 2026-08-20 by ivy1bcae0.**
+
+New `core/save/atomic_json.gd` (`AtomicJson.write()`) is the one durable-write seam. It serializes
+into a sibling `<path>.part`, checks `FileAccess.get_error()` for a short/disk-full write, re-opens
+and measures the scratch file against the expected UTF-8 byte length, and only then calls
+`DirAccess.rename_absolute()` over the destination. Any failure before the rename discards the
+scratch file and leaves the previous save as the file on disk. The sibling location is deliberate:
+`rename(2)` is only atomic within a filesystem, so an OS temp dir would silently degrade to
+copy-then-delete wherever `user://` is on another volume.
+
+All five writers — `salvage_save.gd`, `unlock_save.gd`, `run_record_save.gd`, `steam_stats_save.gd`,
+`settings_save.gd` — now stamp `schema_version` and return `AtomicJson.write(...)`. `save_data()`
+changed from `-> void` to `-> bool` (additive; all 17 call sites discard the value). `false` now
+carries a guarantee: the save did not happen AND the old one survived.
+
+Verified by new `tools/save_atomicity_check.gd` (`failures=0`), four phases:
+- **A** all five writers round-trip, report success, leave no `.part` behind.
+- **B** injected write failure — a directory blocking the `.part` path makes the real
+  `save_data()` return `false` with the destination byte-identical and still loading as itself.
+- **C** injected interruption, deterministic rather than raced: the truncate-then-refill sequence
+  stopped half a document in leaves an unparseable file and loses the old value (negative control,
+  the F-326 hazard reproduced); the shipped sequence stopped at the same point leaves the previous
+  save whole and readable, and a stale `.part` does not jam the next save.
+- **D** source tripwire — no writer may contain `FileAccess.WRITE` again, so a hand-rolled
+  regression goes red even on a machine that never crashes.
+
+Regression: `salvage_check`, `unlock_check`, `settings_check`, `run_summary_check`,
+`steam_stats_check`, `salvage_bench_check`, `json_result_race_check` all `failures=0`.
 
 ### F-324 · Players spawn before the terrain under them has a collider, and fall through the island — **fixed**
 
