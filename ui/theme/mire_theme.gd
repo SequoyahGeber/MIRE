@@ -291,6 +291,22 @@ static func slider(minimum: float, maximum: float, step: float = 0.01) -> HSlide
 	return control
 
 
+## The kit's on/off switch (F-416). Still a `CheckBox`, so `button_pressed`, `toggled` and every
+## existing call site are untouched — but it now DRAWS.
+##
+## It used to override only the font and the focus ring, which left the `checked`/`unchecked` items
+## resolving to Godot's default theme: a dark grey outline. Against `PANEL` that outline is
+## invisible, so an OFF toggle rendered as a label with empty space beside it and an ON toggle as a
+## smudge. Four shipped settings were affected — VSync, Dynamic resolution, Invert vertical look,
+## Reduce motion — and it is why the God mode toggle (F-411) was reported missing when it was in
+## fact present, focusable and correctly wired the whole time.
+##
+## The replacement is a pill switch rather than a tick box, because the state has to be readable
+## without a legend: the knob is left and the track is `FIELD` when off, the knob is right and the
+## track is `MOSS` when on. `MOSS` and not `AMBER` on purpose — amber is this kit's scarce focus
+## colour (§3.1), and a screen of amber switches is a screen with no visible focus ring. Godot swaps
+## the icon straight off `button_pressed` with no signal involved, so the drawn state cannot fall out
+## of sync with the value the way a text label set from `toggled` would.
 static func toggle(text: String = "") -> CheckBox:
 	var control := CheckBox.new()
 	control.text = text
@@ -301,7 +317,83 @@ static func toggle(text: String = "") -> CheckBox:
 	control.add_theme_color_override("font_hover_color", TEXT)
 	control.add_theme_color_override("font_focus_color", TEXT)
 	control.add_theme_stylebox_override("focus", focus_style())
+	control.add_theme_icon_override("checked", switch_icon(true))
+	control.add_theme_icon_override("unchecked", switch_icon(false))
+	control.add_theme_icon_override("checked_disabled", switch_icon(true, true))
+	control.add_theme_icon_override("unchecked_disabled", switch_icon(false, true))
+	# CheckBox draws `radio_*` for the same two states when it is put in a button group; a screen
+	# that groups two toggles must not silently fall back to the invisible defaults again.
+	control.add_theme_icon_override("radio_checked", switch_icon(true))
+	control.add_theme_icon_override("radio_unchecked", switch_icon(false))
+	control.add_theme_icon_override("radio_checked_disabled", switch_icon(true, true))
+	control.add_theme_icon_override("radio_unchecked_disabled", switch_icon(false, true))
 	return control
+
+
+# ── The switch icon (F-416) ───────────────────────────────────────────────────────────────────────
+
+## Pill size at the 1080p reference, before UI scale. Wider than it is tall because the travel of
+## the knob from one end to the other is what reads as "off" versus "on" at a glance.
+const SWITCH_WIDTH: int = 40
+const SWITCH_HEIGHT: int = 22
+
+## Supersample factor. The pill and its knob are circles, and a 40x22 icon drawn with hard pixel
+## tests has visibly stepped edges next to this kit's anti-aliased text; drawing at 4x and resizing
+## down is cheaper than a signed-distance shader for something generated four times per screen.
+const SWITCH_SUPERSAMPLE: int = 4
+
+## Generated icons are identical for every toggle on screen, and the UI-scale setting is the only
+## thing that changes their size, so four textures serve the entire front end.
+static var _switch_cache: Dictionary = {}
+
+
+## One state of the pill switch, as a texture ready for `add_theme_icon_override()`.
+static func switch_icon(on: bool, disabled: bool = false) -> ImageTexture:
+	var scale: float = ui_scale()
+	var key: String = "%d_%d_%.2f" % [int(on), int(disabled), scale]
+	if _switch_cache.has(key):
+		return _switch_cache[key] as ImageTexture
+
+	var width: int = maxi(int(round(float(SWITCH_WIDTH) * scale)), SWITCH_WIDTH)
+	var height: int = maxi(int(round(float(SWITCH_HEIGHT) * scale)), SWITCH_HEIGHT)
+	var big_w: int = width * SWITCH_SUPERSAMPLE
+	var big_h: int = height * SWITCH_SUPERSAMPLE
+
+	var track: Color = MOSS if on else FIELD
+	var edge: Color = MOSS.lightened(0.25) if on else BORDER
+	var knob: Color = PANEL.darkened(0.35) if on else MUTED
+	if disabled:
+		# Same shape, drained — a disabled control still has to show WHICH state it is stuck in.
+		track = track.lerp(PANEL, 0.55)
+		edge = edge.lerp(PANEL, 0.55)
+		knob = knob.lerp(PANEL, 0.45)
+
+	var image := Image.create(big_w, big_h, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+
+	var radius: float = float(big_h) * 0.5
+	var border: float = 1.5 * float(SWITCH_SUPERSAMPLE)
+	var knob_radius: float = radius - border - 2.0 * float(SWITCH_SUPERSAMPLE)
+	var knob_x: float = (float(big_w) - radius) if on else radius
+	var knob_centre := Vector2(knob_x, radius)
+
+	for y: int in big_h:
+		for x: int in big_w:
+			var point := Vector2(float(x) + 0.5, float(y) + 0.5)
+			# Distance to the pill: the capsule's spine runs between the two end centres.
+			var spine: float = clampf(point.x, radius, float(big_w) - radius)
+			var to_track: float = point.distance_to(Vector2(spine, radius))
+			if to_track > radius:
+				continue
+			var colour: Color = edge if to_track > radius - border else track
+			if knob_radius > 0.0 and point.distance_to(knob_centre) <= knob_radius:
+				colour = knob
+			image.set_pixel(x, y, colour)
+
+	image.resize(width, height, Image.INTERPOLATE_BILINEAR)
+	var texture: ImageTexture = ImageTexture.create_from_image(image)
+	_switch_cache[key] = texture
+	return texture
 
 
 static func dropdown() -> OptionButton:

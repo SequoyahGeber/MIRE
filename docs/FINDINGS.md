@@ -2177,7 +2177,35 @@ Close this through a bounded follow-on command roadmap rather than an unsafe gen
 
 ---
 
-### F-416 · Every settings checkbox is invisible when off — MireTheme.toggle() is unstyled
+### F-417 · Ground-cover scatter is too dense to afford — grassland_turf alone places a prop every 5.7 m2
+
+**Area:** performance · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-21, Sequoyah): "i think we should reduce the amount of grass/small
+shrubs, just reduce the quantities of each but keep the variety, its just too performance heavy."
+
+F-395/F-401 widened the content from 9 scatter tables to 31 and, correctly, raised density to fix
+"barely any of the nature assets/plants placed around the map" (F-369). It overshot. Measured density
+per table, as `coverage / cell_size^2`:
+
+    grassland_turf   0.176 props/m2   (one every 5.7 m2)
+    forest_floor     0.107
+    marsh_reeds      0.101
+    birchwood_floor  0.098
+    heath_turf       0.071
+
+Over an 81-chunk sample at seed 20260819 that is **8,767 placements, 108 per chunk**, and the ten
+ground-cover tables account for roughly 90% of them. The canopy, rock and deadwood tables are already
+sparse (0.002-0.008/m2) and are the island's visual structure, so they are not where the cost is.
+
+The constraint on any fix is that the VARIETY must survive — the whole point of F-395 was reaching
+the authored map's full kit. So the lever is `coverage`, never the `entries` lists.
+
+---
+
+## Resolved
+
+### F-416 · Every settings checkbox is invisible when off — MireTheme.toggle() is unstyled — **fixed**
 
 **Area:** ui · **Severity:** high · **Found:** 2026-08-21 by coil995fd7
 
@@ -2200,9 +2228,23 @@ The fix belongs in `MireTheme.toggle()`, not in any one page: one styled control
 existing toggles and every future one. The neighbouring `MireTheme.dropdown()` rows already read
 "ON"/"OFF" in a framed field, which is the visual language this should match.
 
----
+**Resolved 2026-08-21 by coil995fd7.** `MireTheme.toggle()` now overrides the `checked`/`unchecked` icon items (and the disabled and
+`radio_*` variants) with a generated pill switch: knob left over a `FIELD` track when off, knob
+right over a `MOSS` track when on, `MOSS` rather than `AMBER` so the kit's scarce focus colour stays
+scarce. Godot swaps the icon straight off `button_pressed`, so the drawn state cannot desynchronise
+from the value. Four textures are cached per UI scale and serve the whole front end.
 
-## Resolved
+Fixing it in the theme rather than on any one page fixed all four affected settings at once: VSync,
+Dynamic resolution, Invert vertical look, Reduce motion, and the God mode toggle that prompted this.
+
+`tools/settings_render_check.gd` is the new guard, and it is a rendering guard rather than another
+existence assertion: it renders each tab, reads the framebuffer back, and demands measured contrast
+and coverage inside each toggle's own rect in BOTH states. Verified by disabling the icon overrides
+and confirming it fails — 13 failures, every affected toggle reporting 0.0% coverage and 0.005-0.015
+contrast against a 0.06 floor. Note for anyone writing a similar check: `get_global_rect()` is in
+the viewport's content space while `get_texture().get_image()` is physical pixels, so the rect must
+be scaled by the ratio first — the first draft of this check sampled the wrong region and passed an
+invisible toggle.
 
 ### F-405 · step_height is 0.4 m but nothing below it is actually climbable — the capsule's rounded bottom catches the kerb edge and the is_on_floor() guard kills the next attempt — **fixed**
 

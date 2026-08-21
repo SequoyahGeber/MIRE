@@ -8214,3 +8214,15 @@ Took over quill5df327's completed handoff, reran settings service/screen and God
 Files: `core/save/settings_save.gd`, `autoload/settings_service.gd`, `tools/settings_check.gd`, `autoload/graphics_quality.gd`, `ui/frontend/graphics_settings_page.gd`, `ui/frontend/settings_screen.gd`, `tools/settings_screen_check.gd`, `ui/frontend/graphics_settings_page.gd.uid`
 
 Commit at time of writing: `28f5c5d`
+
+---
+
+### DONE · F-416 · coil995fd7 · 2026-08-21T06:57:54+00:00
+
+**Every settings checkbox is invisible when off — MireTheme.toggle() is unstyled**
+
+MireTheme.toggle() now draws a real pill switch; guarded by tools/settings_render_check.gd
+
+Files: `ui/theme/mire_theme.gd`, `tools/settings_screen_check.gd`, `tools/settings_render_check.gd`
+
+Commit at time of writing: `0276463`
