@@ -123,6 +123,14 @@ weight = 0.3
 min_scale = 0.9
 max_scale = 1.2
 
+[sub_resource type="Resource" id="Resource_15_fibre_plant"]
+script = ExtResource("1_entry")
+asset = &"fibre_plant"
+kit = "gatherables"
+weight = 0.35
+min_scale = 0.9
+max_scale = 1.25
+
 [resource]
 script = ExtResource("2_def")
 id = &"marsh_floor"
@@ -132,4 +140,4 @@ jitter_fraction = 0.8
 coverage = 0.34
 min_height = 0.4
 max_height = 1000
-entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_moss_patch_a"), SubResource("Resource_01_moss_patch_b"), SubResource("Resource_02_moss_patch_c"), SubResource("Resource_03_moss_patch_d"), SubResource("Resource_04_duckweed"), SubResource("Resource_05_lily_pad_a"), SubResource("Resource_06_lily_pad_b"), SubResource("Resource_07_lily_pad_c"), SubResource("Resource_08_flowers_bog_a"), SubResource("Resource_09_flowers_bog_b"), SubResource("Resource_10_flowers_bog_c"), SubResource("Resource_11_plant_dock_a"), SubResource("Resource_12_plant_dock_b"), SubResource("Resource_13_plant_dock_c"), SubResource("Resource_14_glowcap_mushroom")])
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_moss_patch_a"), SubResource("Resource_01_moss_patch_b"), SubResource("Resource_02_moss_patch_c"), SubResource("Resource_03_moss_patch_d"), SubResource("Resource_04_duckweed"), SubResource("Resource_05_lily_pad_a"), SubResource("Resource_06_lily_pad_b"), SubResource("Resource_07_lily_pad_c"), SubResource("Resource_08_flowers_bog_a"), SubResource("Resource_09_flowers_bog_b"), SubResource("Resource_10_flowers_bog_c"), SubResource("Resource_11_plant_dock_a"), SubResource("Resource_12_plant_dock_b"), SubResource("Resource_13_plant_dock_c"), SubResource("Resource_14_glowcap_mushroom"), SubResource("Resource_15_fibre_plant")])

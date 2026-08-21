@@ -102,6 +102,14 @@ const HARVEST_RULES: Array = [
 	## because the shore is where the player makes landfall.
 	["nettle", "nettle", Represent.BATCH],
 	["sedge_", "nettle", Represent.BATCH],
+	## F-439: the `gatherables` kit's purpose-built fibre plant, which was modelled, exported and
+	## catalogued and then referenced by nothing. It harvests as `nettle` rather than earning a
+	## definition of its own — same yield, same bare-hands cost — because a second definition with
+	## identical numbers is a second place to forget to change. What it adds is a source that reads
+	## as fibre at a glance: `nettle_*` and `sedge_*` are flora-kit dressing that happen to be
+	## harvestable, so the player learns them by accident, and the note above is about exactly the
+	## kind of lockout that follows when fibre is hard to recognise.
+	["fibre_plant", "nettle", Represent.BATCH],
 ]
 
 

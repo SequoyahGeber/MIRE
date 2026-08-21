@@ -171,6 +171,14 @@ weight = 0.3
 min_scale = 0.85
 max_scale = 1.2
 
+[sub_resource type="Resource" id="Resource_21_fibre_plant"]
+script = ExtResource("1_entry")
+asset = &"fibre_plant"
+kit = "gatherables"
+weight = 0.3
+min_scale = 0.9
+max_scale = 1.25
+
 [resource]
 script = ExtResource("2_def")
 id = &"grassland_meadow"
@@ -180,4 +188,4 @@ jitter_fraction = 0.78
 coverage = 0.4
 min_height = 0.6
 max_height = 1000
-entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_grass_short_a"), SubResource("Resource_01_grass_short_b"), SubResource("Resource_02_grass_short_c"), SubResource("Resource_03_grass_short_d"), SubResource("Resource_04_grass_tussock_a"), SubResource("Resource_05_grass_tussock_b"), SubResource("Resource_06_grass_tussock_c"), SubResource("Resource_07_grass_tussock_d"), SubResource("Resource_08_flowers_meadow_a"), SubResource("Resource_09_flowers_meadow_b"), SubResource("Resource_10_flowers_meadow_c"), SubResource("Resource_11_flowers_meadow_d"), SubResource("Resource_12_flowers_tall_a"), SubResource("Resource_13_flowers_tall_b"), SubResource("Resource_14_flowers_tall_c"), SubResource("Resource_15_clover_patch_a"), SubResource("Resource_16_clover_patch_b"), SubResource("Resource_17_clover_patch_c"), SubResource("Resource_18_flowers_creeping_a"), SubResource("Resource_19_flowers_creeping_b"), SubResource("Resource_20_flowers_creeping_c")])
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_grass_short_a"), SubResource("Resource_01_grass_short_b"), SubResource("Resource_02_grass_short_c"), SubResource("Resource_03_grass_short_d"), SubResource("Resource_04_grass_tussock_a"), SubResource("Resource_05_grass_tussock_b"), SubResource("Resource_06_grass_tussock_c"), SubResource("Resource_07_grass_tussock_d"), SubResource("Resource_08_flowers_meadow_a"), SubResource("Resource_09_flowers_meadow_b"), SubResource("Resource_10_flowers_meadow_c"), SubResource("Resource_11_flowers_meadow_d"), SubResource("Resource_12_flowers_tall_a"), SubResource("Resource_13_flowers_tall_b"), SubResource("Resource_14_flowers_tall_c"), SubResource("Resource_15_clover_patch_a"), SubResource("Resource_16_clover_patch_b"), SubResource("Resource_17_clover_patch_c"), SubResource("Resource_18_flowers_creeping_a"), SubResource("Resource_19_flowers_creeping_b"), SubResource("Resource_20_flowers_creeping_c"), SubResource("Resource_21_fibre_plant")])
