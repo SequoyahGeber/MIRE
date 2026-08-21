@@ -8644,3 +8644,15 @@ Surveyed seed, 18-scene day/night suite, flyover, warm-up pass. 285 assertions, 
 Files: `tools/bench_seed_survey.gd`, `core/bench/benchmark_suite.gd`, `core/bench/benchmark_runner.gd`, `core/bench/settings_advisor.gd`, `tools/benchmark_check.gd`, `ui/frontend/benchmark_screen.gd`
 
 Commit at time of writing: `c26615a`
+
+---
+
+### DONE · F-460 · quill895277 · 2026-08-21T22:10:50+00:00
+
+**The benchmark is only reachable from inside the graphics settings**
+
+BENCHMARK on the title screen, routed through Frontend, asserted by title_check.
+
+Files: `ui/frontend/title_screen.gd`, `ui/frontend/frontend.gd`, `tools/title_check.gd`
+
+Commit at time of writing: `5e78e26`

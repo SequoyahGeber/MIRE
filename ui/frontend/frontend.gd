@@ -50,6 +50,7 @@ const FRONTEND_GROUP: StringName = &"mire_frontend"
 ## the button works, with no edit here. A missing screen says so out loud rather than doing nothing,
 ## which is the failure D-032's "silently refuse to open" produced and this front end exists to fix.
 const SETTINGS_SCREEN_PATH: String = "res://ui/frontend/settings_screen.gd"
+const BENCHMARK_SCREEN_PATH: String = "res://ui/frontend/benchmark_screen.gd"
 const UNLOCKS_SCREEN_PATH: String = "res://ui/frontend/salvage_bench_screen.gd"
 const EXPEDITION_SCREEN_PATH: String = "res://ui/frontend/expedition_screen.gd"
 
@@ -79,6 +80,7 @@ func _ready() -> void:
 	_title.play_requested.connect(request_play)
 	_title.unlocks_requested.connect(request_unlocks)
 	_title.settings_requested.connect(request_settings)
+	_title.benchmark_requested.connect(request_benchmark)
 	_title.credits_requested.connect(request_credits)
 	_title.quit_requested.connect(request_quit)
 
@@ -119,6 +121,14 @@ func request_unlocks() -> void:
 
 func request_settings() -> void:
 	_push_screen(SETTINGS_SCREEN_PATH, "settings")
+
+
+## The benchmark, straight from the title (F-458). It builds its own world on a pinned seed and can
+## never run over a live session (D-192), which is exactly why the front end is the right place for
+## it and the pause menu is not. Reachable from Settings > DISPLAY too — that entry is for someone
+## already looking at the graphics knobs, this one is for someone who has not found them yet.
+func request_benchmark() -> void:
+	_push_screen(BENCHMARK_SCREEN_PATH, "the benchmark")
 
 
 func request_credits() -> void:

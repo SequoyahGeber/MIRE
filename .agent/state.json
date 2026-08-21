@@ -1517,20 +1517,6 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "content/poi/enemy_nest.tres": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T21:58:15+00:00",
-      "hash": "f7f3a6db3de243286768bd95edbde1bf588ed36d428ca08638c82eeb9b9a67ed",
-      "task": "4.18",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
-    },
-    "content/poi/standing_stones.tres": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T21:58:15+00:00",
-      "hash": "6be559641ba5cfeb06eebc0c621851d7756c108f3933f7c7311c2f82ee92a8dd",
-      "task": "4.18",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
-    },
     "content/poi/station_camp.tres": {
       "agent": "kilnd3a089",
       "at": "2026-08-21T05:34:42+00:00",
@@ -1551,13 +1537,6 @@
       "hash": "4962ddc4ed8120e16e1b43341b1d7d8ded8a781b1eefb09bd20e4b4fce63dbaa",
       "task": "F-367",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
-    },
-    "content/poi/wellspring.tres": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T21:58:15+00:00",
-      "hash": "1b2a1902128fe2b54d28af59c75e685e011e60ae53481706044c07e7105361e3",
-      "task": "4.18",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "content/powerups": {
       "agent": "gale43d16e",
@@ -3289,11 +3268,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:e3fa9e81-ffe0-4be7-8109-2a06ac469891"
     },
     "tools/title_check.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T01:08:42+00:00",
-      "hash": "9e22eeb1831e277d3ac65643602ca00a259e07542bbfafa2bd4f25f797ca52aa",
-      "task": "F-335",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+      "agent": "quill895277",
+      "at": "2026-08-21T22:10:50+00:00",
+      "hash": "90d31b2d93b51cccd82a15f9318b797284cdf059c7497dbea338febb95a4db26",
+      "task": "F-460",
+      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "tools/traversal_profile.gd": {
       "agent": "wick5e2d04",
@@ -3352,11 +3331,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "ui/frontend/frontend.gd": {
-      "agent": "mossb81aeb",
-      "at": "2026-08-21T08:29:38+00:00",
-      "hash": "4bc33c1a8c9d5e946abedcfef84a1ff11ebb20fc255fa200fb870bc5a33b379c",
-      "task": "F-421",
-      "token": "CLAUDE_CODE_SESSION_ID:53027a2a-9613-416b-bd3c-e7a62777eff1"
+      "agent": "quill895277",
+      "at": "2026-08-21T22:10:50+00:00",
+      "hash": "3725b25a9cbbde0bb9be2a1fd9ad9a606d1943e3ebdc193e59c0b6f91912497a",
+      "task": "F-460",
+      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "ui/frontend/graphics_settings_page.gd": {
       "agent": "quill895277",
@@ -3377,6 +3356,13 @@
       "at": "2026-08-21T21:36:55+00:00",
       "hash": "bb61d0183b93deeea3c3e7df40b4b7d951eb935dca6d10c54df3a50702113754",
       "task": "F-453",
+      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
+    },
+    "ui/frontend/title_screen.gd": {
+      "agent": "quill895277",
+      "at": "2026-08-21T22:10:50+00:00",
+      "hash": "bec2162ddc7ebe497c1bac57636d9bb8d6d1c8b4bfc29118d852d61d4b7958bd",
+      "task": "F-460",
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "ui/hud/blight_vignette.gdshader": {
@@ -3639,7 +3625,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     }
   },
-  "rev": 874,
+  "rev": 878,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9036,6 +9022,22 @@
       "status": "done",
       "tier": "F",
       "title": "The benchmark seed is arbitrary, its day/night split is 7:2, and nothing flies over the island"
+    },
+    "F-459": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "First visit to a location hitches; the second visit to the same place does not"
+    },
+    "F-460": {
+      "done_at": "2026-08-21T22:10:50+00:00",
+      "done_by": "quill895277",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "The benchmark is only reachable from inside the graphics settings"
     }
   },
   "version": 1

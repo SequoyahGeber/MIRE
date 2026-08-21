@@ -108,6 +108,8 @@ func _run() -> void:
 	(title.get("_play_button") as Button).pressed.emit()
 	(title.get("_unlocks_button") as Button).pressed.emit()
 	(title.get("_settings_button") as Button).pressed.emit()
+	(title.get("_benchmark_button") as Button).pressed.emit()
+	check(title.get("_benchmark_button") != null, "the title offers BENCHMARK (F-460)")
 	(title.get("_quit_button") as Button).pressed.emit()
 	check(",".join(_routed) == "play,unlocks,settings,quit",
 		"every title choice emits its own routing signal, in order")
@@ -157,6 +159,17 @@ func _run() -> void:
 		# that silent no-op is the D-032 dead end this front end exists to remove.
 		check(int(stack.call("depth")) == 0, "an unbuilt screen pushes nothing")
 		check(int(stack.call("toast_count")) > 0, "an unbuilt screen tells the player instead of doing nothing")
+
+	# F-460: the benchmark is reachable from the title itself, not only from inside Settings >
+	# DISPLAY. It exists to answer "what should my settings be", so a player who has not yet gone
+	# looking for the graphics menu is exactly who needs to find it.
+	frontend.request_benchmark()
+	await process_frame
+	check(ResourceLoader.exists(Frontend.BENCHMARK_SCREEN_PATH),
+		"the benchmark screen the title routes to exists")
+	check(int(stack.call("depth")) == 1, "BENCHMARK pushes the benchmark screen")
+	check(stack.call("top") is Control, "and it is a Control")
+	stack.call("pop_all")
 
 	frontend.free()
 

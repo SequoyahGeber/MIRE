@@ -33,12 +33,17 @@ const MENU_WIDTH: float = 300.0
 signal play_requested()
 signal unlocks_requested()
 signal settings_requested()
+## F-458: the benchmark gets its own entry rather than living only inside Settings > DISPLAY. It is
+## the thing a player reaches for BEFORE they know what their settings should be, and a control you
+## have to already be configuring graphics to find is one nobody discovers on a first launch.
+signal benchmark_requested()
 signal credits_requested()
 signal quit_requested()
 
 var _play_button: Button
 var _unlocks_button: Button
 var _settings_button: Button
+var _benchmark_button: Button
 var _quit_button: Button
 var _salvage_label: Label
 var _persona_label: Label
@@ -203,13 +208,16 @@ func _build_menu() -> void:
 	_play_button = MireTheme.button("PLAY", func() -> void: play_requested.emit(), MireTheme.Variant.PRIMARY)
 	_unlocks_button = MireTheme.button("UNLOCKS", func() -> void: unlocks_requested.emit())
 	_settings_button = MireTheme.button("SETTINGS", func() -> void: settings_requested.emit())
+	_benchmark_button = MireTheme.button("BENCHMARK", func() -> void: benchmark_requested.emit())
 	_quit_button = MireTheme.button("QUIT", func() -> void: quit_requested.emit(), MireTheme.Variant.DESTRUCTIVE)
 
-	for button: Button in [_play_button, _unlocks_button, _settings_button, _quit_button]:
+	for button: Button in [_play_button, _unlocks_button, _settings_button, _benchmark_button,
+			_quit_button]:
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		column.add_child(button)
 
-	MireTheme.wire_chain([_play_button, _unlocks_button, _settings_button, _quit_button])
+	MireTheme.wire_chain([_play_button, _unlocks_button, _settings_button, _benchmark_button,
+		_quit_button])
 
 
 func _build_expedition_card() -> void:
