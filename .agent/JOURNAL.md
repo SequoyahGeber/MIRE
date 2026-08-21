@@ -8368,3 +8368,15 @@ Overhead enemy health bars + floating damage numbers, both client-local autoload
 Files: `ui/hud/target_health_hud.gd`, `ui/hud/damage_numbers.gd`, `tools/target_feedback_check.gd`, `tools/target_feedback_shot.gd`
 
 Commit at time of writing: `716118e`
+
+---
+
+### DONE · F-434 · kiln384569 · 2026-08-21T17:50:16+00:00
+
+**Willow colliders are twice any other tree's, and lying props collide as 4 m discs**
+
+Willow bole corrected (0.78->0.52 radius), lying props get boxes, collider fitter extracted to world/gen/prop_collider.gd and adopted by AuthoredWorld so Hollowmere stops sizing tree colliders off canopy footprints. tree_collider_check rewritten to assert over every scattered asset.
+
+Files: `world/gen/resource_scatter_field.gd`, `tools/blender/build_flora_set.py`, `tools/tree_collider_check.gd`, `world/gen/authored_world.gd`, `world/gen/prop_collider.gd`, `assets/flora/catalog.json`, `assets/flora/exports/tree_willow_a.glb`, `assets/flora/exports/tree_willow_b.glb`, `assets/flora/exports/tree_willow_c.glb`, `assets/flora/preview/small_trees_preview.png`, `assets/flora/preview/flora_set_preview.png`
+
+Commit at time of writing: `0718d27`

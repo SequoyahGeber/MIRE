@@ -60,6 +60,30 @@
       "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
+    "content/harvestables/apple_tree.tres": {
+      "agent": "gale43d16e",
+      "at": "2026-08-21T17:45:13+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "content/harvestables/berry_bush.tres": {
+      "agent": "gale43d16e",
+      "at": "2026-08-21T17:45:13+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "content/harvestables/mushroom_patch.tres": {
+      "agent": "gale43d16e",
+      "at": "2026-08-21T17:45:13+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "content/items/apple.tres": {
+      "agent": "gale43d16e",
+      "at": "2026-08-21T17:45:13+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
     "docs/ASSET_TRACKER.md": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:13:34+00:00",
@@ -78,17 +102,17 @@
       "task": "F-404",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
+    "tools/asset_usage_check.gd": {
+      "agent": "mossecba4b",
+      "at": "2026-08-21T17:49:13+00:00",
+      "task": "F-439",
+      "token": "CLAUDE_CODE_SESSION_ID:1e714a39-d8b1-4450-9d79-102af2c5081f"
+    },
     "tools/biome_terrain_check.gd": {
       "agent": "kilnd3a089",
       "at": "2026-08-21T06:47:15+00:00",
       "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
-    },
-    "tools/blender/build_flora_set.py": {
-      "agent": "kiln384569",
-      "at": "2026-08-21T17:25:34+00:00",
-      "task": "F-434",
-      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
     "tools/blender/build_gatherable_plants.py": {
       "agent": "gale43d16e",
@@ -120,12 +144,6 @@
       "task": "F-405",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
-    "tools/tree_collider_check.gd": {
-      "agent": "kiln384569",
-      "at": "2026-08-21T17:25:34+00:00",
-      "task": "F-434",
-      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
-    },
     "world/chunk/chunk_streamer.gd": {
       "agent": "hollow80855f",
       "at": "2026-08-21T17:32:49+00:00",
@@ -150,29 +168,11 @@
       "task": "F-435",
       "token": "CLAUDE_CODE_SESSION_ID:0e245ac7-67ca-4077-a49b-e1b4d92abe80"
     },
-    "world/gen/authored_world.gd": {
-      "agent": "kiln384569",
-      "at": "2026-08-21T17:31:32+00:00",
-      "task": "F-434",
-      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
-    },
     "world/gen/island_heightmap.gd": {
       "agent": "kilnd3a089",
       "at": "2026-08-21T06:47:15+00:00",
       "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
-    },
-    "world/gen/prop_collider.gd": {
-      "agent": "kiln384569",
-      "at": "2026-08-21T17:31:32+00:00",
-      "task": "F-434",
-      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
-    },
-    "world/gen/resource_scatter_field.gd": {
-      "agent": "kiln384569",
-      "at": "2026-08-21T17:25:34+00:00",
-      "task": "F-434",
-      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
     "world/mire/mire_grid.gd": {
       "agent": "hollow80855f",
@@ -189,7 +189,11 @@
         "tools/blender/build_gatherable_plants.py",
         "assets/gatherables/catalog.json",
         "tools/blender/build_pickup_kit.py",
-        "assets/pickups/catalog.json"
+        "assets/pickups/catalog.json",
+        "content/items/apple.tres",
+        "content/harvestables/berry_bush.tres",
+        "content/harvestables/apple_tree.tres",
+        "content/harvestables/mushroom_patch.tres"
       ],
       "notes": [],
       "started": "2026-08-21T17:13:34+00:00",
@@ -232,19 +236,6 @@
       "started": "2026-08-21T06:50:22+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
-    "F-434": {
-      "agent": "kiln384569",
-      "files": [
-        "world/gen/resource_scatter_field.gd",
-        "tools/blender/build_flora_set.py",
-        "tools/tree_collider_check.gd",
-        "world/gen/authored_world.gd",
-        "world/gen/prop_collider.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-21T17:25:34+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
-    },
     "F-435": {
       "agent": "hollow80855f",
       "files": [
@@ -260,6 +251,15 @@
       "notes": [],
       "started": "2026-08-21T17:32:49+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:0e245ac7-67ca-4077-a49b-e1b4d92abe80"
+    },
+    "F-439": {
+      "agent": "mossecba4b",
+      "files": [
+        "tools/asset_usage_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-21T17:49:13+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:1e714a39-d8b1-4450-9d79-102af2c5081f"
     }
   },
   "recent": {
@@ -1188,11 +1188,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "assets/flora/catalog.json": {
-      "agent": "gale43d16e",
-      "at": "2026-08-21T08:34:48+00:00",
-      "hash": "d7335891f19d07d17efaff89a664716d78dbb5660661362ab7a7c524d928d1f1",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+      "agent": "kiln384569",
+      "at": "2026-08-21T17:50:16+00:00",
+      "hash": "f0b1282a0e2db8053d0e2e4b3d68c64bcdf7b43433b427ca01378e832cc3ad0b",
+      "task": "F-434",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
     "assets/flora/exports/tree_snag_a.glb": {
       "agent": "kilnd3a089",
@@ -1216,39 +1216,39 @@
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "assets/flora/exports/tree_willow_a.glb": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T05:34:42+00:00",
-      "hash": "1113cfee59c6da481d90a39fd8d78296de0ae22a89ae78f8e9963cd7f03ddf7d",
-      "task": "F-401",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "kiln384569",
+      "at": "2026-08-21T17:50:16+00:00",
+      "hash": "e399b43193a5516309f1753633856ae5f2b46716283c43d45388ad99f0909a2d",
+      "task": "F-434",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
     "assets/flora/exports/tree_willow_b.glb": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T05:34:42+00:00",
-      "hash": "2680fc5df1816c4f0b0728eaf0b4b53efd078f08fe56e0dd01f901ab041cc3ef",
-      "task": "F-401",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "kiln384569",
+      "at": "2026-08-21T17:50:16+00:00",
+      "hash": "63065e60f2bebab998a2438ed40c646f3d69d23dc5ad8f6f773ef884c3353415",
+      "task": "F-434",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
     "assets/flora/exports/tree_willow_c.glb": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T05:34:42+00:00",
-      "hash": "d8cd4c47c545cb6b726f28dd09fd787c59f4638e6b7c57eb8d8292b4261f6342",
-      "task": "F-401",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "kiln384569",
+      "at": "2026-08-21T17:50:16+00:00",
+      "hash": "e9a6ab0264b3005c01e66dd7ca38e771de38eb87886c7afe5609dcbb30391cde",
+      "task": "F-434",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
     "assets/flora/preview/flora_set_preview.png": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T05:34:42+00:00",
-      "hash": "f3ba398bfc04cac7dac8a58d42d4ab2c1eed3e09dd9faceaabbd18c2a6ef8fc3",
-      "task": "F-401",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "kiln384569",
+      "at": "2026-08-21T17:50:16+00:00",
+      "hash": "a3baaa3ad7b7093fc5427932ff50e1929a699fea79ec27a21682b421952e7cb7",
+      "task": "F-434",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
     "assets/flora/preview/small_trees_preview.png": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T05:34:42+00:00",
-      "hash": "6b8ce25930bfc65848a25e72278f9f36089315fab081d2c7a000840d0e3de7b0",
-      "task": "F-401",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "kiln384569",
+      "at": "2026-08-21T17:50:16+00:00",
+      "hash": "73a1f69ccfbd8f50962ea50df1b9fc7b3270564b0f41d2c4075a48012297d8bf",
+      "task": "F-434",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
     "assets/harvestables/catalog.json": {
       "agent": "gale43d16e",
@@ -2875,11 +2875,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
     "tools/blender/build_flora_set.py": {
-      "agent": "gale43d16e",
-      "at": "2026-08-21T08:34:48+00:00",
-      "hash": "7cc6802324cc33b2f069b626276a861c159ac83c36c6cf6915c458240c351510",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+      "agent": "kiln384569",
+      "at": "2026-08-21T17:50:16+00:00",
+      "hash": "fe1113af461f0bf7f802552aaee62b70aa9607866501f9b05703a3354996c54c",
+      "task": "F-434",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
     "tools/blender/build_harvestable_resources.py": {
       "agent": "gale43d16e",
@@ -3463,11 +3463,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
     "tools/tree_collider_check.gd": {
-      "agent": "gale43d16e",
-      "at": "2026-08-21T08:34:48+00:00",
-      "hash": "e62d940b869120633a033e9386c08c0f4fc0ff09652b89bd366eee015c00f76d",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+      "agent": "kiln384569",
+      "at": "2026-08-21T17:50:16+00:00",
+      "hash": "0f4713d220db2a90693b1fe1178b59835c609abd733ea7cb9cf7ce4c3005400c",
+      "task": "F-434",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
     "tools/verify_setup.gd": {
       "agent": "quill5fa5c7",
@@ -3763,6 +3763,13 @@
       "task": "4.18",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
+    "world/gen/authored_world.gd": {
+      "agent": "kiln384569",
+      "at": "2026-08-21T17:50:16+00:00",
+      "hash": "46756c7db467f8ca76d5c495d1bb3885912df01eb2fe1605e8f65b7200c47e2e",
+      "task": "F-434",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
+    },
     "world/gen/biome_def.gd": {
       "agent": "kilnd3a089",
       "at": "2026-08-21T05:34:42+00:00",
@@ -3791,6 +3798,13 @@
       "task": "F-345",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
+    "world/gen/prop_collider.gd": {
+      "agent": "kiln384569",
+      "at": "2026-08-21T17:50:16+00:00",
+      "hash": "c7d728eaef3a38aa6732c12c1e336c6a52097b8484e4df66f4dd7bf94b55b9e3",
+      "task": "F-434",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
+    },
     "world/gen/resource_scatter.gd": {
       "agent": "quill5fa5c7",
       "at": "2026-08-20T21:58:15+00:00",
@@ -3799,11 +3813,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "world/gen/resource_scatter_field.gd": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T03:51:37+00:00",
-      "hash": "da9259daee9bfe826eae43ff6ba80d33ee7c42365ad6d645b7fb6e0804625b82",
-      "task": "F-390",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "kiln384569",
+      "at": "2026-08-21T17:50:16+00:00",
+      "hash": "f2f5c104ea74d6e26b1d4633f03d10190a2a4397ad732f50c06a2ce3a560e240",
+      "task": "F-434",
+      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
     "world/gen/scatter_def.gd": {
       "agent": "quill5fa5c7",
@@ -3827,7 +3841,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 771,
+  "rev": 778,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9023,9 +9037,11 @@
       "title": "Combat and harvesting have no per-target feedback: no enemy health bars, no damage numbers, no harvest progress"
     },
     "F-434": {
+      "done_at": "2026-08-21T17:50:16+00:00",
+      "done_by": "kiln384569",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Willow colliders are twice any other tree's, and lying props collide as 4 m discs"
     },
@@ -9035,6 +9051,34 @@
       "status": "in_flight",
       "tier": "F",
       "title": "The Mire's corrupted ground is invisible \u2014 the world looks identical where it drains you"
+    },
+    "F-436": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "tools/inventory_check.gd asserts exactly one harvest-yield subscriber, and SfxDirector legitimately added a second"
+    },
+    "F-437": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Three centre-screen HUD elements landed in the same week and nothing has seen them on screen together"
+    },
+    "F-438": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Three audio autoloads are unclassified in the run-scope audit, so tools/run_scope_audit_check.gd fails at HEAD"
+    },
+    "F-439": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "No standing check that every shipped asset is reachable from something the game loads \u2014 46 exports are built but referenced by nothing"
     }
   },
   "version": 1

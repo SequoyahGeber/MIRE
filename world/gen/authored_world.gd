@@ -43,6 +43,9 @@ var terrain_triangles: int = 0
 var prop_count: int = 0
 var multimesh_count: int = 0
 var collider_count: int = 0
+## "kit|asset" -> the shape `_shapes_for()` measured for it, so the per-vertex walk runs once per
+## asset rather than once per placement (F-434).
+var _collider_cache: Dictionary[String, Dictionary] = {}
 var water_surfaces: int = 0
 var harvestable_holders: int = 0
 ## Static per-chunk cross-asset merges built by F-187, counted separately from `multimesh_count`
@@ -173,6 +176,11 @@ func water_surface_at(x: float, z: float) -> float:
 ## (interiors, canyon systems), and re-measure with tools/perf_probe.gd when you do.
 ## Draw distance and shadow policy, decided from geometry so it survives into generated worlds.
 const DrawPolicy := preload("res://world/environment/draw_policy.gd")
+## F-434: the shared collider fitter. An authored layout stores a collider per PLACEMENT, written
+## by a Python mapgen that cannot open a `.glb`, so `tools/mapgen/hollowmere_layout.py` sizes a
+## tree's cylinder as a fraction of its CANOPY footprint — leaves deciding collision, which this
+## project's standing rule forbids. Anything with foliage on it is re-measured off the mesh here.
+const PROP_COLLIDER := preload("res://world/gen/prop_collider.gd")
 ## The asset merge itself, shared with `systems/harvesting/harvestable.gd` — a wired tree has to
 ## collapse to the same geometry the world builder stamps, or it costs fifty-six draws (F-144).
 const MeshMerge := preload("res://core/render/mesh_merge.gd")
@@ -582,7 +590,7 @@ func _build_props() -> void:
 			transforms.append(placement)
 			centroid += placement.origin
 			max_scale = maxf(max_scale, prop_scale)
-			_add_prop_collision(bodies, prop, placement)
+			_add_prop_collision(bodies, prop, placement, meshes)
 			prop_count += 1
 		centroid /= float(transforms.size())
 		# Rebase every copy onto the group's centre before it goes into the MultiMesh, and stand
@@ -705,7 +713,7 @@ func _build_props() -> void:
 			origins.append(placement.origin)
 			centroid += placement.origin
 			max_object_height = maxf(max_object_height, object_mesh.get_aabb().size.y * prop_scale)
-			_add_prop_collision(bodies, prop, placement)
+			_add_prop_collision(bodies, prop, placement, meshes)
 			prop_count += 1
 		if entries.is_empty():
 			continue
@@ -823,7 +831,7 @@ func _build_harvestables(props: Array[Dictionary], cache: Dictionary, root: Node
 		body.set_meta(&"kit", kit)
 		body.add_to_group(PROP_GROUP)
 		holder.add_child(body)
-		_add_shapes(body, prop.get("cols", []) as Array)
+		_add_shapes(body, _shapes_for(prop, meshes))
 		prop_count += 1
 		harvestable_holders += 1
 
@@ -902,8 +910,10 @@ func _build_batch_harvestables(
 		harvestable_holders += 1
 
 
-func _add_prop_collision(parent: Node3D, prop: Dictionary, placement: Transform3D) -> void:
-	var shapes: Array = prop.get("cols", []) as Array
+func _add_prop_collision(
+	parent: Node3D, prop: Dictionary, placement: Transform3D, mesh_parts: Array
+) -> void:
+	var shapes: Array = _shapes_for(prop, mesh_parts)
 	if shapes.is_empty():
 		return
 	var body := StaticBody3D.new()
@@ -914,6 +924,51 @@ func _add_prop_collision(parent: Node3D, prop: Dictionary, placement: Transform3
 	body.add_to_group(PROP_GROUP)
 	parent.add_child(body)
 	_add_shapes(body, shapes)
+
+
+## What this prop collides as (F-434).
+##
+## Two kinds of shape live in a layout and only one of them is knowledge. A BOX is a deliberate
+## authored fit — a wall, a fence run, a door frame, a hand-written `col` override — and is kept
+## exactly as written. A CYLINDER is `tools/mapgen/hollowmere_layout.py`'s generic fallback,
+## `max(0.24, footprint_radius(asset) * 0.62)`: a guess made by a Python mapgen that cannot open a
+## `.glb`, off a hand-maintained FOOTPRINT table, which for a tree means its CANOPY. That is how
+## Hollowmere's willows ended up inside 1.25 m cylinders and its bare trees inside 1.37 m ones,
+## while the same assets measure 0.49-0.84 m and 0.48-0.66 m at the trunk — the invisible wall F-348
+## removed from the generated island and never from this map.
+##
+## So: every prop whose layout shape is a plain cylinder, and that has a mesh to measure, is
+## re-measured through `world/gen/prop_collider.gd` — the same fitter the island uses, on the same
+## geometry. A prop with no `cols` at all keeps none; the mapgen's `NO_COLLIDERS` list means "walk
+## through this", which is a decision, not a gap.
+##
+## An empty answer from the fitter means the prop should not collide at all — soft flora, and
+## anything short enough to step over (F-390) — and is returned as such rather than falling back.
+func _shapes_for(prop: Dictionary, mesh_parts: Array) -> Array:
+	var authored: Array = prop.get("cols", []) as Array
+	if mesh_parts.is_empty() or authored.is_empty():
+		return authored
+	for shape_value: Variant in authored:
+		if String((shape_value as Dictionary).get("t", "")) != "cyl":
+			return authored
+	var key := "%s|%s" % [String(prop.get("kit", "")), String(prop.get("asset", ""))]
+	var fit: Dictionary = PROP_COLLIDER.fit_cached(_collider_cache, key, mesh_parts)
+	if fit.is_empty():
+		return []
+	if StringName(fit.get("shape", &"cylinder")) == &"box":
+		var size: Vector3 = fit["size"] as Vector3
+		var centre: Vector3 = fit["center"] as Vector3
+		return [{
+			"t": "box",
+			"size": [size.x, size.y, size.z],
+			"off": [centre.x, centre.y, centre.z],
+		}]
+	return [{
+		"t": "cyl",
+		"r": float(fit["radius"]),
+		"h": float(fit["height"]),
+		"y": float(fit["center_y"]),
+	}]
 
 
 func _add_shapes(body: StaticBody3D, shapes: Array) -> void:

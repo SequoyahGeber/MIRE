@@ -578,9 +578,21 @@ def build_tree_willow(seed: int) -> None:
       several big ascending limbs somewhere between a fifth and a third of its
       height — often barely above head height — and the trunk under that fork is
       commonly 0.8-1.2 m ACROSS. So: `fork_fraction` 0.24 instead of 0.62, and a
-      0.78 m base radius instead of 0.46. This is the single biggest change and
-      the one that was complained about; nothing else reads right until the tree
-      is standing on a real bole.
+      thicker bole than the 0.46 m radius this asset used to carry. This is the
+      single biggest change and the one that was complained about; nothing else
+      reads right until the tree is standing on a real bole.
+
+      **F-434 corrected the number, not the intent.** F-424 first set
+      `base_radius` to 0.78 m — the research figure applied as a RADIUS where it
+      states a DIAMETER, so the finished tree stood on a bole 2.2 m across at
+      chest height once `create_asset` scaled it into its size band. That is a
+      baobab, and because `ResourceScatterField` measures the collider off the
+      trunk it honestly gave, `tree_willow_a` collided at r=1.08 m against
+      0.48-0.66 m for every pine, birch and broadleaf in either kit — reported
+      from play as *"the collision boxs of willows are huge"*. 0.52 m here lands
+      the finished bole near 1.4 m across: still visibly the stoutest trunk on
+      the island, still nothing like the old 0.46 m stick, and no longer twice
+      every other tree to walk around.
     * **The bark is deeply furrowed** — coarse vertical ridges, far rougher than
       a birch or a young pine. That is what `flute` and `grain` are for on
       `trunk_tube`, and this asset takes the highest values in either kit.
@@ -609,7 +621,7 @@ def build_tree_willow(seed: int) -> None:
     # A short, heavy bole. Everything downstream hangs off how low this forks.
     fork_fraction = 0.24
     points, radii = standing_trunk(
-        height * fork_fraction, 0.78, 0.56, lean * fork_fraction, height * 0.006, 3,
+        height * fork_fraction, 0.52, 0.38, lean * fork_fraction, height * 0.006, 3,
         # Two bark tones, not three: the leaf ramp already spends three of this
         # family's five (MAX_MATERIALS), and the one that has to exist is the
         # SHADOW — it is what the deep furrows are drawn in.

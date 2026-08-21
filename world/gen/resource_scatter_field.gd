@@ -94,6 +94,8 @@ extends Node3D
 const ResourceScatterLib := preload("res://world/gen/resource_scatter.gd")
 const HarvestLib := preload("res://systems/harvesting/harvest_library.gd")
 const DrawPolicy := preload("res://world/environment/draw_policy.gd")
+## F-434: one collider fitter for both world builders — see `_collider_for()` below.
+const PROP_COLLIDER := preload("res://world/gen/prop_collider.gd")
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
 
 ## Same group `world/gen/authored_world.gd` puts its own harvestable holders in — this is the
@@ -113,7 +115,7 @@ const DEPLETION_KIND: StringName = &"harvest_depleted"
 ## already gone by then (see `FOLIAGE_MATERIAL_PREFIXES`). Together the two rules give a tree its
 ## trunk and root flare, while a boulder, a stump or a fallen log — solid all over, and widest down
 ## low anyway — keeps its true full width (F-348).
-const COLLIDER_OBSTACLE_HEIGHT_M: float = 1.8
+const COLLIDER_OBSTACLE_HEIGHT_M: float = PROP_COLLIDER.COLLIDER_OBSTACLE_HEIGHT_M
 ## F-390: the trunk band. Solid geometry is measured from here up to
 ## [constant COLLIDER_OBSTACLE_HEIGHT_M], NOT from the ground up, because the widest solid wood on a
 ## tree below head height is the ROOT FLARE at its very base — and taking the max over the whole
@@ -165,10 +167,10 @@ const SCATTER_VISUAL_BUILDS_PER_FRAME: int = 2
 const WARM_REQUESTS_IN_FLIGHT: int = 4
 const WARM_COMPLETIONS_PER_FRAME: int = 2
 
-const COLLIDER_TRUNK_BAND_MIN_M: float = 0.5
+const COLLIDER_TRUNK_BAND_MIN_M: float = PROP_COLLIDER.COLLIDER_TRUNK_BAND_MIN_M
 ## F-390: nothing shorter than this gets a collider at all. You step over it, so a cylinder there can
 ## only ever be something to trip on.
-const COLLIDER_MIN_HEIGHT_M: float = 0.4
+const COLLIDER_MIN_HEIGHT_M: float = PROP_COLLIDER.COLLIDER_MIN_HEIGHT_M
 ## Material-name prefixes that mark a surface as leaves, fronds, grass, moss or blossom — the parts
 ## of a prop a player walks straight through.
 ##
@@ -178,10 +180,7 @@ const COLLIDER_MIN_HEIGHT_M: float = 0.4
 ## guessed from the assets that happen to exist today. A willow carries its trunk on `MIRE_WoodBark`
 ## and its crown on `MIRE_Leaf`/`MIRE_LeafDeep`/`MIRE_LeafLight`: four surfaces of one mesh, which is
 ## what makes "collide the trunk, not the leaves" answerable at all without hand-authored shapes.
-const FOLIAGE_MATERIAL_PREFIXES: PackedStringArray = [
-	"MIRE_Leaf", "MIRE_Pine", "MIRE_Grass", "MIRE_Moss",
-	"MIRE_Reed", "MIRE_Sedge", "MIRE_Bracken", "MIRE_Flower",
-]
+const FOLIAGE_MATERIAL_PREFIXES: PackedStringArray = PROP_COLLIDER.FOLIAGE_MATERIAL_PREFIXES
 
 @export var world_seed: int = 0
 ## `Registry.scatter_tables.values()`, assigned by whoever builds this field.
@@ -541,11 +540,20 @@ func _build_node_holder(
 		var body := StaticBody3D.new()
 		body.name = "CollisionBody"
 		var shape_node := CollisionShape3D.new()
-		var cylinder := CylinderShape3D.new()
-		cylinder.radius = float(fit["radius"])
-		cylinder.height = float(fit["height"])
-		shape_node.shape = cylinder
-		shape_node.position.y = float(fit["center_y"])
+		# F-434: a prop that lies down gets a box along its own length, not a disc as wide as it is
+		# long. `_collider_for()` decides which; both keys are authored in the prop's own space, so
+		# the holder's yaw and scale carry the shape with the mesh either way.
+		if StringName(fit.get("shape", &"cylinder")) == &"box":
+			var box := BoxShape3D.new()
+			box.size = fit["size"] as Vector3
+			shape_node.shape = box
+			shape_node.position = fit["center"] as Vector3
+		else:
+			var cylinder := CylinderShape3D.new()
+			cylinder.radius = float(fit["radius"])
+			cylinder.height = float(fit["height"])
+			shape_node.shape = cylinder
+			shape_node.position.y = float(fit["center_y"])
 		body.add_child(shape_node)
 		holder.add_child(body)
 
@@ -664,178 +672,19 @@ func _record_point_state(point_id: String, depleted_now: bool) -> void:
 		log.call("host_record", _chunk_from_point_id(point_id), DEPLETION_KIND, point_id, depleted_now)
 
 
-## The cylinder a NODE harvestable collides as: as tall as the prop, as wide as the widest SOLID
-## thing a walking body could hit.
+## The collider a NODE prop gets, delegated to `world/gen/prop_collider.gd` (F-434).
 ##
-## F-348: this used to be the union AABB of every mesh part, which for a tree is the LEAF CROWN —
-## a willow ended up with a 1.89 m-radius invisible wall around a trunk about 0.9 m across at the
-## root flare, so the player was stopped a metre short of every tree on the island with nothing on
-## screen to explain it. Leaves are not an obstacle; the trunk is.
+## The measurement itself moved out of this file when `world/gen/authored_world.gd` needed the same
+## answer: an authored map's layout stores a collider per PLACEMENT, computed by a Python mapgen
+## that has never been able to look at the mesh, so Hollowmere's trees carry cylinders sized from
+## their CANOPY footprint — the exact "leaves collide" defect F-348 removed from this path. One
+## fitter now answers for both worlds.
 ##
-## Two rules get there, and both are needed. Surfaces painted with a foliage material contribute
-## nothing — that removes the crown outright. Of what is left, only vertices below
-## [constant COLLIDER_OBSTACLE_HEIGHT_M] count — that removes the bark BRANCHES, which are solid
-## wood spreading twice as wide as the trunk they grow from and are still something you walk under.
-## Radius is measured from the prop's own vertical axis rather than off an AABB corner: props are
-## authored around their origin, and a radial measure is what a cylinder actually needs. Height
-## stays the FULL height, so an arrow still hits a trunk forty feet up.
-##
-## **Returns an EMPTY dictionary for a prop that should not collide at all**, and `_build_node_holder`
-## emits no body for one. Two ways to get there, both added by F-390:
-##
-##  · **It is foliage all the way down.** The old code treated that as a content bug and fell back to
-##    measuring the foliage, then to the full AABB — "a collider that is too wide beats one that is
-##    missing". That is right for an UNRECOGNISED material and exactly wrong for a recognised one:
-##    every surface being known foliage is not ambiguity, it is the answer. What it actually shipped
-##    was a solid cylinder around every blade of grass, every flower and every clover patch on the
-##    island — `grass_short_c` measured r=0.89 h=0.27, `flowers_meadow_a` r=0.84 — invisible, in the
-##    thousands, and directly against the standing rule for this project that leaves and canopy never
-##    collide. A player walking over a field of ankle-high cylinders bounces, which is what was
-##    reported.
-##  · **It is shorter than [constant COLLIDER_MIN_HEIGHT_M].** You step over it.
-##
-## A prop with geometry the material table does not recognise still gets the old benefit of the
-## doubt — `_is_foliage()` treats an unnamed material as SOLID, so this only ever drops props whose
-## surfaces are all POSITIVELY identified as leaves, grass, moss, reed, sedge, bracken or blossom.
+## Cached per (kit, asset) rather than per prop: the fitter walks every vertex of the mesh, which is
+## affordable for the handful of NODE assets a biome scatters and is not affordable a few hundred
+## times a chunk.
 func _collider_for(kit: String, asset: String, mesh_parts: Array) -> Dictionary:
-	var cache_key := "%s|%s" % [kit, asset]
-	if _collider_cache.has(cache_key):
-		return _collider_cache[cache_key]
-
-	var merged := AABB()
-	# The old measure: widest solid geometry anywhere below the cut. Still the fallback for props
-	# with nothing in the band at all — a fallen log, a low boulder, a stump.
-	var solid_radius: float = 0.0
-	for part: Dictionary in mesh_parts:
-		var mesh: Mesh = part["mesh"] as Mesh
-		var offset: Transform3D = part["offset"] as Transform3D
-		var box: AABB = offset * mesh.get_aabb()
-		merged = box if merged.size == Vector3.ZERO else merged.merge(box)
-		if box.position.y > COLLIDER_OBSTACLE_HEIGHT_M:
-			continue
-		for surface: int in mesh.get_surface_count():
-			if _is_foliage(mesh.surface_get_material(surface)):
-				continue
-			# Vertices, not the surface's bounds: a willow's crown hangs down past head height, so a
-			# bounds test would call the whole canopy "below the cut" and change nothing.
-			solid_radius = maxf(solid_radius, _surface_reach(mesh, surface, offset, 0.0))
-
-	var height: float = maxf(merged.size.y, 0.1)
-	# Nothing solid anywhere, or too short to matter: no body at all.
-	if solid_radius <= 0.0 or height < COLLIDER_MIN_HEIGHT_M:
-		_collider_cache[cache_key] = {}
-		return {}
-
-	var fit: Dictionary = {
-		"radius": maxf(_band_radius(mesh_parts, solid_radius), 0.05),
-		"height": height,
-		"center_y": merged.get_center().y,
-	}
-	_collider_cache[cache_key] = fit
-	return fit
-
-
-## The collider radius, measured as the prop's HORIZONTAL CROSS-SECTION through the trunk band.
-##
-## Three approaches were tried against the shipped assets and the first two both failed on real
-## content, so the reasoning is worth keeping:
-##
-## 1. **Widest solid geometry below head height** (what shipped). Set by the ROOT FLARE at the very
-##    base, so `tree_willow_a` measured 1.29 m around a trunk nearer 0.3 and the player was stopped
-##    over a metre from bark they were walking at.
-## 2. **A percentile of solid VERTEX radii inside the band.** Correct in principle and blind in
-##    practice: these are low-poly meshes, and a willow's trunk is a cylinder with a vertex ring at
-##    its base and the next one above head height. Nothing at all lands between 0.5 m and 1.8 m, so
-##    two of the three willows contributed zero samples and silently fell back to (1).
-##
-## 3. **Slice it.** For each of [constant COLLIDER_BAND_SLICES] heights across the band, find every
-##    triangle EDGE that crosses that height, interpolate the crossing point, and take the widest —
-##    a true silhouette at that height, independent of where the vertices happen to sit. Then take
-##    the MEDIAN across the slices.
-##
-## The median across slices is what separates a trunk from a rock without knowing which it is. A
-## tree is a narrow column at almost every height in the band, with at most a couple of slices
-## catching a branch — outliers the median drops. A boulder is wide at every height, so its median
-## IS its width. Content that is neither still gets a defensible answer rather than a special case.
-const COLLIDER_BAND_SLICES: int = 9
-
-func _band_radius(mesh_parts: Array, fallback: float) -> float:
-	var slice_radii := PackedFloat32Array()
-	var span: float = COLLIDER_OBSTACLE_HEIGHT_M - COLLIDER_TRUNK_BAND_MIN_M
-	for slice: int in COLLIDER_BAND_SLICES:
-		var height: float = COLLIDER_TRUNK_BAND_MIN_M \
-			+ span * (float(slice) + 0.5) / float(COLLIDER_BAND_SLICES)
-		var widest: float = _cross_section_radius(mesh_parts, height)
-		if widest > 0.0:
-			slice_radii.append(widest)
-	if slice_radii.is_empty():
-		# The band is above the whole prop, or below nothing solid. Its widest solid geometry below
-		# the cut is the honest answer and always was — a fallen log, a stump, a low rock.
-		return fallback
-	slice_radii.sort()
-	return slice_radii[slice_radii.size() / 2]
-
-
-## Widest solid point on the horizontal plane at [param height], found by interpolating every
-## triangle edge that crosses it. Returns 0.0 when nothing solid reaches that height.
-func _cross_section_radius(mesh_parts: Array, height: float) -> float:
-	var widest_sq: float = 0.0
-	for part: Dictionary in mesh_parts:
-		var mesh: Mesh = part["mesh"] as Mesh
-		var offset: Transform3D = part["offset"] as Transform3D
-		for surface: int in mesh.get_surface_count():
-			if _is_foliage(mesh.surface_get_material(surface)):
-				continue
-			var arrays: Array = mesh.surface_get_arrays(surface)
-			if arrays.is_empty():
-				continue
-			var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
-			var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
-			var count: int = indices.size() if indices.size() > 0 else verts.size()
-			for i: int in range(0, count - 2, 3):
-				for edge: int in 3:
-					var ia: int = i + edge
-					var ib: int = i + (edge + 1) % 3
-					var a: Vector3 = offset * verts[indices[ia] if indices.size() > 0 else ia]
-					var b: Vector3 = offset * verts[indices[ib] if indices.size() > 0 else ib]
-					if (a.y - height) * (b.y - height) > 0.0:
-						continue
-					if is_equal_approx(a.y, b.y):
-						continue
-					var t: float = (height - a.y) / (b.y - a.y)
-					var x: float = a.x + (b.x - a.x) * t
-					var z: float = a.z + (b.z - a.z) * t
-					widest_sq = maxf(widest_sq, x * x + z * z)
-	return sqrt(widest_sq)
-
-
-## How far one surface reaches from the prop's vertical axis, counting only vertices between
-## [param min_y] and [constant COLLIDER_OBSTACLE_HEIGHT_M].
-func _surface_reach(mesh: Mesh, surface: int, offset: Transform3D, min_y: float) -> float:
-	var arrays: Array = mesh.surface_get_arrays(surface)
-	if arrays.is_empty():
-		return 0.0
-	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
-	var worst_sq: float = 0.0
-	for vertex: Vector3 in verts:
-		var point: Vector3 = offset * vertex
-		if point.y > COLLIDER_OBSTACLE_HEIGHT_M or point.y < min_y:
-			continue
-		worst_sq = maxf(worst_sq, point.x * point.x + point.z * point.z)
-	return sqrt(worst_sq)
-
-
-## True for a surface a player walks straight through. An unnamed or missing material counts as
-## SOLID: silently dropping an unrecognised surface from the collider is how a prop ends up with no
-## collision at all, and being too wide is the safer failure.
-func _is_foliage(material: Material) -> bool:
-	if material == null:
-		return false
-	var name: String = material.resource_name
-	for prefix: String in FOLIAGE_MATERIAL_PREFIXES:
-		if name.begins_with(prefix):
-			return true
-	return false
+	return PROP_COLLIDER.fit_cached(_collider_cache, "%s|%s" % [kit, asset], mesh_parts)
 
 
 func _load_mesh_parts(kit: String, asset: String) -> Array:

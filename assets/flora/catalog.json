@@ -261,8 +261,8 @@
   {
     "name": "tree_willow_a",
     "family": "small_trees",
-    "width_m": 11.92,
-    "depth_m": 12.439,
+    "width_m": 11.986,
+    "depth_m": 12.508,
     "height_m": 13.617,
     "mesh_parts": 1,
     "polygons": 1990,
@@ -278,8 +278,8 @@
   {
     "name": "tree_willow_b",
     "family": "small_trees",
-    "width_m": 9.914,
-    "depth_m": 5.75,
+    "width_m": 9.97,
+    "depth_m": 5.783,
     "height_m": 11.145,
     "mesh_parts": 1,
     "polygons": 1511,
@@ -295,8 +295,8 @@
   {
     "name": "tree_willow_c",
     "family": "small_trees",
-    "width_m": 12.602,
-    "depth_m": 12.746,
+    "width_m": 12.675,
+    "depth_m": 12.82,
     "height_m": 13.355,
     "mesh_parts": 1,
     "polygons": 1990,
