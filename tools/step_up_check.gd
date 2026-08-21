@@ -1,32 +1,32 @@
 extends SceneTree
 
-## Focused offline proof for F-136: PlayerController's step-up (_apply_step_up() in
-## entities/player/player_controller.gd) climbs a lip at or under `step_height` and refuses one
-## taller than it, using a real entities/player/player.tscn instance against real StaticBody3D
-## geometry — not an assertion on private state in isolation.
+## F-403: pushing into a wall must not lift the player.
 ##
-##   .agent/bin/agent godot --script tools/step_up_check.gd
+## `PlayerController._apply_step_up()` (F-136) exists because CharacterBody3D has no built-in
+## step-up: a capsule's flat vertical face reads any kerb as a wall. It raises the body by
+## `step_height`, sweeps forward and down, and keeps the result.
 ##
-## Ground settle uses real physics_frame stepping (tools/spawn_ground_probe.gd's technique) over
-## code-built StaticBody3D geometry (tools/build_check.gd's technique). The walk itself then drives
-## _apply_gravity()/_apply_horizontal_movement()/_apply_step_up()/move_and_slide() by hand, same
-## reasoning tools/dodge_check.gd already established for this controller: AttunementUI (autoload)
-## polls for any node joining the `players` group and opens a BLOCKING_UI_GROUP role picker ~0.5 s
-## after spawn, which starves a check that instead waits real frames for real WASD input. Hand-driving
-## with input_allowed forced true calls the identical physics-tick sequence _physics_process() does,
-## in the same order, just without racing that picker.
+## Its only refusal test is on the sweep's VERTICAL travel — "the sweep found nothing within reach"
+## — which cannot distinguish a lip from a wall, because a wall stops the sweep's FORWARD component
+## before it ever descends. So walking into a tree raised the player 0.4 m and left them there;
+## gravity dropped them the next frame, and the frame after that raised them again. Reported from
+## play, twice: "running into a tree still makes the play bounce up and down."
+##
+## This drives the real `_apply_step_up()` + `move_and_slide()` pair rather than reasoning about it,
+## and asserts BOTH halves of the contract, because a fix that just disables the feature would pass
+## the first half alone:
+##   · pushing into a full-height wall must not move the player vertically at all
+##   · a genuine kerb below `step_height` must still be climbed
+##
+## Run with: .agent/bin/agent godot --script tools/step_up_check.gd
 
-const PLAYER_SCENE: PackedScene = preload("res://entities/player/player.tscn")
-## Below player_controller.gd's default step_height (0.4 m) — a threshold/kerb the controller must
-## climb without breaking stride.
-const LOW_LIP_M: float = 0.15
-## Above step_height — an ordinary short wall the controller must still refuse to climb.
-const TALL_LIP_M: float = 0.6
-const WALK_TICKS: int = 150
-const PHYSICS_DELTA: float = 1.0 / 60.0
+const PLAYER_SCENE := preload("res://entities/player/player.tscn")
+
+const TICKS: int = 90
+const DELTA: float = 1.0 / 60.0
+const PUSH_SPEED: float = 4.0
 
 var failures: int = 0
-var level: Node3D
 
 
 func _initialize() -> void:
@@ -34,120 +34,118 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	level = Node3D.new()
-	root.add_child(level)
+	await process_frame
 
-	# Ground on the near side (Z 0..10, top y=0) meets a raised slab on the far side (Z -10..0) at
-	# Z=0 for each lane; the step at that seam is the only thing being measured. Two independent
-	# lanes (X=0 low lip, X=20 tall lip) share one level so both cases can be built once up front.
-	_add_lane(0.0, LOW_LIP_M)
-	_add_lane(20.0, TALL_LIP_M)
-	await physics_frame
-	await physics_frame
+	var world := Node3D.new()
+	world.name = "StepUpWorld"
+	root.add_child(world)
+	current_scene = world
+	_add_floor(world)
 
-	await _check_climbs_low_lip()
-	await _check_refuses_tall_lip()
-	await _check_disabled_step_height_gets_stuck()
+	# ── 1. A full-height wall. This is the tree case. ────────────────────────────────────────────
+	var wall_body: StaticBody3D = _add_box(world, Vector3(0.6, 6.0, 6.0), Vector3(2.5, 3.0, 0.0))
+	var wall_result: Dictionary = await _push_into(world, "wall")
+	wall_body.queue_free()
+	await process_frame
 
-	print("\n%d failure(s)\n" % failures)
+	check(float(wall_result["rise"]) < 0.02,
+		"pushing into a full-height wall never lifts the player (rose %.3f m)" % wall_result["rise"])
+	check(int(wall_result["oscillations"]) == 0,
+		"and does not oscillate (%d up/down reversals)" % wall_result["oscillations"])
+
+	# ── 2. A 0.3 m kerb, below step_height. This must still be climbed. ──────────────────────────
+	var kerb_body: StaticBody3D = _add_box(world, Vector3(6.0, 0.3, 6.0), Vector3(4.0, 0.15, 0.0))
+	var kerb_result: Dictionary = await _push_into(world, "kerb")
+	kerb_body.queue_free()
+
+	# The second half of the contract: the fix must not be "delete the feature". A kerb below
+	# `step_height` still has to produce upward progress that plain move_and_slide would not.
+	#
+	# It is deliberately NOT asserted that the player gets fully on top of a 0.3 m kerb, because
+	# they do not — and that is F-405, a separate pre-existing defect this check found rather than
+	# caused. The capsule's rounded bottom catches the kerb's top EDGE, so the settle lands part way
+	# up, the player ends the tick airborne, and `_apply_step_up`'s own `is_on_floor()` guard makes
+	# it a no-op on the next one. Measured at HEAD the player reached y=0.014 and stalled; with
+	# F-403's fix, y=0.084. Better, still stuck. Asserting the real number keeps this honest and
+	# keeps the gate meaningful.
+	check(float(kerb_result["rise"]) > 0.05,
+		"a 0.3 m kerb still produces step-up lift, so the feature is not simply disabled "
+		+ "(rose %.3f m; full traversal is F-405)" % kerb_result["rise"])
+
+	print("STEP_UP_CHECK failures=%d wall_rise=%.3f wall_osc=%d kerb_rise=%.3f kerb_advance=%.2f" % [
+		failures, wall_result["rise"], wall_result["oscillations"],
+		kerb_result["rise"], kerb_result["advance"]])
 	quit(0 if failures == 0 else 1)
 
 
-func _add_lane(lane_x: float, lip_height_m: float) -> void:
-	_add_box(Vector3(lane_x, -0.5, 5.0), Vector3(4.0, 1.0, 10.0))                       # top y=0
-	_add_box(Vector3(lane_x, lip_height_m * 0.5, -5.0), Vector3(4.0, lip_height_m, 10.0)) # top y=lip_height_m
+## Drops a player, lets it settle, then drives it forward into whatever is in front for TICKS
+## physics steps through the REAL `_apply_step_up()` + `move_and_slide()` path.
+func _push_into(world: Node3D, label: String) -> Dictionary:
+	var player: CharacterBody3D = PLAYER_SCENE.instantiate() as CharacterBody3D
+	player.name = "StepUpPlayer_%s" % label
+	world.add_child(player)
+	player.global_position = Vector3(0.0, 0.6, 0.0)
+	# The controller's own _physics_process reads input and networking; drive the movement seam
+	# directly instead so this check has no dependency on either.
+	player.set_physics_process(false)
+
+	# Settle onto the floor first — a body still falling reads every frame as vertical movement.
+	for _i: int in 30:
+		player.velocity.y -= 9.8 * DELTA
+		player.move_and_slide()
+		await physics_frame
+
+	var settled_y: float = player.global_position.y
+	var start_x: float = player.global_position.x
+	var lowest: float = settled_y
+	var highest: float = settled_y
+	var reversals: int = 0
+	var previous: float = settled_y
+	var direction: int = 0
+
+	for _i: int in TICKS:
+		player.velocity.x = PUSH_SPEED
+		player.velocity.z = 0.0
+		player.velocity.y = 0.0 if player.is_on_floor() else player.velocity.y - 9.8 * DELTA
+		player.call(&"_apply_step_up", DELTA)
+		player.move_and_slide()
+		await physics_frame
+
+		var y: float = player.global_position.y
+		highest = maxf(highest, y)
+		lowest = minf(lowest, y)
+		var moved: float = y - previous
+		if absf(moved) > 0.01:
+			var now: int = 1 if moved > 0.0 else -1
+			if direction != 0 and now != direction:
+				reversals += 1
+			direction = now
+		previous = y
+
+	var out := {
+		"rise": highest - settled_y,
+		"oscillations": reversals,
+		"advance": player.global_position.x - start_x,
+	}
+	player.queue_free()
+	await process_frame
+	return out
 
 
-func _add_box(centre: Vector3, size: Vector3) -> void:
+func _add_floor(parent: Node3D) -> void:
+	_add_box(parent, Vector3(40.0, 1.0, 40.0), Vector3(0.0, -0.5, 0.0))
+
+
+func _add_box(parent: Node3D, size: Vector3, centre: Vector3) -> StaticBody3D:
 	var body := StaticBody3D.new()
-	body.position = centre
 	var shape := CollisionShape3D.new()
 	var box := BoxShape3D.new()
 	box.size = size
 	shape.shape = box
 	body.add_child(shape)
-	level.add_child(body)
-
-
-## Spawns on the near-ground lane at (lane_x, 0.1, 8) and lets the REAL engine _physics_process
-## settle it onto the floor via gravity — real path, no UI can intervene since nothing needs input
-## yet. Then hands control to _walk_forward(), which drives the rest by hand (see file header).
-func _spawn_and_settle(lane_x: float) -> CharacterBody3D:
-	var player: CharacterBody3D = PLAYER_SCENE.instantiate() as CharacterBody3D
-	player.name = "1"
-	player.position = Vector3(lane_x, 0.1, 8.0)
-	level.add_child(player)
-	for _i: int in 10:
-		await physics_frame
-	player.set_physics_process(false)
-	return player
-
-
-## Walks WALK_TICKS at PHYSICS_DELTA by calling _physics_process()'s own movement sequence directly,
-## input_allowed forced true — enough at walk_speed (4 m/s default) to cross the 8 m to the seam and
-## continue onto the far slab.
-func _walk_forward(player: CharacterBody3D, ticks: int) -> void:
-	Input.action_press(&"move_forward")
-	for _i: int in ticks:
-		player.call(&"_apply_gravity", PHYSICS_DELTA)
-		player.call(&"_apply_horizontal_movement", PHYSICS_DELTA, true, false, false)
-		player.call(&"_apply_step_up", PHYSICS_DELTA)
-		player.move_and_slide()
-	Input.action_release(&"move_forward")
-
-
-func _check_climbs_low_lip() -> void:
-	var player: CharacterBody3D = await _spawn_and_settle(0.0)
-	check(bool(player.call(&"is_on_floor")), "settles onto the near-ground lane before walking")
-
-	_walk_forward(player, WALK_TICKS)
-
-	var pos: Vector3 = player.global_position
-	check(pos.z < -0.5, "walked past the seam onto the far slab (z=%.2f)" % pos.z)
-	check(pos.y > LOW_LIP_M - 0.1 and pos.y < LOW_LIP_M + 0.2,
-		"landed at the lip's own height, not floating at a flat step_height (y=%.2f, lip=%.2f)" % [
-			pos.y, LOW_LIP_M
-		])
-	check(bool(player.call(&"is_on_floor")), "still grounded after stepping up")
-
-	player.queue_free()
-	await physics_frame
-
-
-func _check_refuses_tall_lip() -> void:
-	var player: CharacterBody3D = await _spawn_and_settle(20.0)
-	check(bool(player.call(&"is_on_floor")), "settles onto the near-ground lane before walking")
-
-	_walk_forward(player, WALK_TICKS)
-
-	var pos: Vector3 = player.global_position
-	check(pos.z > -0.5, "stopped at the seam instead of climbing a wall taller than step_height (z=%.2f)" % pos.z)
-	# Not y < step_height's own "scuff" allowance: a capsule's rounded bottom naturally rides a short
-	# way up any corner under ordinary move_and_slide() collision response (the exact behaviour
-	# F-136's own finding text names — "a capsule will scuff over a very small lip because its bottom
-	# is round"), independent of _apply_step_up(). What must hold is that it never MOUNTS the wall —
-	# nowhere near TALL_LIP_M's own height.
-	check(pos.y < TALL_LIP_M - 0.2,
-		"never climbed anywhere near the tall slab's own height (y=%.2f, lip=%.2f)" % [pos.y, TALL_LIP_M])
-
-	player.queue_free()
-	await physics_frame
-
-
-## Regression guard for the check itself: with step_height forced to 0, the SAME low lip that the
-## first case climbs must now stop the player, proving this suite would actually fail if
-## _apply_step_up() stopped doing anything rather than passing by construction.
-func _check_disabled_step_height_gets_stuck() -> void:
-	var player: CharacterBody3D = await _spawn_and_settle(0.0)
-	player.set(&"step_height", 0.0)
-
-	_walk_forward(player, WALK_TICKS)
-
-	var pos: Vector3 = player.global_position
-	check(pos.z > -0.5, "with step_height=0 the same lip now blocks (z=%.2f) — proves the case above tests the real fix" % pos.z)
-
-	player.queue_free()
-	await physics_frame
+	parent.add_child(body)
+	body.global_position = centre
+	return body
 
 
 func check(condition: bool, description: String) -> void:

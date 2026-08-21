@@ -808,20 +808,36 @@ func _apply_step_up(delta: float) -> void:
 		return
 	raised.origin.y += step_height
 
-	# 3. From the raised height, sweep forward AND down together and take the point of first contact.
-	# An ordinary wall taller than step_height still blocks the forward component of this same sweep,
-	# so it is refused here exactly as step 2's plain rise would refuse a ceiling.
-	var landing: KinematicCollision3D = KinematicCollision3D.new()
-	var settle: Vector3 = motion + Vector3(0.0, -step_height, 0.0)
-	var travel: Vector3 = landing.get_travel() if test_move(raised, settle, landing) else settle
+	# 3. From the raised height, can the player actually move FORWARD? This is the test that
+	# separates a lip from a wall, and it is the one F-403 found missing.
+	#
+	# The previous version swept forward and down together and judged the result on `travel.y`
+	# alone. That cannot tell the two apart: a wall stops the combined sweep's forward component
+	# before it ever descends, so it returns the same near-zero `travel.y` a lip does, and was
+	# accepted — teleporting the player a clear `step_height` into the air onto nothing. Gravity
+	# returned them the next frame and pushing forward lifted them again, which is the "bounce up
+	# and down when I run into a tree" reported from play twice. Measured at 0.396 m of lift and 7
+	# reversals in 90 ticks against a plain wall (`tools/step_up_check.gd`).
+	#
+	# Probing forward on its own is unambiguous. A kerb below `step_height` is now UNDER the raised
+	# capsule and the move is clear; a wall is still in front of it and the move is blocked. No
+	# threshold to tune, and no way for the two cases to produce the same answer.
+	if test_move(raised, motion):
+		return
+	var stepped: Transform3D = raised
+	stepped.origin += motion
 
-	# The sweep found nothing within reach (fell the full probe depth without contact) — a step this
-	# tall would be a gap or an actual wall, not a lip, so leave move_and_slide to resolve the frame
-	# normally rather than depositing the player onto whatever is far below.
+	# 4. Settle back down onto whatever is under the new position.
+	var landing: KinematicCollision3D = KinematicCollision3D.new()
+	var drop: Vector3 = Vector3(0.0, -step_height, 0.0)
+	var travel: Vector3 = landing.get_travel() if test_move(stepped, drop, landing) else drop
+
+	# Nothing within reach: the player walked out over a gap rather than up onto a lip, so leave
+	# move_and_slide to resolve the frame instead of depositing them on whatever is far below.
 	if travel.y <= -step_height + 0.02:
 		return
 
-	global_position = raised.origin + travel
+	global_position = stepped.origin + travel
 
 
 # ── Dodge (task 3.8b) ─────────────────────────────────────────────────────────────────────────────

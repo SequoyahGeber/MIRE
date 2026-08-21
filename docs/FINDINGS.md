@@ -2186,7 +2186,443 @@ somebody will act on it anyway.
 
 ---
 
+### F-395 · The procedural island ignores 141 assets the authored map used — 699 placements of already-built content, including every pine, birch and meadow grass
+
+**Area:** worldgen · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "I know we had like five or more tree types. Why is there
+only one tree ever placed on the map?" and "There are so many assets in the old map, make sure we're
+not wasting those."
+
+Measured, by diffing `world/gen/layouts/playtest_hollow.json`'s prop list against every `asset` id
+reachable from `content/scatter/*.tres` and `content/poi/*.tres`:
+
+    the authored map places      152 distinct assets
+    the procedural island can     57
+    unused                       141 distinct, 699 placements
+
+By kit:
+
+    environment         634 placements, 104 assets  — grass_meadow_*, grass_seedhead_*, grass_clump_*,
+                                                      grass_tuft_*, tree_pine_a..f, tree_birch_a..d,
+                                                      tree_bare_a..d, tree_crooked_a..d, fences, ...
+    pickups              22 placements,  11 assets
+    loot                 16 placements,   7 assets
+    harvestables         12 placements,   5 assets
+    crafting_stations     7 placements,   6 assets
+    tools_weapons         7 placements,   7 assets
+
+The tree case is the sharpest illustration. `content/scatter/forest_canopy.tres` holds four entries
+and three of them are `tree_willow_a/b/c` from the `flora` kit, with `tree_snag_a` at weight 0.2.
+Meanwhile **eighteen** built, exported, previously-shipped trees sit in `assets/environment/exports/`
+— six pines, four birches, four bare, four crooked — referenced by nothing the procedural island
+loads. Three near-identical willows is why it reads as one tree species.
+
+None of this needs new art. It needs scatter entries, and in a few cases a `scene_path` on a POI def.
+`HarvestLibrary.HARVEST_RULES` already maps the `tree_` prefix to `wild_tree`, so every one of those
+eighteen becomes choppable the moment it is placed, with no code change.
+
+Worth stating plainly because it explains a whole class of "the procedural map feels empty" reports:
+the authored map was dressed by hand from the full kit, and the procedural generator was given a
+small hand-written subset of it. Nothing checks that the two agree, so the gap is invisible.
+
+---
+
+### F-396 · Every tree in the repo is about 3x eye height, so the island reads as scrub rather than forest
+
+**Area:** art · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported twice from play (2026-08-20, Sequoyah): "tree assets should be significantly taller, they
+are way too short compared to the player", then again after F-370 was filed: "we didn't do anything
+about the trees being way too short still."
+
+Measured across every tree asset in the repo, from each GLB's merged mesh AABB:
+
+    environment/  tree_pine_a..f      4.84 - 5.90 m
+    environment/  tree_birch_a..d     5.98 - 7.44 m
+    environment/  tree_bare_a..d      4.86 - 6.40 m
+    environment/  tree_crooked_a..d   6.42 - 7.42 m
+    flora/        tree_willow_a..c    4.52 - 5.76 m
+    flora/        tree_snag_a..c      3.55 - 4.91 m
+    wetland_nature/ mangrove, hollow  4.60, 4.90 m
+
+Player eye height is about 1.7 m. So the tallest tree in the game is 4.4x eye height and the median
+is nearer 3.3x. Real forest trees read at 6-15x, which is why the canopy never breaks the horizon in
+the playtest capture and the forest reads as shrubbery.
+
+This is the whole kit, not one bad asset — so it is a generator-level fix, not a per-asset one. The
+two generators are `tools/blender/build_mire_map_kit.py` (`build_pine`/`build_birch`/`build_bare`/
+`build_crooked`, registered at :650) and `tools/blender/build_flora_set.py` (`build_tree_willow` at
+:489, `build_tree_snag` at :535, with an explicit height table at :120 —
+`"tree_willow": (4.20, 6.20, "height", 4.2)`).
+
+**Scaling in the scatter def is the wrong lever and worth saying so before someone reaches for it:**
+`min_scale`/`max_scale` scale the trunk with the canopy, so a 1.6x tree has a 1.6x-thick trunk and
+reads as a normal tree seen from closer, not as a taller one. Height wants to come from the
+generator, where trunk length can grow without the trunk fattening.
+
+Supersedes F-370, which named the same problem from the playtest capture alone; this adds the
+measurement and the generator locations.
+
+---
+
+### F-397 · F-379's grade pass turned the forest floor brown, which is further from the target than the green it replaced
+
+**Area:** art · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah), on the change that shipped hours earlier: "the game
+lighting/color grading looks really bad, i really dislike the gross brown ground thats been added."
+
+F-379 gave biomes their own ground colour, which was right — the island had been one flat green. The
+values chosen were not. Uncommitted at the time of this report, in `content/biomes/`:
+
+    forest      Color(0.231, 0.220, 0.184)   <- red == green, and more red than blue. This is mud.
+    grassland   Color(0.380, 0.420, 0.310)   <- desaturated olive
+    shore       Color(0.569, 0.541, 0.471)   <- sand, and the one that is defensible
+
+`world/gen/biome_def.gd`'s own default is `Color(0.26, 0.40, 0.19)` — a real green — so the forest
+biome moved a long way from it in the desaturating direction.
+
+**The reasoning error is worth recording, because it is easy to repeat.** The original complaint was
+"game looks to green/yellow". The problem there was that ground, canopy and light all sat in one
+narrow hue band so nothing separated from anything else. The fix for *no separation* is to separate
+— by hue between biomes, and by value between ground and canopy. Desaturating toward brown reduces
+separation further, and it also walks away from the standing art direction for this project, whose
+reference is Muck: bright, saturated green ground.
+
+"Too green" was never a request for "less green". It was a request for the greens to differ from each
+other and from what stands on them.
+
+Fix: keep the per-biome colour mechanism F-379 added; re-author the values in the green family with
+real hue separation (a cool deep green under forest canopy, a warmer yellow-green meadow, sand only
+at the shore), then re-judge the grade on top of them rather than the other way round.
+
+---
+
+### F-398 · The terrain has no ambient occlusion, so nothing is grounded where it meets the ground
+
+**Area:** render · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Requested from play (2026-08-20, Sequoyah): "can we add ambient occulusion to the game maybe?"
+
+The `WorldEnvironment` in `levels/procedural_island.tscn` (and the three other level scenes) has no
+SSAO configured, and `world/environment/playtest_atmosphere.gd` — which drives every other
+environment knob on the daylight curve — never touches it.
+
+The visible consequence in the playtest captures is that trunks, rocks and props meet the terrain
+with no contact darkening at all, so everything reads as sitting ON the ground rather than IN it, and
+the flat-shaded low-poly forms lose the crease shading that would otherwise separate them from the
+surface behind. It is also part of why the scene reads as one flat hue band (F-397/F-379): with no
+occlusion term, the only thing separating a prop from the ground is its albedo.
+
+Forward+ supports SSAO, so this is configuration rather than new rendering work.
+
+**Must be preset-gated.** SSAO is a per-pixel screen-space pass and this project's standing
+performance goal targets the worst machines. `autoload/graphics_quality.gd`'s LOW preset already
+turns off `glow` and `volumetric` for exactly this reason; SSAO belongs in the same list, off on LOW
+and on above it, with the cost measured rather than assumed.
+
+---
+
+### F-399 · The ground is one flat untextured colour per biome, so large areas read as dead space
+
+**Area:** art · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Requested from play (2026-08-20, Sequoyah): "Maybe we can make a texture for the ground rather than
+just having it be one flat color, maybe subtle texture would be good for the ground."
+
+`world/chunk/terrain_flat.gdshader` assigns `ALBEDO = ground_albedo * albedo_color` and nothing else —
+a single colour per vertex, blended between biomes. On the small 118 m island that was survivable; at
+F-368's 295 m radius there are long stretches of unbroken single-value ground in frame.
+
+**The constraint that makes this non-obvious:** the terrain is deliberately flat-shaded low-poly, and
+the facets are the look. A conventional tiled texture would fight them, and the mesh has no UVs to
+tile one against anyway.
+
+What suits it is procedural breakup in the shader, in world space, at a scale ABOVE the facet size so
+it reads as ground variation rather than as noise on each triangle — a low-frequency value/hue drift
+plus a slight per-facet tint jitter. That keeps the faceted read (which the project wants) while
+stopping a hillside from being one RGB value across forty metres.
+
+Judge it against F-397's re-authored palette, not before — a texture tuned against the wrong base
+colour has to be redone.
+
+---
+
+### F-400 · The island's hills are too low to read as landform at the new island size
+
+**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Requested from play (2026-08-20, Sequoyah): "id also like to make the hills a bit taller as well."
+
+`world/gen/island_heightmap.gd`: `HEIGHT_SCALE` 6.0, `HILL_HEIGHT_MIN` 2.5, `HILL_HEIGHT_MAX` 4.5 —
+so a hill crown lifts 2.5-4.5 m over a hill radius of 30-60 m, which is a grade of roughly 1 in 13 at
+its steepest. The terrain render measures the whole island at low -5.0 / high 6.3 m.
+
+These were tuned against a 118 m island. F-368 raised `ISLAND_RADIUS` to 295 m without touching
+them, so the same relief is now spread over 2.5x the distance and reads flatter than it measured —
+another instance of the absolute-constant-that-was-really-a-fraction pattern this file has already
+hit three times today.
+
+**The constraint:** the standing art direction is explicit that MIRE's terrain is mostly flat with
+gentle rolling hills and no mountains, with Muck as the reference, and the amplitude has already been
+walked down deliberately (60 -> 26 -> 11 -> 6) on earlier playtest verdicts. "A bit taller" is a
+nudge within that brief, not a reversal of it. Whatever number is chosen should be justified against
+a slope measurement, not by eye alone, and re-judged on a top-down render plus a ground-level shot —
+the failure mode on the way up is the "weird pits and aggressive valleys" an earlier pass produced.
+
+---
+
+### F-401 · The island has three biomes that differ almost entirely by a single moisture threshold, so nothing reads as a distinct place
+
+**Area:** worldgen · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Requested from play (2026-08-20, Sequoyah): "let's get some proper biome generation going, like we
+should have some distinct, unique biomes, not just everything going everywhere."
+
+`content/biomes/` holds exactly three defs, and the two that cover the whole interior are separated
+by one number:
+
+    forest      height 1.6-100, moisture 0.5-1.0, detail 1.15, ridge 0.90
+    grassland   height 1.6-100, moisture 0.0-0.5, detail 0.80, ridge 0.25
+    shore       height -100-1.6, moisture 0.0-1.0, detail 0.35, ridge 0.00
+
+So "forest" is the wet half of the island and "grassland" is the dry half, split at moisture 0.5,
+with the same height band and near-identical everything else. Before F-397 they did not even differ
+in colour. The result is what was reported: no sense of arriving anywhere, because there is nowhere
+distinct to arrive at.
+
+Compounding it, the scatter tables map one-to-one onto those three ids, so every table applies across
+half the island at uniform density. "Dense forested regions and then some more open areas" (the same
+playtest) is not expressible in this arrangement — there is no *region*, only a moisture gradient.
+
+What is missing is not more biome rows, it is the axes that would make rows mean something:
+
+- **Real regions rather than a global threshold.** Moisture is smooth noise, so the forest/grassland
+  boundary is a soft contour that wanders the whole island. Distinct places need clustered domains —
+  a low-frequency region field, or Voronoi-style cells — so a forest has an edge you cross.
+- **More than one distinguishing axis.** Height band, slope, distance from shore and distance from
+  the river are all already computable and none of them select a biome today.
+- **Per-biome density and character, not just a different asset list.** A marsh should be sparse and
+  low; a deep wood should be dense and dark; a meadow should be open with high grass coverage.
+- **Somewhere between five and eight biomes**, so the island can hold contrast without any one of
+  them being rare enough that a run never sees it.
+
+`world/gen/biome_map.gd` is where selection happens and `world/gen/scatter_def.gd`'s `biome_id` is
+how content binds to it, so both the mechanism and the content hook already exist — what is missing
+is the region structure feeding them.
+
+Do this together with F-395 (141 unused authored-map assets): the reason to have distinct biomes is
+to give that content somewhere characteristic to go.
+
+---
+
+### F-402 · A bare workbench stands alone in open ground because the station_camp POI places a single prop and calls it a camp
+
+**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "there was just a random crafting bench in the middle of
+the map as well."
+
+`content/poi/station_camp.tres` is `scene_path =
+"res://assets/crafting_stations/exports/station_workbench_primitive.glb"` with `target_count = 1`.
+`world/gen/procedural_world.gd:342-347` instantiates whatever single scene a POI names. So the whole
+of a "camp" is one workbench dropped on the ground, with no shelter, no fire, no clutter, and nothing
+explaining why it is there.
+
+It reads as a bug rather than a location, which is how it got reported.
+
+Two things are wrong and they are separable:
+
+1. **A POI is one prop.** `PoiDef.scene_path` is a single file, so any POI richer than one mesh needs
+   either an authored `.tscn` that groups several props, or a builder that assembles one from the
+   kit. The authored map made its camps by hand-placing a cluster; nothing carries that forward.
+   `assets/camp/` and `assets/crafting_stations/` hold the pieces — `station_campfire`,
+   `station_woodcutting_block`, `station_stone_furnace`, `station_repair_bench`,
+   `station_cooking_spit`, `station_anvil` — and F-395 records that six of them are placed nowhere.
+2. **One camp per island.** `target_count = 1` on a 295 m island means most runs never find it, and
+   the one that exists carries the map's entire crafting affordance.
+
+Fix: build the camp as a small authored group (fire, workbench, one or two stations, a tent or
+crate, some clutter) rather than a lone mesh, and raise the count now that the island has room. The
+same shape applies to `standing_stones`, which has the same one-prop problem and currently
+under-places at 3-4 of its target 6.
+
+---
+
+### F-404 · Three separate movement-feel defects: stopping is near-instant, air control bleeds speed sideways, and gravity_scale 2.0 makes any real fall brutal
+
+**Area:** gameplay · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play (2026-08-20, Sequoyah): "the ground friction is higher while walking than like
+when I start sprinting and I jump, the movement through the air, just feels weird. It's like you kind
+of fly forward rather than moving linearly, and then you slow down too much. Also ... the
+acceleration when jumping is kind of off, like it feels fine if you're just jumping from the ground,
+but if you jump off of something, you go really fast into the ground."
+
+Three distinct causes in `entities/player/player_controller.gd`, all in `_apply_horizontal_movement()`
+and the gravity constants.
+
+**1. Stopping is near-instant, and stops feel identical at every speed.**
+
+    rate = ground_acceleration (60) if wish_dir != Vector3.ZERO else ground_friction (50)
+
+`ground_friction` only ever applies with NO input. At 50 m/s^2 a 4 m/s walk stops dead in 0.08 s and
+a 6 m/s sprint in 0.12 s — effectively a hard stop, which is what reads as "high ground friction".
+Note also that releasing sprint while still holding a direction decelerates at `ground_acceleration`
+(60), i.e. FASTER than the friction number, which is the inversion Sequoyah is describing.
+
+**2. Air control bleeds speed whenever you steer.**
+
+    horizontal = horizontal.move_toward(target, rate * delta)   # rate = air_acceleration (14)
+
+`move_toward` on a VECTOR walks toward the target point, so pushing a direction that differs from
+current travel drags the vector through lower magnitudes — you lose speed simply for steering, then
+regain it. That is exactly "you kind of fly forward rather than moving linearly, and then you slow
+down too much." The conventional fix is to add acceleration ALONG the wish direction while preserving
+the component perpendicular to it, so air steering redirects momentum instead of eating it.
+
+**3. `gravity_scale = 2.0` is tuned for the hop and punishes every real fall.**
+Doubling gravity makes a 1.1 m `jump_height` snappy, which is why a standing jump feels fine. The
+same 19.6 m/s^2 applied to a drop off a rock or a hillside is what "you go really fast into the
+ground" is. `terminal_velocity` is 60 m/s, far too high to cap anything a player will survive.
+Because launch velocity is DERIVED from `jump_height` and gravity, lowering `gravity_scale` keeps the
+jump apex identical while making falls readable — the two are not in tension.
+
+All three are feel calls and should be judged in play, not by a check. What a check CAN pin is that
+steering in air no longer reduces speed, and that a given drop height produces a given impact speed.
+
+---
+
+### F-405 · step_height is 0.4 m but nothing below it is actually climbable — the capsule's rounded bottom catches the kerb edge and the is_on_floor() guard kills the next attempt
+
+**Area:** gameplay · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Found by `tools/step_up_check.gd` while fixing F-403, and **pre-existing** — it is not a consequence
+of that fix.
+
+`PlayerController.step_height` is 0.4 m and documents itself as "roughly knee height ... comfortably
+above the 60 mm door threshold". A 0.3 m kerb is therefore supposed to be walked over. It is not.
+
+Instrumented, one physics tick at a time, walking into a 0.3 m box:
+
+    flat_blocked=true  no_room=false  fwd_blocked=false  drop_hit=true  travel=(0, -0.286, 0)
+
+Every gate passes and the step is accepted — so the player DOES get lifted. But the settle lands at
+y=0.114, not 0.3. The cause is geometry: `stepped.origin` has advanced only one tick of motion
+(0.067 m at 4 m/s), so the capsule is barely over the kerb's leading edge, and its bottom HEMISPHERE
+rests on that edge rather than on the kerb's top face. The player ends the tick at 0.114 m and
+airborne — and `_apply_step_up()` opens with `if not is_on_floor(): return`, so the next tick is a
+no-op, gravity brings them back, and they creep without ever getting up.
+
+Measured over 40 ticks against a 0.3 m kerb, final resting position:
+
+    at HEAD                 x=0.618  y=0.014
+    with F-403's fix        x=0.648  y=0.084
+
+Better, still stuck. So `step_height` currently describes an intention rather than a behaviour, and
+every kerb, doorstep and rock the design assumes is walkable is a wall.
+
+Two things to fix, and they are separable:
+
+1. **Probe forward far enough to clear the edge.** One tick of motion is not enough for the capsule
+   to be over the kerb's top face. The forward probe should advance by at least the capsule radius,
+   or the settle should be taken at the point the sweep actually clears rather than at
+   `origin + motion`.
+2. **Do not require `is_on_floor()` for a step already in progress.** The guard is right for
+   starting a step and wrong for continuing one, which is what turns a partial step into a stall.
+
+Note for whoever takes this: `tools/step_up_check.gd` already drives the real seam and asserts the
+current (wrong) 0.135 m lift with a comment pointing here. Tighten that assertion to a real traversal
+when this lands — that is the proof this is fixed.
+
+---
+
 ## Resolved
+
+### F-403 · Pushing into any wall teleports the player a full step_height into the air, because the step-up probe never tests whether it moved forward — **fixed**
+
+**Area:** gameplay · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+Reported from play twice (2026-08-20, Sequoyah): "running into a tree still makes the play bounce up
+and down", and again after F-390 narrowed the tree colliders: "when I run up to the tree, I start
+bouncing up and down if I keep pushing forward into the tree."
+
+F-393 asked whether the bounce would survive a correct collider. It does, and it is a controller
+defect with nothing to do with colliders at all.
+
+`entities/player/player_controller.gd`'s `_apply_step_up()` (F-136) exists because CharacterBody3D has
+no built-in step-up. Each frame it (1) checks flat forward motion is blocked, (2) checks there is
+room to rise `step_height` = 0.4 m, then (3) sweeps forward-and-down from the raised height and keeps
+the result.
+
+Its only refusal after the rise is:
+
+    if travel.y <= -step_height + 0.02:
+        return
+
+which asks "did the sweep fall the full probe depth without contact". **A wall stops the sweep's
+FORWARD component before it ever descends**, so a wall produces `travel.y` near zero — the same
+answer a lip gives — and is accepted. The player is then assigned `raised.origin + travel`, a clear
+0.4 m off the ground, standing on nothing. Gravity returns them the next frame, they push forward
+again, and it repeats.
+
+The code comment asserts this cannot happen — "an ordinary wall taller than step_height still blocks
+the forward component of this same sweep, so it is refused here" — but nothing tests the forward
+component. The comment describes an intended guard that was never written.
+
+Measured with `tools/step_up_check.gd`, driving the real `_apply_step_up()` + `move_and_slide()` pair
+into a plain 6 m wall for 90 physics ticks:
+
+    rose 0.396 m   (step_height is 0.400)
+    7 up/down reversals
+
+Fix: require the sweep to have made meaningful forward progress before accepting it. Half the
+intended motion separates a lip (the capsule passes and the sweep nearly completes) from a wall (the
+sweep stops in the first millimetres); anything between is a corner, where refusing to teleport is
+the safe answer because `move_and_slide()` still resolves the frame and the player simply slides.
+
+Note the check must assert BOTH halves — no lift against a wall, AND a genuine sub-`step_height` kerb
+still climbed — or "delete the feature" would pass it.
+
+---
+
+**Resolved 2026-08-21 by kilnd3a089.** `_apply_step_up()` now probes FORWARD on its own from the raised height, instead of sweeping forward
+and down together and judging the result on `travel.y` alone.
+
+That combined sweep could not tell a lip from a wall: a wall stops its forward component before it
+ever descends, so it returned the same near-zero `travel.y` a lip does and was accepted — assigning
+the player `raised.origin + travel`, a clear `step_height` off the ground, standing on nothing.
+Gravity returned them next frame and pushing forward lifted them again. The code comment asserted
+this could not happen ("an ordinary wall taller than step_height still blocks the forward component
+of this same sweep, so it is refused here") but nothing tested the forward component — it described
+a guard that was never written.
+
+Probing forward alone is unambiguous and needs no threshold: a kerb below `step_height` is UNDER the
+raised capsule so the move is clear, a wall is still in front of it so the move is blocked.
+
+An earlier attempt is worth recording because it looked right and was not: keeping the combined sweep
+and additionally requiring the travel to cover at least half the intended forward motion. That fixes
+the wall, but a lip's sweep is downward-dominant and contacts after only ~25% of its forward motion,
+so it rejected legitimate kerbs too. Separating the probes removes the need to pick a number at all.
+
+Verified with `tools/step_up_check.gd`, driving the real `_apply_step_up()` + `move_and_slide()` pair
+into a 6 m wall for 90 physics ticks:
+
+    before   rose 0.396 m,  7 up/down reversals
+    after    rose 0.000 m,  0 reversals
+
+`step_height` is 0.400, so "before" was the full lift, every frame — exactly the reported bounce.
+
+The check asserts both halves of the contract, because "delete the feature" would pass the first
+alone. The second half exposed a **separate, pre-existing** defect: nothing below `step_height` is
+actually fully climbable either, because the capsule's rounded bottom catches the kerb's top edge and
+the `is_on_floor()` guard no-ops the follow-up tick. Filed as its own finding with the per-tick
+instrumentation; at HEAD the player stalls at y=0.014 and with this fix at y=0.084, so this change
+improves it but does not close it.
+
+Also closes the bounce half of F-393, which asked exactly this question. F-393's remaining half —
+the extraction ship's own authored collider — is untouched and still open.
 
 ### F-387 · Settings rows below the fold are unreachable — the ScrollContainer exists but the sliders eat the mouse wheel — **fixed**
 
