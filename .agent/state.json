@@ -336,6 +336,12 @@
       "task": "F-410",
       "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
     },
+    "assets/audit/lighting/f410_13_procedural_soft_green.png": {
+      "agent": "emberd89a44",
+      "at": "2026-08-21T05:30:44+00:00",
+      "task": "F-410",
+      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
+    },
     "assets/audit/lighting/f410_probe.json": {
       "agent": "emberd89a44",
       "at": "2026-08-21T05:25:15+00:00",
@@ -954,6 +960,18 @@
       "task": "F-401",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
+    "tools/biome_region_check.gd": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:31:29+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "tools/biome_region_probe.gd": {
+      "agent": "kilnd3a089",
+      "at": "2026-08-21T05:31:29+00:00",
+      "task": "F-401",
+      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
     "tools/biome_terrain_check.gd": {
       "agent": "kilnd3a089",
       "at": "2026-08-21T05:28:01+00:00",
@@ -1225,7 +1243,9 @@
         "world/chunk/terrain_flat.gdshader",
         "world/environment/playtest_atmosphere.gd",
         "world/gen/biome_def.gd",
-        "world/gen/biome_map.gd"
+        "world/gen/biome_map.gd",
+        "tools/biome_region_check.gd",
+        "tools/biome_region_probe.gd"
       ],
       "notes": [],
       "started": "2026-08-21T05:03:25+00:00",
@@ -1246,7 +1266,8 @@
         "assets/audit/lighting/f410_procedural_probe.jsonl",
         "assets/audit/lighting/f410_10_procedural_current.png",
         "assets/audit/lighting/f410_11_procedural_soft.png",
-        "assets/audit/lighting/f410_12_procedural_clear.png"
+        "assets/audit/lighting/f410_12_procedural_clear.png",
+        "assets/audit/lighting/f410_13_procedural_soft_green.png"
       ],
       "notes": [
         {
@@ -2373,13 +2394,6 @@
       "task": "F-290",
       "token": null
     },
-    "tools/run_restart_net_check.gd.uid": {
-      "agent": "lc1",
-      "at": "2026-08-20T05:31:06+00:00",
-      "hash": "40c6b4cf5b1715d00b29acb87a5d2bca5fe158886255075854c27f40d72a13fe",
-      "task": "F-243-review",
-      "token": null
-    },
     "tools/run_restart_spawn_check.gd": {
       "agent": "lp",
       "at": "2026-08-20T15:40:30+00:00",
@@ -2843,7 +2857,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 495,
+  "rev": 500,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -7583,7 +7597,7 @@
     "F-370": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Trees are far too short next to the player, which also puts the leaf-fall emitter above the crown"
     },
@@ -7772,35 +7786,35 @@
     "F-395": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "The procedural island ignores 141 assets the authored map used \u2014 699 placements of already-built content, including every pine, birch and meadow grass"
     },
     "F-396": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Every tree in the repo is about 3x eye height, so the island reads as scrub rather than forest"
     },
     "F-397": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "F-379's grade pass turned the forest floor brown, which is further from the target than the green it replaced"
     },
     "F-398": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "The terrain has no ambient occlusion, so nothing is grounded where it meets the ground"
     },
     "F-399": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "The ground is one flat untextured colour per biome, so large areas read as dead space"
     },
@@ -7821,7 +7835,7 @@
     "F-402": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "A bare workbench stands alone in open ground because the station_camp POI places a single prop and calls it a camp"
     },
