@@ -2848,7 +2848,89 @@ timing, but the four above failed on every run of both revisions.
 
 ---
 
-### F-452 · render_census sees 388 surfaces in a world whose real frame is 4,908 draw calls — the structural instrument is blind to nearly all of the shipped cost
+### F-453 · No in-game benchmark: a player cannot measure their own machine
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
+
+MIRE ships two ways to reason about performance and neither is reachable by a player.
+`core/render/hardware_tier.gd` classifies a machine from the driver's adapter string at first
+boot — a deliberate guess, biased safe, that never measures anything. `tools/perf_probe.gd`
+measures properly, but it is a `SceneTree` script launched from a shell with
+`--display-driver macos`, so it exists only for agents with a terminal.
+
+Between them there is nothing a player can run. Somebody on the low-end target
+(docs/DECISIONS.md, F-174) who lands on MEDIUM because their GPU reports as integrated has no
+way to find out whether HIGH would have held 60 fps, or whether LOW is what they actually
+needed — they get one classification and a settings menu with no feedback loop.
+
+What is missing is a player-facing benchmark that walks the shipped world's real areas
+(shore spawn, dense forest, traversal that forces the chunk streamer, a POI cluster, the Mire,
+night, a combat wave, a long-sightline vista), samples each with the discipline
+docs/PERFORMANCE.md §1 sets out — 1% low as the headline, pinned seed, settled streamer, no
+frame limiter, transient frames discarded — and ends in a settings recommendation the player
+can apply with one button.
+
+It also has to survive being stopped: a benchmark is a long list-processing run, so each scene's
+result belongs on disk the moment that scene finishes (AGENTS.md, "killable at any moment"),
+not in memory until the end.
+
+---
+
+### F-454 · The felt performance problem is chunk streaming, not rendering: traversal drops the 1% low from 81 fps to 13 fps, and no graphics preset touches it
+
+**Area:** performance · **Severity:** high · **Found:** 2026-08-21 by wick5e2d04
+
+Measured 2026-08-21 on an M5 Pro, fullscreen 3024x1898, shipped main scene on `BENCH_SEED`,
+`tools/perf_probe.gd` (rebuilt this session — paired references, 5 s samples, 1% low as the mean
+of the slowest 1% of frames, `Engine.max_fps = 0`, seed pinned, streamer settled):
+
+    row                              fps   1% low            median
+    0  as shipped (stationary)       120   81 fps (12.34 ms)  7.99 ms
+    T1 TRAVERSAL (streaming)         101   13 fps (74.45 ms)  9.00 ms
+    T2 traversal @ preset low        146   10 fps (102.55 ms) 4.23 ms
+    T3 traversal + menu open         102   15 fps (65.92 ms)  8.93 ms
+
+**The median barely moves and the tail collapses by a factor of six.** Standing still, the game
+holds an 81 fps 1% low. Walking at sprint speed into unstreamed terrain, the 1% low is 13 fps —
+74 ms frames — on the fastest machine in the project. That is the hitch Sequoyah described as "it
+really only shows the lag and performance hit when you move and force the game to load new terrain",
+and it is now measured.
+
+**No graphics setting touches it.** Row T2 is the same traversal at `GraphicsQuality` preset LOW:
+the median improves from 9.00 ms to 4.23 ms — a 53% better median, exactly what the preset is
+designed to buy — and the 1% low gets *worse*, 13 fps to 10 fps. Every renderer lever in the probe
+(resolution scale, shadows, glow, fog, SSAO, AA, draw distance, LOD threshold) measures between
+-3.4 ms and +1.6 ms of 1% low while stationary. The traversal hitch is +60.8 ms. It is not the same
+problem and it does not have the same fix.
+
+That LOW is not better under motion is worth its own look: LOW lowers draw distance (0.55) and
+undergrowth density, both of which change what the streamer builds per chunk, so it may simply be
+doing more rebuild work per metre travelled. Unconfirmed.
+
+**Not the menu.** T3 answers a question Sequoyah raised: an open Attunement/class picker costs
+nothing measurable (15 fps 1% low against T1's 13 — inside the run's variance).
+
+**Where to look.** The work that happens per newly-resident chunk, on the main thread:
+`ChunkStreamer`'s 4 ms frame budget and whether it is actually being respected under motion, the
+mesher's `add_surface_from_arrays` pass, `ResourceScatterField`'s per-chunk placement (the census
+now shows 10,087 MultiMeshInstance3D nodes across the world — those get built somewhere), the nav
+bake, and `Harvestable` wiring (the probe log shows "wired N live harvestable prop(s)" firing
+repeatedly throughout traversal, N climbing from 233 to 391).
+
+A 74 ms frame is not a budget overrun, it is a stall. Something in that path is synchronous and
+unbudgeted. Related but distinct: F-363's Mire tick is a separate ~16 ms main-thread pass on a
+2-second interval.
+
+**Consequence for the standing goal (F-174).** Every conclusion this project has drawn about
+performance was drawn from a stationary probe, including the graphics preset table that exists to
+protect low-end machines. The presets are well built and they solve the median. Nothing has ever
+been aimed at the number a player actually feels, because until now nothing measured it.
+
+---
+
+## Resolved
+
+### F-452 · render_census sees 388 surfaces in a world whose real frame is 4,908 draw calls — the structural instrument is blind to nearly all of the shipped cost — **fixed**
 
 **Area:** performance · **Severity:** high · **Found:** 2026-08-21 by wick5e2d04
 
@@ -2887,7 +2969,59 @@ instrument that was supposed to explain why has been reporting an empty world.
 
 ---
 
-## Resolved
+**Resolved 2026-08-21 by wick5e2d04.** Root cause found and fixed, plus four more instrument defects the investigation turned up.
+
+**The census blindness itself.** `tools/render_census.gd` did all its work in `_init()`. A
+`SceneTree`'s `_init()` runs BEFORE the autoloads are added to the tree, so the level was
+instantiated into a world with no `GameState`, no `Registry`, no `GraphicsQuality`. The terrain
+built anyway (the chunk mesher needs nothing global) and the prop layer did not. Moved to the
+standard `_initialize()` -> `_run.call_deferred()` pattern every other instrument uses. The
+difference:
+
+    before (empty world)            after (real world)
+    opaque surfaces      388        opaque surfaces        15,075
+    MeshInstance3D       389        MeshInstance3D          1,826
+    MultiMeshInstance3D    0        MultiMeshInstance3D    10,087 holding 22,047 instances
+    meshes with LOD        0        meshes with LOD           187
+    LOD distances          0        LOD distances          11,063
+
+So the two "levers not yet pulled" the census had been reporting were artefacts of an empty scene.
+It now exits `RENDER_CENSUS_OK`. F-352's argument should be re-read against these numbers.
+
+**And it hands F-426 its real measurement:** 10,087 MultiMeshInstance3D nodes carrying 22,047
+instances is **2.2 instances per MultiMesh**, which is worse than not batching at all — node
+overhead, buffer and submission for no batching. Seven fern variants are ~4,100 of those nodes.
+
+**Four further instrument defects, all fixed:**
+
+1. `perf_probe` never disabled `Engine.max_fps`, so all fourteen rows printed the panel's 120 Hz
+   and every delta in the table was noise. It now sets `max_fps = 0` and warns loudly if the rows
+   still cluster on the refresh rate.
+2. `perf_probe` warmed up for a fixed 1.5 s instead of settling the streamer — a third-built world.
+   Both it and `frame_cost_check` now wait on `ProbeScene.settle()`.
+3. **Nothing pinned the world seed.** Every instrument run generated a different island from real
+   entropy; three consecutive `frame_cost_check` runs reported 4,908 / 3,325 / 2,990 draw calls and
+   none was wrong. `ProbeScene.pin_seed()` stages `BENCH_SEED` unless `--seed=` overrides. Two runs
+   now agree to 0.07% on draw calls, 0.004% on primitives.
+4. A single-baseline serial table could not resolve anything smaller than the run's own drift
+   (+1.9 ms). Every row is now a PAIRED measurement against a reference sampled immediately after
+   it, the first 15 frames of each sample are discarded, and the drift is printed so the claim
+   stays checkable.
+
+**Also rebuilt around what a player actually feels** (Sequoyah, this session): the headline metric
+is now the 1% low — the mean of the slowest 1% of frames over a 5 s window — not the median; the
+probe covers eight more levers one at a time (SSAO, AA, cascade count, shadow distance, draw
+distance, LOD threshold, FSR vs bilinear); and it added traversal scenario rows that walk the anchor
+body through unstreamed terrain. Those rows found F-454, which is the actual performance problem.
+
+**Shipping defect fixed along the way.** `SettingsService` handed every machine `graphics_preset: 2`
+(HIGH) with `dynamic_resolution: false`, so the worst computer this project targets booted into the
+full authored look with the safety net off. `core/render/hardware_tier.gd` now classifies the
+machine on first boot only — adapter name, device type, thread count, physical memory, ties resolved
+downward, no benchmark. A saved choice always wins afterwards.
+`tools/hardware_tier_check.gd` proves both halves against synthetic machines: HARDWARE_TIER_OK.
+
+Written up in the new `docs/PERFORMANCE.md`, which three findings already referenced.
 
 ### F-450 · The island is too flat, and its hills are domes when what it needs is broad flat-topped uplands — **fixed**
 
