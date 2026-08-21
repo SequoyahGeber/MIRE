@@ -92,6 +92,13 @@ static func placements_for_chunk(
 			mire_centres = MIRE_GRID_SIM.seed_cluster_centres(world_seed)
 			break
 
+	# F-461: ONE generator for the whole chunk, re-seeded per candidate point rather than allocated
+	# per candidate point. A chunk offers ~3,750 candidates (31 tables x 121 cells) and this used to
+	# be 3,750 object allocations inside it. Determinism is untouched: every point still assigns
+	# `rng.seed` from `_point_seed()` before its first draw, and assigning `seed` resets the stream,
+	# so each point consumes exactly the sequence it consumed before.
+	var rng := RandomNumberGenerator.new()
+
 	for def: Resource in defs:
 		var total_weight: float = float(def.call(&"total_weight"))
 		var entries: Array = def.get(&"entries")
@@ -99,30 +106,69 @@ static func placements_for_chunk(
 			continue
 		var cell: float = maxf(float(def.get(&"cell_size_m")), 0.5)
 		var cells_per_side: int = maxi(1, ceili(float(CHUNK_MESHER.CHUNK_SIZE) / cell))
+		# F-461: every one of these was read off the Resource once per CANDIDATE — a dynamic
+		# property lookup by StringName, 121 times per table for a value that cannot change between
+		# cells. `_hash_id()` was the worst of them: it built a String and a PackedByteArray from
+		# the def id and walked its bytes, per candidate, to produce the same integer every time.
+		var plan := DefPlan.new()
+		plan.def = def
+		plan.def_id = def.get(&"id")
+		plan.id_hash = _hash_id(plan.def_id)
+		plan.total_weight = total_weight
+		plan.cell = cell
+		plan.coverage = float(def.get(&"coverage"))
+		plan.jitter_fraction = float(def.get(&"jitter_fraction"))
+		plan.biome_id = def.get(&"biome_id")
+		plan.reads_corruption = bool(def.call(&"reads_corruption"))
+		plan.min_corruption = float(def.get(&"min_corruption"))
+		plan.max_corruption = float(def.get(&"max_corruption"))
+		plan.min_height = float(def.get(&"min_height"))
+		plan.max_height = float(def.get(&"max_height"))
 		for gx: int in cells_per_side:
 			for gz: int in cells_per_side:
 				var placement: Dictionary = _placement_at(
-					chunk_x, chunk_z, gx, gz, cell, origin_x, origin_z, world_seed, def, total_weight,
-					biome_defs, noise_set, table, mire_centres
+					chunk_x, chunk_z, gx, gz, origin_x, origin_z, world_seed, plan,
+					biome_defs, noise_set, table, mire_centres, rng
 				)
 				if not placement.is_empty():
 					out.append(placement)
 	return out
 
 
-static func _placement_at(
-	chunk_x: int, chunk_z: int, gx: int, gz: int, cell: float, origin_x: float, origin_z: float,
-	world_seed: int, def: Resource, total_weight: float, biome_defs: Array,
-	noise_set: BIOME_MAP.NoiseSet, table: BIOME_MAP.TerrainTable, mire_centres: PackedVector2Array
-) -> Dictionary:
-	var def_id: StringName = def.get(&"id")
-	var rng := RandomNumberGenerator.new()
-	rng.seed = _point_seed(chunk_x, chunk_z, gx, gz, def_id, world_seed)
+## F-461. One scatter table's per-chunk constants, read off the `ScatterDef` Resource once instead
+## of once per candidate point. Typed fields on a RefCounted rather than a Dictionary: the whole
+## point is to get off keyed lookups on the inner loop, and a Dictionary would only trade a
+## StringName property lookup for a StringName hash lookup.
+class DefPlan extends RefCounted:
+	var def: Resource
+	var def_id: StringName
+	var id_hash: int = 0
+	var total_weight: float = 0.0
+	var cell: float = 0.0
+	var coverage: float = 0.0
+	var jitter_fraction: float = 0.0
+	var biome_id: StringName
+	var reads_corruption: bool = false
+	var min_corruption: float = 0.0
+	var max_corruption: float = 0.0
+	var min_height: float = 0.0
+	var max_height: float = 0.0
 
-	if rng.randf() > float(def.get(&"coverage")):
+
+static func _placement_at(
+	chunk_x: int, chunk_z: int, gx: int, gz: int, origin_x: float, origin_z: float,
+	world_seed: int, plan: DefPlan, biome_defs: Array,
+	noise_set: BIOME_MAP.NoiseSet, table: BIOME_MAP.TerrainTable, mire_centres: PackedVector2Array,
+	rng: RandomNumberGenerator
+) -> Dictionary:
+	var def_id: StringName = plan.def_id
+	var cell: float = plan.cell
+	rng.seed = _seed_from_hash(chunk_x, chunk_z, gx, gz, plan.id_hash, world_seed)
+
+	if rng.randf() > plan.coverage:
 		return {}
 
-	var jitter_span: float = cell * float(def.get(&"jitter_fraction"))
+	var jitter_span: float = cell * plan.jitter_fraction
 	var local_x: float = clampf(
 		(float(gx) + 0.5) * cell + rng.randf_range(-0.5, 0.5) * jitter_span,
 		0.0, float(CHUNK_MESHER.CHUNK_SIZE) - 0.001
@@ -145,7 +191,7 @@ static func _placement_at(
 	# The jitter may have carried a point out of the biome its cell nominally belongs to. Skip
 	# rather than force it — a def that pulled the point back to its own biome would place the
 	# asset at the wrong height/moisture combination it was never authored to describe.
-	var def_biome: StringName = def.get(&"biome_id")
+	var def_biome: StringName = plan.biome_id
 	if def_biome != SCATTER_DEF.ANY_BIOME:
 		var biome_id: StringName = BIOME_MAP.biome_at_from_set(
 			world_x, world_z, noise_set, world_seed, biome_defs)
@@ -155,11 +201,10 @@ static func _placement_at(
 	# F-445: the Mire band, tested before the surface sample for the same reason as the biome gate —
 	# it is the cheapest rejection there is (four distance tests) and it is what a Mire table rejects
 	# almost every point on. Stream-safe: like the gates around it, it touches no `rng`.
-	if bool(def.call(&"reads_corruption")):
+	if plan.reads_corruption:
 		var corruption: float = MIRE_GRID_SIM.initial_corruption_from_centres(
 			world_x, world_z, mire_centres)
-		if corruption < float(def.get(&"min_corruption")) \
-				or corruption > float(def.get(&"max_corruption")):
+		if corruption < plan.min_corruption or corruption > plan.max_corruption:
 			return {}
 
 	# Only surviving points pay for the surface sample, and it is used for `position.y` alone —
@@ -170,10 +215,10 @@ static func _placement_at(
 	# The def's height band (see its own comment: shore biome includes the seabed). Gating here is
 	# stream-safe — every point draws from its own seeded rng, so a rejection cannot shift any
 	# other point's rolls.
-	if height < float(def.get(&"min_height")) or height > float(def.get(&"max_height")):
+	if height < plan.min_height or height > plan.max_height:
 		return {}
 
-	var entry: Resource = def.call(&"pick_entry", rng.randf() * total_weight)
+	var entry: Resource = plan.def.call(&"pick_entry", rng.randf() * plan.total_weight)
 	if entry == null:
 		return {}
 
@@ -193,13 +238,22 @@ static func _placement_at(
 static func _point_seed(
 	chunk_x: int, chunk_z: int, gx: int, gz: int, def_id: StringName, world_seed: int
 ) -> int:
+	return _seed_from_hash(chunk_x, chunk_z, gx, gz, _hash_id(def_id), world_seed)
+
+
+## F-461: the same mix, taking the def id's hash already computed. `_point_seed()` above is now a
+## thin wrapper over this so the pure-function contract the checks assert against is unchanged;
+## the inner loop calls this one and hashes the id once per TABLE instead of once per point.
+static func _seed_from_hash(
+	chunk_x: int, chunk_z: int, gx: int, gz: int, id_hash: int, world_seed: int
+) -> int:
 	const PRIME: int = 1000003
 	var h: int = world_seed ^ SEED_SALT
 	h = h * PRIME + chunk_x
 	h = h * PRIME + chunk_z
 	h = h * PRIME + gx
 	h = h * PRIME + gz
-	h = h ^ _hash_id(def_id)
+	h = h ^ id_hash
 	return h
 
 

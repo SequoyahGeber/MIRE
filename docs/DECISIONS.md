@@ -6587,3 +6587,76 @@ confirm the first visit and the second agree.
 **Would change my mind:** F-459 being fixed at the source. If first sight of a material costs
 nothing, the warm-up is dead weight and should go, and the suite gets its most player-relevant
 measurement back.
+
+---
+
+## D-197 — a signal handler is inside the emitter's frame budget, so a pure pass belongs on a worker
+
+**Context:** F-461. `ChunkStreamer` reported 31-56 ms `_process()` frames against its own
+`FRAME_BUDGET_MS = 4.0` while uploading as little as one chunk. Nothing in the streamer was slow.
+`chunk_mesh_ready.emit()` is synchronous, and its two listeners — `ResourceScatterField` and
+`NavBaker` — were each doing 8-80 ms of main-thread work per chunk inside it.
+
+**The decision, in two parts.**
+
+**A budget only meters the work that happens after it.** `ResourceScatterField` had a careful 2 ms
+allowance (`SCATTER_BUILD_BUDGET_MS`, F-454) over the *node creation* half of dressing a chunk, and
+called `ResourceScatter.placements_for_chunk()` — 8-10 ms, main thread — before consulting it. So a
+chunk's cost was `10 + budgeted`, and tightening the budget could never reach the 10. Whenever a
+budgeted system still hitches, look for work upstream of the deadline check before tuning the number.
+
+**A pure function that costs milliseconds belongs on `WorkerThreadPool`, not on a budget.**
+`placements_for_chunk()` was already documented as pure and deterministic; it is now computed by
+`ResourceScatterField.PlacementJob`, exactly as `ChunkStreamer.ChunkJob` has always computed meshes.
+The cost does not scale with the result — 10.29 ms produced four placements — so slicing it finer
+would only spread a fixed cost, while moving it removes it from the frame entirely.
+
+The same reasoning fixed `NavBaker` differently: its `_source_geometry()` was calling
+`ChunkMesher.build_mesh()` to rebuild the mesh the streamer had *just* built on a worker and was
+holding in the node it emitted about. There the answer was not another thread but not doing the work
+at all — `ChunkStreamer.chunk_mesh()` hands it over. **Before threading a pure pass, check whether
+somebody already computed it.**
+
+**Corollary for signal design.** A node that publishes a signal from inside its own budgeted
+`_process()` is publishing its budget too. Either the listeners keep their own work off that frame,
+or the emitter's budget is fiction. Measuring this needs the split, not the total: `ChunkStreamer`
+now exposes `last_phase_costs_ms()` (eval / drain / cook) and `last_phase_counts()`, because "the
+streamer spent 56 ms" and "the streamer spent 56 ms uploading one chunk" are different bugs.
+
+**Would change my mind:** nothing about the threading. The reuse in `NavBaker` is worth re-checking
+if the nav LOD ever stops being the streamer's LOD0 — `_nav_lod_mesh()` guards on exactly that and
+falls back to rebuilding, so the failure mode is slow, not wrong.
+
+---
+
+## D-198 — a chunk crossing an LOD boundary is retargeted, never rebuilt
+
+**Context:** F-461, from play: "when a new chunk does get loaded the assets in currently generated
+and loaded chunks get reloaded". They were, twice per chunk per pass.
+
+`ResourceScatterField` keeps two boundaries (F-369): visuals build out to `SCATTER_VISUAL_MAX_LOD`,
+harvest proxies only inside the collision ring. Crossing between them called `_teardown_chunk()` and
+`_build_chunk()`, so one walk past a chunk built it three times — visual on the way in, full at the
+collision ring, visual again on the way out — and the player watched 200-500 props vanish and refill
+through the 2 ms/frame allowance while standing next to them.
+
+**Two of those three builds produced identical geometry.** What actually differs across the boundary
+is narrow, and `_retarget_chunk()` now touches only that:
+
+- **decorative scatter** — the bulk of every chunk — is one MultiMesh per part either way. Never
+  touched.
+- **a BATCH harvestable** is also the same MultiMesh either way; only its invisible proxy holders
+  are added or freed.
+- **a NODE harvestable** genuinely changes representation (individual meshes with proxies, one
+  MultiMesh without) and is the only family rebuilt.
+
+Retarget work queues through the same `_group_queue` budget as any other, so a transition cannot
+spike a frame either. A side effect worth keeping: because the BATCH MultiMesh now survives the
+transition, a harvested bush stays harvested across an LOD change instead of growing back.
+
+**The general rule:** when a system has tiers, the tier change should be a *diff*, not a rebuild.
+Rebuilding is easy to write and correct by construction, which is why it survives — but the user
+sees every byte of it that did not need to change.
+
+**Would change my mind:** if NODE harvestables ever became the majority of a chunk's placements, the
+narrow rebuild would stop being narrow and both representations would need to coexist instead.

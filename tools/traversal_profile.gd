@@ -136,6 +136,15 @@ func _walk() -> void:
 			"ms": frame_ms,
 			"streamer_ms": 0.0 if _streamer == null \
 				else float(_streamer.call(&"last_process_cost_ms")),
+			# F-461: the streamer's own cost split across the three things `_process()` does, plus
+			# what it actually did. "The streamer spent 60 ms" is not a diagnosis; "it spent 60 ms
+			# cooking two colliders" is.
+			"phases": ([0.0, 0.0, 0.0] as Array[float]) if _streamer == null \
+				or not _streamer.has_method(&"last_phase_costs_ms") \
+				else (_streamer.call(&"last_phase_costs_ms") as Array),
+			"counts": ([0, 0] as Array[int]) if _streamer == null \
+				or not _streamer.has_method(&"last_phase_counts") \
+				else (_streamer.call(&"last_phase_counts") as Array),
 			"nodes_added": _nodes_added_this_frame,
 			"chunks": 0 if _streamer == null else int(_streamer.call(&"loaded_chunk_count")),
 			"pending": 0 if _streamer == null else int(_streamer.call(&"pending_job_count")),
@@ -197,13 +206,18 @@ func _report() -> void:
 		nodes_total, float(nodes_total) / float(_frames.size())])
 
 	print("\n=== the %d worst frames ===" % WORST_FRAMES_SHOWN)
-	print("  %8s %10s %10s %10s %7s %7s %7s %6s" % [
-		"frame ms", "process", "physics", "streamer", "nodes", "navQ", "grpQ", "at s"])
+	print("  %8s %8s %8s %8s | %7s %7s %7s %5s %5s | %6s %6s %6s" % [
+		"frame ms", "process", "physics", "streamer",
+		"s:eval", "s:drain", "s:cook", "up", "cook",
+		"nodes", "grpQ", "at s"])
 	for i: int in mini(WORST_FRAMES_SHOWN, sorted.size()):
 		var frame: Dictionary = sorted[i]
-		print("  %8.2f %10.2f %10.2f %10.2f %7d %7d %7d %6.1f" % [
+		var phases: Array = frame["phases"]
+		var counts: Array = frame["counts"]
+		print("  %8.2f %8.2f %8.2f %8.2f | %7.2f %7.2f %7.2f %5d %5d | %6d %6d %6.1f" % [
 			frame["ms"], frame["process_ms"], frame["physics_ms"], frame["streamer_ms"],
-			frame["nodes_added"], frame["nav_pending"], frame["groups_pending"],
+			phases[0], phases[1], phases[2], counts[0], counts[1],
+			frame["nodes_added"], frame["groups_pending"],
 			frame["at_second"]])
 
 	_attribute(sorted)

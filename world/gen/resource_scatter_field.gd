@@ -252,11 +252,68 @@ var _chunk_has_proxies: Dictionary[Vector2i, bool] = {}
 ## F-369: visual-band chunks awaiting their turn under SCATTER_VISUAL_BUILDS_PER_FRAME. Insertion
 ## order is streaming order, which is near-to-far, so draining it in order dresses inward-out.
 var _visual_queue: Array[Vector2i] = []
+## F-461. coord -> that chunk's placements grouped "kit|asset" -> Array, as its `PlacementJob`
+## computed them. Kept for as long as the chunk is resident (freed in `_teardown_chunk()`) so a
+## proxy-boundary transition can re-dress one asset group without recomputing the whole chunk's
+## placement pass — the very cost this finding exists to get off the main thread.
+var _chunk_placements: Dictionary[Vector2i, Dictionary] = {}
+## F-461. coord -> the in-flight worker task computing that chunk's placements.
+var _placement_jobs: Dictionary[Vector2i, PlacementJob] = {}
 ## F-407 warm-up state. `_warm_pending` is [kit, asset] not yet requested; `_warm_active` is
 ## [kit, asset, path] currently loading on a worker thread. Both drain to empty and stay there.
 var _warm_pending: Array = []
 var _warm_active: Array = []
 var _warm_queued: bool = false
+
+
+## F-461. One chunk's placement pass, on a `WorkerThreadPool` thread.
+##
+## `ResourceScatter.placements_for_chunk()` is a pure static function — the file's own header opens
+## by saying so — but it was being called on the MAIN thread, from inside `_build_chunk()`, which is
+## reached synchronously from `ChunkStreamer`'s `chunk_mesh_ready` emit. `tools/traversal_profile.gd`
+## caught the consequence: the streamer reported 31-56 ms frames against its own 4 ms budget while
+## uploading as little as ONE chunk, and the time was not the streamer's at all. Per chunk:
+##
+##     placements_for_chunk (11, 8) = 10.62 ms (111 placements)
+##     placements_for_chunk (13, 8) = 10.29 ms (4 placements)
+##
+## Ten milliseconds to decide the position of four bushes, because the cost is not the placements
+## that survive — it is the ~3,750 candidates a chunk offers (31 scatter tables x 121 cells) and the
+## biome/surface noise each surviving one samples. It does not shrink with the answer, so no budget
+## downstream of it can help: `SCATTER_BUILD_BUDGET_MS` was metering the cheap half.
+##
+## It is also exactly the shape `ChunkStreamer.ChunkJob` already moved off-thread for mesh building,
+## for the same reason, so this is that pattern applied to the other pure pass in the pipeline.
+## Self-contained on purpose — `run()` touches only its own fields, never the field node.
+class PlacementJob extends RefCounted:
+	var coord: Vector2i
+	var world_seed: int = 0
+	## Read-only content shared across every in-flight job, on the same reasoning
+	## `ChunkStreamer.ChunkJob` documents for its own `biome_defs`: nothing sampling these mutates
+	## them (`placements_for_chunk()` duplicates before sorting, `make_terrain_table()` before its own).
+	var scatter_defs: Array = []
+	var biome_defs: Array = []
+	var task_id: int = -1
+	var finished: bool = false
+	## Set when the main thread has already dressed this chunk synchronously while the job ran.
+	## A running WorkerThreadPool task cannot be cancelled, so the result is discarded on landing —
+	## the same supersede-rather-than-cancel shape `ChunkStreamer.ChunkJob` uses.
+	var superseded: bool = false
+	## "kit|asset" -> Array of placements. Grouped on the worker too: it is pure string work, and
+	## doing it here keeps the main-thread half of a chunk down to appending queue entries.
+	var grouped: Dictionary = {}
+
+	func run() -> void:
+		grouped = PlacementJob.group(ResourceScatterLib.placements_for_chunk(
+			coord.x, coord.y, world_seed, scatter_defs, biome_defs))
+
+	## Shared with `_build_chunk()`'s synchronous path so both produce the identical grouping.
+	static func group(placements: Array) -> Dictionary:
+		var by_asset: Dictionary = {}
+		for placement: Dictionary in placements:
+			var key := "%s|%s" % [String(placement["kit"]), String(placement["asset"])]
+			(by_asset.get_or_add(key, [] as Array) as Array).append(placement)
+		return by_asset
 
 
 ## Connects to a running `ChunkStreamer` — a plain `Node3D`, per its own DELEGATION note, so this
@@ -299,6 +356,14 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	EVENT_BUS.unsubscribe_run_restarted(clear_depletion_memory)
+	# F-461: a WorkerThreadPool task must be waited on to release its slot even when it has already
+	# finished — the same rule `ChunkStreamer._exit_tree()` follows, and for the same reason (F-005:
+	# an unreleased task id is a leak, not a no-op).
+	for coord: Vector2i in _placement_jobs:
+		var job: PlacementJob = _placement_jobs[coord]
+		if not job.finished:
+			WorkerThreadPool.wait_for_task_completion(job.task_id)
+	_placement_jobs.clear()
 
 
 func chunk_count() -> int:
@@ -336,6 +401,7 @@ func _process(delta: float) -> void:
 	if _streamer == null:
 		return
 	_pump_asset_warm()
+	_drain_placement_jobs()
 	_drain_group_queue()
 	_drain_visual_queue()
 	if _pending_lod0.is_empty():
@@ -371,12 +437,15 @@ func _drain_lod0_pending() -> void:
 		if not underfoot and built >= SCATTER_LOD0_BUILDS_PER_FRAME:
 			break
 		_pending_lod0.erase(coord)
-		# F-369: the chunk may already carry visual-only scatter from its LOD1 pass. Replace it
-		# rather than adding a second copy on top.
+		# F-461: the chunk may already carry visual-only scatter from its LOD1 pass. It used to be
+		# torn down and rebuilt whole here, which is what made an already-dressed chunk 64 m ahead
+		# of the player go bare and refill over the following second. Upgrade it in place instead:
+		# only its harvest groups differ between the two builds.
 		if _chunk_holders.has(coord):
-			_teardown_chunk(coord)
-		# Underfoot builds whole and now; everything else queues its groups (F-454).
-		_build_chunk(coord, true, underfoot)
+			_retarget_chunk(coord, true)
+		else:
+			# Underfoot builds whole and now; everything else queues its groups (F-454).
+			_build_chunk(coord, true, underfoot)
 		if not underfoot:
 			built += 1
 
@@ -428,7 +497,8 @@ func _on_chunk_mesh_ready(coord: Vector2i, lod: int) -> void:
 		if bool(_streamer.chunk_has_collision(coord)):
 			_pending_lod0.erase(coord)
 			if _chunk_holders.has(coord):
-				_teardown_chunk(coord)
+				_retarget_chunk(coord, true)      # F-461, as in `_drain_lod0_pending()`
+				return
 			# Immediate only for the chunk actually underfoot. This fires for every chunk
 			# entering the collision ring, and under motion that is several per second —
 			# dressing each one whole, in the frame it arrives, is most of F-454's hitch.
@@ -445,9 +515,15 @@ func _on_chunk_mesh_ready(coord: Vector2i, lod: int) -> void:
 	# been downgraded away from the collision ring, so its proxies must go even though its visuals
 	# stay — that is the whole point of separating the two boundaries.
 	_pending_lod0.erase(coord)
-	if _chunk_has_proxies.get(coord, false):
-		_teardown_chunk(coord)
-	if not _chunk_holders.has(coord) and not _visual_queue.has(coord):
+	# F-461: a chunk arriving here already dressed is one that has just LEFT the collision ring
+	# walking outward. Its visuals are the same at LOD1 as they were at LOD0 — only the proxies have
+	# to go — so it is downgraded in place. Tearing it down and re-queuing a visual-only rebuild was
+	# the second of the two full rebuilds every chunk used to pay for on a single pass.
+	# `_retarget_chunk()` is a no-op when the flag already matches, so a re-fired LOD1 costs nothing.
+	if _chunk_holders.has(coord):
+		_retarget_chunk(coord, false)
+		return
+	if not _visual_queue.has(coord):
 		_visual_queue.append(coord)
 
 
@@ -532,32 +608,91 @@ func visual_queue_count() -> int:
 ## chunk the anchor is standing in, and the synchronous world prime behind a loading screen. Every
 ## other caller queues — see [constant SCATTER_BUILD_BUDGET_MS].
 func _build_chunk(coord: Vector2i, with_proxies: bool, immediate: bool = false) -> void:
-	var placements: Array[Dictionary] = ResourceScatterLib.placements_for_chunk(
-		coord.x, coord.y, world_seed, scatter_defs, biome_defs
-	)
+	# F-461: one holder per coord, always. Every caller already guards on `_chunk_holders.has()`
+	# before reaching here, but the invariant is worth owning in one place now that a chunk can be
+	# HOLDER-RESIDENT WITH ITS CONTENTS STILL IN FLIGHT — a second holder would orphan the first and
+	# the landing job would dress the wrong one.
+	if _chunk_holders.has(coord):
+		_retarget_chunk(coord, with_proxies)
+		return
+
 	var holder := Node3D.new()
 	holder.name = "Chunk_%d_%d" % [coord.x, coord.y]
 	add_child(holder)
 	_chunk_holders[coord] = holder
 	_chunk_has_proxies[coord] = with_proxies
 
-	var by_asset: Dictionary = {}
-	for placement: Dictionary in placements:
-		var key := "%s|%s" % [String(placement["kit"]), String(placement["asset"])]
-		(by_asset.get_or_add(key, [] as Array) as Array).append(placement)
+	# F-461. `immediate` is the loading-screen/underfoot case: the caller has said a partly dressed
+	# chunk is worse than a stalled frame, so it pays for the placement pass here and now.
+	if immediate:
+		# A job for this coord may already be in flight from an earlier, non-immediate request that
+		# has since been overtaken (a chunk queued at LOD1 that the player walked onto). It cannot be
+		# cancelled, so mark its result to be discarded rather than dressing this chunk twice.
+		if _placement_jobs.has(coord):
+			_placement_jobs[coord].superseded = true
+		var grouped: Dictionary = PlacementJob.group(ResourceScatterLib.placements_for_chunk(
+			coord.x, coord.y, world_seed, scatter_defs, biome_defs))
+		_chunk_placements[coord] = grouped
+		for key: String in grouped:
+			var parts := key.split("|")
+			_build_asset_group(holder, parts[0], parts[1], grouped[key] as Array, with_proxies)
+		return
 
-	for key: String in by_asset:
-		var parts := key.split("|")
-		if immediate:
-			_build_asset_group(holder, parts[0], parts[1], by_asset[key] as Array, with_proxies)
-		else:
+	# Everything else computes its placements on a worker thread. See PlacementJob for the
+	# measurement — this call was 8-10 ms of main-thread time per chunk, paid inside
+	# `ChunkStreamer`'s own `chunk_mesh_ready` emit, and it is what made SCATTER_BUILD_BUDGET_MS a
+	# budget over the cheap half of the work.
+	if _placement_jobs.has(coord):
+		return
+	var job := PlacementJob.new()
+	job.coord = coord
+	job.world_seed = world_seed
+	job.scatter_defs = scatter_defs
+	job.biome_defs = biome_defs
+	job.task_id = WorkerThreadPool.add_task(job.run)
+	_placement_jobs[coord] = job
+
+
+## Folds finished placement jobs back onto the main thread, queueing each chunk's asset groups for
+## the budgeted dressing pass. Uploading a result is pure bookkeeping — the expensive part already
+## happened on the worker — so unlike `_drain_group_queue()` this is not itself budgeted.
+func _drain_placement_jobs() -> void:
+	if _placement_jobs.is_empty():
+		return
+	for coord: Vector2i in _placement_jobs.keys():
+		var job: PlacementJob = _placement_jobs[coord]
+		if not job.finished:
+			if not WorkerThreadPool.is_task_completed(job.task_id):
+				continue
+			WorkerThreadPool.wait_for_task_completion(job.task_id)
+			job.finished = true
+		_placement_jobs.erase(coord)
+		if job.superseded:
+			continue
+		# Torn down while the job was in flight, and not rebuilt since. The result is simply dropped
+		# — a WorkerThreadPool task cannot be cancelled (the constraint `ChunkStreamer._retire()`
+		# works around too). A chunk that WAS rebuilt meanwhile is dressed from this result rather
+		# than recomputing it: placements are a pure function of (coord, seed), so it is still exact.
+		var holder: Node3D = _chunk_holders.get(coord)
+		if holder == null:
+			continue
+		_chunk_placements[coord] = job.grouped
+		# `_chunk_has_proxies` is the single source of truth for which side of the proxy boundary
+		# this chunk is on, and `_retarget_chunk()` may well have moved it while the job ran.
+		var with_proxies: bool = bool(_chunk_has_proxies.get(coord, false))
+		for key: String in job.grouped:
+			var parts := key.split("|")
 			_group_queue.append({
 				"coord": coord,
 				"kit": parts[0],
 				"asset": parts[1],
-				"placements": by_asset[key],
+				"placements": job.grouped[key],
 				"with_proxies": with_proxies,
 			})
+
+
+func pending_placement_job_count() -> int:
+	return _placement_jobs.size()
 
 
 ## Dresses queued asset groups until the frame's allowance is spent. Groups whose chunk has since
@@ -577,6 +712,10 @@ func _drain_group_queue() -> void:
 		if Time.get_ticks_usec() >= deadline_usec:
 			return
 		_group_queue.pop_front()
+		if bool(item.get("retarget", false)):
+			_retarget_asset_group(holder, String(item["kit"]), String(item["asset"]),
+				item["placements"] as Array, bool(item["with_proxies"]))
+			continue
 		_build_asset_group(holder, String(item["kit"]), String(item["asset"]),
 			item["placements"] as Array, bool(item["with_proxies"]))
 
@@ -585,6 +724,136 @@ func _drain_group_queue() -> void:
 ## dressed — the condition `tools/chunk_stream_check.gd` and the renderer instruments settle on.
 func pending_group_count() -> int:
 	return _group_queue.size()
+
+
+## F-461. Moves an ALREADY-DRESSED chunk across the proxy boundary without destroying its scatter.
+##
+## The report this fixes: "when a new chunk does get loaded the assets in currently generated and
+## loaded chunks get reloaded". They were. A chunk crossing into the collision ring was torn down
+## and rebuilt whole, and so was the same chunk crossing back out — so one pass past a chunk built
+## it three times (visual in, full, visual out) and the player watched 200-500 props vanish and
+## refill through `_group_queue`'s 2 ms/frame allowance while standing next to them.
+##
+## Two of those three builds produce IDENTICAL geometry. What actually differs across the boundary
+## is narrow:
+##
+##   · decorative scatter — the overwhelming majority of every chunk's placements — is one MultiMesh
+##     per mesh part either way. Nothing about it depends on the boundary, so it is never touched.
+##   · a BATCH harvestable is also the same MultiMesh either way (`_build_asset_group()` batches it
+##     in both branches). Only its invisible proxy holders differ, so only those are added or freed.
+##   · a NODE harvestable genuinely changes representation — individual meshes with proxies, one
+##     MultiMesh without — and is the one family that has to be rebuilt at all.
+##
+## The rebuilds are queued through the same `_group_queue` budget as any other work, so a transition
+## cannot spike a frame either. Nothing visible moves for the first two cases, which is the point.
+func _retarget_chunk(coord: Vector2i, with_proxies: bool) -> void:
+	var chunk_holder: Node3D = _chunk_holders.get(coord)
+	if chunk_holder == null:
+		return
+	if bool(_chunk_has_proxies.get(coord, false)) == with_proxies:
+		return
+	_chunk_has_proxies[coord] = with_proxies
+
+	# Groups still waiting their turn have not been built yet, so they should simply be built the
+	# NEW way when it comes. Retargeting them in place matters: `_drain_group_queue()` drops an item
+	# whose `with_proxies` disagrees with the chunk's flag, so leaving them would silently discard
+	# every undrained group of a chunk that changed tier while its queue was backed up.
+	for item: Dictionary in _group_queue:
+		if (item["coord"] as Vector2i) == coord:
+			item["with_proxies"] = with_proxies
+
+	for key: String in _grouped_placements(coord):
+		var parts := key.split("|")
+		if not HarvestLib.is_harvestable(StringName(parts[1])):
+			continue                                  # decorative: identical either way
+		if _group_holder_for(chunk_holder, StringName(parts[1])) == null:
+			continue                                  # not built yet — retargeted in the loop above
+		_group_queue.append({
+			"coord": coord,
+			"kit": parts[0],
+			"asset": parts[1],
+			"placements": (_grouped_placements(coord)[key] as Array),
+			"with_proxies": with_proxies,
+			"retarget": true,
+		})
+
+
+## This chunk's placements, keyed "kit|asset", as its `PlacementJob` computed them. Empty for a
+## chunk whose job has not landed yet, which is the correct answer: `_retarget_chunk()` has nothing
+## built to retarget in that case, and `_drain_placement_jobs()` reads the current
+## `_chunk_has_proxies` when the result does arrive.
+func _grouped_placements(coord: Vector2i) -> Dictionary:
+	return _chunk_placements.get(coord, {})
+
+
+## The child of [param chunk_holder] holding one asset's instances, matched on the `asset` meta
+## `_build_asset_group()` stamps rather than on the node name — a name can be uniquified by the
+## engine, the meta cannot.
+func _group_holder_for(chunk_holder: Node3D, asset_id: StringName) -> Node3D:
+	for child: Node in chunk_holder.get_children():
+		if child is Node3D and StringName(child.get_meta(&"asset", &"")) == asset_id:
+			return child as Node3D
+	return null
+
+
+## One group's half of `_retarget_chunk()`. See that function for which of the three cases each
+## branch is.
+func _retarget_asset_group(
+	chunk_holder: Node3D, kit: String, asset: String, placements: Array, with_proxies: bool
+) -> void:
+	var asset_id := StringName(asset)
+	var group_holder: Node3D = _group_holder_for(chunk_holder, asset_id)
+	if group_holder == null:
+		return
+
+	if HarvestLib.representation_for(asset_id) == HarvestLib.Represent.NODE:
+		# The only family whose GEOMETRY differs across the boundary, so the only one rebuilt.
+		# Removed from the tree before the replacement is added, so the new group holder cannot
+		# collide with the old one's name and `_group_holder_for()` cannot find the corpse.
+		_capture_depletion(group_holder)
+		chunk_holder.remove_child(group_holder)
+		group_holder.queue_free()
+		_build_asset_group(chunk_holder, kit, asset, placements, with_proxies)
+		return
+
+	# BATCH: the MultiMesh stays exactly as it is, including any slot a depleted prop has zeroed —
+	# which is strictly better than the rebuild this replaces, where a harvested bush grew back the
+	# moment its chunk changed tier.
+	if with_proxies:
+		_add_batch_holders(group_holder, kit, asset, placements)
+	else:
+		_drop_batch_holders(group_holder)
+
+
+## Gives an existing batched group its harvest proxies, reusing the MultiMeshes already under it.
+func _add_batch_holders(
+	group_holder: Node3D, kit: String, asset: String, placements: Array
+) -> void:
+	var mesh_parts: Array = _load_mesh_parts(kit, asset)
+	if mesh_parts.is_empty():
+		return
+	var slots: Array[MultiMesh] = []
+	for part_index: int in mesh_parts.size():
+		var instance := group_holder.get_node_or_null(
+			NodePath("%s_%d" % [asset, part_index])) as MultiMeshInstance3D
+		if instance == null:
+			return                     # not the shape `_build_asset_group()` builds; leave it alone
+		slots.append(instance.multimesh)
+	var asset_id := StringName(asset)
+	for index: int in placements.size():
+		_build_batch_holder(group_holder, placements[index], asset_id, kit, slots, mesh_parts,
+			_transform_for(placements[index]), index)
+
+
+## Takes a batched group's harvest proxies away, leaving its MultiMeshes untouched. Depletion state
+## is captured first — it is the proxies that carry it, and out here they are what is going away.
+func _drop_batch_holders(group_holder: Node3D) -> void:
+	_capture_depletion(group_holder)
+	for child: Node in group_holder.get_children():
+		if not child.is_in_group(HARVESTABLE_HOLDER_GROUP):
+			continue
+		group_holder.remove_child(child)
+		child.queue_free()
 
 
 func _build_asset_group(
@@ -774,6 +1043,10 @@ func _teardown_chunk(coord: Vector2i) -> void:
 	# permanent for that coord. Caught by resource_scatter_check's "the same point rebuilds a live
 	# Harvestable again".
 	_chunk_has_proxies.erase(coord)
+	# F-461: this chunk's placement list is only wanted while the chunk is resident. Any in-flight
+	# `PlacementJob` is deliberately LEFT alone: it cannot be cancelled, its result is still exactly
+	# right for this coord if the chunk comes back, and `_drain_placement_jobs()` drops it if not.
+	_chunk_placements.erase(coord)
 	# F-454: anything still queued for this coord is now work on a holder that is about to be
 	# freed. `_drain_group_queue()` would drop it on its own, but leaving it in the queue lets a
 	# chunk that unloads and reloads accumulate dead entries ahead of live ones.

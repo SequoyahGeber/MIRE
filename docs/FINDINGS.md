@@ -3084,6 +3084,37 @@ Two independent causes, both found by reading, not guessed:
    prop(s)" hundreds of times in one run, climbing 337 -> 773, which is the sweep being re-run.
    `wired_harvestables()` is computed there ONLY to produce that log line.
 
+**Two more causes, found by instrumenting rather than reading.** Fixing the two above cut the hitch
+share from 18.7% of the wall clock to 14.5%, and left `ChunkStreamer` reporting **31-56 ms frames
+against its own 4 ms budget while uploading as little as ONE chunk**. Splitting
+`ChunkStreamer._process()` three ways (`last_phase_costs_ms()`, added by this finding) put all of it
+in the upload drain, and probing inside that showed `add_child()` was 0.03 ms and
+`chunk_mesh_ready.emit()` was the other 40. The emit is synchronous, so both of its listeners were
+charging their work to the streamer's budget:
+
+3. `world/gen/resource_scatter.gd` `placements_for_chunk()` cost **8-10 ms of MAIN-THREAD time per
+   chunk**, called from `ResourceScatterField._build_chunk()` inside that emit. It does not shrink
+   with the answer — 10.29 ms to place *four* bushes — because the cost is the ~3,750 candidates a
+   chunk offers (31 scatter tables x 121 cells) and the biome/surface noise each surviving one
+   samples. So no downstream budget could help: `SCATTER_BUILD_BUDGET_MS` was metering the cheap
+   half of the work, after the expensive half had already been paid in full.
+
+4. `world/chunk/nav_baker.gd` `_source_geometry()` called `ChunkMesher.build_mesh()` — rebuilding
+   from scratch, on the main thread, the very mesh `ChunkStreamer` had just built on a WORKER thread
+   and was holding in the node it emitted the signal about. `_start_bake()` measured **19-81 ms per
+   chunk**, on frames whose only tree churn was that one terrain node. D-016 moved the *bake* async
+   and left the geometry pass synchronous; nothing made it reuse the mesh sitting next to it.
+
+**Result** (`tools/traversal_profile.gd`, seed 20260821, 45 s walk at 7 m/s, M5 Pro):
+
+| | hitch frames (>=25 ms) | share of wall clock | streamer share of hitch time | nodes added |
+|---|---|---|---|---|
+| before | 172 | 18.7% | 23.0% | 43,801 |
+| after | **27** | **2.6%** | **1.3%** | 33,776 |
+
+Median 5.95 -> 6.89 ms. Almost every surviving hitch is in the first 1.7 seconds — the initial
+settle behind the loading screen, where `grpQ` is 850-1,600 — not during traversal.
+
 ---
 
 ### F-463 · agent ship silently drops force-added ignored files, so a music .import never lands
@@ -3197,6 +3228,36 @@ contract, which is why it is filed rather than done in passing.
 
 Reproduce: `.agent/bin/agent godot --windowed --script tools/benchmark_check.gd -- --full` on a
 machine well above the target, and read the calibration rows in `user://benchmark/report.txt`.
+
+---
+
+### F-466 · The benchmark reports frame times taken while its window was not being rendered
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
+
+Sequoyah, 2026-08-21, after a long session of `agent godot --windowed` benchmark runs: *"when u were
+opening game windows to do ur tests i was putting them to the background so i could work on other
+stuff at the same time so the game was not actually being rendered on my screen."*
+
+On macOS an unfocused or occluded window is throttled and may not composite at all, so every
+millisecond figure from such a run describes the window manager rather than the game. The benchmark
+recorded and reported those numbers with no indication that anything was wrong — it printed a
+results table, a settings recommendation, and a report file meant to be pasted into bug threads.
+
+This is not only an agent-testing problem. **A player who alt-tabs during the four-minute run hits
+exactly the same thing**, and today would get a confident recommendation derived from a window that
+was not on screen. The benchmark already refuses to trust a world that is still streaming, a frame
+pinned to the refresh rate, and a machine that is thermally throttled (F-453, F-462); a window that
+is not being drawn belongs in the same list and is a larger error than any of them.
+
+What it should do: watch focus for every sampled frame, count the frames that were not focused, and
+if any scene lost focus, say so at the top of the results and in `report.txt` — and refuse to
+present the recommendation as though it were measured. `DisplayServer.window_is_focused()` is the
+check; true occlusion (focused but covered) is not exposed by the engine, so focus is the available
+proxy and its limits should be stated rather than implied away.
+
+Related, and the reason this went unnoticed for a whole session: several conclusions were drawn from
+these runs and are now unsafe — see the amendments on F-457, F-459 and F-465.
 
 ---
 

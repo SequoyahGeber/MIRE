@@ -75,6 +75,36 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-21 — F-461: the placement pass is off-thread, and LOD changes retarget instead of rebuilding (quillcfd8d7)
+
+Traversal hitches went from **172 frames / 18.7% of the wall clock to 27 frames / 2.6%**, and the
+survivors are nearly all in the first 1.7 s (the settle behind the loading screen), not in traversal.
+See F-461 for the measurements and D-197/D-198 for the reasoning. What the next task needs to know:
+
+**New API.**
+
+- `ChunkStreamer.chunk_mesh(coord) -> ArrayMesh` — the resident mesh, or null. **Use this instead of
+  calling `ChunkMesher.build_mesh()` for a chunk that is already streamed in.** `NavBaker` was
+  rebuilding it and paying 19-81 ms of main-thread time per chunk to do so.
+- `ChunkStreamer.last_phase_costs_ms() -> [eval, drain, cook]` and `last_phase_counts() ->
+  [uploads, cooks]` — the split behind `last_process_cost_ms()`. `tools/traversal_profile.gd` prints
+  both; a streamer total without the split cannot tell "blew the budget" from "a signal listener did".
+- `ResourceScatterField.pending_placement_job_count()` — in-flight `PlacementJob`s. **A settle
+  condition that waits on `pending_group_count()` alone is now incomplete**: a chunk can be
+  holder-resident with its placements still computing on a worker.
+
+**Two invariants that are easy to break.**
+
+1. `ResourceScatterField` chunks are built ASYNCHRONOUSLY now. `_chunk_holders.has(coord)` means
+   "this chunk exists", not "this chunk is dressed" — its contents arrive over later frames.
+   `_build_chunk()` owns the one-holder-per-coord rule and retargets instead of building a second.
+2. `_chunk_has_proxies[coord]` is the single source of truth for which side of the proxy boundary a
+   chunk is on. A landing `PlacementJob` reads it fresh rather than trusting what was requested,
+   because `_retarget_chunk()` may have moved the chunk while the job ran.
+
+**Anything reached from `chunk_mesh_ready` runs inside `ChunkStreamer._process()`'s 4 ms budget** —
+the emit is synchronous. Keep new listeners off that frame or the budget stops meaning anything.
+
 ### 2026-08-21 — F-458: the benchmark suite is 9 situations x day/night, on a surveyed seed (quill895277)
 
 Three changes on top of F-453, all from Sequoyah: a seed chosen rather than guessed, equal day and

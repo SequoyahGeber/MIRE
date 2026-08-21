@@ -119,6 +119,17 @@ var _shared_material: ShaderMaterial
 ## whatever else the machine is doing; read this to tell "this node blew its own budget" apart
 ## from "the frame was slow for an unrelated reason" (see `last_process_cost_ms()`).
 var _last_process_cost_usec: int = 0
+## F-461. The same number as `_last_process_cost_usec`, split three ways across the three things
+## `_process()` does. A single total says "the streamer spent 60 ms" and stops there; these say
+## WHICH of ring evaluation, mesh upload, or collision cooking spent it, which is the difference
+## between a fix and a guess. Reset every `_process()`, read through `last_phase_costs_ms()`.
+var _cost_eval_usec: int = 0
+var _cost_drain_usec: int = 0
+var _cost_cook_usec: int = 0
+## How many chunks the most recent `_process()` uploaded and how many colliders it cooked — the
+## per-frame counts that turn a phase cost into a per-chunk cost.
+var _uploads_this_frame: int = 0
+var _cooks_this_frame: int = 0
 
 
 ## One resident chunk: its uploaded mesh, and its (optional, lazily-cooked) collider.
@@ -279,6 +290,7 @@ func prime(anchors: Array[Vector3], radius_chunks: int = PRIME_RADIUS_CHUNKS) ->
 		if entry.lod != 0 or entry.has_collision:
 			continue
 		_cook_collision(entry)
+		_cooks_this_frame += 1
 		cooked += 1
 	return cooked
 
@@ -302,6 +314,23 @@ func is_chunk_loaded(coord: Vector2i) -> bool:
 ## -1 if [param coord] is not currently loaded.
 func chunk_lod(coord: Vector2i) -> int:
 	return _loaded[coord].lod if _loaded.has(coord) else -1
+
+
+## The uploaded mesh for [param coord], or null when the chunk is not resident.
+##
+## F-461. Public because a consumer that needs the chunk's GEOMETRY should not rebuild it:
+## `NavBaker._source_geometry()` was calling `ChunkMesher.build_mesh()` for a chunk this node had
+## just built on a worker thread and was holding right here, which put a whole synchronous mesh
+## generation on the main thread inside this node's own `chunk_mesh_ready` emit — measured at 19-81
+## ms per chunk by `tools/traversal_profile.gd`, and reported against THIS node's budget because it
+## ran inside its `_process()`.
+func chunk_mesh(coord: Vector2i) -> ArrayMesh:
+	if not _loaded.has(coord):
+		return null
+	var entry: ChunkEntry = _loaded[coord]
+	if not is_instance_valid(entry.mesh_instance):
+		return null
+	return entry.mesh_instance.mesh as ArrayMesh
 
 
 func chunk_has_collision(coord: Vector2i) -> bool:
@@ -337,21 +366,45 @@ func last_process_cost_ms() -> float:
 	return float(_last_process_cost_usec) / 1000.0
 
 
+## F-461: the phase split, so a 60 ms streamer frame can be attributed. `[eval, drain, cook]` in
+## milliseconds, for the most recent `_process()` call.
+func last_phase_costs_ms() -> Array[float]:
+	return [
+		float(_cost_eval_usec) / 1000.0,
+		float(_cost_drain_usec) / 1000.0,
+		float(_cost_cook_usec) / 1000.0,
+	] as Array[float]
+
+
+## F-461: `[uploads, collision cooks]` performed by the most recent `_process()` call.
+func last_phase_counts() -> Array[int]:
+	return [_uploads_this_frame, _cooks_this_frame] as Array[int]
+
+
 func _process(delta: float) -> void:
 	if _anchors.is_empty():
 		return
 	var t0_usec: int = Time.get_ticks_usec()
+	_cost_eval_usec = 0
+	_uploads_this_frame = 0
+	_cooks_this_frame = 0
 
 	_eval_accum += delta
 	if _eval_accum >= RING_EVAL_INTERVAL_SEC:
 		_eval_accum = 0.0
 		_evaluate_rings()
+		_cost_eval_usec = Time.get_ticks_usec() - t0_usec
 
-	var deadline_usec: int = Time.get_ticks_usec() + int(FRAME_BUDGET_MS * 1000.0)
+	var t1_usec: int = Time.get_ticks_usec()
+	var deadline_usec: int = t1_usec + int(FRAME_BUDGET_MS * 1000.0)
 	_drain_ready_jobs(deadline_usec)
+	var t2_usec: int = Time.get_ticks_usec()
 	_cook_lazy_collision(deadline_usec)
+	var t3_usec: int = Time.get_ticks_usec()
 
-	_last_process_cost_usec = Time.get_ticks_usec() - t0_usec
+	_cost_drain_usec = t2_usec - t1_usec
+	_cost_cook_usec = t3_usec - t2_usec
+	_last_process_cost_usec = t3_usec - t0_usec
 
 
 # ── Ring membership ───────────────────────────────────────────────────────────────────────────
@@ -500,6 +553,7 @@ func _drain_ready_jobs(deadline_usec: int) -> void:
 			continue  # Done, but this frame's slice is spent — upload on a later frame.
 
 		_upload_chunk(job)
+		_uploads_this_frame += 1
 		_jobs.erase(coord)
 
 

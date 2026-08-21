@@ -44,6 +44,11 @@ var _definitions: Dictionary[String, Resource] = {}
 var _refresh_scheduled: bool = false
 var _last_reported_count: int = -1
 var _observed_scene_id: int = 0
+## F-461. Holders that entered the tree since the last drain, waiting to be wired. Every entry here
+## is wired EXACTLY ONCE — see `_on_node_added()` for why the whole-scene sweep this replaced was
+## the wrong shape for a streamed world.
+var _pending_holders: Array[Node] = []
+var _drain_scheduled: bool = false
 
 
 func _ready() -> void:
@@ -131,6 +136,8 @@ func refresh_current_scene() -> void:
 	var scene: Node = get_tree().current_scene
 	if scene == null:
 		return
+	# F-461: this sweep visits every holder in the scene, which is a superset of anything queued.
+	_pending_holders.clear()
 	for group: StringName in HOLDER_GROUPS:
 		for candidate: Node in get_tree().get_nodes_in_group(group):
 			if candidate is Node3D and (scene == candidate or scene.is_ancestor_of(candidate)):
@@ -199,13 +206,56 @@ func expected_harvestable_count(layout: Dictionary) -> int:
 ## visible here. Without this filter, every node the game ever adds — audio one-shots, enemies,
 ## build pieces — scheduled a full multi-group scene rescan, which under steady spawn churn meant
 ## one per frame for the life of the game (F-099).
+## F-461. This used to call `_schedule_refresh()`, which sweeps EVERY holder in the world and then
+## walks the whole `harvestable` group a second time just to produce a log line. That is the right
+## shape for an authored map, which builds its props once: the sweep runs once, wires 1,156 holders,
+## and is never heard from again.
+##
+## It is the wrong shape for a streamed one. `ResourceScatterField` drains its group queue against a
+## 2 ms budget, so during traversal holders enter the tree on very nearly every frame — and each one
+## re-ran an O(all holders in the world) sweep whose only new work was the single holder that
+## triggered it. `tools/chunk_stream_check.gd` shows the sweep re-running hundreds of times in one
+## walk, its reported count climbing 337 -> 773; the report that opened F-461 described it from the
+## player's side as the already-loaded chunks' assets being "reloaded" whenever a new chunk lands.
+##
+## A holder needs wiring exactly once, and the node that needs it is the node we were just handed.
+## So queue it and wire only it. The full sweep still exists for the cases that genuinely need one —
+## a scene change, a run restart, a console command — where it runs once and costs nothing per frame.
 func _on_node_added(node: Node) -> void:
 	for group: StringName in HOLDER_GROUPS:
 		if node.is_in_group(group):
-			_schedule_refresh()
+			_pending_holders.append(node)
+			if not _drain_scheduled:
+				_drain_scheduled = true
+				call_deferred("_drain_pending_holders")
 			return
 
 
+## Wires the holders queued by `_on_node_added()` and nothing else. Deferred rather than immediate
+## because a holder is added BEFORE its `Visual`/`CollisionBody` children are (F-012's ordering
+## rule), so wiring it in the `node_added` callback itself would find neither.
+func _drain_pending_holders() -> void:
+	_drain_scheduled = false
+	var holders: Array[Node] = _pending_holders
+	_pending_holders = []
+	# A full sweep is already queued for this frame and covers every one of these — doing both would
+	# wire each holder twice (harmless, `WIRED_META` guards it) and pay for the scan twice (not).
+	if _refresh_scheduled:
+		return
+	var scene: Node = get_tree().current_scene
+	# No current scene yet. These holders are not lost: the engine assigning the main scene is what
+	# `_process()` watches for, and that schedules the full sweep which picks them all up.
+	if scene == null:
+		return
+	for node: Node in holders:
+		if not is_instance_valid(node) or not node is Node3D:
+			continue
+		if scene == node or scene.is_ancestor_of(node):
+			_wire_holder(node as Node3D, scene)
+
+
+## The whole-world sweep. Correct, and cheap enough, for the events that actually change the world
+## wholesale; never on the streaming path (see `_on_node_added()`).
 func _schedule_refresh() -> void:
 	if _refresh_scheduled:
 		return

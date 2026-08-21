@@ -317,7 +317,7 @@ func _retire(coord: Vector2i) -> void:
 ## the navmesh around it in the one pass — compositing two independently-baked regions cannot produce
 ## the same result, because a region does not know what another region's geometry looked like.
 func _source_geometry(coord: Vector2i) -> NavigationMeshSourceGeometryData3D:
-	var mesh: ArrayMesh = Mesher.build_mesh(coord.x, coord.y, world_seed, biome_defs, NAV_LOD)
+	var mesh: ArrayMesh = _nav_lod_mesh(coord)
 	var terrain_faces: PackedVector3Array = PackedVector3Array()
 	if mesh != null and mesh.get_surface_count() > 0:
 		terrain_faces = Mesher.collision_faces(mesh, NAV_LOD)
@@ -331,6 +331,29 @@ func _source_geometry(coord: Vector2i) -> NavigationMeshSourceGeometryData3D:
 	if not piece_faces.is_empty():
 		geometry.add_faces(piece_faces, Transform3D.IDENTITY)
 	return geometry
+
+
+## F-461. The chunk's NAV_LOD mesh, taken from the streamer when it has one rather than rebuilt.
+##
+## This used to be an unconditional `Mesher.build_mesh()`, and it is reached from
+## `_on_chunk_mesh_ready` — so for every chunk that streamed in, the main thread rebuilt from
+## scratch the very mesh `ChunkStreamer` had just finished building on a WORKER thread and was
+## holding in the node it emitted the signal about. `tools/traversal_profile.gd` measured the whole
+## `_start_bake()` at 19-81 ms per chunk, on frames whose only tree churn was the one terrain node.
+##
+## Identical geometry, not merely equivalent: the streamer's mesh IS
+## `build_mesh(coord, world_seed, biome_defs, lod)`, `bind()` takes this baker's `biome_defs` from
+## that same streamer, and the LOD is checked to be NAV_LOD before the resident mesh is accepted.
+## The rebuild survives as the fallback for the cases that have no resident mesh to borrow — a
+## harness that bakes without a streamer, and F-159's rebake of a chunk that has since left the ring.
+func _nav_lod_mesh(coord: Vector2i) -> ArrayMesh:
+	if _streamer != null and _streamer.has_method(&"chunk_mesh") \
+			and _streamer.has_method(&"chunk_lod") \
+			and int(_streamer.call(&"chunk_lod", coord)) == NAV_LOD:
+		var resident := _streamer.call(&"chunk_mesh", coord) as ArrayMesh
+		if resident != null and resident.get_surface_count() > 0:
+			return resident
+	return Mesher.build_mesh(coord.x, coord.y, world_seed, biome_defs, NAV_LOD)
 
 
 ## Every piece NavBaker is tracking whose stored coord is this chunk, as one solid box each —
