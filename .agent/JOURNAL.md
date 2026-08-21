@@ -8728,3 +8728,68 @@ Focus grab does not work from a terminal-launched process on macOS (window_move_
 Files: `tools/benchmark_check.gd`, `tools/bench_measure.sh`, `core/bench/benchmark_runner.gd`
 
 Commit at time of writing: `5179f9d`
+
+---
+
+### DONE · F-471 · onyx059945 · 2026-08-21T23:21:06+00:00
+
+**Scatter has no slope gate at all, so trees grow straight out of cliff faces**
+
+slope gate on ScatterDef, defaulted on
+
+Files: `world/gen/resource_scatter.gd`, `world/gen/scatter_def.gd`, `world/gen/scatter_entry.gd`, `content/scatter/cliff_rubble.tres`
+
+Commit at time of writing: `291ec1f`
+
+---
+
+### DONE · F-471 · onyx059945 · 2026-08-21T23:21:42+00:00
+
+**Scatter has no slope gate at all, so trees grow straight out of cliff faces**
+
+ScatterDef slope gate, on by default; cliff_rubble table
+
+Commit at time of writing: `0fcc1f3`
+
+---
+
+### DONE · F-464 · onyx059945 · 2026-08-21T23:21:42+00:00
+
+**The river's carve ends in a vertical wall wherever it crosses a hill, and nothing on the island reads as rock**
+
+river ramps out of the corridor; rock on steep ground; A-016a placed
+
+Files: `world/gen/island_heightmap.gd`, `world/chunk/chunk_mesher.gd`, `world/chunk/terrain_flat.gdshader`, `world/gen/cliff_dresser.gd`, `world/gen/procedural_world.gd`, `tools/cliff_check.gd`, `tools/cliff_render.gd`, `tools/chunk_stream_check.gd`, `assets/audit/cliffs/cliff_20260818.png`, `assets/audit/cliffs/cliff_4242.png`, `assets/audit/cliffs/cliff_8102602.png`
+
+Commit at time of writing: `0fcc1f3`
+
+---
+
+### DONE · 3.18 · birche6b40e · 2026-08-21T23:26:09+00:00
+
+**Five-tier tool ladder, gated inside the run — extend 3.1's three tiers to five (wood → stone → iron → bogsilver → wellglass), each tier unlocked by a world event rather than by time: node access, a station the party must build, a Wellspring cap, a guardian kill (`PROGRESSION.md` §2–4)**
+
+Five-rung ladder shipped: wood/stone/iron/bogsilver/wellglass, top two gated on a Wellspring cap and a boss kill. ProgressionService + ItemDef.tool_tier + LootTableDef.guaranteed; all content authored; progression_check green. Gaps F-473 (art) and F-474 (heavy-chunk haul).
+
+Notes along the way:
+- Code half committed (5f115a8). Content half (.tres) blocked all session by an open Godot editor — D-031. Worklist and API in docs/PROGRESSION.md §9.
+- F-473 and F-474 are written into docs/FINDINGS.md and STAGED but uncommitted: coil26502f holds an exact claim on that file for F-472 and --no-verify is unavailable in this session. Commit them the moment the claim frees.
+
+Files: `docs/PROGRESSION.md`, `systems/inventory/item_def.gd`, `autoload/progression_service.gd`, `core/events/event_bus.gd`, `tools/progression_check.gd`, `autoload/crafting_service.gd`, `autoload/salvage_service.gd`, `docs/DECISIONS.md`, `docs/ITEMS.md`, `content/items/wooden_axe.tres`, `content/items/wooden_pickaxe.tres`, `content/items/sling.tres`, `content/items/short_bow.tres`, `content/items/stone_axe.tres`, `content/items/stone_pickaxe.tres`, `content/items/iron_pickaxe.tres`, `content/items/iron_sword.tres`, `content/items/cleaver.tres`, `content/items/skewer.tres`, `content/items/repair_hammer.tres`, `content/items/longbow.tres`, `content/items/crossbow.tres`, `content/items/iron_axe.tres`, `content/items/bogsilver_ore.tres`, `content/items/bogsilver_ingot.tres`, `content/items/bogsilver_axe.tres`, `content/items/bogsilver_pickaxe.tres`, `content/items/wellglass_shard.tres`, `content/items/guardian_core.tres`, `content/items/wellglass_axe.tres`, `content/items/wellglass_pickaxe.tres`, `content/weapons/iron_axe.tres`, `content/weapons/bogsilver_axe.tres`, `content/weapons/bogsilver_pickaxe.tres`, `content/weapons/wellglass_axe.tres`, `content/weapons/wellglass_pickaxe.tres`, `content/stations/anvil.tres`, `content/buildables/anvil.tres`, `scenes/buildables/anvil.tscn`, `content/recipes/iron_axe.tres`, `content/recipes/bogsilver_ingot.tres`, `content/recipes/bogsilver_axe.tres`, `content/recipes/bogsilver_pickaxe.tres`, `content/recipes/wellglass_axe.tres`, `content/recipes/wellglass_pickaxe.tres`, `systems/loot/loot_table_def.gd`, `content/loot/wellspring.tres`, `content/loot/boss.tres`, `content/harvestables/bogsilver_node.tres`, `systems/harvesting/harvest_library.gd`
+
+Commit at time of writing: `c5bd240`
+
+---
+
+### DONE · 3.19 · birche6b40e · 2026-08-21T23:26:09+00:00
+
+**In-run guidance — a `GuideService` + HUD that names the next objective and fires one-shot contextual tips, data-authored, client-local, skippable (`PROGRESSION.md` §5). The game currently ships no tutorial of any kind**
+
+GuideService/GuideHud/GuideStepDef + 13 objectives and 6 tips, settings toggle, guide_check green.
+
+Notes along the way:
+- Same: GuideService/GuideHud/GuideStepDef shipped, content/guide/*.tres and the three autoload registrations still to do.
+
+Files: `autoload/guide_service.gd`, `ui/hud/guide_hud.gd`, `systems/guide/guide_step_def.gd`, `tools/guide_check.gd`, `autoload/registry.gd`, `autoload/settings_service.gd`, `core/save/settings_save.gd`, `ui/hud/focus_prompt.gd`, `ui/frontend/settings_screen.gd`, `content/guide/build_anvil.tres`, `content/guide/cap_wellspring.tres`, `content/guide/chop_a_tree.tres`, `content/guide/craft_first_axe.tres`, `content/guide/craft_stone_tools.tres`, `content/guide/find_bog_iron.tres`, `content/guide/forge_bogsilver.tres`, `content/guide/forge_wellglass.tres`, `content/guide/gather_fibre.tres`, `content/guide/kill_guardian.tres`, `content/guide/place_workbench.tres`, `content/guide/push_or_leave.tres`, `content/guide/smelt_iron.tres`, `content/guide/tip_corrupted_ground.tres`, `content/guide/tip_downed.tres`, `content/guide/tip_enemy_close.tres`, `content/guide/tip_first_night.tres`, `content/guide/tip_ship_ready.tres`, `content/guide/tip_tool_blocked.tres`, `tools/settings_check.gd`
+
+Commit at time of writing: `c5bd240`
