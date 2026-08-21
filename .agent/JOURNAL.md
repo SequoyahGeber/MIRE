@@ -8704,3 +8704,15 @@ Focus detection built and green (239 assertions, 0 failures headless). What is N
 Files: `core/bench/benchmark_runner.gd`, `core/bench/frame_sampler.gd`, `core/bench/benchmark_report.gd`, `tools/benchmark_check.gd`, `tools/bench_measure.sh`
 
 Commit at time of writing: `337bdda`
+
+---
+
+### DONE · 3.7 · coil26502f · 2026-08-21T23:04:24+00:00
+
+**Buildable pieces (walls/floors/ramps/doors) + Ward structures**
+
+Buildable set completed with floor_wood (D-199); all six building checks green at HEAD; F-468 filed
+
+Files: `tools/blender/build_construction_set.py`, `scenes/buildables/floor.tscn`, `content/buildables/floor.tres`, `docs/FINDINGS.md`, `tools/blender/mire_art.py`, `assets/construction/exports/floor_wood.glb`, `tools/blender/render_item_icons.py`, `assets/icons/exports/icon_build_floor.png`, `tools/construction_check.gd`, `docs/DECISIONS.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `f2c5852`

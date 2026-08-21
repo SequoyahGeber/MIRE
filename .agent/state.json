@@ -1,22 +1,10 @@
 {
   "claims": {
-    "assets/construction/exports/floor_wood.glb": {
-      "agent": "coil26502f",
-      "at": "2026-08-21T22:56:10+00:00",
-      "task": "3.7",
-      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
-    },
     "assets/gatherables/catalog.json": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:16:22+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
-    },
-    "assets/icons/exports/icon_build_floor.png": {
-      "agent": "coil26502f",
-      "at": "2026-08-21T22:58:12+00:00",
-      "task": "3.7",
-      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "assets/pickups/catalog.json": {
       "agent": "gale43d16e",
@@ -60,12 +48,6 @@
       "task": "3.19",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "content/buildables/floor.tres": {
-      "agent": "coil26502f",
-      "at": "2026-08-21T22:54:44+00:00",
-      "task": "3.7",
-      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
-    },
     "content/harvestables/apple_tree.tres": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:45:13+00:00",
@@ -108,35 +90,11 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "docs/DECISIONS.md": {
-      "agent": "coil26502f",
-      "at": "2026-08-21T23:01:28+00:00",
-      "task": "3.7",
-      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
-    },
-    "docs/DELEGATION.md": {
-      "agent": "coil26502f",
-      "at": "2026-08-21T23:01:28+00:00",
-      "task": "3.7",
-      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
-    },
-    "docs/FINDINGS.md": {
-      "agent": "coil26502f",
-      "at": "2026-08-21T22:54:44+00:00",
-      "task": "3.7",
-      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
-    },
     "docs/PROGRESSION.md": {
       "agent": "birche6b40e",
       "at": "2026-08-21T22:49:29+00:00",
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
-    },
-    "scenes/buildables/floor.tscn": {
-      "agent": "coil26502f",
-      "at": "2026-08-21T22:54:44+00:00",
-      "task": "3.7",
-      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "systems/guide/guide_step_def.gd": {
       "agent": "birche6b40e",
@@ -150,12 +108,6 @@
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "tools/blender/build_construction_set.py": {
-      "agent": "coil26502f",
-      "at": "2026-08-21T22:54:44+00:00",
-      "task": "3.7",
-      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
-    },
     "tools/blender/build_gatherable_plants.py": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:16:22+00:00",
@@ -168,18 +120,6 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "tools/blender/mire_art.py": {
-      "agent": "coil26502f",
-      "at": "2026-08-21T22:56:10+00:00",
-      "task": "3.7",
-      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
-    },
-    "tools/blender/render_item_icons.py": {
-      "agent": "coil26502f",
-      "at": "2026-08-21T22:58:12+00:00",
-      "task": "3.7",
-      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
-    },
     "tools/cliff_check.gd": {
       "agent": "onyx059945",
       "at": "2026-08-21T22:45:11+00:00",
@@ -191,12 +131,6 @@
       "at": "2026-08-21T22:45:11+00:00",
       "task": "F-464",
       "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
-    },
-    "tools/construction_check.gd": {
-      "agent": "coil26502f",
-      "at": "2026-08-21T23:00:30+00:00",
-      "task": "3.7",
-      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "tools/guide_check.gd": {
       "agent": "birche6b40e",
@@ -214,6 +148,12 @@
       "agent": "birche6b40e",
       "at": "2026-08-21T22:51:41+00:00",
       "task": "3.18",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "ui/frontend/settings_screen.gd": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:04:24+00:00",
+      "task": "3.19",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
     "ui/hud/focus_prompt.gd": {
@@ -303,30 +243,12 @@
         "autoload/registry.gd",
         "autoload/settings_service.gd",
         "core/save/settings_save.gd",
-        "ui/hud/focus_prompt.gd"
+        "ui/hud/focus_prompt.gd",
+        "ui/frontend/settings_screen.gd"
       ],
       "notes": [],
       "started": "2026-08-21T22:49:29+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
-    },
-    "3.7": {
-      "agent": "coil26502f",
-      "files": [
-        "tools/blender/build_construction_set.py",
-        "scenes/buildables/floor.tscn",
-        "content/buildables/floor.tres",
-        "docs/FINDINGS.md",
-        "tools/blender/mire_art.py",
-        "assets/construction/exports/floor_wood.glb",
-        "tools/blender/render_item_icons.py",
-        "assets/icons/exports/icon_build_floor.png",
-        "tools/construction_check.gd",
-        "docs/DECISIONS.md",
-        "docs/DELEGATION.md"
-      ],
-      "notes": [],
-      "started": "2026-08-21T22:54:44+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "F-464": {
       "agent": "onyx059945",
@@ -1115,6 +1037,13 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "assets/construction/exports/floor_wood.glb": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:04:24+00:00",
+      "hash": "1aff2546d8e6bcfb59fe5215e40392da08b1ecdb9be09c44d2ac497abb2eed31",
+      "task": "3.7",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+    },
     "assets/environment/catalog.json": {
       "agent": "gale43d16e",
       "at": "2026-08-21T08:34:48+00:00",
@@ -1331,6 +1260,13 @@
       "hash": "fd47581fdb2467a100491fa8d06a5293590b19e542c9a643fa86a1bfb0647174",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "assets/icons/exports/icon_build_floor.png": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:04:24+00:00",
+      "hash": "004f18d0ca69493c811923dae25c08e9d82ce339b4545137ab2c31872972d168",
+      "task": "3.7",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "autoload/ambient_music_director.gd": {
       "agent": "ivye199f8",
@@ -1562,6 +1498,13 @@
       "hash": "1b54568e9c9435f6dc810ff93357e19870cfa99dd499a1724e965cff07e05614",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "content/buildables/floor.tres": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:04:24+00:00",
+      "hash": "2382abd35e18aed2cfe8fac4a071ab37a34d212755186d9deb50aadfbd5af9b0",
+      "task": "3.7",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "content/buildables/gate.tres": {
       "agent": "gale43d16e",
@@ -2684,25 +2627,25 @@
       "token": "CLAUDE_CODE_SESSION_ID:079ec6c8-3025-4d18-9503-6b15fbd8d6f2"
     },
     "docs/DECISIONS.md": {
-      "agent": "slate977821",
-      "at": "2026-08-21T22:28:24+00:00",
-      "hash": "a5700d8cbd17a39bb7f0de7763bd6de4fa4eb4898131f4c3a0210a990845ddda",
-      "task": "7.2",
-      "token": "CLAUDE_CODE_SESSION_ID:079ec6c8-3025-4d18-9503-6b15fbd8d6f2"
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:04:24+00:00",
+      "hash": "a5715dc0c7c42f9e83c0328bbf870f4e841afb19fbd262da0e9c8d11af240a7f",
+      "task": "3.7",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "docs/DELEGATION.md": {
-      "agent": "hollow80855f",
-      "at": "2026-08-21T18:29:30+00:00",
-      "hash": "d804cef401e8f01f09aed6eb658cb45513c710a5f7164bc0ab2da4340256fa5f",
-      "task": "F-435",
-      "token": "CLAUDE_CODE_SESSION_ID:0e245ac7-67ca-4077-a49b-e1b4d92abe80"
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:04:24+00:00",
+      "hash": "ba2f42f9d326ead229e0aa5d2b961defd4f736d00a0f3871fc2b223f342ba5db",
+      "task": "3.7",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "docs/FINDINGS.md": {
-      "agent": "hollow80855f",
-      "at": "2026-08-21T18:29:30+00:00",
-      "hash": "e78ab997f0d54ceb1b99259647281ead809c1acf7731611575a98954783d962c",
-      "task": "F-435",
-      "token": "CLAUDE_CODE_SESSION_ID:0e245ac7-67ca-4077-a49b-e1b4d92abe80"
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:04:24+00:00",
+      "hash": "438981bf8e68e58547d62bfedd7a5b3343d969c9cedd5b0cf68de22033d7a61e",
+      "task": "3.7",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "docs/GAMELOOP.md": {
       "agent": "ivy1bcae0",
@@ -2801,6 +2744,13 @@
       "hash": "710cf8347a9ce2bcdf78b8023dc728f8b96dedc38f9a6826c7a90b7a81475b77",
       "task": "F-413",
       "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
+    },
+    "scenes/buildables/floor.tscn": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:04:24+00:00",
+      "hash": "833f99f173e09b0ee960c4e42a7e73e5484395fb390c131456d4fcf5102e94c4",
+      "task": "3.7",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "scenes/buildables/wall.tscn": {
       "agent": "gale43d16e",
@@ -3041,11 +2991,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
     "tools/blender/build_construction_set.py": {
-      "agent": "gale43d16e",
-      "at": "2026-08-21T08:34:48+00:00",
-      "hash": "1d59462c4462b593052d684d4777e845036b96cba392a8e14b7bf09e83851bac",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:04:24+00:00",
+      "hash": "5af18e05f92a8c4ab398317e9551b72f04db2399d0a231a9e1f31fb96ccc74d8",
+      "task": "3.7",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "tools/blender/build_flora_set.py": {
       "agent": "kiln384569",
@@ -3083,18 +3033,18 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "tools/blender/mire_art.py": {
-      "agent": "gale43d16e",
-      "at": "2026-08-21T08:34:48+00:00",
-      "hash": "e01f2aab206a77b98239418405087a494b0d8a09b440c4b4765565801af32846",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:04:24+00:00",
+      "hash": "db6c108a6c6f95db3a3cd9ba63eb0cd85d21e2c5de012cb93556fffff8fcb3c7",
+      "task": "3.7",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "tools/blender/render_item_icons.py": {
-      "agent": "gale43d16e",
-      "at": "2026-08-21T08:34:48+00:00",
-      "hash": "72a3cf28f3a26d97931246dec7dcbd78d8bc8f7b91db8134a6a9be99650bd46d",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:04:24+00:00",
+      "hash": "85a3e3ceb6f87a5942e2784d9ec644dec664e6b00b8e4d07007547bf3cd421ea",
+      "task": "3.7",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "tools/blender/trunk_inspect.py": {
       "agent": "gale43d16e",
@@ -3137,6 +3087,13 @@
       "hash": "084ec34f941d206cb5e195cf1bcc419395d4f005bc4c7d14aa063ff01cce58ed",
       "task": "F-330",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
+    "tools/construction_check.gd": {
+      "agent": "coil26502f",
+      "at": "2026-08-21T23:04:24+00:00",
+      "hash": "d18ab3fd2a9b79df69060674519e8552faf282110dc2ce34ec3963b8cb5c3953",
+      "task": "3.7",
+      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "tools/crafting_ui_check.gd": {
       "agent": "kilnd3a089",
@@ -3909,7 +3866,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     }
   },
-  "rev": 922,
+  "rev": 924,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -4586,9 +4543,11 @@
       "title": "Review 3.6 @ dc86116 \u2014 judge the commit, file findings, no edits"
     },
     "3.7": {
+      "done_at": "2026-08-21T23:04:24+00:00",
+      "done_by": "coil26502f",
       "est": "4",
       "milestone": "M3",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T0",
       "title": "Buildable pieces (walls/floors/ramps/doors) + Ward structures"
     },
