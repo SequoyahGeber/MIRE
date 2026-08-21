@@ -8503,3 +8503,15 @@ Ground cover cut 25%: scatter coverage x0.75 on floor/turf/undergrowth/scrub tab
 Files: `world/gen/undergrowth.gd`, `content/scatter/birchwood_floor.tres`, `content/scatter/birchwood_undergrowth.tres`, `content/scatter/forest_floor.tres`, `content/scatter/forest_undergrowth.tres`, `content/scatter/grassland_meadow.tres`, `content/scatter/grassland_shrubs.tres`, `content/scatter/grassland_turf.tres`, `content/scatter/heath_scrub.tres`, `content/scatter/heath_turf.tres`, `content/scatter/highland_floor.tres`, `content/scatter/highland_scrub.tres`, `content/scatter/marsh_floor.tres`, `content/scatter/marsh_reeds.tres`, `content/scatter/shore_beach.tres`, `levels/hollowmere.tscn`
 
 Commit at time of writing: `d92368f`
+
+---
+
+### DONE · F-450 · birchcf39ce · 2026-08-21T20:14:02+00:00
+
+**The island is too flat, and its hills are domes when what it needs is broad flat-topped uplands**
+
+Hills are flat-topped uplands: top radius and ramp gradients sized independently, height derived from top radius, ramp blend cubed toward the steep side. Peak ~21 m -> 30-50 m; 43% of level ground is now above 15 m (was 0%). Biome bands, ChunkMesher.SKIRT_DEPTH, biome_terrain_check probes and terrain_map_render's shading all re-based on the taller terrain.
+
+Files: `world/gen/island_heightmap.gd`, `tools/hill_slope_check.gd`, `tools/terrain_map_render.gd`, `content/biomes/highland.tres`, `content/biomes/forest.tres`, `content/biomes/birchwood.tres`, `content/biomes/marsh.tres`, `tools/biome_terrain_check.gd`, `world/chunk/chunk_mesher.gd`, `tools/chunk_stream_check.gd`
+
+Commit at time of writing: `b14692b`

@@ -6,8 +6,8 @@
 script = ExtResource("1_forest")
 id = &"forest"
 display_name = "Deep Forest"
-height_min = 5.5
-height_max = 6.9
+height_min = 5.2
+height_max = 20.0
 moisture_min = 0.62
 moisture_max = 1.0
 priority = 6

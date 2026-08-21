@@ -42,6 +42,18 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "docs/PERFORMANCE.md": {
+      "agent": "wick5e2d04",
+      "at": "2026-08-21T20:07:44+00:00",
+      "task": "F-452",
+      "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
+    },
+    "tools/_perf_attrib.gd": {
+      "agent": "wick5e2d04",
+      "at": "2026-08-21T20:07:44+00:00",
+      "task": "F-452",
+      "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
+    },
     "tools/blender/build_gatherable_plants.py": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:16:22+00:00",
@@ -54,29 +66,17 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "tools/hill_slope_check.gd": {
-      "agent": "birchcf39ce",
-      "at": "2026-08-21T19:50:30+00:00",
-      "task": "F-450",
-      "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
-    },
     "tools/item_icons_check.gd": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:52:45+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "tools/terrain_map_render.gd": {
-      "agent": "birchcf39ce",
-      "at": "2026-08-21T19:53:12+00:00",
-      "task": "F-450",
-      "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
-    },
-    "world/gen/island_heightmap.gd": {
-      "agent": "birchcf39ce",
-      "at": "2026-08-21T19:50:30+00:00",
-      "task": "F-450",
-      "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
+    "tools/perf_probe.gd": {
+      "agent": "wick5e2d04",
+      "at": "2026-08-21T20:10:58+00:00",
+      "task": "F-452",
+      "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
     }
   },
   "in_flight": {
@@ -98,16 +98,16 @@
       "started": "2026-08-21T17:13:34+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "F-450": {
-      "agent": "birchcf39ce",
+    "F-452": {
+      "agent": "wick5e2d04",
       "files": [
-        "world/gen/island_heightmap.gd",
-        "tools/hill_slope_check.gd",
-        "tools/terrain_map_render.gd"
+        "tools/_perf_attrib.gd",
+        "docs/PERFORMANCE.md",
+        "tools/perf_probe.gd"
       ],
       "notes": [],
-      "started": "2026-08-21T19:50:30+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
+      "started": "2026-08-21T20:07:44+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
     }
   },
   "recent": {
@@ -1260,11 +1260,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
     "content/biomes/birchwood.tres": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T05:34:42+00:00",
-      "hash": "2e9d7477a3d134454e2392e4b30c37c5dafede9f7548751377036ec99054923e",
-      "task": "F-401",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "birchcf39ce",
+      "at": "2026-08-21T20:14:02+00:00",
+      "hash": "729d214b185b5d6e5cd83d5aca07680104c329fec2bd1c3e5fc4ec8705ee1255",
+      "task": "F-450",
+      "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
     },
     "content/biomes/birchwood.tres content/biomes/forest.tres content/biomes/grassland.tres content/biomes/heath.tres content/biomes/highland.tres content/biomes/marsh.tres content/biomes/shore.tres content/poi/station_camp.tres content/scatter/birchwood_canopy.tres content/scatter/birchwood_deadwood.tres content/scatter/birchwood_floor.tres content/scatter/birchwood_undergrowth.tres content/scatter/forest_canopy.tres content/scatter/forest_deadwood.tres content/scatter/forest_floor.tres content/scatter/forest_rocks.tres content/scatter/forest_undergrowth.tres content/scatter/grassland_meadow.tres content/scatter/grassland_rocks.tres content/scatter/grassland_shrubs.tres content/scatter/grassland_trees.tres content/scatter/grassland_turf.tres content/scatter/heath_scrub.tres content/scatter/heath_stones.tres content/scatter/heath_trees.tres content/scatter/heath_turf.tres content/scatter/highland_floor.tres content/scatter/highland_pines.tres content/scatter/highland_rocks.tres content/scatter/highland_scrub.tres content/scatter/marsh_canopy.tres content/scatter/marsh_deadwood.tres content/scatter/marsh_floor.tres content/scatter/marsh_reeds.tres content/scatter/shore_beach.tres content/scatter/shore_drift.tres content/scatter/shore_rocks.tres entities/props/camp_abandoned.tscn entities/props/standing_stone_circle.tscn levels/greybox_test.tscn levels/hollowmere.tscn levels/playtest_hollow.tscn levels/procedural_island.tscn ": {
       "agent": "kilnd3a089",
@@ -1274,11 +1274,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "content/biomes/forest.tres": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T05:34:42+00:00",
-      "hash": "729cc2db1ab3e4cfa062f3a5468f26aa7a71a2fd1bc83287c659f7d9200c3290",
-      "task": "F-401",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "birchcf39ce",
+      "at": "2026-08-21T20:14:02+00:00",
+      "hash": "3c12ca7e6e8ab5c0b291a0eb6223fd5c3f415959547502b9c10026e881c4cd3d",
+      "task": "F-450",
+      "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
     },
     "content/biomes/grassland.tres": {
       "agent": "kilnd3a089",
@@ -1295,18 +1295,18 @@
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "content/biomes/highland.tres": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T05:34:42+00:00",
-      "hash": "d5363d037c78a959052a21966b31dcb3ff39ecb27b8a2abf787fabcd3b00f2ae",
-      "task": "F-401",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "birchcf39ce",
+      "at": "2026-08-21T20:14:02+00:00",
+      "hash": "bc734b6353960ab8c30f9f19e7f8ed282ecba7409784b819d06835f221dc654e",
+      "task": "F-450",
+      "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
     },
     "content/biomes/marsh.tres": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T05:34:42+00:00",
-      "hash": "6b99a6b688f63883485b8736e73b3e189217fff2ff5a5eba277469df7b6631bb",
-      "task": "F-401",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "birchcf39ce",
+      "at": "2026-08-21T20:14:02+00:00",
+      "hash": "f06c66511eb2d2921f9b02cfbd08c6d8ccc11bb5e0a12d644467f8bd6a4f72ad",
+      "task": "F-450",
+      "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
     },
     "content/biomes/shore.tres": {
       "agent": "kilnd3a089",
@@ -2793,11 +2793,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "tools/biome_terrain_check.gd": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T05:34:42+00:00",
-      "hash": "5bcbc8ecc12c9dd4e2279eade8053ab1c85b890391a61fe2acb87ed32400072a",
-      "task": "F-401",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "birchcf39ce",
+      "at": "2026-08-21T20:14:02+00:00",
+      "hash": "a2ebe1428ab753cea68b97fd0bc1799f51bf869b375bd668305bb2d7cbb84dfa",
+      "task": "F-450",
+      "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
     },
     "tools/blender/asset_repro_check.py": {
       "agent": "ivy1bcae0",
@@ -2906,9 +2906,9 @@
     },
     "tools/chunk_stream_check.gd": {
       "agent": "birchcf39ce",
-      "at": "2026-08-21T19:40:33+00:00",
-      "hash": "1cfcd494da0a32fa98a9e04e84c77fc4921558fa6b6cad2a8a0a38b6a9e1223a",
-      "task": "F-447",
+      "at": "2026-08-21T20:14:02+00:00",
+      "hash": "6c0c7fef90212ea3d7cbe07e982342aea3a300805c650d7ba73fbaceba21d269",
+      "task": "F-450",
       "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
     },
     "tools/client_stream_budget_check.gd": {
@@ -3130,9 +3130,9 @@
     },
     "tools/hill_slope_check.gd": {
       "agent": "birchcf39ce",
-      "at": "2026-08-21T19:40:33+00:00",
-      "hash": "6bc78ccab33543897dd1fa251e8bdf131b8ff13e197acf5316d2baaff57da2f1",
-      "task": "F-447",
+      "at": "2026-08-21T20:14:02+00:00",
+      "hash": "3e89851f48a06a3c31af3049191cdfe4222c78facfa943d2914e6eaa98a00e34",
+      "task": "F-450",
       "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
     },
     "tools/interp_check.gd": {
@@ -3409,11 +3409,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "tools/terrain_map_render.gd": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T05:34:42+00:00",
-      "hash": "0b1af0b9f23f50e824b02c1ba9aefa14e6647705964be479c2258fbf73bcd187",
-      "task": "F-401",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "birchcf39ce",
+      "at": "2026-08-21T20:14:02+00:00",
+      "hash": "67d85e6e138dd823f773f48112d384f7502014c2e99448bf8b615753f0372cab",
+      "task": "F-450",
+      "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
     },
     "tools/terrain_normal_check.gd": {
       "agent": "kilnd3a089",
@@ -3703,11 +3703,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:44f62a84-7862-455b-a776-2e1c5eb11d39"
     },
     "world/chunk/chunk_mesher.gd": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T05:34:42+00:00",
-      "hash": "c55198100e31ee927b63bc50312183514f5b16dde5e037ab457b726ac90ca2e1",
-      "task": "F-401",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "birchcf39ce",
+      "at": "2026-08-21T20:14:02+00:00",
+      "hash": "18e6d0dec0ee8d36833fcde316225b309c8c2e6975a65ade5b704f8781f08087",
+      "task": "F-450",
+      "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
     },
     "world/chunk/chunk_streamer.gd": {
       "agent": "hollow80855f",
@@ -3781,9 +3781,9 @@
     },
     "world/gen/island_heightmap.gd": {
       "agent": "birchcf39ce",
-      "at": "2026-08-21T19:40:33+00:00",
-      "hash": "92d5ef395841afa22901f860d59f424507de33ef11603d4c30ed41003819a94d",
-      "task": "F-447",
+      "at": "2026-08-21T20:14:02+00:00",
+      "hash": "5a974e299dfb9394fa8d1334ef1a1df214ba5d9ca07771f7420e2cb64e58bff3",
+      "task": "F-450",
       "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
     },
     "world/gen/procedural_world.gd": {
@@ -3843,7 +3843,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     }
   },
-  "rev": 835,
+  "rev": 843,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9167,9 +9167,11 @@
       "title": "Task 5.3's ranged-weapon content was authored but never committed \u2014 the longbow, crossbow, sling and bolt existed only in the working tree"
     },
     "F-450": {
+      "done_at": "2026-08-21T20:14:02+00:00",
+      "done_by": "birchcf39ce",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "The island is too flat, and its hills are domes when what it needs is broad flat-topped uplands"
     },
@@ -9181,6 +9183,13 @@
       "status": "done",
       "tier": "F",
       "title": "Ground cover reads 25% too dense \u2014 cut scatter coverage and undergrowth density"
+    },
+    "F-452": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "render_census sees 388 surfaces in a world whose real frame is 4,908 draw calls \u2014 the structural instrument is blind to nearly all of the shipped cost"
     }
   },
   "version": 1

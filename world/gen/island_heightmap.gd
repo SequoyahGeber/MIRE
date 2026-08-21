@@ -93,16 +93,25 @@ const BASE_NOISE_WEIGHT: float = 0.25
 ## smooth radial mound; overlapping hills take `maxf` like the lobe masks do, so two neighbours
 ## merge into a broader rise instead of stacking into a peak.
 ##
-## **The count is 5-8, raised from 3-5 with the island's radius (F-447), and that number is a
-## judgement call worth flagging.** "3-5 hills on the whole island" was Sequoyah's own count on
-## 2026-08-20, and it was a count for a 295 m island. Doubling the radius quadruples the ground; at
-## an unchanged 3-5 the same island reads as a plain with a few bumps on it, which is not what he
-## approved either. Holding the DENSITY would have meant 12-20, which is plainly not what he said.
-## 5-8 splits the difference toward his number: an island still countable at a glance, with more
-## ground between hills than before rather than less. If the next playtest says "too many hills",
-## this constant is the one to move — not the sizes or the profiles below.
-const HILL_COUNT_MIN: int = 5
-const HILL_COUNT_MAX: int = 8
+## **These are UPLANDS, not hills, and the count came back down because of it (F-450).**
+##
+## Sequoyah: "taller hills please the map is wayy too flat, i do like big flat areas but i also like
+## higher areas, i dont like narrow hills that make the map always go up and down if you know what
+## i mean." The last clause is the structural one. A dome's crown is a single point, so every metre
+## of its footprint is sloping ground — put enough of them on an island and the walk is a continuous
+## up-and-down whatever their amplitude is. More of them, or taller ones, makes that worse.
+##
+## What he is describing is high ground with a TOP: a broad rise, a flat area on top of it at a
+## different elevation from the flat area around it, and a limited amount of slope in between. That
+## is `HILL_FLAT_*` below, and it is the change that matters here — the height and radius numbers
+## only decide how much of it there is.
+##
+## 3-5 at these radii covers as much of the island as 5-8 did at the old ones, and it covers it in
+## fewer, larger pieces, which is the point. `HILL_MIN_SEPARATION` is loose enough that neighbours
+## merge under `maxf` into one bigger upland rather than standing as two — at this size merging is
+## the desired outcome, not a collision to be pushed apart.
+const HILL_COUNT_MIN: int = 3
+const HILL_COUNT_MAX: int = 5
 ## **Hills are placed inside a LOBE, not at a bearing from the island's middle** — the biggest
 ## single correction in the F-447 pass, and the one that was invisible until the hills were
 ## measured rather than looked at.
@@ -121,26 +130,64 @@ const HILL_COUNT_MAX: int = 8
 ## frame so a stretched lobe scatters its hills along its length rather than bunching them across
 ## its waist. Capped short of the lobe's edge so a hill's toe stays off the coastal falloff, which
 ## is what the old cap against ISLAND_RADIUS was for.
-const HILL_LOBE_OFFSET_MAX: float = 0.58
-## A hill may be no broader than this fraction of its lobe's SHORT half-axis. Without it a 95 m
-## hill on a small outer lobe is wider than the land it stands on, and its flanks are underwater on
-## three sides — the asymmetry is authored into a shape nobody can walk round.
-const HILL_LOBE_FIT: float = 0.70
+const HILL_LOBE_OFFSET_MAX: float = 0.46
+## An upland may be no broader than this fraction of its lobe's SHORT half-axis.
+##
+## Raised to 1.0 with the upland restructure (F-450). At 0.70 it existed to stop a hill being wider
+## than the land it stood on; at upland radii it was instead cutting every upland down to the
+## smallest lobe it might land on, which is the "narrow hills" complaint arriving from the other
+## direction. 1.0 lets an upland reach its lobe's own edge, where the island mask fades it into the
+## coastal falloff — high ground that runs out at the shore, which is a headland, and one of the
+## better things this generator now makes.
+const HILL_LOBE_FIT: float = 0.85
 ## Minimum centre separation between two hills, as a fraction of the sum of their radii. Below this
 ## they read as one landform, so `hills()` pushes the later one out — deterministically, along the
 ## line between them, no RNG and no iteration to convergence.
-const HILL_MIN_SEPARATION: float = 0.80
-## Heights are +25% on F-447 ("hills can be a bit taller maybe 25%"), applied to both ends of the
-## spread so the range keeps its shape: 5.5-10.5 m of crown lift becomes 6.9-13.1 m.
+const HILL_MIN_SEPARATION: float = 0.50
+## **The FLAT TOP's radius, in metres** — not the upland's whole footprint (F-450). The ramps are
+## added outside it, each sized from the gradient it is meant to have, so this number is exactly one
+## thing: how big the level area on top is. At the old sizes (34-95 m) a "taller hill" was only ever
+## a steeper hill, because the height had nowhere to spread out over; the island is 1.18 km across
+## and these are the landforms the map is supposed to be made OF.
 ##
-## The RADIUS spread widened at the same time, and much further at the top than the bottom, because
-## the ask was for variety and a spread of 30-60 m is a spread of one hill size. 34-95 m puts a
-## broad, gentle swell and a compact steep knoll on the same island, and — with the asymmetry below
-## — makes the steepness of a given hill something you have to look at rather than assume.
-const HILL_RADIUS_MIN: float = 34.0     # metres
-const HILL_RADIUS_MAX: float = 95.0
-const HILL_HEIGHT_MIN: float = 6.9      # metres of lift at the crown
-const HILL_HEIGHT_MAX: float = 13.1
+## The first cut of the upland made this the whole footprint and took the flat top as a FRACTION of
+## it, which quietly coupled the two things that most needed separating. A big flat top meant a
+## narrow ramp, so the tablelands with the most level ground on top were ringed by 38-degree rims on
+## every bearing — a mesa you cannot get onto, and the "one side steeper" variety collapsed because
+## every side was steep. Measured: 15-21% of all land sat past 20 degrees.
+##
+## 60-260 m of radius is a level area from a clearing to a small plain.
+const HILL_TOP_RADIUS_MIN: float = 60.0     # metres
+const HILL_TOP_RADIUS_MAX: float = 260.0
+## Crown lift, in metres. 10-34 m against F-447's 6.9-13.1: the rendered high point of the island
+## goes from ~20 m to ~45 m above the sea, which is what "wayy too flat" was about.
+const HILL_HEIGHT_MIN: float = 12.0
+const HILL_HEIGHT_MAX: float = 40.0
+## **Height is derived FROM the top's radius, not drawn independently of it** (F-450) — metres of
+## lift per metre of top radius, clamped into the range above.
+##
+## Drawing the two independently means a quarter of all hills are the tall-and-narrow combination,
+## and tall-and-narrow is exactly the landform he ruled out: "i dont like narrow hills that make the
+## map always go up and down". Tying them means a big upland is a high one and a small rise is a low
+## one, which is also how real ground works — a landmass's relief scales with its extent. The
+## spread is what keeps two uplands of the same size from being the same height.
+const HILL_LIFT_PER_RADIUS_MIN: float = 0.12
+const HILL_LIFT_PER_RADIUS_MAX: float = 0.26
+## **The GENTLE side's gradient**, in metres of run per metre of rise — the same unit as
+## `HILL_SCARP_RUN_*` below, and the counterpart to it (F-450).
+##
+## Every upland has one; it is what the ground does on the bearing away from its steep face, and on
+## one that drew no scarp worth the name it is what the ground does all the way round. 4.5 is about
+## 12 degrees and 11.0 about 5 — from "a slope you notice" to "you are on the upland before you
+## register having climbed".
+##
+## The ramp is `height * run` of ground OUTSIDE the flat top, so a taller upland gets a
+## proportionally longer ramp and its gradient stays what this says it is. That is precisely the
+## property a fraction-of-radius ramp cannot have, and why the flat top and the ramps are now sized
+## independently: the top decides how much level high ground there is, and these decide how you get
+## onto it.
+const HILL_LEE_RUN_MIN: float = 3.0
+const HILL_LEE_RUN_MAX: float = 6.5
 ## HILL ASYMMETRY — the cliff side (F-447).
 ##
 ## Sequoyah's direction: "some more variety in steepness, like one side of the hill could be more
@@ -285,8 +332,14 @@ const RIDGE_GATHER: float = 1.7
 ## Raised with the flat-plateau restructure: the plateau sits around 0.75 x HEIGHT_SCALE, so the
 ## old 0.14/0.52 window put ridge texture on ALL of it. Starting just above the plateau confines
 ## the cresting to the placed hills' upper slopes — the only high ground left.
-const RIDGE_MASK_START: float = 0.95
-const RIDGE_MASK_FULL: float = 1.30
+## Raised again with the uplands (F-450). The window is a fraction of HEIGHT_SCALE against the
+## CONTINENT height, and uplands lift the continent to 30-45 m — so the old 0.95/1.30 window
+## (10.5-14.3 m) put full-strength ridged texture on every square metre of every flat top. Flat
+## tops are the feature; ridging them is the same mistake as ridging the plateau was. 2.6/3.6
+## (28.6-39.6 m) confines it to the highest uplands' upper ramps and summits, where a little crest
+## texture reads as rock rather than as a bumpy field.
+const RIDGE_MASK_START: float = 2.60
+const RIDGE_MASK_FULL: float = 3.60
 
 const BASE_NOISE_SALT: int = 0x5F10A
 const DETAIL_NOISE_SALT: int = 0x9E3779B9
@@ -679,15 +732,24 @@ static func _warp_point(x: float, z: float, world_seed: int) -> Vector2:
 ## are values, and the D-017 portability contract is unchanged.
 class Hill:
 	var centre: Vector2 = Vector2.ZERO
-	var radius: float = 0.0
+	## Radius of the FLAT TOP. The ramps lie outside it; `footprint()` is the whole landform.
+	var top_radius: float = 0.0
 	## Metres of lift at the crown.
 	var height: float = 0.0
 	## The unit bearing the STEEP face points along. Everything asymmetric about the hill is
 	## measured as a dot product against this.
 	var cliff_direction: Vector2 = Vector2(1.0, 0.0)
-	## The steep face's run in metres per metre of rise, from which its radius is derived. Never
-	## larger than `radius`: a "steep" face with more run than the lee is not a steep face.
+	## The gentle side's run in metres per metre of rise.
+	var lee_run: float = HILL_LEE_RUN_MAX
+	## The steep face's run in metres per metre of rise, from which its ramp length is derived. Never
+	## longer than the lee's: a "steep" face with more run than the gentle one is not a steep face,
+	## and a seed that draws one simply gets a symmetric upland — the intended ordinary case.
 	var scarp_run: float = HILL_SCARP_RUN_MAX
+
+	## The whole landform's outer radius: flat top plus the longer of its two ramps. What anything
+	## asking "how much ground does this upland cover" wants.
+	func footprint() -> float:
+		return top_radius + height * maxf(lee_run, scarp_run)
 	## 0 = smoothstep everywhere. Toward `HILL_SHARPNESS_MAX` the steep face's profile front-loads
 	## its rise at the toe; the lee is untouched whatever this is.
 	var sharpness: float = 0.0
@@ -720,13 +782,16 @@ static func hills(world_seed: int) -> Array[Hill]:
 		var hill := Hill.new()
 		hill.centre = lobe_centre + axis * (local.dot(axis) * lobe.w) \
 			+ perpendicular * (local.dot(perpendicular) / lobe.w)
-		hill.radius = HILL_RADIUS_MIN \
-			+ (HILL_RADIUS_MAX - HILL_RADIUS_MIN) * float(step % 29) / 28.0
-		# ...but never broader than the lobe can carry. The SHORT half-axis is the binding one: a
-		# hill wider than that hangs off the lobe's waist however long the lobe is.
-		hill.radius = minf(hill.radius, lobe.z / lobe.w * HILL_LOBE_FIT)
-		hill.height = HILL_HEIGHT_MIN \
-			+ (HILL_HEIGHT_MAX - HILL_HEIGHT_MIN) * float(step % 7) / 6.0
+		hill.top_radius = HILL_TOP_RADIUS_MIN \
+			+ (HILL_TOP_RADIUS_MAX - HILL_TOP_RADIUS_MIN) * float(step % 29) / 28.0
+		# ...but never broader than the lobe can carry. The SHORT half-axis is the binding one: an
+		# upland wider than that hangs off the lobe's waist however long the lobe is.
+		hill.top_radius = minf(hill.top_radius, lobe.z / lobe.w * HILL_LOBE_FIT)
+		var lift_per_radius: float = HILL_LIFT_PER_RADIUS_MIN \
+			+ (HILL_LIFT_PER_RADIUS_MAX - HILL_LIFT_PER_RADIUS_MIN) * float(step % 7) / 6.0
+		hill.height = clampf(hill.top_radius * lift_per_radius, HILL_HEIGHT_MIN, HILL_HEIGHT_MAX)
+		hill.lee_run = HILL_LEE_RUN_MIN \
+			+ (HILL_LEE_RUN_MAX - HILL_LEE_RUN_MIN) * float(step % 23) / 22.0
 		# The cliff faces its OWN way, off the same table and a different divisor — deliberately
 		# not the hill's offset direction. Tying it to the offset would point every cliff either
 		# out to sea or back at the island's middle, and the whole island would read as a bowl or
@@ -745,7 +810,7 @@ static func hills(world_seed: int) -> Array[Hill]:
 		# iteration order beyond the order this loop already fixes, and no seed can loop forever.
 		for placed: Hill in out:
 			var gap: Vector2 = hill.centre - placed.centre
-			var needed: float = (hill.radius + placed.radius) * HILL_MIN_SEPARATION
+			var needed: float = (hill.footprint() + placed.footprint()) * HILL_MIN_SEPARATION
 			var apart: float = gap.length()
 			if apart >= needed:
 				continue
@@ -780,15 +845,36 @@ static func _hill_lift(bent: Vector2, hill_list: Array[Hill]) -> float:
 		var facing: float = 0.0
 		if distance > 0.001:
 			facing = to_point.dot(hill.cliff_direction) / distance
-		# The effective radius at this bearing: the scarp's own radius straight down the steep
-		# face, the hill's nominal radius straight down the lee, blended by bearing. `facing`
-		# runs -1..1, so `(facing + 1) * 0.5` is the 0..1 the blend wants.
-		var scarp_radius: float = minf(hill.radius, hill.height * hill.scarp_run)
-		var toward: float = (facing + 1.0) * 0.5
-		var radius: float = hill.radius + (scarp_radius - hill.radius) * toward
-		if distance >= radius:
+		# The FLAT TOP first: inside it the upland is at full crown height and perfectly level, and
+		# it is a circle, not an ellipse — the asymmetry belongs to the ramp, not to the summit.
+		if distance <= hill.top_radius:
+			lift = maxf(lift, hill.height)
 			continue
-		var t: float = 1.0 - distance / radius
+		# Then the RAMP outside it, whose LENGTH varies with bearing: each side's own gradient times
+		# the height it has to climb, so both sides keep the gradient they were given whatever the
+		# upland's size.
+		#
+		# **The blend is CUBED toward the steep side, and that is a land-budget decision, not a
+		# cosmetic one.** With a linear blend, half of every upland's perimeter carries a long
+		# gentle ramp, and a ramp is sloping ground: measured over four seeds, three to five uplands
+		# spent so much of the island on their own flanks that level ground fell from 62% of the
+		# land to 32%, which is the "map always goes up and down" complaint arriving by a different
+		# road. There is only so much island, and a metre of it is either flat or it is a way up.
+		#
+		# Cubing spends the gentle ramp where it is worth spending: `away` is near zero across most
+		# of the perimeter and only opens up in the sector directly opposite the steep face. So an
+		# upland is a table with a defined edge nearly all the way round and ONE walkable approach —
+		# which is both more level ground and a more legible landform than a cone. An upland whose
+		# seed gave it a long `scarp_run` is gentle everywhere regardless; the shaping only decides
+		# how much of the perimeter is like the steep side, not how steep that side is.
+		var lee_ramp: float = hill.height * hill.lee_run
+		var scarp_ramp: float = minf(lee_ramp, hill.height * hill.scarp_run)
+		var away: float = (1.0 - facing) * 0.5
+		away = away * away * away
+		var ramp: float = scarp_ramp + (lee_ramp - scarp_ramp) * away
+		if distance >= hill.top_radius + ramp:
+			continue
+		var t: float = 1.0 - (distance - hill.top_radius) / ramp
 		var rounded: float = t * t * (3.0 - 2.0 * t)
 		var inv: float = 1.0 - t
 		var scarped: float = 1.0 - inv * inv * inv

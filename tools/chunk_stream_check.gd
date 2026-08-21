@@ -83,7 +83,14 @@ const BENCH_SEED: int = 20260818
 ## `SKIRT_DEPTH` rather than against its own history.
 const WORST_KNOWN_SEED: int = 4242
 const WORST_KNOWN_CHUNK := Vector2i(3, -4)
-const WORST_KNOWN_DIVERGENCE_M: float = 4.4004
+##
+## Re-swept again for F-450 (uplands: hill lift 13 -> 40 m, flat tops, scarped rims): **13.5104 m**
+## here, 5.8681 m island-wide worst on the bench seed. Tripling the terrain's relief tripled this,
+## which is what a drift tripwire is for — and this time it also cost the skirt its margin, because
+## `ChunkMesher.SKIRT_DEPTH` was a fraction of `HEIGHT_SCALE` and the uplands are not in
+## `HEIGHT_SCALE`. That constant is a fraction of `MAX_HEIGHT` now (33.2 m), so the margin is back
+## to 2.5x and it tracks the hills automatically.
+const WORST_KNOWN_DIVERGENCE_M: float = 13.5104
 ## Chunk radius the seam/harvestable sweeps scan. `IslandHeightmap.ISLAND_RADIUS` is 118 m
 ## (CHUNK_SIZE 32 m -> ~4 chunks), so 10 chunks (320 m) is a wide margin past the falloff shoulder
 ## into open water — cheap because water contributes ~0 divergence and no harvestable placements,

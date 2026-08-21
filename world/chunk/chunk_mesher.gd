@@ -59,8 +59,25 @@ const INDEX_COUNT: int = TRI_COUNT * 3
 ## (2.6 m) covers barely a fifth of that. 170% of HEIGHT_SCALE clears it with the same ~3.4x margin
 ## F-128 originally sized for, scaled to the new worst case. `tools/chunk_stream_check.gd`
 ## re-measures the divergence every run and fails if the margin is ever lost again.
-const SKIRT_DEPTH_FRACTION: float = 1.70
-const SKIRT_DEPTH: float = Heightmap.HEIGHT_SCALE * SKIRT_DEPTH_FRACTION
+##
+## Re-based by F-450 (2026-08-21) onto `MAX_HEIGHT` instead of `HEIGHT_SCALE`, which is the real
+## repair rather than another number. `HEIGHT_SCALE` is the amplitude of the continental NOISE
+## only; the placed uplands add their crown lift on top of it and are not in it at all, so when
+## F-450 took hill lift from 13 m to 40 m the terrain's actual relief tripled while this constant
+## did not move at all. Measured immediately afterwards, the recorded worst seam divergence went
+## 4.4004 -> 13.5104 m against an 18.700 m skirt: still covered, but at 1.38x where F-128 sized for
+## 3.4x, and the margin assertion in `tools/chunk_stream_check.gd` caught it.
+##
+## Scarps are why this needs headroom rather than a tight fit. A LOD1 chord spans 2 m of ground and
+## a 45-degree scarp face climbs 2 m across it; halve the sampling rate over a feature that sharp
+## and the coarse mesh cuts the corner by metres. Expect this number to matter again if cliffs are
+## ever made commoner or steeper.
+##
+## 0.65 of `MAX_HEIGHT` is 33.2 m at the shipped constants — 2.5x the measured worst case, and it
+## now tracks the uplands automatically because `MAX_HEIGHT` includes `HILL_HEIGHT_MAX`. The cost is
+## only depth on an apron that is never seen: the skirt's vertex and triangle counts are unchanged.
+const SKIRT_DEPTH_FRACTION: float = 0.65
+const SKIRT_DEPTH: float = Heightmap.MAX_HEIGHT * SKIRT_DEPTH_FRACTION
 
 ## Vertex XZ jitter, as a fraction of the LOD's vertex spacing (4.18/D-184's flat-shaded
 ## low-poly look). A regular grid flat-shades into uniform right triangles; the rvr9ca reference —

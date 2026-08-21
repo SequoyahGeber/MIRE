@@ -38,6 +38,40 @@ const WALK_LIMIT_DEGREES: float = 46.0
 ## magnitude above that because it is a REGRESSION gate, not a target; if a later profile change
 ## trips it, the island has been fenced off and the change is wrong.
 const MAX_UNWALKABLE_SHARE: float = 0.18
+## What counts as FLAT, in degrees of slope, and over what BASELINE.
+##
+## The baseline is 16 m, not the 1 m the walk-limit test uses, and the difference is the whole point.
+## "i dont like narrow hills that make the map always go up and down" is a complaint about LANDFORM,
+## and landform is not what a one-metre gradient measures: the detail layer puts ~0.9 m of
+## undulation at a ~20 m wavelength across the entire island, which is about 5 degrees at a
+## one-metre baseline. Measured that way, a perfectly level plain and a gentle ramp score nearly the
+## same, and the number moves when the texture layer is retuned rather than when the terrain's shape
+## changes. Sixteen metres is a few strides — the scale at which "am I on a plain or on a slope"
+## is a question with an answer.
+const FLAT_DEGREES: float = 4.0
+const LANDFORM_STEP_M: float = 16.0
+## ...and what counts as HIGH, in metres above sea level. The interior plateau sits around 6 m, so
+## anything past 15 m is on an upland rather than on the ground the uplands stand on.
+const HIGH_GROUND_M: float = 15.0
+## Sequoyah, F-450: "i do like big flat areas but i also like higher areas, i dont like narrow hills
+## that make the map always go up and down" — and, when the first cut of this check gated on strict
+## flatness, **"it doesnt need to be perfectly flat"**.
+##
+## So the gate is on EASY GOING — land at 10 degrees or less — rather than on the strict `< 4 deg`
+## share. That is the number his sentence is about: a walk that does not go up and down is one where
+## most of the ground is either level or a gentle roll, and insisting on the strict share was
+## chasing a figure this island has no reason to hit. Uplands cost sloping ground; the question is
+## whether what is left is comfortable, not whether it is a table.
+##
+## Measured across four seeds after the upland pass: 58-68% easy, against 92-98% on the pre-upland
+## island that had no high ground at all. The strict `< 4 deg` share is still printed per seed
+## because it is the number that moves first when a profile changes — it is diagnosis, not a gate.
+const MIN_EASY_SHARE: float = 0.55
+## ...and the other half of his sentence: a real share of the LEVEL ground must be up on an upland
+## rather than all of it being the one low plain. Measured at 22-58%; it was 0% before F-450.
+const MIN_HIGH_FLAT_SHARE: float = 0.12
+## Where "easy going" ends, in degrees at landform scale.
+const EASY_DEGREES: float = 10.0
 ## **This check asserts a SPREAD of steepness, not a floor under it.**
 ##
 ## Sequoyah's second direction on F-447: "i dont want every single hill to have a cliff, some hills
@@ -69,6 +103,11 @@ const PROBE_STEP_M: float = 1.0
 ## enough down that the answer is the flank's shape rather than the crown's rounding, and short of
 ## the toe, where the hill has already handed over to whatever it stands on.
 const DESCENT_FRACTION: float = 0.7
+## How far below the crown the ground has to fall before the walk counts itself as having left the
+## SUMMIT and started down the ramp, as a fraction of the crown lift. Small, but not zero: an
+## upland's flat top carries the detail layer's own centimetres of undulation, and a strict
+## equality would call the first bump the start of the descent.
+const SUMMIT_TOLERANCE: float = 0.05
 
 var _failures: int = 0
 
@@ -123,15 +162,40 @@ func _run() -> void:
 	_check("the steepest hill face is a cliff (past the %.0f deg walk limit)" % WALK_LIMIT_DEGREES,
 		steepest_face > WALK_LIMIT_DEGREES, "steepest face %.1f deg" % steepest_face)
 
-	print("\n-- island-wide walkability --")
+	print("\n-- the island's own shape: how much of it is flat, and at what heights --")
 	var unwalkable_total: float = 0.0
+	var easy_total: float = 0.0
+	var high_flat_total: float = 0.0
 	for index in seed_count:
 		var world_seed: int = 20260821 + index * 7919
-		var share: float = _unwalkable_share(world_seed)
-		unwalkable_total += share
-		print("  seed %d · %.1f%% of land past %.0f deg" % [world_seed, share * 100.0,
-			WALK_LIMIT_DEGREES])
+		var profile: Dictionary = _terrain_profile(world_seed)
+		unwalkable_total += float(profile["unwalkable"])
+		var seed_bands: PackedFloat32Array = profile["bands"]
+		easy_total += seed_bands[0] + seed_bands[1]
+		high_flat_total += float(profile["high_flat"])
+		var bands: PackedFloat32Array = profile["bands"]
+		print("  seed %d · flat %.0f%% | 4-10 deg %.0f%% | 10-20 deg %.0f%% | 20+ %.0f%%"
+			% [world_seed, bands[0] * 100.0, bands[1] * 100.0, bands[2] * 100.0, bands[3] * 100.0]
+			+ " · %.0f%% of flat ground is above %.0f m · %.1f%% past %.0f deg · peak %.1f m"
+			% [float(profile["high_flat"]) * 100.0, HIGH_GROUND_M,
+			float(profile["unwalkable"]) * 100.0, WALK_LIMIT_DEGREES, float(profile["peak"])])
 	var mean_unwalkable: float = unwalkable_total / float(seed_count)
+	var mean_easy: float = easy_total / float(seed_count)
+	var mean_high_flat: float = high_flat_total / float(seed_count)
+
+	# The two halves of "i do like big flat areas but i also like higher areas" (F-450), as two
+	# assertions, because a single one is satisfiable by the wrong island. Easy ground alone passes
+	# on a pancake; high ground alone passes on an island that is all ramp. Both together say what
+	# he asked for: comfortable ground, at more than one elevation.
+	var easy_label: String = \
+		"most of the island is EASY GOING (>= %.0f%% of land under %.0f deg)" \
+		% [MIN_EASY_SHARE * 100.0, EASY_DEGREES]
+	_check(easy_label, mean_easy >= MIN_EASY_SHARE, "mean %.0f%% easy" % (mean_easy * 100.0))
+	var high_label: String = \
+		"...and a real share of that flat ground is UP (>= %.0f%% of it above %.0f m)" \
+		% [MIN_HIGH_FLAT_SHARE * 100.0, HIGH_GROUND_M]
+	_check(high_label, mean_high_flat >= MIN_HIGH_FLAT_SHARE,
+		"mean %.0f%% of flat ground is high" % (mean_high_flat * 100.0))
 	_check("cliffs stay local: under %.0f%% of land is past the walk limit"
 		% (MAX_UNWALKABLE_SHARE * 100.0), mean_unwalkable < MAX_UNWALKABLE_SHARE,
 		"mean %.1f%%" % (mean_unwalkable * 100.0))
@@ -156,7 +220,7 @@ func _run() -> void:
 ## flank and nothing else.
 func _flank_degrees(hill: IslandHeightmap.Hill, bearing: Vector2,
 		set: IslandHeightmap.NoiseSet, world_seed: int) -> float:
-	var reach: float = hill.radius * 2.2
+	var reach: float = hill.footprint() * 1.2
 	var steps: int = int(reach / PROBE_STEP_M)
 	# The hill's centre is a BENT coordinate, and heights are sampled at WORLD ones — so the walk
 	# is laid out along the bearing in bent space and each point is un-bent before it is sampled.
@@ -165,21 +229,33 @@ func _flank_degrees(hill: IslandHeightmap.Hill, bearing: Vector2,
 	var crown_world: Vector2 = _unbend(hill.centre, world_seed)
 	var crown: float = IslandHeightmap.height_from_set(crown_world.x, crown_world.y, set,
 		world_seed)
+	# The gradient of the RAMP, not of the whole walk from the summit (F-450). An upland has a flat
+	# top, so a run measured from the crown includes however wide that top is — which is not slope
+	# at all, and reading it as slope reported a 45-degree scarp as 33 degrees and got gentler the
+	# broader the summit was. The walk therefore finds two distances: where the ground first leaves
+	# the summit, and where it has descended `DESCENT_FRACTION` of the crown lift. The ramp is what
+	# lies between them.
+	var leaves: float = hill.height * SUMMIT_TOLERANCE
 	var target: float = crown - hill.height * DESCENT_FRACTION
 	var previous: Vector2 = crown_world
 	var run: float = 0.0
+	var summit_run: float = -1.0
 	for step in range(1, steps + 1):
 		var at_world: Vector2 = _unbend(hill.centre + bearing * (float(step) * PROBE_STEP_M),
 			world_seed)
 		run += at_world.distance_to(previous)
 		previous = at_world
-		if IslandHeightmap.height_from_set(at_world.x, at_world.y, set, world_seed) > target:
+		var here: float = IslandHeightmap.height_from_set(at_world.x, at_world.y, set, world_seed)
+		if summit_run < 0.0 and here < crown - leaves:
+			summit_run = run
+		if here > target:
 			continue
-		if run <= 0.01:
+		var ramp: float = run - maxf(summit_run, 0.0)
+		if ramp <= 0.01:
 			return 0.0
 		# `rad_to_deg(atan(...))` is a libm call, which this repo keeps out of the GENERATOR
 		# (D-017) — a check may use one: it never feeds a shipped height, it only reports on one.
-		return rad_to_deg(atan((crown - target) / run))
+		return rad_to_deg(atan((crown - target - leaves) / ramp))
 	return 0.0
 
 
@@ -198,15 +274,24 @@ func _unbend(bent: Vector2, world_seed: int) -> Vector2:
 	return estimate
 
 
-## Share of this seed's LAND (surface above sea level) whose slope is past the walk limit. Slope
-## comes from central differences at `PROBE_STEP_M`, the same scale the character controller's own
-## floor test works at.
-func _unwalkable_share(world_seed: int) -> float:
+## What this seed's island is actually SHAPED like, as four numbers over a grid of its whole extent:
+## the share of land that is flat, the share of THAT which is high ground, the share past the walk
+## limit, and the peak. Slope comes from central differences at `PROBE_STEP_M`, the same scale the
+## character controller's own floor test works at.
+##
+## One walk producing all four rather than four walks: the grid is the expensive part and every
+## number here is a different question about the same samples.
+func _terrain_profile(world_seed: int) -> Dictionary:
 	var set: IslandHeightmap.NoiseSet = IslandHeightmap.make_noise_set(world_seed)
 	var reach: float = IslandHeightmap.ISLAND_RADIUS
 	var steps: int = int(reach * 2.0 / GRID_STEP_M)
 	var land: int = 0
 	var steep: int = 0
+	var flat: int = 0
+	var high_flat: int = 0
+	var peak: float = 0.0
+	## Landform-scale slope histogram: [< FLAT_DEGREES, .. 10, .. 20, 20+], in samples of land.
+	var bands: PackedInt32Array = [0, 0, 0, 0]
 	for iz in steps:
 		var z: float = -reach + float(iz) * GRID_STEP_M
 		for ix in steps:
@@ -215,15 +300,51 @@ func _unwalkable_share(world_seed: int) -> float:
 			if here <= 0.0:
 				continue
 			land += 1
-			var east: float = IslandHeightmap.height_from_set(x + PROBE_STEP_M, z, set, world_seed)
-			var west: float = IslandHeightmap.height_from_set(x - PROBE_STEP_M, z, set, world_seed)
-			var north: float = IslandHeightmap.height_from_set(x, z + PROBE_STEP_M, set, world_seed)
-			var south: float = IslandHeightmap.height_from_set(x, z - PROBE_STEP_M, set, world_seed)
-			var gradient := Vector2((east - west) / (2.0 * PROBE_STEP_M),
-				(north - south) / (2.0 * PROBE_STEP_M))
-			if rad_to_deg(atan(gradient.length())) > WALK_LIMIT_DEGREES:
+			peak = maxf(peak, here)
+			# Underfoot, at the character controller's own scale: is this ground climbable.
+			if _slope_degrees(x, z, PROBE_STEP_M, set, world_seed) > WALK_LIMIT_DEGREES:
 				steep += 1
-	return float(steep) / maxf(1.0, float(land))
+			# At landform scale: is this a plain or a ramp. See FLAT_DEGREES.
+			var landform: float = _slope_degrees(x, z, LANDFORM_STEP_M, set, world_seed)
+			# The full spread, not just the pass/fail split: "the map always goes up and down" is a
+			# complaint about how much GENTLE slope there is as much as about how much steep, and a
+			# single flat-or-not number cannot tell an island of plains and bluffs apart from an
+			# island that is entirely a 6-degree ramp.
+			if landform < FLAT_DEGREES:
+				bands[0] += 1
+			elif landform < 10.0:
+				bands[1] += 1
+			elif landform < 20.0:
+				bands[2] += 1
+			else:
+				bands[3] += 1
+			if landform >= FLAT_DEGREES:
+				continue
+			flat += 1
+			if here >= HIGH_GROUND_M:
+				high_flat += 1
+	var land_f: float = maxf(1.0, float(land))
+	return {
+		"bands": PackedFloat32Array([float(bands[0]) / land_f, float(bands[1]) / land_f,
+			float(bands[2]) / land_f, float(bands[3]) / land_f]),
+		"unwalkable": float(steep) / maxf(1.0, float(land)),
+		"flat": float(flat) / maxf(1.0, float(land)),
+		"high_flat": float(high_flat) / maxf(1.0, float(flat)),
+		"peak": peak,
+	}
+
+
+## Terrain slope at (x, z) in degrees, from central differences over `baseline` metres. The
+## baseline is a parameter because the two questions this check asks want different ones — see
+## `FLAT_DEGREES`.
+func _slope_degrees(x: float, z: float, baseline: float, set: IslandHeightmap.NoiseSet,
+		world_seed: int) -> float:
+	var east: float = IslandHeightmap.height_from_set(x + baseline, z, set, world_seed)
+	var west: float = IslandHeightmap.height_from_set(x - baseline, z, set, world_seed)
+	var north: float = IslandHeightmap.height_from_set(x, z + baseline, set, world_seed)
+	var south: float = IslandHeightmap.height_from_set(x, z - baseline, set, world_seed)
+	var gradient := Vector2((east - west) / (2.0 * baseline), (north - south) / (2.0 * baseline))
+	return rad_to_deg(atan(gradient.length()))
 
 
 func _check(label: String, passed: bool, detail: String) -> void:

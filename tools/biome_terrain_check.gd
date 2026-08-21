@@ -138,12 +138,18 @@ func _check_amplitudes_reach_content() -> void:
 	#
 	# Every entry below is re-derived from the shipped bands rather than carried over, so this stays
 	# a real assertion instead of one that happens to still pass.
+	#
+	# Re-derived again for F-450, and for the same reason one layer up: the uplands took the
+	# island's high point from ~20 m to ~50 m, so the bands moved (forest 5.2-20.0, highland 20.0+)
+	# and the old highland probe at 14 m fell inside FOREST. Any pass that changes how tall the
+	# terrain is changes what these coordinates mean — this table is downstream of the heightmap,
+	# not independent of it.
 	var probes: Dictionary = {
 		&"shore": Vector2(0.0, 0.5),        # height < 3.1, any moisture
-		&"marsh": Vector2(4.3, 0.8),        # 3.1 - 5.5,  wet
-		&"forest": Vector2(6.2, 0.8),       # 5.5 - 6.9,  wet
-		&"birchwood": Vector2(4.8, 0.51),   # 3.1 - 6.9,  mid moisture
-		&"highland": Vector2(14.0, 0.7),    # 6.9+,       mid-wet
+		&"marsh": Vector2(4.3, 0.8),        # 3.1 - 5.2,  wet
+		&"forest": Vector2(12.0, 0.8),      # 5.2 - 20.0, wet
+		&"birchwood": Vector2(12.0, 0.51),  # 3.1 - 20.0, mid moisture
+		&"highland": Vector2(30.0, 0.7),    # 20.0+,      mid-wet
 		&"grassland": Vector2(14.0, 0.25),  # 3.1+,       dry
 		&"heath": Vector2(14.0, 0.07),      # 3.1+,       driest
 	}

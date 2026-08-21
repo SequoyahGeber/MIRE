@@ -118,9 +118,14 @@ func _run() -> void:
 				else:
 					# Height shading on top of the biome tint: dark in the valleys,
 					# pale on the crests, so ridges are visible as ridges. Scaled to the
-					# island's own relief (a few metres) rather than to a fixed 30 m, which
-					# on this terrain flattened every crest into the same tone.
-					var lift: float = clampf(h / 8.0, 0.0, 1.0)
+					# island's own relief rather than to a fixed number of metres.
+					#
+					# The scale is `IslandHeightmap.MAX_HEIGHT` now, not a literal 8.0 (F-450). A
+					# hard-coded ceiling is a hidden assumption about how tall the terrain is, and
+					# when the uplands went to ~44 m every square metre above 8 m clipped to the
+					# same white — the picture said "the island is uniformly high" about terrain
+					# with 40 m of relief in it, which is the opposite of what this tool is for.
+					var lift: float = clampf(h / IslandHeightmap.MAX_HEIGHT, 0.0, 1.0)
 					colour = tint.lerp(Color(0.96, 0.96, 0.92), lift * 0.55)
 			image.set_pixel(px, py, colour)
 
