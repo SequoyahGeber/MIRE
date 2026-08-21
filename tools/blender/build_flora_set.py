@@ -78,6 +78,7 @@ from mire_art import (  # noqa: E402
     radial,
     reset_materials,
     tapered_between,
+    trunk_tube,
     world_bounds,
 )
 from godot_import_lock import import_cache_guard  # noqa: E402
@@ -126,7 +127,13 @@ SIZE_BAND: dict[str, tuple[float, float, str, float | None]] = {
     #: factor and produced the same tree seen from closer, which is exactly what
     #: the finding says not to do. The builders below are authored at the new
     #: height with trunk radii chosen independently; the band is what CHECKS them.
-    "tree_willow": (10.50, 14.50, "height", 11.0),
+    #: F-424 raised the willow's footprint cap from 11.0 m to 13.0 m. The cap is a
+    #: scatter-spacing guard, not a style rule, and 11.0 was set when this asset was
+    #: a narrow generic tree wearing the name. A mature weeping willow's crown spread
+    #: genuinely equals or exceeds its height — a 12.5 m one is 12-15 m across — so
+    #: capping it under its own height was forcing the wrong tree. Still capped,
+    #: because a prop wider than this overlaps its neighbours in the scatter field.
+    "tree_willow": (10.50, 14.50, "height", 13.0),
     "tree_snag": (7.00, 11.00, "height", 5.0),
     "plant_broadleaf": (0.42, 0.90, "height", 1.7),
     "plant_dock": (0.60, 1.10, "height", 1.7),
@@ -523,77 +530,28 @@ def rolled_between(name: str, start, end, radius_start: float, radius_end: float
 
 def standing_trunk(height: float, base_radius: float, tip_radius: float, lean: Vector,
                    sway: float, segments: int, tones: tuple, rng: random.Random, seed: int,
-                   vertices: int = 7, ridges: int = 3, flare: float = 1.9,
-                   flare_top: float = 0.42, roots: int = 5,
-                   root_reach: tuple[float, float] = (0.55, 1.0),
-                   taper_power: float = 1.35,
-                   roll_spread: float = math.pi) -> tuple[list[Vector], list[float]]:
-    """The trunk both of this kit's real trees stand on (F-396).
+                   **kwargs) -> tuple[list[Vector], list[float]]:
+    """The trunk both of this kit's real trees stand on — `mire_art.trunk_tube`.
 
-    `tones` is (shadow, bark, lit) — three tones of the same wood, because one
-    flat colour is half of why the old trunks read as pipe; the other half was
-    that they were two untapered cylinders that stopped dead at z=0.
+    F-422: this used to be a private copy of the map kit's frustum stack, defect
+    for defect — a silhouette that shouldered at every segment joint, a splayed
+    "chicken foot" of root cones round the base, a hard tone break where the
+    separate flare cone met the column, and bark ridges anchored to the BASE
+    radius that finished outside a tapering trunk as a dark stick leaning on it.
+    Both copies are gone; the generator lives in `mire_art` and every dimension
+    it varies is an explicit argument, so nothing here is reshaped implicitly.
 
-    Returns the spine points and the radius at each, so a caller hangs boughs on
-    the trunk WHERE THE TRUNK IS rather than on the vertical axis.
-
-    **The flare tops out below half a metre on purpose.** `ResourceScatterField.
-    COLLIDER_TRUNK_BAND_MIN_M` is 0.5 m — F-390 lifted the collider's measuring
-    band off the floor precisely because the flare, not the trunk, was setting the
-    radius, which is what put `tree_willow_a` at a 1.29 m collider around a 0.3 m
-    trunk and had the player stopped a metre off the bark. Keeping the flare under
-    that line buys a well-planted base for nothing.
+    Kept as a named wrapper because this kit's callers read better for it and
+    because the flare rule is this kit's to remember: **the flare tops out below
+    half a metre on purpose.** `ResourceScatterField.COLLIDER_TRUNK_BAND_MIN_M`
+    is 0.5 m — F-390 lifted the collider's measuring band off the floor precisely
+    because the flare, not the trunk, was setting the radius, which is what put
+    `tree_willow_a` at a 1.29 m collider around a 0.3 m trunk and had the player
+    stopped a metre off the bark. Keeping the flare under that line buys a
+    well-planted base for nothing.
     """
-    shadow, bark, lit = tones
-    points = [Vector((0.0, 0.0, 0.0))]
-    drift = Vector((0.0, 0.0, 0.0))
-    for index in range(1, segments + 1):
-        t = index / segments
-        drift = drift + Vector((rng.uniform(-sway, sway), rng.uniform(-sway, sway), 0.0))
-        points.append(lean * (t * t) + drift + Vector((0.0, 0.0, height * t)))
-    radii = [
-        tip_radius + (base_radius - tip_radius) * ((1.0 - index / segments) ** taper_power)
-        for index in range(segments + 1)
-    ]
-
-    # The buttresses ARCH: up over a knee at flare height, then back into the
-    # ground about half a metre past the flare. Roots that run straight from the
-    # flare to the floor are long thin spikes and the tree reads as a spider
-    # standing on it — the first pass of this did exactly that.
-    tapered_between("Flare", (0.0, 0.0, 0.0), (0.0, 0.0, flare_top),
-                    base_radius * flare, base_radius * 1.06, shadow, 8)
-    for index, (angle, rad) in enumerate(radial(roots, base_radius * 1.05, seed=seed + 311,
-                                                jitter=0.34, radius_jitter=0.20)):
-        toe = rad + rng.uniform(*root_reach)
-        knee = around((0.0, 0.0, flare_top * 0.62), angle, (rad + toe) * 0.48)
-        tapered_between(
-            f"Root_{index + 1}_A",
-            around((0.0, 0.0, flare_top * 0.95), angle, rad * 0.45), knee,
-            base_radius * 0.54, base_radius * 0.36, bark if index % 2 else lit, 5,
-        )
-        tapered_between(
-            f"Root_{index + 1}_B", knee, around((0.0, 0.0, 0.02), angle, toe),
-            base_radius * 0.36, base_radius * 0.11, bark if index % 2 else lit, 5,
-        )
-    # ONE tone for the column, and the foot in shadow. Varying the tone per
-    # segment reads as painted rings however it is chosen — a trunk's segment
-    # boundaries are horizontal, so anything varying per segment varies
-    # horizontally, which is the one direction bark never does. The second tone
-    # earns its keep on the ridges below, running vertically, and on the flare.
-    for index in range(segments):
-        material = shadow if index == 0 else bark
-        rolled_between(f"Trunk_{index + 1}", tuple(points[index]), tuple(points[index + 1]),
-                       radii[index], radii[index + 1], material, vertices,
-                       roll=rng.uniform(-roll_spread, roll_spread))
-    for index, (angle, _rad) in enumerate(radial(ridges, 1.0, seed=seed + 313, jitter=0.55)):
-        stop = max(2, min(segments, int(segments * rng.uniform(0.40, 0.80))))
-        tapered_between(
-            f"Bark_Ridge_{index + 1}",
-            around(tuple(points[0] + Vector((0.0, 0.0, flare_top * 0.45))), angle, radii[0] * 0.86),
-            around(tuple(points[stop]), angle, radii[stop] * 0.78),
-            base_radius * 0.26, base_radius * 0.07, shadow, 4,
-        )
-    return points, radii
+    return trunk_tube(height, base_radius, tip_radius, lean, sway, segments, tones, rng, seed,
+                      **kwargs)
 
 
 def spine_point(points: list[Vector], fraction: float) -> Vector:
@@ -606,67 +564,179 @@ def spine_point(points: list[Vector], fraction: float) -> Vector:
 
 
 def build_tree_willow(seed: int) -> None:
-    """A wet-ground tree whose branches fall instead of reaching.
+    """A weeping willow, built from what a weeping willow actually is.
 
-    Three drafts to get this right, and the lesson is worth keeping: **you cannot
-    make a hanging curtain by drooping a sphere.** Pulling lobes out of a round
-    canopy gives it notches, and hanging separate round masses off the rim gives
-    it ears. A curtain has to be *built* tall and narrow — an elongated mass whose
-    long axis is vertical, tapering to its lowest point, overlapping its
-    neighbours so the gaps read as grooves rather than as gaps. `droop` is for
-    softening the underside of a canopy that is already the right shape.
+    F-424, Sequoyah: *"the leaves don't really fit a willow tree and the trunk is
+    wayyy too skinny for a willow tree — try to do some research of the real life
+    thing that you're designing in low poly and model the asset after the real
+    thing."* The previous version was the kit's standard slim trunk carrying the
+    kit's standard round crown, with a handful of fat teardrops hung off the rim.
+    That is a generic tree wearing a species name. What `Salix babylonica`
+    actually looks like, and what each fact costs here:
 
-    The result is the fountain silhouette, and it is the opposite of every other
-    tree in either kit, which is the entire reason this asset exists.
+    * **The bole is short and very thick.** A mature weeping willow forks into
+      several big ascending limbs somewhere between a fifth and a third of its
+      height — often barely above head height — and the trunk under that fork is
+      commonly 0.8-1.2 m ACROSS. So: `fork_fraction` 0.24 instead of 0.62, and a
+      0.78 m base radius instead of 0.46. This is the single biggest change and
+      the one that was complained about; nothing else reads right until the tree
+      is standing on a real bole.
+    * **The bark is deeply furrowed** — coarse vertical ridges, far rougher than
+      a birch or a young pine. That is what `flute` and `grain` are for on
+      `trunk_tube`, and this asset takes the highest values in either kit.
+    * **The crown is as wide as the tree is tall, or wider,** and it is NOT a
+      dome. Its surface is made of hanging strands, so the silhouette is streaked
+      vertically and ragged along the bottom. A smooth capping hull — which is
+      what the old asset had — is the one shape a willow never makes, so there
+      is no capping hull here at all: the top of the crown is the arch of the
+      limbs and the tops of the strands that hang off them.
+    * **The whips are long, thin and many.** Slender pendulous shoots, 1-3 m,
+      falling nearly to the ground on a big tree. Built as tall narrow tapering
+      strands in clusters along each arching limb, at mixed lengths and mixed
+      widths — a few broad ones carry the mass at distance, the thin ones between
+      them carry the streak up close.
+    * **The colour is pale.** Willow leaves are narrow, light green above and
+      silvery beneath, and a hanging curtain shows a lot of underside. So the
+      ramp runs `leaf` -> `leaf_light` -> `leaf_pale` rather than sitting on the
+      forest greens the broadleaves use — a willow that reads as dark as an oak
+      is wrong even before its shape is.
 
-    F-396 rebuilt it at 12.5 m rather than 5.0 m, on `standing_trunk` — and the
-    curtains are what had to change with it, not just the numbers. A willow's
-    read is that the canopy hangs far below the boughs it grows from, so the
-    boughs now leave a crotch two-thirds of the way UP a much longer trunk and the
-    curtains fall two-thirds of the way back down it — lowest leaves land around
-    3.5 m, a bit over twice eye height. Scaling the old tree by the same factor
-    instead would have put them at nine metres, which is the one thing a willow
-    must never do.
+    Willows want wet feet, which is why this is the tree the marsh biome carries.
     """
     rng = random.Random(seed)
     height = 12.5
-    lean = Vector((rng.uniform(-0.55, 0.55), rng.uniform(-0.45, 0.45), 0.0))
-    crotch_fraction = 0.62
+    lean = Vector((rng.uniform(-0.40, 0.40), rng.uniform(-0.34, 0.34), 0.0))
+    # A short, heavy bole. Everything downstream hangs off how low this forks.
+    fork_fraction = 0.24
     points, radii = standing_trunk(
-        height * crotch_fraction, 0.46, 0.24, lean * crotch_fraction, height * 0.010, 5,
+        height * fork_fraction, 0.78, 0.56, lean * fork_fraction, height * 0.006, 3,
         # Two bark tones, not three: the leaf ramp already spends three of this
         # family's five (MAX_MATERIALS), and the one that has to exist is the
-        # SHADOW — it is what the flare and the bark ridges are drawn in.
+        # SHADOW — it is what the deep furrows are drawn in.
         (mat("wood_bark_dark"), mat("wood_bark"), mat("wood_bark")), rng, seed,
-        vertices=7, ridges=3, flare=1.95, roots=5, root_reach=(0.75, 1.30), taper_power=1.20,
+        vertices=9, flare=1.70, flare_power=1.4, flare_top=0.40, toe=0.55, toe_top=0.30,
+        taper_power=1.0, grain=0.115, flute=0.80, shade_columns=2, lit_columns=0,
     )
     crotch = points[-1]
 
-    curtains = rng.randint(6, 7)
-    for index, (angle, rad) in enumerate(radial(curtains, 2.55, seed=seed + 43, jitter=0.26,
-                                                radius_jitter=0.22)):
-        arch = Vector(around((crotch.x, crotch.y, crotch.z + rng.uniform(1.30, 2.20)), angle, rad))
-        # Two segments per bough so it arches instead of spiking straight out —
-        # the arch is what the curtain hangs from and the whole fountain read
-        # depends on it being a curve.
-        knee = crotch.lerp(arch, 0.55) + Vector((0.0, 0.0, rng.uniform(0.45, 0.85)))
-        rolled_between(f"Bough_{index + 1}_1", tuple(crotch), tuple(knee), radii[-1] * 0.42,
-                       radii[-1] * 0.28, mat("wood_bark"), 5, roll=rng.uniform(0.0, math.tau))
-        rolled_between(f"Bough_{index + 1}_2", tuple(knee), tuple(arch), radii[-1] * 0.28,
-                       radii[-1] * 0.14, mat("wood_bark"), 5, roll=rng.uniform(0.0, math.tau))
-        fall = rng.uniform(5.2, 7.4)
-        width = rng.uniform(0.62, 0.88)
-        hull(
-            f"Curtain_{index + 1}", (arch.x, arch.y, arch.z - fall * 0.42),
-            (width, width * rng.uniform(0.84, 1.12), fall * 0.52),
-            mat("leaf_deep" if index % 2 else "leaf"), seed + index * 59,
-            subdivisions=1, lumps=4, lump=0.30, sharpness=2.2, taper=-0.55,
-        )
-    canopy = hull("Canopy", (crotch.x, crotch.y, crotch.z + 2.35), (2.55, 2.40, 1.10), mat("leaf"),
-                  seed + 47, subdivisions=2, lumps=6, lump=0.26, taper=0.34,
-                  droop=0.55, droop_lobes=5, droop_sharpness=3.0)
-    paint_faces(canopy, mat("leaf_light"), min_normal_z=0.30, min_height=0.46, coverage=0.7,
-                seed=seed + 2)
+    leaves = (mat("leaf"), mat("leaf_light"), mat("leaf_pale"))
+    # Three or four big ascending limbs out of the low fork, each carrying its own
+    # spray of smaller arching branches. A willow's mass comes from this second
+    # level: one limb per direction gives a beach umbrella, which is the other
+    # half of what made the old asset read wrong.
+    limbs = rng.randint(3, 4)
+    # Crown spread. A weeping willow's is roughly its own height, and building
+    # the crown up to the tree's stated height (see `rise` below) narrowed the
+    # footprint to 8.7 m on a 13.6 m tree, which is an oak's proportion, not a
+    # willow's. `SIZE_BANDS`' 13.0 m footprint cap is the ceiling.
+    reach = 4.85
+    for index, (angle, _rad) in enumerate(radial(limbs, 1.0, seed=seed + 43, jitter=0.30)):
+        # The limbs have to carry the crown to very near the tree's stated height.
+        # This is not a proportion choice, it is the flare rule again: `create_asset`
+        # scales the finished asset UNIFORMLY to land inside `SIZE_BANDS`, so a tree
+        # whose geometry stops at 10 m and is then stretched to 13.6 m takes its ROOT
+        # FLARE up with it — measured at 1.70 m wide at 0.6 m, i.e. straight through
+        # `COLLIDER_TRUNK_BAND_MIN_M`, which is the exact defect F-390 lifted that
+        # band off the floor to kill. Building to height keeps the scale factor near
+        # 1.0 and keeps the flare under the line where it costs nothing.
+        rise = height * rng.uniform(0.64, 0.74)
+        elbow = Vector((crotch.x + math.cos(angle) * reach * 0.34,
+                        crotch.y + math.sin(angle) * reach * 0.34,
+                        crotch.z + rise * 0.70))
+        shoulder = Vector((crotch.x + math.cos(angle) * reach * 0.82,
+                           crotch.y + math.sin(angle) * reach * 0.82,
+                           crotch.z + rise))
+        tapered_between(f"Limb_{index + 1}_1", tuple(crotch), tuple(elbow),
+                        radii[-1] * 0.62, radii[-1] * 0.44, mat("wood_bark"), 6)
+        tapered_between(f"Limb_{index + 1}_2", tuple(elbow), tuple(shoulder),
+                        radii[-1] * 0.44, radii[-1] * 0.24, mat("wood_bark"), 5)
+
+        # Two more whips hung straight off the limb between elbow and shoulder.
+        # A willow's crown is full to its middle; without these the interior is
+        # an empty cone with the structural limbs on show inside it.
+        for inner in range(2):
+            anchor = elbow.lerp(shoulder, 0.35 + 0.40 * inner)
+            drop = max(0.8, anchor.z - 0.5)
+            fall = drop * rng.uniform(0.45, 0.85)
+            width = rng.uniform(0.26, 0.36)
+            hull(f"Inner_{index + 1}_{inner + 1}",
+                 (anchor.x, anchor.y, anchor.z - width - fall * 0.48),
+                 (width, width * rng.uniform(0.82, 1.18), fall * 0.58),
+                 leaves[(seed + index + inner) % 3], seed + index * 23 + inner * 7,
+                 subdivisions=0, lumps=3, lump=0.34, sharpness=2.4, taper_low=0.66)
+
+        # Each limb divides into arching branches that go OVER and start falling.
+        # The arch is where the weeping begins; without it the strands hang off a
+        # spike and the tree reads as a mop on a pole.
+        for sub in range(4):
+            swing = angle + rng.uniform(-0.72, 0.72)
+            span = reach * rng.uniform(0.30, 0.54)
+            # The branch goes over the top of its arch and starts DOWN again.
+            # Ending it above the shoulder left the tops of the whips standing
+            # proud of the crown as isolated spikes; a willow's outline above the
+            # foliage is bare limb, never leaf-tips pointing up.
+            tip = Vector((shoulder.x + math.cos(swing) * span,
+                          shoulder.y + math.sin(swing) * span,
+                          shoulder.z + rng.uniform(-0.75, 0.30)))
+            tapered_between(f"Branch_{index + 1}_{sub + 1}", tuple(shoulder), tuple(tip),
+                            radii[-1] * 0.22, radii[-1] * 0.08, mat("wood_bark"), 4)
+
+            # The whips. A weeping willow's shoots are SLENDER — a few centimetres
+            # across and metres long — and there are hundreds of them. The first
+            # cut of this made six per tree at half a metre wide, which is the
+            # shape of a hanging leaf the size of a canoe: the preview read as
+            # green footballs strung on a stick. Thin and many is the only way the
+            # curtain reads, and it is what hides the limbs, which a real willow's
+            # foliage does completely.
+            #
+            # Mixed widths on purpose: the broad ones are the only thing visible
+            # at 60 m, the thin ones the only thing that reads as strands at 3 m,
+            # and a curtain of one width is a bedsheet at both distances.
+            for strand in range(5):
+                # From the shoulder outward, not from a fifth of the way along.
+                # Starting at 0.12 left a hole around every limb junction and the
+                # tree read as four separate hanging brooms with the bare limbs
+                # visible between them.
+                along = 0.02 + 0.23 * strand + rng.uniform(-0.05, 0.05)
+                anchor = shoulder.lerp(tip, along)
+                broad = strand % 3 == 1
+                # Length as a FRACTION of how high the shoot starts, not an
+                # absolute range. An absolute range clamps against the anchor
+                # height and every strand ends up reaching almost the same way
+                # down, which gives the curtain a level hem — the one edge a
+                # willow never has. Proportional lengths keep the hem ragged at
+                # every tree size.
+                drop = max(0.8, anchor.z - 0.5)
+                fall = drop * (rng.uniform(0.58, 1.0) if broad else rng.uniform(0.38, 0.94))
+                width = rng.uniform(0.30, 0.42) if broad else rng.uniform(0.17, 0.26)
+                hull(
+                    f"Whip_{index + 1}_{sub + 1}_{strand + 1}",
+                    # Hung on the branch LINE with no lateral scatter at all, and
+                    # overlapping it by a tenth of its own length. Every version
+                    # of this that jittered the anchor sideways — even by less
+                    # than the strand's own width — detached two to four whips
+                    # per tree, because the far end of a branch is 45 mm thick and
+                    # there is nothing there to miss by. A shoot with daylight
+                    # between it and its own branch is the same defect as a root
+                    # cone lying beside a trunk (F-422). Variety comes from length,
+                    # width and lump seed instead, which cannot come unstuck.
+                    # Tucked down by its own width so the strand's crown sits
+                    # INSIDE the branch instead of standing above it. Without the
+                    # tuck the top of every whip pokes through as a pale spike and
+                    # the crown's upper edge reads as a row of flames; a willow's
+                    # outline above its foliage is bare limb.
+                    (anchor.x, anchor.y, anchor.z - width * 0.55 - fall * 0.45),
+                    (width, width * rng.uniform(0.82, 1.18), fall * 0.62),
+                    leaves[(seed + index * 3 + sub + strand) % 3],
+                    seed + index * 59 + sub * 17 + strand,
+                    subdivisions=0, lumps=3, lump=0.34, sharpness=2.4,
+                    # `taper` narrows the top; a hanging shoot thins DOWNWARD, so
+                    # this wants `taper_low`, which F-424 added to `hull` for it.
+                    # `taper=-0.62` reads like the right answer and is not — a
+                    # negative taper FLARES the top, which is what the camp set's
+                    # pot rims depend on, so the sign was not free to repurpose.
+                    taper_low=0.66,
+                )
 
 
 def build_tree_snag(seed: int) -> None:
@@ -686,7 +756,11 @@ def build_tree_snag(seed: int) -> None:
     points, radii = standing_trunk(
         height, 0.52, 0.24, lean, height * 0.010, 6,
         (mat("wood_dead"), mat("wood_dead"), mat("wood_dead_cut")), rng, seed,
-        vertices=7, ridges=4, flare=1.85, roots=5, root_reach=(0.75, 1.30), taper_power=1.10,
+        vertices=8, flare=2.10, flare_power=1.5, toe=0.68, toe_top=0.32, taper_power=1.10,
+        # Dead wood weathers into hard vertical grooves and loses its bark in
+        # strips, so the snag takes deeper flutes than a living trunk and puts
+        # two columns in the pale cut-wood tone rather than one.
+        grain=0.100, flute=0.72, shade_columns=1, lit_columns=2,
     )
     top = points[-1]
 

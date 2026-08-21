@@ -261,16 +261,16 @@
   {
     "name": "tree_willow_a",
     "family": "small_trees",
-    "width_m": 8.311,
-    "depth_m": 7.073,
+    "width_m": 11.92,
+    "depth_m": 12.439,
     "height_m": 13.617,
     "mesh_parts": 1,
-    "polygons": 1027,
-    "triangles": 1336,
+    "polygons": 1990,
+    "triangles": 2254,
     "materials": [
       "MIRE_Leaf",
-      "MIRE_LeafDeep",
       "MIRE_LeafLight",
+      "MIRE_LeafPale",
       "MIRE_WoodBark",
       "MIRE_WoodBarkDark"
     ]
@@ -278,16 +278,16 @@
   {
     "name": "tree_willow_b",
     "family": "small_trees",
-    "width_m": 6.689,
-    "depth_m": 7.303,
+    "width_m": 9.914,
+    "depth_m": 5.75,
     "height_m": 11.145,
     "mesh_parts": 1,
-    "polygons": 1121,
-    "triangles": 1448,
+    "polygons": 1511,
+    "triangles": 1730,
     "materials": [
       "MIRE_Leaf",
-      "MIRE_LeafDeep",
       "MIRE_LeafLight",
+      "MIRE_LeafPale",
       "MIRE_WoodBark",
       "MIRE_WoodBarkDark"
     ]
@@ -295,16 +295,16 @@
   {
     "name": "tree_willow_c",
     "family": "small_trees",
-    "width_m": 7.35,
-    "depth_m": 7.639,
+    "width_m": 12.602,
+    "depth_m": 12.746,
     "height_m": 13.355,
     "mesh_parts": 1,
-    "polygons": 1027,
-    "triangles": 1336,
+    "polygons": 1990,
+    "triangles": 2254,
     "materials": [
       "MIRE_Leaf",
-      "MIRE_LeafDeep",
       "MIRE_LeafLight",
+      "MIRE_LeafPale",
       "MIRE_WoodBark",
       "MIRE_WoodBarkDark"
     ]
@@ -312,12 +312,12 @@
   {
     "name": "tree_snag_a",
     "family": "small_trees",
-    "width_m": 3.997,
-    "depth_m": 4.37,
+    "width_m": 3.717,
+    "depth_m": 4.404,
     "height_m": 10.454,
     "mesh_parts": 1,
-    "polygons": 388,
-    "triangles": 760,
+    "polygons": 326,
+    "triangles": 580,
     "materials": [
       "MIRE_Moss",
       "MIRE_MossDark",
@@ -328,12 +328,12 @@
   {
     "name": "tree_snag_b",
     "family": "small_trees",
-    "width_m": 3.038,
-    "depth_m": 3.523,
+    "width_m": 3.068,
+    "depth_m": 2.179,
     "height_m": 7.864,
     "mesh_parts": 1,
-    "polygons": 436,
-    "triangles": 856,
+    "polygons": 326,
+    "triangles": 580,
     "materials": [
       "MIRE_Moss",
       "MIRE_MossDark",
@@ -344,12 +344,12 @@
   {
     "name": "tree_snag_c",
     "family": "small_trees",
-    "width_m": 3.652,
-    "depth_m": 4.196,
+    "width_m": 3.538,
+    "depth_m": 4.281,
     "height_m": 10.138,
     "mesh_parts": 1,
-    "polygons": 388,
-    "triangles": 760,
+    "polygons": 320,
+    "triangles": 568,
     "materials": [
       "MIRE_Moss",
       "MIRE_MossDark",

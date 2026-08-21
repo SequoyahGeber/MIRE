@@ -40,7 +40,7 @@ from __future__ import annotations
 
 import math
 import random
-from typing import Sequence
+from typing import Callable, Sequence
 
 import bpy
 from mathutils import Vector
@@ -754,11 +754,20 @@ def eevee_engine() -> str:
 #   hull()         one displaced solid instead of a heap of ellipsoids
 #   paint_faces()  a second material by face orientation, at no geometric cost
 #   fork()         recursive branching, so a bare tree is structure not sticks
+#   tube_mesh()    one continuous surface where a stack of frusta used to be
+#   trunk_tube()   the tree trunk both kits build on it
 #
 # They are deliberately general. A hull is a boulder, a bush, a tree crown, a
 # mushroom cap, a bread loaf or a cloud; paint_faces() is moss, snow, lichen,
 # rust, scorching or blood; fork() is a dead tree, a root system, a crack or an
-# antler. Vegetation is only the first caller.
+# antler; a tube_mesh is a trunk, a limb, a horn, a rope, a chimney or a mast.
+# Vegetation is only the first caller.
+#
+# F-422 added the fourth, and its lesson generalises past trunks: **a part that
+# is bolted onto a surface will eventually read as bolted on.** The kit hit that
+# three separate times on one asset family — root cones on a flare, lenticel
+# cylinders on a birch bole, moss lumps on bark — and every time the answer was
+# to make the detail part of the surface rather than a thing standing on it.
 
 
 def icosphere(subdivisions: int = 1) -> tuple[list[Vector], list[tuple[int, int, int]]]:
@@ -811,6 +820,7 @@ def hull(
     lump: float = 0.30,
     sharpness: float = 2.4,
     taper: float = 0.0,
+    taper_low: float = 0.0,
     droop: float = 0.0,
     droop_lobes: int = 0,
     droop_sharpness: float = 6.0,
@@ -824,6 +834,13 @@ def hull(
     vertex moves independently; a handful of broad bumps moves whole regions
     together, which is what produces the big readable facets that make flat
     shading look intentional.
+
+    ``taper`` narrows the TOP and only the top — a negative value flares it,
+    which is what a cooking pot's rim and a mushroom cap already rely on, so the
+    sign is not free to repurpose. ``taper_low`` is the missing other half: it
+    narrows the BOTTOM, which is the direction anything hanging thins in. The
+    willow's shoots are its first caller; a stalactite, an icicle, a teardrop, a
+    hanging vine or a wasp nest want the same thing.
 
     ``droop`` pulls lobes down out of the lower half — the hanging tongues that
     give a broadleaf crown its silhouette instead of leaving it a green ball.
@@ -861,6 +878,10 @@ def hull(
             narrow = 1.0 - taper * (direction.z * 0.5 + 0.5)
             point.x *= narrow
             point.y *= narrow
+        if taper_low:
+            narrow = 1.0 - taper_low * (0.5 - direction.z * 0.5)
+            point.x *= narrow
+            point.y *= narrow
         dropped = 0.0
         if lobes and direction.z < 0.30:
             flat = Vector((direction.x, direction.y, 0.0))
@@ -880,6 +901,314 @@ def hull(
             point.z = max(point.z, -radius[2] * flat_base - dropped)
         points.append((centre[0] + point.x, centre[1] + point.y, centre[2] + point.z))
     return mesh_object(name, points, faces, material, recalculate=False)
+
+
+def tube_mesh(
+    name: str,
+    rings: list[list[tuple[float, float, float]]],
+    materials: list[bpy.types.Material],
+    face_material: Callable[[int, int], int],
+    cap_bottom: bool = True,
+    cap_top: bool = True,
+) -> bpy.types.Object:
+    """One closed, flat-shaded tube through a stack of same-width vertex rings.
+
+    Every trunk in this kit used to be a STACK of separate frusta, and that is
+    what "the trunks look really bad" kept coming back to. Two defects follow
+    from the stack itself and cannot be tuned out of it:
+
+    * **A shoulder at every joint.** Consecutive frusta are separate cylinders
+      whose facets do not line up, so the silhouette steps in and out at each
+      segment boundary — a telescoping antenna, not a taper. `rolled_frustum`
+      made this worse on purpose, rolling each segment to break up the shading.
+    * **Nowhere to put a root flare except a separate cone.** Which is why the
+      base was a fatter stub butted onto the column, with a hard tone break
+      where the two met (worst on the birch: a pale trunk standing in a dark
+      boot) and five loose cones radiating off it that read as a chicken foot.
+
+    A tube has neither, because it has no joints. Radius, material and shape all
+    vary per RING and per COLUMN, so the flare, the buttress lobes and the bark
+    grain are the same surface as the trunk and merge into it by construction.
+    `face_material(ring, column)` picks the slot for each quad.
+
+    Rings run bottom to top and must all carry the same number of vertices.
+    """
+    if len({len(ring) for ring in rings}) != 1:
+        raise RuntimeError(f"{name}: rings have differing vertex counts")
+    columns = len(rings[0])
+    vertices: list[tuple[float, float, float]] = [point for ring in rings for point in ring]
+    faces: list[tuple[int, ...]] = []
+    slots: list[int] = []
+    for ring in range(len(rings) - 1):
+        low = ring * columns
+        high = low + columns
+        for column in range(columns):
+            nxt = (column + 1) % columns
+            faces.append((low + column, low + nxt, high + nxt, high + column))
+            slots.append(face_material(ring, column))
+    if cap_bottom:
+        faces.append(tuple(range(columns - 1, -1, -1)))
+        slots.append(face_material(0, 0))
+    if cap_top:
+        top = (len(rings) - 1) * columns
+        faces.append(tuple(range(top, top + columns)))
+        slots.append(face_material(len(rings) - 2, 0))
+
+    mesh = bpy.data.meshes.new(f"{name}_Mesh")
+    mesh.from_pydata(vertices, [], faces)
+    mesh.update()
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.scene.collection.objects.link(obj)
+    for material in materials:
+        obj.data.materials.append(material)
+    for polygon, slot in zip(obj.data.polygons, slots):
+        polygon.material_index = slot
+        polygon.use_smooth = False
+    return obj
+
+
+def trunk_tube(
+    height: float,
+    base_radius: float,
+    tip_radius: float,
+    lean: Vector,
+    sway: float,
+    segments: int,
+    tone: tuple[bpy.types.Material, bpy.types.Material, bpy.types.Material],
+    rng: random.Random,
+    seed: int,
+    vertices: int = 7,
+    flare: float = 1.9,
+    flare_top: float = 0.44,
+    toe: float = 0.85,
+    toe_top: float = 0.16,
+    taper_power: float = 1.35,
+    flare_power: float = 1.7,
+    grain: float = 0.075,
+    flute: float = 0.62,
+    shade_columns: int = 1,
+    lit_columns: int = 1,
+    marks: int = 0,
+    mark_band: float = 0.11,
+    moss: int = 0,
+    moss_band: float = 0.26,
+    moss_material: bpy.types.Material | None = None,
+) -> tuple[list[Vector], list[float]]:
+    """A standing tree trunk: ONE tube mesh, from the soil to the tip.
+
+    `tone` is (shadow, bark, lit) — three tones from the same wood, because
+    one flat colour is what made the first trunks read as plastic pipe.
+
+    Returns the spine points and the radius at each, so a caller can hang
+    limbs on the trunk WHERE THE TRUNK IS rather than on the vertical axis.
+
+    F-422 rebuilt this from a stack of rolled frusta plus bolt-on parts into a
+    single `tube_mesh`, and moved it here because BOTH kits had grown their own
+    copy of the stack and therefore both had all four of its defects. Every one
+    was visible from two metres away:
+
+    * **A stepped silhouette.** Separate frusta with independent rolls do not
+      line up, so the outline shouldered in and out at every joint. The tube
+      has no joints; the taper is one continuous surface.
+    * **A chicken foot.** The root flare was a separate fat cone butted onto
+      the column, with five thin cones arching off it to the ground. Now the
+      flare is the tube's own bottom rings, swelling by `flare` over the
+      first `flare_top` metres, and the buttresses are `flute`-deep LOBES in
+      those rings — the same surface as the trunk, so there is nothing to
+      detach. Only `roots` short, thick, half-buried toes leave it, and they
+      leave it from the lobe crests where a real root would.
+    * **A dip line.** The flare cone carried its own material, so a pale
+      birch stood in a dark boot. Material is now per-face on one mesh and
+      keyed to the lobe depth, so it varies VERTICALLY — which is the one
+      direction bark actually varies. Two earlier passes varied tone per
+      segment, i.e. horizontally, and both read as painted rings.
+    * **A black stick beside the trunk.** The bark ridges were separate cones
+      anchored at a fixed fraction of the BASE radius, so on a tapering trunk
+      they finished outside the wood, in shadow tone, reading as a pole. The
+      grain is now `grain`-deep flutes in the tube itself: free, always on the
+      surface, and it is what makes the facets catch light separately.
+
+    Two things here stay load-bearing:
+
+    * **The taper is a curve, not a line.** `taper_power` > 1 sheds radius
+      fast at the base and slowly near the top, which is the profile a trunk
+      actually has; a linear taper is a traffic cone and looks like one.
+    * **The flare stops at `flare_top` on purpose.**
+      `ResourceScatterField.COLLIDER_TRUNK_BAND_MIN_M` is 0.5 m — F-390
+      lifted the collider's measuring band off the floor precisely because
+      the flare, not the trunk, was setting the radius and holding the player
+      a metre off the bark they were walking at. Keeping the flare under that
+      line means a wide, well-planted base costs nothing in collision.
+    * **The lean accumulates as t².** A trunk that leans linearly is a
+      leaning pole — the base has to stay planted and the crown carry the
+      offset, or the tree looks knocked over rather than grown crooked.
+    """
+    shadow, bark, lit = tone
+
+    points = [Vector((0.0, 0.0, 0.0))]
+    drift = Vector((0.0, 0.0, 0.0))
+    for index in range(1, segments + 1):
+        t = index / segments
+        drift = drift + Vector((rng.uniform(-sway, sway), rng.uniform(-sway, sway), 0.0))
+        points.append(lean * (t * t) + drift + Vector((0.0, 0.0, height * t)))
+    radii = [
+        tip_radius + (base_radius - tip_radius) * ((1.0 - index / segments) ** taper_power)
+        for index in range(segments + 1)
+    ]
+
+    # One number per column, held constant all the way up, and it drives
+    # THREE things at once: how far that column bulges (grain), how far it
+    # swells into a buttress down at the flare, and which of the three tones
+    # its faces take. Driving them from the same value is what makes the
+    # flutes at the base read as the same wood as the ridges up the trunk,
+    # instead of as two unrelated decorations — and holding it constant per
+    # column is what makes the variation run vertically.
+    column_rng = random.Random(seed + 733)
+    depth = [column_rng.uniform(-1.0, 1.0) for _ in range(vertices)]
+    # Guarantee at least one crest and one deep flute however the seed falls;
+    # an all-shallow column set is a smooth pipe again.
+    depth[column_rng.randrange(vertices)] = column_rng.uniform(0.55, 1.0)
+    depth[column_rng.randrange(vertices)] = column_rng.uniform(-1.0, -0.50)
+    # Break the regular polygon too. A perfect heptagon in cross-section is
+    # readable as a machined part however good the profile is.
+    skew = [column_rng.uniform(-0.13, 0.13) for _ in range(vertices)]
+
+    def spine_at(z: float) -> tuple[Vector, float]:
+        """Position and radius of the spine at absolute height `z`."""
+        for index in range(len(points) - 1):
+            low, high = points[index], points[index + 1]
+            if z <= high.z or index == len(points) - 2:
+                span = high.z - low.z
+                fraction = 0.0 if span <= 0.0 else (z - low.z) / span
+                return (low.lerp(high, fraction),
+                        radii[index] + (radii[index + 1] - radii[index]) * fraction)
+        return points[-1], radii[-1]
+
+    # Ring heights: four extra rings inside the flare, because the flare is
+    # under half a metre tall and the trunk's own segments are metres apart —
+    # sampled only at the spine points, a root flare has nowhere to happen.
+    # The first ring is BELOW the soil line, which is what lets the root toes
+    # dive rather than stop dead on the ground plane.
+    sink = base_radius * 0.30
+    ring_heights = [-sink, 0.0, toe_top * 0.55, flare_top * 0.30, flare_top * 0.62, flare_top]
+    ring_heights += [point.z for point in points if point.z > flare_top * 1.35]
+    if ring_heights[-1] < points[-1].z - 1e-6:
+        ring_heights.append(points[-1].z)
+
+    # A scar needs its OWN pair of rings, `mark_band` apart. The trunk's
+    # rings are metres apart above the flare, so painting a face between two
+    # of them paints a two-metre black rectangle — which is exactly what the
+    # first cut of `marks` produced on the birch. Inserting the band first
+    # and recording which ring index it starts at is what keeps a lenticel
+    # the size of a lenticel.
+    band_rng = random.Random(seed + 811)
+    scars: list[tuple[float, int, int]] = []
+    for _ in range(marks):
+        z = round(band_rng.uniform(flare_top * 1.4, max(flare_top * 1.9, points[-1].z * 0.55)), 5)
+        ring_heights += [z, z + mark_band * band_rng.uniform(0.7, 1.4)]
+        scars.append((z, band_rng.randrange(vertices), band_rng.randint(2, 3)))
+
+    # Moss runs UP a trunk, on the side that stays damp — it does not belt it.
+    # The first cut reused the scar machinery, which paints a run of faces on
+    # ONE ring band, and two of those on a bole is unmistakably a strip of
+    # green tape wrapped round the tree. So a moss patch gets three closely
+    # spaced rings of its own and takes a staggered L out of them: tall, one
+    # or two columns wide, and not a rectangle.
+    patches: list[tuple[float, float, int]] = []
+    for _ in range(moss):
+        z = round(band_rng.uniform(flare_top * 0.5, max(flare_top, points[-1].z * 0.22)), 5)
+        step = moss_band * band_rng.uniform(0.8, 1.25)
+        ring_heights += [z, round(z + step, 5), round(z + step * 2.0, 5)]
+        patches.append((z, step, band_rng.randrange(vertices)))
+    ring_heights = sorted(set(round(z, 5) for z in ring_heights))
+
+    rings: list[list[tuple[float, float, float]]] = []
+    for z in ring_heights:
+        centre, radius = spine_at(max(0.0, z))
+        surface = max(0.0, z)
+        # Flare: a swell that dies out by `flare_top`, sharpened so the
+        # widening happens down at the soil rather than halfway up a bole.
+        swell = 0.0
+        if surface < flare_top:
+            swell = (flare - 1.0) * ((1.0 - surface / flare_top) ** flare_power)
+        # Toes: the same idea taken one step further, over the first
+        # `toe_top` metres only and raised to a high power on the lobe, so it
+        # reaches on the two or three sharpest buttress crests and nowhere
+        # else. This is what replaced the separate root cones. Cones could
+        # never be made to work: a cone butted onto the flare either leaves a
+        # hairline gap and reads as a fin lying on the floor, or is pushed in
+        # far enough to hide the gap and then shows its end cap through the
+        # bark as a dark pentagon. Both were visible on the shipped pine. A
+        # toe that is the trunk's own surface has no seam to show.
+        spread = 0.0
+        if surface < toe_top and toe > 0.0:
+            spread = toe * ((1.0 - surface / toe_top) ** 1.55)
+        # Below the soil line everything draws in, so the base dives into the
+        # ground instead of ending on it.
+        dive = 1.0 if z >= 0.0 else 0.72
+        wobble = 1.0 + rng.uniform(-0.018, 0.018)
+        ring: list[tuple[float, float, float]] = []
+        for column in range(vertices):
+            angle = (column / vertices) * math.tau + skew[column]
+            lobe = 0.5 * (depth[column] + 1.0)
+            reach = radius * (1.0 + depth[column] * grain) * wobble
+            reach *= 1.0 + swell * (1.0 - flute + flute * lobe) + spread * (lobe ** 3.0)
+            reach *= dive
+            ring.append((centre.x + math.cos(angle) * reach,
+                         centre.y + math.sin(angle) * reach,
+                         z))
+        rings.append(ring)
+
+    # slot 0 -> the shadow tone (birch lenticels), slot 1 -> `moss_material`.
+    band_faces: dict[tuple[int, int], int] = {}
+    for z, start, run in scars:
+        ring = ring_heights.index(z)
+        for step in range(run):
+            band_faces[(ring, (start + step) % vertices)] = 0
+    for z, step, column in patches:
+        low = ring_heights.index(z)
+        mid = ring_heights.index(round(z + step, 5))
+        # A diagonal creep up and around the bole. Painting the same column
+        # on both rings gives a rectangle, and a rectangle of one flat green
+        # on brown is a sticker whatever colour it is.
+        for row, offset in ((low, 0), (mid, 0), (mid, 1)):
+            band_faces[(row, (column + offset) % vertices)] = 1
+
+    # Which columns take the shadow and lit tones, by COUNT rather than by a
+    # threshold on `depth`. A threshold is a lottery on the seed: the first
+    # cut put a third of the trunk in `wood_bark_dark` and a quarter in the
+    # saturated `wood_bark_light`, and eight-column trunks came out striped
+    # like a barber's pole. One deep flute in shadow and one crest catching
+    # light is bark; four of each is paint.
+    order = sorted(range(vertices), key=lambda column: depth[column])
+    shaded = set(order[:max(0, shade_columns)])
+    lit_set = set(order[len(order) - max(0, lit_columns):]) if lit_columns > 0 else set()
+
+    def face_material(ring: int, column: int) -> int:
+        slot = band_faces.get((ring, column))
+        if slot == 0:
+            return 0
+        if slot == 1:
+            return 3
+        # The buried ring goes to shadow whatever its column, so the toes
+        # darken as they enter the soil rather than ending in a lit facet
+        # against the ground — the cheapest contact shadow there is, and the
+        # one place a horizontal tone break is the correct answer.
+        if ring == 0:
+            return 0
+        if column in shaded:
+            return 0
+        if column in lit_set:
+            return 2
+        return 1
+
+    # Only declare the fourth slot when something uses it: an unused slot is
+    # an extra glTF primitive, an extra Godot surface and an extra draw call
+    # on every instance of the asset.
+    palette = [shadow, bark, lit] + ([moss_material] if moss and moss_material else [])
+    tube_mesh("Trunk", rings, palette, face_material)
+
+    return points, radii
 
 
 def paint_faces(
