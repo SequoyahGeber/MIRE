@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="RangedWeaponDef" format=3]
+
+[ext_resource type="Script" path="res://systems/combat/ranged_weapon_def.gd" id="1_r4ng"]
+
+[resource]
+script = ExtResource("1_r4ng")
+item_id = &"sling"
+display_name = "Sling"
+ammo_item_id = &"stone"
+draw_seconds = 0.35
+recovery_seconds = 0.3
+projectile_speed_m_s = 20.0
+gravity_scale = 0.6
+max_range_m = 26.0
+damage = 3
+hitstop_seconds = 0.03
+shake_magnitude = 0.05
+shake_duration = 0.12
+impact_audible_range_m = 20.0

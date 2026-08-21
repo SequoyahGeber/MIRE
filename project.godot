@@ -83,6 +83,7 @@ AmbientMusicDirector="*res://autoload/ambient_music_director.gd"
 GodModeService="*res://autoload/god_mode_service.gd"
 ThemeMusicDirector="*res://autoload/theme_music_director.gd"
 SfxDirector="*res://autoload/sfx_director.gd"
+FocusPrompt="*res://ui/hud/focus_prompt.gd"
 TargetHealthHud="*res://ui/hud/target_health_hud.gd"
 DamageNumbers="*res://ui/hud/damage_numbers.gd"
 

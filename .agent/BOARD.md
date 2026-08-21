@@ -9,12 +9,13 @@
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
 | **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | gale43d16e | 2026-08-21 17:13 | `docs/ASSET_TRACKER.md`, `tools/blender/build_gatherable_plants.py`, `assets/gatherables/catalog.json`, `tools/blender/build_pickup_kit.py`, `assets/pickups/catalog.json`, `content/items/apple.tres`, `content/harvestables/berry_bush.tres`, `content/harvestables/apple_tree.tres`, `content/harvestables/mushroom_patch.tres`, `tools/item_icons_check.gd` |
+| **F-449** Task 5.3's ranged-weapon content was authored but never committed — the longbow, crossbow, sling and bolt existed only in the working tree | quill26e3d7 | 2026-08-21 19:46 | `content/items/bolt.tres`, `content/items/crossbow.tres`, `content/items/longbow.tres`, `content/items/sling.tres`, `content/ranged_weapons/crossbow.tres`, `content/ranged_weapons/longbow.tres`, `content/ranged_weapons/sling.tres` |
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `████████░░` 381/452 | 71 |
+| Findings | `████████░░` 381/453 | 72 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -119,6 +120,7 @@
 | ⬜ | **F-444** The ordinary ground mist still hangs off one world Y, and on a streamed island that Y is the waterline — it pools in the sea, not in the valleys | todo |
 | ⬜ | **F-446** Deep Forest is 3.5% of the island's dry land, so the richest scatter tables in the game are almost never seen | todo |
 | ⬜ | **F-448** chunk_stream_check's union-of-interest assertions fail at HEAD: neither anchor gets a LOD0 collider or a live Harvestable | todo |
+| 🔵 | **F-449** Task 5.3's ranged-weapon content was authored but never committed — the longbow, crossbow, sling and bolt existed only in the working tree | in_flight |
 
 ## Done
 

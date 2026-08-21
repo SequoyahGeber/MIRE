@@ -2848,6 +2848,28 @@ timing, but the four above failed on every run of both revisions.
 
 ---
 
+### F-449 · Task 5.3's ranged-weapon content was authored but never committed — the longbow, crossbow, sling and bolt existed only in the working tree
+
+**Area:** content · **Severity:** medium · **Found:** 2026-08-21 by quill26e3d7
+
+Task 5.3 (ranged combat) was marked done on 2026-08-19, but four ItemDefs
+(`bolt`, `crossbow`, `longbow`, `sling`) and three RangedWeaponDefs
+(`crossbow`, `longbow`, `sling`) were left untracked in the working tree. They
+were never pushed, so on origin the ranged-weapon roster was the short bow
+alone — every other agent and every fresh checkout saw a game with one bow.
+
+The content itself is correct: verified headless, all four items and all three
+weapons resolve through `Registry`, and each weapon's `ammo_item_id` (arrow /
+bolt / stone) resolves to a real item. Nothing needed fixing; it needed
+committing.
+
+The general lesson matches F-131 and the D-039 close-out rule: a task is not
+done when the files are right on disk, it is done when they are in a commit
+that reached origin. `agent ship <id>` exists precisely so this cannot happen —
+5.3 was closed without it.
+
+---
+
 ## Resolved
 
 ### F-447 · The island is half the size it should be, its outline is still round, and every hill is the same symmetric dome — **fixed**

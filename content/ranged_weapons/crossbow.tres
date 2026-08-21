@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="RangedWeaponDef" format=3]
+
+[ext_resource type="Script" path="res://systems/combat/ranged_weapon_def.gd" id="1_r4ng"]
+
+[resource]
+script = ExtResource("1_r4ng")
+item_id = &"crossbow"
+display_name = "Crossbow"
+ammo_item_id = &"bolt"
+draw_seconds = 0.45
+recovery_seconds = 1.6
+projectile_speed_m_s = 85.0
+gravity_scale = 0.02
+max_range_m = 90.0
+damage = 16
+hitstop_seconds = 0.1
+shake_magnitude = 0.16
+shake_duration = 0.24
+impact_audible_range_m = 40.0

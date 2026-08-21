@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="RangedWeaponDef" format=3]
+
+[ext_resource type="Script" path="res://systems/combat/ranged_weapon_def.gd" id="1_r4ng"]
+
+[resource]
+script = ExtResource("1_r4ng")
+item_id = &"longbow"
+display_name = "Longbow"
+ammo_item_id = &"arrow"
+draw_seconds = 1.05
+recovery_seconds = 0.5
+projectile_speed_m_s = 62.0
+gravity_scale = 0.05
+max_range_m = 110.0
+damage = 9
+hitstop_seconds = 0.07
+shake_magnitude = 0.12
+shake_duration = 0.2
+impact_audible_range_m = 34.0

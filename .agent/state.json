@@ -36,6 +36,48 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "content/items/bolt.tres": {
+      "agent": "quill26e3d7",
+      "at": "2026-08-21T19:46:46+00:00",
+      "task": "F-449",
+      "token": "CLAUDE_CODE_SESSION_ID:f97215fe-2359-4eab-a329-74522e35831e"
+    },
+    "content/items/crossbow.tres": {
+      "agent": "quill26e3d7",
+      "at": "2026-08-21T19:46:46+00:00",
+      "task": "F-449",
+      "token": "CLAUDE_CODE_SESSION_ID:f97215fe-2359-4eab-a329-74522e35831e"
+    },
+    "content/items/longbow.tres": {
+      "agent": "quill26e3d7",
+      "at": "2026-08-21T19:46:46+00:00",
+      "task": "F-449",
+      "token": "CLAUDE_CODE_SESSION_ID:f97215fe-2359-4eab-a329-74522e35831e"
+    },
+    "content/items/sling.tres": {
+      "agent": "quill26e3d7",
+      "at": "2026-08-21T19:46:46+00:00",
+      "task": "F-449",
+      "token": "CLAUDE_CODE_SESSION_ID:f97215fe-2359-4eab-a329-74522e35831e"
+    },
+    "content/ranged_weapons/crossbow.tres": {
+      "agent": "quill26e3d7",
+      "at": "2026-08-21T19:46:46+00:00",
+      "task": "F-449",
+      "token": "CLAUDE_CODE_SESSION_ID:f97215fe-2359-4eab-a329-74522e35831e"
+    },
+    "content/ranged_weapons/longbow.tres": {
+      "agent": "quill26e3d7",
+      "at": "2026-08-21T19:46:46+00:00",
+      "task": "F-449",
+      "token": "CLAUDE_CODE_SESSION_ID:f97215fe-2359-4eab-a329-74522e35831e"
+    },
+    "content/ranged_weapons/sling.tres": {
+      "agent": "quill26e3d7",
+      "at": "2026-08-21T19:46:46+00:00",
+      "task": "F-449",
+      "token": "CLAUDE_CODE_SESSION_ID:f97215fe-2359-4eab-a329-74522e35831e"
+    },
     "docs/ASSET_TRACKER.md": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:13:34+00:00",
@@ -79,6 +121,21 @@
       "notes": [],
       "started": "2026-08-21T17:13:34+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "F-449": {
+      "agent": "quill26e3d7",
+      "files": [
+        "content/items/bolt.tres",
+        "content/items/crossbow.tres",
+        "content/items/longbow.tres",
+        "content/items/sling.tres",
+        "content/ranged_weapons/crossbow.tres",
+        "content/ranged_weapons/longbow.tres",
+        "content/ranged_weapons/sling.tres"
+      ],
+      "notes": [],
+      "started": "2026-08-21T19:46:46+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:f97215fe-2359-4eab-a329-74522e35831e"
     }
   },
   "recent": {
@@ -3758,7 +3815,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     }
   },
-  "rev": 817,
+  "rev": 825,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9071,6 +9128,13 @@
       "status": "todo",
       "tier": "F",
       "title": "chunk_stream_check's union-of-interest assertions fail at HEAD: neither anchor gets a LOD0 collider or a live Harvestable"
+    },
+    "F-449": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Task 5.3's ranged-weapon content was authored but never committed \u2014 the longbow, crossbow, sling and bolt existed only in the working tree"
     }
   },
   "version": 1
