@@ -1569,6 +1569,44 @@ Two smaller gaps found alongside, worth folding into the same task:
 
 `tools/interp_check.gd` failed consistently in both audit sweeps on the settled code. Synthetic 30 Hz snapshots with jitter/loss produced motion CV 0.406 (limit 0.35); the live two-peer path produced CV 0.376. RemoteInterpolator removes almost all still frames (0.6%/0.3% versus 64-67% without it), so wiring is working, but frame-to-frame motion remains measurably more uneven than the acceptance budget and carries ~85 ms deliberate lag. Profile whether 120 Hz render timing/engine interpolation changed the measurement, then retune buffer/adaptation or justify a platform-aware threshold from repeated distributions; keep both synthetic and real-spawner phases.
 
+**Profiled 2026-08-20 by ivy1bcae0 — not fixed, and the order of the work is the reverse of what
+this finding assumed.**
+
+*The measurement is not reproducible.* Same settled tree, consecutive runs:
+
+| run | phase A | phase C |
+|---|---:|---:|
+| the audit | 0.406 | 0.376 |
+| #1 | 0.661 | **0.285 — passes** |
+| #2 | 0.570 | 0.399 |
+
+Phase C is green in one run and red in the next, and phase A swings ~40%. "CV 0.406 against a 0.35
+limit" was never a stable fact, and no buffer or adaptation tuning can be validated against an
+instrument that moves this much between runs.
+
+*What dominates it is harness frame pacing, not the interpolator.* `_motion_stats()` takes the
+spread of per-frame DISTANCE between samples collected after `_wait_until(next_frame_usec)`, and
+that wait does not hold a fixed interval — so a perfectly constant velocity yields varying per-frame
+distance purely from frame-length variance, and the CV counts it as stutter.
+
+*Tried and reverted:* recomputing the CV over speed (`distance / actual dt`) instead of distance.
+That ought to be the more honest metric — a frame is displayed for its own duration, so constant
+speed is what looks smooth — but it produced **CV 7.143, peak 150x mean**. That is the diagnosis
+rather than a failure of the idea: `dt` collapses toward zero whenever `_wait_until` returns
+immediately because it is already past its target, and dividing by it explodes. The 150x peak is a
+direct measure of how badly the harness's frame spacing varies. `tools/interp_check.gd` is unchanged
+— the experiment was backed out rather than shipped.
+
+*So the order is:* (1) make the pacing real — either have `_wait_until` actually pace and assert it
+did, dropping or flagging samples whose `dt` falls outside a tight band, or drive both phases off a
+fixed simulated clock so the interval is exact by construction; (2) re-measure across many runs and
+set the threshold from that distribution, as this finding asks; (3) only then retune buffer and
+adaptation, if it still misses.
+
+*Not in doubt, and not to be re-litigated:* `RemoteInterpolator` is doing its job. Still frames go
+from 63-70% without it to 0.4-0.6% with it, in every run, in both phases. The wiring is right; how
+smooth the result is remains unmeasured.
+
 ---
 
 ### F-349 · Blight drains a standing player to death with no signal that anything is happening

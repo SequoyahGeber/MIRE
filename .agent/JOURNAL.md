@@ -7846,3 +7846,51 @@ Notes along the way:
 Files: `export_presets.cfg`, `tools/steam/export_release.sh`
 
 Commit at time of writing: `6dfbd69`
+
+---
+
+### DONE · F-346 · ivy1bcae0 · 2026-08-21T02:04:32+00:00
+
+**Chunk navigation regions repeatedly report overlapping edge synchronization errors**
+
+edge-error budget contract
+
+Files: `world/chunk/nav_baker.gd`, `tools/nav_bake_check.gd`
+
+Commit at time of writing: `7f58c43`
+
+---
+
+### DONE · F-334 · ivy1bcae0 · 2026-08-21T02:11:31+00:00
+
+**The end-to-end loop passes every phase and then aborts in engine teardown**
+
+leaked lambda in the static EventBus registry
+
+Files: `tools/loop_audit_check.gd`
+
+Commit at time of writing: `7aedd02`
+
+---
+
+### DONE · F-338 · ivy1bcae0 · 2026-08-21T02:16:00+00:00
+
+**The full 256 by 256 Mire simulation has no saturated late-run performance gate**
+
+ward mask + flat indices, 41x
+
+Files: `tools/bench_mire.gd`, `world/mire/mire_grid_sim.gd`
+
+Commit at time of writing: `7769020`
+
+---
+
+### HANDOFF · F-344 · ivy1bcae0 · 2026-08-21T02:18:38+00:00
+
+**Remote interpolation misses its own smoothness budget in both synthetic and live phases**
+
+Profiled, not fixed. The check's CV is unreproducible run to run (A: 0.661/0.570, C: 0.285/0.399 — C passes in one run, fails the next) because _motion_stats measures per-frame DISTANCE while _wait_until does not hold a fixed frame interval. Recomputing over speed (distance/dt) was tried and reverted: it gives CV 7.1, peak 150x, because dt collapses when _wait_until overshoots — which is itself the measure of how bad the pacing is. Fix the pacing (or use a fixed simulated clock) FIRST, then set the threshold from a real distribution, then retune. RemoteInterpolator itself is fine: still frames 63-70% -> 0.4-0.6% in every run. Full evidence in the finding's note. tools/interp_check.gd is UNCHANGED — I reverted my experiment.
+
+Files: `tools/interp_check.gd`
+
+Commit at time of writing: `7769020`
