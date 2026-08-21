@@ -451,6 +451,28 @@ func _build_accessibility_page() -> Control:
 	_bind(reduce, "reduce_camera_motion")
 	column.add_child(_row("Reduce motion", reduce,
 		"Stops camera shake, menu fades and the title screen's drift. Everything cuts instantly instead."))
+
+	column.add_child(MireTheme.separator())
+	column.add_child(MireTheme.label("GUIDANCE", MireTheme.CAPTION, MireTheme.MUTED))
+
+	# Task 3.19. Lives on the accessibility page rather than under gameplay because that is where a
+	# player goes when something on screen is in their way, and "the game keeps telling me things" is
+	# exactly that complaint.
+	var guidance: OptionButton = MireTheme.dropdown()
+	for label: String in ["Full", "Objectives only", "Off"]:
+		guidance.add_item(label)
+	guidance.selected = clampi(int(settings.call("guidance_mode")), 0, 2)
+	guidance.item_selected.connect(func(index: int) -> void:
+		_write("set_guidance_mode", index)
+		_note(["Objectives and tips.", "Objectives only.", "You are on your own."][index]))
+	_bind(guidance, "guidance_mode")
+	column.add_child(_row("Guidance", guidance,
+		"The objective line and the one-shot tips. Tips are shown once and then never again."))
+
+	var replay: Button = MireTheme.button("SHOW TIPS AGAIN", func() -> void:
+		_write_no_arg("reset_seen_tips")
+		_note("Every tip is new again."))
+	column.add_child(replay)
 	return column
 
 

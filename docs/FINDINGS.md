@@ -3338,6 +3338,60 @@ class of problem as F-131 and F-269 — the doc and the state disagreeing, with 
 
 ---
 
+### F-469 · Four recent decisions use a heading shape decision_ref_check.py cannot see
+
+**Area:** docs · **Severity:** low · **Found:** 2026-08-21 by birche6b40e
+
+`tools/decision_ref_check.py` recognises a decision heading only as `### D-NNN ·` (HEADING_RE, line
+45). D-196, D-197, D-198 and D-199 were authored as `## D-NNN — <title>`, so the checker treats every
+citation of them as DANGLING: four of the ten failures it reports at HEAD are these, and they are
+noise that hides a real dangling reference the moment one appears.
+
+Found while adding D-200/D-201 for task 3.18/3.19 (`docs/PROGRESSION.md`), which initially copied the
+newer `##` shape from D-196 and inherited the same failure; they were re-authored as `### D-NNN ·
+<date> · <title>` and the checker is satisfied with them.
+
+**The fix is one of two calls, and it is a call, not a cleanup:** either re-author the four headings
+to `### D-NNN · <date> · <title>` (DECISIONS.md's "append, never rewrite" rule is about reasoning, and
+a heading shape is not reasoning), or widen `HEADING_RE` to accept both shapes and stop pretending
+the file has one convention. Prefer the first — the date in the heading is load-bearing for anyone
+reading the log chronologically, and the `##` entries dropped it.
+
+Do NOT simply re-run the check and treat 10 as the expected number: that is how the other six stay
+invisible.
+
+---
+
+### F-470 · The fullscreen benchmark harness does not take focus, so its own runs are void
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
+
+Follow-on from F-466. With focus detection in place, the first fullscreen run of
+`tools/benchmark_check.gd -- --fullscreen` reported **883 unfocused frames — FLAGGED**: the window
+went fullscreen and never took keyboard focus, because it was launched from a terminal and macOS
+left focus with the terminal.
+
+That makes the "walk away and let it measure" plan useless on its own — walking away does not move
+focus, so the run stays void unless a human clicks the game window after it appears, which is
+exactly the manual step the plan was meant to remove.
+
+Fixed by having the check call `DisplayServer.window_move_to_foreground()` after switching to
+fullscreen, so the run claims focus itself.
+
+Two things worth keeping in mind here. Programmatic focus-grabbing is at the mercy of the platform's
+focus-stealing prevention and may not work under every launcher or macOS version, which is why the
+focus COUNTER stays the authority: if the grab silently fails, the run still says
+"THESE TIMINGS ARE NOT VALID" rather than reporting numbers. And focus is only a proxy for being
+drawn — a focused window can still be fully covered, which the engine does not expose — so an
+unflagged run is evidence of nothing being obviously wrong, not proof the window was visible.
+
+Also fixed alongside: `--tag` (added so a sequence of ablation runs does not overwrite each other's
+reports) changed the ledger's filename, but `_check_ledger()` still asserted against the untagged
+path, so `discard() removes the ledger` failed on any tagged run. The check now asks the writer for
+its own path instead of rebuilding it.
+
+---
+
 ## Resolved
 
 ### F-462 · The benchmark shows a progress bar and no numbers, and never says how long is left — **fixed**

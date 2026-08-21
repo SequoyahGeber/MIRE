@@ -35,6 +35,17 @@ enum AttackStyle {
 @export_multiline var description: String = ""
 @export var icon: Texture2D
 @export var category: Category = Category.RESOURCE
+
+## Which rung of the tool ladder this item IS — 0 for everything that is not a rung, 1 wood,
+## 2 stone, 3 iron, 4 bogsilver, 5 wellglass (`docs/PROGRESSION.md` §2). Authored per item rather
+## than derived from the material name or from `WeaponDef.harvest_power`, because the two axes are
+## deliberately separate: the iron *sword* is tier 3 and harvests nothing, and a tier's fork weapons
+## are the same rung as its pickaxe even though they bite different things.
+##
+## `ProgressionService` reads this and nothing else to decide the party's high-water mark, so an
+## unauthored tool silently never advances the ladder — which is why `tools/progression_check.gd`
+## asserts every TOOL/WEAPON item carries a non-zero tier.
+@export_range(0, 5, 1) var tool_tier: int = 0
 @export var stack_size: int = 99
 ## Scene used when this item exists as a physical pickup in the world (dropped, harvested). Optional —
 ## items that are only ever crafting intermediates may not need one yet.

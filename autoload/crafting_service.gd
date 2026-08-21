@@ -248,9 +248,24 @@ func _finish_craft(peer_id: int, request_id: int, data: Dictionary) -> void:
 	var detail: String
 	if accepted:
 		detail = "crafted %s" % String(data.get("output_name", ""))
+		# 3.18: the single commit point both craft paths (instant and timed) pass through, so the
+		# tool ladder's high-water mark is raised exactly where a tool actually enters the world —
+		# not on the request, which may still be rejected. ProgressionService ignores everything
+		# whose `ItemDef.tool_tier` is 0, which is almost everything.
+		_note_progression(data.get("additions", {}) as Dictionary)
 	else:
 		detail = "craft rejected: missing ingredients or inventory full"
 	_confirm_peer(peer_id, request_id, accepted, detail)
+
+
+## Host-side only, and deliberately tolerant of the autoload being absent: a `--script` check that
+## boots CraftingService without the whole autoload list must still be able to craft.
+func _note_progression(additions: Dictionary) -> void:
+	if additions.is_empty():
+		return
+	var progression: Node = get_node_or_null(^"/root/ProgressionService")
+	if progression != null:
+		progression.call("host_note_crafted", additions)
 
 
 func _definition_data(recipe_id: StringName) -> Dictionary:
@@ -304,6 +319,23 @@ func _station_in_range(player: Node3D, station: StringName) -> bool:
 		if player.global_position.distance_squared_to(position) <= max_distance_squared:
 			return true
 	return false
+
+
+## How many stations of this kind exist ANYWHERE in the world, whoever placed them and however far
+## away they are — a party fact, unlike `local_station_in_range()` right above, which is a fact about
+## where you are standing. `GuideService` (3.19) is the caller: "place a workbench" has to clear when
+## your teammate places one on the other side of the island.
+##
+## Rides the same `_station_positions_for()` cache every craft query already warms, so asking this
+## four times a second costs a dictionary lookup.
+func station_count(station: StringName) -> int:
+	var station_def: Resource = Registry.get_station(station)
+	if station_def == null:
+		return 0
+	var asset := StringName(String(station_def.get("world_scene")))
+	if asset == &"":
+		return 0
+	return _station_positions_for(asset).size()
 
 
 ## Cached station positions for one asset — see _station_positions' comment for the invalidation

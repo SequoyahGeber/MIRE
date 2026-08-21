@@ -87,6 +87,15 @@ Every acquisition route in the game, so no item below has to invent one:
 | Corrupted kills | fighting inside the Mire (R7) | Blight Residue |
 | Stations | recipe + ingredients | ingots, tar, rope, cloth, tonics, food |
 
+> **Corrected 2026-08-21 by task 3.18 (D-200).** The tier language in this section shipped as three
+> rungs with mithril and Wellglass sharing T3. It is now **five**, and `docs/PROGRESSION.md` §2 is the
+> authority: **T1** wood · **T2** stone/flint · **T3** iron (*bog iron*) · **T4** **Bogsilver** (the
+> rename — "mithril" was an admitted placeholder here and belongs to a different game) · **T5**
+> Wellglass. Read every "T3" below that means *the top of the ladder* as T5, and every "mithril" as
+> bogsilver; the item ids ship as `bogsilver_ore` / `bogsilver_*`. The one thing that did NOT change is
+> this section's closing instinct — there is no sixth rung, and deeper Cycles escalate through
+> modifiers and the Gleam pool rather than another ingot.
+
 Tier language used below (D3, `DESIGN.md` §4.3): **T0** bare hands · **T1** wood/stone/flint ·
 **T2** iron (*bog iron* — it's real, it forms in bogs, and it's free flavour) · **T3** mithril +
 Wellglass. T3 is deliberately the last full tool tier; deeper Cycles escalate through modifiers and

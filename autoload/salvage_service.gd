@@ -44,10 +44,26 @@ const DEATH_BANK_FRACTION: float = 0.5
 ## detection work two other systems haven't shipped. `MILESTONE_WEIGHTS`-shaped growth (one more
 ## `EventBus` subscription and one more counter, same pattern as `_wellsprings_capped_this_run`) is
 ## how a future task adds either without touching the reward formula itself.
+##
+## **Task 3.18 supplied the second of the three, along exactly that path.** `ProgressionService`
+## announces reaching a tool tier (`EventBus.tier_reached`, `docs/PROGRESSION.md` §4), so "tiers
+## reached" is now a real fact with a real event and is scored below. Bosses killed is the one still
+## missing a run-scoped tally.
 const WELLSPRING_CAP_BONUS: int = 20
+
+## Per RUNG: a party that climbed to Bogsilver banks four of these. Weighted below a Wellspring cap
+## on purpose — a cap is a fight the party chose, and the lower rungs are crafting the run was going
+## to do anyway. Only the top two rungs are gated behind a cap and a boss at all
+## (`PROGRESSION.md` §2), which is where the real payout for climbing already lives. Placeholder-
+## tuned, same unplaytested status as the curve above.
+const TIER_REACHED_BONUS: int = 8
 
 var _total_salvage_cache: int = 0
 var _wellsprings_capped_this_run: int = 0
+## The party's high-water tool tier as seen by THIS peer this run. A mirror of
+## `ProgressionService.tier_reached()` rather than a read of it, for the same reason the Wellspring
+## count is a counter rather than a query: the run boundary that resets it is this file's own.
+var _tier_reached_this_run: int = 0
 ## Override for `tools/salvage_check.gd` only — production code never sets this, so it always reads
 ## `SalvageSave.SAVE_PATH` and a check run never touches a real player's save file.
 var save_path: String = SALVAGE_SAVE.SAVE_PATH
@@ -58,6 +74,7 @@ func _ready() -> void:
 	EVENT_BUS.subscribe_run_extracted(_on_run_extracted)
 	EVENT_BUS.subscribe_run_wiped(_on_run_wiped)
 	EVENT_BUS.subscribe_wellspring_capped(_on_wellspring_capped)
+	EVENT_BUS.subscribe_tier_reached(_on_tier_reached)
 	var game_state: Node = get_node_or_null(^"/root/GameState")
 	if game_state != null:
 		game_state.connect(&"seed_ready", _on_seed_ready)
@@ -67,6 +84,7 @@ func _exit_tree() -> void:
 	EVENT_BUS.unsubscribe_run_extracted(_on_run_extracted)
 	EVENT_BUS.unsubscribe_run_wiped(_on_run_wiped)
 	EVENT_BUS.unsubscribe_wellspring_capped(_on_wellspring_capped)
+	EVENT_BUS.unsubscribe_tier_reached(_on_tier_reached)
 
 
 ## This peer's own lifetime Salvage balance.
@@ -102,6 +120,12 @@ func wellsprings_capped_this_run() -> int:
 	return _wellsprings_capped_this_run
 
 
+## The highest tool tier THIS peer has seen the party reach since the current run began. Same
+## exposure rationale as `wellsprings_capped_this_run()` above.
+func tier_reached_this_run() -> int:
+	return _tier_reached_this_run
+
+
 ## The Salvage a run ending at `cycle` with the milestones banked so far would earn, before any
 ## death fraction is applied. Exposed so `tools/salvage_check.gd` can assert the curve directly
 ## rather than reverse-engineering it from a banked total.
@@ -110,7 +134,10 @@ func reward_for_cycle(cycle: int) -> int:
 
 
 func _milestone_bonus() -> int:
-	return _wellsprings_capped_this_run * WELLSPRING_CAP_BONUS
+	return (
+		_wellsprings_capped_this_run * WELLSPRING_CAP_BONUS
+		+ _tier_reached_this_run * TIER_REACHED_BONUS
+	)
 
 
 func _on_run_extracted(cycle: int, _world_position: Vector3) -> void:
@@ -125,6 +152,13 @@ func _on_wellspring_capped(_wellspring_name: StringName, _world_position: Vector
 	_wellsprings_capped_this_run += 1
 
 
+## `tier_reached` fires once per rung per run and only ever on a RISE (see ProgressionService), so
+## the max() here is belt-and-braces rather than load-bearing — but it is what makes this handler
+## safe against a future emit that repeats a rung, which a bare `+= 1` would not be.
+func _on_tier_reached(tier: int, _item_id: StringName) -> void:
+	_tier_reached_this_run = maxi(_tier_reached_this_run, tier)
+
+
 ## F-273: `GameState.seed_ready` is a RUN boundary on every peer, host and client alike — it fires
 ## at session start, at every restart (F-258/D-161 made a restart draw a fresh seed), and when a
 ## client adopts the host's replicated seed. Read that signal's declaration in `core/game_state.gd`
@@ -134,6 +168,7 @@ func _on_wellspring_capped(_wellspring_name: StringName, _world_position: Vector
 ## peer, which is why this run's milestone tally resets on it.
 func _on_seed_ready(_value: int) -> void:
 	_wellsprings_capped_this_run = 0
+	_tier_reached_this_run = 0
 
 
 func _bank(earned: int, cycle: int, extracted: bool) -> void:
@@ -144,6 +179,7 @@ func _bank(earned: int, cycle: int, extracted: bool) -> void:
 	data[&"total_salvage"] = _total_salvage_cache
 	SALVAGE_SAVE.save_data(data, save_path)
 	_wellsprings_capped_this_run = 0
+	_tier_reached_this_run = 0
 	EVENT_BUS.emit_salvage_banked(earned, _total_salvage_cache, cycle, extracted)
 
 

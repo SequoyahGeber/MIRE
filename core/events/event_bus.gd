@@ -26,6 +26,7 @@ static var _boss_phase_changed_subscribers: Array[Callable] = []
 static var _boss_defeated_subscribers: Array[Callable] = []
 static var _run_restarted_subscribers: Array[Callable] = []
 static var _world_rebuilt_subscribers: Array[Callable] = []
+static var _tier_reached_subscribers: Array[Callable] = []
 ## Monotonic count of `world_rebuilt` emits — the PULL half of that event. See its block below.
 static var _world_generation: int = 0
 
@@ -548,6 +549,42 @@ static func world_rebuilt_subscriber_count() -> int:
 ## `CraftingService._station_positions_for()` is the worked example (F-286).
 static func world_generation() -> int:
 	return _world_generation
+
+
+## Listener signature: (tier: int, item_id: StringName) -> void
+##
+## Task 3.18's tool ladder (`docs/PROGRESSION.md` §4). Fires when the PARTY first crafts an item
+## whose `ItemDef.tool_tier` is above the run's high-water mark — the "the iron age begins" moment,
+## once per rung per run, never once per player. `item_id` is the item that did it, so a consumer
+## can say *what* opened the tier rather than only its number.
+##
+## Fires on EVERY peer. `ProgressionService` raises the mark host-side and records it into
+## `WorldDeltaLog`; a client re-derives the identical emit when that record lands
+## (`ProgressionService._on_world_delta_applied()`). That is the same no-new-RPC shape D-099/D-100
+## gave `cycle_advanced`, and it is deliberate: F-250 and F-254 are both the bug you get from
+## emitting a party fact behind a host-only guard, and this event is a party fact.
+##
+## Consumers today: `GuideService`'s tier fanfare (3.19) and `SalvageService`'s "tiers reached"
+## milestone, which `DESIGN.md` §4.6 has always listed and which had no fact to read until now.
+static func subscribe_tier_reached(listener: Callable) -> void:
+	_prune_invalid(_tier_reached_subscribers)
+	if listener.is_valid() and not _tier_reached_subscribers.has(listener):
+		_tier_reached_subscribers.append(listener)
+
+
+static func unsubscribe_tier_reached(listener: Callable) -> void:
+	_tier_reached_subscribers.erase(listener)
+
+
+static func emit_tier_reached(tier: int, item_id: StringName) -> void:
+	_prune_invalid(_tier_reached_subscribers)
+	for listener: Callable in _tier_reached_subscribers.duplicate():
+		listener.call(tier, item_id)
+
+
+static func tier_reached_subscriber_count() -> int:
+	_prune_invalid(_tier_reached_subscribers)
+	return _tier_reached_subscribers.size()
 
 
 static func _prune_invalid(subscribers: Array[Callable]) -> void:

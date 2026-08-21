@@ -103,6 +103,8 @@ const DEFAULTS: Dictionary = {
 	&"invert_y": false,
 	&"fov_degrees": 75.0,
 	&"reduce_camera_motion": false,
+	&"guidance_mode": 0,
+	&"guide_tips_seen": [],
 }
 
 ## Fires after any setting changes and is applied — `PlayerCamera` and `SettingsMenu` both refresh
@@ -140,6 +142,13 @@ var _gamepad_look_sensitivity: float = 180.0
 var _invert_y: bool = false
 var _fov_degrees: float = 75.0
 var _reduce_camera_motion: bool = false
+## Task 3.19. 0 FULL · 1 OBJECTIVES ONLY · 2 OFF — see `GuideService.Mode`, which owns the meaning;
+## this file only stores and persists the number, the same way it does for `graphics_preset`.
+var _guidance_mode: int = 0
+## Ids of tips this PROFILE has already been shown, so a returning player is never re-taught
+## (`docs/PROGRESSION.md` §5.2). Grows by one String per tip and is never pruned — the whole
+## authored set is a few dozen entries, which is smaller than one keybind row.
+var _guide_tips_seen: Dictionary = {}
 ## StringName action -> int physical_keycode. Only entries this peer has explicitly rebound; every
 ## action not in here is still bound, just to `project.godot`'s own authored default.
 var _keybinds: Dictionary = {}
@@ -333,6 +342,49 @@ func set_reduce_camera_motion(value: bool) -> void:
 	_reduce_camera_motion = value
 	_save()
 	settings_changed.emit()
+
+
+## 0 FULL · 1 OBJECTIVES ONLY · 2 OFF. `GuideService.Mode` names them.
+func guidance_mode() -> int:
+	return _guidance_mode
+
+
+func set_guidance_mode(mode: int) -> void:
+	_guidance_mode = clampi(mode, 0, 2)
+	_save()
+	settings_changed.emit()
+
+
+func has_seen_tip(tip_id: StringName) -> bool:
+	return _guide_tips_seen.has(tip_id)
+
+
+## Idempotent, and silent when nothing changed — a tip already marked must not cost a disk write
+## every time it is re-evaluated.
+func mark_tip_seen(tip_id: StringName) -> void:
+	if tip_id == &"" or _guide_tips_seen.has(tip_id):
+		return
+	_guide_tips_seen[tip_id] = true
+	_save()
+
+
+## Wipes the "already taught" record, so the tips fire again from scratch. Exists for the settings
+## screen ("show tips again") and for `tools/guide_check.gd`, which would otherwise be at the mercy
+## of whatever the dev machine's profile had already seen.
+func reset_seen_tips() -> void:
+	if _guide_tips_seen.is_empty():
+		return
+	_guide_tips_seen.clear()
+	_save()
+	settings_changed.emit()
+
+
+func _seen_tip_list() -> Array:
+	var out: Array = []
+	for tip_id: StringName in _guide_tips_seen.keys():
+		out.append(String(tip_id))
+	out.sort()
+	return out
 
 
 func rebindable_actions() -> PackedStringArray:
@@ -677,6 +729,10 @@ func _load() -> void:
 	_fov_degrees = clampf(float(data.get(&"fov_degrees", DEFAULTS[&"fov_degrees"])), MIN_FOV, MAX_FOV)
 	_reduce_camera_motion = bool(
 		data.get(&"reduce_camera_motion", DEFAULTS[&"reduce_camera_motion"]))
+	_guidance_mode = clampi(int(data.get(&"guidance_mode", DEFAULTS[&"guidance_mode"])), 0, 2)
+	_guide_tips_seen.clear()
+	for raw: Variant in data.get(&"guide_tips_seen", []):
+		_guide_tips_seen[StringName(raw)] = true
 
 	_keybinds.clear()
 	var raw_keybinds: Dictionary = data.get(&"keybinds", {}) as Dictionary
@@ -743,6 +799,8 @@ func _save() -> void:
 		"invert_y": _invert_y,
 		"fov_degrees": _fov_degrees,
 		"reduce_camera_motion": _reduce_camera_motion,
+		"guidance_mode": _guidance_mode,
+		"guide_tips_seen": _seen_tip_list(),
 		"keybinds": raw_keybinds,
 		"joypad_binds": raw_joypad_binds,
 	}, save_path)

@@ -6688,3 +6688,64 @@ The alternative considered was a ground-level slab at y = 0, the way a foundatio
 grid their building in 3D. It was rejected because this kit has no foundation concept and one ramp is
 defined as exactly one storey: a slab on the ground would have made the ramp meaningless and given the
 floor a mating height nothing else in the kit shares.
+
+---
+
+### D-200 · 2026-08-21 · the tool ladder is five rungs, and the top two are bought with objectives, not with mining
+
+**Sequoyah, 2026-08-21:** *"the tools don't really have a clear progression, im thinking 5 tiers of
+tools at least that are progression gated during each run."*
+
+Three tiers shipped (wood 1 · stone 2 · iron 3) and all three were reachable in the first fifteen
+minutes by anyone who knew where a rock was. The rest of a 60–120 minute run escalated the threat
+with nothing escalating the kit. So: **five rungs — wood, stone, iron, bogsilver, wellglass — and
+each one unlocked by a different kind of action.** Gathering, then building a station, then finding a
+node, then capping a Wellspring, then killing a guardian.
+
+**The gate is the decision, not the count.** Adding two more ingots that a good gatherer reaches by
+minute twenty would have changed nothing. Bogsilver needs an Anvil, the Anvil recipe costs a Wellglass
+Shard, and shards drop only from a capped Wellspring; the top rung costs a Guardian Core. That makes
+the ladder a *readout of run progress* — you cannot rush it, and the thing you must do to climb it is
+the thing the run was already about. `tools/progression_check.gd` asserts this against the shipped
+recipe graph rather than trusting the authoring, because it is the one property that stops being true
+the moment someone adds a convenience recipe.
+
+**`harvest_power` steps 1 · 2 · 3 · 4 · 6.** The last jump is oversized deliberately: T5 is the end of
+the ladder and should land like one.
+
+**No sixth rung, ever.** Past T5 the run escalates through Cycle modifiers, Resonance and the Gleam
+pool — content, not another ingot (`ITEMS.md`'s original instinct, which stopped one rung too early).
+
+**Mithril is renamed Bogsilver.** `ITEMS.md` used mithril as an admitted placeholder. Generic fantasy
+mithril belongs to a different game; a bog does not.
+
+**Would change my mind:** a playtest where parties routinely finish a run at rung 3 because the
+objective gates are too far apart. The fix would be moving the shard drop earlier, not adding a
+craftable shortcut — a shortcut deletes the decision this entry exists to protect.
+
+---
+
+### D-201 · 2026-08-21 · guidance is one line, client-local, and can never take the cursor
+
+Task 3.19, from the other half of the same directive: *"the game feels kind of directionless rn
+there's no tutorial or tips to guide you."* The build shipped no guidance of any kind.
+
+**One objective line, one-shot tips, a tier fanfare. Nothing else, and never two at once.** MIRE is an
+evening with friends. A tutorial that can pause the game, take the mouse, or make five people wait on
+the one who is reading is worse than no tutorial, so `GuideHud` joins no input-blocking group and
+takes no input at all. Tips fire **once per profile**, not per run — a returning player is not
+re-taught. The whole layer has an off switch that is honoured immediately.
+
+**Conditions are an enum, not an expression string** (`PROGRESSION.md` §5.4). The moment guidance can
+evaluate authored expressions, game logic starts living in content and no check can prove coverage
+again. A new kind of condition is a new enum member and therefore a change someone reviews.
+
+**Party facts are polled, never subscribed to.** `wellspring_capped`, `ship_repaired` and their
+siblings are HOST-ONLY emits: a client's own bus never fires them. That is the bug shape F-250 and
+F-254 each cost a task to find, and a guidance layer is exactly the kind of consumer that would hit
+it and look merely broken. So the conditions read replicated state — `Wellspring.capped`,
+`repair_stage`, `ProgressionService.tier_reached()` — and the two events it *does* subscribe to are
+the two that are already re-derived on every peer.
+
+**Would change my mind:** playtesters reporting the line is patronising rather than useful. The fix is
+fewer authored steps, not a second line.

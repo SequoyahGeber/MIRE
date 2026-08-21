@@ -695,3 +695,12 @@ func _build_ui() -> void:
 	column.add_child(_hint_label)
 
 	_panel.visible = false
+
+
+## True when the player is looking at something their held tool cannot chip — the "Needs an axe"
+## state `_describe_harvestable()` computes for the prompt. Exposed for `GuideService`'s
+## `TOOL_BLOCKED` condition (task 3.19): that tip has to fire at exactly the moment this prompt
+## turns amber, and re-deriving the answer there would be a second copy of the host's own
+## `damage_from_tool()` call — the one thing this file exists to keep singular.
+func focus_is_blocked() -> bool:
+	return bool(_focus_view.get("blocked", false))

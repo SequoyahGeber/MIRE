@@ -165,6 +165,13 @@ one night. If this isn't fun, nothing built on top of it will be.
 | 3.15 | EntityDirectory + selectors (`@a @p @e[...]`) + entity verbs `tp`/`kill`/`tag`/`entities`, authority-respecting player moves (`COMMANDS.md` §3) | T2 | 3 |
 | 3.16 | Command catalog sweep — every system verb in `COMMANDS.md` §7 incl. D-030's `lobby host/join/invite`, plus the coverage check | T1 | 2 |
 | 3.17 | Functions + hooks + autoexec + headless `tools/run_commands.gd` scenario runner (`COMMANDS.md` §5–6) | T1 | 2 |
+| 3.18 | **Five-tier tool ladder, gated inside the run** — extend 3.1's three tiers to five (wood → stone → iron → bogsilver → wellglass), each tier unlocked by a world event rather than by time: node access, a station the party must build, a Wellspring cap, a guardian kill (`PROGRESSION.md` §2–4) | T1 | 4 |
+| 3.19 | **In-run guidance** — a `GuideService` + HUD that names the next objective and fires one-shot contextual tips, data-authored, client-local, skippable (`PROGRESSION.md` §5). The game currently ships no tutorial of any kind | T1 | 4 |
+
+> **3.18–3.19 are the progression track** (added 2026-08-21, on Sequoyah's *"the game feels
+> directionless — no tutorial or tips, and the tools have no clear progression"*). Spec:
+> [`PROGRESSION.md`](PROGRESSION.md). Order: 3.18 first — 3.19's objective line is mostly a
+> readout of 3.18's gates, so writing the guidance before the ladder means writing it twice.
 
 > **3.13–3.17 are the command track** (added 2026-08-18): runtime data control over every system,
 > Minecraft-style — the full spec is [`COMMANDS.md`](COMMANDS.md). Order: 3.13 first; 3.14/3.15

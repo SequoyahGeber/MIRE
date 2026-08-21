@@ -27,6 +27,7 @@ const POI_PATH: String = "res://content/poi"
 const HOOKS_PATH: String = "res://content/hooks"
 const CYCLE_MODIFIERS_PATH: String = "res://content/cycle_modifiers"
 const UNLOCKS_PATH: String = "res://content/unlocks"
+const GUIDE_PATH: String = "res://content/guide"
 
 ## F-016: LootTableDef is a brand-new class_name (task 3.5) and this autoload boots in every
 ## headless run, so a bare reference here would break every check in the project the moment the
@@ -74,6 +75,7 @@ const CYCLE_MODIFIER_DEF := preload("res://systems/cycle/cycle_modifier_def.gd")
 ## the content id it gates). Which ones are currently PURCHASED is not content and does not live
 ## here; autoload/unlock_service.gd owns that (docs/ARCHITECTURE.md §2.2, "Unlocks" row).
 const UNLOCK_DEF := preload("res://systems/unlocks/unlock_def.gd")
+const GUIDE_STEP_DEF := preload("res://systems/guide/guide_step_def.gd")
 ## Preloaded like the four above so the one generic loader can use script equality uniformly —
 ## it is the F-016-safe type check for every def, established or new (F-099).
 const ITEM_DEF := preload("res://systems/inventory/item_def.gd")
@@ -153,6 +155,7 @@ var cycle_modifiers: Dictionary[StringName, Resource] = {}
 ## (D-073 — one at a time, not a bulk sweep). Which ones are currently PURCHASED is host-per-peer
 ## account state, not content — see `autoload/unlock_service.gd`.
 var unlocks: Dictionary[StringName, Resource] = {}
+var guide_steps: Dictionary[StringName, Resource] = {}
 
 
 func _ready() -> void:
@@ -179,11 +182,12 @@ func _ready() -> void:
 		cycle_modifiers
 	)
 	_load_dir(UNLOCKS_PATH, "UnlockDef", UNLOCK_DEF, &"id", "unlock id", unlocks)
-	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d station(s), %d weapon(s), %d ranged weapon(s), %d loot table(s), %d powerup(s), %d buildable(s), %d haulable(s), %d attunement(s), %d biome(s), %d scatter table(s), %d rule(s), %d hook(s), %d poi(s), %d cycle modifier(s), %d unlock(s)" % [
+	_load_dir(GUIDE_PATH, "GuideStepDef", GUIDE_STEP_DEF, &"id", "guide step id", guide_steps)
+	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d station(s), %d weapon(s), %d ranged weapon(s), %d loot table(s), %d powerup(s), %d buildable(s), %d haulable(s), %d attunement(s), %d biome(s), %d scatter table(s), %d rule(s), %d hook(s), %d poi(s), %d cycle modifier(s), %d unlock(s), %d guide step(s)" % [
 		items.size(), recipes.size(), stations.size(), weapons.size(), ranged_weapons.size(),
 		loot_tables.size(), powerups.size(), buildables.size(), haulables.size(), attunements.size(),
 		biomes.size(), scatter_tables.size(), rules.size(), hooks.size(), poi.size(),
-		cycle_modifiers.size(), unlocks.size()
+		cycle_modifiers.size(), unlocks.size(), guide_steps.size()
 	])
 
 
@@ -351,6 +355,20 @@ func get_unlock(id: StringName) -> Resource:
 
 func has_unlock(id: StringName) -> bool:
 	return unlocks.has(id)
+
+
+## Every authored guidance step, in no particular order — `GuideService` sorts them itself by
+## `order`. Same `*_defs()` naming as `unlock_defs()`/`rule_defs()`, for the same reason.
+func guide_step_defs() -> Dictionary:
+	return guide_steps
+
+
+func get_guide_step(id: StringName) -> Resource:
+	return guide_steps.get(id)
+
+
+func has_guide_step(id: StringName) -> bool:
+	return guide_steps.has(id)
 
 
 ## The one loader behind every content directory (F-099 — this replaced seven near-identical

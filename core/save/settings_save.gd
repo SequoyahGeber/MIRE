@@ -15,7 +15,7 @@ extends RefCounted
 ## on and off disk.
 
 const SAVE_PATH: String = "user://settings.json"
-const SCHEMA_VERSION: int = 2
+const SCHEMA_VERSION: int = 3
 
 
 ## Reads `path` (defaults to `SAVE_PATH`) and returns an always-valid, always-current-schema
@@ -71,6 +71,8 @@ static func _default_data() -> Dictionary:
 		&"invert_y": false,
 		&"fov_degrees": 75.0,
 		&"reduce_camera_motion": false,
+		&"guidance_mode": 0,
+		&"guide_tips_seen": [],
 		&"keybinds": {},
 		&"joypad_binds": {},
 	}
@@ -96,5 +98,14 @@ static func _migrate(data: Dictionary) -> Dictionary:
 			if not data.has(String(key)):
 				data[String(key)] = defaults[key]
 		version = 2
+	if version < 3:
+		# Task 3.19's guidance layer. Backfilled rather than assumed present: a player upgrading
+		# into this build has never seen a tip, and `guidance_mode` 0 is FULL — the default a new
+		# player wants and an existing one can turn off in one click.
+		var defaults: Dictionary = _default_data()
+		for key: StringName in [&"guidance_mode", &"guide_tips_seen"]:
+			if not data.has(String(key)):
+				data[String(key)] = defaults[key]
+		version = 3
 	data["schema_version"] = version
 	return data
