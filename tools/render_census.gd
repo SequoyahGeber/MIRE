@@ -28,7 +28,20 @@ const SPLIT_BLEND_OVERLAP: float = 1.3
 var failures: Array[String] = []
 
 
-func _init() -> void:
+func _initialize() -> void:
+	_run.call_deferred()
+
+
+## Deferred out of `_init()`, which is where this whole body used to live — and that is F-452's
+## root cause. A `SceneTree`'s `_init()` runs BEFORE the autoloads are added to the tree, so the
+## level was instantiated into a world with no `GameState`, no `Registry` and no `GraphicsQuality`.
+## The terrain built anyway (the chunk mesher needs nothing global) and the prop layer did not, so
+## the census reported 388 surfaces and zero MultiMeshInstance3D for a world the renderer draws
+## with ~3,000 draw calls — and every structural conclusion drawn from it, including "no mesh
+## carries LOD levels", was drawn from a world with no props in it to carry them.
+func _run() -> void:
+	# Same island every run, unless `--seed=` says otherwise (F-452).
+	var pinned_seed: int = ProbeScene.pin_seed(self)
 	scene_path = ProbeScene.resolve()
 	var packed: PackedScene = load(scene_path) as PackedScene
 	if packed == null:
@@ -45,7 +58,7 @@ func _init() -> void:
 	# geometry as if it were the whole scene (F-342).
 	var settle: Dictionary = await ProbeScene.settle(level)
 
-	print("\n=== MIRE render census — %s ===" % ProbeScene.describe(scene_path))
+	print("\n=== MIRE render census — %s | seed %d ===" % [ProbeScene.describe(scene_path), pinned_seed])
 	if bool(settle.get("streaming", false)):
 		print("streamed %d chunk(s) in %d frame(s)%s" % [
 			int(settle.get("chunks", 0)), int(settle.get("frames", 0)),

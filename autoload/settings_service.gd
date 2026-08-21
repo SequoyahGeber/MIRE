@@ -26,6 +26,9 @@ extends Node
 ## assuming boot order, so they never depend on where in the list this entry sits either.
 
 const SETTINGS_SAVE := preload("res://core/save/settings_save.gd")
+## First-boot hardware classification (F-452). Preloaded, not `class_name`-referenced, so a
+## headless `--script` run can reach it before the editor rescans the project.
+const HARDWARE_TIER := preload("res://core/render/hardware_tier.gd")
 
 const MUSIC_BUS: StringName = &"Music"
 const SFX_BUS: StringName = &"SFX"
@@ -636,6 +639,18 @@ func _apply_bus_volume(bus_name: StringName, linear: float) -> void:
 
 func _load() -> void:
 	var data: Dictionary = SETTINGS_SAVE.load_data(save_path)
+	# First boot only: let the hardware pick the preset instead of handing every machine the
+	# authored look with the safety net off (F-452). `load_data()` resolves a missing file to full
+	# defaults, so it cannot tell a first launch from a player who deliberately chose HIGH — the
+	# file's existence is what separates the two, and a saved choice always wins.
+	if not FileAccess.file_exists(save_path):
+		var tier: Dictionary = HARDWARE_TIER.detect()
+		data[&"graphics_preset"] = int(tier["preset"])
+		data[&"dynamic_resolution"] = bool(tier["dynamic_resolution"])
+		MireLog.info(&"perf", "first boot: graphics preset '%s'%s — %s" % [
+			HARDWARE_TIER.preset_name(int(tier["preset"])),
+			" + dynamic resolution" if bool(tier["dynamic_resolution"]) else "",
+			tier["reason"]])
 	_graphics_preset = clampi(int(data.get(&"graphics_preset", DEFAULTS[&"graphics_preset"])), 0, 2)
 	_window_mode = clampi(
 		int(data.get(&"window_mode", DEFAULTS[&"window_mode"])), 0, WINDOW_MODES.size() - 1)

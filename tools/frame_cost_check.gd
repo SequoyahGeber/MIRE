@@ -42,6 +42,8 @@ func _run() -> void:
 	# anything resolution-dependent do, and a before/after taken at two different sizes is not a
 	# before/after at all.
 	root.size = VIEWPORT_SIZE
+	# Same island every run, unless `--seed=` says otherwise (F-452).
+	var pinned_seed: int = ProbeScene.pin_seed(self)
 	scene_path = ProbeScene.resolve()
 	var packed := load(scene_path) as PackedScene
 	if packed == null:
@@ -56,11 +58,19 @@ func _run() -> void:
 	# frames pay for shader compilation. None of that is a steady-state frame.
 	for _i in WARMUP_FRAMES:
 		await process_frame
+	# A fixed warmup is a guess about how long streaming takes; `settle()` is the answer (F-452).
+	# 90 frames happened to be enough here, but the same guess measured a third-built world in
+	# tools/perf_probe.gd, and nothing about this file made it immune to that.
+	var settle_report: Dictionary = await ProbeScene.settle(level)
+	if bool(settle_report.get("streaming", false)):
+		print("streamed %d chunk(s) in %d frame(s)%s" % [
+			int(settle_report.get("chunks", 0)), int(settle_report.get("frames", 0)),
+			"" if bool(settle_report.get("settled", true)) else " — NOT SETTLED"])
 
 	print("\n=== MIRE frame cost — %s ===" % ProbeScene.describe(scene_path))
 	print("Godot %s | %s | %s" % [
 		Engine.get_version_info()["string"], OS.get_name(), OS.get_processor_name()])
-	print("viewport %s | samples %d per row" % [root.size, SAMPLE_FRAMES])
+	print("viewport %s | samples %d per row | seed %d" % [root.size, SAMPLE_FRAMES, pinned_seed])
 
 	# The shipped default first, then each preset, so the row that matters for the worst machine
 	# someone might play this on is measured rather than assumed.

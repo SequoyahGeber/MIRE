@@ -24,6 +24,47 @@ extends RefCounted
 const FALLBACK_SCENE: String = "res://levels/procedural_island.tscn"
 
 
+## The seed every renderer instrument generates its world from unless told otherwise. Arbitrary,
+## and that is the point — what matters is that two runs get the SAME island.
+const BENCH_SEED: int = 20260821
+
+
+## Pins the world seed so two runs of an instrument measure the same island (F-452).
+##
+## `GameState.host_generate_seed()` draws real entropy when nothing has staged a seed, so an
+## unpinned instrument generates a DIFFERENT world every launch — different hills, different
+## biome mix, different prop count. Two runs of `tools/frame_cost_check.gd` an hour apart reported
+## 4,908 and 3,325 draw calls on "the same" scene, and neither number was wrong: they were two
+## islands. A before/after taken across a reseed is not a before/after at all, which makes it
+## impossible to prove any optimization did anything.
+##
+## An explicit `--seed=` on the command line still wins, so measuring a specific island stays
+## possible; this only supplies the default that entropy was supplying before. Call it BEFORE
+## instantiating the level — the world reads its seed as it builds.
+static func pin_seed(loop: SceneTree) -> int:
+	var game_state: Node = loop.root.get_node_or_null(^"/root/GameState")
+	if game_state == null:
+		return 0
+	# An explicit `--seed=` is the operator measuring a specific island; never override it.
+	if _has_seed_arg():
+		return int(game_state.get(&"run_seed"))
+	# Solo/offline play draws its seed during autoload `_ready()` (F-172), so by the time an
+	# instrument runs, `is_seed_ready` is ALREADY true and a staged pending seed would never be
+	# consulted. Re-derive over it: nothing has built a world from the entropy seed yet, because
+	# the instrument has not instantiated the level.
+	game_state.call(&"set_pending_seed", BENCH_SEED)
+	game_state.call(&"host_generate_seed")
+	return int(game_state.get(&"run_seed"))
+
+
+static func _has_seed_arg() -> bool:
+	for source: PackedStringArray in [OS.get_cmdline_user_args(), OS.get_cmdline_args()]:
+		for arg: String in source:
+			if arg.begins_with("--seed="):
+				return true
+	return false
+
+
 ## The scene an instrument should measure: `-- --scene res://...` if given, else the project's
 ## shipped main scene.
 static func resolve() -> String:

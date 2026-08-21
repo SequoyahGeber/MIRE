@@ -8515,3 +8515,15 @@ Hills are flat-topped uplands: top radius and ramp gradients sized independently
 Files: `world/gen/island_heightmap.gd`, `tools/hill_slope_check.gd`, `tools/terrain_map_render.gd`, `content/biomes/highland.tres`, `content/biomes/forest.tres`, `content/biomes/birchwood.tres`, `content/biomes/marsh.tres`, `tools/biome_terrain_check.gd`, `world/chunk/chunk_mesher.gd`, `tools/chunk_stream_check.gd`
 
 Commit at time of writing: `b14692b`
+
+---
+
+### DONE · F-452 · wick5e2d04 · 2026-08-21T21:17:45+00:00
+
+**render_census sees 388 surfaces in a world whose real frame is 4,908 draw calls — the structural instrument is blind to nearly all of the shipped cost**
+
+Root cause: render_census did its work in _init(), before autoloads existed, so it measured a world with no props. Fixed, plus four more instrument defects (no max_fps=0, no streamer settle, unpinned seed, single-baseline drift). Probe rebuilt around 1% lows, paired references and traversal scenarios; that found F-454. First-boot hardware tier detection added.
+
+Files: `tools/_perf_attrib.gd`, `docs/PERFORMANCE.md`, `tools/perf_probe.gd`, `core/render/hardware_tier.gd`, `autoload/settings_service.gd`, `tools/hardware_tier_check.gd`, `tools/frame_cost_check.gd`, `tools/probe_scene.gd`, `tools/render_census.gd`
+
+Commit at time of writing: `afc8178`
