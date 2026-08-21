@@ -6,6 +6,12 @@
       "task": "F-337",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
+    "autoload/command_service.gd": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T00:57:48+00:00",
+      "task": "F-333",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
     "autoload/enemy_world.gd": {
       "agent": "ivy1bcae0",
       "at": "2026-08-21T00:40:11+00:00",
@@ -24,10 +30,22 @@
       "task": "F-327",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
+    "autoload/run_record.gd": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T00:54:19+00:00",
+      "task": "F-328",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
     "autoload/world_delta_log.gd": {
       "agent": "ivy1bcae0",
       "at": "2026-08-21T00:41:20+00:00",
       "task": "F-332",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
+    "docs/DECISIONS.md": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T00:54:19+00:00",
+      "task": "F-328",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "docs/GAMELOOP.md": {
@@ -60,10 +78,22 @@
       "task": "F-342",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
+    "tools/harvest_world_check.gd": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T00:49:28+00:00",
+      "task": "F-343",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
     "tools/perf_probe.gd": {
       "agent": "ivy1bcae0",
       "at": "2026-08-21T00:28:11+00:00",
       "task": "F-342",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
+    "tools/poi_required_station_check.gd": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T00:55:20+00:00",
+      "task": "F-335",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "tools/ranged_combat_net_check.gd": {
@@ -78,10 +108,34 @@
       "task": "F-342",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
+    "tools/run_scope_audit_check.gd": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T00:54:19+00:00",
+      "task": "F-328",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
+    "tools/spawn_ground_check.gd": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T00:51:13+00:00",
+      "task": "F-345",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
+    "tools/title_check.gd": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T00:55:20+00:00",
+      "task": "F-335",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
+    "world/chunk/chunk_mesher.gd": {
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T00:59:35+00:00",
+      "task": "F-339",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
     "world/gen/procedural_world.gd": {
       "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:33:26+00:00",
-      "task": "F-330",
+      "at": "2026-08-21T00:51:13+00:00",
+      "task": "F-345",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
@@ -94,6 +148,17 @@
       ],
       "notes": [],
       "started": "2026-08-21T00:43:58+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
+    "F-328": {
+      "agent": "ivy1bcae0",
+      "files": [
+        "tools/run_scope_audit_check.gd",
+        "autoload/run_record.gd",
+        "docs/DECISIONS.md"
+      ],
+      "notes": [],
+      "started": "2026-08-21T00:53:17+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "F-330": {
@@ -125,6 +190,25 @@
       "started": "2026-08-21T00:41:20+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
+    "F-333": {
+      "agent": "ivy1bcae0",
+      "files": [
+        "autoload/command_service.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-21T00:57:48+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
+    "F-335": {
+      "agent": "ivy1bcae0",
+      "files": [
+        "tools/title_check.gd",
+        "tools/poi_required_station_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-21T00:55:20+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
     "F-336": {
       "agent": "ivy1bcae0",
       "files": [
@@ -142,6 +226,15 @@
       ],
       "notes": [],
       "started": "2026-08-21T00:45:27+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
+    "F-339": {
+      "agent": "ivy1bcae0",
+      "files": [
+        "world/chunk/chunk_mesher.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-21T00:59:35+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "F-341": {
@@ -162,6 +255,25 @@
       ],
       "notes": [],
       "started": "2026-08-21T00:28:11+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
+    "F-343": {
+      "agent": "ivy1bcae0",
+      "files": [
+        "tools/harvest_world_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-21T00:49:28+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
+    "F-345": {
+      "agent": "ivy1bcae0",
+      "files": [
+        "world/gen/procedural_world.gd",
+        "tools/spawn_ground_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-21T00:51:13+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
@@ -768,6 +880,13 @@
       "task": "F-329",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
+    "tools/blight_timeline_check.gd": {
+      "agent": "ivycc0920",
+      "at": "2026-08-21T01:01:06+00:00",
+      "hash": "dfd1b3e196717021d11df568d9cd5ee9feeed2785b6c25b6c44e652a3a89c654",
+      "task": "F-349",
+      "token": "CLAUDE_CODE_SESSION_ID:34f19dd1-60f4-4279-b7ba-e40ce133b27f"
+    },
     "tools/check_determinism.gd": {
       "agent": "lm",
       "at": "2026-08-20T06:20:25+00:00",
@@ -851,6 +970,13 @@
       "hash": "3347f8981134be40c84e958ccb04cddc6972c79610783c7d2826013db36546bd",
       "task": "F-283",
       "token": null
+    },
+    "tools/enemy_nav_map_check.gd": {
+      "agent": "ivycc0920",
+      "at": "2026-08-21T01:01:13+00:00",
+      "hash": "976d3b86fe1279dd8c79abae3fc6906b1cd40e5d8a04acac28195ba2f6c5a6fc",
+      "task": "F-351",
+      "token": "CLAUDE_CODE_SESSION_ID:34f19dd1-60f4-4279-b7ba-e40ce133b27f"
     },
     "tools/enemy_net_check.gd": {
       "agent": "lp",
@@ -1455,7 +1581,7 @@
       "token": null
     }
   },
-  "rev": 182,
+  "rev": 196,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -5839,7 +5965,7 @@
     "F-328": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "The run-scope totality audit already misses three newly registered autoloads"
     },
@@ -5876,7 +6002,7 @@
     "F-333": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Command rate limiting drops legitimate back-to-back operations instead of scheduling them"
     },
@@ -5890,7 +6016,7 @@
     "F-335": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Two verification checks no longer test the shipped contracts they claim"
     },
@@ -5918,7 +6044,7 @@
     "F-339": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Jittered terrain vertices keep normals derived from the unjittered height grid"
     },
@@ -5946,7 +6072,7 @@
     "F-343": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "harvest_world_check is seed-dependent because live Mire can reduce its fixed-yield assertion"
     },
@@ -5960,7 +6086,7 @@
     "F-345": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Procedural co-op spawn offsets are not placed on their own terrain surface"
     },
@@ -5986,6 +6112,31 @@
       "status": "done",
       "tier": "F",
       "title": "Procedural trees collide as canopy-wide cylinders, not trunks"
+    },
+    "F-349": {
+      "done_at": "2026-08-21T01:01:06+00:00",
+      "done_by": "ivycc0920",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Blight drains a standing player to death with no signal that anything is happening"
+    },
+    "F-350": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The Mire saturates the whole island in 30 minutes and nothing ever pushes it back"
+    },
+    "F-351": {
+      "done_at": "2026-08-21T01:01:13+00:00",
+      "done_by": "ivycc0920",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Enemies navigate a map the streamed world never bakes into \u2014 every chunk navmesh is on NavBaker's private map"
     }
   },
   "version": 1

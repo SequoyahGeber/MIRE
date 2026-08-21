@@ -7571,3 +7571,30 @@ Tree colliders now match the trunk, not the canopy — foliage surfaces excluded
 Files: `world/gen/resource_scatter_field.gd`, `tools/tree_collider_check.gd`
 
 Commit at time of writing: `32bbbfe`
+
+---
+
+### DONE · F-349 · ivycc0920 · 2026-08-21T01:01:06+00:00
+
+**Blight drains a standing player to death with no signal that anything is happening**
+
+Blight diagnosed and measured: spawn crosses the lethal threshold at 58 s and the island is 100% saturated at 30 min (tools/blight_timeline_check.gd). Filed F-350 for the saturation itself. No fix applied — both halves are design calls.
+
+Files: `tools/blight_timeline_check.gd`
+
+Commit at time of writing: `3206cde`
+
+---
+
+### DONE · F-351 · ivycc0920 · 2026-08-21T01:01:13+00:00
+
+**Enemies navigate a map the streamed world never bakes into — every chunk navmesh is on NavBaker's private map**
+
+Root-caused and reproduced: NavBaker mints a private navigation map for all 25 streamed chunk regions while every Enemy's NavigationAgent3D queries the default map, which holds only EnemyWorld's one stale session-start region. Crawler walks 11.98 -> 21.44 m AWAY from the player. Fix blocked on F-331's file claims — see the note.
+
+Notes along the way:
+- Fix is BLOCKED, not skipped: systems/enemies/enemy.gd and autoload/enemy_world.gd are both claimed by ivy1bcae0 for F-331, and two agents in one file conflict. Everything except the two-line map assignment is done and in the repo — the mechanism is proven and tools/enemy_nav_map_check.gd reproduces it and exits 1. Whoever holds those files next should point each NavigationAgent3D at NavBaker.map_rid() when the level has a NavBaker, and stop EnemyWorld.bake_navigation() adding a competing EnemyNavRegion in that case; the check flips to exit 0 when the two maps are one.
+
+Files: `tools/enemy_nav_map_check.gd`
+
+Commit at time of writing: `3206cde`
