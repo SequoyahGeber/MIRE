@@ -8088,3 +8088,15 @@ Notes along the way:
 Files: `assets/audit/lighting/f408_neutral_probe.json`
 
 Commit at time of writing: `4b38288`
+
+---
+
+### REOPEN · F-408 · emberd89a44 · 2026-08-21T05:20:33+00:00
+
+**Daytime grade is fluorescent and crushed rather than Valheim-like**
+
+Reopened (was marked done 2026-08-21 by kilnd3a089).
+
+The white-point/saturation correction removed the worst radioactive clipping, but F-408's acceptance was broader and is not met: the sky remains a flat dark-grey/blue field, the horizon is disconnected, daytime still has crushed near-black shadows and harsh leaf/trunk values, no overcast/golden/night control suite was verified, and the user explicitly says the game lacks atmosphere. Continue from 7cf1225; do not revert its highlight-headroom fix. F-409 records the partial white-point work and visible leftovers.
+
+Commit at time of writing: `7cf1225`

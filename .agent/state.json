@@ -2729,7 +2729,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 465,
+  "rev": 468,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -7733,13 +7733,18 @@
       "title": "agent claim with more than one file stores the whole list as a single dictionary key, so the pre-commit hook never sees any of them as claimed"
     },
     "F-408": {
-      "done_at": "2026-08-21T05:20:00+00:00",
-      "done_by": "kilnd3a089",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "done",
+      "status": "todo",
       "tier": "F",
       "title": "Daytime grade is fluorescent and crushed rather than Valheim-like"
+    },
+    "F-409": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The daytime white point clips sunlit ground per-channel, and a 1.30 saturation boost multiplies the clipped result \u2014 the ground renders radioactive lime"
     }
   },
   "version": 1

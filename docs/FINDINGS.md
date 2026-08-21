@@ -2575,7 +2575,35 @@ a stale joined key is indistinguishable from a legitimately-named file and will 
 
 ---
 
-### F-409 · The daytime white point clips sunlit ground per-channel, and a 1.30 saturation boost multiplies the clipped result — the ground renders radioactive lime
+### F-410 · Three visual defects remain in the noon frame after the grade fix: pale grey trunks, orange canopy facets, and a flat grey horizon
+
+**Area:** render · **Severity:** medium · **Found:** 2026-08-21 by kilnd3a089
+
+Split out of F-409 so the lighting work has a clean open item. All three are visible in
+`assets/audit/lighting/f408_noon_after.png`, rendered after F-408/F-409 fixed the fluorescent ground.
+None of them is a grade problem — the grade is now roughly right and these did not move with it.
+
+**1. Tree trunks render pale grey with a near-white root flare, not bark.** Most obvious on the
+foreground pine. F-396 rebuilt the trunks as stacked frusta and added "a second darker tone so the
+facets catch light the way the canopy's already do" (`tools/blender/build_mire_map_kit.py`). The
+result on screen is not a second bark tone, it is grey — so the likely cause is that the new tone is
+resolving to the wrong palette entry, or to a roof/stone token rather than a bark one. Check what
+`mire_art.mat()` returns for whatever token the trunk builder now passes; note F-092 records that
+this exact helper had a cache bug where `key` and the datablock name disagreed.
+
+**2. Some canopy facets are orange/tan** in a way that reads as untextured geometry rather than
+autumn colour — scattered across several trees, not confined to one species.
+
+**3. The sky is flat and grey toward the horizon.** This is **F-357** ("A flat pale-grey band sits
+above the horizon in every daytime view, and six candidate causes have been eliminated"), still open,
+and with the ground no longer blowing out it is now the single most obviously wrong thing in frame.
+Worth re-reading F-357's eliminated-causes list before starting — six are already ruled out.
+
+---
+
+## Resolved
+
+### F-409 · The daytime white point clips sunlit ground per-channel, and a 1.30 saturation boost multiplies the clipped result — the ground renders radioactive lime — **fixed**
 
 **Area:** render · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
 
@@ -2616,9 +2644,18 @@ next:
 3. **The sky is flat and grey toward the horizon** — this is F-357, still open, and it is now the
    most obviously wrong thing left in the frame.
 
----
+**Resolved 2026-08-21 by kilnd3a089.** Same fix as F-408, which turned out to be the pre-existing finding for this exact symptom
+("Daytime grade is fluorescent and crushed rather than Valheim-like"). `DAY_TONEMAP_WHITE` 1.0 -> 1.8
+and `DAY_ADJUSTMENT_SATURATION` 1.30 -> 1.10; rendered at
+`assets/audit/lighting/f408_noon_after.png`.
 
-## Resolved
+Kept as its own entry rather than folded away because the DIAGNOSIS is the durable part and F-408 was
+written from the symptom: the mechanism is per-channel clipping at the ACES white point, not a bad
+palette. A saturated albedo under a bright sun pins one channel and not the others, which is why the
+result was specifically LIME rather than merely bright.
+
+The three defects still visible in that frame are carried forward as their own open finding for
+whoever takes the lighting next.
 
 ### F-408 · Daytime grade is fluorescent and crushed rather than Valheim-like — **fixed**
 
