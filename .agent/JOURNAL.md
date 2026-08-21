@@ -8793,3 +8793,15 @@ Notes along the way:
 Files: `autoload/guide_service.gd`, `ui/hud/guide_hud.gd`, `systems/guide/guide_step_def.gd`, `tools/guide_check.gd`, `autoload/registry.gd`, `autoload/settings_service.gd`, `core/save/settings_save.gd`, `ui/hud/focus_prompt.gd`, `ui/frontend/settings_screen.gd`, `content/guide/build_anvil.tres`, `content/guide/cap_wellspring.tres`, `content/guide/chop_a_tree.tres`, `content/guide/craft_first_axe.tres`, `content/guide/craft_stone_tools.tres`, `content/guide/find_bog_iron.tres`, `content/guide/forge_bogsilver.tres`, `content/guide/forge_wellglass.tres`, `content/guide/gather_fibre.tres`, `content/guide/kill_guardian.tres`, `content/guide/place_workbench.tres`, `content/guide/push_or_leave.tres`, `content/guide/smelt_iron.tres`, `content/guide/tip_corrupted_ground.tres`, `content/guide/tip_downed.tres`, `content/guide/tip_enemy_close.tres`, `content/guide/tip_first_night.tres`, `content/guide/tip_ship_ready.tres`, `content/guide/tip_tool_blocked.tres`, `tools/settings_check.gd`
 
 Commit at time of writing: `c5bd240`
+
+---
+
+### DONE · F-472 · coil26502f · 2026-08-21T23:28:27+00:00
+
+**Placement snaps to a fixed world grid with no toggle and no piece-to-piece mating, so a structure lines up only where the grid happens to agree**
+
+resolve_placement: free placement, neighbour mating, V/D-pad-left toggle, protocol 23; 10 checks green; D-202 recorded; F-473 filed
+
+Files: `systems/building/placement_validator.gd`, `systems/building/build_ghost.gd`, `autoload/build_service.gd`, `core/net/net_version.gd`, `core/net/rpc_manifest.gd`, `entities/player/player_controller.gd`, `ui/building/build_bar.gd`, `project.godot`, `docs/FINDINGS.md`, `docs/DELEGATION.md`, `tools/build_check.gd`, `tools/build_net_check.gd`, `tools/build_snap_check.gd`, `tools/handshake_check.gd`, `tools/gamepad_check.gd`
+
+Commit at time of writing: `2b13db1`
