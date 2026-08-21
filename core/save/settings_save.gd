@@ -41,14 +41,14 @@ static func load_data(path: String = SAVE_PATH) -> Dictionary:
 ## Writes `data` to `path` (defaults to `SAVE_PATH`), stamping the current schema version. Whole-file
 ## overwrite, not an append or a diff — the save is a handful of scalars plus a small keybind map, so
 ## there is nothing an incremental write would save that is worth the corruption risk of a partial one.
-static func save_data(data: Dictionary, path: String = SAVE_PATH) -> void:
-	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
-	if file == null:
-		push_error("SettingsSave: could not open %s for write (%s)" % [path, error_string(FileAccess.get_open_error())])
-		return
+##
+## Durable, via `AtomicJson` (F-326): the document lands in a sibling `.part` file and is renamed over
+## the destination, so an interrupted write leaves the PREVIOUS settings intact rather than an empty
+## file that `load_data()` would silently resolve to defaults — losing every rebound key and slider.
+## `false` means the save did not happen AND the old one survived.
+static func save_data(data: Dictionary, path: String = SAVE_PATH) -> bool:
 	data["schema_version"] = SCHEMA_VERSION
-	file.store_string(JSON.stringify(data))
-	file.close()
+	return AtomicJson.write(path, data, "SettingsSave")
 
 
 static func _default_data() -> Dictionary:

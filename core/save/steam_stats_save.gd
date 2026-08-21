@@ -44,14 +44,14 @@ static func load_data(path: String = SAVE_PATH) -> Dictionary:
 ## overwrite, not an append or a diff — same reasoning as `SalvageSave.save_data()`: the save is a
 ## handful of small dictionaries, so there is nothing an incremental write would save that is worth
 ## the corruption risk of a partial one.
-static func save_data(data: Dictionary, path: String = SAVE_PATH) -> void:
-	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
-	if file == null:
-		push_error("SteamStatsSave: could not open %s for write (%s)" % [path, error_string(FileAccess.get_open_error())])
-		return
+##
+## Durable, via `AtomicJson` (F-326): the document lands in a sibling `.part` file and is renamed over
+## the destination, so an interrupted write leaves the PREVIOUS stats intact rather than an empty file
+## that `load_data()` would silently resolve to zeroed lifetime counters. `false` means the save did
+## not happen AND the old one survived.
+static func save_data(data: Dictionary, path: String = SAVE_PATH) -> bool:
 	data["schema_version"] = SCHEMA_VERSION
-	file.store_string(JSON.stringify(data))
-	file.close()
+	return AtomicJson.write(path, data, "SteamStatsSave")
 
 
 static func _default_data() -> Dictionary:

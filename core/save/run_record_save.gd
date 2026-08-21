@@ -43,15 +43,15 @@ static func load_data(path: String = SAVE_PATH) -> Dictionary:
 	return _migrate(parsed as Dictionary)
 
 
-static func save_data(data: Dictionary, path: String = SAVE_PATH) -> void:
-	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
-	if file == null:
-		push_error("RunRecordSave: could not open %s for write (%s)"
-			% [path, error_string(FileAccess.get_open_error())])
-		return
+## Writes `data` to `path` (defaults to `SAVE_PATH`), stamping the current schema version.
+##
+## Durable, via `AtomicJson` (F-326): the document lands in a sibling `.part` file and is renamed over
+## the destination, so an interrupted write leaves the PREVIOUS run record intact rather than an empty
+## file that the title screen would silently resolve to "no last run". `false` means the save did not
+## happen AND the old one survived.
+static func save_data(data: Dictionary, path: String = SAVE_PATH) -> bool:
 	data["schema_version"] = SCHEMA_VERSION
-	file.store_string(JSON.stringify(data))
-	file.close()
+	return AtomicJson.write(path, data, "RunRecordSave")
 
 
 ## `has_run` is what the title screen's last-expedition card keys off. It is a separate flag rather
