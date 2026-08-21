@@ -6,7 +6,7 @@
 script = ExtResource("1_heath")
 id = &"heath"
 display_name = "Heath"
-height_min = 2.4
+height_min = 3.1
 height_max = 100.0
 moisture_min = 0.0
 moisture_max = 0.15

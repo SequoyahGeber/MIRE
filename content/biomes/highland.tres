@@ -6,7 +6,7 @@
 script = ExtResource("1_highland")
 id = &"highland"
 display_name = "Pine Highland"
-height_min = 5.3
+height_min = 6.9
 height_max = 100.0
 moisture_min = 0.4
 moisture_max = 1.0

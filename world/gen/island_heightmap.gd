@@ -70,7 +70,7 @@ const FREQUENCY_SCALE: float = _FREQUENCY_REFERENCE_RADIUS / ISLAND_RADIUS
 ## make the map closer to sea level with very very gentle rolling hills." With LAND_BIAS below,
 ## the walkable interior now sits ~1.8-4.8 m above the water instead of ~8, so the shore is a
 ## beach you step off, not a bank you fall down.
-const HEIGHT_SCALE: float = 8.5
+const HEIGHT_SCALE: float = 11.0
 
 ## How much of the continental noise actually reaches the surface. His second verdict (2026-08-20,
 ## same day, off the first retune's renders): "still wayyy too steep on the hills, im thinking like
@@ -96,8 +96,8 @@ const HILL_OFFSET_MAX: float = 0.62
 ## is a rise you jog over, visibly a hill only because the ground around it is nearly flat.
 const HILL_RADIUS_MIN: float = 30.0     # metres
 const HILL_RADIUS_MAX: float = 60.0
-const HILL_HEIGHT_MIN: float = 4.0      # metres of lift at the crown
-const HILL_HEIGHT_MAX: float = 7.5
+const HILL_HEIGHT_MIN: float = 5.5      # metres of lift at the crown
+const HILL_HEIGHT_MAX: float = 10.5
 const HILL_SALT: int = 0x48C3D1
 ## Fraction of ISLAND_RADIUS where the falloff begins. Inside this, height is unmasked; outside,
 ## it tapers cubically to 0 at ISLAND_RADIUS.
@@ -144,7 +144,7 @@ const DETAIL_NOISE_WEIGHT: float = 0.08
 ## still read as a mountain range — the exact thing the Muck-reference direction rules out. 2 m,
 ## multiplied by the biome amplitudes (forest 0.9, grassland 0.25), is rolling texture on the high
 ## ground, not a skyline.
-const RIDGE_WEIGHT: float = 1.7
+const RIDGE_WEIGHT: float = 2.2
 
 ## Domain warp: the coastline's own coordinates are pushed around by a second
 ## noise field before the continental noise is sampled, which is what turns fBm's

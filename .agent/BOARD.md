@@ -9,12 +9,13 @@
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
 | **F-400** The island's hills are too low to read as landform at the new island size | kilnd3a089 | 2026-08-21 05:25 | `world/gen/island_heightmap.gd`, `content/biomes/shore.tres`, `content/biomes/marsh.tres`, `content/biomes/forest.tres`, `content/biomes/birchwood.tres`, `content/biomes/highland.tres`, `content/biomes/grassland.tres`, `content/biomes/heath.tres`, `tools/biome_terrain_check.gd` |
+| **F-416** Every settings checkbox is invisible when off — MireTheme.toggle() is unstyled | coil995fd7 | 2026-08-21 06:47 | `ui/theme/mire_theme.gd`, `tools/settings_screen_check.gd`, `tools/settings_render_check.gd` |
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `█████████░` 364/421 | 57 |
+| Findings | `█████████░` 364/422 | 58 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -105,6 +106,7 @@
 | ⬜ | **F-405** step_height is 0.4 m but nothing below it is actually climbable — the capsule's rounded bottom catches the kerb edge and the is_on_floor() guard kills the next attempt | todo |
 | ⬜ | **F-406** agent claim with more than one file stores the whole list as a single dictionary key, so the pre-commit hook never sees any of them as claimed | todo |
 | ⬜ | **F-412** The command system does not yet meet the Minecraft-like capability bar | todo |
+| 🔵 | **F-416** Every settings checkbox is invisible when off — MireTheme.toggle() is unstyled | in_flight |
 
 ## Done
 

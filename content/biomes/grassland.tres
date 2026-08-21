@@ -6,7 +6,7 @@
 script = ExtResource("1_grassland")
 id = &"grassland"
 display_name = "Meadow"
-height_min = 2.4
+height_min = 3.1
 height_max = 100.0
 moisture_min = 0.15
 moisture_max = 0.4

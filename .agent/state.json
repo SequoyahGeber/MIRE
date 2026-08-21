@@ -2,55 +2,73 @@
   "claims": {
     "content/biomes/birchwood.tres": {
       "agent": "kilnd3a089",
-      "at": "2026-08-21T05:26:35+00:00",
+      "at": "2026-08-21T06:47:16+00:00",
       "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "content/biomes/forest.tres": {
       "agent": "kilnd3a089",
-      "at": "2026-08-21T05:26:35+00:00",
+      "at": "2026-08-21T06:47:15+00:00",
       "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "content/biomes/grassland.tres": {
       "agent": "kilnd3a089",
-      "at": "2026-08-21T05:26:35+00:00",
+      "at": "2026-08-21T06:47:16+00:00",
       "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "content/biomes/heath.tres": {
       "agent": "kilnd3a089",
-      "at": "2026-08-21T05:26:35+00:00",
+      "at": "2026-08-21T06:47:16+00:00",
       "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "content/biomes/highland.tres": {
       "agent": "kilnd3a089",
-      "at": "2026-08-21T05:26:35+00:00",
+      "at": "2026-08-21T06:47:16+00:00",
       "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "content/biomes/marsh.tres": {
       "agent": "kilnd3a089",
-      "at": "2026-08-21T05:26:35+00:00",
+      "at": "2026-08-21T06:47:15+00:00",
       "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "content/biomes/shore.tres": {
       "agent": "kilnd3a089",
-      "at": "2026-08-21T05:26:35+00:00",
+      "at": "2026-08-21T06:47:15+00:00",
       "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "tools/biome_terrain_check.gd": {
       "agent": "kilnd3a089",
-      "at": "2026-08-21T05:28:01+00:00",
+      "at": "2026-08-21T06:47:15+00:00",
       "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
+    "tools/settings_render_check.gd": {
+      "agent": "coil995fd7",
+      "at": "2026-08-21T06:47:05+00:00",
+      "task": "F-416",
+      "token": "CLAUDE_CODE_SESSION_ID:44f62a84-7862-455b-a776-2e1c5eb11d39"
+    },
+    "tools/settings_screen_check.gd": {
+      "agent": "coil995fd7",
+      "at": "2026-08-21T06:47:05+00:00",
+      "task": "F-416",
+      "token": "CLAUDE_CODE_SESSION_ID:44f62a84-7862-455b-a776-2e1c5eb11d39"
+    },
+    "ui/theme/mire_theme.gd": {
+      "agent": "coil995fd7",
+      "at": "2026-08-21T06:47:05+00:00",
+      "task": "F-416",
+      "token": "CLAUDE_CODE_SESSION_ID:44f62a84-7862-455b-a776-2e1c5eb11d39"
+    },
     "world/gen/island_heightmap.gd": {
       "agent": "kilnd3a089",
-      "at": "2026-08-21T05:25:41+00:00",
+      "at": "2026-08-21T06:47:15+00:00",
       "task": "F-400",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     }
@@ -72,6 +90,17 @@
       "notes": [],
       "started": "2026-08-21T05:25:41+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "F-416": {
+      "agent": "coil995fd7",
+      "files": [
+        "ui/theme/mire_theme.gd",
+        "tools/settings_screen_check.gd",
+        "tools/settings_render_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-21T06:47:05+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:44f62a84-7862-455b-a776-2e1c5eb11d39"
     }
   },
   "recent": {
@@ -1678,13 +1707,6 @@
       "task": "F-351",
       "token": "CLAUDE_CODE_SESSION_ID:34f19dd1-60f4-4279-b7ba-e40ce133b27f"
     },
-    "systems/environment/day_night.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T06:34:42+00:00",
-      "hash": "da7230cb9350a1c8d5f5c576fe430a9f8ff6d83c0441ad72cb5c02b8d38c72dd",
-      "task": "F-278",
-      "token": null
-    },
     "systems/harvesting/harvest_library.gd": {
       "agent": "kilnd3a089",
       "at": "2026-08-21T03:15:17+00:00",
@@ -1907,13 +1929,6 @@
       "at": "2026-08-20T11:15:17+00:00",
       "hash": "09a14edd7bdf0beaf74d5c95c9a982db714027e8422f2b28caf96bcabe1460e3",
       "task": "F-290",
-      "token": null
-    },
-    "tools/day_night_restart_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T06:34:42+00:00",
-      "hash": "e94f90211d3af6fadb74234e0ce633c35bbb4393c6834fcb2c4002a2e7eb9f93",
-      "task": "F-278",
       "token": null
     },
     "tools/decision_ref_check.py": {
@@ -2371,13 +2386,6 @@
       "task": "F-307",
       "token": null
     },
-    "tools/terminal_focus_check.gd.uid": {
-      "agent": "lm",
-      "at": "2026-08-20T06:31:22+00:00",
-      "hash": "cea92bb9c622cf1c672ddceb15268df17af2b565555f943ce2d27f5ff4ed96c7",
-      "task": "F-275",
-      "token": null
-    },
     "tools/terrain_check.gd": {
       "agent": "quill5fa5c7",
       "at": "2026-08-20T21:58:15+00:00",
@@ -2757,7 +2765,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     }
   },
-  "rev": 667,
+  "rev": 679,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -7825,6 +7833,13 @@
       "status": "done",
       "tier": "F",
       "title": "Night should strongly reward a torch without making moonless navigation impossible"
+    },
+    "F-416": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Every settings checkbox is invisible when off \u2014 MireTheme.toggle() is unstyled"
     }
   },
   "version": 1

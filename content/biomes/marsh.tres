@@ -6,8 +6,8 @@
 script = ExtResource("1_marsh")
 id = &"marsh"
 display_name = "Marsh"
-height_min = 2.4
-height_max = 4.2
+height_min = 3.1
+height_max = 5.5
 moisture_min = 0.62
 moisture_max = 1.0
 priority = 4

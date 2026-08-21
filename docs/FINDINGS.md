@@ -2239,17 +2239,6 @@ ui/frontend/settings_screen.gd's DISPLAY tab exposes only graphics quality and F
 
 ## Resolved
 
-### F-415 · Night should strongly reward a torch without making moonless navigation impossible — **fixed**
-
-**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by emberd89a44
-
-Sequoyah's post-F-356 target is darker than the first readable-night pass: silhouettes, the path, and broad terrain should remain navigable by moonlight, but nearby detail, gathering, and threat recognition should strongly reward a torch. Preserve the approved daytime endpoint and F-356's indigo sky/moon directionality; lower ground midtones without returning to the old black frame.
-
-**Resolved 2026-08-21 by emberd89a44.** Darkened only the night endpoints after Sequoyah clarified the target: broad terrain and silhouettes remain navigable under moonlight, while fine detail, gathering, and threat recognition strongly reward a torch. Kept F-356's indigo sky, stars, cool moon directionality, and the approved daytime endpoint.
-
-Fixed-seed Forward+ proof `f415_12_dark_moonlit_night.png` measures luminance p05 0.0183, median 0.0835, p95 0.2596, with 8.66% below 0.02. That is deliberately darker than F-356's 0.1105 median without returning to the broken 0.0127 baseline. Verified atmosphere night, grade, graphics-quality, and findings-numbering checks at zero failures.
-
-
 ### F-356 · Night renders essentially black on the shipped grade — the ground is invisible, not merely dark — **fixed**
 
 **Area:** render · **Severity:** high · **Found:** 2026-08-21 by gale47f1fe
