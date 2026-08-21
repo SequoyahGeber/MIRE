@@ -1587,14 +1587,6 @@ Two smaller gaps found alongside, worth folding into the same task:
 
 ---
 
-### F-346 · Chunk navigation regions repeatedly report overlapping edge synchronization errors
-
-**Area:** navigation · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
-
-The stable `spawn_ground_check.gd` run emitted repeated `Navigation region synchronization had 3-10 edge error(s)` warnings: more than two edges occupy the same map rasterization space, which Godot labels a logical navigation-geometry error. Similar warnings appear while four chunk regions attach in `nav_bake_check.gd`, even though sampled cross-boundary paths currently work. The overlap can create ambiguous connections and log spam as chunks stream/rebuild. Eliminate duplicate/overlapping boundary geometry or tune cell size/geometry margin/merge rasterizer scale from measured path coverage, then make the warning count part of the nav check contract.
-
----
-
 ### F-349 · Blight drains a standing player to death with no signal that anything is happening
 
 **Area:** systems · **Severity:** high · **Found:** 2026-08-21 by ivycc0920
@@ -1752,14 +1744,6 @@ more complete fix, since it also removes the double-stepping every other asserti
 
 ---
 
-### F-355 · Godot project and export settings need a release-readiness audit
-
-**Area:** build/export · **Severity:** medium · **Found:** 2026-08-21 by moss5523e3
-
-Sequoyah requested a full Godot editor audit of project settings, editor-visible settings, export presets, and installed export templates. Verify effective settings against the pinned 4.7.1 engine and MIRE's architecture, inspect all desktop presets in the editor, correct only objective project/export deficiencies under exact guarded-file claims with the editor closed, validate exports as far as this machine allows, and document any identity/signing/store metadata that intentionally remains placeholder or human-supplied.
-
----
-
 ### F-356 · Night renders essentially black on the shipped grade — the ground is invisible, not merely dark
 
 **Area:** render · **Severity:** high · **Found:** 2026-08-21 by gale47f1fe
@@ -1887,7 +1871,128 @@ a missed budget, phase 4f isolates attach from retire, and D-016 is marked AMBER
 
 ---
 
+### F-359 · Release smoke boot reports NavigationServer3D edge-overlap warnings
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by moss5523e3
+
+The freshly exported macOS Release build exits 0, but its authored-world boot prints two Navigation region synchronization warnings (2 and 4 edge errors): more than two edges occupy the same rasterization space. Do not silence navigation/3d/warnings/navmesh_edge_merge_errors globally; inspect the generated/baked navigation geometry and choose cell_size, geometry margin, or overlap corrections with a navigation-focused check. Evidence: export/release/macos/MIRE.app/Contents/MacOS/MIRE --headless --quit-after 15, log /tmp/mire-f355-release-smoke.log.
+
+---
+
+### F-360 · A concurrent agent's staging can silently drop files from your commit, not just add theirs
+
+**Area:** tooling/concurrency · **Severity:** high · **Found:** 2026-08-21 by ivy1bcae0
+
+Found 2026-08-20 by ivy1bcae0, with a worked instance.
+
+F-267 records one direction of the shared-index hazard: `agent ship` sweeping a sibling's
+uncommitted hunks INTO your commit. This is the other direction, and it is worse because it is
+silent.
+
+**What happened.** Staging three files for F-347:
+
+    git add tools/bench_navbake.gd docs/DECISIONS.md docs/FINDINGS.md
+    git diff --cached --name-only     -> all three, confirmed
+
+then committing in the next command. The commit (`3d17296`) contains only the two docs.
+`tools/bench_navbake.gd` — the entire code half of the fix — was silently absent, and the finding
+resolved in the same commit described behaviour that had not shipped. Recovered as `6dfbd69` only
+because the stat was read afterwards.
+
+**Why.** Three agent sessions share one `.git/index`. Between the `git add` and the `git commit`,
+another session (`gale47f1fe`, committing F-353) ran its own staging cycle, which reset the index
+and took my file out of it. Nothing errored. `git add` succeeded, `git commit` succeeded, and the
+result was a commit missing a third of its content.
+
+**The tell was visible and ignorable.** The pre-commit hook printed `✓ check passed (2 changed
+file(s), session: ivy1bcae0)` where three had been staged. That count is the only signal, it is
+phrased as a success, and nothing compares it to what the author staged.
+
+**Also observed in the same window:** `.git/index.lock` held by another session (waited it out
+rather than removing it — removing a live lock is how an index gets corrupted), and ten of that
+session's untracked PNGs sitting staged in my index between my own commands.
+
+Worth fixing, roughly in order:
+
+1. **Make the hook compare.** It already counts staged files; have `agent check` take the expected
+   set (or hash the index at `agent claim` time) and refuse a commit whose staged set is not the one
+   the session put there. A count that is only ever printed is not a guard.
+2. **Give `agent ship` an atomic stage-and-commit** that holds a repo-level lock across both, the
+   same way `agent godot` holds one across the import cache (F-044/F-196). The window this finding
+   exploits is exactly the gap between two commands.
+3. **Never use glob pathspecs with `git add` in this repo.** A separate near-miss in the same
+   session staged another lane's two level `.tscn` files, a shader, `chunk_streamer.gd` and ten PNGs;
+   the D-031 hook caught that one, but only because Godot files have their own guard. Explicit paths
+   only.
+
+Until 1 or 2 lands, the practical rule for every agent: after committing, run
+`git show --stat --name-only HEAD` and confirm it contains what you meant. Do not trust that
+`git add` and `git commit` saw the same index.
+
+---
+
 ## Resolved
+
+### F-346 · Chunk navigation regions repeatedly report overlapping edge synchronization errors — **fixed**
+
+**Area:** navigation · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
+
+The stable `spawn_ground_check.gd` run emitted repeated `Navigation region synchronization had 3-10 edge error(s)` warnings: more than two edges occupy the same map rasterization space, which Godot labels a logical navigation-geometry error. Similar warnings appear while four chunk regions attach in `nav_bake_check.gd`, even though sampled cross-boundary paths currently work. The overlap can create ambiguous connections and log spam as chunks stream/rebuild. Eliminate duplicate/overlapping boundary geometry or tune cell size/geometry margin/merge rasterizer scale from measured path coverage, then make the warning count part of the nav check contract.
+
+---
+
+**Resolved 2026-08-21 by ivy1bcae0.** **Closed 2026-08-20 by ivy1bcae0 — diagnosed, and bounded rather than eliminated.**
+
+The finding offers two routes: eliminate duplicate/overlapping boundary geometry, or tune the
+rasterizer from measured path coverage and then make the warning count part of the nav check
+contract. The first two were measured and ruled out; the third is what shipped.
+
+**Not duplicated geometry.** `NavBaker._source_geometry()` bakes exactly one chunk's
+`collision_faces()` plus that chunk's own pieces — no apron, no neighbour overlap. And
+`biome_terrain_check` independently asserts that two neighbours place every shared border vertex at
+the identical world position, to within 0.1 mm, which currently passes. (The audit describes that
+check as "still requiring every border vertex to sit on the unjittered grid"; it does not — it
+asserts neighbour AGREEMENT, which is the property that survives jitter.)
+
+**Not the merge rasterizer's resolution.** Drove `map_set_merge_rasterizer_cell_scale` across
+0.25 / 0.5 / 1.0 / 2.0 on four adjacent baked regions: **zero edge errors at every scale**, with the
+cross-seam path intact at every scale. Synthetic regular geometry does not reproduce the warning at
+all, which is itself the useful result — it is specific to independently-baked regions of real
+terrain meeting at a seam, most likely the several boundary edges converging where four chunks share
+a corner.
+
+**And the margin cannot shrink.** D-016 requires `edge_connection_margin` above 2x agent radius
+(1.10 m for a 0.5 m agent) or chunks do not connect at all.
+
+So the count becomes the contract. `nav_bake_check.gd` gains `_check_edge_error_budget()`, which
+spawns a child that boots the SHIPPED world and lets it stream for 240 frames, then counts
+`edge error(s)` off the child's stderr and asserts it against `EDGE_ERROR_BUDGET = 24`. It measures
+**10** today and passes.
+
+The scenario choice is the load-bearing part. The first version ran this file's own
+`_check_bakes_and_attaches()` — four regions it bakes itself — and measured **zero**, which would
+have shipped a budget that could never fail while the real path produced fourteen. A budget measured
+on a scenario that does not reproduce the thing is worse than no budget, because it reads as
+coverage. Same failure mode as F-335's toothless POI control, caught before it shipped this time.
+
+Paths across the seam are unaffected and remain proven by this file's own seam phases:
+`nav_bake_check failures=0`.
+
+### F-355 · Godot project and export settings need a release-readiness audit — **fixed**
+
+**Area:** build/export · **Severity:** medium · **Found:** 2026-08-21 by moss5523e3
+
+Sequoyah requested a full Godot editor audit of project settings, editor-visible settings, export presets, and installed export templates. Verify effective settings against the pinned 4.7.1 engine and MIRE's architecture, inspect all desktop presets in the editor, correct only objective project/export deficiencies under exact guarded-file claims with the editor closed, validate exports as far as this machine allows, and document any identity/signing/store metadata that intentionally remains placeholder or human-supplied.
+
+---
+
+**Resolved 2026-08-21 by moss5523e3.** Audited the live Godot 4.7.1 editor, Project Settings, all six desktop export presets, the GodotSteam GDExtension, and Template Manager. The installed 4.7.1.stable template set contains all 21 official macOS, Windows, and Linux desktop templates; the editor's offered 4.7.2 update was deliberately not taken because MIRE pins 4.7.1. Jolt, physics interpolation, Forward+, D3D12-on-Windows, canvas-items scaling, effective 60 Hz/max-steps/vsync defaults, autoloads, and extension registration were already correct; `project.godot` required no change.
+
+Release presets now exclude steam_appid.txt plus developer tools, audit renders, source previews/catalogues, and the GodotSteam editor plugin; only runtime content and target release libraries ship. macOS and Linux shader baking is enabled using a real rendering device; Windows baking stays off because this is a macOS-hosted pipeline and D3D12 baking requires Windows. The duplicate runnable flags on Windows/Linux release presets were removed so the intended debug preset remains each platform's runnable preset. `tools/steam/export_release.sh` now builds all targets in a clean temporary staging tree, publishes only after all three exports succeed, strips macOS extended attributes, and performs strict signature verification before publish.
+
+Verified with `tools/steam/export_release.sh` (exit 0): Windows 124 MB, macOS 192 MB, Linux 93 MB, down from 198/266/166 MB; export-log and PCK-string checks found zero forbidden developer paths; Windows/Linux x86_64 and macOS universal x86_64+arm64 architectures passed; every target carries the matching GodotSteam release library and no release console wrapper. The staged macOS bundle passes `codesign --verify --deep --strict`; `tools/verify_setup.gd` reports all checks passed; the exported macOS game boots and exits 0. The smoke boot's separate navigation edge-overlap warnings are filed as F-359.
+
+The `test` bundle identifier, stock icon, ad-hoc macOS signature/no notarization, and unsigned Windows binary are not silently guessed here: real product naming/branding/signing remain the explicit 8.0, 8.5, and 8.10 release gates.
 
 ### F-347 · The navigation performance decision is no longer reproduced: the benchmark now records repeatable 39-43 ms streaming frames — **fixed**
 

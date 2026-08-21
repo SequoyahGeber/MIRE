@@ -37,6 +37,15 @@ const MIN_LAND_HEIGHT: float = 2.0
 ## real ground from the heightmap makes the check seed-independent and stops it from ever again
 ## reporting a terrain choice as a navigation bug.
 
+## F-346: total edge errors the streamed-region scenario may report before this check goes red.
+## The measured value on the settled tree is 14 (five synchronizations of 2-4). Set with headroom
+## for run-to-run variation in how many synchronizations a boot performs, but far below the count a
+## real geometry regression would produce.
+const EDGE_ERROR_BUDGET: int = 24
+## Frames the child lets the shipped world stream for. Enough that NavBaker attaches and retires
+## across several map synchronizations; the warnings appear during those.
+const EDGE_PROBE_FRAMES: int = 240
+
 var failures: int = 0
 var baker: Node
 var coords: Array[Vector2i] = []
@@ -52,6 +61,15 @@ func _initialize() -> void:
 func _run() -> void:
 	await process_frame
 
+	# F-346: the child half of `_check_edge_error_budget()`. Runs ONLY the bake-and-attach scenario
+	# and exits, so the parent can count the engine's edge-merge warnings off its stderr. Branching
+	# here rather than in a separate file keeps the measured scenario and the asserted scenario the
+	# same code — and the early return is what stops the parent's own probe from recursing.
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	if args.size() > 0 and args[0] == "edge-error-probe":
+		await _run_edge_error_probe()
+		return
+
 	_biome_defs = BiomeDefsLib.load_defs(self)
 	_noise_set = BiomeMapScript.make_noise_set(WORLD_SEED)
 	_table = BiomeMapScript.make_terrain_table(_biome_defs)
@@ -66,6 +84,7 @@ func _run() -> void:
 	await _check_buildable_obstruction()
 	await _check_retire()
 	await _check_enemy_world_buildable_obstruction()
+	_check_edge_error_budget()
 
 	if baker != null:
 		baker.free()
@@ -477,6 +496,76 @@ func _path_length(path: PackedVector3Array) -> float:
 	for i in range(1, path.size()):
 		total += path[i - 1].distance_to(path[i])
 	return total
+
+
+## The child half: boot the SHIPPED world and let it stream, which is what actually provokes the
+## warning. An earlier version of this ran `_check_bakes_and_attaches()` instead — four regions this
+## file bakes itself — and measured zero, which would have shipped a contract that could never fail
+## while the real path produced fourteen. A budget measured on a scenario that does not reproduce
+## the thing is worse than no budget, because it reads as coverage.
+func _run_edge_error_probe() -> void:
+	var packed: PackedScene = load("res://levels/procedural_island.tscn") as PackedScene
+	if packed == null:
+		push_error("edge-error-probe: could not load the shipped world")
+		quit(1)
+		return
+	var world: Node = packed.instantiate()
+	root.add_child(world)
+	current_scene = world
+	# Long enough for the streamer to cook its rings and for NavBaker to attach and retire regions
+	# across several map synchronizations — the window the warnings appear in.
+	for _frame: int in EDGE_PROBE_FRAMES:
+		await process_frame
+		await physics_frame
+	quit(0)
+
+
+## F-346: the map's edge-merge warning count, bounded so it cannot silently grow.
+##
+## Streaming the real island logs `Navigation region synchronization had N edge error(s)` — 2 to 4
+## per synchronization, five times over a `spawn_ground_check` run. Godot means "more than two region
+## edges landed in the same map rasterization cell", which it treats as a logical navigation-geometry
+## error because ambiguous connections can result.
+##
+## **What it is not.** Not duplicated source geometry: `NavBaker._source_geometry()` bakes exactly one
+## chunk's `collision_faces()` plus that chunk's own pieces, with no apron and no neighbour overlap,
+## and `biome_terrain_check` separately asserts that two neighbours place every shared border vertex
+## at the identical world position to within 0.1 mm. Nor is it the merge rasterizer's resolution:
+## driving `map_set_merge_rasterizer_cell_scale` across 0.25/0.5/1.0/2.0 on four adjacent baked
+## regions produced ZERO edge errors at every scale, with the cross-seam path intact at every scale.
+## And the margin cannot simply shrink — D-016 requires it above 2x agent radius (1.10 m for a 0.5 m
+## agent) or chunks do not connect at all.
+##
+## So it is specific to independently-baked regions of REAL terrain meeting at a seam, most likely
+## the several boundary edges that converge where four chunks share a corner. Paths across the seam
+## work — this check's own seam phases prove that — so the honest response is the one F-346 names as
+## the alternative to eliminating geometry: make the count a contract. A number that is currently
+## small and understood becomes a regression the moment it grows.
+##
+## Measured in a CHILD process because the warning goes to the engine's stderr, not through anything
+## this script can observe in-process.
+func _check_edge_error_budget() -> void:
+	var project_dir: String = ProjectSettings.globalize_path("res://")
+	var output: Array = []
+	var exit_code: int = OS.execute(OS.get_executable_path(), PackedStringArray([
+		"--headless", "--path", project_dir, "--script", "tools/nav_bake_check.gd",
+		"--", "edge-error-probe",
+	]), output, true)
+	if exit_code != 0 and output.is_empty():
+		check(false, "the edge-error probe process ran")
+		return
+	var text: String = "\n".join(output)
+	var errors: int = 0
+	for line: String in text.split("\n"):
+		var marker: int = line.find(" edge error(s)")
+		if marker == -1:
+			continue
+		var head: String = line.substr(0, marker)
+		var space: int = head.rfind(" ")
+		errors += int(head.substr(space + 1)) if space != -1 else 1
+	check(errors <= EDGE_ERROR_BUDGET,
+		"chunk regions synchronize within the recorded edge-error budget (%d of %d allowed)"
+			% [errors, EDGE_ERROR_BUDGET])
 
 
 func _until(condition: Callable, timeout_seconds: float) -> bool:
