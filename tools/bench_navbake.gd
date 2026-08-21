@@ -55,6 +55,8 @@ var _burst_block_ms: float = 0.0
 var _attach_block_ms: PackedFloat64Array = PackedFloat64Array()
 var _stream_block_ms: float = 0.0
 var _seam_ok: bool = false
+## Set by `_report()`; read by the quit below so a missed budget leaves a nonzero status (F-347).
+var _verdict_failed: bool = false
 var _seam_strategy: String = "none"
 var _control_ok: bool = false
 
@@ -95,7 +97,7 @@ func _run_frame_phases() -> void:
 	await _measure_async()
 	await _bench_seams()
 	_report()
-	quit()
+	quit(1 if _verdict_failed else 0)
 
 
 func _process(_delta: float) -> bool:
@@ -278,6 +280,9 @@ func _measure_async() -> void:
 	await _measure_attach(true)
 	await _measure_attach(false)
 
+	# 4f. F-347: which half of a streaming step is expensive.
+	await _measure_retire()
+
 	# 4e. The case that decides the verdict: a player walking into new terrain. One bake in
 	# flight at a time, each chunk attached as it lands, oldest chunks retired.
 	await _measure_streaming()
@@ -334,6 +339,130 @@ func _measure_attach(use_async_iterations: bool) -> void:
 ## The realistic streaming episode: bake one chunk at a time, attach it when it lands,
 ## retire the oldest so only a 3x3 window stays live. The worst engine-side frame across
 ## the whole episode is what a player would feel as a stutter.
+## F-347: attach and RETIREMENT, measured apart.
+##
+## `_measure_attach()` above only ever adds a region, and reports 0.009 ms median onto a live map.
+## The streaming episode adds a region AND frees the oldest one, and reports tens of milliseconds.
+## Freeing is the only structural difference between the two, so it is the first thing to isolate
+## rather than the last — a benchmark that reports one blended number for a two-part operation
+## cannot tell anyone which part to fix.
+func _measure_retire() -> void:
+	print("")
+	print("--- 4f. attach vs retire, measured apart (F-347) ---")
+	var retire_only: PackedFloat64Array = await _retire_cycle(false)
+	var attach_and_retire: PackedFloat64Array = await _retire_cycle(true)
+	retire_only.sort()
+	attach_and_retire.sort()
+	print("  [retire   ] free 1 region from a live %d-region map | median %.3f | max %.3f ms" % [
+		STREAM_LIVE, _pct(retire_only, 0.5), retire_only[retire_only.size() - 1],
+	])
+	print("  [add+retire] attach 1 and free 1 in the same step  | median %.3f | max %.3f ms" % [
+		_pct(attach_and_retire, 0.5), attach_and_retire[attach_and_retire.size() - 1],
+	])
+
+	# Which way of retiring is cheap. `NavBaker._retire()` ships the first one, so if another is
+	# materially cheaper this table is the argument for changing it — and if none is, that is worth
+	# knowing before anyone spends a session trying.
+	print("")
+	print("  retirement strategies, same map, same step count:")
+	for strategy: String in ["free_rid", "unset_map", "empty_mesh", "disable"]:
+		var blocks: PackedFloat64Array = await _retire_strategy(strategy)
+		blocks.sort()
+		print("    %-12s | median %7.3f | max %7.3f ms" % [
+			strategy, _pct(blocks, 0.5), blocks[blocks.size() - 1],
+		])
+
+
+## One retirement strategy, measured over `ATTACH_RUNS` steps on a warm map.
+##
+## `free_rid` is what `world/chunk/nav_baker.gd._retire()` ships today. The other three are the
+## alternatives that keep the RID alive so it can be reused, which is the shape a fix would take if
+## freeing turns out to be the expensive part.
+func _retire_strategy(strategy: String) -> PackedFloat64Array:
+	var map: RID = Probe.make_map(Probe.DEFAULT_CELL_SIZE, 1.10)
+	var live: Array[RID] = []
+	var held: Array[NavigationMesh] = []
+	var initial: int = STREAM_LIVE + ATTACH_RUNS + 1
+	for i: int in initial:
+		var nm: NavigationMesh = Probe.make_nav_mesh()
+		Probe.bake_sync(nm, Probe.make_source_geometry(i % 4, i / 4))
+		held.append(nm)
+		live.append(Probe.add_region(map, nm, Vector3(
+			float(i % 4) * Probe.CHUNK_SIZE, 0.0, float(i / 4) * Probe.CHUNK_SIZE
+		)))
+	await _wait_for_map(map)
+	var empty := NavigationMesh.new()
+
+	var blocks := PackedFloat64Array()
+	var retired: Array[RID] = []
+	for _run: int in ATTACH_RUNS:
+		var victim: RID = live.pop_front()
+		_gaps.clear()
+		_collect = true
+		match strategy:
+			"free_rid":
+				NavigationServer3D.free_rid(victim)
+			"unset_map":
+				NavigationServer3D.region_set_map(victim, RID())
+				retired.append(victim)
+			"empty_mesh":
+				NavigationServer3D.region_set_navigation_mesh(victim, empty)
+				retired.append(victim)
+			"disable":
+				NavigationServer3D.region_set_enabled(victim, false)
+				retired.append(victim)
+		await _wait_iterations(map, 2)
+		_collect = false
+		blocks.append(_block_stats()["worst"])
+
+	for r: RID in live + retired:
+		NavigationServer3D.free_rid(r)
+	NavigationServer3D.free_rid(map)
+	return blocks
+
+
+## One warm map, then `ATTACH_RUNS` steps that either free a region, or attach one and free one.
+## Returns the engine-side block for each step.
+func _retire_cycle(also_attach: bool) -> PackedFloat64Array:
+	var map: RID = Probe.make_map(Probe.DEFAULT_CELL_SIZE, 1.10)
+	var live: Array[RID] = []
+	var held: Array[NavigationMesh] = []
+	# Enough regions to keep freeing one for every step without running the map dry.
+	var initial: int = STREAM_LIVE + ATTACH_RUNS + 1
+	for i: int in initial:
+		var nm: NavigationMesh = Probe.make_nav_mesh()
+		Probe.bake_sync(nm, Probe.make_source_geometry(i % 4, i / 4))
+		held.append(nm)
+		live.append(Probe.add_region(map, nm, Vector3(
+			float(i % 4) * Probe.CHUNK_SIZE, 0.0, float(i / 4) * Probe.CHUNK_SIZE
+		)))
+	await _wait_for_map(map)
+
+	var blocks := PackedFloat64Array()
+	for run: int in ATTACH_RUNS:
+		var fresh: NavigationMesh = null
+		if also_attach:
+			fresh = Probe.make_nav_mesh()
+			Probe.bake_sync(fresh, Probe.make_source_geometry(3, run + 9))
+			held.append(fresh)
+		# Everything above is this script's own work and is deliberately outside the window.
+		_gaps.clear()
+		_collect = true
+		if also_attach:
+			live.append(Probe.add_region(map, fresh, Vector3(
+				3.0 * Probe.CHUNK_SIZE, 0.0, float(run + 9) * Probe.CHUNK_SIZE
+			)))
+		NavigationServer3D.free_rid(live.pop_front())
+		await _wait_iterations(map, 2)
+		_collect = false
+		blocks.append(_block_stats()["worst"])
+
+	for r: RID in live:
+		NavigationServer3D.free_rid(r)
+	NavigationServer3D.free_rid(map)
+	return blocks
+
+
 func _measure_streaming() -> void:
 	var map: RID = Probe.make_map(Probe.DEFAULT_CELL_SIZE, 1.10)
 	var live: Array[RID] = []
@@ -583,21 +712,57 @@ func _report() -> void:
 	])
 	print("")
 
+	# F-347: composed from two INDEPENDENT axes, because it used to be a fall-through ladder that
+	# conflated them. With a 39 ms block and seams connecting, every branch failed its test and the
+	# `else` printed "RED — hitches at runtime and seams do not join" — the second half flatly false,
+	# and contradicting the table two lines above it that reads "seams connect across chunk regions:
+	# YES". A verdict that argues with its own evidence gets discounted, and this verdict is the
+	# evidence D-016 rests on.
 	var verdict: String = ""
 	if not _control_ok:
 		verdict = "INVALID — the seam control failed; do not trust these numbers"
-	elif _stream_block_ms < HITCH_MS and _seam_ok:
-		verdict = "GREEN — async bake, sub-%.0f ms main-thread block, chunks connect" % HITCH_MS
-	elif _stream_block_ms < FRAME_BUDGET_MS and _seam_ok:
-		verdict = "AMBER — connects, but the block is above %.0f ms; needs mitigation" % HITCH_MS
-	elif _stream_block_ms < HITCH_MS:
-		verdict = "AMBER — no hitch, but chunk regions do not connect; needs a seam strategy"
+		_verdict_failed = true
 	else:
-		verdict = "RED — hitches at runtime and seams do not join"
+		var block_grade: String = _grade_block()
+		var seam_grade: String = "GREEN" if _seam_ok else "RED"
+		var grade: String = _worse_of(block_grade, seam_grade)
+		var block_clause: String = "block %.3f ms" % _stream_block_ms
+		if block_grade == "GREEN":
+			block_clause += " (under the %.0f ms budget)" % HITCH_MS
+		elif block_grade == "AMBER":
+			block_clause += " (over the %.0f ms budget, inside a %.1f ms frame)" % [
+				HITCH_MS, FRAME_BUDGET_MS]
+		else:
+			block_clause += " (over a whole %.1f ms frame)" % FRAME_BUDGET_MS
+		var seam_clause: String = ("seams connect via %s" % _seam_strategy) if _seam_ok \
+			else "seams do not join"
+		verdict = "%s — %s; %s" % [grade, block_clause, seam_clause]
+		_verdict_failed = grade != "GREEN"
 	print("VERDICT: %s" % verdict)
 	print("thresholds: GREEN block <%.0f ms AND seams connect | RED block >%.1f ms OR seams cannot join" % [
 		HITCH_MS, FRAME_BUDGET_MS,
 	])
+	# F-347: a benchmark that reports a missed budget and exits 0 is a benchmark the battery treats
+	# as passing. D-016 declares runtime navigation GREEN on this instrument's own evidence, so the
+	# instrument has to be able to withdraw it.
+	if _verdict_failed:
+		print("BENCH_NAVBAKE_BUDGET_MISSED — exiting nonzero so a red verdict cannot read as a pass")
+
+
+## Where the streaming block sits against the two thresholds. Separate from the seam axis on purpose.
+func _grade_block() -> String:
+	if _stream_block_ms < HITCH_MS:
+		return "GREEN"
+	if _stream_block_ms < FRAME_BUDGET_MS:
+		return "AMBER"
+	return "RED"
+
+
+## The worse of two grades. The overall verdict can never be better than either axis, and each axis
+## still gets to state what IT found in the clause above.
+static func _worse_of(a: String, b: String) -> String:
+	var rank: Dictionary = {"GREEN": 0, "AMBER": 1, "RED": 2}
+	return a if int(rank[a]) >= int(rank[b]) else b
 
 
 # --- stats ---------------------------------------------------------------------------
