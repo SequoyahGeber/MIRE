@@ -314,6 +314,24 @@ The bed's duck floor of 0.10 is deliberate rather than zero: `_apply_channel()` 
 below `AUDIBLE_EPSILON`, and a stopped `AudioStreamPlayer` resumes at the head of a 3:44 loop — so a
 cycle cue ending mid-run would silently rewind the ambience.
 
+**A hard boundary is a snap, never a fade** (F-430). At the two moments there is nothing to
+cross-fade *from* — the first frame of the process, and a run restart — the theme takes its cue
+straight to full gain and the bed comes up already ducked underneath it. Fading across a boundary
+went wrong twice over: a cue at gain 0 is not quiet but *stopped*, so the theme made no sound at all
+until the first `_process`, and the first frame of a real boot is the one that builds
+`run/main_scene` — 347 ms headless, seconds with shaders. The bed (started from its own `_ready()`,
+at full, because no theme was playing yet to duck it) scored that entire stall alone, and then the
+frame's `delta` — the whole stall — crossed both fades in one `move_toward` step, so the intended
+1.5 s cross-fade was heard as a cut. Sequoyah reported it as "the old theme song plays for 2-3
+seconds before switching to the new one".
+
+Two consequences worth keeping in mind before touching either director. `AmbientMusicDirector` must
+not start its beds from `_ready()`: autoloads ready in `project.godot` order and `ThemeMusicDirector`
+is registered below it, so at that instant "is a theme playing" is unanswerable. And the same is true
+one dispatch at a time on `run_restarted`, which is why the bed defers its snap by a frame rather
+than reading the duck inside the handler. `tools/theme_music_check.gd`'s "a hard boundary is a snap"
+section replays the restart boundary and asserts both halves.
+
 ## Network authority (ARCHITECTURE.md §2.2)
 
 Audio is **client-local presentation**. Nothing here replicates: playback is triggered by gameplay

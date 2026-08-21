@@ -2490,7 +2490,102 @@ fails for an unrelated reason is worse than one that says it could not measure.
 
 ---
 
+### F-431 · No world-focus prompt: harvestables, haulables and chests give the player no indication they are interactable
+
+**Area:** ui · **Severity:** medium · **Found:** 2026-08-21 by wickc3d79c
+
+Only doors (`ui/building/door_prompt.gd`) and chests (`ui/loot/chest_ui.gd`) draw an interaction
+prompt, both proximity-based, both drawing their own panel at different screen offsets so they can
+overlap. Everything else the player is meant to act on is silent:
+
+- a tree or rock (`systems/harvesting/harvestable.gd`) never says it is harvestable, which tool
+  bites it, or how far down it is;
+- a haulable crate (`systems/hauling/haulable.gd`) never says it can be picked up;
+- there is no crosshair at all, so there is no "you are looking at this" feedback anywhere.
+
+Inventory slots do have a tooltip, but it is Godot's default plain-text one: display name plus
+description, no category, no stack, no tool/weapon/consumable stats.
+
+Fix: one aim-driven focus prompt shared by every interactable kind, a crosshair that reacts to it,
+and a styled inventory tooltip that reads the real ItemDef/WeaponDef numbers.
+
+---
+
 ## Resolved
+
+### F-430 · The ambient bed plays alone at full volume across the whole boot, then cuts to the theme — **fixed**
+
+**Area:** audio · **Severity:** high · **Found:** 2026-08-21 by ivye199f8
+
+Reported from play: "when booting up the game the old theme song plays for 2-3 seconds before
+switching to the new one."
+
+Reproduced headlessly (tools/_tmp_boot_music_probe.gd, throwaway). At t=0 — the moment the process
+has finished readying its autoloads and before a single `_process` frame has run — the audible mix
+is:
+
+  AmbientDay=1.000   Menu=0.000(off)  Landfall=0.000(off)  Cycle=0.000(off)
+
+Three things combine:
+
+1. `AmbientMusicDirector._ready()` snaps the bed to FULL gain and calls `_apply_mix()`, which starts
+   the ogg immediately. Its comment ("Snap, do not fade, at boot") is about the day/night mix and is
+   right about that, but the DUCK is snapped too — to 1.0, unducked — because at that instant no
+   theme is playing.
+2. `ThemeMusicDirector` is registered BELOW the ambient director in `project.godot`, so at the
+   moment above it has not readied yet. When it does, it picks its boot cue (landfall, since
+   `run/main_scene` is still the world) but starts it at gain 0.0, to be faded in over
+   `FADE_IN_SEC` = 1.5 s. Gain 0 means `_apply_channel()` leaves the player STOPPED, so the theme
+   makes no sound at all until the first `_process`.
+3. Nothing moves until that first `_process` — and the first frame of a real boot is the one that
+   instantiates `run/main_scene`. Measured at 347 ms headless with no rendering
+   (tools/_tmp_boot_stall_probe.gd); on a real boot the same frame also uploads meshes and compiles
+   the water/foliage shaders, which is the 2-3 s the report describes.
+
+So the whole boot is scored by `ambient_day.ogg` at full volume, alone. Worse, when that first frame
+finally lands, its `delta` is the entire stall — large enough for `move_toward` to complete the
+0.35 s duck AND most of the 1.5 s theme fade-in in a single step. The transition the code intends as
+a 1.5-second fade is therefore heard as a hard CUT, which is exactly the "then switching to the new
+one" half of the report.
+
+Affects the run-restart path for the same reason: `ThemeMusicDirector._on_run_restarted()` also
+starts landfall from gain 0.
+
+FIX SHAPE: boot is a snap on BOTH sides. The theme director should take its boot (and hard-boundary)
+cue to full gain immediately — there is nothing to fade FROM, the same argument the ambient bed
+already makes for its own mix — and the ambient bed should not start at all until the first
+`advance()`, at which point the theme director exists, has chosen its cue, and the duck can be
+snapped to its real target instead of ramping down from unducked.
+
+---
+
+**Resolved 2026-08-21 by ivye199f8.** Fixed. Boot is now a snap on both sides, and the same code covers the run-restart boundary.
+
+`ThemeMusicDirector._snap_active_gain()` takes the boot/restart cue straight to full gain instead of
+leaving it at 0.0 for `FADE_IN_SEC` to ramp — 0.0 meant `_apply_channel()` kept the player STOPPED,
+so the theme was silent for the whole world-gen stall.
+
+`AmbientMusicDirector` no longer starts its beds from `_ready()` (`_boot_pending`); the first
+`advance()` snaps both the mix and the duck, by which point every autoload has readied and
+`_duck_target()` can actually see the theme. `_on_run_restarted()` re-arms the same flag rather than
+snapping inline: EventBus dispatches in autoload registration order and the theme director sits
+below the bed, so inside the handler the answer is still the dying run's.
+
+Measured before -> after, at t=0 with no frame run:
+  before  AmbientDay=1.000  Landfall=0.000(off)
+  after   AmbientDay=0.000(off)  Landfall=1.000   (bed joins at 0.100 on frame one)
+
+Regression cover: `tools/theme_music_check.gd` "a hard boundary is a snap, not a fade" — replays the
+restart boundary and asserts the theme is audible at full before any frame runs and that one frame
+puts the bed at exactly THEME_DUCK_GAIN. Verified 4 of its 5 assertions fail against the pre-fix
+autoloads.
+
+`tools/ambient_music_check.gd` needed a real fix, not an adjustment: it was measuring bed gain while
+the boot landfall cue was in the way, and only passed because that cue started at gain 0 and took a
+frame or two to become audible — luck, not setup. It now retires the theme explicitly before
+measuring, and again after each restart.
+
+Checks: ambient_music_check 0 failures, theme_music_check 0 failures, audio_import_check 0 failures.
 
 ### F-421 · Quitting from the in-game menu crashes the process on shutdown (macOS) — **fixed**
 
