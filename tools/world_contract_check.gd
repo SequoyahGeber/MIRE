@@ -70,6 +70,8 @@ const AUTHORED_FIXTURE_PATH: String = "res://levels/hollowmere.tscn"
 ## Preloaded at class level (F-016's standing rule): a --script run must not depend on the
 ## gitignored global-class cache to know what a ProceduralWorld is.
 const ProceduralWorldScript := preload("res://world/gen/procedural_world.gd")
+## D-191: this check asks the Mire simulation where it seeded rather than searching for it.
+const MireGridSimLib := preload("res://world/mire/mire_grid_sim.gd")
 
 var failures: Array[String] = []
 var _map_label: String = ""
@@ -255,12 +257,25 @@ func _check_loop_fixtures(level: Node, procedural: bool) -> void:
 	mire.call("ensure_ready")
 	var hot: Vector3 = Vector3.ZERO
 	var hottest: float = -1.0
+	# D-191 dropped the seed from four clusters to one, and this probe used to hunt for corruption on
+	# a fixed 48 m lattice — a stride wider than a 32 m cluster's diameter, which found one of four
+	# by luck and finds one of one almost never. So ask the simulation where it seeded instead of
+	# searching for it: `seed_cluster_centres()` is the same list `seed_initial()` stamps, in the
+	# same order. The lattice is still swept afterwards, because "hot only where the sim says" is a
+	# weaker claim than "hot there, and the binding is live across the island".
+	var game_state: Node = root.get_node_or_null(^"GameState")
+	var world_seed: int = int(game_state.call("ensure_seed")) if game_state != null else 0
+	var probes: Array[Vector3] = []
+	for centre: Vector2 in MireGridSimLib.seed_cluster_centres(world_seed):
+		probes.append(Vector3(centre.x, 0.0, centre.y))
 	for x: int in range(-480, 481, 48):
 		for z: int in range(-480, 481, 48):
-			var value: float = float(mire.call("corruption_at", Vector3(float(x), 0.0, float(z))))
-			if value > hottest:
-				hottest = value
-				hot = Vector3(float(x), 0.0, float(z))
+			probes.append(Vector3(float(x), 0.0, float(z)))
+	for probe: Vector3 in probes:
+		var value: float = float(mire.call("corruption_at", probe))
+		if value > hottest:
+			hottest = value
+			hot = probe
 	if hottest <= 0.05:
 		_fail("MireGrid has no seeded corruption anywhere on the island (max %.3f)" % hottest)
 	else:
@@ -270,6 +285,14 @@ func _check_loop_fixtures(level: Node, procedural: bool) -> void:
 		var after: float = float(mire.call("corruption_at", hot))
 		if after >= hottest:
 			_fail("a Wellspring cap did not recede the Mire (%.3f -> %.3f)" % [hottest, after])
+		# D-191: the cap clears 48 m and the run now seeds a SINGLE 32 m cluster, so this probe
+		# erases the world's only corruption. That was invisible while there were four — the other
+		# three carried the second map's arm — and it left the next arm asserting against a grid
+		# this check had itself wiped. Put it back; a probe must not be a mutation.
+		mire.call("host_reset")
+		# The reset re-seeds and broadcasts its deltas; give them the frame they are queued for
+		# before this arm tears its level down, or the next arm builds on a half-applied grid.
+		await physics_frame
 	print("WORLD_CONTRACT_%s wellsprings=%d ships=%d chests=%d registered_stations=%d "
 		% [_map_label.to_upper(), wellsprings, ships, chests.size(), registered_markers]
 		+ "spawn_points=%d mire_peak=%.2f" % [spawn_points, hottest])
