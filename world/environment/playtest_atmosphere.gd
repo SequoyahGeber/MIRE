@@ -54,6 +54,61 @@ const NIGHT_AMBIENT_COLOR := Color(0.34, 0.42, 0.62)
 ## Cool cast on what little directional light survives the sun going down.
 const MOONLIGHT_COLOR := Color(0.55, 0.68, 1.0)
 
+## ── The daytime varnish (F-353) ────────────────────────────────────────────────────────────────
+## Sequoyah, on the shipped island: "it looks super washed out and looks like it needs a coat of
+## varnish to make everything clear and saturated." Measured, the frame lived in a 0.48-0.71
+## luminance band with nothing black, nothing white, and a saturation median of 0.24.
+##
+## Every constant below is the DAY end of a lerp whose NIGHT end is the value the scene author
+## already set, so this is a daytime change and only a daytime change — at `daylight` 0 the grade
+## comes back byte-identical to what shipped, which is what keeps a separately-broken night (F-356)
+## out of this fix's blast radius. They are hard-coded ends rather than captured exports for the
+## same reason `ambient_light_energy` and `tonemap_exposure` already were: this block is a tuned
+## curve, and reading half of it off the resource would hide half the tuning.
+##
+## What each one was doing to the frame:
+##
+##   · WHITE POINT. ACES normalises by the tonemapped white, so `tonemap_white = 3.0` mapped the
+##     scene's real 0..1 range into the toe of the curve — blacks lifted, highlights never
+##     arrived. 1.0 gives the range back.
+##   · GLOW BLOOM. `glow_bloom` applies glow to the whole frame BELOW the HDR threshold; at 0.14 it
+##     is a milk pass over every pixel regardless of brightness. Dropping it took the darkest pixel
+##     in the frame from 0.164 to 0.070 — that is where the blacks had gone. The threshold goes to
+##     1.0 and the intensity down with it so the sun disk stops smearing across a quarter of the sky.
+##   · AMBIENT FILL. D-184's terrain is flat-shaded with no texture and no normal map, so
+##     facet-to-facet radiance difference is the ONLY thing that gives the ground form. At 0.62 a
+##     facet turned 30 deg off the sun read the same as one facing it: two ground samples 150 px
+##     apart measured one 1/255 step apart. The sky contribution stays at the authored 0.68, so what
+##     is left of the fill is blue — warm light against cool shadow is most of the perceived chroma.
+##   · SATURATION AND CONTRAST. The grade's own last word, once the three above stopped fighting it.
+const DAY_TONEMAP_WHITE: float = 1.0
+const DAY_TONEMAP_EXPOSURE: float = 0.95
+const DAY_AMBIENT_ENERGY: float = 0.30
+const DAY_ADJUSTMENT_CONTRAST: float = 1.14
+const DAY_ADJUSTMENT_SATURATION: float = 1.30
+const DAY_GLOW_BLOOM: float = 0.0
+const DAY_GLOW_HDR_THRESHOLD: float = 1.0
+const DAY_GLOW_INTENSITY: float = 0.70
+const DAY_SUN_ENERGY: float = 1.55
+## Night ends — the values `levels/procedural_island.tscn` and `levels/hollowmere.tscn` author, kept
+## here so the lerp is readable in one place. A scene that authors different ones is not wrong, it
+## just stops being the night end of this particular curve; nothing downstream depends on the match.
+const NIGHT_TONEMAP_WHITE: float = 3.0
+const NIGHT_TONEMAP_EXPOSURE: float = 0.85
+const NIGHT_AMBIENT_ENERGY: float = 0.22
+const NIGHT_ADJUSTMENT_CONTRAST: float = 1.03
+const NIGHT_ADJUSTMENT_SATURATION: float = 1.14
+const NIGHT_GLOW_BLOOM: float = 0.14
+const NIGHT_GLOW_HDR_THRESHOLD: float = 0.92
+const NIGHT_GLOW_INTENSITY: float = 1.05
+## Exponential DISTANCE fog, restored. F-115 zeroed this to kill a uniform grey blanket, and that
+## was right, but zero left the level's `fog_height_density` as the only fog the Environment
+## applied — and the height term is `max`ed in independently of this one, so it kept blending grey
+## into everything below y=6 AT EVERY DISTANCE, the player's own feet included. The heights are off
+## in the scenes now and this puts the haze back where it belongs: 1.6% at 10 m, 15% at 100 m,
+## nothing you can see up close and real aerial perspective on a far shore.
+const DAY_FOG_DENSITY: float = 0.0016
+
 ## ── Ground mist (F-115) ───────────────────────────────────────────────────────────────────────
 ## Mist is a dawn and dusk thing. It burns off through the morning, is thinnest at noon, and comes
 ## back as the ground gives up its heat — which is also exactly when the low sun is raking through
@@ -234,7 +289,7 @@ func apply_atmosphere() -> void:
 	var sunrise_color := Color(1.0, 0.55, 0.27)
 	var horizon_mix := sunrise_color.lerp(daylight_color, 1.0 - warm_horizon * 0.58)
 	sun.light_color = horizon_mix.lerp(MOONLIGHT_COLOR, starlight)
-	sun.light_energy = lerpf(0.04, 1.45, daylight)
+	sun.light_energy = lerpf(0.04, DAY_SUN_ENERGY, daylight)
 	# Shafts peak at GOLDEN HOUR, not at noon. A sun overhead lights the mist from above and there
 	# is nothing to rake through; a sun on the horizon fires the length of the valley through every
 	# trunk in it, which is the shot this is for. `golden` is the extra 60% either side of dawn.
@@ -244,17 +299,39 @@ func apply_atmosphere() -> void:
 	sun.shadow_opacity = lerpf(0.4, 0.88, daylight)
 
 	_environment.background_energy_multiplier = lerpf(0.12, 0.9, daylight)
-	# The day end is the floor under everything the sun is NOT hitting. At 0.5 with ACES and a
-	# contrast lift, a hillside facing away from a low sun crushed to pure black and read as a hole
-	# in the map rather than as a shadow; 0.62 keeps the silhouette dark and still coloured.
-	_environment.ambient_light_energy = lerpf(0.22, 0.62, daylight)
+	# The day end is the floor under everything the sun is NOT hitting, and F-353 took it from 0.62
+	# down to DAY_AMBIENT_ENERGY. The old value's own comment worried that 0.5 "crushed a hillside
+	# facing away from a low sun to pure black" — but it was measured under `tonemap_white = 3.0`,
+	# which lifted the blacks that were doing the crushing, and the fill it chose to compensate is
+	# what erased the flat-shaded facets. With the white point back at 1.0 the curve is different and
+	# the shadow is dark AND coloured, which is what that comment actually wanted. The colour half of
+	# it is unchanged: ambient stays 68% sky (the level's own ambient_light_sky_contribution), so the
+	# fill that remains is blue and reads as sky bouncing into shade rather than as grey.
+	_environment.ambient_light_energy = lerpf(NIGHT_AMBIENT_ENERGY, DAY_AMBIENT_ENERGY, daylight)
 	_environment.ambient_light_color = NIGHT_AMBIENT_COLOR.lerp(_day_ambient_color, daylight)
-	_environment.tonemap_exposure = lerpf(0.85, 1.16, daylight)
+	_environment.tonemap_exposure = lerpf(NIGHT_TONEMAP_EXPOSURE, DAY_TONEMAP_EXPOSURE, daylight)
+	# F-353's four remaining knobs, all on the same `daylight` curve as everything above so night
+	# lands on the authored values and this stays a daytime change. See the DAY_* block's header for
+	# what each was doing to the frame.
+	_environment.tonemap_white = lerpf(NIGHT_TONEMAP_WHITE, DAY_TONEMAP_WHITE, daylight)
+	_environment.glow_bloom = lerpf(NIGHT_GLOW_BLOOM, DAY_GLOW_BLOOM, daylight)
+	_environment.glow_hdr_threshold = lerpf(
+		NIGHT_GLOW_HDR_THRESHOLD, DAY_GLOW_HDR_THRESHOLD, daylight
+	)
+	_environment.glow_intensity = lerpf(NIGHT_GLOW_INTENSITY, DAY_GLOW_INTENSITY, daylight)
+	_environment.adjustment_contrast = lerpf(
+		NIGHT_ADJUSTMENT_CONTRAST, DAY_ADJUSTMENT_CONTRAST, daylight
+	)
+	_environment.adjustment_saturation = lerpf(
+		NIGHT_ADJUSTMENT_SATURATION, DAY_ADJUSTMENT_SATURATION, daylight
+	)
 	_environment.fog_light_color = Color(0.19, 0.22, 0.3).lerp(
 		Color(0.62, 0.67, 0.72), daylight
 	)
-	# Keep the open routes clear. FogVolume nodes, not the global environment, define mist pockets.
-	_environment.fog_density = 0.0
+	# Aerial perspective, not a blanket: FogVolume nodes still define every mist pocket you actually
+	# look at, and this is only the depth cue that makes a far shore sit behind a near one. Scaled by
+	# `haze_strength` like the rest of the weather knobs. See DAY_FOG_DENSITY for why zero was worse.
+	_environment.fog_density = DAY_FOG_DENSITY * haze_strength
 	# F-115: this used to be the ONLY fog on the shipped map, at a density that greyed out
 	# everything evenly. It is now just the thin medium a sunbeam needs in order to be visible at
 	# all — an eighth of what it was — and `GroundFog` carries every bit of fog you actually look

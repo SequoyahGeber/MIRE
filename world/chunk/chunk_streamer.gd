@@ -159,7 +159,12 @@ func _ready() -> void:
 	# and 4.4's eventual per-biome tint both live on as shader uniforms.
 	_shared_material = ShaderMaterial.new()
 	_shared_material.shader = preload("res://world/chunk/terrain_flat.gdshader")
-	_shared_material.set_shader_parameter(&"albedo_color", Color(0.35, 0.45, 0.3))
+	# F-353: deepened and given real chroma. The old value was a greyed olive (sRGB saturation ~0.20)
+	# chosen while the grade was washing everything out anyway; with the veils gone it rendered as a
+	# pale chartreuse sheet. This is the same hue family, darker and further from grey, which is what
+	# lets the flat-shaded facets read as shading rather than as one flat fill. Kept in step with the
+	# shader's own default so the two copies of the placeholder colour cannot drift.
+	_shared_material.set_shader_parameter(&"albedo_color", Color(0.26, 0.40, 0.19))
 
 
 func _exit_tree() -> void:

@@ -6,111 +6,45 @@
       "task": "F-355",
       "token": "CODEX_SESSION_ID:01a021e9-16c4-79b1-aaa1-daca169c6136"
     },
-    "levels/hollowmere.tscn": {
-      "agent": "gale47f1fe",
-      "at": "2026-08-21T01:16:15+00:00",
-      "task": "F-353",
-      "token": "CLAUDE_CODE_SESSION_ID:a79bd01a-839b-4869-9a2e-162d784fa591"
-    },
-    "levels/procedural_island.tscn": {
-      "agent": "gale47f1fe",
-      "at": "2026-08-21T01:16:15+00:00",
-      "task": "F-353",
-      "token": "CLAUDE_CODE_SESSION_ID:a79bd01a-839b-4869-9a2e-162d784fa591"
-    },
-    "tools/chunk_stream_check.gd": {
+    "tools/bench_navbake.gd": {
       "agent": "ivy1bcae0",
-      "at": "2026-08-21T01:18:21+00:00",
-      "task": "F-340",
+      "at": "2026-08-21T01:49:16+00:00",
+      "task": "F-347",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
-    "tools/grade_probe.gd": {
-      "agent": "gale47f1fe",
-      "at": "2026-08-21T01:16:15+00:00",
-      "task": "F-353",
-      "token": "CLAUDE_CODE_SESSION_ID:a79bd01a-839b-4869-9a2e-162d784fa591"
-    },
-    "tools/terrain_look_check.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T01:18:21+00:00",
-      "task": "F-340",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "tools/worldgen_noise_reuse_check.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T01:18:21+00:00",
-      "task": "F-340",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "world/chunk/chunk_mesher.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:59:35+00:00",
-      "task": "F-339",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "world/chunk/chunk_streamer.gd": {
-      "agent": "gale47f1fe",
-      "at": "2026-08-21T01:16:15+00:00",
-      "task": "F-353",
-      "token": "CLAUDE_CODE_SESSION_ID:a79bd01a-839b-4869-9a2e-162d784fa591"
-    },
-    "world/environment/playtest_atmosphere.gd": {
-      "agent": "gale47f1fe",
-      "at": "2026-08-21T01:16:15+00:00",
-      "task": "F-353",
-      "token": "CLAUDE_CODE_SESSION_ID:a79bd01a-839b-4869-9a2e-162d784fa591"
+    "tools/steam/export_release.sh": {
+      "agent": "moss5523e3",
+      "at": "2026-08-21T01:48:24+00:00",
+      "task": "F-355",
+      "token": "CODEX_SESSION_ID:01a021e9-16c4-79b1-aaa1-daca169c6136"
     }
   },
   "in_flight": {
-    "F-339": {
+    "F-347": {
       "agent": "ivy1bcae0",
       "files": [
-        "world/chunk/chunk_mesher.gd"
+        "tools/bench_navbake.gd"
       ],
       "notes": [],
-      "started": "2026-08-21T00:59:35+00:00",
+      "started": "2026-08-21T01:49:16+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "F-340": {
-      "agent": "ivy1bcae0",
-      "files": [
-        "tools/worldgen_noise_reuse_check.gd",
-        "tools/terrain_look_check.gd",
-        "tools/chunk_stream_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-21T01:18:21+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "F-353": {
-      "agent": "gale47f1fe",
-      "files": [
-        "levels/procedural_island.tscn",
-        "levels/hollowmere.tscn",
-        "world/environment/playtest_atmosphere.gd",
-        "world/chunk/chunk_streamer.gd",
-        "tools/grade_probe.gd"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-21T01:35:27+00:00",
-          "by": "gale47f1fe",
-          "text": "Isolation render confirms contributor 1 empirically. Rendering the spawn view with fog_height_density=0 and fog_density=0.0016 restored, versus the shipped grade: near ground (bottom 60px, ~2m from the camera) blue channel 121 -> 103, saturation +0.072; mid ground 126 -> 110, +0.060; far ground/shore unchanged (+/-2, sat -0.006); sky unchanged. A DISTANCE fog cannot touch a pixel two metres away, so the near-field change is the height term alone \u2014 and the far field netting to zero is the trade working as intended: the haze moves off the player's feet and back out to range where aerial perspective belongs."
-        }
-      ],
-      "started": "2026-08-21T01:16:15+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:a79bd01a-839b-4869-9a2e-162d784fa591"
     },
     "F-355": {
       "agent": "moss5523e3",
       "files": [
-        "export_presets.cfg"
+        "export_presets.cfg",
+        "tools/steam/export_release.sh"
       ],
       "notes": [
         {
           "at": "2026-08-21T01:28:57+00:00",
           "by": "moss5523e3",
           "text": "Audit so far: engine and installed desktop export templates exactly match pinned 4.7.1; project effective physics/display values are covered by verify_setup and align with ARCHITECTURE 5a. Export presets have six debug/release targets but release presets still carry console-wrapper=true, macOS bundle id is placeholder test, and stock Godot icon remains. Signing/notarization and real store identity remain intentionally gated on tasks 8.1/8.2/8.10/8.11."
+        },
+        {
+          "at": "2026-08-21T01:48:24+00:00",
+          "by": "moss5523e3",
+          "text": "Live editor pass: Project Settings shows Jolt Physics + physics interpolation on; GDExtension tab lists GodotSteam minimum 4.4; Export dialog loads all six presets with no missing-template errors; Template Manager shows 4.7.1 desktop templates installed. Found release presets 4/5 marked Runnable, displacing Windows/Linux debug presets; all release Shader Baker toggles are off."
         }
       ],
       "started": "2026-08-21T01:28:57+00:00",
@@ -601,12 +535,19 @@
       "task": "7.4",
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
+    "levels/hollowmere.tscn": {
+      "agent": "gale47f1fe",
+      "at": "2026-08-21T01:57:33+00:00",
+      "hash": "cedf85d55b00994e0101a8a4e092de23c26de91652151ab84522a3eb94b25894",
+      "task": "F-353",
+      "token": "CLAUDE_CODE_SESSION_ID:a79bd01a-839b-4869-9a2e-162d784fa591"
+    },
     "levels/procedural_island.tscn": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T21:58:15+00:00",
-      "hash": "f8f9ebeb84241a7d83174a64cf47ef0b629ec367b3190d502349dbea19d9dfb3",
-      "task": "4.18",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+      "agent": "gale47f1fe",
+      "at": "2026-08-21T01:57:33+00:00",
+      "hash": "a8e9be805ff5fd3beccee89ecc75ea91a1e16e1d525a7f44d2fdc8ce3bc2eed2",
+      "task": "F-353",
+      "token": "CLAUDE_CODE_SESSION_ID:a79bd01a-839b-4869-9a2e-162d784fa591"
     },
     "project.godot": {
       "agent": "quill5fa5c7",
@@ -784,11 +725,11 @@
       "token": null
     },
     "tools/chunk_stream_check.gd": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T21:58:15+00:00",
-      "hash": "8019ae13cf46181aedb5389aef531ee7defb4598a849fc87ea4126826ec2cc9a",
-      "task": "4.18",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T01:49:16+00:00",
+      "hash": "1da2d76c7cb580c421bd7eaaa1f2f26d197be8160b863328956b17dd419322b5",
+      "task": "F-340",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "tools/client_stream_budget_check.gd": {
       "agent": "ivy1bcae0",
@@ -915,6 +856,20 @@
       "hash": "8dfaed5bb9c8f0313eb2c23cc02494cf50e896da2ab224c3aa22f1812e849145",
       "task": "F-342",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
+    "tools/grade_check.gd": {
+      "agent": "gale47f1fe",
+      "at": "2026-08-21T01:57:33+00:00",
+      "hash": "cc2287752d807dcdb04debdb870267673255cad636584e4ad98fc3575de1fda2",
+      "task": "F-353",
+      "token": "CLAUDE_CODE_SESSION_ID:a79bd01a-839b-4869-9a2e-162d784fa591"
+    },
+    "tools/grade_probe.gd": {
+      "agent": "gale47f1fe",
+      "at": "2026-08-21T01:57:33+00:00",
+      "hash": "5130f291c3d00960cd714af08d69e882dbfa8a97cc66e4647f298b4409f1929c",
+      "task": "F-353",
+      "token": "CLAUDE_CODE_SESSION_ID:a79bd01a-839b-4869-9a2e-162d784fa591"
     },
     "tools/ground_fog_check.gd": {
       "agent": "quill5fa5c7",
@@ -1211,11 +1166,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "tools/terrain_look_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T06:20:25+00:00",
-      "hash": "5ac3d40242f2936ec9f37011e3df52d353aea79cd9e4738be3c21c4c5f471164",
-      "task": "F-274",
-      "token": null
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T01:49:16+00:00",
+      "hash": "bd63454fa8678e1554375dbd03d1bb33c918b147f25cfa715f31b60059d619d9",
+      "task": "F-340",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "tools/terrain_look_check.gd.uid": {
       "agent": "lc1",
@@ -1281,11 +1236,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "tools/worldgen_noise_reuse_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-20T06:20:25+00:00",
-      "hash": "0195e736e9b0320e5252f7dc8005f158bc86a76998511ea2c8ba9e221f958a5c",
-      "task": "F-274",
-      "token": null
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T01:49:16+00:00",
+      "hash": "dd4bae0c9db3f1869965f9d330d33e33c57fdf5a73c3ee39ad64d80913924547",
+      "task": "F-340",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "ui/attunement/attunement_ui.gd": {
       "agent": "lm",
@@ -1393,18 +1348,18 @@
       "token": "CLAUDE_CODE_SESSION_ID:9f98dbf5-93c9-4f54-8d04-a347365baa71"
     },
     "world/chunk/chunk_mesher.gd": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T21:58:15+00:00",
-      "hash": "1dbdaf08a119b08d03d2f5617266a9a06b6e7cac045e1c3445a3b3531f6a4fdf",
-      "task": "4.18",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+      "agent": "ivy1bcae0",
+      "at": "2026-08-21T01:49:16+00:00",
+      "hash": "3650471aab8fb50b313d4d7d9a2b31c2b566cb6664d48abee24017985794ec80",
+      "task": "F-339",
+      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "world/chunk/chunk_streamer.gd": {
-      "agent": "slate8b6811",
-      "at": "2026-08-20T21:22:10+00:00",
-      "hash": "597181e5528d6fca484f45163dd242f46fcaca060db0b0b6684e25170782ac5a",
-      "task": "F-324",
-      "token": "CLAUDE_CODE_SESSION_ID:dcf988c3-f81b-4177-97bb-d3f72dcb1927"
+      "agent": "gale47f1fe",
+      "at": "2026-08-21T01:57:33+00:00",
+      "hash": "803c0f06784a9646e0e4658eddde3e69feba31bfffa6790aa4d20ef58413d4ec",
+      "task": "F-353",
+      "token": "CLAUDE_CODE_SESSION_ID:a79bd01a-839b-4869-9a2e-162d784fa591"
     },
     "world/chunk/nav_baker.gd": {
       "agent": "ivycc0920",
@@ -1414,11 +1369,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:34f19dd1-60f4-4279-b7ba-e40ce133b27f"
     },
     "world/chunk/terrain_flat.gdshader": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-20T21:00:13+00:00",
-      "hash": "2233e78f46aa6b744c1d14f66c4e95a57cb358e6ef2e9f56c21dc32671517ee4",
-      "task": "4.18",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+      "agent": "gale47f1fe",
+      "at": "2026-08-21T01:57:33+00:00",
+      "hash": "f35f83826a90556b37964963440d07e28e995b8b4ccb4ccdcdc80b23b93ee000",
+      "task": "F-353",
+      "token": "CLAUDE_CODE_SESSION_ID:a79bd01a-839b-4869-9a2e-162d784fa591"
     },
     "world/environment/ground_fog.gd": {
       "agent": "quill5fa5c7",
@@ -1426,6 +1381,13 @@
       "hash": "64a695e032083c0f47e1f02ed4ff58b2f5372c2818df4385cdf4d515409afc0c",
       "task": "4.19",
       "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    },
+    "world/environment/playtest_atmosphere.gd": {
+      "agent": "gale47f1fe",
+      "at": "2026-08-21T01:57:33+00:00",
+      "hash": "a4a9d5e0b7c2ea90404d5f7c72ac04859d482a1325e36599fd82136117f0336e",
+      "task": "F-353",
+      "token": "CLAUDE_CODE_SESSION_ID:a79bd01a-839b-4869-9a2e-162d784fa591"
     },
     "world/environment/water_low_poly.gdshader": {
       "agent": "quill5fa5c7",
@@ -1512,7 +1474,7 @@
       "token": null
     }
   },
-  "rev": 228,
+  "rev": 237,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -5991,16 +5953,20 @@
       "title": "The full 256 by 256 Mire simulation has no saturated late-run performance gate"
     },
     "F-339": {
+      "done_at": "2026-08-21T01:49:16+00:00",
+      "done_by": "ivy1bcae0",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Jittered terrain vertices keep normals derived from the unjittered height grid"
     },
     "F-340": {
+      "done_at": "2026-08-21T01:49:16+00:00",
+      "done_by": "ivy1bcae0",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Terrain retuning landed without refreshing its deterministic and structural checks"
     },
@@ -6057,7 +6023,7 @@
     "F-347": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "The navigation performance decision is no longer reproduced: the benchmark now records repeatable 39-43 ms streaming frames"
     },
@@ -6103,9 +6069,11 @@
       "title": "render_census reports the procedural world's ring-based LOD as a missing lever"
     },
     "F-353": {
+      "done_at": "2026-08-21T01:57:33+00:00",
+      "done_by": "gale47f1fe",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Daytime lighting reads washed out: the frame lives in a 0.48-0.71 luminance band with no blacks and no saturation"
     },
@@ -6122,6 +6090,20 @@
       "status": "in_flight",
       "tier": "F",
       "title": "Godot project and export settings need a release-readiness audit"
+    },
+    "F-356": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Night renders essentially black on the shipped grade \u2014 the ground is invisible, not merely dark"
+    },
+    "F-357": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "A flat pale-grey band sits above the horizon in every daytime view, and six candidate causes have been eliminated"
     }
   },
   "version": 1

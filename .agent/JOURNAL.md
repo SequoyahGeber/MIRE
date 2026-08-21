@@ -7778,3 +7778,42 @@ Enemies now query the map their level bakes into. NavBaker announces ownership v
 Files: `systems/enemies/enemy.gd`, `autoload/enemy_world.gd`, `tools/enemy_nav_map_check.gd`, `world/chunk/nav_baker.gd`, `tools/dev_loadout_check.gd`, `tools/nav_bake_check.gd`
 
 Commit at time of writing: `3ac9cdf`
+
+---
+
+### DONE · F-339 · ivy1bcae0 · 2026-08-21T01:49:16+00:00
+
+**Jittered terrain vertices keep normals derived from the unjittered height grid**
+
+normals from emitted geometry
+
+Files: `world/chunk/chunk_mesher.gd`
+
+Commit at time of writing: `69c401f`
+
+---
+
+### DONE · F-340 · ivy1bcae0 · 2026-08-21T01:49:16+00:00
+
+**Terrain retuning landed without refreshing its deterministic and structural checks**
+
+goldens refreshed
+
+Files: `tools/worldgen_noise_reuse_check.gd`, `tools/terrain_look_check.gd`, `tools/chunk_stream_check.gd`
+
+Commit at time of writing: `69c401f`
+
+---
+
+### DONE · F-353 · gale47f1fe · 2026-08-21T01:57:33+00:00
+
+**Daytime lighting reads washed out: the frame lives in a 0.48-0.71 luminance band with no blacks and no saturation**
+
+Daytime grade fixed: height-fog veil off in both levels, glow bloom / ACES white point / ambient fill moved onto the daylight curve so night is untouched, terrain albedo deepened. Tonal range 2.2x, saturation median 0.238 -> 0.383. New tools/grade_check.gd (headless, 0 failures both levels) and tools/grade_probe.gd (windowed A/B). D-186. Filed F-356 (night renders black, pre-existing, control-rendered) and F-357 (horizon band, six causes eliminated).
+
+Notes along the way:
+- Isolation render confirms contributor 1 empirically. Rendering the spawn view with fog_height_density=0 and fog_density=0.0016 restored, versus the shipped grade: near ground (bottom 60px, ~2m from the camera) blue channel 121 -> 103, saturation +0.072; mid ground 126 -> 110, +0.060; far ground/shore unchanged (+/-2, sat -0.006); sky unchanged. A DISTANCE fog cannot touch a pixel two metres away, so the near-field change is the height term alone — and the far field netting to zero is the trade working as intended: the haze moves off the player's feet and back out to range where aerial perspective belongs.
+
+Files: `levels/procedural_island.tscn`, `levels/hollowmere.tscn`, `world/environment/playtest_atmosphere.gd`, `world/chunk/chunk_streamer.gd`, `tools/grade_probe.gd`, `world/chunk/terrain_flat.gdshader`, `tools/grade_check.gd`
+
+Commit at time of writing: `69c401f`

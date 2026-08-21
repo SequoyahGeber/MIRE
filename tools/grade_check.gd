@@ -1,0 +1,161 @@
+extends SceneTree
+
+## F-353: the daytime grade must stay clear and saturated, and must stay DAYTIME-only.
+##
+## Sequoyah's verdict on the shipped island was "super washed out… needs a coat of varnish to make
+## everything clear and saturated." Four things were flattening the frame, and each one is a single
+## number that anybody can put back without noticing. This guards all four, plus the property that
+## made the fix safe to ship at all: at `daylight` 0 the grade returns to the values the scene
+## author set, so a separately-broken night (F-356) is nobody's regression but its own.
+##
+## Runs headless — every assertion is Environment state, not rendered pixels. To actually LOOK at
+## the grade, use `tools/grade_probe.gd --windowed`, which poses any hour and saves PNGs.
+##
+## Run with: .agent/bin/agent godot --script tools/grade_check.gd
+
+const ATMOSPHERE := preload("res://world/environment/playtest_atmosphere.gd")
+## Both shipped levels share one grade and must not drift apart; hollowmere is the authored map and
+## procedural_island is what actually ships, but a player cannot tell which one they are standing in
+## and neither should the lighting.
+const LEVELS: Array = [
+	"res://levels/procedural_island.tscn",
+	"res://levels/hollowmere.tscn",
+]
+## Hours whose `daylight` is exactly 1 and exactly 0 — see `apply_atmosphere()`'s smoothstep.
+const NOON: float = 12.0
+const MIDNIGHT: float = 0.0
+
+var failures: int = 0
+
+
+func _initialize() -> void:
+	call_deferred("_run")
+
+
+func _run() -> void:
+	for level_path: String in LEVELS:
+		await _check_level(level_path)
+	print("GRADE_CHECK failures=%d" % failures)
+	quit(1 if failures > 0 else 0)
+
+
+func _check_level(level_path: String) -> void:
+	print("\n== %s ==" % level_path)
+	var packed := load(level_path) as PackedScene
+	check(packed != null, "the level loads")
+	if packed == null:
+		return
+
+	# THE VEIL. `fog_height_density` is the one that has to be read off the AUTHORED resource rather
+	# than after the controller has run, because the controller never touches it — which is exactly
+	# why it survived F-115 and kept painting grey on everything below y=6 at every distance, the
+	# player's own feet included. Godot maxes the height term in independently of `fog_density`, so
+	# zeroing the latter (which F-115 did) does not disable it. Only this does.
+	var authored := _environment_of(packed.instantiate() as Node3D)
+	check(authored != null, "the level has a WorldEnvironment with an Environment")
+	if authored == null:
+		return
+	check(is_zero_approx(authored.fog_height_density),
+		"no distance-independent height veil (fog_height_density=%.4f)" % authored.fog_height_density)
+
+	# SNAPSHOT, not a reference. Every instance of a PackedScene shares its sub-resources, so the
+	# Environment `authored` points at is the SAME object the controller writes to below — holding
+	# the node and reading it later compares the day grade against itself and passes no matter what
+	# (the first version of this check did exactly that and reported "1.30 > 1.30").
+	var authored_values := {
+		"tonemap_white": authored.tonemap_white,
+		"glow_bloom": authored.glow_bloom,
+		"adjustment_saturation": authored.adjustment_saturation,
+		"adjustment_contrast": authored.adjustment_contrast,
+	}
+
+	# The authored values ARE the night ends of the controller's lerps. Asserting the match here is
+	# what keeps the two copies from drifting: change one without the other and night silently stops
+	# being the thing this file claims it is.
+	check(is_equal_approx(authored_values["tonemap_white"], ATMOSPHERE.NIGHT_TONEMAP_WHITE),
+		"authored tonemap_white is the controller's night end (%.2f)" % authored_values["tonemap_white"])
+	check(is_equal_approx(authored_values["glow_bloom"], ATMOSPHERE.NIGHT_GLOW_BLOOM),
+		"authored glow_bloom is the controller's night end (%.2f)" % authored_values["glow_bloom"])
+	check(is_equal_approx(authored_values["adjustment_saturation"],
+			ATMOSPHERE.NIGHT_ADJUSTMENT_SATURATION),
+		"authored saturation is the controller's night end (%.2f)"
+			% authored_values["adjustment_saturation"])
+	check(is_equal_approx(authored_values["adjustment_contrast"],
+			ATMOSPHERE.NIGHT_ADJUSTMENT_CONTRAST),
+		"authored contrast is the controller's night end (%.2f)"
+			% authored_values["adjustment_contrast"])
+
+	# NOON — the varnish is on.
+	var noon := await _environment_at(packed, NOON)
+	if noon == null:
+		return
+	check(is_equal_approx(noon.tonemap_white, ATMOSPHERE.DAY_TONEMAP_WHITE),
+		"noon uses the day white point, so the frame reaches black and white (%.2f)"
+			% noon.tonemap_white)
+	check(is_zero_approx(noon.glow_bloom),
+		"noon has no whole-frame glow bloom (%.3f)" % noon.glow_bloom)
+	check(noon.adjustment_saturation > authored_values["adjustment_saturation"],
+		"noon is more saturated than the authored night grade (%.2f > %.2f)"
+			% [noon.adjustment_saturation, authored_values["adjustment_saturation"]])
+	check(noon.adjustment_contrast > authored_values["adjustment_contrast"],
+		"noon carries more contrast than the authored night grade (%.2f > %.2f)"
+			% [noon.adjustment_contrast, authored_values["adjustment_contrast"]])
+	# The fill that erases D-184's flat-shaded facets. 0.62 made a facet turned 30 deg off the sun
+	# read the same as one facing it; anything back near that value is the regression.
+	check(noon.ambient_light_energy <= ATMOSPHERE.DAY_AMBIENT_ENERGY + 0.001,
+		"noon ambient fill stays low enough for facets to separate (%.2f)"
+			% noon.ambient_light_energy)
+	# Aerial perspective, the half of the fog trade that has to exist for the other half to be safe:
+	# the haze belongs at range, not on the player's feet.
+	check(noon.fog_density > 0.0,
+		"distant geometry still hazes (fog_density=%.5f)" % noon.fog_density)
+
+	# MIDNIGHT — the varnish is off, and every value is back where the scene author put it.
+	var night := await _environment_at(packed, MIDNIGHT)
+	if night == null:
+		return
+	check(is_equal_approx(night.tonemap_white, authored_values["tonemap_white"]),
+		"midnight restores the authored white point (%.2f)" % night.tonemap_white)
+	check(is_equal_approx(night.glow_bloom, authored_values["glow_bloom"]),
+		"midnight restores the authored glow bloom (%.2f)" % night.glow_bloom)
+	check(is_equal_approx(night.adjustment_saturation, authored_values["adjustment_saturation"]),
+		"midnight restores the authored saturation (%.2f)" % night.adjustment_saturation)
+	check(is_equal_approx(night.adjustment_contrast, authored_values["adjustment_contrast"]),
+		"midnight restores the authored contrast (%.2f)" % night.adjustment_contrast)
+
+
+## Instantiates the level, poses DayNight at [param hour], and returns the Environment the
+## controller has written. Goes through DayNight rather than the Atmosphere node directly because
+## DayNight re-applies every physics tick and would otherwise overwrite the pose before it is read.
+func _environment_at(packed: PackedScene, hour: float) -> Environment:
+	var scene := packed.instantiate() as Node3D
+	root.add_child(scene)
+	current_scene = scene
+	for _frame: int in 4:
+		await process_frame
+	var day_night: Node = root.get_node_or_null(^"DayNight")
+	check(day_night != null, "DayNight autoload exists to pose the clock")
+	if day_night == null:
+		scene.queue_free()
+		return null
+	day_night.call(&"host_set_time", hour / 24.0)
+	await physics_frame
+	await process_frame
+	var environment := _environment_of(scene)
+	# Detached, not freed: the caller reads the resource, and the Environment outlives the node.
+	root.remove_child(scene)
+	scene.queue_free()
+	return environment
+
+
+func _environment_of(scene: Node3D) -> Environment:
+	var holder := scene.get_node_or_null(^"WorldEnvironment") as WorldEnvironment
+	return null if holder == null else holder.environment
+
+
+func check(condition: bool, description: String) -> void:
+	if condition:
+		print("PASS: %s" % description)
+		return
+	failures += 1
+	push_error("FAIL: %s" % description)

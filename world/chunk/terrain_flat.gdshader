@@ -14,7 +14,7 @@ shader_type spatial;
 // The mesh's own smooth normals are still what the skirt inherits and what
 // SurfaceTool.generate_normals comparisons in the checks read — this shader only changes lighting.
 
-uniform vec3 albedo_color : source_color = vec3(0.35, 0.45, 0.3);
+uniform vec3 albedo_color : source_color = vec3(0.26, 0.40, 0.19);
 
 void fragment() {
 	ALBEDO = albedo_color;
