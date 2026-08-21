@@ -8133,3 +8133,18 @@ Notes along the way:
 Files: `autoload/god_mode_service.gd`, `systems/health/player_health.gd`, `entities/player/player_controller.gd`, `project.godot`, `core/net/net_version.gd`, `core/net/rpc_manifest.gd`, `tools/god_mode_check.gd`, `ui/menu/settings_menu.gd`, `tools/god_mode_net_check.gd`
 
 Commit at time of writing: `b70a260`
+
+---
+
+### DONE · F-356 · emberd89a44 · 2026-08-21T06:07:24+00:00
+
+**Night renders essentially black on the shipped grade — the ground is invisible, not merely dark**
+
+Night sky and moonlight rebalanced without changing the approved daytime endpoint. Fixed-seed midnight median luminance 0.1105 vs 0.0127; night, grade, graphics-quality, and findings checks pass.
+
+Notes along the way:
+- User approved the F-410 daytime baseline. F-356 changes only night endpoints: indigo procedural sky/horizon, readable background and ACES range, desaturated cool ambient, stronger but still sub-day moon key. Fixed-seed render f356_22: median luminance 0.1105 (was 0.0127), p95 0.3016, pixels under 0.02 1.37% (was 51.31%). Noon constants are unchanged.
+
+Files: `world/environment/playtest_atmosphere.gd`, `tools/f410_procedural_sky_probe.gd`, `tools/atmosphere_night_check.gd`, `tools/f356_night_probe.gd`, `tools/f356_night_probe.gd.uid`, `assets/audit/lighting/f356_20_noon_control.png`, `assets/audit/lighting/f356_21_blue_hour.png`, `assets/audit/lighting/f356_22_moonlit_night.png`, `assets/audit/lighting/f356_night_render.jsonl`, `tools/grade_check.gd`
+
+Commit at time of writing: `719600c`

@@ -129,10 +129,23 @@ func _check_night_and_day_states() -> void:
 			night_cloud_tint.r, night_cloud_tint.b])
 
 	var sky := _sky_material(level)
+	var environment := (level.get_node(^"WorldEnvironment") as WorldEnvironment).environment
 	check(is_equal_approx(sky.sky_energy_multiplier, ATMOSPHERE_SCRIPT.NIGHT_SKY_ENERGY),
 		"the night sky itself dims (energy %.3f)" % sky.sky_energy_multiplier)
 	check(sky.sky_top_color.b > sky.sky_top_color.r,
 		"the night sky stays blue rather than washing to grey")
+	# F-356: all three values used to compound toward black even though each looked plausible alone.
+	check(environment.background_energy_multiplier >= 0.6,
+		"night keeps enough authored sky to show an indigo gradient (%.3f)"
+			% environment.background_energy_multiplier)
+	check(environment.tonemap_white < 2.0,
+		"night does not bury moonlight in the ACES toe (white %.3f)" % environment.tonemap_white)
+	check(environment.adjustment_saturation <= 0.9,
+		"night desaturates authored green albedos instead of turning the ground teal (%.3f)"
+			% environment.adjustment_saturation)
+	check(environment.ambient_light_energy < ATMOSPHERE_SCRIPT.DAY_AMBIENT_ENERGY,
+		"night remains darker than day even with a readable ambient floor (%.3f < %.3f)" % [
+			environment.ambient_light_energy, ATMOSPHERE_SCRIPT.DAY_AMBIENT_ENERGY])
 	level.queue_free()
 
 

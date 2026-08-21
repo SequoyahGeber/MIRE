@@ -61,18 +61,19 @@ const DAY_GROUND_BOTTOM := Color(0.192, 0.275, 0.235)
 const GOLDEN_SKY_TOP := Color(0.40, 0.49, 0.59)
 const GOLDEN_SKY_HORIZON := Color(0.92, 0.58, 0.34)
 const GOLDEN_GROUND_HORIZON := Color(0.69, 0.50, 0.34)
-const NIGHT_SKY_TOP := Color(0.028, 0.045, 0.12)
-const NIGHT_SKY_HORIZON := Color(0.075, 0.10, 0.20)
-const NIGHT_GROUND_HORIZON := Color(0.035, 0.05, 0.10)
-const NIGHT_GROUND_BOTTOM := Color(0.012, 0.018, 0.04)
+const NIGHT_SKY_TOP := Color(0.035, 0.060, 0.18)
+const NIGHT_SKY_HORIZON := Color(0.12, 0.17, 0.32)
+const NIGHT_GROUND_HORIZON := Color(0.065, 0.095, 0.18)
+const NIGHT_GROUND_BOTTOM := Color(0.018, 0.030, 0.075)
 const SKY_CURVE: float = 0.18
 const SKY_SUN_ANGLE_MAX_DEG: float = 1.5
 const SKY_SUN_CURVE: float = 0.08
 const DAY_SKY_ENERGY: float = 1.0
-const NIGHT_SKY_ENERGY: float = 0.35
+const NIGHT_SKY_ENERGY: float = 0.78
+const NIGHT_BACKGROUND_ENERGY: float = 0.72
 ## The non-sky ambient floor keeps a moonlit night playable without flattening the terrain.
-const NIGHT_AMBIENT_COLOR := Color(0.34, 0.42, 0.62)
-const NIGHT_AMBIENT_SKY_CONTRIBUTION: float = 0.68
+const NIGHT_AMBIENT_COLOR := Color(0.42, 0.48, 0.66)
+const NIGHT_AMBIENT_SKY_CONTRIBUTION: float = 0.28
 const DAY_AMBIENT_SKY_CONTRIBUTION: float = 0.78
 
 ## Keep the light's angular size small for useful shadow definition. The visible disc is authored
@@ -97,10 +98,10 @@ const SUN_ANGULAR_DIAMETER_DEG: float = 0.85
 ## follows `starlight` — the same window the stars fade in across — and the sun's shadows are
 ## switched off for as long as the moon's are on, so the map never pays for two shadow-casting
 ## directional lights at once and exactly one of the two is meaningfully lit at any hour.
-const MOONLIGHT_COLOR := Color(0.66, 0.76, 1.0)
-## Roughly a seventh of the day sun. Moonlight has to read as "you can just make out the ground",
-## never as a blue midday: the whole point of night is that it is dangerous.
-const MOON_ENERGY: float = 0.55
+const MOONLIGHT_COLOR := Color(0.74, 0.82, 1.0)
+## Strong enough to carve directional facet and trunk shadows, but still well below the day sun.
+## The sky and ambient floor provide legibility; this provides shape, so night stays dangerous.
+const MOON_ENERGY: float = 0.72
 ## Tighter than the sun's, because the moon's shadows are the ones most likely to look wrong — a
 ## soft-edged shadow at this energy is a smudge rather than a shape.
 const MOON_ANGULAR_DIAMETER_DEG: float = 0.6
@@ -141,14 +142,15 @@ const DAY_GLOW_BLOOM: float = 0.0
 const DAY_GLOW_HDR_THRESHOLD: float = 1.0
 const DAY_GLOW_INTENSITY: float = 0.70
 const DAY_SUN_ENERGY: float = 1.15
-## Night ends — the values `levels/procedural_island.tscn` and `levels/hollowmere.tscn` author, kept
-## here so the lerp is readable in one place. A scene that authors different ones is not wrong, it
-## just stops being the night end of this particular curve; nothing downstream depends on the match.
-const NIGHT_TONEMAP_WHITE: float = 3.0
-const NIGHT_TONEMAP_EXPOSURE: float = 0.85
-const NIGHT_AMBIENT_ENERGY: float = 0.22
-const NIGHT_ADJUSTMENT_CONTRAST: float = 1.03
-const NIGHT_ADJUSTMENT_SATURATION: float = 1.14
+## Night ends are controller-owned alongside the procedural sky. F-356's old 3.0 white point, 0.12
+## background, and 1.14 saturation multiplied into a black sky and radioactive green terrain. The
+## restrained grade below keeps authored moonlight out of the ACES toe and pulls flat albedos toward
+## cool moonlit colour without making the scene a blue daytime.
+const NIGHT_TONEMAP_WHITE: float = 1.65
+const NIGHT_TONEMAP_EXPOSURE: float = 0.94
+const NIGHT_AMBIENT_ENERGY: float = 0.30
+const NIGHT_ADJUSTMENT_CONTRAST: float = 1.0
+const NIGHT_ADJUSTMENT_SATURATION: float = 0.78
 const NIGHT_GLOW_BLOOM: float = 0.14
 const NIGHT_GLOW_HDR_THRESHOLD: float = 0.92
 const NIGHT_GLOW_INTENSITY: float = 1.05
@@ -468,9 +470,10 @@ func apply_atmosphere() -> void:
 		# valley at midnight is a searchlight, not a moon.
 		_moon.light_volumetric_fog_energy = god_ray_strength * 0.25 * moonlight
 
-	_environment.background_energy_multiplier = lerpf(0.12, 0.9, daylight)
-	# The ambient term is a readable-shadow floor, not a second key light. Most of it comes from the
-	# authored blue-green sky, keeping unlit facets cool while the sun provides their warm edge.
+	_environment.background_energy_multiplier = lerpf(NIGHT_BACKGROUND_ENERGY, 0.9, daylight)
+	# The ambient term is a readable-shadow floor, not a second key light. At night most of it comes
+	# from the authored cool colour rather than the green ground half of the sky, preventing grass
+	# albedo from tinting every unlit facet teal. By day the shared sky again supplies most of it.
 	_environment.ambient_light_energy = lerpf(NIGHT_AMBIENT_ENERGY, DAY_AMBIENT_ENERGY, daylight)
 	_environment.ambient_light_color = NIGHT_AMBIENT_COLOR.lerp(_day_ambient_color, daylight)
 	_environment.ambient_light_sky_contribution = lerpf(

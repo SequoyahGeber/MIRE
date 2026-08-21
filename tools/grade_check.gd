@@ -55,32 +55,9 @@ func _check_level(level_path: String) -> void:
 	check(is_zero_approx(authored.fog_height_density),
 		"no distance-independent height veil (fog_height_density=%.4f)" % authored.fog_height_density)
 
-	# SNAPSHOT, not a reference. Every instance of a PackedScene shares its sub-resources, so the
-	# Environment `authored` points at is the SAME object the controller writes to below — holding
-	# the node and reading it later compares the day grade against itself and passes no matter what
-	# (the first version of this check did exactly that and reported "1.30 > 1.30").
-	var authored_values := {
-		"tonemap_white": authored.tonemap_white,
-		"glow_bloom": authored.glow_bloom,
-		"adjustment_saturation": authored.adjustment_saturation,
-		"adjustment_contrast": authored.adjustment_contrast,
-	}
-
-	# The authored values ARE the night ends of the controller's lerps. Asserting the match here is
-	# what keeps the two copies from drifting: change one without the other and night silently stops
-	# being the thing this file claims it is.
-	check(is_equal_approx(authored_values["tonemap_white"], ATMOSPHERE.NIGHT_TONEMAP_WHITE),
-		"authored tonemap_white is the controller's night end (%.2f)" % authored_values["tonemap_white"])
-	check(is_equal_approx(authored_values["glow_bloom"], ATMOSPHERE.NIGHT_GLOW_BLOOM),
-		"authored glow_bloom is the controller's night end (%.2f)" % authored_values["glow_bloom"])
-	check(is_equal_approx(authored_values["adjustment_saturation"],
-			ATMOSPHERE.NIGHT_ADJUSTMENT_SATURATION),
-		"authored saturation is the controller's night end (%.2f)"
-			% authored_values["adjustment_saturation"])
-	check(is_equal_approx(authored_values["adjustment_contrast"],
-			ATMOSPHERE.NIGHT_ADJUSTMENT_CONTRAST),
-		"authored contrast is the controller's night end (%.2f)"
-			% authored_values["adjustment_contrast"])
+	# F-410 made the shared Atmosphere controller authoritative for the whole grade and procedural
+	# sky. Scene resource values are merely boot defaults now; runtime endpoints below are the
+	# contract, which lets every current and future level receive the same night without duplication.
 
 	# NOON — neutral authored colour, with highlight headroom and restrained contact shading.
 	var noon := await _environment_at(packed, NOON)
@@ -131,18 +108,18 @@ func _check_level(level_path: String) -> void:
 	check(is_equal_approx(noon.ssao_light_affect, ATMOSPHERE.SSAO_LIGHT_AFFECT),
 		"AO has only a restrained direct-light term (%.2f)" % noon.ssao_light_affect)
 
-	# MIDNIGHT — every grade value is back where the scene author put it.
+	# MIDNIGHT — the shared controller's readable, cool night endpoint.
 	var night := await _environment_at(packed, MIDNIGHT)
 	if night == null:
 		return
-	check(is_equal_approx(night.tonemap_white, authored_values["tonemap_white"]),
-		"midnight restores the authored white point (%.2f)" % night.tonemap_white)
-	check(is_equal_approx(night.glow_bloom, authored_values["glow_bloom"]),
-		"midnight restores the authored glow bloom (%.2f)" % night.glow_bloom)
-	check(is_equal_approx(night.adjustment_saturation, authored_values["adjustment_saturation"]),
-		"midnight restores the authored saturation (%.2f)" % night.adjustment_saturation)
-	check(is_equal_approx(night.adjustment_contrast, authored_values["adjustment_contrast"]),
-		"midnight restores the authored contrast (%.2f)" % night.adjustment_contrast)
+	check(is_equal_approx(night.tonemap_white, ATMOSPHERE.NIGHT_TONEMAP_WHITE),
+		"midnight reaches the shared white point (%.2f)" % night.tonemap_white)
+	check(is_equal_approx(night.glow_bloom, ATMOSPHERE.NIGHT_GLOW_BLOOM),
+		"midnight reaches the shared glow bloom (%.2f)" % night.glow_bloom)
+	check(is_equal_approx(night.adjustment_saturation, ATMOSPHERE.NIGHT_ADJUSTMENT_SATURATION),
+		"midnight reaches the shared saturation (%.2f)" % night.adjustment_saturation)
+	check(is_equal_approx(night.adjustment_contrast, ATMOSPHERE.NIGHT_ADJUSTMENT_CONTRAST),
+		"midnight reaches the shared contrast (%.2f)" % night.adjustment_contrast)
 
 
 ## Instantiates the level, poses DayNight at [param hour], and returns the Environment the
