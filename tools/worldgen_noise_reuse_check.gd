@@ -54,27 +54,54 @@ const SEEDS: Array[int] = [1, 20260819, -77, 0x5EED, 999983]
 ##   7a5196113765b5cb / c72cdd79cb349965 / bf2f672a4de972a9, scatter 428ea591736623cc /
 ##   1fb5f19469c5fc2f / 559e522d6b5d2706 / 906faea3771ca932 / de9ffaa1d503238d.
 ##
+## - **All twenty re-captured 2026-08-20 (F-340) for the 4.18/D-184 retune, INCLUDING
+##   `GOLDEN_BIOME`.** The goldens above were last captured at `8754844` (F-274); four commits
+##   reshaped the island after it — `179bb52` (retune to the Muck direction: mostly flat, gentle
+##   rolls, no mountains), `c782ce4` (flat plateau plus 3-5 placed hills), `2075ae3` (sea-level
+##   island, real ocean, streams) and `bf8141a` (gradual coast, 71 degrees of cliff down to 48).
+##   Every one of those moves the continent field.
+##
+##   `GOLDEN_BIOME` moving is the part that needed justifying, because the note above rightly calls
+##   its survival "the single most useful fact in this file". It does NOT mean D-144 broke.
+##   Classification still reads the continent and the moisture field and nothing else — what changed
+##   is the continent itself, and a classification that is a pure function of a field that moved is
+##   supposed to move with it. The pattern is the evidence: all four families moved TOGETHER, which
+##   is what a shape retune predicts. D-144 breaking would look like the opposite — biome drifting
+##   while the continent-derived hashes held still. Points 1, 2 and 4 of this check (equivalence,
+##   adoption, speed) all pass unchanged, so the `*_from_set` contract is intact.
+##
+##   Pre-4.18 values, for the record — biome 1c3ed123238a5fc0 / ec7e068c82caff15 /
+##   1b4a559bda6f8b5e / 537fc99b71f55371 / 0f57083774aa3f1b, POI 9ac297d056a197d6 /
+##   58ee2f52c21c9d53 / 96002f169e73689b / ef311362aabaffd9 / 600f7440406eb48d, amplitudes
+##   1724ffe59450b379 / 6a61a6eae9f39f45 / 4daacddc09ac7d00 / a5bf82fd86277a3d /
+##   add7ba4c8474e7c1, scatter 53d85dfad1e2e104 / cf43553290fcc014 / 0bd9550b9fe329c4 /
+##   38699fc7937a2d5b / dc4523d37681fbd7.
+##
+##   Each new value was confirmed reproducible across two independent Godot processes before being
+##   written down. A golden that is not deterministic is worse than a stale one: it converts every
+##   future run into a coin flip and teaches people to re-capture on red without reading why.
+##
 ## See point 3 in the header: these are a tripwire, not a specification of the layout.
 const GOLDEN_POI: Dictionary = {
-	1: "9ac297d056a197d6",
-	20260819: "58ee2f52c21c9d53",
-	-77: "96002f169e73689b",
-	0x5EED: "ef311362aabaffd9",
-	999983: "600f7440406eb48d",
+	1: "600f400bd3e47afb",
+	20260819: "77cd0f7cbf5ceaaf",
+	-77: "5ecc9980ab085d27",
+	0x5EED: "2f66eb28d0e7aef3",
+	999983: "d863d05a6ca834e4",
 }
 const GOLDEN_BIOME: Dictionary = {
-	1: "1c3ed123238a5fc0",
-	20260819: "ec7e068c82caff15",
-	-77: "1b4a559bda6f8b5e",
-	0x5EED: "537fc99b71f55371",
-	999983: "0f57083774aa3f1b",
+	1: "8a302f2dff58e302",
+	20260819: "21d757dcd3c3ea98",
+	-77: "4ba377eabfcd1b4c",
+	0x5EED: "a04249ac1903e44b",
+	999983: "f4e7f38be6d643c4",
 }
 const GOLDEN_AMPLITUDES: Dictionary = {
-	1: "1724ffe59450b379",
-	20260819: "6a61a6eae9f39f45",
-	-77: "4daacddc09ac7d00",
-	0x5EED: "a5bf82fd86277a3d",
-	999983: "add7ba4c8474e7c1",
+	1: "eb3b1eb76c641933",
+	20260819: "6ad186f647f1f3ef",
+	-77: "2a16a1ce41d904e5",
+	0x5EED: "aea0961ef28de2c0",
+	999983: "cacb8d21ceb99fd6",
 }
 ## Scatter got its own witness at F-271, which is when it first moved (from e1b81b6cdf97bb57 /
 ## 0ba6f0e311c68e58 / eadd61e208e89c9f / 357d154af9590f1a / 8ff13290e7187f75, when scatter stopped
@@ -82,11 +109,11 @@ const GOLDEN_AMPLITUDES: Dictionary = {
 ## became the biome-shaped surface. A worldgen change that moves it must say so and re-capture; one
 ## that claims to move nothing must leave it alone.
 const GOLDEN_SCATTER: Dictionary = {
-	1: "53d85dfad1e2e104",
-	20260819: "cf43553290fcc014",
-	-77: "0bd9550b9fe329c4",
-	0x5EED: "38699fc7937a2d5b",
-	999983: "dc4523d37681fbd7",
+	1: "ddd54fb1041f05dd",
+	20260819: "d91208295ca223f7",
+	-77: "2b77e122cf60a40e",
+	0x5EED: "9dd6749ae9585b8b",
+	999983: "eedfb82051d38761",
 }
 
 var failures: int = 0
@@ -118,6 +145,7 @@ func _run() -> void:
 	_check_equivalence()
 	_check_adoption()
 	_check_layout_unchanged()
+	_check_hashes_are_sensitive()
 	_check_poi_determinism()
 	_check_speedup()
 
@@ -306,24 +334,53 @@ func _poi_hash(sites: Array) -> String:
 	return ctx.finish().hex_encode().substr(0, 16)
 
 
-func _biome_hash(world_seed: int) -> String:
+## F-340: how far the sample grid is nudged for the sensitivity control below. 5 cm — smaller than
+## any terrain change anyone would make on purpose, so a hash that survives it is a hash that would
+## also survive a real drift.
+const SENSITIVITY_NUDGE_M: float = 0.05
+
+
+## The negative mutation the tripwire needs to be worth keeping (F-340).
+##
+## Re-capturing twenty goldens is only defensible if they can still fail. The risk after a bulk
+## re-capture is not that the numbers are wrong — they were confirmed reproducible — but that nobody
+## ever finds out whether the hash is sensitive enough to notice a change smaller than the retune
+## that prompted it. So: recompute the biome and amplitude hashes over a grid displaced by 5 cm and
+## assert they differ from the recorded values. If a 5 cm shift cannot move them, neither could a
+## real seam or non-determinism regression, and every PASS above is decoration.
+func _check_hashes_are_sensitive() -> void:
+	print("\n== the recorded hashes still notice a change far smaller than the retune ==")
+	for world_seed: int in SEEDS:
+		var nudged_biome: String = _biome_hash(world_seed, SENSITIVITY_NUDGE_M)
+		_check(nudged_biome != String(GOLDEN_BIOME[world_seed]),
+			"seed %d: a %.2f m shift moves the biome hash" % [world_seed, SENSITIVITY_NUDGE_M],
+			"a 5 cm displacement produced the recorded hash %s — the tripwire cannot see drift"
+				% nudged_biome)
+		var nudged_amp: String = _amplitude_hash(world_seed, SENSITIVITY_NUDGE_M)
+		_check(nudged_amp != String(GOLDEN_AMPLITUDES[world_seed]),
+			"seed %d: a %.2f m shift moves the amplitude hash" % [world_seed, SENSITIVITY_NUDGE_M],
+			"a 5 cm displacement produced the recorded hash %s — the tripwire cannot see drift"
+				% nudged_amp)
+
+
+func _biome_hash(world_seed: int, nudge_m: float = 0.0) -> String:
 	var ctx := HashingContext.new()
 	ctx.start(HashingContext.HASH_SHA256)
 	for gx in range(-16, 17):
 		for gz in range(-16, 17):
-			var x: float = float(gx) * 9.5
-			var z: float = float(gz) * 9.5
+			var x: float = float(gx) * 9.5 + nudge_m
+			var z: float = float(gz) * 9.5 + nudge_m
 			ctx.update(String(BiomeMap.biome_at(x, z, world_seed, biome_defs)).to_utf8_buffer())
 			ctx.update(PackedFloat64Array([BiomeMap.moisture(x, z, world_seed)]).to_byte_array())
 	return ctx.finish().hex_encode().substr(0, 16)
 
 
-func _amplitude_hash(world_seed: int) -> String:
+func _amplitude_hash(world_seed: int, nudge_m: float = 0.0) -> String:
 	var ctx := HashingContext.new()
 	ctx.start(HashingContext.HASH_SHA256)
 	for gx in range(-12, 13):
 		for gz in range(-12, 13):
 			var a: Vector2 = BiomeMap.terrain_amplitudes(
-				float(gx) * 11.0, float(gz) * 11.0, world_seed, biome_defs)
+				float(gx) * 11.0 + nudge_m, float(gz) * 11.0 + nudge_m, world_seed, biome_defs)
 			ctx.update(PackedFloat64Array([a.x, a.y]).to_byte_array())
 	return ctx.finish().hex_encode().substr(0, 16)

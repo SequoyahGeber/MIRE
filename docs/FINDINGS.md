@@ -1579,14 +1579,6 @@ Two smaller gaps found alongside, worth folding into the same task:
 
 ---
 
-### F-340 · Terrain retuning landed without refreshing its deterministic and structural checks
-
-**Area:** worldgen/testing · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
-
-After 4.18/D-184, `tools/biome_terrain_check.gd` still requires every border vertex to sit on the unjittered grid, `chunk_stream_check.gd` still assumes grid-ordered positions and pins an obsolete 3.0999 m divergence, `terrain_look_check.gd` pins pre-retune ridge/height conditions, and `worldgen_noise_reuse_check.gd` has 20 stale hashes across terrain/biome/scatter/POI outputs. This leaves the most recent worldgen change with a broadly red regression suite, so a future real drift cannot be distinguished from accepted retuning. Re-author invariants around deterministic shared jitter, independently review each new golden hash, and keep a negative mutation that proves the checks fail for actual seam/non-determinism regressions.
-
----
-
 ### F-344 · Remote interpolation misses its own smoothness budget in both synthetic and live phases
 
 **Area:** netcode/performance · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
@@ -1823,7 +1815,143 @@ Sequoyah requested a full Godot editor audit of project settings, editor-visible
 
 ---
 
+### F-356 · Night renders essentially black on the shipped grade — the ground is invisible, not merely dark
+
+**Area:** render · **Severity:** high · **Found:** 2026-08-21 by gale47f1fe
+
+Found while measuring F-353's daytime fix, and NOT caused by it: the shipped grade was rendered at
+hour 22.0 as its own control (`assets/audit/lighting/35_baseline_night.png`) and measures
+
+  luminance p05 0.000  median 0.000  p95 0.003   (3682 distinct colours in the whole frame)
+
+The frame is not empty — stars, a few blue cloud facets and the emissive rims on foliage survive —
+but the TERRAIN is gone. There is no ground plane, no silhouette, no horizon. A player standing in
+it can see the sky and nothing they are standing on.
+
+This contradicts what `world/environment/playtest_atmosphere.gd` is explicitly trying to do. Its
+own `NIGHT_AMBIENT_COLOR` comment says the night ambient floor exists so that "night should be
+dangerous, not unreadable", and `MOONLIGHT_COLOR` exists to tint what directional light survives.
+Both are being applied; neither is reaching the ground.
+
+Candidates, none yet isolated:
+
+  · `background_energy_multiplier` runs to 0.12 at night and `ambient_light_sky_contribution` is
+    0.68, so 68% of the ambient term is a sky that has itself been dimmed to near nothing — the
+    two multiply, and `NIGHT_AMBIENT_ENERGY` 0.22 is then applied to the product.
+  · `sun.light_energy` bottoms out at 0.04, which against a terrain albedo of 0.26/0.40/0.19 is
+    below what the tonemapper resolves at all.
+  · `tonemap_white` 3.0 at night maps the scene into the toe of the ACES curve (this is the same
+    mechanism F-353 measured on the day side), so what little radiance exists is compressed toward
+    zero rather than lifted.
+
+Deliberately left alone by F-353: that fix drives every grade knob it touches off `daylight` so
+night lands on the authored values unchanged, precisely so this pre-existing problem stays a
+separate, separately-judged change. Whoever takes this should re-measure FIRST — the numbers above
+are one seed at one hour, and `tools/grade_probe.gd` will pose any hour with no overrides.
+
+Worth a product call alongside it: how dark is night SUPPOSED to be? The atmosphere file says
+"dangerous, not unreadable", but nobody has rendered a night anyone signed off on.
+
+---
+
+### F-357 · A flat pale-grey band sits above the horizon in every daytime view, and six candidate causes have been eliminated
+
+**Area:** render · **Severity:** low · **Found:** 2026-08-21 by gale47f1fe
+
+Pre-existing, visible in the shipped renders (`assets/audit/terrain/island_shore_look.png`) and
+still there after F-353's grade fix (`assets/audit/lighting/25_final_spawn.png`,
+`20_shore_final.png`). Between the water horizon and the blue of the upper sky there is a wide,
+flat, desaturated grey-teal band. On the spawn view it is a thin strip behind the treeline; on the
+shore view it fills the top quarter of the frame. It reads as smog, and it is the last part of the
+frame that still looks washed out after F-353.
+
+Measured on the shore view at hour 8.35: band ~rgb(130,148,151) against a sky top of
+rgb(127,164,172) — lighter and markedly greyer than the sky above it.
+
+ELIMINATED, each by an isolated render at the same hour in the same run
+(`tools/grade_probe.gd`, round 3 variants 21-24 and round 4 variants 30-33):
+
+  · `fog_sky_affect = 0.0`             — no change
+  · `volumetric_fog_sky_affect = 0.0`  — no change
+  · `fog_aerial_perspective = 0.0`     — no change
+  · sky `ground_color` -> (0.09,0.14,0.20) — no change
+  · sky `turbidity` 5.2 -> 3.5 and -> 2.0 — no change
+  · sky `mie_coefficient` 0.0048 -> 0.0025 — no change
+
+CAVEAT WORTH CHECKING FIRST: the last three all go through `grade_probe.gd`'s sky-material override
+path, and that path has never been independently proven to take effect. Two unrelated properties
+both producing exactly zero change is as consistent with "the override silently did nothing" as
+with "the property is not the cause". Before spending time on new hypotheses, assert the write
+landed — read `turbidity` back off the material after setting it, or set it to something absurd
+(20.0) and confirm the frame changes at all.
+
+METHOD NOTE for whoever picks this up, learned the expensive way on F-353: `procedural_world`
+builds a DIFFERENT island per probe run, so shots from two different runs are two different maps
+and cannot be compared. Only variants within a single run are comparable. The first shot after the
+420-frame settle is also not yet converged and reads several units darker than the identical config
+rendered later in the same run — put a throwaway variant first, or discard shot one.
+
+---
+
 ## Resolved
+
+### F-340 · Terrain retuning landed without refreshing its deterministic and structural checks — **fixed**
+
+**Area:** worldgen/testing · **Severity:** medium · **Found:** 2026-08-20 by nettlea491cc
+
+After 4.18/D-184, `tools/biome_terrain_check.gd` still requires every border vertex to sit on the unjittered grid, `chunk_stream_check.gd` still assumes grid-ordered positions and pins an obsolete 3.0999 m divergence, `terrain_look_check.gd` pins pre-retune ridge/height conditions, and `worldgen_noise_reuse_check.gd` has 20 stale hashes across terrain/biome/scatter/POI outputs. This leaves the most recent worldgen change with a broadly red regression suite, so a future real drift cannot be distinguished from accepted retuning. Re-author invariants around deterministic shared jitter, independently review each new golden hash, and keep a negative mutation that proves the checks fail for actual seam/non-determinism regressions.
+
+---
+
+**Resolved 2026-08-21 by ivy1bcae0.** **Fixed 2026-08-20 by ivy1bcae0.** Two of the three named files were genuinely stale; the third had
+already been fixed in a commit the audit's snapshot predates.
+
+**`worldgen_noise_reuse_check.gd` — all 20 goldens re-captured.** The file's own doctrine is the
+governing rule: "If a later task deliberately changes worldgen output, THESE CONSTANTS MUST BE
+RE-CAPTURED and the change recorded." 4.18/D-184 is exactly such a task. The goldens were last
+captured at `8754844` (F-274); four commits reshaped the island after it — `179bb52` (Muck direction:
+mostly flat, gentle rolls, no mountains), `c782ce4` (flat plateau plus placed hills), `2075ae3`
+(sea-level island, ocean, streams) and `bf8141a` (gradual coast). Every one moves the continent field.
+
+`GOLDEN_BIOME` moving needed justifying, because the file rightly calls its survival "the single most
+useful fact" in it. It does not mean D-144 broke. Classification still reads the continent and the
+moisture field and nothing else — the CONTINENT changed, and a pure function of a field that moved is
+supposed to move with it. The pattern is the evidence: all four families moved together, which is
+what a shape retune predicts; D-144 breaking would look like the opposite, biome drifting while the
+continent-derived hashes held still. Points 1, 2 and 4 of the check (equivalence, adoption, speed)
+pass unchanged, so the `*_from_set` contract is intact.
+
+Every new value was confirmed byte-identical across two independent Godot processes before being
+written down, and the pre-4.18 values are recorded in the file. A golden that is not deterministic is
+worse than a stale one: it turns every future run into a coin flip and teaches people to re-capture
+on red without reading why.
+
+**A negative mutation, kept.** A bulk re-capture is only defensible if the tripwire can still fail,
+so `_check_hashes_are_sensitive()` recomputes the biome and amplitude hashes over a grid displaced by
+5 cm and asserts they differ from the recorded values — far smaller than any deliberate terrain
+change. All ten pass, so the hashes would notice a real seam or non-determinism regression.
+
+**`terrain_look_check.gd` — both invariants re-authored around the jitter and the constants.**
+- The ridge assertion read `ridge_mask(HEIGHT_SCALE) == 1.0`, true only while `RIDGE_MASK_FULL` was
+  at or below 1.0. The retune raised it to 1.30, so the mask saturates at 7.8 m and the check failed
+  on terrain working exactly as authored. It now asserts against the authored thresholds — masked at
+  sea level, still masked at `RIDGE_MASK_START`, full at `RIDGE_MASK_FULL`, and ramping between them
+  rather than stepping. A future retune moves the constants without touching this file.
+- The mesher assertion compared a chunk vertex's height to the surface at the integer grid point it
+  was scanned from, and failed by 0.003 m. That is the jitter: since 4.18 the vertex is displaced in
+  XZ and re-sampled there. It now compares at the vertex's OWN position — the diagnostic reads
+  "scanned from (18, 2), actually at 17.946, 1.891" — and keeps the point of the assertion by also
+  requiring the height to differ from the biome-BLIND surface, without which it would pass on a
+  mesher that ignored the biome table entirely.
+
+**`chunk_stream_check.gd` — already fixed, after the audit looked.** The audit reports it pinning an
+obsolete 3.0999 m divergence. That number is historical provenance in a comment; the live constant
+`WORST_KNOWN_DIVERGENCE_M` has been re-measured twice since (1.2134, then 0.2196) and `bf8141a`
+landed that after the audit's `76f1244` snapshot. It runs clean: **0 functional failures**, including
+the F-132 union-of-interest phase — which independently confirms F-330 left the host union intact.
+
+Verified: `worldgen_noise_reuse failures=0`, `terrain_look_check failures=0`,
+`chunk_stream_check` 0 functional failures, `biome_terrain_check failures=0`.
 
 ### F-351 · Enemies navigate a map the streamed world never bakes into — every chunk navmesh is on NavBaker's private map — **fixed**
 

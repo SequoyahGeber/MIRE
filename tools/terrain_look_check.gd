@@ -45,10 +45,25 @@ func _run() -> void:
 
 func _check_ridge_layer() -> void:
 	print("\n== the masked ridged layer only adds on high ground ==")
+	# F-340: asserted against the authored thresholds, not against a hardcoded multiple of
+	# HEIGHT_SCALE. This used to read `ridge_mask(HEIGHT_SCALE) == 1.0`, which was true only while
+	# RIDGE_MASK_FULL was at or below 1.0; the 4.18/D-184 retune raised it to 1.30, so the mask now
+	# saturates at 7.8 m rather than 6.0 m and the check failed on a terrain that was working
+	# exactly as authored. The INVARIANT — masked low, full high, a ramp in between — is unchanged
+	# and is what is asserted now, so a future retune moves the thresholds without moving this file.
+	var start_h: float = IslandHeightmap.RIDGE_MASK_START * IslandHeightmap.HEIGHT_SCALE
+	var full_h: float = IslandHeightmap.RIDGE_MASK_FULL * IslandHeightmap.HEIGHT_SCALE
 	check(IslandHeightmap.ridge_mask(0.0) == 0.0,
 		"the ridged layer is fully masked at sea level")
-	check(IslandHeightmap.ridge_mask(IslandHeightmap.HEIGHT_SCALE) == 1.0,
-		"the ridged layer reaches full strength on high ground")
+	check(IslandHeightmap.ridge_mask(start_h) == 0.0,
+		"the ridged layer is still fully masked at its own start threshold (%.2f m)" % start_h)
+	check(IslandHeightmap.ridge_mask(full_h) == 1.0,
+		"the ridged layer reaches full strength at its own full threshold (%.2f m)" % full_h)
+	# A ramp, not a step: without this the two endpoints above are satisfied by a hard cutoff, which
+	# is the one shape the mask exists to avoid.
+	var midpoint: float = IslandHeightmap.ridge_mask((start_h + full_h) * 0.5)
+	check(midpoint > 0.0 and midpoint < 1.0,
+		"and it ramps between them rather than stepping (midpoint %.3f)" % midpoint)
 
 	var active_samples: int = 0
 	var subtractive_samples: int = 0
@@ -134,9 +149,29 @@ func _check_chunk_mesher_surface() -> void:
 	var side: int = ChunkMesher.verts_per_side(0)
 	var vertex_index: int = candidate_local.y * side + candidate_local.x
 	var actual: float = vertices[vertex_index].y
-	check(absf(actual - candidate_scaled) <= HEIGHT_EPSILON,
-		"chunk vertex uses biome-scaled height (actual=%.3f scaled=%.3f blind=%.3f at %s/%s)" % [
-			actual, candidate_scaled, candidate_blind, candidate_chunk, candidate_local])
+
+	# F-340: compared at the vertex's OWN position, not at the grid point it was scanned from.
+	#
+	# Since 4.18/D-184 `ChunkMesher` displaces every vertex in XZ by deterministic jitter and
+	# re-samples its height there, so a vertex no longer sits above the integer coordinate this loop
+	# found it at. The old assertion compared its height to the surface at (18, 2) and failed by
+	# 0.003 m — the jitter, not a defect. Same class as F-345: an invariant written for a pre-jitter
+	# world. The property being asserted is unchanged, and is still the one that matters: the mesher
+	# uses the BIOME-SCALED surface rather than the biome-blind one.
+	var vertex_x: float = float(candidate_chunk.x * ChunkMesher.CHUNK_SIZE) + vertices[vertex_index].x
+	var vertex_z: float = float(candidate_chunk.y * ChunkMesher.CHUNK_SIZE) + vertices[vertex_index].z
+	var here: Vector2 = BiomeMap.terrain_amplitudes(vertex_x, vertex_z, SEED, biome_defs)
+	var scaled_here: float = IslandHeightmap.height(vertex_x, vertex_z, SEED, here.x, here.y)
+	var blind_here: float = IslandHeightmap.height(vertex_x, vertex_z, SEED)
+	check(absf(actual - scaled_here) <= HEIGHT_EPSILON,
+		"chunk vertex uses biome-scaled height at its own jittered position "
+		+ "(actual=%.4f scaled=%.4f at %.3f,%.3f — scanned from %s/%s)" % [
+			actual, scaled_here, vertex_x, vertex_z, candidate_chunk, candidate_local])
+	# The teeth: without this the assertion above passes on a mesher that ignores the biome table
+	# entirely, as long as it samples the right coordinate.
+	check(absf(actual - blind_here) > HEIGHT_EPSILON,
+		"and that height is NOT the biome-blind one (scaled=%.4f blind=%.4f, apart by %.4f m)" % [
+			scaled_here, blind_here, absf(scaled_here - blind_here)])
 
 
 func check(condition: bool, description: String) -> void:
