@@ -1,0 +1,190 @@
+[gd_scene load_steps=35 format=3]
+
+[ext_resource type="Script" path="res://entities/props/prop_group.gd" id="0_prop_group"]
+[ext_resource type="PackedScene" uid="uid://br4jxp0kh0y70" path="res://assets/camp/exports/barrel_large.glb" id="1_barrel_large"]
+[ext_resource type="PackedScene" uid="uid://c66er28pth3kt" path="res://assets/camp/exports/barrel_small.glb" id="2_barrel_small"]
+[ext_resource type="PackedScene" uid="uid://dd704ipuwsssy" path="res://assets/camp/exports/bedroll.glb" id="3_bedroll"]
+[ext_resource type="PackedScene" uid="uid://bw1w455qanbxh" path="res://assets/camp/exports/bench.glb" id="4_bench"]
+[ext_resource type="PackedScene" uid="uid://dfasj5hckwub7" path="res://assets/camp/exports/bucket.glb" id="5_bucket"]
+[ext_resource type="PackedScene" uid="uid://die74fjq1slya" path="res://assets/camp/exports/crate.glb" id="6_crate"]
+[ext_resource type="PackedScene" uid="uid://ibl8y0tt5n07" path="res://assets/camp/exports/crate_broken.glb" id="7_crate_broken"]
+[ext_resource type="PackedScene" uid="uid://cc7cq7g4u7usb" path="res://assets/environment/exports/fallen_log_a.glb" id="8_fallen_log_a"]
+[ext_resource type="PackedScene" uid="uid://sof4asc0p333" path="res://assets/environment/exports/fence_post.glb" id="9_fence_post"]
+[ext_resource type="PackedScene" uid="uid://11iwdoe1d41d" path="res://assets/environment/exports/fence_straight.glb" id="10_fence_straight"]
+[ext_resource type="PackedScene" uid="uid://cvq2jxs8rnhla" path="res://assets/camp/exports/lantern.glb" id="11_lantern"]
+[ext_resource type="PackedScene" uid="uid://pw3lcudfmiro" path="res://assets/camp/exports/rack_drying.glb" id="12_rack_drying"]
+[ext_resource type="PackedScene" uid="uid://b7yhfpinr5kdn" path="res://assets/camp/exports/rack_tool.glb" id="13_rack_tool"]
+[ext_resource type="PackedScene" uid="uid://d2khviovrs5y1" path="res://assets/camp/exports/sack.glb" id="14_sack"]
+[ext_resource type="PackedScene" uid="uid://b7ja6x4v0nyy7" path="res://assets/crafting_stations/exports/station_anvil.glb" id="15_station_anvil"]
+[ext_resource type="PackedScene" uid="uid://djerbibolekom" path="res://assets/crafting_stations/exports/station_campfire.glb" id="16_station_campfire"]
+[ext_resource type="PackedScene" uid="uid://bffvgt1vdd0u0" path="res://assets/crafting_stations/exports/station_cooking_spit.glb" id="17_station_cooking_spit"]
+[ext_resource type="PackedScene" uid="uid://b4pao7ea6mqkj" path="res://assets/crafting_stations/exports/station_stone_furnace.glb" id="18_station_stone_furnace"]
+[ext_resource type="PackedScene" uid="uid://vbo1sj14rm8d" path="res://assets/crafting_stations/exports/station_woodcutting_block.glb" id="19_station_woodcutting_block"]
+[ext_resource type="PackedScene" uid="uid://dh3ifbg2j8qib" path="res://assets/crafting_stations/exports/station_workbench_primitive.glb" id="20_station_workbench_primitive"]
+[ext_resource type="PackedScene" uid="uid://sf5hmfjxttfq" path="res://assets/camp/exports/stool.glb" id="21_stool"]
+[ext_resource type="PackedScene" uid="uid://btv2wb637ao21" path="res://assets/environment/exports/stump_a.glb" id="22_stump_a"]
+[ext_resource type="PackedScene" uid="uid://dll525pkueisl" path="res://assets/camp/exports/table.glb" id="23_table"]
+[ext_resource type="PackedScene" uid="uid://df6v1s4jkl0nq" path="res://assets/environment/exports/wood_post.glb" id="24_wood_post"]
+[ext_resource type="PackedScene" uid="uid://brcoow6hxmnvg" path="res://assets/environment/exports/wood_roof_slope.glb" id="25_wood_roof_slope"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1"]
+size = Vector3(2.05, 1.24, 0.87)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_2"]
+size = Vector3(2.15, 2.09, 1.51)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_3"]
+size = Vector3(1.38, 1.36, 0.89)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_4"]
+size = Vector3(2.06, 1.16, 1.24)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_5"]
+size = Vector3(2.29, 1.67, 1.41)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_6"]
+size = Vector3(1.72, 0.85, 0.79)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_7"]
+size = Vector3(0.68, 0.88, 0.68)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_8"]
+size = Vector3(0.65, 0.58, 0.65)
+
+[node name="CampAbandoned" type="Node3D"]
+script = ExtResource("0_prop_group")
+
+; F-402: the station_camp POI. Twenty-eight kit props, two working stations, eight colliders. Origin is the workbench because the composer's marker lands there.
+
+[node name="station_workbench_primitive" parent="." instance=ExtResource("20_station_workbench_primitive")]
+transform = Transform3D(1.00000, 0.00000, -0.00000, 0.00000, 1.00000, 0.00000, 0.00000, 0.00000, 1.00000, 0.00000, 0.00000, 0.00000)
+; the anchor: the composer's Station_ marker lands here, at the site root
+
+[node name="station_stone_furnace" parent="." instance=ExtResource("18_station_stone_furnace")]
+transform = Transform3D(-0.70271, 0.00000, -0.71147, 0.00000, 1.00000, 0.00000, 0.71147, 0.00000, -0.70271, 3.30000, 0.00000, -1.70000)
+; carries its own marker below, so the furnace station actually works
+
+[node name="station_anvil" parent="." instance=ExtResource("15_station_anvil")]
+transform = Transform3D(0.45360, 0.00000, -0.89121, 0.00000, 1.00000, 0.00000, 0.89121, 0.00000, 0.45360, 1.85000, 0.00000, -3.65000)
+
+[node name="station_woodcutting_block" parent="." instance=ExtResource("19_station_woodcutting_block")]
+transform = Transform3D(0.40849, 0.00000, 0.91276, 0.00000, 1.00000, 0.00000, -0.91276, 0.00000, 0.40849, 3.45000, 0.00000, 1.95000)
+
+[node name="stump_a" parent="." instance=ExtResource("22_stump_a")]
+transform = Transform3D(0.49729, 0.00000, -0.62666, 0.00000, 0.80000, 0.00000, 0.62666, 0.00000, 0.49729, 5.70000, 0.00000, -3.55000)
+; the chopping block
+
+[node name="rack_tool" parent="." instance=ExtResource("13_rack_tool")]
+transform = Transform3D(0.92106, 0.00000, -0.38942, 0.00000, 1.00000, 0.00000, 0.38942, 0.00000, 0.92106, 4.85000, 0.00000, 3.55000)
+
+[node name="barrel_large" parent="." instance=ExtResource("1_barrel_large")]
+transform = Transform3D(1.00000, 0.00000, -0.00000, 0.00000, 1.00000, 0.00000, 0.00000, 0.00000, 1.00000, -0.55000, 0.00000, -1.95000)
+
+[node name="barrel_small" parent="." instance=ExtResource("2_barrel_small")]
+transform = Transform3D(1.00000, 0.00000, -0.00000, 0.00000, 1.00000, 0.00000, 0.00000, 0.00000, 1.00000, 0.95000, 0.00000, -1.60000)
+
+[node name="crate_broken" parent="." instance=ExtResource("7_crate_broken")]
+transform = Transform3D(0.69671, 0.00000, -0.71736, 0.00000, 1.00000, 0.00000, 0.71736, 0.00000, 0.69671, 5.20000, 0.00000, 0.30000)
+; abandoned, not tidy
+
+[node name="bucket" parent="." instance=ExtResource("5_bucket")]
+transform = Transform3D(0.92106, 0.00000, 0.38942, 0.00000, 1.00000, 0.00000, -0.38942, 0.00000, 0.92106, 2.35000, 0.00000, -0.35000)
+
+[node name="station_campfire" parent="." instance=ExtResource("16_station_campfire")]
+transform = Transform3D(1.00000, 0.00000, -0.00000, 0.00000, 1.00000, 0.00000, 0.00000, 0.00000, 1.00000, -2.60000, 0.00000, 2.40000)
+; the heart of the clearing
+
+[node name="stool" parent="." instance=ExtResource("21_stool")]
+transform = Transform3D(-0.50485, 0.00000, -0.86321, 0.00000, 1.00000, 0.00000, 0.86321, 0.00000, -0.50485, -4.45000, 0.00000, 3.40000)
+
+[node name="stool_2" parent="." instance=ExtResource("21_stool")]
+transform = Transform3D(0.54030, 0.00000, 0.84147, 0.00000, 1.00000, 0.00000, -0.84147, 0.00000, 0.54030, -1.60000, 0.00000, 4.30000)
+
+[node name="fallen_log_a" parent="." instance=ExtResource("8_fallen_log_a")]
+transform = Transform3D(0.93937, 0.00000, -0.34290, 0.00000, 1.00000, 0.00000, 0.34290, 0.00000, 0.93937, -3.15000, 0.00000, 0.45000)
+; the other side of the fire
+
+[node name="bedroll" parent="." instance=ExtResource("3_bedroll")]
+transform = Transform3D(0.00080, 0.00000, -1.00000, 0.00000, 1.00000, 0.00000, 1.00000, 0.00000, 0.00080, -5.45000, 0.00000, 1.85000)
+; under the lean-to
+
+[node name="crate" parent="." instance=ExtResource("6_crate")]
+transform = Transform3D(0.62161, 0.00000, -0.78333, 0.00000, 1.00000, 0.00000, 0.78333, 0.00000, 0.62161, -4.25000, 0.00000, -0.65000)
+
+[node name="sack" parent="." instance=ExtResource("14_sack")]
+transform = Transform3D(0.98007, 0.00000, -0.19867, 0.00000, 1.00000, 0.00000, 0.19867, 0.00000, 0.98007, -5.60000, 0.00000, -1.35000)
+
+[node name="rack_drying" parent="." instance=ExtResource("12_rack_drying")]
+transform = Transform3D(0.87758, 0.00000, 0.47943, 0.00000, 1.00000, 0.00000, -0.47943, 0.00000, 0.87758, -3.45000, 0.00000, -2.30000)
+
+[node name="station_cooking_spit" parent="." instance=ExtResource("17_station_cooking_spit")]
+transform = Transform3D(-0.85689, 0.00000, -0.51550, 0.00000, 1.00000, 0.00000, 0.51550, 0.00000, -0.85689, -1.30000, 0.00000, 5.65000)
+; its own fire, so it sits across the clearing from the campfire
+
+[node name="barrel_small_2" parent="." instance=ExtResource("2_barrel_small")]
+transform = Transform3D(0.82534, 0.00000, -0.56464, 0.00000, 1.00000, 0.00000, 0.56464, 0.00000, 0.82534, -6.40000, 0.00000, 4.55000)
+
+[node name="table" parent="." instance=ExtResource("23_table")]
+transform = Transform3D(0.99500, 0.00000, -0.09983, 0.00000, 1.00000, 0.00000, 0.09983, 0.00000, 0.99500, 1.10000, 0.00000, 4.60000)
+
+[node name="lantern" parent="." instance=ExtResource("11_lantern")]
+transform = Transform3D(0.62161, 0.00000, -0.78333, 0.00000, 1.00000, 0.00000, 0.78333, 0.00000, 0.62161, 1.10000, 0.87000, 4.60000)
+; on the table, not on the floor
+
+[node name="bench" parent="." instance=ExtResource("4_bench")]
+transform = Transform3D(0.95534, 0.00000, 0.29552, 0.00000, 1.00000, 0.00000, -0.29552, 0.00000, 0.95534, 2.35000, 0.00000, 5.65000)
+
+[node name="wood_post" parent="." instance=ExtResource("24_wood_post")]
+transform = Transform3D(0.72000, 0.00000, -0.00000, 0.00000, 0.72000, 0.00000, 0.00000, 0.00000, 0.72000, -6.55000, 0.00000, 0.30000)
+
+[node name="wood_post_2" parent="." instance=ExtResource("24_wood_post")]
+transform = Transform3D(0.72000, 0.00000, -0.00000, 0.00000, 0.72000, 0.00000, 0.00000, 0.00000, 0.72000, -6.55000, 0.00000, 3.45000)
+
+[node name="wood_roof_slope" parent="." instance=ExtResource("25_wood_roof_slope")]
+transform = Transform3D(0.00072, 0.00000, -0.90000, 0.00000, 0.90000, 0.00000, 0.90000, 0.00000, 0.00072, -5.65000, 1.02000, 1.90000)
+; yawed so the wedge falls away from the fire, on 2.16 m posts
+
+[node name="fence_straight" parent="." instance=ExtResource("10_fence_straight")]
+transform = Transform3D(1.00000, 0.00000, -0.00000, 0.00000, 1.00000, 0.00000, 0.00000, 0.00000, 1.00000, -1.10000, 0.00000, -5.10000)
+; a windbreak, half fallen
+
+[node name="fence_post" parent="." instance=ExtResource("9_fence_post")]
+transform = Transform3D(0.95534, 0.00000, -0.29552, 0.00000, 1.00000, 0.00000, 0.29552, 0.00000, 0.95534, 1.55000, 0.00000, -5.05000)
+
+[node name="Station_station_stone_furnace" type="Marker3D" parent="."]
+transform = Transform3D(-0.70271, 0.00000, -0.71147, 0.00000, 1.00000, 0.00000, 0.71147, 0.00000, -0.70271, 3.30000, 0.00000, -1.70000)
+metadata/kind = "station"
+
+[node name="Collision" type="StaticBody3D" parent="."]
+
+[node name="Workbench" type="CollisionShape3D" parent="Collision"]
+transform = Transform3D(1.00000, 0.00000, -0.00000, 0.00000, 1.00000, 0.00000, 0.00000, 0.00000, 1.00000, 0.00000, 0.62000, 0.00000)
+shape = SubResource("BoxShape3D_1")
+
+[node name="Furnace" type="CollisionShape3D" parent="Collision"]
+transform = Transform3D(-0.70271, 0.00000, -0.71147, 0.00000, 1.00000, 0.00000, 0.71147, 0.00000, -0.70271, 3.30000, 1.05000, -1.70000)
+shape = SubResource("BoxShape3D_2")
+
+[node name="Anvil" type="CollisionShape3D" parent="Collision"]
+transform = Transform3D(0.45360, 0.00000, -0.89121, 0.00000, 1.00000, 0.00000, 0.89121, 0.00000, 0.45360, 1.85000, 0.68000, -3.65000)
+shape = SubResource("BoxShape3D_3")
+
+[node name="ChopBlock" type="CollisionShape3D" parent="Collision"]
+transform = Transform3D(0.40849, 0.00000, 0.91276, 0.00000, 1.00000, 0.00000, -0.91276, 0.00000, 0.40849, 3.45000, 0.58000, 1.95000)
+shape = SubResource("BoxShape3D_4")
+
+[node name="CookingSpit" type="CollisionShape3D" parent="Collision"]
+transform = Transform3D(-0.85689, 0.00000, -0.51550, 0.00000, 1.00000, 0.00000, 0.51550, 0.00000, -0.85689, -1.30000, 0.84000, 5.65000)
+shape = SubResource("BoxShape3D_5")
+
+[node name="Table" type="CollisionShape3D" parent="Collision"]
+transform = Transform3D(0.99500, 0.00000, -0.09983, 0.00000, 1.00000, 0.00000, 0.09983, 0.00000, 0.99500, 1.10000, 0.43000, 4.60000)
+shape = SubResource("BoxShape3D_6")
+
+[node name="BarrelLarge" type="CollisionShape3D" parent="Collision"]
+transform = Transform3D(1.00000, 0.00000, -0.00000, 0.00000, 1.00000, 0.00000, 0.00000, 0.00000, 1.00000, -0.55000, 0.44000, -1.95000)
+shape = SubResource("BoxShape3D_7")
+
+[node name="Crate" type="CollisionShape3D" parent="Collision"]
+transform = Transform3D(0.62161, 0.00000, -0.78333, 0.00000, 1.00000, 0.00000, 0.78333, 0.00000, 0.62161, -4.25000, 0.29000, -0.65000)
+shape = SubResource("BoxShape3D_8")
