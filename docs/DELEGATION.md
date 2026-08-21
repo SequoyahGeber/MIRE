@@ -75,6 +75,47 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-21 — F-447: the island doubled, its lobes are ellipses, its hills are asymmetric (birchcf39ce)
+
+Reported from play: *"the island should be maybe twice as big and id like the shape to be a bit more
+random rather than usually mostly round... also hills can be a bit taller maybe 25%, with some more
+variety in steepness, like one side of the hill could be more steep than the other kinda making a
+cliff type area."*
+
+`world/gen/island_heightmap.gd` — `ISLAND_RADIUS` is **590 m** (was 295). Anything holding a number
+in metres against the old island is now holding a fraction of a different one; anything authored as
+a fraction of `ISLAND_RADIUS` scaled for free.
+
+**Three signatures changed. Nothing outside the file called any of them, but tools do now:**
+
+```gdscript
+IslandHeightmap.lobes(seed)  -> Array[Vector4]   # (centre.x, centre.y, radius, stretch) — was Vector3
+IslandHeightmap.hills(seed)  -> Array[Hill]      # a class now, six fields — was Vector4
+IslandHeightmap.bend(x, z, seed) -> Vector2      # NEW, public: the shape warp, for instruments only
+```
+
+**`Hill`** carries `centre`, `radius`, `height`, `cliff_direction`, `scarp_run` (metres of run per
+metre of rise on the steep face — the gradient itself) and `sharpness` (how far that face
+front-loads its rise). Hills are placed inside a chosen LOBE rather than at a bearing from the
+island's middle, because the island does not fill the disc `ISLAND_RADIUS` names and hills placed
+that way landed in the sea.
+
+**`NoiseSet` now carries the seed's landform lists** — `lobe_list`, `islet_list`, `hill_list` —
+built once in `make_noise_set()`. If you sample many points for one seed, go through the set:
+`shape_into()` used to rebuild all three per sample, and with asymmetric hills that is 5-8 object
+allocations per vertex. Same threading rule as the noise fields: one set per `WorkerThreadPool`
+task, never shared.
+
+**Every landform coordinate is in BENT space.** `lobes()`, `hills()` and `river_polyline()` return
+points the shape warp has already been applied to, and the warp's amplitude is ~67 m at this radius.
+A tool that walks "outward from this hill along its cliff bearing" in world coordinates is walking
+some other bearing entirely — `tools/hill_slope_check.gd` measured steep flanks as gentler than lee
+flanks until it inverted `bend()` by fixed-point iteration. If you write an instrument against any
+of these, un-bend first.
+
+**New check:** `tools/hill_slope_check.gd` — per-hill flank asymmetry and island-wide walkability.
+
+
 ### 2026-08-21 — F-432/F-434/F-442: a tree's collider is its trunk, and felling one leaves its own stump (kiln384569)
 
 Reported from play: *"harvest states of trees are not working, and the collision boxs of willows are

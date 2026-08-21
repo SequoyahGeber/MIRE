@@ -6083,6 +6083,51 @@ composed lengths, landfall-at-boot, the bounded fade and hand-back, Cycle 1 vs C
 depth and its floor, and a run restart dropping a live cycle cue). `tools/audio_import_check.gd`
 knows the three lengths; `tools/ambient_music_check.gd` still passes unchanged.
 
+## D-188 — an island's silhouette comes from its lobes' SHAPE, not from trim on their edges
+
+**F-447.** Sequoyah has asked three separate times for islands that are not round (2026-08-19 "the
+islands are quite round, they shouldn't be standard shapes"; 2026-08-21 "id like the shape to be a
+bit more random rather than usually mostly round"). Each earlier pass added trim: coastline jitter,
+a domain warp, then a union of several offset lobes instead of one disc. Each helped and none of
+them fixed it, because **a union of discs is a rounded blob however the discs are arranged** —
+every piece of its outline is an arc of a circle, and "round" is what arcs of circles look like.
+
+The fix had to change what the pieces ARE. Lobes are ellipses now: each carries a stretch factor,
+and its mask is measured in a frame scaled along its own outward bearing, so it reaches further out
+to sea and stays narrow across. That produces peninsulas, waists and bays as STRUCTURE rather than
+as displacement, and four seeds render as four recognisably different islands instead of four
+arrangements of the same blob.
+
+The transform is **area-preserving** — the along component divided by the stretch, the across
+component multiplied by it — which is what stops a shape control from also being a size control.
+
+**The general rule: when a form reads wrong, check whether you are adding noise to the right thing.
+Displacing a circle's edge cannot stop the silhouette being a circle.**
+
+
+## D-189 — a landform's steepness is specified as an ANGLE, and its variety includes the ordinary case
+
+**F-447.** Two rules from the same pass, both learned by measuring rather than looking.
+
+**Specify the gradient, not a fraction of the footprint.** The first cut gave each hill a
+`cliff_bias` that squeezed its radius on one bearing. That ties the face's steepness to a radius and
+a height the seed drew independently, so a tall hill that happened to draw a broad radius came out
+gentle however large the bias was; the steepest face across three seeds measured 20.3 degrees.
+Replacing it with `scarp_run` — metres of run per metre of rise, which IS the gradient — makes the
+seed pick the steepness directly, and lets a broad 90 m swell end in a bluff on one side, which is
+the combination the direction was asking for and which a bias fraction cannot express.
+
+**A spread must reach its ordinary end.** Having measured that many hills came out near-symmetric,
+the first instinct was to put a floor under the spread so every hill had a steep side. Sequoyah
+corrected it the same day: *"i dont want every single hill to have a cliff, some hills can be very
+gentle and rolling and others can have a steeper side or whatever, just variety."* The plain
+instances are what the dramatic ones are read against; a cliff on every hill is a terrain style, not
+a landmark. `scarp_run` now runs past the point where the scarp stops existing at all, and
+`tools/hill_slope_check.gd` asserts **both ends of the distribution** — that some hills are
+near-symmetric and some are cliffs — because a fleet average alone cannot tell a spread apart from a
+floor.
+
+
 ## D-187 — one look-at prompt owns every interaction prompt; the systems keep the input
 
 **F-431.** Two prompts existed in the shipped game and they were both proximity driven:

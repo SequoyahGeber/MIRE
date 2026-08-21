@@ -2821,7 +2821,36 @@ silhouette and leave forest at 3.5%.
 
 ---
 
-### F-447 · The island is half the size it should be, its outline is still round, and every hill is the same symmetric dome
+### F-448 · chunk_stream_check's union-of-interest assertions fail at HEAD: neither anchor gets a LOD0 collider or a live Harvestable
+
+**Area:** streaming · **Severity:** high · **Found:** 2026-08-21 by birchcf39ce
+
+The union-of-interest block of tools/chunk_stream_check.gd fails at HEAD as well as after F-447:
+
+  FAIL  the 'host local' anchor's chunk loaded at LOD0 with a collider
+  FAIL  the 'remote peer' anchor's chunk ALSO loaded at LOD0 with a collider
+  FAIL  a live, host-authoritative Harvestable exists at the 'host local' anchor's point
+  FAIL  a live, host-authoritative Harvestable ALSO exists at the 'remote peer' anchor's point
+
+Measured on a throwaway worktree at dfe38e6 (the commit before F-447 landed) with
+`agent godot --windowed --script tools/chunk_stream_check.gd`: SIX functional failures there,
+including all four above. So this is NOT F-447 fallout — F-447 only re-recorded the LOD seam
+divergence tripwire, which is a separate assertion in the same file and now passes.
+
+The contract these four assert is F-132's: a host must build LOD0 chunks with colliders, and live
+host-authoritative Harvestables, at EVERY anchor in the union of interest — not only at its own
+local player's. A remote peer standing on a chunk the host never cooked cannot be reached by an
+`rpc_id(HOST_PEER_ID)` harvest call, so this is a multiplayer correctness failure, not a test
+nicety. Whether the streamer regressed or the check's settle window is now too short for a world
+this size is the first thing to establish: one nearby assertion ("both far-apart chunks are among
+the ones that materialized scatter") passes on some runs and fails on others, which points at
+timing, but the four above failed on every run of both revisions.
+
+---
+
+## Resolved
+
+### F-447 · The island is half the size it should be, its outline is still round, and every hill is the same symmetric dome — **fixed**
 
 **Area:** world-gen · **Severity:** high · **Found:** 2026-08-21 by birchcf39ce
 
@@ -2840,7 +2869,80 @@ Three separate defects in world/gen/island_heightmap.gd:
 
 ---
 
-## Resolved
+**Resolved 2026-08-21 by birchcf39ce.** **The island is twice the size, its outline is per-seed distinctive, and its hills vary from plain
+rolling swells to bluffs.** All of it in `world/gen/island_heightmap.gd`.
+
+**Size.** `ISLAND_RADIUS` 295 -> 590 m. Land measured on four seeds went from 6.3-8.3% of a 1600 m
+square to 8.4-12.4% of a 2400 m square — about 3x the area, not 4x, because the lobe radii shrank
+in the same pass to buy outline irregularity. The 512 m cut rejected in 2026-08-19 as "a continent
+filling the frame" does not reapply: what produced that read was the render FRAME, and the lobe
+union covers well under half the disc ISLAND_RADIUS names.
+
+**Outline.** Lobes are now ELLIPSES (`LOBE_STRETCH_MIN/MAX`, area-preserving, elongated radially),
+there are 4-6 of them instead of 3-4, they are smaller relative to the island, and the body lobe is
+pushed off the origin so it has a direction to be elongated along. A union of DISCS is a rounded
+blob however the discs are arranged — every piece of its outline is an arc of a circle — which is
+why three previous passes moved the circles around and the islands stayed round. Renders of four
+seeds now give a starfish with arms, a broad twin-lobed mass, a teardrop with a long spit, and a
+lumpy diagonal with an isthmus.
+
+**Hills.** Heights +25% (5.5-10.5 -> 6.9-13.1 m of crown lift). Count 3-5 -> 5-8 (a judgement call
+against a 4x area increase; flagged in the constant's own comment). Radii 30-60 -> 34-95 m. Each
+hill has a steep face on its own bearing, specified as an ANGLE (`scarp_run`, metres of run per
+metre of rise) rather than as a fraction of its footprint — a bias fraction ties steepness to a
+radius and a height the seed drew independently, and measured that way the steepest face on three
+seeds was 20.3 degrees. It reaches 56 degrees now. `sharpness` front-loads the rise on that face
+only, giving a scarp a lip at its toe.
+
+**Three things the measurement caught that looking could not, all recorded in the file:**
+
+  1. **Hills were being placed in the ocean.** Offsets were a bearing and a fraction of
+     ISLAND_RADIUS, which assumes the island fills that disc; it does not. Two of five hills on
+     seed 20260821 sat on the ocean floor and were multiplied away by the island mask. Hills are
+     now placed inside a chosen LOBE, in that lobe's elliptical frame, and capped to fit it.
+  2. **Hills were colliding.** Eight bearings x thirteen offset steps is a 104-point lattice, and
+     the offset spread included zero — seed 20276659 put two hills on the origin and a third 31 m
+     away. There is now a deterministic separation pass.
+  3. **Landforms live in BENT space.** `hills()`/`lobes()` coordinates have the shape warp already
+     applied, and the warp amplitude is ~67 m at this radius. `tools/hill_slope_check.gd` measured
+     a hill's steep flank as GENTLER than its lee purely because it walked its transect in world
+     coordinates. `IslandHeightmap.bend()` is now public so an instrument can invert the warp; the
+     check does that by fixed-point iteration.
+
+**Not every hill has a cliff, and that is the spec.** Sequoyah, mid-task: "i dont want every single
+hill to have a cliff, some hills can be very gentle and rolling and others can have a steeper side
+or whatever, just variety." The first cut floored the spread so every hill was asymmetric; the
+floor came out and `scarp_run` now reaches past the point where the scarp stops existing at all.
+Measured over five seeds and 31 hills: 42% gentle (steep flank within 1.25x the lee), 26% scarps
+(2.0x or more), the rest in between. `tools/hill_slope_check.gd` asserts BOTH ends, because a
+fleet average alone cannot tell a spread apart from a floor.
+
+**Performance.** `NoiseSet` now carries the seed's lobe, islet and hill lists. Asymmetric hills are
+objects, and `shape_into()` was allocating 5-8 of them per vertex against ~1,089 vertices a chunk:
+`tools/noise_reuse_check.gd`'s shared-set speedup fell from 1.88x to 1.22x and tripped its 1.3x
+floor. Hoisting the three lists onto the set put it back.
+
+**Checks touched, and why each moved:**
+  · `tools/hill_slope_check.gd` — NEW. Flank asymmetry per hill and island-wide walkability.
+  · `tools/terrain_check.gd` — the river bed's monotonic walk probed a +/-17.6 m CROSS sized for a
+    ~14 m warp. At ~67 m it missed the channel entirely and reported the bed climbing. It is a
+    filled disc sized off `SHAPE_WARP_AMPLITUDE` now; a cross was never the right shape to look in.
+  · `tools/biome_region_check.gd` — counted biome crossings PER TRANSECT, and the transect spans
+    the island while the biome regions do not scale with it, so doubling the radius doubled the
+    count and failed a field that had not changed. It is a rate per kilometre now, calibrated by
+    running the new metric against the old generator in a worktree at HEAD (33.1/km there vs
+    25.9/km now — the walk between boundaries got LONGER).
+  · `tools/chunk_stream_check.gd` — the recorded worst-case LOD seam divergence was re-swept:
+    0.2196 -> 4.4004 m at chunk (3,-4) on seed 4242, which is interior ground now and was coast
+    before. Island-wide worst is 2.3049 m against an 18.7 m skirt, so the guarantee is intact.
+  · `tools/blight_ground_check.gd` — its control camera came down INSIDE A TREE TRUNK and the
+    check reported "0 of 45504 px" terrain, a true statement about a photograph of bark. It now
+    tries several bearings onto the same ground and keeps the first whose crop shows ground.
+
+Green after the change: terrain_check, hill_slope_check, biome_region_check, biome_terrain_check,
+terrain_normal_check, terrain_accents_check, mire_scatter_check, poi_check, noise_reuse_check,
+check_determinism, blight_ground_check. `chunk_stream_check` still reports five functional
+failures, all of them present at HEAD as well (six there) — filed separately as F-448.
 
 ### F-445 · Purple Mire growth scatters across clean forests, and the Mire's own crystal/tendril assets are placed nowhere — **fixed**
 
