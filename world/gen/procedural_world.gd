@@ -44,6 +44,11 @@ const TERRAIN_GROUP: StringName = &"authored_world_terrain"
 ## Where the ocean's surface sits. `IslandHeightmap` measures every height against this, so it is
 ## the datum "below this is water" already meant everywhere it was written as a bare 0.0.
 const SEA_LEVEL: float = 0.0
+## The ocean plane is 1,400 m wide, so it does not need to chase the player every frame. Doing so
+## fed the player's movement into `water_low_poly.gdshader` through MODEL_MATRIX: sprinting made
+## its world-position wave phase race. Recenter only after a long traversal; this still leaves at
+## least 444 m of water beyond the viewer in every direction after crossing the deadband.
+const OCEAN_RECENTER_DISTANCE_M: float = 256.0
 
 ## How far (m) the spawn probe walks in from the island edge looking for standable shore, and the
 ## band of heights that read as "beach, above the waterline". WORLDGEN.md §3.1: shore start is a
@@ -688,10 +693,15 @@ func _physics_process(delta: float) -> void:
 
 
 ## Keeps the finite presentation mesh under the viewer without moving the gameplay water datum.
+## The deadband is load-bearing: translating it continuously makes the shader's world-position
+## phase inherit player speed, so sprinting appears to accelerate the waves (F-532).
 ## Public only so the composition check can pin the regression without needing a live player.
 func _center_ocean_on(anchor: Vector3) -> void:
 	var ocean := get_node_or_null(^"Ocean") as MeshInstance3D
 	if ocean == null:
+		return
+	var offset := Vector2(anchor.x - ocean.global_position.x, anchor.z - ocean.global_position.z)
+	if offset.length_squared() < OCEAN_RECENTER_DISTANCE_M * OCEAN_RECENTER_DISTANCE_M:
 		return
 	ocean.global_position = Vector3(anchor.x, SEA_LEVEL, anchor.z)
 

@@ -126,6 +126,18 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "systems/wellspring/wellspring.gd": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:06:44+00:00",
+      "task": "F-531",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
+    "tools/attunement_ui_check.gd": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:05:35+00:00",
+      "task": "F-530",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
     "tools/blender/build_deep_materials.py": {
       "agent": "birche6b40e",
       "at": "2026-08-21T23:53:11+00:00",
@@ -167,6 +179,18 @@
       "at": "2026-08-21T17:52:45+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "tools/wellspring_check.gd": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:06:44+00:00",
+      "task": "F-531",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
+    "ui/attunement/attunement_ui.gd": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:05:35+00:00",
+      "task": "F-530",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     }
   },
   "in_flight": {
@@ -236,6 +260,38 @@
       "notes": [],
       "started": "2026-08-22T00:29:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "F-530": {
+      "agent": "ivyf16b98",
+      "files": [
+        "ui/attunement/attunement_ui.gd",
+        "tools/attunement_ui_check.gd"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-22T05:05:35+00:00",
+          "by": "ivyf16b98",
+          "text": "Root cause: AttunementUI sets mouse visible once, but later PlayerController/HUD handlers can recapture it; the mandatory panel has no continuous ownership enforcement. Fixing in the UI without touching claimed player_controller.gd."
+        }
+      ],
+      "started": "2026-08-22T05:05:35+00:00",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
+    "F-531": {
+      "agent": "ivyf16b98",
+      "files": [
+        "systems/wellspring/wellspring.gd",
+        "tools/wellspring_check.gd"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-22T05:06:44+00:00",
+          "by": "ivyf16b98",
+          "text": "Confirmed unbounded accumulation: _start_channel() calls _spawn_defense_wave() every time, while _cancel_channel() leaves enemies alive and clears no encounter latch. Repeated E cancel/start stacks another 4+ enemies indefinitely."
+        }
+      ],
+      "started": "2026-08-22T05:06:44+00:00",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     }
   },
   "recent": {
@@ -4594,11 +4650,11 @@
       "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
     "tools/procedural_world_check.gd": {
-      "agent": "nettlee11674",
-      "at": "2026-08-22T03:04:15+00:00",
-      "hash": "3370f3663e688e9eebc3ad9b86d4ab43be409486a4c3475a869932f9151d6696",
-      "task": "F-507",
-      "token": "CODEX_SESSION_ID:01a02768-cbb6-7920-9096-4e48e878c5ec"
+      "agent": "cinder7f5a42",
+      "at": "2026-08-22T05:06:50+00:00",
+      "hash": "e6cc4ff855bb392978f7ff985799544e83bbcdfdbfa197969780ed1536c131a9",
+      "task": "F-532",
+      "token": "CODEX_SESSION_ID:01a027da-eedc-7792-b9fe-5a08f5de632e"
     },
     "tools/progression_check.gd": {
       "agent": "birche6b40e",
@@ -5126,11 +5182,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "world/gen/procedural_world.gd": {
-      "agent": "vane99f1bb",
-      "at": "2026-08-22T03:47:58+00:00",
-      "hash": "cac309ac960024c9e2707fafe0550da2f3c7df6babfddd412a04a103e59ca3c9",
-      "task": "F-516",
-      "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
+      "agent": "cinder7f5a42",
+      "at": "2026-08-22T05:06:50+00:00",
+      "hash": "636c3dff230f8de5c45bd626c73ba2a2faa57aebdb6d6c02ed731c3bccf8ff4e",
+      "task": "F-532",
+      "token": "CODEX_SESSION_ID:01a027da-eedc-7792-b9fe-5a08f5de632e"
     },
     "world/gen/prop_collider.gd": {
       "agent": "kiln384569",
@@ -5196,7 +5252,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1399,
+  "rev": 1414,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -11180,6 +11236,57 @@
       "status": "done",
       "tier": "F",
       "title": "macOS release shader cache crashes on launch"
+    },
+    "F-526": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Teammate revive interaction does not revive a downed player"
+    },
+    "F-527": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Build menu again leaves the cursor captive, preventing station and item selection"
+    },
+    "F-528": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Procedural map chest and loose-loot density is far below the intended scavenging experience"
+    },
+    "F-529": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "A rejoining player can inherit the host camera viewport and visor overlay"
+    },
+    "F-530": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Class selection can open while the mouse is captured and become impossible to dismiss"
+    },
+    "F-531": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Wellspring capture eventually triggers an overwhelming unbounded enemy flood"
+    },
+    "F-532": {
+      "done_at": "2026-08-22T05:06:50+00:00",
+      "done_by": "cinder7f5a42",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Water animation accelerates while sprinting"
     }
   },
   "version": 1

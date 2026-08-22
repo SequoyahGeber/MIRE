@@ -9607,3 +9607,18 @@ Notes along the way:
 Files: `export_presets.cfg`
 
 Commit at time of writing: `7ddded7b`
+
+---
+
+### DONE · F-532 · cinder7f5a42 · 2026-08-22T05:06:50+00:00
+
+**Water animation accelerates while sprinting**
+
+Ocean recentering now has a 256 m deadband, so sprint movement no longer drives water shader phase; procedural_world_check pins ordinary-move stability and long-travel recentering, failures=0.
+
+Notes along the way:
+- Cause confirmed: Ocean was recentered to the player's exact XZ every physics tick while water_low_poly derives phase from MODEL_MATRIX world position. Fix will use a wide deadband recenter so sprint does not continuously drive shader phase; remains client-local VFX authority.
+
+Files: `world/gen/procedural_world.gd`, `tools/procedural_world_check.gd`
+
+Commit at time of writing: `82696120`

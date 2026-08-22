@@ -55,6 +55,12 @@ func _run() -> void:
 	world_a.call(&"_center_ocean_on", Vector3(725.0, 80.0, -640.0))
 	check(ocean.global_position.is_equal_approx(Vector3(725.0, 0.0, -640.0)),
 		"the finite ocean follows a high-vantage player in XZ and stays at sea level")
+	world_a.call(&"_center_ocean_on", Vector3(735.0, 80.0, -650.0))
+	check(ocean.global_position.is_equal_approx(Vector3(725.0, 0.0, -640.0)),
+		"ordinary player movement does not translate the ocean's wave phase")
+	world_a.call(&"_center_ocean_on", Vector3(1000.0, 80.0, -640.0))
+	check(ocean.global_position.is_equal_approx(Vector3(1000.0, 0.0, -640.0)),
+		"the finite ocean recenters after a long traversal")
 
 	var sites: Array = world_a.get(&"poi_sites")
 	check(sites.size() > 0, "PoiMap produced sites (%d)" % sites.size())
