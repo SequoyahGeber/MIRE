@@ -27,6 +27,7 @@ const ChunkStreamerScript := preload("res://world/chunk/chunk_streamer.gd")
 const ChunkMesherScript := preload("res://world/chunk/chunk_mesher.gd")
 const NavBakerScript := preload("res://world/chunk/nav_baker.gd")
 const ScatterFieldScript := preload("res://world/gen/resource_scatter_field.gd")
+const RiverWaterScript := preload("res://world/environment/river_water.gd")
 const PlayerScene := preload("res://entities/player/player.tscn")
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
 ## The layer `ChunkStreamer._cook_collision()` puts terrain bodies on. Taken from the same file it
@@ -101,6 +102,14 @@ var _void_recoveries: int = 0
 ## the mesh, the collider, the navmesh, the POI sites, the scatter and `height_at()` all agree —
 ## and three separate reads of the same autoload is three chances for one of them to be empty.
 var _biome_defs: Array = []
+## The warp fields `water_surface_at()` bends through, built once per world (F-478). `bend()` would
+## construct two `FastNoiseLite` per call and this is asked once a frame per player.
+var _water_noise: IslandHeightmap.NoiseSet = null
+## The Shape `water_surface_at()` fills per call. One instance, reused, exactly as `ChunkMesher`
+## reuses one per chunk — and the reason this is safe is the same reason that is: main thread only.
+var _water_shape: IslandHeightmap.Shape = IslandHeightmap.Shape.new()
+## The river's water sheet — presentation only; see `world/environment/river_water.gd`.
+var river_water: Node3D = null
 
 
 func _ready() -> void:
@@ -119,6 +128,7 @@ func _ready() -> void:
 	_build_streamer()
 	_build_nav()
 	_build_scatter()
+	_build_river_water()
 	_build_poi_sites()
 	spawn_position = _pick_spawn()
 	_publish_spawn_marker()
@@ -186,6 +196,7 @@ func rebuild_for_seed(seed_value: int) -> void:
 	_build_streamer()
 	_build_nav()
 	_build_scatter()
+	_build_river_water()
 	_build_poi_sites()
 	spawn_position = _pick_spawn()
 	_publish_spawn_marker()
@@ -207,7 +218,7 @@ func rebuild_for_seed(seed_value: int) -> void:
 ## function's to remove.
 func _teardown_derived() -> void:
 	var derived: Array[Node] = []
-	for candidate: Node in [streamer, nav_baker, scatter_field]:
+	for candidate: Node in [streamer, nav_baker, scatter_field, river_water]:
 		if candidate != null and is_instance_valid(candidate):
 			derived.append(candidate)
 	for child_name: String in ["PoiSites", "SpawnMarker"]:
@@ -220,6 +231,8 @@ func _teardown_derived() -> void:
 	streamer = null
 	nav_baker = null
 	scatter_field = null
+	river_water = null
+	_water_noise = null
 
 
 ## Stands THIS peer's own player back up on the new island's shore, and re-anchors the respawn point
@@ -266,12 +279,37 @@ func height_at(x: float, z: float) -> float:
 
 ## The other half of that pair (F-284): the water surface over (x, z).
 ##
-## Constant, because this generator has exactly one body of water — the ocean the island stands out
-## of — and `IslandHeightmap` measures every height it produces against y = 0. It is a function of
-## (x, z) anyway so that a caller cannot tell this map from an authored one, whose surface genuinely
-## varies per point. A generator that later grows inland lakes changes this, not its callers.
-func water_surface_at(_x: float, _z: float) -> float:
-	return SEA_LEVEL
+## It used to be the constant `SEA_LEVEL`, on the grounds that this generator has exactly one body
+## of water. It has two (F-478). The river `IslandHeightmap` carves across every island runs its bed
+## from +1.2 m at the source down to -1.2 m at the mouth, so for the first ~81% of its length there
+## is a channel well above the sea with water standing in it, and answering `SEA_LEVEL` there told
+## `PlayerController` the river was dry ground to walk down.
+##
+## `maxf`, so the estuary is not a special case: the river's own level is clamped at sea level from
+## t = 0.81 on, both bodies are at exactly 0 across the mouth, and neither one wins a fight it could
+## lose to floating point. Everywhere off the river `river_water_level()` answers -INF and the ocean
+## is the whole answer, exactly as before.
+##
+## MAIN THREAD ONLY, like everything that samples through `_water_noise`: `FastNoiseLite` is not
+## safe to read from two `WorkerThreadPool` tasks at once (D-075), and the shipped callers of this
+## are `PlayerController`'s per-frame depth probe and `GroundFog`, both on the main thread. A worker
+## that wants the same number builds its own `NoiseSet` and calls `IslandHeightmap` directly, which
+## is what `RiverWater` does.
+func water_surface_at(x: float, z: float) -> float:
+	if _water_noise == null:
+		return SEA_LEVEL
+	# The BIOME-BLIND ground, not `height_at()`'s. `river_water_level()` needs both a shape and a
+	# ground height to answer at all — the shape carries the land that contains the water, the ground
+	# tells bank from channel — and this is asked once a frame per player, while `height_at()` goes
+	# through `BiomeMap.surface_at()`, which rebuilds a noise set AND a terrain table per call. The
+	# two differ by the biome's own detail/ridge amplitudes, which is centimetres of roughness on a
+	# channel floor carved metres below its banks, and they differ in the safe direction: amplitude
+	# 1.0 is the roughest the generator gets, so this reads the ground no lower than it really is.
+	IslandHeightmapScript.shape_into(x, z, _water_noise, world_seed, _water_shape)
+	var ground: float = IslandHeightmapScript.height_from_shape(
+		x, z, _water_shape, _water_noise)
+	return maxf(SEA_LEVEL, IslandHeightmapScript.river_water_level(
+		_water_shape, world_seed, ground))
 
 
 # ── the pipeline, composed ────────────────────────────────────────────────────────────────────────
@@ -316,6 +354,20 @@ func _build_scatter() -> void:
 
 ## One site loop, dumb on purpose (D-143): WHAT a site is to the services lives on `PoiDef.
 ## marker_kind`, WHERE it goes came from PoiMap. This function only instances and publishes.
+## The river's water (F-478). After the streamer, because the sheet is drawn against the same
+## channel the terrain is carved from and building it before there is any terrain would put water on
+## screen a frame ahead of the ground under it; before the POI sites, because it costs a fraction of
+## what they do and a partial world is better ordered cheap-first.
+func _build_river_water() -> void:
+	_water_noise = IslandHeightmapScript.make_noise_set(world_seed)
+	river_water = RiverWaterScript.new()
+	river_water.name = "RiverWater"
+	river_water.set(&"world_seed", world_seed)
+	river_water.set(&"biome_defs", _biome_defs)
+	add_child(river_water)
+	river_water.call(&"build")
+
+
 func _build_poi_sites() -> void:
 	var registry: Node = get_node_or_null(^"/root/Registry")
 	if registry == null:

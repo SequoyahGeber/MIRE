@@ -75,6 +75,48 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-21 — F-478: the procedural river has water in it (vaneabd52b)
+
+Sequoyah, on a play capture of a wide carved valley with sand on its floor: *"if we have a river i
+feel like there should prolly be water inside"*. It never had any — `ProceduralWorld.
+water_surface_at()` returned a flat `SEA_LEVEL` everywhere on the grounds that this generator has one
+body of water, and `levels/procedural_island.tscn` drew one 1400 m Ocean plane at y = 0, while the
+channel bed only dips under y = 0 in the last fifth of its run.
+
+**The one place the level is decided**, and every consumer goes through it:
+
+```gdscript
+IslandHeightmap.river_water_level(shape: Shape, world_seed: int, ground: float) -> float
+IslandHeightmap.river_water_level_on(points, shape, ground) -> float   # polyline reuse; see below
+IslandHeightmap.river_water_band_on(points, bent) -> Vector2           # cheap "is it over the channel"
+IslandHeightmap.river_water_surface(t) -> float                        # the level at t, no lateral test
+IslandHeightmap.river_track_on(points, bent) -> Vector2                # (t, lateral metres)
+IslandHeightmap.bend_from_set(x, z, set) -> Vector2
+```
+
+`-INF` means "no river water here", the same answer `AuthoredWorld.water_surface_at()` gives, so both
+map kinds read alike. The level is `min(bed(t) + RIVER_WATER_DEPTH, raw_continent -
+RIVER_WATER_FREEBOARD)` clamped at sea level, answered only where the finished ground is above sea
+level and below it. **Anything that needs a river surface calls this — do not re-derive it from `t`.**
+Two separate defects came out of a level that read `t` alone, and the doc comment on the function
+records both.
+
+`_river_channel()` was refactored onto `river_track_on()` so the carve and the water walk one line;
+it is **bit-identical** (`worldgen_noise_reuse_check` reports the same terrain/POI/biome/amplitude
+hashes with and without).
+
+**`world/environment/river_water.gd`** (`RiverWater`, VFX authority, no network anything) draws it.
+`ProceduralWorld._build_river_water()` builds one per seed, hands it `_biome_defs` so the sheet reads
+the same terrain table as the mesh and the collider (F-274), and `_teardown_derived()` frees it on
+`rebuild_for_seed()`. It marches a world-space grid — the polyline lives in BENT space and the warp
+has no inverse, so a ribbon walked along the line is not available — in three stages, cheapest first:
+segment distance (no noise) → bend (`river_water_band_on`) → full terrain surface, on the ~10k points
+that survive. Under 400 ms a seed, asserted.
+
+**Verify with** `tools/river_water_check.gd` (headless, five seeds) and `tools/river_water_shot.gd`
+(`--windowed`; writes `assets/audit/terrain/river_water_{bank,course}.png`).
+
+
 ### 2026-08-21 — 3.18/3.19: the tool ladder has five rungs and the game has a narrator (birche6b40e)
 
 **Spec: `docs/PROGRESSION.md`. Calls: D-200 (the ladder), D-201 (guidance).** Both tasks came from one

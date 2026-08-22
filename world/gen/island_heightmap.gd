@@ -567,6 +567,60 @@ const RIVER_BANK_RISE: float = 0.30          # how fast the channel ceiling rise
 const RIVER_CORRIDOR: float = 5.0           # carve influence ends at width x this
 const RIVER_SALT: int = 0x71E5B
 
+## THE WATER IN IT (F-478).
+##
+## The carve above shapes a CHANNEL; until F-478 nothing ever put anything in it. `ProceduralWorld`
+## published one flat `SEA_LEVEL` for the whole map and the level scene drew one ocean plane at
+## y = 0, and the bed only drops under y = 0 in the last fifth of its run — so the first ~81% of
+## every island's river was a dry rock cut with a beach on its floor. Play read it as a quarry.
+##
+## The surface is a function of `t` ALONE — one level right across the section, and linear in `t`
+## exactly as the bed is, so the same monotonic-downhill guarantee `tools/terrain_check.gd` walks on
+## the bed holds for the water on top of it. Water cannot flow uphill here for the same reason the
+## bed cannot: there is no term in it that is not linear in `t`.
+##
+## Clamped at `SEA_LEVEL` (0.0) rather than allowed to follow the bed below it, which is what makes
+## the mouth JOIN the ocean instead of cutting a trench of low water through it. `RIVER_BED_MOUTH`
+## is -1.2 and the depth is 0.75, so the clamp takes over at t = 0.81 and the last fifth of the
+## river is a flat estuary continuous with the sea plane — no seam, no step, nothing to z-fight,
+## because both sheets are at exactly 0.
+##
+## The DEPTH is 0.75 m on purpose: knee-to-thigh, a river you ford rather than swim, because this
+## one runs from a source on the interior plateau to the coast and is the map's main east-west
+## walking line. `PlayerController` reads the same number through `water_surface_at()` (F-284), so
+## "it looks fordable" and "it is fordable" are one fact rather than two that can drift.
+const RIVER_WATER_DEPTH: float = 0.75
+## How far out from the centreline the water is looked for, in half-widths. It is a SEARCH BOUND,
+## not the waterline: the waterline is wherever the bank rises through the level, and the caller
+## finds that by handing this function the ground height, one sample at a time.
+##
+## The bound still has to be wide enough to contain the waterline, or the edge that gets drawn is
+## the bound itself — a straight line across a valley floor. The parabola says 2.0 half-widths is
+## enough (`sqrt(1.2 / 0.30)`, the deepest case) and 3.0 leaves half again on top of that;
+## `tools/river_water_check.gd` walks the rim on five seeds and asserts the ground there is dry, so
+## a later retune of the widths or the bank rise cannot quietly outgrow it. Widening costs samples
+## linearly, all of them on the stage that samples terrain, so it is not free.
+##
+## Widening it is also NOT the fix if that assertion ever fails on a low-lying reach. 4.5 was tried
+## and moved the worst rim sample by two centimetres, because what floods there is the detail layer's
+## hollows and they are everywhere, not just past the bank. That is `RIVER_WATER_FREEBOARD`'s job.
+const RIVER_WATER_REACH: float = 3.0
+## How far BELOW the surrounding land the water has to stay, in metres.
+##
+## The containment rule in `river_water_level_on()` caps the level at `raw_continent`, the smooth
+## uncarved land. Capping at exactly that is one metre short of enough, and the check said so on
+## every seed: `raw_continent` is smooth, but the ground the player walks is `raw_continent` plus the
+## DETAIL layer, and the detail digs as well as it heaps. So over any low-lying stretch — where the
+## cap is what is binding — the level sat exactly at the smooth land and flooded every detail hollow
+## within the search band. That is not a river; that is a water table.
+##
+## The freeboard is the detail layer's own reach: `DETAIL_NOISE_WEIGHT * HEIGHT_SCALE` is 0.88 m of
+## amplitude, so at 0.9 the level clears the deepest hollow the detail can dig and the water stays
+## in the channel, which is the only place the CARVE (which is not detail, and is metres deep) can
+## put ground below it. Where the land is under 0.9 m the river simply has no water left — that is
+## the coastal fringe, and the ocean plane is already there.
+const RIVER_WATER_FREEBOARD: float = 0.9
+
 ## CLIFFS (F-464) — what happens where the river crosses ground the corridor is too narrow for.
 ##
 ## Everything above tunes the river on the INTERIOR PLATEAU, and on the plateau it is right: the
@@ -793,6 +847,18 @@ static func bend(x: float, z: float, world_seed: int) -> Vector2:
 	return _warp_point(x, z, world_seed)
 
 
+## The point, bent, through a `NoiseSet` the caller already built (F-478).
+##
+## `bend()` above constructs two `FastNoiseLite` per call, which is why its comment says nothing the
+## game builds should call it. The river's water needs the bend on the SHIPPED path — once per grid
+## sample while the sheet is meshed, and once per frame per player through `water_surface_at()` —
+## so it needs the same set-reuse every other sampler in this file already has. Same threading rule
+## as everything else here: one set per `WorkerThreadPool` task, never shared.
+static func bend_from_set(x: float, z: float, set: NoiseSet) -> Vector2:
+	return _warp_point_with(x, z, set.warp_x, set.warp_z)
+
+
+
 ## The point, bent. Everything that measures a distance in this file measures it here.
 static func _warp_point(x: float, z: float, world_seed: int) -> Vector2:
 	var warp_x := _make_noise(world_seed ^ SHAPE_WARP_SALT_X, SHAPE_WARP_FREQUENCY, 3,
@@ -1014,13 +1080,30 @@ static func river_polyline(world_seed: int) -> PackedVector2Array:
 ## point is outside the river's corridor. `t` is the 0..1 fraction along the whole polyline —
 ## width and bed depth both grow with it, and the bed is LINEAR in t, which is the monotonic-
 ## downhill guarantee terrain_check asserts.
-static func _river_channel(bent: Vector2, world_seed: int, wander: float = 0.0) -> Vector3:
-	var points: PackedVector2Array = river_polyline(world_seed)
+## Where `bent` sits against this seed's river: `(t, lateral distance in metres)`, with `t` the
+## 0..1 fraction along the whole polyline. Returns `t = -1` only for a degenerate line.
+##
+## Split out of `_river_channel()` by F-478 so that the CARVE and the WATER walk the same line from
+## the same code. A water level derived from a second, independently written walk is how the sheet
+## ends up a few centimetres off the bed it is meant to fill, and the two would then drift apart
+## under any later retune of the polyline — the same argument the file header makes for
+## `shape_into()` being the one body every height goes through.
+static func river_track(bent: Vector2, world_seed: int) -> Vector2:
+	return river_track_on(river_polyline(world_seed), bent)
+
+
+## `river_track()` against a polyline the caller already has (F-478).
+##
+## `river_polyline()` rebuilds `lobes()` on every call, and the water sheet asks for a track once per
+## grid sample over a corridor a kilometre long — the same reuse argument `make_noise_set()` makes,
+## and measured at the same order: hoisting the line out of the loop took a seed's sheet from ~470 ms
+## to well under half that.
+static func river_track_on(points: PackedVector2Array, bent: Vector2) -> Vector2:
 	var total_length: float = 0.0
 	for index in range(points.size() - 1):
 		total_length += points[index].distance_to(points[index + 1])
 	if total_length <= 0.0:
-		return NO_CHANNEL
+		return Vector2(-1.0, INF)
 
 	var best_distance: float = 1.0e9
 	var best_t: float = 0.0
@@ -1038,6 +1121,81 @@ static func _river_channel(bent: Vector2, world_seed: int, wander: float = 0.0) 
 			best_distance = distance
 			best_t = (walked + segment_length * projection) / total_length
 		walked += segment_length
+	return Vector2(best_t, best_distance)
+
+
+## The river's water SURFACE over `shape`, whose ground stands at `ground`, or `-INF` where there is
+## no river water over it at all.
+##
+## `-INF` rather than `SEA_LEVEL` because the caller has to be able to tell "no river here" from
+## "river here, and it is at sea level" — the mesh builder decides whether to emit a quad at all
+## from it, while `ProceduralWorld.water_surface_at()` maxes it against the ocean and would not
+## notice the difference. `AuthoredWorld.water_surface_at()` already answers -INF to exactly this
+## question (see `PlayerController`'s F-284 notes), so both map kinds answer it the same way.
+##
+## TWO THINGS BOUND THE LEVEL, and neither is optional. `river_water_surface(t)` alone is a level
+## with nothing holding it up, and the check found both ways that fails:
+##
+##   * **The land has to contain it.** `shape.raw_continent` is the UNCARVED continent — the land the
+##     channel is cut into, smooth, and already carrying the island mask and the offshore floor. The
+##     water cannot stand above it, because standing above it means standing above the banks. Taking
+##     the `min` is what makes the coast, the overshoot past the coast (`RIVER_OVERSHOOT` puts the
+##     mouth 1.18 island radii out to sea) and every interior mask dip fade out for free: the land
+##     goes to zero there and takes the water with it. An earlier version faded by the mask with
+##     `_carve()`'s own `smoothstep(0.0, 0.35, mask)` and it was not enough — the fade saturates at
+##     mask 0.35 while the LAND, which is the mask times the continent, is still only a few
+##     centimetres over the sea, so over a lobe seam the sheet stood a metre and a half above ground
+##     the ocean was already covering.
+##   * **The ground has to be under it.** `ground` is the finished, carved surface. Above the level it
+##     is a bank and there is no water on a bank; at or under `SEA_LEVEL` it belongs to the OCEAN,
+##     which floods it to exactly 0, and a river surface over the same square metre would be the
+##     "second transparent sheet hanging in the air above the lake" defect
+##     `AuthoredWorld._build_water()` records unioning its bodies to avoid.
+##
+## What is left between them is a depth of `min(RIVER_WATER_DEPTH, land - bed)`, which is the right
+## shape for it to have: the water thins out on its own wherever the channel is shallow, instead of
+## being a fixed slab that has to be argued about.
+static func river_water_level(shape: Shape, world_seed: int, ground: float) -> float:
+	return river_water_level_on(river_polyline(world_seed), shape, ground)
+
+
+## `river_water_level()` against a polyline the caller already has — see `river_track_on()`.
+static func river_water_level_on(points: PackedVector2Array, shape: Shape,
+		ground: float) -> float:
+	if ground <= 0.0:
+		return -INF
+	var track: Vector2 = river_water_band_on(points, shape.bent)
+	if track.x < 0.0:
+		return -INF
+	var level: float = minf(river_water_surface(track.x),
+		shape.raw_continent - RIVER_WATER_FREEBOARD)
+	return level if level > ground else -INF
+
+
+## `river_track_on()`, but answering `t = -1` for anything outside the band the water is searched in
+## — the cheap half of `river_water_level_on()`, split out so a caller can decide whether a point is
+## worth a ground sample before it has one. `world/environment/river_water.gd` is that caller, and
+## the split is what keeps the expensive stage down to the ~10k points actually over the channel.
+static func river_water_band_on(points: PackedVector2Array, bent: Vector2) -> Vector2:
+	var track: Vector2 = river_track_on(points, bent)
+	if track.x < 0.0:
+		return track
+	var width: float = lerpf(RIVER_WIDTH_SOURCE, RIVER_WIDTH_MOUTH, track.x)
+	return track if track.y <= width * RIVER_WATER_REACH else Vector2(-1.0, track.y)
+
+
+## The water level at fraction `t` along the river, with no lateral test — the sheet's height, for a
+## caller that has already decided the point is in the channel.
+static func river_water_surface(t: float) -> float:
+	return maxf(lerpf(RIVER_BED_SOURCE, RIVER_BED_MOUTH, t) + RIVER_WATER_DEPTH, 0.0)
+
+
+static func _river_channel(bent: Vector2, world_seed: int, wander: float = 0.0) -> Vector3:
+	var track: Vector2 = river_track(bent, world_seed)
+	if track.x < 0.0:
+		return NO_CHANNEL
+	var best_t: float = track.x
+	var best_distance: float = track.y
 
 	var width: float = lerpf(RIVER_WIDTH_SOURCE, RIVER_WIDTH_MOUTH, best_t)
 	var bed: float = lerpf(RIVER_BED_SOURCE, RIVER_BED_MOUTH, best_t)
@@ -1156,7 +1314,6 @@ static func _island_mask_bent(point: Vector2, lobe_list: Array[Vector4],
 	for centre: Vector2 in islet_list:
 		mask = maxf(mask, _radial_mask(point.distance_to(centre) - jitter * 0.5, islet_radius))
 	return mask
-
 
 
 

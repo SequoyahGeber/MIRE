@@ -3470,7 +3470,30 @@ theirs with `agent resolve`/re-file, and the allocator should be made to hold a 
 
 ---
 
-### F-478 · The procedural river is a dry gully — nothing renders or reports water in the channel
+### F-479 · Five crafting stations are now buildable but have no recipes — the panel opens empty
+
+**Area:** content · **Severity:** medium · **Found:** 2026-08-21 by cindere7060a
+
+Follow-up to F-477, which made all eight stations buildable. Recipes are still authored for only
+three station ids: `workbench` (12 recipes, the default), `furnace` (3) and `anvil` (4). A player who
+spends 12 log, 4 fibre bundle and 2 iron ingot on a Reinforced Workbench, or 6 log / 4 stone / 2
+flint on a Woodcutting Block, gets a station that opens a crafting panel with nothing in it.
+
+Stations with a StationDef and zero recipes: `workbench_upgraded`, `campfire`, `cooking_spit`,
+`repair_bench`, `woodcutting_block`.
+
+Each wants its own recipe set, and each set is a design question rather than a data chore —
+`cooking_spit` implies cooked food items that do not exist yet (`raw_meat` has no cooked counterpart
+in content/items), and `repair_bench` implies a durability-restoring action, which is a system, not a
+recipe. `campfire` and `woodcutting_block` are the cheap ones: cooked food and plank/charcoal-style
+intermediates. `workbench_upgraded` most likely wants tier-2 recipes gated off the primitive bench
+rather than a duplicate of its list.
+
+---
+
+## Resolved
+
+### F-478 · The procedural river is a dry gully — nothing renders or reports water in the channel — **fixed**
 
 **Area:** world · **Severity:** high · **Found:** 2026-08-21 by vaneabd52b
 
@@ -3494,28 +3517,42 @@ told the river is dry ground.
 
 ---
 
-### F-479 · Five crafting stations are now buildable but have no recipes — the panel opens empty
+**Resolved 2026-08-22 by vaneabd52b.** Fixed. The procedural island now has TWO bodies of water, and the river is the second one.
 
-**Area:** content · **Severity:** medium · **Found:** 2026-08-21 by cindere7060a
+`IslandHeightmap` grew the water half of the river it has been carving since 4.14. The surface is
+`min(bed(t) + RIVER_WATER_DEPTH, raw_continent - RIVER_WATER_FREEBOARD)`, clamped at sea level, and
+it is answered only where the finished ground is both above sea level and below the surface —
+`river_water_level_on()` carries all of that in one place so the mesh and `water_surface_at()`
+cannot disagree. `world/environment/river_water.gd` draws it: a grid marched over the polyline's
+corridor in world space, three stages cheapest-first (segment distance -> bend -> terrain height),
+clipped to the ground the way `AuthoredWorld._build_water()` clips its bodies, in the ocean's own
+shader so the estuary has no seam. `ProceduralWorld` builds it per seed and rebuilds it on
+`rebuild_for_seed()`, and `water_surface_at()` now answers the river's level instead of a flat 0.
 
-Follow-up to F-477, which made all eight stations buildable. Recipes are still authored for only
-three station ids: `workbench` (12 recipes, the default), `furnace` (3) and `anvil` (4). A player who
-spends 12 log, 4 fibre bundle and 2 iron ingot on a Reinforced Workbench, or 6 log / 4 stone / 2
-flint on a Woodcutting Block, gets a station that opens a crafting panel with nothing in it.
+TWO THINGS THE FIRST VERSION GOT WRONG, both found by `tools/river_water_check.gd` and both worth
+knowing before anyone retunes this:
 
-Stations with a StationDef and zero recipes: `workbench_upgraded`, `campfire`, `cooking_spit`,
-`repair_bench`, `woodcutting_block`.
+  * A level that is a function of `t` alone stands over ground the sea is already covering. Fading
+    it by `_carve()`'s own `smoothstep(0.0, 0.35, mask)` is NOT enough — that fade saturates at mask
+    0.35, where the land (which is mask times continent) is still centimetres above the sea, so over
+    a lobe seam the sheet floated 1.5 m above the ocean. Capping against `raw_continent` is what
+    works, because the land is the thing that has to contain the water.
+  * Capping against `raw_continent` exactly floods every hollow the DETAIL layer digs, across the
+    whole search band — a water table, not a river. `RIVER_WATER_FREEBOARD` (0.9 m, the detail
+    layer's own amplitude) is the whole of that fix. Widening `RIVER_WATER_REACH` is not: 3.0 -> 4.5
+    moved the worst rim sample by two centimetres.
 
-Each wants its own recipe set, and each set is a design question rather than a data chore —
-`cooking_spit` implies cooked food items that do not exist yet (`raw_meat` has no cooked counterpart
-in content/items), and `repair_bench` implies a durability-restoring action, which is a system, not a
-recipe. `campfire` and `woodcutting_block` are the cheap ones: cooked food and plank/charcoal-style
-intermediates. `workbench_upgraded` most likely wants tier-2 recipes gated off the primitive bench
-rather than a duplicate of its list.
+Verified: `tools/river_water_check.gd` green on five seeds (build under 400 ms each, monotonic
+surface, channel floor under water bar a few riffles, rim dry). `tools/river_water_shot.gd` saves
+`assets/audit/terrain/river_water_bank.png` and `river_water_course.png` — a river in a valley
+running to the sea. `terrain_check`, `procedural_world_check`, `chunk_stream_check --windowed` and
+`blight_ground_check --windowed` all green; `ground_fog_check` and `world_contract_check` fail
+identically at HEAD (`agent baseline`), so they are somebody else's red, not this.
 
----
-
-## Resolved
+The heightmap refactor is bit-identical: `worldgen_noise_reuse_check` reports the SAME terrain, POI,
+biome and amplitude hashes with and without this change. That check is red at HEAD on every one of
+its golden values, and its scatter hash additionally drifted run to run while another session was
+editing content in the same tree — neither is this finding's.
 
 ### F-480 · The tier-4 and tier-5 tools ship on placeholder art, and the bogsilver seam has none at all — **fixed**
 
