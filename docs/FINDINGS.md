@@ -850,54 +850,6 @@ smooth the result is remains unmeasured.
 
 ---
 
-### F-350 · The Mire saturates the whole island in 30 minutes and nothing ever pushes it back
-
-**Area:** world · **Severity:** high · **Found:** 2026-08-21 by ivycc0920
-
-Measured, `tools/blight_timeline_check.gd` (new), seed 20260819, no wards, no caps — the state a run
-actually starts in:
-
-     time   island above threshold   corruption at spawn   hp/s   time-to-die
-        0 s          12.9%                  0.000          0.00      —
-      120 s          27.7%                  1.000          4.00     25 s
-      600 s          66.9%                  1.000          4.00     25 s
-     1200 s          94.9%                  1.000          4.00     25 s
-     1800 s         100.0%                  1.000          4.00     25 s
-
-Spawn crosses `PlayerHealth.BLIGHT_CORRUPTION_THRESHOLD` at **58 seconds** and is at full corruption
-— 4 hp/sec, dead from full health in 25 seconds — inside two minutes. At thirty minutes every cell
-on the island is at 1.0. This is the direct cause of the death reported in F-349.
-
-**The missing term is decay.** `MireGridSim.tick()` gives every corrupted cell `value * spread_rate`
-to each of its four orthogonal neighbours and never subtracts anything from anywhere. Corruption is
-monotonically non-decreasing by construction, so the only fixed point of the system is "the whole
-grid at 1.0", and the 2-second tick reaches it in half an hour. Nothing in the model can move the
-front backwards.
-
-The counterplay that exists does not change this:
-
-- Wards (`_is_warded()`) only stop a cell being written; they do not lower it, and they cover the
-  footprint a player has actually built.
-- Capping a Wellspring calls `clear_radius()` once for 48 m, and `mire_grid.gd`'s own comment notes
-  that the cleared circle "regrows from its still-corrupted edge inward" on the very next tick,
-  because clearing zeroes cells without freezing them.
-- `SPREAD_REDUCTION_PER_CAP` (0.85) slows the rate; it cannot reverse it. Even at rate zero the
-  already-corrupted 100% stays corrupted.
-
-So a run has roughly one minute of safe ground at spawn, and after half an hour there is no
-survivable square metre on the map for any player, at any skill level, with any build. That reads to
-a player exactly as it was reported: health starts dropping and you die.
-
-What needs deciding (a real design call, not a code fix): whether corrupted ground should recover on
-its own away from a source, whether spread should be sourced from a bounded set of Mire origins
-rather than from every corrupted cell equally, and what the intended shape of the pressure curve
-over a run actually is. Any of those turns this from a countdown into a mechanic. Tuning
-`BASE_SPREAD_RATE` alone only moves the half-hour.
-
-Filed alongside F-349 (the same drain has no player-facing signal at all).
-
----
-
 ### F-352 · render_census reports the procedural world's ring-based LOD as a missing lever
 
 **Area:** rendering · **Severity:** medium · **Found:** 2026-08-21 by ivy1bcae0
@@ -3594,6 +3546,82 @@ than a constant, and it should be its own task rather than a tuning pass.
 ---
 
 ## Resolved
+
+### F-350 · The Mire saturates the whole island in 30 minutes and nothing ever pushes it back — **decided**
+
+**Area:** world · **Severity:** high · **Found:** 2026-08-21 by ivycc0920
+
+Measured, `tools/blight_timeline_check.gd` (new), seed 20260819, no wards, no caps — the state a run
+actually starts in:
+
+     time   island above threshold   corruption at spawn   hp/s   time-to-die
+        0 s          12.9%                  0.000          0.00      —
+      120 s          27.7%                  1.000          4.00     25 s
+      600 s          66.9%                  1.000          4.00     25 s
+     1200 s          94.9%                  1.000          4.00     25 s
+     1800 s         100.0%                  1.000          4.00     25 s
+
+Spawn crosses `PlayerHealth.BLIGHT_CORRUPTION_THRESHOLD` at **58 seconds** and is at full corruption
+— 4 hp/sec, dead from full health in 25 seconds — inside two minutes. At thirty minutes every cell
+on the island is at 1.0. This is the direct cause of the death reported in F-349.
+
+**The missing term is decay.** `MireGridSim.tick()` gives every corrupted cell `value * spread_rate`
+to each of its four orthogonal neighbours and never subtracts anything from anywhere. Corruption is
+monotonically non-decreasing by construction, so the only fixed point of the system is "the whole
+grid at 1.0", and the 2-second tick reaches it in half an hour. Nothing in the model can move the
+front backwards.
+
+The counterplay that exists does not change this:
+
+- Wards (`_is_warded()`) only stop a cell being written; they do not lower it, and they cover the
+  footprint a player has actually built.
+- Capping a Wellspring calls `clear_radius()` once for 48 m, and `mire_grid.gd`'s own comment notes
+  that the cleared circle "regrows from its still-corrupted edge inward" on the very next tick,
+  because clearing zeroes cells without freezing them.
+- `SPREAD_REDUCTION_PER_CAP` (0.85) slows the rate; it cannot reverse it. Even at rate zero the
+  already-corrupted 100% stays corrupted.
+
+So a run has roughly one minute of safe ground at spawn, and after half an hour there is no
+survivable square metre on the map for any player, at any skill level, with any build. That reads to
+a player exactly as it was reported: health starts dropping and you die.
+
+What needs deciding (a real design call, not a code fix): whether corrupted ground should recover on
+its own away from a source, whether spread should be sourced from a bounded set of Mire origins
+rather than from every corrupted cell equally, and what the intended shape of the pressure curve
+over a run actually is. Any of those turns this from a countdown into a mechanic. Tuning
+`BASE_SPREAD_RATE` alone only moves the half-hour.
+
+Filed alongside F-349 (the same drain has no player-facing signal at all).
+
+---
+
+**Resolved 2026-08-22 by wick410d34 (decided).** Superseded by measurement, 2026-08-22. The behaviour this describes no longer exists, and leaving it
+open cost a reviewer real time today: it directly contradicts the current spread rate, and
+birch1db63e went hunting a conflict between the two numbers that turned out not to exist because one
+of them was four days stale.
+
+F-350 measured the rate BEFORE F-368 normalised `BASE_SPREAD_RATE` against cell size. F-368 is what
+this finding caused, and it over-corrected. Re-measured at HEAD with the same instrument,
+`tools/blight_timeline_check.gd`:
+
+    tick 2.0 s, spread 0.012, threshold 0.15, drain 4.0 hp/s at full
+
+     time   island>thr   corruption@spawn
+        0 s      0.2%         0.000
+      600 s      1.7%         0.000
+     1560 s      8.0%         0.000
+
+Against F-350's original 66.9% at 600 s. **Twenty-six minutes in, the island is 8% corrupted and the
+player's own spawn has never seen a single point of corruption.**
+
+So the problem is now exactly inverted, and that is filed as **F-599**: the Mire front advances
+1.66 m/min across an 1180 m island, which crosses it around Cycle 12 — correct for a three-hour run
+as `DESIGN.md` §4.1 draws it, and imperceptible in the one-to-two hours anyone plays in a sitting.
+`docs/PRESSURE.md` carries the full working. F-599 added a `mire_spread_multiplier` gamerule so the
+rate is tunable mid-session rather than needing a rebuild to find by feel.
+
+Nothing here is a fix, which is why this is `decided` rather than `fixed`: the finding is retired
+because its subject changed, and the live version of the concern lives at F-599.
 
 ### F-601 · The Sling exists as a full item and ranged weapon but nothing in the game produces it — **fixed**
 
