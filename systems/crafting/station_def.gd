@@ -40,6 +40,25 @@ extends Resource
 ## runs.
 @export var tier: int = 1
 
+## The station this one REPLACES — every recipe that station can make, this one can make too.
+##
+## F-575: `family` and `tier` alone cannot answer this, and reading them as if they could is the bug
+## that made the first attempt at this fix wrong. A family is a themed progression, not a ladder of
+## substitutes: `forge` runs furnace (1) then anvil (2) because the anvil is gated behind the
+## furnace's output, but an anvil does not smelt ore, and `recipe_station_check.gd` (F-484) is
+## explicit that smelting belongs at the furnace and smithing at the anvil. Inferring "tier 2
+## satisfies tier 1" from the same data would have moved both ingot recipes onto the anvil.
+##
+## So substitution is DECLARED, never inferred. `workbench_upgraded` sets this to `workbench`
+## because the Reinforced Workbench genuinely is a better bench; the anvil sets nothing, because it
+## is a different tool that happens to come later. Chains resolve transitively, so a hypothetical
+## tier-3 bench need only name the tier-2 one.
+##
+## Constrained rather than free-form: `tools/station_tier_check.gd` requires the named station to
+## exist, to be in the same family, and to sit at a strictly lower tier — so this can express an
+## upgrade and cannot express a shortcut across the progression.
+@export var upgrades_from: StringName = &""
+
 
 ## Same shape as LootTableDef's/PowerupDef's/BuildableDef's — registry.gd calls this before indexing
 ## and skips anything that fails, so a malformed .tres is a named boot error rather than a crash the

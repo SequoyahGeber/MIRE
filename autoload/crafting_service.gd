@@ -82,9 +82,47 @@ func recipes_for_station(station: StringName) -> Array[RecipeDef]:
 	var result: Array[RecipeDef] = []
 	for id: StringName in ids:
 		var recipe: RecipeDef = Registry.get_recipe(id)
-		if recipe != null and recipe.station == station:
+		if recipe != null and station_satisfies(station, recipe.station):
 			result.append(recipe)
 	return result
+
+
+## Does standing at `station` let you craft a recipe that asks for `required`?
+##
+## F-575: this used to be `recipe.station == required`, a bare id comparison, and `StationDef` was
+## the only content family in the repo whose fields nothing read — `family` and `tier` were authored,
+## validated by `tools/station_tier_check.gd`, and then ignored by the game. The visible cost was the
+## Reinforced Workbench: `workbench_upgraded` is the upgrade of `workbench` and satisfied NONE of the
+## seven workbench recipes, so a player who paid for the upgrade got strictly less than the bench it
+## replaces, which reads as a broken game rather than as content nobody has authored yet.
+##
+## Substitution comes from `StationDef.upgrades_from`, DECLARED per station, and deliberately not
+## inferred from `family` + `tier`. The first attempt at this fix did infer it — "same family, equal
+## or higher tier" — and it was wrong: `forge` runs furnace (1) then anvil (2), so the rule quietly
+## moved `iron_ingot` and `bogsilver_ingot` onto the anvil and `tools/recipe_station_check.gd` (F-484,
+## "smelting at the furnace, smithed goods at the anvil") caught it. A family is a themed progression,
+## not a ladder of substitutes; an anvil comes after a furnace without being able to do its job.
+##
+## Chains resolve transitively, so a tier-3 bench need only name the tier-2 one. The walk is bounded
+## by the registry size rather than trusting the data to be acyclic — a mis-authored `a -> b -> a`
+## must not hang the host inside a craft request.
+static func station_satisfies(station: StringName, required: StringName) -> bool:
+	if station == required:
+		return true
+	if station == &"" or required == &"":
+		return false
+	var seen: Dictionary[StringName, bool] = {}
+	var current: StringName = station
+	while current != &"" and not seen.has(current):
+		seen[current] = true
+		var def: Resource = Registry.get_station(current)
+		if def == null:
+			return false
+		var next := StringName(String(def.get("upgrades_from")))
+		if next == required:
+			return true
+		current = next
+	return false
 
 
 ## The registered station id the local player is currently in range of, or &"" if none. Ties break by
@@ -97,7 +135,10 @@ func nearby_station_id() -> StringName:
 	if player == null:
 		return &""
 	for station_id: StringName in Registry.stations:
-		if _station_in_range(player, station_id):
+		# The raw probe, not the F-575 satisfy rule: this answers "which bench am I standing at",
+		# so standing at the Reinforced Workbench must report `workbench_upgraded` and not
+		# `workbench`. `recipes_for_station()` is what widens that answer into a recipe list.
+		if _station_instance_in_range(player, station_id):
 			return station_id
 	return &""
 
@@ -318,7 +359,26 @@ func _definition_data(recipe_id: StringName) -> Dictionary:
 ## prop (individually queryable node, meta `asset`) and a Hollowmere marker (meta kind == "station",
 ## named "Station_<asset>" — see MARKER_GROUP above). `station` not resolving to a registered
 ## StationDef means no world_scene to match against, so it is always out of range.
-func _station_in_range(player: Node3D, station: StringName) -> bool:
+func _station_in_range(player: Node3D, required: StringName) -> bool:
+	if Registry.get_station(required) == null:
+		return false
+	# F-575: any registered station that satisfies the requirement counts, not just the one whose id
+	# the recipe names. Both the client preview (`local_station_in_range`) and the host's own
+	# revalidation in `_process_craft()` come through here, so the two cannot disagree about whether
+	# the Reinforced Workbench is a workbench.
+	for station_id: StringName in Registry.stations:
+		if not station_satisfies(station_id, required):
+			continue
+		if _station_instance_in_range(player, station_id):
+			return true
+	return false
+
+
+## Is a physical instance of exactly this station within reach — no family or tier reasoning.
+## `nearby_station_id()` and `_station_in_range()` both need this, and they need it to mean different
+## things: "which bench am I standing at" is a question about the world, "can I craft this here" is a
+## question about the rules.
+func _station_instance_in_range(player: Node3D, station: StringName) -> bool:
 	var station_def: Resource = Registry.get_station(station)
 	if station_def == null:
 		return false
@@ -339,14 +399,22 @@ func _station_in_range(player: Node3D, station: StringName) -> bool:
 ##
 ## Rides the same `_station_positions_for()` cache every craft query already warms, so asking this
 ## four times a second costs a dictionary lookup.
-func station_count(station: StringName) -> int:
-	var station_def: Resource = Registry.get_station(station)
-	if station_def == null:
+func station_count(required: StringName) -> int:
+	if Registry.get_station(required) == null:
 		return 0
-	var asset := StringName(String(station_def.get("world_scene")))
-	if asset == &"":
-		return 0
-	return _station_positions_for(asset).size()
+	# F-575, same rule as `_station_in_range()`: a guide step that says "place a workbench" must
+	# clear when the party places the Reinforced Workbench instead, or the tutorial deadlocks behind
+	# a bench the player has already outgrown.
+	var total: int = 0
+	for station_id: StringName in Registry.stations:
+		if not station_satisfies(station_id, required):
+			continue
+		var station_def: Resource = Registry.get_station(station_id)
+		var asset := StringName(String(station_def.get("world_scene")))
+		if asset == &"":
+			continue
+		total += _station_positions_for(asset).size()
+	return total
 
 
 ## Cached station positions for one asset — see _station_positions' comment for the invalidation

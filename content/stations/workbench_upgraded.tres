@@ -9,3 +9,4 @@ display_name = "Reinforced Workbench"
 world_scene = &"station_workbench_upgraded"
 family = &"workbench"
 tier = 2
+upgrades_from = &"workbench"
