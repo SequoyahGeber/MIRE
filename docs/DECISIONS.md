@@ -6083,6 +6083,49 @@ composed lengths, landfall-at-boot, the bounded fade and hand-back, Cycle 1 vs C
 depth and its floor, and a run restart dropping a live cycle cue). `tools/audio_import_check.gd`
 knows the three lengths; `tools/ambient_music_check.gd` still passes unchanged.
 
+## D-212 — an Attunement's stat effects are read at the consumer, and its two non-stat rules are authored on content
+
+**Context:** F-543. SPECS §3.9 shipped Attunements as "data over 3.3, zero new stat plumbing" and
+that was the right call — but the sentence quietly assumed the stat plumbing on the other side
+already existed. It did not. `PowerupService.stat()` had three readers in the whole repo, none of
+them touching a stat any Attunement names, so all four roles were a label and nothing else.
+
+**Decided, three ways:**
+
+1. **Every stat is read at its consumer, at the moment of the thing it modifies** — the shape
+   `docs/POWERUPS.md` §2 always described ("wiring is that system's one-line route"), not a
+   central "apply modifiers to a player" pass. A damage number is read when a swing lands; a craft
+   duration when the craft starts; a yield when the node depletes. The alternative — caching a
+   resolved stat block per peer — was rejected because it needs an invalidation story for every
+   stat and buys nothing on event-rate paths. **Exactly two values are cached**, both because they
+   are read per physics frame or held in state a grant cannot reach: the player's own walk/sprint
+   speed (off `local_powerups_changed`) and `PlayerHealth`'s per-peer `max_hp` ceiling (off the new
+   `host_powerups_changed`).
+
+2. **Builder attribution is `_placed`'s `"owner"`.** `ward_radius_m` and the new `structure_hp` are
+   authored as "of structures YOU placed", and POWERUPS.md §2 flagged the attribution question as
+   open. It was already answered: `BuildService._placed` has carried the placing peer id since
+   task 3.6. Ward radius is re-derived on a later grant (a Warden's existing Wards widen when they
+   attune); structure hp is baked in at placement and NOT re-derived, because retuning the ceiling
+   of every standing wall mid-run would either heal the base or destroy pieces.
+
+3. **The two role-GATED build rules are content, not code** (D-212a in the source comments).
+   `BuildableDef` gained `forbidden_attunement_ids` and `required_attunement_id`; the two Wards
+   name the Reaver, and the Tinker's turret will name the Tinker when that content exists. The
+   alternative — naming roles in `BuildService` — would have put DESIGN §4.5's table in two places.
+
+**The tension worth flagging, not resolved here:** DESIGN §4.5's table says the Reaver "can't build
+Wards", and the prose four lines below it says "Nobody is locked out of anything — you're just
+clearly *the best* at your thing." Those cannot both be true of the same piece. The specific rule was
+implemented over the general principle, because the table is the per-role spec and the prose is
+describing the *intent* of the set; but this is a taste call about a design pillar and it is
+Sequoyah's to overturn. Reverting it is one line in each of `content/buildables/ward.tres` and
+`ward_post.tres` — nothing in code names a role.
+
+**Would change my mind:** a playtest where a Reaver in a party of two is the one who happens to be
+holding the materials when the Mire reaches camp, and the ban reads as the game refusing to let them
+help rather than as a reason to hand the job to the Warden.
+
 ## D-196 — the dawn cue is a JIG SET, and the escalation keeps every third morning
 
 **Sequoyah:** *"im thinking it would be fun to have a happy jig typa theme song play when morning
@@ -7168,3 +7211,61 @@ times" had no data to decide against.
 **Would change my mind:** a sustained godot-lock wait p95 above ~12 s in `agent locks`. At that point
 queueing costs more than a lane's whole cold import, and the right answer is to cut hold times first
 (the checks, not the cache) and only then reconsider separate trees.
+
+---
+
+### D-215 · 2026-08-22 · Chests are a five-rung rarity ladder, and the rung is legible before the UI is
+
+**Context:** F-541. MIRE shipped seven loot tables but only two kinds of container ever reached a
+map: free `Cache_` crates and the key-locked Gilded Chest. The three tables that were supposed to be
+the coin economy — `small`, `bog`, `strongbox` — were three prices over three overlapping pools, and
+two of the three were placed by nothing at all. Coins had almost nothing to buy, and a player looking
+at a container could not tell what it was worth without walking to it and reading a prompt.
+
+**The decision:** one ladder, five rungs, named for what players already understand — `basic`,
+`common`, `rare`, `epic`, `legendary`. Three properties are non-negotiable, and each is asserted by
+`tools/chest_placement_check.gd::_check_ladder()` against the REAL Hollowmere boot rather than a
+synthetic scene:
+
+1. **Price strictly increases** — 10 / 30 / 75 / 150 / 300, roughly doubling per rung. A rung that
+   costs what its neighbour costs is not a rung.
+2. **What the price buys is odds, not potency** (D-063). The POWERUP share of one weighted draw runs
+   5% → 48% → 50% → 55% → 72%, and the *rarity* of those powerup lines climbs alongside it. The
+   check computes that share from the authored weights rather than asserting a number of its own, so
+   re-tuning a `.tres` re-grades the ladder instead of silently drifting from this entry.
+3. **Every rung owns its own silhouette and its own locator tint.** Width climbs monotonically
+   (0.62 → 0.75 → 0.96 → 1.04 → 1.12 m) and no two palettes share anything — grey deadwood and rope
+   with no metal at all, warm timber and iron, dark timber and heavy iron, ward teal on slate, gold
+   on charred wood. The price has to be legible at the moment of SIGHTING, because that is when the
+   decision to walk over is made. A ladder you must open a UI to read is a table, not a ladder.
+
+**Scarcity carries price too.** Per island: 5 basic, 4 common, 3 rare, 2 epic, 1 legendary; on the
+procedural map the same shape as climbing PoiDef `min_spacing_m`. `validate()` in
+`tools/mapgen/hollowmere_layout.py` fails the build if any rung comes up short, because a missing
+rung is a hole in a price ladder rather than a quieter map — and each rung's odds are only meaningful
+as a comparison against the rung below it.
+
+**Free caches are not a sixth tier.** `Cache_<n>` markers build the `basic` TABLE at cost 0; the
+price comes from the marker prefix, not from the tier. Muck's proven loop is the reason — free caches
+seed the coins that priced chests spend, and a run whose first container wants 10 coins the player
+cannot yet have is a run that opens on a locked door.
+
+**What deliberately stayed off the ladder:** `gilded` (Gilded Key), `wellspring` (granted on a cap),
+`sunken` (risk-priced), `boss` (kill reward). None of them are bought, so none of them is a price.
+`gilded` wears the `legendary` mesh on purpose: both are "the chest you saved up for", and two
+different expensive silhouettes would teach a distinction the loot behind them does not make.
+
+**Rejected — keeping `small`/`bog`/`strongbox` alongside the new tables.** Two parallel ladders
+sharing one Registry namespace is exactly how the first one rotted: a table that nothing places looks
+authored right up until somebody counts. Retiring them cost three tier-id updates in checks and one
+PoiDef swap, which is less than the standing cost of a second, dead economy.
+
+**Side effect worth recording, because it measures the old ladder's real size:** 47 of the 70
+authored powerups appeared in NO loot table at all. The three-row economy drew from the same 25 ids,
+so two thirds of `content/powerups/` was unreachable from a chest. The ladder distributes them by how
+run-defining each one is — small stat lines to `common` (rarity 1), conditional and build-shaping
+ones to `rare` (rarity 2), the 1-stack identities and run-definers to `epic`/`legendary` (rarity 3).
+
+**Would change my mind:** a playtest where players open the cheapest affordable chest every time and
+never save. That would mean the price curve is steeper than the odds curve — the fix is the odds, not
+the prices, since D-063 keeps potency fixed and frequency is the only lever the ladder has.
