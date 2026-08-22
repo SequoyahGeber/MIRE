@@ -24,7 +24,15 @@ func _run() -> void:
 		quit(1)
 		return
 	var scene_path := String(ProjectSettings.get_setting("application/run/main_scene", ""))
-	var scene := (load(scene_path) as PackedScene).instantiate() as Node3D
+	var packed := load(scene_path) as PackedScene
+	var scene := packed.instantiate() as Node3D
+	# The shipped main scene is the non-playable frontend now. Follow its declared PLAY target just
+	# as verify_setup does, so this remains a probe of the shipped world rather than the title screen.
+	if scene != null and scene.get_script() == load("res://ui/frontend/frontend.gd"):
+		scene_path = String(scene.call("_world_scene_path"))
+		scene.free()
+		packed = load(scene_path) as PackedScene
+		scene = packed.instantiate() as Node3D
 	root.add_child(scene)
 	current_scene = scene
 	if not scene.has_method(&"height_at") or scene.get(&"spawn_position") == null:

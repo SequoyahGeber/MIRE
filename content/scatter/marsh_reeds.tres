@@ -7,33 +7,33 @@
 script = ExtResource("1_entry")
 asset = &"reeds_a"
 kit = "environment"
-weight = 1.2
-min_scale = 0.85
-max_scale = 1.35
+weight = 0.7
+min_scale = 0.7
+max_scale = 0.72
 
 [sub_resource type="Resource" id="Resource_01_reeds_b"]
 script = ExtResource("1_entry")
 asset = &"reeds_b"
 kit = "environment"
-weight = 1.2
-min_scale = 0.85
-max_scale = 1.35
+weight = 0.7
+min_scale = 0.7
+max_scale = 0.72
 
 [sub_resource type="Resource" id="Resource_02_reeds_c"]
 script = ExtResource("1_entry")
 asset = &"reeds_c"
 kit = "environment"
-weight = 1.2
-min_scale = 0.85
-max_scale = 1.35
+weight = 0.7
+min_scale = 0.7
+max_scale = 0.72
 
 [sub_resource type="Resource" id="Resource_03_reeds_d"]
 script = ExtResource("1_entry")
 asset = &"reeds_d"
 kit = "environment"
-weight = 1.2
-min_scale = 0.85
-max_scale = 1.35
+weight = 0.7
+min_scale = 0.7
+max_scale = 0.72
 
 [sub_resource type="Resource" id="Resource_04_cattail_bundle"]
 script = ExtResource("1_entry")
@@ -119,9 +119,9 @@ max_scale = 1.15
 script = ExtResource("2_def")
 id = &"marsh_reeds"
 biome_id = &"marsh"
-cell_size_m = 2.6
+cell_size_m = 3.2
 jitter_fraction = 0.8
-coverage = 0.3
+coverage = 0.2
 min_height = 0.4
 max_height = 1000
 entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_reeds_a"), SubResource("Resource_01_reeds_b"), SubResource("Resource_02_reeds_c"), SubResource("Resource_03_reeds_d"), SubResource("Resource_04_cattail_bundle"), SubResource("Resource_05_reed_bed"), SubResource("Resource_06_marsh_grass_a"), SubResource("Resource_07_marsh_grass_b"), SubResource("Resource_08_marsh_grass_c"), SubResource("Resource_09_sedge_a"), SubResource("Resource_10_sedge_b"), SubResource("Resource_11_sedge_c"), SubResource("Resource_12_sphagnum_moss"), SubResource("Resource_95_poison_berry_bush")])

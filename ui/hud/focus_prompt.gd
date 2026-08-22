@@ -64,7 +64,7 @@ const FALLBACK_CONE_DEGREES: float = 50.0
 ## a cost with no readable benefit (F-099).
 const POLL_SEC: float = 0.066
 
-const PANEL_WIDTH_PX: float = 320.0
+const PANEL_WIDTH_PX: float = 260.0
 ## Below the crosshair, not on it — text over the aim point is text you cannot aim through.
 const PANEL_TOP_OFFSET_PX: float = 44.0
 const BAR_HEIGHT_PX: float = 5.0
@@ -587,7 +587,9 @@ func _render() -> void:
 				MIRE_THEME.AMBER.to_html(false), key, action,
 			]
 
-	var hint: String = focus_hint()
+	# Keep yield information in the description/API, but suppress it visually while blocked: the
+	# missing-tool correction is the only useful next sentence in that state.
+	var hint: String = "" if bool(_focus_view.get("blocked", false)) else focus_hint()
 	_hint_label.visible = not hint.is_empty()
 	_hint_label.text = hint
 

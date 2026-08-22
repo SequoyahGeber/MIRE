@@ -19,7 +19,8 @@ const LAYER: int = 5
 
 const FADE_SEC: float = 0.25
 ## Bottom-left, clear of the hotbar. Measured against `vitals_hud.gd`'s own bottom-left block.
-const OBJECTIVE_MARGIN := Vector2(28.0, -150.0)
+const OBJECTIVE_MARGIN := Vector2(24.0, -132.0)
+const OBJECTIVE_WIDTH_PX: float = 360.0
 const TIP_TOP_OFFSET: float = 96.0
 const FANFARE_TOP_OFFSET: float = 180.0
 
@@ -111,16 +112,19 @@ func _build_ui() -> void:
 	_objective_label = Label.new()
 	_objective_label.add_theme_color_override("font_color", MIRE_THEME.TEXT)
 	_objective_label.add_theme_font_size_override(
-		"font_size", MIRE_THEME.font_size(MIRE_THEME.BODY)
+		"font_size", MIRE_THEME.font_size(MIRE_THEME.CAPTION)
 	)
+	_objective_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_objective_label.custom_minimum_size.x = OBJECTIVE_WIDTH_PX
 	row.add_child(_objective_label)
 
 	_objective_panel.set_anchors_and_offsets_preset(
 		Control.PRESET_BOTTOM_LEFT, Control.PRESET_MODE_KEEP_SIZE
 	)
 	_objective_panel.offset_left = OBJECTIVE_MARGIN.x
+	_objective_panel.offset_right = OBJECTIVE_MARGIN.x + OBJECTIVE_WIDTH_PX + 28.0
 	_objective_panel.offset_top = OBJECTIVE_MARGIN.y
-	_objective_panel.offset_bottom = OBJECTIVE_MARGIN.y + 40.0
+	_objective_panel.offset_bottom = OBJECTIVE_MARGIN.y + 48.0
 
 	# ── tip card ─────────────────────────────────────────────────────────────────────────────────
 	_tip_panel = PanelContainer.new()
