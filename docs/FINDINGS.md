@@ -3670,6 +3670,190 @@ that build did, not a measurement of HEAD, and HEAD is likely worse.
 
 ---
 
+### F-612 · Inventory items cannot be dropped by key or by dragging a stack outside the inventory
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest 2026-08-22 (Sequoyah): there is no player-facing way to drop an item from inventory. Add a bound drop action for the selected stack and make InventoryUI accept dragging a stack outside the inventory panel as the same host-authoritative drop request. The authoritative mutation belongs in autoload/inventory_service.gd; ui/inventory/inventory_ui.gd must provide both input paths, and the dropped result must use the existing world item-drop path rather than deleting the stack.
+
+---
+
+### F-613 · A full inventory silently loses chest rewards instead of spilling them into the world
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest 2026-08-22 (Sequoyah): opening a chest while inventory is full does not collect its item or powerup rewards, gives no inventory-full warning, and leaves no recoverable reward. systems/loot/chest.gd must preserve the authoritative roll: anything InventoryService cannot accept should spawn as a world pickup beside the chest, and the receiving player must get an explicit inventory-full message. Cover mixed item/powerup rolls and partial capacity so no reward is silently destroyed.
+
+---
+
+### F-614 · Chest loot identity is wrong: ordinary resources dilute the powerup and unique-weapon reward loop
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest design finding 2026-08-22 (Sequoyah): chests should contain powerups or powerful unique weapons, not serve as ordinary resource containers. Audit content/loot_tables and the chest roll path in systems/loot/chest.gd; reserve mundane materials for world pickups and the requested resource-cache container family. Preserve host-seeded authoritative rolls and define what qualifies as a unique/powerful weapon before rewriting tier tables.
+
+---
+
+### F-615 · The procedural map has no resource caches or deposits as a dedicated loot-container family
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest content request 2026-08-22 (Sequoyah): add resource caches/deposits found around the map, distinct from chests. They should carry ordinary crafting resources so chests can specialize in powerups and unique weapons. This needs an authored container definition and visuals, procedural placement through the shipped POI/marker pipeline, host-authoritative opening and persistent consumed state; do not implement it as a renamed chest with the same loot identity.
+
+---
+
+### F-616 · Player speed explodes on uphill slopes and on forward-plus-sideways diagonal input
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest 2026-08-22 (Sequoyah): moving uphill makes the player move extremely fast, and holding forward plus a strafe direction also produces excessive speed. player/player_controller.gd must normalize planar input before speed scaling and must not convert slope projection or floor snapping into additional horizontal velocity. Add flat cardinal-vs-diagonal and uphill/downhill speed assertions at walk and sprint speeds.
+
+---
+
+### F-617 · No enemies ever spawn during a normal procedural-map run
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest 2026-08-22 (Sequoyah): no enemies spawned anywhere during the run. This is sharper than F-599's low-density measurement: verify autoload/enemy_world.gd receives procedural enemy-nest markers and actually creates live base enemies during the shipped front-end-to-procedural flow. Record elapsed play time, marker count and live enemy count in a runtime check; a content census alone does not close it. Coordinate with the active F-599 owner rather than editing its claimed files concurrently.
+
+---
+
+### F-618 · Player health does not regenerate during normal play
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest 2026-08-22 (Sequoyah): damaged health never regenerates. Inspect player/player_health.gd and the intended health-regen powerup/food seams; decide and document the base regeneration rule, its delay after damage, and whether hunger suppresses it. Add a runtime assertion that damage followed by the eligible idle interval restores health without exceeding max health, and that an ineligible state does not.
+
+---
+
+### F-619 · Powerups remain too weak and lack run-changing mobility and defence choices
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest design finding 2026-08-22 (Sequoyah): powerups feel lame and basically do nothing; the desired bar includes double jump, faster running, dodge chance and similarly legible run-changing effects. F-580 and F-585 recently wired formerly inert stats and Resonances, so first reproduce this on current HEAD rather than assuming those fixes reached the tested build. Then author and verify a smaller set of strong qualitative powerups one at a time, including visible held-effect descriptions; do not bulk-generate stat filler.
+
+---
+
+### F-620 · Mire spread has no slow opening ramp and overwhelms the first few days
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest 2026-08-22 (Sequoyah): Mire spreads far too fast; the first few days should spread very slowly before pressure ramps. This may be a regression or tuning consequence of active F-599 work. In world/mire/mire_grid.gd and content/rules/mire_spread_multiplier.tres, define a Cycle/day curve rather than one constant multiplier, measure front movement per early day, and preserve a later-run escalation. Coordinate with F-599's current owner before touching its claimed files.
+
+---
+
+### F-621 · Chest reel icons are oversized and obscure the in-world slot animation
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest 2026-08-22 (Sequoyah): the lottery/slot animation above chests uses icons that are too large. Tune ui/loot/chest_reel.gd against the now-1.25x chest family so the reel stays readable without dominating the chest or view. Verify at the smallest and largest chest tiers from normal first-person distance, not only in an isolated UI check.
+
+---
+
+### F-622 · Players need a reliable screen for current powerups and their exact effects
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest 2026-08-22 (Sequoyah): there is no adequate way to check current powerups and effects. F-581 added a held-powerup icon row, but icons and stack counts are not a usable effect reference. Extend the inventory/run UI with a browsable list showing name, stacks, family, current numerical/qualitative effects and active Resonance thresholds, sourced from PowerupService's replicated local state. It must remain inspectable after reconnect and not rely on transient pickup cards.
+
+---
+
+### F-623 · Moon and night shadows jitter and traverse the sky too quickly
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest 2026-08-22 (Sequoyah): the moon visibly jitters and moves too fast at night, and its shadows jitter/move at the same excessive rate. Inspect the day/night directional-light update path and moon visual together; base both on one smooth authoritative phase, avoid low-frequency transform stepping, and slow the visible night arc. Capture a windowed time series proving monotonic smooth rotation and stable shadow movement over a representative night.
+
+---
+
+### F-624 · Building UI does not show required resources or whether the player can afford a piece
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest 2026-08-22 (Sequoyah): a campfire could be built, but the player had no way to see its required resources or whether enough were held. ui/building/build_bar.gd must show every selected BuildableDef cost with owned/required counts and an unmistakable affordable/unaffordable state before placement; the placement ghost/refusal must carry the same authoritative reason. Keep BuildService host validation as the authority and add UI coverage for both sufficient and insufficient inventories.
+
+---
+
+### F-625 · Food and stamina bars do not refill completely
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest 2026-08-22 (Sequoyah): the food and stamina bars stop short of full instead of returning to their maximum. Reproduce through player/player_health.gd and ui/hud/vitals_hud.gd, separating an underlying value/clamp defect from a ProgressBar presentation defect. Assert exact max restoration after eating/resting, correct replication, and a displayed ratio of 1.0 with no permanent final-pixel gap.
+
+---
+
+### F-626 · Tutorial tips remain on screen and cannot be dismissed or completed
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest 2026-08-22 (Sequoyah): tutorial tips do not go away. Inspect the guide/tutorial HUD completion and dismissal path; each tip must clear when its condition completes, provide a manual dismiss/skip affordance, and not reappear forever after respawn or run restart unless the player explicitly resets guidance. Persist the appropriate first-run state and cover the shipped front-end-to-run path.
+
+---
+
+### F-627 · All food should restore health or grant health regeneration as well as hunger
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest design finding 2026-08-22 (Sequoyah): every food item should provide some health value in addition to filling food, either immediate HP or a regeneration effect. Update content/items food definitions one item at a time against ItemDef's real consume schema, giving each a deliberate healing identity and avoiding uniform template values. player/player_health.gd must apply and clearly report both hunger and health outcomes without exceeding maxima.
+
+---
+
+### F-628 · Building playtests incorrectly start the player with tools
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest 2026-08-22 (Sequoyah): the normal building playtest starts with tools already granted; progression should require obtaining/crafting them. Find the shipped startup loadout source (including autoexec or playtest bootstrap) and remove tools from the normal run while retaining an explicit developer-only fast path. Add a clean-profile boot assertion that inventory starts without tools and that debug/god loadouts remain opt-in.
+
+---
+
+### F-629 · Fall damage is far too punishing for ordinary terrain traversal
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest 2026-08-22 (Sequoyah): fall damage is much too high. Reproduce representative drops in player/player_health.gd at small terrain-step, normal jump, moderate cliff and lethal heights; establish a no-damage grace threshold and a readable nonlinear curve rather than applying severe damage to routine slopes. Verify with and without fall-damage powerups and keep the host authoritative for health mutation.
+
+---
+
+### F-630 · An unidentified untextured beige capsule prop spawns on the procedural shoreline
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest 2026-08-22 (Sequoyah), screenshot supplied: an unexplained smooth beige capsule/cylinder with a domed top appears upright on grass near the shoreline. It has no readable texture, label or gameplay purpose and looks like a placeholder collision/debug mesh. Trace the procedural marker/scatter/POI instance that owns the object, identify it in a runtime look-at diagnostic, then replace the missing visual or prevent the placeholder from spawning. Screenshot source: codex-clipboard-35215875-0b4d-4750-a079-a75fcc70c0e5.png.
+
+---
+
+### F-631 · Procedural clouds clump and distribute unnaturally
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest 2026-08-22 (Sequoyah): clouds spawn/distribute strangely rather than forming a believable sky field. Inspect the procedural cloud placement code and its seeded sampling bounds; prevent obvious clumps, gaps, horizon bands and camera-local discontinuities while keeping deterministic placement. Validate from several island positions and through a full day/night transition with windowed captures.
+
+---
+
+### F-632 · Destroying a bush leaves an invisible collision body behind
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest 2026-08-22 (Sequoyah): after breaking a bush, the visible plant disappears but an invisible collider remains and blocks movement. The harvestable lifecycle must disable/remove collision in the same authoritative state transition that hides the mesh, and restore both together only on respawn. Add a physics assertion that a player-shaped body can traverse the former footprint after destruction on host and client.
+
+---
+
+### F-633 · Wellspring encounters still spawn crawlers instead of the intended base enemy
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest 2026-08-22 (Sequoyah): Wellspring activation still spawns crawlers rather than the intended base enemy roster. Inspect the Wellspring wave definition/spawner content selection, replace the legacy hard-coded crawler fallback with the designed base-enemy entry, and assert the live spawned enemy id across the first wave and later escalation. Keep spawn selection host-authoritative and seeded where required.
+
+---
+
+### F-634 · Mire corruption persists after death/restart but its green fog presentation disappears
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest 2026-08-22 (Sequoyah): after dying and respawning/restarting the game, Mire continues spreading but the green fog is absent. A supplied pre-restart screenshot at 4% island corruption shows the expected presentation clearly: several large yellow-green fog pools over corrupted forest cells, with sharply readable circular footprints. That gives the restart test a concrete before/after visual baseline rather than only a verbal colour description (`codex-clipboard-42ff0d0c-0dbd-463a-b3e9-e9e880e5d84e.png`). The replicated/persisted MireGrid state and EnvironmentVfx presentation are desynchronised across the run boundary. Drive a death/restart test that preserves or restores corrupted cells, then assert the green fog/tint is rebuilt from current Mire state for host and joining client rather than only from incremental spread events.
+
+---
+
 ## Resolved
 
 ### F-611 · Release build excludes tools/perf_format.gd, so SessionLog fails to parse and instantiate on launch — **fixed**
@@ -30970,4 +31154,3 @@ line: `failures=2` — the client still holding the ended run's `20` logs at `r2
 grant swallowed. Post-fix: `0`, then `3` at `r1`.
 
 **Resolved 2026-08-20 by lp.** Spec: `docs/SPECS.md` `## F-279`. Rule: **D-173**.
-
