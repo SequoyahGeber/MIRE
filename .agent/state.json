@@ -42,6 +42,12 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "autoload/settings_service.gd": {
+      "agent": "galedc2f76",
+      "at": "2026-08-22T02:36:19+00:00",
+      "task": "F-503",
+      "token": "CODEX_SESSION_ID:01a02752-64f4-7b03-88cb-24234c204f6e"
+    },
     "content/enemies/bloatcap.tres": {
       "agent": "ember5da2c4",
       "at": "2026-08-22T02:13:56+00:00",
@@ -282,11 +288,41 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "tools/settings_check.gd": {
+      "agent": "galedc2f76",
+      "at": "2026-08-22T02:36:19+00:00",
+      "task": "F-503",
+      "token": "CODEX_SESSION_ID:01a02752-64f4-7b03-88cb-24234c204f6e"
+    },
+    "tools/settings_screen_check.gd": {
+      "agent": "galedc2f76",
+      "at": "2026-08-22T02:36:19+00:00",
+      "task": "F-503",
+      "token": "CODEX_SESSION_ID:01a02752-64f4-7b03-88cb-24234c204f6e"
+    },
     "tools/wave_director_check.gd": {
       "agent": "ember5da2c4",
       "at": "2026-08-22T01:25:45+00:00",
       "task": "5.11",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
+    },
+    "tools/worldgen_noise_reuse_check.gd": {
+      "agent": "quill3c83cf",
+      "at": "2026-08-22T02:35:28+00:00",
+      "task": "F-294",
+      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
+    },
+    "ui/frontend/graphics_settings_page.gd": {
+      "agent": "galedc2f76",
+      "at": "2026-08-22T02:36:19+00:00",
+      "task": "F-503",
+      "token": "CODEX_SESSION_ID:01a02752-64f4-7b03-88cb-24234c204f6e"
+    },
+    "world/gen/island_heightmap.gd": {
+      "agent": "quill3c83cf",
+      "at": "2026-08-22T02:35:28+00:00",
+      "task": "F-294",
+      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
     },
     "world/mire/mire_grid.gd": {
       "agent": "ember5da2c4",
@@ -350,6 +386,22 @@
       "started": "2026-08-22T01:08:05+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
     },
+    "F-294": {
+      "agent": "quill3c83cf",
+      "files": [
+        "world/gen/island_heightmap.gd",
+        "tools/worldgen_noise_reuse_check.gd"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-22T02:35:28+00:00",
+          "by": "quill3c83cf",
+          "text": "Pre-edit check: equivalence/adoption/order tests pass; 20 golden hashes are already stale after later worldgen commits. Preserve the current measured hashes across this refactor and do not bless unrelated output drift."
+        }
+      ],
+      "started": "2026-08-22T02:35:28+00:00",
+      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
+    },
     "F-469": {
       "agent": "coil26502f",
       "files": [
@@ -398,6 +450,24 @@
       "notes": [],
       "started": "2026-08-22T00:29:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "F-503": {
+      "agent": "galedc2f76",
+      "files": [
+        "autoload/settings_service.gd",
+        "ui/frontend/graphics_settings_page.gd",
+        "tools/settings_check.gd",
+        "tools/settings_screen_check.gd"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-22T02:36:19+00:00",
+          "by": "galedc2f76",
+          "text": "Resolution is a window-size choice. Borderless and exclusive fullscreen use the display's native pixel size, so the UI must disable resolution there instead of accepting a no-op; windowed mode gets live DisplayServer.window_get_size coverage."
+        }
+      ],
+      "started": "2026-08-22T02:36:19+00:00",
+      "token": "CODEX_SESSION_ID:01a02752-64f4-7b03-88cb-24234c204f6e"
     }
   },
   "recent": {
@@ -4776,6 +4846,13 @@
       "task": "F-478",
       "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
     },
+    "world/environment/water_low_poly.gdshader": {
+      "agent": "ember6cacac",
+      "at": "2026-08-22T02:36:26+00:00",
+      "hash": "f9a7ac7866b10946c5ab162121c36fa0b0714323dc36d764523b431a2ff1dc36",
+      "task": "F-499",
+      "token": "CODEX_SESSION_ID:01a02752-177a-7f21-9190-de2b135a6fcc"
+    },
     "world/gen/authored_world.gd": {
       "agent": "vane99f1bb",
       "at": "2026-08-22T01:50:20+00:00",
@@ -4896,7 +4973,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:120f1976-6c96-46a1-8784-38dd75780df4"
     }
   },
-  "rev": 1101,
+  "rev": 1116,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9058,7 +9135,7 @@
     "F-294": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Every surface sample allocates two or three Arrays inside island_heightmap.gd \u2014 lobes(), islet_centres() and river_polyline() are rebuilt per point, and F-274 doubled the river walk"
     },
@@ -10669,6 +10746,13 @@
       "status": "done",
       "tier": "F",
       "title": "Benchmark seed leaks into later gameplay"
+    },
+    "F-503": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Resolution selector silently does nothing outside windowed mode"
     }
   },
   "version": 1

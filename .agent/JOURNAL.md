@@ -9064,3 +9064,15 @@ Notes along the way:
 Files: `ui/frontend/benchmark_screen.gd`, `tools/benchmark_check.gd`
 
 Commit at time of writing: `ced0228c`
+
+---
+
+### HANDOFF · F-499 · ember6cacac · 2026-08-22T02:36:26+00:00
+
+**the ocean's wave amplitude is capped by guesswork, because no audit frame can show the waterline**
+
+Raised shipped ocean wave_height from 0.34 m to 0.46 m (35%) for Sequoyah's 'looks really flat' playtest note; shader import passes and gameplay water_surface_at is untouched. F-499 itself remains open: its actual closure criterion is a waterline-visible audit frame, and the current ocean_glint_shot views still do not provide that evidence.
+
+Files: `world/environment/water_low_poly.gdshader`
+
+Commit at time of writing: `49b9d044`

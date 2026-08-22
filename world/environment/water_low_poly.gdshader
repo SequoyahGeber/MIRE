@@ -39,11 +39,12 @@ uniform vec3 albedo_color : source_color = vec3(0.16, 0.33, 0.40);
 // `wave_height` is capped by the SHORE, not by taste. The gameplay water level is a flat 0
 // (`water_surface_at()`) and these waves are paint on top of it, so every centimetre of amplitude
 // is a centimetre the sea can climb over the sand without the beach knowing. Seed 7's shore rises
-// about 0.5 m over its first 6 m, so 0.62 m of wave — which is where this pass first landed —
-// washes right over seven-odd metres of beach. 0.34 m keeps the flood inside about four. Raising it
-// further needs the displacement tapered toward shore first, which needs a shore distance the
-// vertex stage does not currently have.
-uniform float wave_height = 0.34;
+// about 0.5 m over its first 6 m, so 0.62 m of wave — where the aggressive-water pass first landed
+// — washed too far over the beach. 0.46 m is the deliberately modest follow-up to Sequoyah's
+// "ocean looks really flat": 35% more vertical relief than 0.34 m, while retaining a margin below
+// that rejected extreme. Raising it further needs displacement tapered toward shore first, which
+// needs a shore distance the vertex stage does not currently have.
+uniform float wave_height = 0.46;
 uniform float wave_length = 9.5;
 uniform float wave_speed = 1.05;
 /// Horizontal pull toward each crest, as a fraction of `wave_length`. This is the Gerstner trick in
@@ -118,7 +119,7 @@ void fragment() {
 	vec3 facet_world = normalize(cross(dFdx(world_pos), dFdy(world_pos)));
 	facet_world *= sign(facet_world.y);
 
-	// The waves are only +/-0.18 m over ~8 m quads, so every facet normal is within a few degrees
+	// The waves are still under half a metre over ~8 m quads, so every facet normal is within a few
 	// of straight up and a normal-vs-sun dot is effectively constant. What DOES vary across a wave
 	// is which way the facet leans horizontally, so the sun test is done in the ground plane: the
 	// sunward face of a wave catches, the back of it does not.

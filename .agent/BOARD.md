@@ -10,15 +10,23 @@
 |---|---|---|---|
 | **5.11** Tiered enemy ladder: 5 authored enemies — own model, rig, clips, unique attack, stats — one per escalation step, entering the night pool as Cycles advance (`docs/ENEMIES.md`) | ember5da2c4 | 2026-08-22 01:08 | `docs/ENEMIES.md`, `tools/blender/build_enemy_peatling.py`, `assets/enemies/catalog.json`, `world/mire/mire_grid.gd`, `world/mire/mire_grid_sim.gd`, `systems/enemies/enemy_def.gd`, `systems/enemies/enemy.gd`, `systems/waves/wave_spawner.gd`, `content/enemies/peatling.tres`, `assets/enemies/README.md`, `tools/wave_director_check.gd`, `tools/enemy_peatling_check.gd`, `tools/blender/build_enemy_fen_stalker.py`, `content/enemies/fen_stalker.tres`, `tools/enemy_fen_stalker_check.gd`, `tools/blender/build_enemy_bog_bulwark.py`, `content/enemies/bog_bulwark.tres`, `tools/enemy_bog_bulwark_check.gd`, `tools/blender/build_enemy_crawler.py`, `tools/blender/build_enemy_bloatcap.py`, `content/enemies/bloatcap.tres`, `tools/enemy_bloatcap_check.gd` |
 | **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | gale43d16e | 2026-08-21 17:13 | `docs/ASSET_TRACKER.md`, `tools/blender/build_gatherable_plants.py`, `assets/gatherables/catalog.json`, `tools/blender/build_pickup_kit.py`, `assets/pickups/catalog.json`, `content/items/apple.tres`, `content/harvestables/berry_bush.tres`, `content/harvestables/apple_tree.tres`, `content/harvestables/mushroom_patch.tres`, `tools/item_icons_check.gd` |
+| **F-294** Every surface sample allocates two or three Arrays inside island_heightmap.gd — lobes(), islet_centres() and river_polyline() are rebuilt per point, and F-274 doubled the river walk | quill3c83cf | 2026-08-22 02:35 | `world/gen/island_heightmap.gd`, `tools/worldgen_noise_reuse_check.gd` |
 | **F-469** Four recent decisions use a heading shape decision_ref_check.py cannot see | coil26502f | 2026-08-21 23:06 | `systems/building/placement_validator.gd`, `systems/building/build_ghost.gd`, `autoload/build_service.gd`, `core/net/net_version.gd`, `core/net/rpc_manifest.gd`, `entities/player/player_controller.gd`, `ui/building/build_bar.gd` |
 | **F-473** PROTOCOL_VERSION has two independent hard-coded expectations, and only the loud one gets maintained | birche6b40e | 2026-08-21 23:42 | `tools/blender/mire_art.py`, `tools/blender/build_tool_weapon_set.py`, `assets/tools_weapons/catalog.json`, `tools/blender/build_deep_materials.py`, `assets/deep_materials/catalog.json`, `tools/blender/build_harvestable_resources.py`, `assets/harvestables/catalog.json`, `content/scatter/highland_rocks.tres`, `content/harvestables/bogsilver_node.tres` |
 | **F-482** The sling, longbow and crossbow all shipped as the short bow, and the bolt as an arrow | birche6b40e | 2026-08-22 00:29 | `content/items/sling.tres`, `content/items/longbow.tres`, `content/items/crossbow.tres`, `content/items/bolt.tres`, `content/items/iron_axe.tres`, `content/items/bogsilver_axe.tres`, `content/items/bogsilver_pickaxe.tres`, `content/items/wellglass_axe.tres`, `content/items/wellglass_pickaxe.tres` |
+| **F-503** Resolution selector silently does nothing outside windowed mode | galedc2f76 | 2026-08-22 02:36 | `autoload/settings_service.gd`, `ui/frontend/graphics_settings_page.gd`, `tools/settings_check.gd`, `tools/settings_screen_check.gd` |
+
+**F-294 notes:**
+- Pre-edit check: equivalence/adoption/order tests pass; 20 golden hashes are already stale after later worldgen commits. Preserve the current measured hashes across this refactor and do not bless unrelated output drift.
+
+**F-503 notes:**
+- Resolution is a window-size choice. Borderless and exclusive fullscreen use the display's native pixel size, so the UI must disable resolution there instead of accepting a no-op; windowed mode gets live DisplayServer.window_get_size coverage.
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `████████░░` 414/505 | 91 |
+| Findings | `████████░░` 414/506 | 92 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -68,7 +76,7 @@
 | ⬜ | **F-291** A `--script` check that fires a real `EventBus` event as a state-setup shortcut can be broken by an unrelated later feature that subscribes to the same event — **fixed in `tools/unlock_check.gd`, same class not yet swept project-wide** | todo |
 | ⬜ | **F-292** tools/nav_bake_check.gd has had 4 failures at HEAD since the 4.13/4.14 terrain retune — the island has no gentle chunk-boundary strip at its 30-degree gate | todo |
 | ⬜ | **F-293** Nothing enumerates and runs the tools/ check suite, so a red check sits at HEAD indefinitely — two were red for days and a third was asserting nothing | todo |
-| ⬜ | **F-294** Every surface sample allocates two or three Arrays inside island_heightmap.gd — lobes(), islet_centres() and river_polyline() are rebuilt per point, and F-274 doubled the river walk | todo |
+| 🔵 | **F-294** Every surface sample allocates two or three Arrays inside island_heightmap.gd — lobes(), islet_centres() and river_polyline() are rebuilt per point, and F-274 doubled the river walk | in_flight |
 | ⬜ | **F-295** Every batched Hollowmere harvestable had a per-process node name, so none of the map's 794 batch-drawn props ever replicated | todo |
 | ⬜ | **F-296** NetInterest.configure() installs authority-only visibility processing on every peer, so each client logs ERR_BUG from _update_spawn_visibility on join | todo |
 | ⬜ | **F-300** autoexec's documented loadout half survives exactly one run — it is boot-only and F-243 wipes the inventory | todo |
@@ -143,6 +151,7 @@
 | ⬜ | **F-497** Every music director leaves its AudioStreamPlayers running at engine shutdown, leaking playbacks and streams past cleanup | todo |
 | ⬜ | **F-498** Directional armour has no dedicated deflect cue, only the absence of one | todo |
 | ⬜ | **F-499** the ocean's wave amplitude is capped by guesswork, because no audit frame can show the waterline | todo |
+| 🔵 | **F-503** Resolution selector silently does nothing outside windowed mode | in_flight |
 
 ## Done
 
