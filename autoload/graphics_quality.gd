@@ -142,6 +142,10 @@ var prop_draw_distance_scale: float = 1.0
 ## Player overrides layered after the preset. -1 follows the preset/level; 0 forces off; 1 forces on.
 var ssao_override: int = -1
 var brightness: float = 1.0
+var foliage_quality_override: int = -1
+var shadow_quality_override: int = -1
+var shadow_distance_override: int = -1
+var volumetric_fog_override: int = -1
 
 # Authored values captured the first time a preset touches a node, keyed by instance id, so
 # `high` restores rather than guesses. Ids from freed levels are never read again — an apply
@@ -212,6 +216,14 @@ func set_player_overrides(new_ssao_override: int, new_brightness: float) -> void
 	apply(preset)
 
 
+func set_advanced_overrides(foliage: int, shadows: int, shadow_distance: int, fog: int) -> void:
+	foliage_quality_override = clampi(foliage, -1, 2)
+	shadow_quality_override = clampi(shadows, -1, 2)
+	shadow_distance_override = clampi(shadow_distance, -1, 2)
+	volumetric_fog_override = clampi(fog, -1, 1)
+	apply(preset)
+
+
 func _dynamic_step(delta: float) -> void:
 	_dynamic_elapsed += delta
 	if _dynamic_elapsed < DYNAMIC_INTERVAL_SEC:
@@ -258,7 +270,10 @@ func apply(new_preset: Preset) -> void:
 	# right default for a machine that can afford it and the wrong one for the machine this game
 	# is meant to run on. Raising it costs silhouette detail at distance and nothing else.
 	get_viewport().mesh_lod_threshold = float(spec.get("lod_threshold", DEFAULT_LOD_THRESHOLD))
-	applied_shadow_atlas = int(spec.get("shadow_atlas", DEFAULT_SHADOW_ATLAS))
+	var shadow_atlas: int = int(spec.get("shadow_atlas", DEFAULT_SHADOW_ATLAS))
+	if shadow_quality_override >= 0:
+		shadow_atlas = [1024, 2048, 4096][shadow_quality_override]
+	applied_shadow_atlas = shadow_atlas
 	RenderingServer.directional_shadow_atlas_set_size(applied_shadow_atlas, true)
 	if scene == null:
 		return
@@ -273,8 +288,10 @@ func apply(new_preset: Preset) -> void:
 			"normal_bias": sun.shadow_normal_bias,
 		}) as Dictionary
 		sun.directional_shadow_mode = int(spec.get("cascades", authored["mode"]))
-		sun.directional_shadow_max_distance = float(
-			spec.get("shadow_distance", authored["distance"]))
+		var distance: float = float(spec.get("shadow_distance", authored["distance"]))
+		if shadow_distance_override >= 0:
+			distance = [30.0, 55.0, 90.0][shadow_distance_override]
+		sun.directional_shadow_max_distance = distance
 		sun.directional_shadow_blend_splits = bool(
 			spec.get("blend_splits", authored["blend_splits"]))
 		# Both biases are derived from the AUTHORED value every time, never from the light's
@@ -302,7 +319,10 @@ func apply(new_preset: Preset) -> void:
 				"brightness": environment.adjustment_brightness,
 			}) as Dictionary
 		environment.glow_enabled = bool(spec.get("glow", authored["glow"]))
-		environment.volumetric_fog_enabled = bool(spec.get("volumetric", authored["volumetric"]))
+		var fog_enabled: bool = bool(spec.get("volumetric", authored["volumetric"]))
+		if volumetric_fog_override >= 0:
+			fog_enabled = volumetric_fog_override > 0
+		environment.volumetric_fog_enabled = fog_enabled
 		var preset_ssao: bool = bool(spec.get("ssao", authored["ssao"]))
 		environment.ssao_enabled = preset_ssao if ssao_override < 0 else ssao_override > 0
 		environment.adjustment_enabled = bool(authored["adjustment_enabled"]) or not is_equal_approx(brightness, 1.0)
@@ -312,6 +332,8 @@ func apply(new_preset: Preset) -> void:
 	DrawPolicy.rescale(get_tree())
 
 	var target_scale: float = float(spec.get("undergrowth", 1.0))
+	if foliage_quality_override >= 0:
+		target_scale = [0.35, 0.7, 1.0][foliage_quality_override]
 	if target_scale != undergrowth_density_scale:
 		undergrowth_density_scale = target_scale
 		var undergrowth: Node = scene.get_node_or_null(^"Undergrowth")

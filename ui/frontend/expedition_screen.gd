@@ -207,7 +207,10 @@ func refresh() -> void:
 
 	var lobby: Node = _lobby()
 	var lobby_id: int = int(lobby.call("current_lobby_id")) if lobby != null else 0
-	_code_field.text = str(lobby_id) if lobby_id != 0 else "local game — no code to share"
+	var private: bool = _streamer_mode()
+	_seed_field.secret = private
+	_code_field.text = "hidden by Streamer Mode" if private and lobby_id != 0 \
+		else (str(lobby_id) if lobby_id != 0 else "local game — no code to share")
 	_copy_button.disabled = lobby_id == 0
 
 	# The host picks the island; everyone else is cargo. Making that visible (rather than letting a
@@ -261,7 +264,8 @@ func _member_row(member: Dictionary) -> Control:
 	card.add_child(row)
 
 	row.add_child(MireTheme.label("⛵", MireTheme.BODY, MireTheme.MOSS))
-	row.add_child(MireTheme.label(String(member.get("name", "?")), MireTheme.BODY, MireTheme.TEXT))
+	var member_name: String = "Player" if _streamer_mode() else String(member.get("name", "?"))
+	row.add_child(MireTheme.label(member_name, MireTheme.BODY, MireTheme.TEXT))
 
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -327,6 +331,15 @@ func _connect_services() -> void:
 				lobby.connect(signal_name, _on_lobby_changed)
 		if lobby.has_signal("lobby_failed"):
 			lobby.connect("lobby_failed", _on_lobby_failed)
+	var settings: Node = get_node_or_null(^"/root/SettingsService")
+	if settings != null and settings.has_signal(&"settings_changed"):
+		settings.connect(&"settings_changed", refresh)
+
+
+func _streamer_mode() -> bool:
+	var settings: Node = get_node_or_null(^"/root/SettingsService")
+	return settings != null and settings.has_method(&"streamer_mode") \
+		and bool(settings.call(&"streamer_mode"))
 
 	var session: Node = _session()
 	if session != null:
@@ -351,6 +364,10 @@ func _disconnect_services() -> void:
 		for signal_name: String in ["session_opened", "session_ended"]:
 			if session.has_signal(signal_name) and session.is_connected(signal_name, _on_lobby_changed):
 				session.disconnect(signal_name, _on_lobby_changed)
+	var settings: Node = get_node_or_null(^"/root/SettingsService")
+	if settings != null and settings.has_signal(&"settings_changed") \
+			and settings.is_connected(&"settings_changed", refresh):
+		settings.disconnect(&"settings_changed", refresh)
 
 
 ## One handler for every lobby/session signal, with the arguments deliberately ignored: the screen

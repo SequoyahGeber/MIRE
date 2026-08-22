@@ -14,8 +14,10 @@ signal note_requested(message: String)
 ## previewing before that can happen, which is the screen's business, not this page's.
 signal benchmark_requested()
 
-const GRAPHICS_PRESETS: Array[String] = ["LOW", "MEDIUM", "HIGH"]
+const GRAPHICS_PRESETS: Array[String] = ["LOW", "MEDIUM", "HIGH", "CUSTOM"]
 const SSAO_MODES: Array[String] = ["AUTO (PRESET)", "OFF", "ON"]
+const QUALITY_OVERRIDES: Array[String] = ["AUTO (PRESET)", "LOW", "MEDIUM", "HIGH"]
+const TOGGLE_OVERRIDES: Array[String] = ["AUTO (PRESET)", "OFF", "ON"]
 const READOUT_WIDTH: float = 96.0
 
 var _settings: Node
@@ -82,14 +84,23 @@ func _build() -> void:
 	add_child(MireTheme.separator())
 	add_child(_heading("QUALITY"))
 	add_child(_dropdown_row("Graphics quality", GRAPHICS_PRESETS,
-		"graphics_preset", "set_graphics_preset",
+		"graphics_selection", "set_graphics_preset",
 		"Presets scale shadows, effects, foliage, draw distance, LOD and render resolution."))
+	(_controls.back()[&"control"] as OptionButton).set_item_disabled(3, true)
 	add_child(_dropdown_row("Anti-aliasing", _settings.get("ANTI_ALIASING_MODES"),
 		"anti_aliasing", "set_anti_aliasing"))
 	add_child(_dropdown_row("Ambient occlusion", SSAO_MODES,
 		"ssao_override", "set_ssao_override", "Auto follows the selected quality preset.", 1))
 	add_child(_toggle_row("Dynamic resolution", "dynamic_resolution", "set_dynamic_resolution",
 		"Lowers 3D resolution during expensive scenes to protect the target frame rate."))
+	add_child(_dropdown_row("Foliage density", QUALITY_OVERRIDES,
+		"foliage_quality", "set_foliage_quality", "Overrides the preset's vegetation density.", 1))
+	add_child(_dropdown_row("Shadow quality", QUALITY_OVERRIDES,
+		"shadow_quality", "set_shadow_quality", "Controls directional shadow-map resolution.", 1))
+	add_child(_dropdown_row("Shadow distance", QUALITY_OVERRIDES,
+		"shadow_distance", "set_shadow_distance", "Controls how far dynamic shadows are drawn.", 1))
+	add_child(_dropdown_row("Volumetric fog", TOGGLE_OVERRIDES,
+		"volumetric_fog", "set_volumetric_fog", "Disable the froxel fog pass for performance.", 1))
 
 	if _allow_benchmark:
 		add_child(_benchmark_row())

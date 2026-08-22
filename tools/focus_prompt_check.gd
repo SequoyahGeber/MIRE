@@ -47,6 +47,21 @@ func _run() -> void:
 	await process_frame
 	_focus.set_process(false)
 	_focus.set_process_input(false)
+	var settings: Node = root.get_node_or_null(^"SettingsService")
+	if settings != null:
+		settings.call(&"set_crosshair_size", 1.6)
+		settings.call(&"set_crosshair_opacity", 0.7)
+		settings.call(&"set_crosshair_colour", "62c8ff")
+		settings.call(&"set_crosshair_high_contrast", true)
+		var reticle: Control = _focus.get(&"_reticle") as Control
+		check(is_equal_approx(float(reticle.get(&"size_scale")), 1.6),
+			"crosshair size applies live to the reticle")
+		check(is_equal_approx(float(reticle.get(&"opacity")), 0.7),
+			"crosshair opacity applies live to the reticle")
+		check((reticle.get(&"player_colour") as Color).is_equal_approx(
+			Color.from_string("62c8ff", Color.WHITE)),
+			"crosshair colour applies live to the reticle")
+		check(bool(reticle.get(&"high_contrast")), "high contrast applies live to the reticle")
 
 	_check_authored_harvestable_names()
 	_check_harvestable_wording()

@@ -48,6 +48,7 @@ var _sprinting: bool = false
 ## own without the player's input — a motion-sensitive player can turn off exactly those and keep
 ## everything else.
 var _reduce_motion: bool = false
+var _shake_intensity: float = 1.0
 
 ## Impact shake state. Client-local presentation, never networked (see the class docs above); decay
 ## is integrated from elapsed time rather than lerped per frame, so it is framerate-independent.
@@ -88,6 +89,8 @@ func _apply_settings() -> void:
 			camera.fov = _base_fov
 	if settings.has_method("reduce_camera_motion"):
 		_reduce_motion = bool(settings.call("reduce_camera_motion"))
+	if settings.has_method("camera_shake_intensity"):
+		_shake_intensity = float(settings.call("camera_shake_intensity"))
 
 
 ## Called by the owning PlayerController with raw mouse motion. Yaw goes to the body so that movement
@@ -141,6 +144,7 @@ func set_sprinting(sprinting: bool) -> void:
 ## nothing and is never sent anywhere. Overlapping impacts take the stronger shake and restart it,
 ## rather than summing into a blur.
 func add_shake(magnitude: float, duration: float) -> void:
+	magnitude *= _shake_intensity
 	if _reduce_motion or magnitude <= 0.0 or duration <= 0.0:
 		return
 	if _shake_elapsed < _shake_duration and magnitude < _shake_magnitude:

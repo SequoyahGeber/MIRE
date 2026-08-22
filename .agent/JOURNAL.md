@@ -9469,3 +9469,27 @@ Notes along the way:
 Files: `content/scatter/forest_canopy.tres`, `content/scatter/marsh_canopy.tres`, `content/scatter/marsh_reeds.tres`, `content/scatter/grassland_turf.tres`, `world/gen/resource_scatter_field.gd`, `world/gen/procedural_world.gd`, `assets/audit/terrain/island_spawn_view.png`, `assets/audit/terrain/island_orbit.png`, `assets/audit/terrain/island_shore_look.png`
 
 Commit at time of writing: `968f329a`
+
+---
+
+### DONE · F-363 · vane99f1bb · 2026-08-22T03:32:46+00:00
+
+**The Mire tick still costs most of a frame at saturation, on the host main thread**
+
+Mire tick now runs on WorkerThreadPool — 12-16 ms off the host frame every 2s. Found and fixed a real thread-safety bug on the way (CoW share raced by main-thread writes; eager duplicate()). New guard tools/mire_async_tick_check.gd, 0 failures x6 runs. bench_mire AMBER kept, ceiling unchanged.
+
+Files: `world/mire/mire_grid.gd`, `world/mire/mire_grid_sim.gd`, `tools/mire_async_tick_check.gd`, `tools/bench_mire.gd`
+
+Commit at time of writing: `e5dd7692`
+
+---
+
+### DONE · F-514 · hollowe6edef · 2026-08-22T03:35:54+00:00
+
+**Settings lacks the approved advanced graphics, accessibility and privacy controls**
+
+Advanced settings are persisted, previewable and live-applied client-locally. Graphics overrides show CUSTOM; InputMap owns deadzones; root Window owns UI scaling; FocusPrompt and ExpeditionScreen consume crosshair/privacy settings. Focused checks pass; expedition's sole failure is baseline-proven.
+
+Files: `autoload/settings_service.gd`, `core/save/settings_save.gd`, `autoload/graphics_quality.gd`, `ui/frontend/graphics_settings_page.gd`, `ui/frontend/settings_screen.gd`, `entities/player/player_camera.gd`, `tools/settings_check.gd`, `tools/settings_screen_check.gd`, `ui/hud/focus_prompt.gd`, `ui/frontend/expedition_screen.gd`, `ui/theme/mire_theme.gd`, `tools/focus_prompt_check.gd`, `tools/expedition_check.gd`
+
+Commit at time of writing: `e5dd7692`

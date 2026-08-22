@@ -74,6 +74,10 @@ const BAR_HEIGHT_PX: float = 5.0
 ## resolution and costs no import. It reacts to the focus target — that reaction IS the "this is
 ## interactable" signal the world was missing, and it reads before any text does.
 class Reticle extends Control:
+	var player_colour: Color = MIRE_THEME.TEXT
+	var size_scale: float = 1.0
+	var opacity: float = 1.0
+	var high_contrast: bool = false
 	var focused: bool = false:
 		set(value):
 			if focused == value:
@@ -90,17 +94,17 @@ class Reticle extends Control:
 
 	func _draw() -> void:
 		var centre := size * 0.5
-		var colour: Color = MIRE_THEME.TEXT
+		var colour: Color = player_colour
 		if focused:
 			colour = MIRE_THEME.AMBER if blocked else MIRE_THEME.MOSS
-		colour.a = 0.9 if focused else 0.55
+		colour.a = (0.9 if focused else 0.55) * opacity
 
-		var gap: float = 6.0 if focused else 4.0
-		var tick: float = 5.0 if focused else 3.0
-		var width: float = 2.0 if focused else 1.0
+		var gap: float = (6.0 if focused else 4.0) * size_scale
+		var tick: float = (5.0 if focused else 3.0) * size_scale
+		var width: float = (2.0 if focused else 1.0) * size_scale
 		# A dark pass under every stroke: the reticle has to stay readable against a bright sky and
 		# against a black cave wall, and one colour cannot do both.
-		var shadow := Color(0.0, 0.0, 0.0, colour.a * 0.6)
+		var shadow := Color(0.0, 0.0, 0.0, colour.a * (1.0 if high_contrast else 0.6))
 		for pass_index: int in 2:
 			var offset: float = 1.0 if pass_index == 0 else 0.0
 			var stroke: Color = shadow if pass_index == 0 else colour
@@ -136,7 +140,24 @@ func _ready() -> void:
 	layer = 4
 	process_mode = Node.PROCESS_MODE_PAUSABLE
 	_build_ui()
+	_apply_crosshair_settings()
+	var settings: Node = get_node_or_null(^"/root/SettingsService")
+	if settings != null and settings.has_signal(&"settings_changed"):
+		settings.connect(&"settings_changed", _apply_crosshair_settings)
 	set_process(true)
+
+
+func _apply_crosshair_settings() -> void:
+	if _reticle == null:
+		return
+	var settings: Node = get_node_or_null(^"/root/SettingsService")
+	if settings == null:
+		return
+	_reticle.size_scale = float(settings.call(&"crosshair_size"))
+	_reticle.opacity = float(settings.call(&"crosshair_opacity"))
+	_reticle.player_colour = Color.from_string(String(settings.call(&"crosshair_colour")), Color.WHITE)
+	_reticle.high_contrast = bool(settings.call(&"crosshair_high_contrast"))
+	_reticle.queue_redraw()
 
 
 func _process(delta: float) -> void:

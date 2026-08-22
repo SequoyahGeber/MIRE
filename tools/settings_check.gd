@@ -49,6 +49,7 @@ func _run() -> void:
 	await _check_graphics(settings, gfx)
 	_check_audio_buses(settings)
 	_check_look_and_accessibility(settings)
+	_check_advanced(settings, gfx)
 	_check_keybinds(settings)
 	_check_joypad_keybinds(settings)
 	await _check_player_camera(settings)
@@ -109,6 +110,11 @@ func _check_settings_save() -> void:
 		"ssao_override": 0, "anti_aliasing": 4, "dynamic_resolution": true, "brightness": 1.2,
 		"look_sensitivity": 0.2, "gamepad_look_sensitivity": 240.0, "invert_y": true, "fov_degrees": 95.0,
 		"reduce_camera_motion": true, "keybinds": {"jump": 74}, "joypad_binds": {"jump": 2},
+		"ui_scale": 1.25, "camera_shake_intensity": 0.4,
+		"foliage_quality": 0, "shadow_quality": 1, "shadow_distance": 2, "volumetric_fog": 0,
+		"left_stick_deadzone": 0.15, "right_stick_deadzone": 0.25, "controller_vibration": 0.6,
+		"crosshair_size": 1.4, "crosshair_opacity": 0.7, "crosshair_colour": "62c8ff",
+		"crosshair_high_contrast": true, "streamer_mode": true,
 	}, TEST_ROUNDTRIP_PATH)
 	var round_trip: Dictionary = SETTINGS_SAVE.load_data(TEST_ROUNDTRIP_PATH)
 	check(int(round_trip.get(&"graphics_preset", -1)) == 1, "round trip: graphics preset")
@@ -123,6 +129,10 @@ func _check_settings_save() -> void:
 	check(is_equal_approx(float(round_trip.get(&"sfx_volume", -1.0)), 0.5), "round trip: sfx volume")
 	check(bool(round_trip.get(&"invert_y", false)) == true, "round trip: invert_y")
 	check(bool(round_trip.get(&"reduce_camera_motion", false)) == true, "round trip: reduce_camera_motion")
+	check(is_equal_approx(float(round_trip.get(&"ui_scale", 0.0)), 1.25), "round trip: UI scale")
+	check(int(round_trip.get(&"shadow_quality", -2)) == 1, "round trip: shadow override")
+	check(bool(round_trip.get(&"streamer_mode", false)), "round trip: Streamer Mode")
+	check(String(round_trip.get(&"crosshair_colour", "")) == "62c8ff", "round trip: crosshair colour")
 	check(int((round_trip.get(&"keybinds", {}) as Dictionary).get("jump", -1)) == 74,
 		"round trip: a keybind override")
 	check(is_equal_approx(float(round_trip.get(&"gamepad_look_sensitivity", -1.0)), 240.0),
@@ -214,6 +224,53 @@ func _check_audio_buses(settings: Node) -> void:
 	settings.call("set_sfx_volume", 0.75)
 	check(is_equal_approx(AudioServer.get_bus_volume_db(sfx_idx), linear_to_db(0.75)),
 		"sfx volume reaches the SFX bus in dB")
+
+
+func _check_advanced(settings: Node, gfx: Node) -> void:
+	print("\n== SettingsService: advanced presentation ==")
+	settings.call(&"set_ui_scale", 2.0)
+	check(is_equal_approx(float(settings.call(&"ui_scale")), 1.5), "UI scale clamps to 150%")
+	check(is_equal_approx(root.content_scale_factor, 1.5), "UI scale reaches the root canvas live")
+	settings.call(&"set_camera_shake_intensity", 0.35)
+	settings.call(&"set_reduce_camera_motion", false)
+	check(is_equal_approx(float(settings.call(&"camera_shake_intensity")), 0.35),
+		"camera shake intensity is read back")
+	settings.call(&"set_reduce_camera_motion", true)
+	check(is_zero_approx(float(settings.call(&"camera_shake_intensity"))),
+		"Reduce Motion forces effective camera shake to zero")
+	settings.call(&"set_reduce_camera_motion", false)
+	settings.call(&"set_foliage_quality", 1)
+	settings.call(&"set_shadow_quality", 0)
+	settings.call(&"set_shadow_distance", 2)
+	settings.call(&"set_volumetric_fog", 0)
+	check(int(settings.call(&"graphics_selection")) == 3, "a per-knob override marks graphics CUSTOM")
+	check(int(gfx.get(&"foliage_quality_override")) == 1, "foliage override reaches GraphicsQuality")
+	check(int(gfx.get(&"shadow_quality_override")) == 0, "shadow quality reaches GraphicsQuality")
+	check(int(gfx.get(&"shadow_distance_override")) == 2, "shadow distance reaches GraphicsQuality")
+	check(int(gfx.get(&"volumetric_fog_override")) == 0, "fog override reaches GraphicsQuality")
+	settings.call(&"set_graphics_preset", 1)
+	check(int(settings.call(&"graphics_selection")) == 1 and int(settings.call(&"foliage_quality")) == -1,
+		"choosing a preset clears per-knob overrides")
+	settings.call(&"set_left_stick_deadzone", 0.8)
+	settings.call(&"set_right_stick_deadzone", -1.0)
+	check(is_equal_approx(float(settings.call(&"left_stick_deadzone")), 0.5), "left deadzone clamps")
+	check(is_zero_approx(float(settings.call(&"right_stick_deadzone"))), "right deadzone clamps")
+	check(is_equal_approx(InputMap.action_get_deadzone(&"move_forward"), 0.5),
+		"left deadzone reaches movement actions live")
+	check(is_zero_approx(InputMap.action_get_deadzone(&"look_right")),
+		"right deadzone reaches look actions live")
+	settings.call(&"set_controller_vibration", 2.0)
+	check(is_equal_approx(float(settings.call(&"controller_vibration")), 1.0), "vibration clamps")
+	settings.call(&"set_crosshair_size", 3.0)
+	settings.call(&"set_crosshair_opacity", 0.0)
+	settings.call(&"set_crosshair_colour", "62c8ff")
+	settings.call(&"set_crosshair_high_contrast", true)
+	settings.call(&"set_streamer_mode", true)
+	check(is_equal_approx(float(settings.call(&"crosshair_size")), 2.0), "crosshair size clamps")
+	check(is_equal_approx(float(settings.call(&"crosshair_opacity")), 0.1), "crosshair opacity clamps")
+	check(String(settings.call(&"crosshair_colour")) == "62c8ff", "crosshair colour normalizes")
+	check(bool(settings.call(&"crosshair_high_contrast")), "crosshair contrast is read back")
+	check(bool(settings.call(&"streamer_mode")), "Streamer Mode is read back")
 
 
 func _check_look_and_accessibility(settings: Node) -> void:

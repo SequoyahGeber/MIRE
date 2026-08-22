@@ -228,7 +228,7 @@ func _run() -> void:
 	for slider: HSlider in all_sliders:
 		if not slider.scrollable and slider.mouse_force_pass_scroll_events:
 			wheel_safe += 1
-	check(wheel_safe == all_sliders.size() and all_sliders.size() == 7,
+	check(wheel_safe == all_sliders.size() and all_sliders.size() == 14,
 		"every slider declines the wheel and lets it climb to the scroll container (%d/%d)"
 			% [wheel_safe, all_sliders.size()])
 

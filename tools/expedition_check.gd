@@ -93,6 +93,16 @@ func _run() -> void:
 	check(dock.get("_seed_field").editable, "a solo player can choose the island")
 	check(bool(dock.call("sail_enabled")), "SET SAIL is enabled for a solo player")
 	check(String(dock.get("_sail_button").text) == "SET SAIL", "the primary action reads SET SAIL")
+	var settings: Node = root.get_node_or_null(^"SettingsService")
+	if settings != null:
+		settings.call(&"set_streamer_mode", true)
+		await process_frame
+		check(bool((dock.get("_seed_field") as LineEdit).secret),
+			"Streamer Mode masks the shareable run seed live")
+		settings.call(&"set_streamer_mode", false)
+		await process_frame
+		check(not bool((dock.get("_seed_field") as LineEdit).secret),
+			"disabling Streamer Mode restores the seed field")
 
 	# Typing a seed stages it into GameState and nowhere else.
 	var state: Node = root.get_node_or_null(^"/root/GameState")

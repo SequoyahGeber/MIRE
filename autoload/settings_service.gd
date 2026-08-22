@@ -103,6 +103,20 @@ const DEFAULTS: Dictionary = {
 	&"invert_y": false,
 	&"fov_degrees": 75.0,
 	&"reduce_camera_motion": false,
+	&"ui_scale": 1.0,
+	&"camera_shake_intensity": 1.0,
+	&"foliage_quality": -1,
+	&"shadow_quality": -1,
+	&"shadow_distance": -1,
+	&"volumetric_fog": -1,
+	&"left_stick_deadzone": 0.2,
+	&"right_stick_deadzone": 0.2,
+	&"controller_vibration": 1.0,
+	&"crosshair_size": 1.0,
+	&"crosshair_opacity": 1.0,
+	&"crosshair_colour": "ffffff",
+	&"crosshair_high_contrast": false,
+	&"streamer_mode": false,
 	&"guidance_mode": 0,
 	&"guide_tips_seen": [],
 }
@@ -142,6 +156,20 @@ var _gamepad_look_sensitivity: float = 180.0
 var _invert_y: bool = false
 var _fov_degrees: float = 75.0
 var _reduce_camera_motion: bool = false
+var _ui_scale: float = 1.0
+var _camera_shake_intensity: float = 1.0
+var _foliage_quality: int = -1
+var _shadow_quality: int = -1
+var _shadow_distance: int = -1
+var _volumetric_fog: int = -1
+var _left_stick_deadzone: float = 0.2
+var _right_stick_deadzone: float = 0.2
+var _controller_vibration: float = 1.0
+var _crosshair_size: float = 1.0
+var _crosshair_opacity: float = 1.0
+var _crosshair_colour: String = "ffffff"
+var _crosshair_high_contrast: bool = false
+var _streamer_mode: bool = false
 ## Task 3.19. 0 FULL · 1 OBJECTIVES ONLY · 2 OFF — see `GuideService.Mode`, which owns the meaning;
 ## this file only stores and persists the number, the same way it does for `graphics_preset`.
 var _guidance_mode: int = 0
@@ -166,8 +194,19 @@ func graphics_preset() -> int:
 	return _graphics_preset
 
 
+func graphics_selection() -> int:
+	return 3 if _foliage_quality >= 0 or _shadow_quality >= 0 or _shadow_distance >= 0 \
+		or _volumetric_fog >= 0 else _graphics_preset
+
+
 func set_graphics_preset(preset: int) -> void:
+	if preset > 2:
+		return
 	_graphics_preset = clampi(preset, 0, 2)
+	_foliage_quality = -1
+	_shadow_quality = -1
+	_shadow_distance = -1
+	_volumetric_fog = -1
 	_apply_graphics()
 	_save()
 	settings_changed.emit()
@@ -340,6 +379,68 @@ func reduce_camera_motion() -> bool:
 
 func set_reduce_camera_motion(value: bool) -> void:
 	_reduce_camera_motion = value
+	_save()
+	settings_changed.emit()
+
+
+func ui_scale() -> float: return _ui_scale
+func camera_shake_intensity() -> float: return 0.0 if _reduce_camera_motion else _camera_shake_intensity
+func foliage_quality() -> int: return _foliage_quality
+func shadow_quality() -> int: return _shadow_quality
+func shadow_distance() -> int: return _shadow_distance
+func volumetric_fog() -> int: return _volumetric_fog
+func left_stick_deadzone() -> float: return _left_stick_deadzone
+func right_stick_deadzone() -> float: return _right_stick_deadzone
+func controller_vibration() -> float: return _controller_vibration
+func crosshair_size() -> float: return _crosshair_size
+func crosshair_opacity() -> float: return _crosshair_opacity
+func crosshair_colour() -> String: return _crosshair_colour
+func crosshair_high_contrast() -> bool: return _crosshair_high_contrast
+func streamer_mode() -> bool: return _streamer_mode
+
+func set_ui_scale(value: float) -> void:
+	_ui_scale = clampf(value, 1.0, 1.5)
+	_apply_ui_scale()
+	_save()
+	settings_changed.emit()
+func set_camera_shake_intensity(value: float) -> void: _set_advanced(&"camera_shake_intensity", clampf(value, 0.0, 1.0))
+func set_foliage_quality(value: int) -> void: _set_graphics_override(&"foliage_quality", clampi(value, -1, 2))
+func set_shadow_quality(value: int) -> void: _set_graphics_override(&"shadow_quality", clampi(value, -1, 2))
+func set_shadow_distance(value: int) -> void: _set_graphics_override(&"shadow_distance", clampi(value, -1, 2))
+func set_volumetric_fog(value: int) -> void: _set_graphics_override(&"volumetric_fog", clampi(value, -1, 1))
+func set_left_stick_deadzone(value: float) -> void:
+	_left_stick_deadzone = clampf(value, 0.0, 0.5)
+	_apply_deadzones()
+	_save()
+	settings_changed.emit()
+func set_right_stick_deadzone(value: float) -> void:
+	_right_stick_deadzone = clampf(value, 0.0, 0.5)
+	_apply_deadzones()
+	_save()
+	settings_changed.emit()
+func set_controller_vibration(value: float) -> void: _set_advanced(&"controller_vibration", clampf(value, 0.0, 1.0))
+func set_crosshair_size(value: float) -> void: _set_advanced(&"crosshair_size", clampf(value, 0.5, 2.0))
+func set_crosshair_opacity(value: float) -> void: _set_advanced(&"crosshair_opacity", clampf(value, 0.1, 1.0))
+func set_crosshair_colour(value: String) -> void:
+	var colour := Color.from_string(value, Color.WHITE)
+	_set_advanced(&"crosshair_colour", colour.to_html(false))
+func set_crosshair_high_contrast(value: bool) -> void: _set_advanced(&"crosshair_high_contrast", value)
+func set_streamer_mode(value: bool) -> void: _set_advanced(&"streamer_mode", value)
+
+func vibrate_controller(weak: float, strong: float, duration: float, device: int = 0) -> void:
+	if _controller_vibration <= 0.0 or duration <= 0.0:
+		return
+	Input.start_joy_vibration(device, clampf(weak, 0.0, 1.0) * _controller_vibration,
+		clampf(strong, 0.0, 1.0) * _controller_vibration, duration)
+
+func _set_advanced(property: StringName, value: Variant) -> void:
+	set("_" + String(property), value)
+	_save()
+	settings_changed.emit()
+
+func _set_graphics_override(property: StringName, value: int) -> void:
+	set("_" + String(property), value)
+	_apply_graphics()
 	_save()
 	settings_changed.emit()
 
@@ -559,6 +660,20 @@ func capture_state() -> Dictionary:
 		&"invert_y": _invert_y,
 		&"fov_degrees": _fov_degrees,
 		&"reduce_camera_motion": _reduce_camera_motion,
+		&"ui_scale": _ui_scale,
+		&"camera_shake_intensity": _camera_shake_intensity,
+		&"foliage_quality": _foliage_quality,
+		&"shadow_quality": _shadow_quality,
+		&"shadow_distance": _shadow_distance,
+		&"volumetric_fog": _volumetric_fog,
+		&"left_stick_deadzone": _left_stick_deadzone,
+		&"right_stick_deadzone": _right_stick_deadzone,
+		&"controller_vibration": _controller_vibration,
+		&"crosshair_size": _crosshair_size,
+		&"crosshair_opacity": _crosshair_opacity,
+		&"crosshair_colour": _crosshair_colour,
+		&"crosshair_high_contrast": _crosshair_high_contrast,
+		&"streamer_mode": _streamer_mode,
 		&"keybinds": _keybinds.duplicate(),
 		&"joypad_binds": _joypad_binds.duplicate(),
 	}
@@ -602,6 +717,7 @@ func apply_state(state: Dictionary) -> void:
 	_invert_y = bool(state.get(&"invert_y", _invert_y))
 	_fov_degrees = clampf(float(state.get(&"fov_degrees", _fov_degrees)), MIN_FOV, MAX_FOV)
 	_reduce_camera_motion = bool(state.get(&"reduce_camera_motion", _reduce_camera_motion))
+	_load_advanced(state)
 
 	_apply_keybind_state(
 		state.get(&"keybinds", _keybinds) as Dictionary,
@@ -652,6 +768,9 @@ func _apply_graphics() -> void:
 	if gfx != null and gfx.has_method("apply"):
 		gfx.call("apply", _graphics_preset)
 		gfx.call("set_player_overrides", _ssao_override, _brightness)
+		if gfx.has_method(&"set_advanced_overrides"):
+			gfx.call(&"set_advanced_overrides", _foliage_quality, _shadow_quality,
+				_shadow_distance, _volumetric_fog)
 		gfx.call("set_dynamic_scale", _dynamic_resolution, float(_fps_cap))
 
 
@@ -752,6 +871,7 @@ func _load() -> void:
 	_fov_degrees = clampf(float(data.get(&"fov_degrees", DEFAULTS[&"fov_degrees"])), MIN_FOV, MAX_FOV)
 	_reduce_camera_motion = bool(
 		data.get(&"reduce_camera_motion", DEFAULTS[&"reduce_camera_motion"]))
+	_load_advanced(data)
 	_guidance_mode = clampi(int(data.get(&"guidance_mode", DEFAULTS[&"guidance_mode"])), 0, 2)
 	_guide_tips_seen.clear()
 	for raw: Variant in data.get(&"guide_tips_seen", []):
@@ -787,6 +907,40 @@ func _apply_values() -> void:
 	_apply_bus_volume(&"Master", _master_volume)
 	_apply_bus_volume(MUSIC_BUS, _music_volume)
 	_apply_bus_volume(SFX_BUS, _sfx_volume)
+	_apply_ui_scale()
+	_apply_deadzones()
+
+
+func _apply_ui_scale() -> void:
+	var window: Window = get_tree().root
+	if window != null:
+		window.content_scale_factor = _ui_scale
+
+
+func _apply_deadzones() -> void:
+	for action: StringName in [&"move_forward", &"move_back", &"move_left", &"move_right"]:
+		if InputMap.has_action(action):
+			InputMap.action_set_deadzone(action, _left_stick_deadzone)
+	for action: StringName in [&"look_up", &"look_down", &"look_left", &"look_right"]:
+		if InputMap.has_action(action):
+			InputMap.action_set_deadzone(action, _right_stick_deadzone)
+
+
+func _load_advanced(data: Dictionary) -> void:
+	_ui_scale = clampf(float(data.get(&"ui_scale", DEFAULTS[&"ui_scale"])), 1.0, 1.5)
+	_camera_shake_intensity = clampf(float(data.get(&"camera_shake_intensity", DEFAULTS[&"camera_shake_intensity"])), 0.0, 1.0)
+	_foliage_quality = clampi(int(data.get(&"foliage_quality", DEFAULTS[&"foliage_quality"])), -1, 2)
+	_shadow_quality = clampi(int(data.get(&"shadow_quality", DEFAULTS[&"shadow_quality"])), -1, 2)
+	_shadow_distance = clampi(int(data.get(&"shadow_distance", DEFAULTS[&"shadow_distance"])), -1, 2)
+	_volumetric_fog = clampi(int(data.get(&"volumetric_fog", DEFAULTS[&"volumetric_fog"])), -1, 1)
+	_left_stick_deadzone = clampf(float(data.get(&"left_stick_deadzone", DEFAULTS[&"left_stick_deadzone"])), 0.0, 0.5)
+	_right_stick_deadzone = clampf(float(data.get(&"right_stick_deadzone", DEFAULTS[&"right_stick_deadzone"])), 0.0, 0.5)
+	_controller_vibration = clampf(float(data.get(&"controller_vibration", DEFAULTS[&"controller_vibration"])), 0.0, 1.0)
+	_crosshair_size = clampf(float(data.get(&"crosshair_size", DEFAULTS[&"crosshair_size"])), 0.5, 2.0)
+	_crosshair_opacity = clampf(float(data.get(&"crosshair_opacity", DEFAULTS[&"crosshair_opacity"])), 0.1, 1.0)
+	_crosshair_colour = Color.from_string(String(data.get(&"crosshair_colour", DEFAULTS[&"crosshair_colour"])), Color.WHITE).to_html(false)
+	_crosshair_high_contrast = bool(data.get(&"crosshair_high_contrast", DEFAULTS[&"crosshair_high_contrast"]))
+	_streamer_mode = bool(data.get(&"streamer_mode", DEFAULTS[&"streamer_mode"]))
 
 
 func _save() -> void:
@@ -822,6 +976,20 @@ func _save() -> void:
 		"invert_y": _invert_y,
 		"fov_degrees": _fov_degrees,
 		"reduce_camera_motion": _reduce_camera_motion,
+		"ui_scale": _ui_scale,
+		"camera_shake_intensity": _camera_shake_intensity,
+		"foliage_quality": _foliage_quality,
+		"shadow_quality": _shadow_quality,
+		"shadow_distance": _shadow_distance,
+		"volumetric_fog": _volumetric_fog,
+		"left_stick_deadzone": _left_stick_deadzone,
+		"right_stick_deadzone": _right_stick_deadzone,
+		"controller_vibration": _controller_vibration,
+		"crosshair_size": _crosshair_size,
+		"crosshair_opacity": _crosshair_opacity,
+		"crosshair_colour": _crosshair_colour,
+		"crosshair_high_contrast": _crosshair_high_contrast,
+		"streamer_mode": _streamer_mode,
 		"guidance_mode": _guidance_mode,
 		"guide_tips_seen": _seen_tip_list(),
 		"keybinds": raw_keybinds,

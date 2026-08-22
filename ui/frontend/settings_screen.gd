@@ -427,6 +427,18 @@ func _build_gamepad_page() -> Control:
 	_bind(sensitivity, "gamepad_look_sensitivity")
 	column.add_child(_slider_row(
 		"Gamepad look sensitivity", sensitivity, FocusRingSlider.Readout.DEGREES_PER_SECOND))
+	for entry: Array in [
+		["Left stick deadzone", "left_stick_deadzone", "set_left_stick_deadzone"],
+		["Right stick deadzone", "right_stick_deadzone", "set_right_stick_deadzone"],
+	]:
+		var deadzone: HSlider = MireTheme.slider(0.0, 0.5, 0.01)
+		deadzone.value_changed.connect(func(value: float) -> void: _write(String(entry[2]), value))
+		_bind(deadzone, String(entry[1]))
+		column.add_child(_slider_row(String(entry[0]), deadzone, FocusRingSlider.Readout.PERCENT))
+	var vibration: HSlider = MireTheme.slider(0.0, 1.0, 0.05)
+	vibration.value_changed.connect(func(value: float) -> void: _write("set_controller_vibration", value))
+	_bind(vibration, "controller_vibration")
+	column.add_child(_slider_row("Vibration", vibration, FocusRingSlider.Readout.PERCENT))
 
 	column.add_child(MireTheme.separator())
 	column.add_child(MireTheme.label("BUTTONS", MireTheme.CAPTION, MireTheme.MUTED))
@@ -451,6 +463,40 @@ func _build_accessibility_page() -> Control:
 	_bind(reduce, "reduce_camera_motion")
 	column.add_child(_row("Reduce motion", reduce,
 		"Stops camera shake, menu fades and the title screen's drift. Everything cuts instantly instead."))
+	var shake: HSlider = MireTheme.slider(0.0, 1.0, 0.05)
+	shake.value_changed.connect(func(value: float) -> void: _write("set_camera_shake_intensity", value))
+	_bind(shake, "camera_shake_intensity")
+	column.add_child(_slider_row("Camera shake", shake, FocusRingSlider.Readout.PERCENT,
+		"Reduce Motion always forces this to zero."))
+	var ui_scale: HSlider = MireTheme.slider(1.0, 1.5, 0.05)
+	ui_scale.value_changed.connect(func(value: float) -> void: _write("set_ui_scale", value))
+	_bind(ui_scale, "ui_scale")
+	column.add_child(_slider_row("UI scale", ui_scale, FocusRingSlider.Readout.PERCENT))
+	var crosshair_size: HSlider = MireTheme.slider(0.5, 2.0, 0.05)
+	crosshair_size.value_changed.connect(func(value: float) -> void: _write("set_crosshair_size", value))
+	_bind(crosshair_size, "crosshair_size")
+	column.add_child(_slider_row("Crosshair size", crosshair_size, FocusRingSlider.Readout.PERCENT))
+	var crosshair_opacity: HSlider = MireTheme.slider(0.1, 1.0, 0.05)
+	crosshair_opacity.value_changed.connect(func(value: float) -> void: _write("set_crosshair_opacity", value))
+	_bind(crosshair_opacity, "crosshair_opacity")
+	column.add_child(_slider_row("Crosshair opacity", crosshair_opacity, FocusRingSlider.Readout.PERCENT))
+	var contrast: CheckBox = MireTheme.toggle()
+	contrast.toggled.connect(func(value: bool) -> void: _write("set_crosshair_high_contrast", value))
+	_bind(contrast, "crosshair_high_contrast")
+	column.add_child(_row("High-contrast crosshair", contrast))
+	var colours: PackedStringArray = ["ffffff", "8ed47a", "f0b35b", "62c8ff"]
+	var colour_picker: OptionButton = MireTheme.dropdown()
+	for label: String in ["White", "Moss", "Amber", "Sky"]:
+		colour_picker.add_item(label)
+	colour_picker.item_selected.connect(func(index: int) -> void:
+		_write("set_crosshair_colour", colours[index]))
+	_bind(colour_picker, "crosshair_colour", colours)
+	column.add_child(_row("Crosshair colour", colour_picker))
+	var streamer: CheckBox = MireTheme.toggle()
+	streamer.toggled.connect(func(value: bool) -> void: _write("set_streamer_mode", value))
+	_bind(streamer, "streamer_mode")
+	column.add_child(_row("Streamer mode", streamer,
+		"Hides lobby codes, player identifiers and run seeds from shareable screens."))
 
 	column.add_child(MireTheme.separator())
 	column.add_child(MireTheme.label("GUIDANCE", MireTheme.CAPTION, MireTheme.MUTED))
@@ -698,8 +744,11 @@ func _on_restore_defaults() -> void:
 
 ## Records `control` as the view of `getter`, so `_refresh_controls()` can put a whole-state change
 ## back on screen without this file growing a member variable per row.
-func _bind(control: Control, getter: String) -> void:
-	_bound_controls.append({&"control": control, &"getter": getter})
+func _bind(control: Control, getter: String, values: Variant = null) -> void:
+	var entry: Dictionary = {&"control": control, &"getter": getter}
+	if values != null:
+		entry[&"values"] = values
+	_bound_controls.append(entry)
 
 
 ## Re-derives every value control from `SettingsService`. Signals are blocked around the write so a
@@ -717,7 +766,10 @@ func _refresh_controls() -> void:
 		control.set_block_signals(true)
 		if control is OptionButton:
 			var dropdown: OptionButton = control
-			dropdown.selected = clampi(int(value), 0, dropdown.item_count - 1)
+			if entry.has(&"values"):
+				dropdown.selected = maxi((entry[&"values"] as PackedStringArray).find(String(value)), 0)
+			else:
+				dropdown.selected = clampi(int(value), 0, dropdown.item_count - 1)
 		elif control is CheckBox:
 			(control as CheckBox).button_pressed = bool(value)
 		elif control is Range:

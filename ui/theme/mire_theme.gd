@@ -96,15 +96,12 @@ enum Variant {
 # ── Settings-derived scale (read-only; SettingsService owns the state) ────────────────────────────
 
 
-## Multiplies every font size and minimum height. 1.0 until MENU-6 adds the accessibility slider;
-## resolved through `get_node_or_null` + `call` rather than a bare `SettingsService` identifier for
-## the same harness-safety reason this whole file is preloaded (SPECS.md standing rule 1), and
-## tolerant of the service being absent so a `--script` check that boots no autoloads still works.
+## UI scale is applied once at the root Window by SettingsService. Returning the scale here as well
+## would multiply authored font/touch dimensions AND the canvas, producing 225% at a requested 150%.
+## Keep this compatibility seam for callers that express dimensions through it, but one authored
+## pixel remains one canvas pixel and the root owns the actual accessibility magnification.
 static func ui_scale() -> float:
-	var settings: Node = _settings()
-	if settings == null or not settings.has_method("ui_scale"):
-		return 1.0
-	return clampf(float(settings.call("ui_scale")), 1.0, 1.5)
+	return 1.0
 
 
 ## 1.0 normally, 0.0 when the player has asked for reduced motion. Write animations as

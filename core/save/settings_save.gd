@@ -15,7 +15,7 @@ extends RefCounted
 ## on and off disk.
 
 const SAVE_PATH: String = "user://settings.json"
-const SCHEMA_VERSION: int = 3
+const SCHEMA_VERSION: int = 4
 
 
 ## Reads `path` (defaults to `SAVE_PATH`) and returns an always-valid, always-current-schema
@@ -71,6 +71,20 @@ static func _default_data() -> Dictionary:
 		&"invert_y": false,
 		&"fov_degrees": 75.0,
 		&"reduce_camera_motion": false,
+		&"ui_scale": 1.0,
+		&"camera_shake_intensity": 1.0,
+		&"foliage_quality": -1,
+		&"shadow_quality": -1,
+		&"shadow_distance": -1,
+		&"volumetric_fog": -1,
+		&"left_stick_deadzone": 0.2,
+		&"right_stick_deadzone": 0.2,
+		&"controller_vibration": 1.0,
+		&"crosshair_size": 1.0,
+		&"crosshair_opacity": 1.0,
+		&"crosshair_colour": "ffffff",
+		&"crosshair_high_contrast": false,
+		&"streamer_mode": false,
 		&"guidance_mode": 0,
 		&"guide_tips_seen": [],
 		&"keybinds": {},
@@ -107,5 +121,15 @@ static func _migrate(data: Dictionary) -> Dictionary:
 			if not data.has(String(key)):
 				data[String(key)] = defaults[key]
 		version = 3
+	if version < 4:
+		var defaults: Dictionary = _default_data()
+		for key: StringName in [&"ui_scale", &"camera_shake_intensity", &"foliage_quality",
+				&"shadow_quality", &"shadow_distance", &"volumetric_fog",
+				&"left_stick_deadzone", &"right_stick_deadzone", &"controller_vibration",
+				&"crosshair_size", &"crosshair_opacity", &"crosshair_colour",
+				&"crosshair_high_contrast", &"streamer_mode"]:
+			if not data.has(String(key)):
+				data[String(key)] = defaults[key]
+		version = 4
 	data["schema_version"] = version
 	return data
