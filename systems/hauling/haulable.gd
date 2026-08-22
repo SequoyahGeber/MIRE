@@ -25,6 +25,11 @@ const HAULABLE_GROUP: StringName = &"haulable"
 ## DESIGN.md §4.5: heavy hauling is a 2-player mechanic. A third requester is refused, not queued.
 const MAX_CARRIERS: int = 2
 
+## KEPT DELIBERATELY, though nothing in the shipped tree connects it (F-576). `tools/haul_check.gd` and
+## `tools/haul_net_check.gd` are the only consumers of this pair; they are how both checks read
+## the accept/refuse outcome of a request, including the MAX_CARRIERS refusal.
+## Deleting it would not simplify anything — it would delete that coverage, or force the
+## check to infer the same fact from state, which is what it is here to avoid.
 signal pickup_confirmed(request_id: int, accepted: bool, reason: String)
 signal drop_confirmed(request_id: int, accepted: bool, reason: String)
 ## Host-side and replicated (ON_CHANGE) — everyone sees who is carrying, not just the carriers.

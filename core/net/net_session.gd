@@ -56,6 +56,10 @@ signal session_ended(reason: EndReason, detail: String)
 ## Client-side. Contact was lost and a rejoin is starting. Between this and either [signal rejoined]
 ## or [signal session_ended] the world is already gone — PlayerNet clears on disconnect — so this is
 ## the cue for "Reconnecting…", not for keeping the game running.
+## KEPT DELIBERATELY, though nothing in the shipped tree connects it (F-576). `tools/session_lifecycle_check.gd:391` is its
+## only consumer, and this is how that check observes an interrupted session at all.
+## Deleting it would not simplify anything — it would delete that coverage, or force the
+## check to infer the same fact from state, which is what it is here to avoid.
 signal connection_interrupted(detail: String)
 signal rejoin_attempted(attempt: int, of: int)
 signal rejoined()
@@ -72,6 +76,10 @@ signal connect_failed(detail: String)
 
 ## Host-side. A peer was turned away, with the reason it was given. Capacity/policy refusals happen
 ## before admission; a version refusal happens just after connection and is immediately despawned.
+## KEPT DELIBERATELY, though nothing in the shipped tree connects it (F-576). `tools/session_lifecycle_check.gd:150` is its
+## only consumer, and a refusal is otherwise invisible from outside the host.
+## Deleting it would not simplify anything — it would delete that coverage, or force the
+## check to infer the same fact from state, which is what it is here to avoid.
 signal peer_refused(peer_id: int, detail: String)
 
 ## F-032. A reconnecting client arrives under a NEW peer id, and every host-owned system keys its

@@ -80,7 +80,6 @@ const MAX_LEAN_DEG: float = 5.0
 ## enemies join it too and CombatService needs no change when they do.
 const DAMAGEABLE_GROUP: StringName = &"damageable"
 
-signal hit_accepted(peer_id: int, damage: int, health_remaining: int)
 signal depleted(peer_id: int, item_id: StringName, amount: int)
 signal respawned
 
@@ -93,8 +92,10 @@ signal respawned
 
 ## Replicated state. Setters keep presentation correct when a network delta arrives on a client.
 ##
-## F-391 hangs the destruction feedback here, and deliberately NOT on `hit_accepted`: that signal
-## fires on the HOST only, so a client watching a teammate fell a tree got nothing at all. `health`
+## F-391 hangs the destruction feedback here, and deliberately NOT on a damage signal: there was a
+## host-only `hit_accepted` alongside this, so a client watching a teammate fell a tree got nothing
+## at all — F-576 deleted it once F-391 had made it redundant and nothing else had picked it up.
+## `health`
 ## is a replicated on-change property, which means this setter runs on every peer — the host's copy
 ## from `host_apply_damage()`, a client's from the MultiplayerSynchronizer delta — off a value
 ## everyone already has. Presentation only: the host still owns whether the node broke, and no new
@@ -243,7 +244,6 @@ func host_apply_tool_damage(tool_class: int, harvest_power: int, instigator_peer
 		definition.damage_from_tool(tool_class, harvest_power), instigator_peer_id
 	)
 	if amount <= 0:
-		hit_accepted.emit(instigator_peer_id, 0, health)
 		return true
 	return host_apply_damage(amount, instigator_peer_id)
 
@@ -256,7 +256,6 @@ func host_apply_damage(amount: int, instigator_peer_id: int) -> bool:
 
 	health = maxi(health - amount, 0)
 	visual_state = _state_for_health(health)
-	hit_accepted.emit(instigator_peer_id, amount, health)
 
 	if health == 0:
 		_deplete(instigator_peer_id)

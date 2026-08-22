@@ -38,11 +38,6 @@ signal connected_to_host()
 signal server_started()
 signal disconnected()
 
-## F-157: the peer id -> display name map changed. Fires on the host (who applied/decided it) and on
-## every peer that received the broadcast or the joining snapshot — same "everyone ends up agreeing"
-## shape as peer_joined/peer_left, just for a name instead of membership.
-signal display_name_changed(peer_id: int, display_name: String)
-
 ## Private on purpose — callers branch on is_host() / is_active() / current_mode(), not on this.
 enum _Status { OFFLINE, HOSTING, CONNECTING, CONNECTED }
 
@@ -677,7 +672,6 @@ func net_request_display_name(raw_name: String) -> void:
 @rpc("authority", "call_remote", "reliable")
 func net_display_name_changed(peer_id: int, name: String) -> void:
 	_display_names[peer_id] = name
-	display_name_changed.emit(peer_id, name)
 
 
 ## Host -> one newly admitted peer: the full map as it stands, so a joiner sees every existing
@@ -690,7 +684,6 @@ func net_display_name_snapshot(names: Dictionary) -> void:
 		var id: int = int(id_v)
 		var name: String = String(names[id_v])
 		_display_names[id] = name
-		display_name_changed.emit(id, name)
 
 
 ## The only writer of _display_names. Applies the sanitized name and — since this may be called for
@@ -702,7 +695,6 @@ func _host_apply_display_name(peer_id: int, raw_name: String) -> void:
 	if String(_display_names.get(peer_id, "")) == name:
 		return
 	_display_names[peer_id] = name
-	display_name_changed.emit(peer_id, name)
 	if _status == _Status.HOSTING:
 		net_display_name_changed.rpc(peer_id, name)
 

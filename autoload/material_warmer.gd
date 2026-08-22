@@ -93,8 +93,6 @@ const RUNTIME_SPATIAL_SHADERS: Array[String] = [
 	"res://world/environment/particle_billboard.gdshader",
 ]
 
-signal warm_completed(asset_count: int)
-
 var _viewport: SubViewport
 var _camera: Camera3D
 var _pending: PackedStringArray = PackedStringArray()
@@ -309,7 +307,6 @@ func _teardown() -> void:
 	_camera = null
 	MireLog.info(&"perf", "MaterialWarmer: pre-warmed %d asset(s) and %d runtime shader(s)"
 		% [_warmed_count, RUNTIME_SPATIAL_SHADERS.size()])
-	warm_completed.emit(_warmed_count)
 
 
 # ── test seams ────────────────────────────────────────────────────────────────────────────────────

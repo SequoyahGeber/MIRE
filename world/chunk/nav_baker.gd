@@ -64,9 +64,6 @@ const NAV_OWNER_GROUP: StringName = &"navigation_map_owner"
 ## has no collider would walk on nothing.
 const NAV_LOD: int = 0
 
-signal region_ready(coord: Vector2i)
-signal region_retired(coord: Vector2i)
-
 var world_seed: int = 0
 
 ## Adopted from the streamer in `bind()` — see the note there. Never set independently: two tables
@@ -289,7 +286,6 @@ func _attach(coord: Vector2i, nav_mesh: NavigationMesh) -> void:
 	NavigationServer3D.region_set_use_edge_connections(region, true)
 	NavigationServer3D.region_set_navigation_mesh(region, nav_mesh)
 	_regions[coord] = {"region": region, "nav_mesh": nav_mesh}
-	region_ready.emit(coord)
 
 
 func _retire(coord: Vector2i) -> void:
@@ -299,7 +295,6 @@ func _retire(coord: Vector2i) -> void:
 		return
 	_regions.erase(coord)
 	NavigationServer3D.free_rid(entry["region"] as RID)
-	region_retired.emit(coord)
 
 
 # ── Geometry ─────────────────────────────────────────────────────────────────────────────────────

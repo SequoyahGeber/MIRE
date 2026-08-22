@@ -88,8 +88,6 @@ const TOAST_SECONDS: float = 3.0
 signal screen_pushed(screen: Control)
 ## Emitted after a screen is removed. The screen may already be queued for free.
 signal screen_popped(screen: Control)
-## Emitted when the last screen pops — the front end is showing nothing of its own.
-signal stack_emptied()
 ## Emitted when `ui_cancel` arrives with an empty stack. The pause menu's cue (MENU-5). A listener
 ## that pushes a screen in response causes the press to be consumed; one that ignores it leaves the
 ## press to whoever else is listening, which is what keeps the un-migrated panels working.
@@ -248,8 +246,6 @@ func pop() -> bool:
 		_grab_default_focus(below)
 
 	screen_popped.emit(screen)
-	if _stack.is_empty():
-		stack_emptied.emit()
 	return true
 
 

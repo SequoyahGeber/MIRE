@@ -47,6 +47,10 @@ const MINIMAP_SIDE: float = 268.0
 ## enough that a row stays a row rather than becoming a ribbon on a wide monitor.
 const PAGE_WIDTH: float = 1120.0
 
+## KEPT DELIBERATELY, though nothing in the shipped tree connects it (F-576), and it is a genuine
+## duplicate of the path that does the work: `request_host_and_sail()` calls `enter_world()` on the
+## frontend directly on the very next line. `tools/expedition_check.gd:79` is its only consumer and
+## uses it to assert that setting sail actually happened, which the direct call cannot report.
 signal sail_requested()
 
 var _party_box: VBoxContainer

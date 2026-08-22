@@ -291,8 +291,6 @@ signal piece_selected(piece_id: StringName)
 ## Emitted only by a pointer click on a piece, after piece_selected. Bound cycling intentionally
 ## keeps the picker open; a mouse choice transitions into captured first-person placement (F-571).
 signal placement_aim_requested
-## Emitted when the open tab changes, for checks and for anything that later wants to react to it.
-signal category_changed(category: StringName)
 
 var _root: Control
 var _bar_center: CenterContainer
@@ -393,7 +391,6 @@ func set_selected_piece(piece_id: StringName) -> void:
 	if owning != &"" and owning != _open_category:
 		_open_category = owning
 		_present_category()
-		category_changed.emit(_open_category)
 	for slot: PieceSlot in _slots:
 		var armed: bool = slot.piece_id == piece_id
 		slot.present(armed)
@@ -450,7 +447,6 @@ func step_category(direction: int) -> void:
 	var current: int = _categories.find(_open_category)
 	_open_category = _categories[wrapi(maxi(current, 0) + direction, 0, _categories.size())]
 	_present_category()
-	category_changed.emit(_open_category)
 	var bucket: Array = _open_slots()
 	if not bucket.is_empty():
 		piece_selected.emit((bucket[0] as PieceSlot).piece_id)
@@ -729,7 +725,6 @@ func _on_tab_pressed(category: StringName) -> void:
 		return
 	_open_category = category
 	_present_category()
-	category_changed.emit(category)
 	# F-571: a tab click is browsing, not a piece choice. Emitting piece_selected here made the
 	# picker-to-aim transition fire before the player could click an item on the newly opened tab.
 
