@@ -215,7 +215,7 @@
     },
     "docs/FINDINGS.md": {
       "agent": "moss8598bb",
-      "at": "2026-08-22T06:20:06+00:00",
+      "at": "2026-08-22T06:50:48+00:00",
       "dirty_at_claim": true,
       "task": "F-291",
       "token": "CLAUDE_CODE_SESSION_ID:ba8e8bdc-1c55-4638-b9e8-b5fc2b5623fd"
@@ -309,8 +309,8 @@
     },
     "tools/blocking_ui_event_check.gd": {
       "agent": "moss8598bb",
-      "at": "2026-08-22T06:20:06+00:00",
-      "dirty_at_claim": false,
+      "at": "2026-08-22T06:50:48+00:00",
+      "dirty_at_claim": true,
       "task": "F-291",
       "token": "CLAUDE_CODE_SESSION_ID:ba8e8bdc-1c55-4638-b9e8-b5fc2b5623fd"
     },
@@ -341,13 +341,6 @@
       "task": "F-302",
       "token": "CLAUDE_CODE_SESSION_ID:9f85a50f-dcca-4078-b6c0-522f46a43f77"
     },
-    "tools/nav_bake_check.gd": {
-      "agent": "cinder9818da",
-      "at": "2026-08-22T05:56:04+00:00",
-      "dirty_at_claim": false,
-      "task": "F-292",
-      "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
-    },
     "tools/run_reseed_net_check.gd": {
       "agent": "coil8be837",
       "at": "2026-08-22T06:07:50+00:00",
@@ -361,6 +354,13 @@
       "dirty_at_claim": false,
       "task": "F-543",
       "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
+    },
+    "tools/terminal_focus_check.gd": {
+      "agent": "moss8598bb",
+      "at": "2026-08-22T06:50:48+00:00",
+      "dirty_at_claim": false,
+      "task": "F-291",
+      "token": "CLAUDE_CODE_SESSION_ID:ba8e8bdc-1c55-4638-b9e8-b5fc2b5623fd"
     },
     "tools/world_contract_check.gd": {
       "agent": "coil8be837",
@@ -425,20 +425,12 @@
       "agent": "moss8598bb",
       "files": [
         "tools/blocking_ui_event_check.gd",
-        "docs/FINDINGS.md"
+        "docs/FINDINGS.md",
+        "tools/terminal_focus_check.gd"
       ],
       "notes": [],
       "started": "2026-08-22T06:20:03+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:ba8e8bdc-1c55-4638-b9e8-b5fc2b5623fd"
-    },
-    "F-292": {
-      "agent": "cinder9818da",
-      "files": [
-        "tools/nav_bake_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-22T05:56:04+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
     },
     "F-302": {
       "agent": "coil8be837",
@@ -3234,11 +3226,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "docs/FINDINGS.md": {
-      "agent": "larch543bba",
-      "at": "2026-08-22T06:44:24+00:00",
+      "agent": "coil8be837",
+      "at": "2026-08-22T06:51:56+00:00",
       "hash": null,
-      "task": "F-543",
-      "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
+      "task": "F-272",
+      "token": "CLAUDE_CODE_SESSION_ID:9f85a50f-dcca-4078-b6c0-522f46a43f77"
     },
     "docs/ITEMS.md": {
       "agent": "nettled7199c",
@@ -4239,6 +4231,15 @@
       "task": "F-493",
       "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
+    "tools/nav_bake_check.gd": {
+      "agent": "cinder9818da",
+      "at": "2026-08-22T06:51:49+00:00",
+      "claimed_at": "2026-08-22T05:56:04+00:00",
+      "dirty_at_claim": false,
+      "hash": "72e9841c2b5d8c84484849834929bdefffbcfaf17855819e84582d2eff52fb98",
+      "task": "F-292",
+      "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
+    },
     "tools/ocean_glint_shot.gd": {
       "agent": "nettlee11674",
       "at": "2026-08-22T03:04:15+00:00",
@@ -4888,7 +4889,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1582,
+  "rev": 1585,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9048,7 +9049,7 @@
     "F-292": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "F",
       "title": "tools/nav_bake_check.gd has had 4 failures at HEAD since the 4.13/4.14 terrain retune \u2014 the island has no gentle chunk-boundary strip at its 30-degree gate"
     },
