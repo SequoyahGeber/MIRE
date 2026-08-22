@@ -3487,7 +3487,71 @@ come first.
 
 ---
 
+### F-526 · Teammate revive interaction does not revive a downed player
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivyf16b98
+
+Multiplayer playtest report from Sequoyah on 2026-08-21: when a teammate was downed, the other player could not revive them. Reproduce with two real peers, verify the revive prompt/interact path reaches the host, and verify authoritative health/downed state plus both peers' UI after completion. Treat as a multiplayer gameplay failure, not only missing presentation.
+
+---
+
+### F-527 · Build menu again leaves the cursor captive, preventing station and item selection
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivyf16b98
+
+Multiplayer playtest report from Sequoyah on 2026-08-21: with the build menu open, the cursor remains captured and there is no usable way to choose a station or item to build. This is a live regression or incomplete UX relative to resolved F-483. Reproduce from the actual player flow with mouse and keyboard, including selecting a station recipe/buildable rather than merely cycling a generic piece in an automated harness. Verify the player can discover and operate selection while placement aiming remains usable.
+
+---
+
+### F-528 · Procedural map chest and loose-loot density is far below the intended scavenging experience
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivyf16b98
+
+Multiplayer playtest report from Sequoyah on 2026-08-21: only one chest could be found across the map. Direction is roughly 50 times more discoverable chests than this observed run, plus loot items distributed around the map. This is a content-density/discoverability regression or insufficient resolution relative to F-511, which proved 13 live chests and added locators but did not meet the play experience. Establish an explicit map-scaled chest target and loose-loot placement contract, then verify counts and spatial distribution over multiple deterministic seeds and visually in a real gameplay run; preserve host authority for opening/pickup state.
+
+---
+
+### F-529 · A rejoining player can inherit the host camera viewport and visor overlay
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivyf16b98
+
+Multiplayer playtest report from Sequoyah on 2026-08-21: after the other player rejoined the host's game, that player's view appeared to be through the host's viewport, with the host's black visor blocking most of the screen. Reproduce a disconnect/rejoin with two real rendered peers and verify local camera ownership, current-camera selection, viewmodel/visor ownership, and late-spawn cleanup/rebind. The reconnect state tests are insufficient unless each process renders from its own player camera with only its own presentation nodes visible.
+
+---
+
+### F-530 · Class selection can open while the mouse is captured and become impossible to dismiss
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivyf16b98
+
+Multiplayer playtest report from Sequoyah on 2026-08-21: sometimes the cursor is forcibly captured while the class-selection menu is open, and the menu cannot be bypassed. Reproduce through the real lobby/landfall/rejoin flows, not only direct UI construction. A cursor-owning blocking menu must keep the mouse visible and operable, and the mandatory class choice must always expose a working selection/confirmation path. Verify focus, mouse mode, and dismissal on both host and client, including timing races during player spawn and reconnect.
+
+---
+
+### F-531 · Wellspring capture eventually triggers an overwhelming unbounded enemy flood
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivyf16b98
+
+Multiplayer playtest report from Sequoyah on 2026-08-21: while capping a Wellspring, far too many enemies begin spawning after the capture has run for a while. Reproduce a sustained capture with the real host-authoritative Wellspring and wave/spawn services, measure concurrent live enemies and spawn rate over time, and enforce an explicit encounter budget with recovery after capture stops/completes. Verification must cover the late portion where accumulation occurs, not only initial spawns, and must prove clients never spawn enemies themselves.
+
+---
+
 ## Resolved
+
+### F-532 · Water animation accelerates while sprinting — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by cinder7f5a42
+
+`world/gen/procedural_world.gd::_physics_process()` calls `_center_ocean_on()` every physics frame, translating the Ocean mesh by the player's full XZ movement. `world/environment/water_low_poly.gdshader` derives every wave phase from MODEL_MATRIX world position, so sprint velocity is added directly to the apparent phase velocity and the water goes frantic. Keep the finite ocean under the viewer without continuously translating the shader's spatial phase; add a focused regression check that ordinary movement does not recenter it every frame.
+
+**Resolved 2026-08-22 by cinder7f5a42.** Fixed `world/gen/procedural_world.gd` so its 1,400 m Ocean mesh recenters only after the local viewer has moved 256 m from the mesh centre, rather than inheriting every frame of player/sprint movement. This removes player velocity from the world-position shader phase while retaining 444 m of water beyond the viewer at the deadband edge. Extended `tools/procedural_world_check.gd` to prove ordinary movement leaves the ocean fixed and long traversal still recenters it. Verified with `.agent/bin/agent godot --script tools/procedural_world_check.gd`: all checks pass, `PROCEDURAL_WORLD_CHECK failures=0` (the check retains existing shutdown RID diagnostics).
+
+### F-525 · macOS release shader cache crashes on launch — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by slatef9bff1
+
+The macOS release preset bakes shader containers that Godot 4.7.1 fails to parse at runtime on macOS 27 / Apple M5 Pro and macOS 26 / Apple M1. A real windowed exported-app launch reproduces `Not enough bytes for uniform in shader container`, `Failed to parse shader container from binary`, then fatal `Index p_index = 19 is out of bounds`; headless smoke missed the renderer path. Disable shader baking for the macOS release so shaders compile on first launch, and gate the export with a real windowed Metal smoke run.
+
+**Resolved 2026-08-22 by slatef9bff1.** Disabled `shader_baker/enabled` for the macOS release preset. Re-exported the app with no baked shader containers, then ran the exported app through a real Metal 4.0 Forward+ window on macOS 27 / Apple M5 Pro with a fresh runtime cache: it stayed up and exited 0 after 30 seconds; the prior baked build deterministically exited 133 with the reported parse errors and fatal. The clean staged bundle and the bundle extracted from its ZIP both passed `codesign --verify --deep --strict`; archive SHA-256 is `65865aadbd402f3823a163dca735ba981a5aa546f1bb6943631f58d037b198ba`.
 
 ### F-520 · Steam invite is a silent no-op and opening a lobby captures the mouse behind the menu — **fixed**
 
