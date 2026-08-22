@@ -8868,3 +8868,18 @@ Recipes split across furnace/workbench/anvil; smithed goods now require the anvi
 Files: `content/recipes/iron_axe.tres`, `content/recipes/iron_pickaxe.tres`, `content/recipes/iron_sword.tres`, `content/recipes/cleaver.tres`, `content/recipes/repair_hammer.tres`, `content/recipes/skewer.tres`, `content/recipes/arrow.tres`, `content/recipes/short_bow.tres`, `content/recipes/stone_axe.tres`, `content/recipes/stone_pickaxe.tres`, `content/recipes/wooden_axe.tres`, `content/recipes/wooden_pickaxe.tres`, `tools/crafting_ui_check.gd`, `tools/recipe_station_check.gd`
 
 Commit at time of writing: `2d5b78d`
+
+---
+
+### DONE · F-483 · galee581ee · 2026-08-22T00:53:18+00:00
+
+**Build mode's piece picker is unreachable: cursor stays captured and the wrapped bar hides the ghost**
+
+Build bar is one row above the hotbar with STRUCTURE/DEFENCE/STATION tabs, and pieces are picked with bound input (wheel, R3/BACK, Z/C) since build mode keeps the cursor captured.
+
+Notes along the way:
+- One row + tabs shipped; picker is bound input (wheel/R3/BACK for pieces, Z/C for tabs). Shoulder buttons are unusable — InventoryUI wins _input.
+
+Files: `ui/building/build_bar.gd`, `systems/building/buildable_def.gd`, `project.godot`, `content/buildables/anvil.tres`, `content/buildables/barricade.tres`, `content/buildables/barricade_spike.tres`, `content/buildables/bridge.tres`, `content/buildables/campfire.tres`, `content/buildables/cooking_spit.tres`, `content/buildables/dock.tres`, `content/buildables/door.tres`, `content/buildables/floor.tres`, `content/buildables/furnace.tres`, `content/buildables/gate.tres`, `content/buildables/ladder.tres`, `content/buildables/palisade.tres`, `content/buildables/palisade_gate.tres`, `content/buildables/ramp.tres`, `content/buildables/repair_bench.tres`, `content/buildables/wall.tres`, `content/buildables/ward.tres`, `content/buildables/ward_post.tres`, `content/buildables/woodcutting_block.tres`, `content/buildables/workbench.tres`, `content/buildables/workbench_upgraded.tres`
+
+Commit at time of writing: `da66a8a`

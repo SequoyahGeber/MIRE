@@ -7,6 +7,7 @@
 [resource]
 script = ExtResource("1_buildabledef")
 icon = ExtResource("ic_cooking_spit")
+category = &"station"
 id = &"cooking_spit"
 display_name = "Cooking Spit"
 description = "A skewer frame to hang over a fire. Build it beside a campfire; on its own it is a rack with nothing under it."

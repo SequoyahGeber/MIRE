@@ -7,6 +7,7 @@
 [resource]
 script = ExtResource("1_buildabledef")
 icon = ExtResource("ic_workbench_upgraded")
+category = &"station"
 id = &"workbench_upgraded"
 display_name = "Reinforced Workbench"
 description = "The workbench rebuilt with an iron-shod top and a tool rack. Same recipes, better light and more room — the tier-2 bench a settled camp earns."

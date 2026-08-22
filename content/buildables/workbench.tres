@@ -7,6 +7,7 @@
 [resource]
 script = ExtResource("1_buildabledef")
 icon = ExtResource("ic_workbench")
+category = &"station"
 id = &"workbench"
 display_name = "Workbench"
 description = "The first station of a run: a plank top on lashed legs. Every stone-tier recipe is made here, so a party that cannot find one should be able to build one (F-477)."

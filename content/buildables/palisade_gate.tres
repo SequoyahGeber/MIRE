@@ -7,6 +7,7 @@
 [resource]
 script = ExtResource("1_buildabledef")
 icon = ExtResource("ic_palisade_gate")
+category = &"defence"
 id = &"palisade_gate"
 display_name = "Palisade Gate"
 description = "The hole you leave in your own wall on purpose. Barred, so you can see what is waiting."

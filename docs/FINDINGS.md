@@ -3547,6 +3547,39 @@ tabs — one tab per kind of building — so the row never wraps regardless of h
 set grows to. Cycle pieces within the tab and tabs within the bar from bound actions, not the
 cursor.
 
+**Resolved 2026-08-21.** Both halves, plus one thing the first cut got wrong.
+
+*Tabs.* `BuildableDef.category` is a new authored `StringName`; `CATEGORY_ORDER` fixes the tab
+order and an unlisted category sorts last alphabetically rather than being dropped. All 22 pieces
+are authored onto STRUCTURE (8), DEFENCE (6) or STATION (8), so the widest tab is one row. The
+`HFlowContainer` is an `HBoxContainer` again and the per-slot cost line moved to a single line
+under the row for the *armed* piece — eight slots each sized to their own cost string ran the panel
+1 268 px wide of a 1 280 px window.
+
+*Selection without a cursor.* Four new actions, read in `BuildBar._input` and consumed:
+`build_piece_prev`/`build_piece_next` (wheel up/down, R3/BACK on a pad) and
+`build_category_prev`/`build_category_next` (Z/C, keyboard only). `step_piece()` walks the whole set
+in tab order rather than the open tab, so two pad buttons reach all 22 pieces and
+`set_selected_piece()` opens the tab the selection landed on. Slots are `FOCUS_NONE` now: F-217's
+focus ring outranked the selected ring, so the armed piece rendered in "focused" blue instead of
+amber, and a focused Control during first-person play leaves `ui_accept` and the arrow keys doing UI
+things while the player is aiming.
+
+*What the first cut got wrong, recorded because the next feature will want these buttons too.*
+Piece stepping was on the shoulder buttons, shared with `hotbar_prev`/`hotbar_next`, on the theory
+that BuildBar — built by the player, deeper in the tree than the `InventoryUI` autoload — would win
+`_input`'s reverse-tree-order propagation and consume them while build mode was on. It does not.
+`InventoryUI` sees them first, steps the hotbar and returns *without* consuming, so the press then
+also reached the bar: one button, two effects, silently swapping the held item out from under a
+player who was only changing walls. **An autoload that reads an action in `_input` and does not
+consume it cannot be pre-empted by a deeper node.** Distinct bindings instead.
+
+Verified headless — `tools/build_picker_check.gd` (new, 0 failures, and it guards the shoulder-button
+regression by asserting the hotbar moves and the piece does not), plus `build_check`,
+`buildable_content_check`, `station_buildable_check` and `build_snap_check` all still 0. Layout
+evidence per tab in `assets/audit/ui/build_bar_*.png` from `tools/build_bar_shot.gd`, with the
+hotbar's own band drawn in. Full write-up in `docs/DELEGATION.md`.
+
 ---
 
 ### F-485 · The anvil costs a wellglass shard, so smithing is gated behind a POI drop
@@ -3566,6 +3599,89 @@ Suggested fix: the anvil's cost should be reachable from the furnace's own outpu
 iron_ingot, 4 log, 10 stone — and the wellglass shard should gate a station above it, not the
 first smithing station. Not applied here: content/buildables/anvil.tres was claimed by another
 agent (galee581ee, F-483) at the time.
+
+---
+
+### F-486 · Pine and willow read wrong against their real subjects; birch is the standard both should meet
+
+**Area:** art · **Severity:** high · **Found:** 2026-08-22 by moss7f4dd3
+
+Sequoyah, 2026-08-21: *"we gotta work on the pine and willow trees, the birch is fine but the
+other 2 need significant improvement"*.
+
+Rendered fresh with `audit_all_sides.py` (the committed sheets under `assets/audit/sheets` for
+the willow were STALE — they still showed the pre-F-424 lollipop, so anyone judging the willow
+from the repo sheet is judging an asset that no longer exists).
+
+### Pine (`build_pine`, tools/blender/build_mire_map_kit.py)
+
+Reads as a toy Christmas tree, not a forest conifer:
+
+* The whorls are a uniformly-shrinking stack of clean flat discs on evenly-spaced tiers
+  (`t = tier / (tiers - 1)`, `spread = (1-t)**0.80`). Real whorls are annual and irregular —
+  6 to 24 inches apart on the same species — and on a mature pine the LOWER branches droop
+  steeply while the top ones stay level. Nothing here droops at all.
+* `needles[min(2, (tier * 3) // tiers)]` puts the eight tiers into three contiguous blocks,
+  so the crown is three hard horizontal colour bands rather than a mixed mass.
+* The leader is one smooth pale cone 13% of the tree's height — a party hat, in a tone that
+  appears nowhere else in the silhouette.
+* All six variants read identically; only `height` varies, and the shape is a pure function
+  of `tier / tiers`.
+
+### Willow (`build_tree_willow`, tools/blender/build_flora_set.py)
+
+F-424/F-434 fixed the bole and got the curtain to exist, but the curtain itself is wrong:
+
+* The whips are dead-straight vertical bars with blunt ends — a bead curtain. A weeping
+  willow's shoots **arch upward from the limb, then turn steeply downward in long flowing
+  arcs**; the `hull` primitive cannot curve, so every strand is a vertical box.
+* The crown is not rounded. A willow's defining outline is a **broad, rounded crown**; the
+  top-down view here is a bare spider of limbs with nothing over it, and the side views have
+  a flat open top with the dark limbs showing straight through.
+* The pale tone lands as near-white full-length columns, so the curtain reads as a barcode.
+
+---
+
+### F-487 · Station tiers: the tier-1 forge and wood stations cost flint and coal, which no run can obtain
+
+**Area:** progression · **Severity:** high · **Found:** 2026-08-22 by quillb947a7
+
+Sequoyah's design rule (2026-08-21): crafting stations are tiered families, and the FIRST TIER of
+each family must be craftable from base gathered resources. MIRE currently breaks that at the root
+of two families, and the ingredients involved are not merely expensive — they are unobtainable.
+
+Sources, checked exhaustively across content/harvestables, content/loot and content/scatter:
+
+  flint   NO SOURCE AT ALL. No harvestable yields it, no loot table drops it, no recipe makes it.
+  coal    one source only — content/loot/sunken.tres, a POI loot table.
+
+Yet flint and coal are required by:
+
+  content/buildables/furnace.tres           stone 20, flint 4, coal 4     (tier-1 forge station)
+  content/buildables/woodcutting_block.tres log 6, stone 4, flint 2       (tier-1 wood station)
+  content/buildables/barricade_spike.tres   flint
+  content/recipes/arrow.tres                branch 1, flint 1
+
+So the furnace cannot be built, which means no iron_ingot, which means no anvil, which means none of
+the iron or higher tools — the entire forge branch of progression is closed in every run. Arrows
+cannot be crafted either, which closes ranged combat. This is not a balance issue; it is a dead end
+that the recipe data has hidden in plain sight because each individual cost reads as plausible.
+
+Compounding it, content/recipes/charcoal.tres consumes coal to produce charcoal at the furnace — the
+fuel recipe requires the fuel, and requires the station whose own cost requires the fuel.
+
+Fix, in two halves:
+
+  1. Base resources must be obtainable. flint gets a source; charcoal becomes the pre-furnace fuel
+     path, made from logs at the campfire (a tier-1, base-cost station) rather than from coal at the
+     furnace.
+  2. Tier-1 station costs must name only obtainable base resources. furnace and woodcutting_block
+     drop flint/coal in favour of stone, log and branch; the anvil (tier-2 forge) drops the
+     wellglass_shard already filed as F-485; repair_bench, the only station in its family and
+     therefore its first tier, drops its 3 iron_ingot.
+
+Half 1 lands with this finding. Half 2 is blocked: every file in content/buildables/ is claimed by
+galee581ee for F-483. It must be applied as soon as that claim releases.
 
 ---
 

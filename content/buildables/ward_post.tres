@@ -7,6 +7,7 @@
 [resource]
 script = ExtResource("1_buildabledef")
 icon = ExtResource("ic_ward_post")
+category = &"defence"
 id = &"ward_post"
 display_name = "Ward Post"
 description = "Holds the Mire back for twelve metres. The radius is authored here; 4.11 is the task that makes the Mire respect it."

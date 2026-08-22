@@ -7,6 +7,7 @@
 [resource]
 script = ExtResource("1_buildabledef")
 icon = ExtResource("ic_dock")
+category = &"structure"
 id = &"dock"
 display_name = "Dock Section"
 description = "A metre of deck over the water, on four piles. Weed already growing at the waterline."

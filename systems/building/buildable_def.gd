@@ -11,6 +11,41 @@ extends Resource
 
 ## Unique key. Must match across all peers — it is what goes over the network, never the resource
 ## path.
+## Tab order in the build bar, most-used first: you raise walls far more often than you re-site a
+## workbench. Anything not listed sorts after these, alphabetically — see `category_rank()`.
+const CATEGORY_ORDER: Array[StringName] = [&"structure", &"defence", &"station"]
+
+## Tab labels. A category with no entry here is title-cased from its own id, so an unlisted
+## category still reads as a word rather than as a raw key.
+const CATEGORY_LABELS: Dictionary[StringName, String] = {
+	&"structure": "STRUCTURE",
+	&"defence": "DEFENCE",
+	&"station": "STATION",
+}
+
+
+## Sort key for the tab strip: listed categories in `CATEGORY_ORDER`, everything else after them.
+static func category_rank(name: StringName) -> int:
+	var index: int = CATEGORY_ORDER.find(name)
+	return index if index >= 0 else CATEGORY_ORDER.size()
+
+
+static func category_label(name: StringName) -> String:
+	if CATEGORY_LABELS.has(name):
+		return CATEGORY_LABELS[name]
+	return String(name).replace("_", " ").to_upper()
+
+
+## Which tab of the build bar this piece appears under (F-483). The bar is one row above the
+## hotbar and cycles tabs rather than wrapping, so this is what keeps the row a row no matter how
+## many buildables the set grows to — F-477 already took it from 15 to 22 and the wrapped flow was
+## four rows tall, covering the ghost it exists to help you aim.
+##
+## A StringName rather than an enum so content can add a tab without a code change (§3.1, "content
+## is data, not code"). `CATEGORY_ORDER` fixes the tab order; a category not named there sorts last
+## alphabetically rather than being dropped, so a new one is visible the moment it is authored.
+@export var category: StringName = &"structure"
+
 @export var id: StringName = &""
 @export var display_name: String = ""
 @export_multiline var description: String = ""
@@ -81,6 +116,8 @@ func validation_errors() -> PackedStringArray:
 		errors.append("id is empty")
 	if display_name.is_empty():
 		errors.append("display_name is empty")
+	if category == &"":
+		errors.append("category is empty — every piece needs a build-bar tab (F-483)")
 	if size.x <= 0.0 or size.y <= 0.0 or size.z <= 0.0:
 		errors.append("size must be positive on every axis (got %s)" % size)
 	if max_build_range_m <= 0.0:

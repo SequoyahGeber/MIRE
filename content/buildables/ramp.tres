@@ -7,6 +7,7 @@
 [resource]
 script = ExtResource("1_buildabledef")
 icon = ExtResource("ic_ramp")
+category = &"structure"
 id = &"ramp"
 display_name = "Ramp"
 description = "Rises exactly one deck over one module, at an angle your legs agree with."

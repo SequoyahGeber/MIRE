@@ -7,6 +7,7 @@
 [resource]
 script = ExtResource("1_buildabledef")
 icon = ExtResource("ic_barricade")
+category = &"defence"
 id = &"barricade"
 display_name = "Barricade"
 description = "Chest-high and nailed together out of whatever was to hand. Crouch behind it and feel clever."

@@ -7,6 +7,7 @@
 [resource]
 script = ExtResource("1_buildabledef")
 icon = ExtResource("ic_floor")
+category = &"structure"
 id = &"floor_wood"
 display_name = "Wooden Floor"
 description = "Two metres square of decking on posts, standing at the same height a ramp climbs to. Lay them edge to edge and they read as one surface; walk under them and you can see the joists."

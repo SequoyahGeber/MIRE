@@ -7,6 +7,7 @@
 [resource]
 script = ExtResource("1_buildabledef")
 icon = ExtResource("ic_woodcutting_block")
+category = &"station"
 id = &"woodcutting_block"
 display_name = "Woodcutting Block"
 description = "A split round with an axe sunk in it. Rough timber worked down into something a bench can use."

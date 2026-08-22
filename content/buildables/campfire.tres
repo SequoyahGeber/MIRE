@@ -7,6 +7,7 @@
 [resource]
 script = ExtResource("1_buildabledef")
 icon = ExtResource("ic_campfire")
+category = &"station"
 id = &"campfire"
 display_name = "Campfire"
 description = "A ring of stone around a burning stack. Warmth, light, and the heat every cooked thing needs."

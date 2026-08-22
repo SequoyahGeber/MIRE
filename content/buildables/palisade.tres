@@ -7,6 +7,7 @@
 [resource]
 script = ExtResource("1_buildabledef")
 icon = ExtResource("ic_palisade")
+category = &"defence"
 id = &"palisade"
 display_name = "Palisade"
 description = "Two metres of sharpened log. Crawlers do not climb; that is the entire pitch."

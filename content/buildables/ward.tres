@@ -7,6 +7,7 @@
 [resource]
 script = ExtResource("1_buildabledef")
 icon = ExtResource("ic_ward")
+category = &"defence"
 id = &"ward"
 display_name = "Ward"
 description = "Teal answers purple. Holds the Mire back for eighteen metres and looks smug about it."

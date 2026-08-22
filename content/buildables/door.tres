@@ -7,6 +7,7 @@
 [resource]
 script = ExtResource("1_buildabledef")
 icon = ExtResource("ic_door")
+category = &"structure"
 id = &"door"
 display_name = "Wooden Door"
 description = "Planks, ledges and two iron straps. Currently opens for nobody, which is very secure."

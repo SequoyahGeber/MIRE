@@ -30,138 +30,6 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "content/buildables/anvil.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:42:44+00:00",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
-    },
-    "content/buildables/barricade.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:42:44+00:00",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
-    },
-    "content/buildables/barricade_spike.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:42:44+00:00",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
-    },
-    "content/buildables/bridge.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:42:44+00:00",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
-    },
-    "content/buildables/campfire.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:42:44+00:00",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
-    },
-    "content/buildables/cooking_spit.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:42:44+00:00",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
-    },
-    "content/buildables/dock.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:42:44+00:00",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
-    },
-    "content/buildables/door.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:42:44+00:00",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
-    },
-    "content/buildables/floor.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:42:44+00:00",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
-    },
-    "content/buildables/furnace.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:42:44+00:00",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
-    },
-    "content/buildables/gate.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:42:44+00:00",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
-    },
-    "content/buildables/ladder.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:42:44+00:00",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
-    },
-    "content/buildables/palisade.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:42:44+00:00",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
-    },
-    "content/buildables/palisade_gate.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:42:44+00:00",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
-    },
-    "content/buildables/ramp.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:42:44+00:00",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
-    },
-    "content/buildables/repair_bench.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:42:44+00:00",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
-    },
-    "content/buildables/wall.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:42:44+00:00",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
-    },
-    "content/buildables/ward.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:42:44+00:00",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
-    },
-    "content/buildables/ward_post.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:42:44+00:00",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
-    },
-    "content/buildables/woodcutting_block.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:42:44+00:00",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
-    },
-    "content/buildables/workbench.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:42:44+00:00",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
-    },
-    "content/buildables/workbench_upgraded.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:42:44+00:00",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
-    },
     "content/harvestables/apple_tree.tres": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:45:13+00:00",
@@ -246,6 +114,24 @@
       "task": "F-482",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "content/recipes/arrow.tres": {
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:52:48+00:00",
+      "task": "F-487",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
+    },
+    "content/recipes/charcoal.tres": {
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:52:48+00:00",
+      "task": "F-487",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
+    },
+    "content/recipes/flint.tres": {
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:52:48+00:00",
+      "task": "F-487",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
+    },
     "content/scatter/highland_rocks.tres": {
       "agent": "birche6b40e",
       "at": "2026-08-22T00:06:31+00:00",
@@ -258,23 +144,23 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "project.godot": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:42:22+00:00",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
-    },
-    "systems/building/buildable_def.gd": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:42:22+00:00",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
+    "docs/DECISIONS.md": {
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:52:48+00:00",
+      "task": "F-487",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
     "tools/blender/build_deep_materials.py": {
       "agent": "birche6b40e",
       "at": "2026-08-21T23:53:11+00:00",
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "tools/blender/build_flora_set.py": {
+      "agent": "moss7f4dd3",
+      "at": "2026-08-22T00:47:57+00:00",
+      "task": "F-486",
+      "token": "CLAUDE_CODE_SESSION_ID:7a55bc0f-4fc2-48cf-9c62-318569fb449e"
     },
     "tools/blender/build_gatherable_plants.py": {
       "agent": "gale43d16e",
@@ -287,6 +173,12 @@
       "at": "2026-08-21T23:59:20+00:00",
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "tools/blender/build_mire_map_kit.py": {
+      "agent": "moss7f4dd3",
+      "at": "2026-08-22T00:47:57+00:00",
+      "task": "F-486",
+      "token": "CLAUDE_CODE_SESSION_ID:7a55bc0f-4fc2-48cf-9c62-318569fb449e"
     },
     "tools/blender/build_pickup_kit.py": {
       "agent": "gale43d16e",
@@ -312,11 +204,11 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "ui/building/build_bar.gd": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:42:22+00:00",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
+    "tools/recipe_station_check.gd": {
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:52:48+00:00",
+      "task": "F-487",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     }
   },
   "in_flight": {
@@ -387,38 +279,28 @@
       "started": "2026-08-22T00:29:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "F-483": {
-      "agent": "galee581ee",
+    "F-486": {
+      "agent": "moss7f4dd3",
       "files": [
-        "ui/building/build_bar.gd",
-        "systems/building/buildable_def.gd",
-        "project.godot",
-        "content/buildables/anvil.tres",
-        "content/buildables/barricade.tres",
-        "content/buildables/barricade_spike.tres",
-        "content/buildables/bridge.tres",
-        "content/buildables/campfire.tres",
-        "content/buildables/cooking_spit.tres",
-        "content/buildables/dock.tres",
-        "content/buildables/door.tres",
-        "content/buildables/floor.tres",
-        "content/buildables/furnace.tres",
-        "content/buildables/gate.tres",
-        "content/buildables/ladder.tres",
-        "content/buildables/palisade.tres",
-        "content/buildables/palisade_gate.tres",
-        "content/buildables/ramp.tres",
-        "content/buildables/repair_bench.tres",
-        "content/buildables/wall.tres",
-        "content/buildables/ward.tres",
-        "content/buildables/ward_post.tres",
-        "content/buildables/woodcutting_block.tres",
-        "content/buildables/workbench.tres",
-        "content/buildables/workbench_upgraded.tres"
+        "tools/blender/build_mire_map_kit.py",
+        "tools/blender/build_flora_set.py"
       ],
       "notes": [],
-      "started": "2026-08-22T00:42:22+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
+      "started": "2026-08-22T00:47:57+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:7a55bc0f-4fc2-48cf-9c62-318569fb449e"
+    },
+    "F-487": {
+      "agent": "quillb947a7",
+      "files": [
+        "content/recipes/charcoal.tres",
+        "content/recipes/flint.tres",
+        "content/recipes/arrow.tres",
+        "tools/recipe_station_check.gd",
+        "docs/DECISIONS.md"
+      ],
+      "notes": [],
+      "started": "2026-08-22T00:52:48+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     }
   },
   "recent": {
@@ -1662,158 +1544,158 @@
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "content/buildables/anvil.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-22T00:03:18+00:00",
-      "hash": "632ee0bcca15ec33652cc3bee8771f77312aed666910b66909065c262ab4b86e",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:53:18+00:00",
+      "hash": "2d889163af63c203427266f055aa2ea00735a45388e0bcc57eef467416bded85",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/barricade.tres": {
-      "agent": "gale43d16e",
-      "at": "2026-08-21T08:34:48+00:00",
-      "hash": "14d96c421973b9897bc7f37e65f35c3274b56266fac9e28bcd1920ceab6ee08f",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:53:18+00:00",
+      "hash": "7fb24ddc7a81fbb535d86e147a5bd32e5f1ac63a8b46cbcce6daa7171cbef4ea",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/barricade_spike.tres": {
-      "agent": "gale43d16e",
-      "at": "2026-08-21T08:34:48+00:00",
-      "hash": "bfd19739382ca40f824ef19e8fb9cb33bd234efb85a8fd2f42da2d9a49108c1b",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:53:18+00:00",
+      "hash": "a796200fcb59833feb62823f8de1dab7c30df2cea298d16ad608335a3bf459d0",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/bridge.tres": {
-      "agent": "gale43d16e",
-      "at": "2026-08-21T08:34:48+00:00",
-      "hash": "99e448cc612459b9565fed529cf3c439c7430813c9ea3425cbbca91bbf4b03e9",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:53:18+00:00",
+      "hash": "b94727208864b81d84a8beb20f930e8632dc508afd52633f5b2f8eefe08a5f58",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/campfire.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-22T00:03:18+00:00",
-      "hash": "b77fd05d35908dd651536a669abb5ff38623a80a7bc6165904a437cc60c62a8d",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:53:18+00:00",
+      "hash": "08fbf558a5826be4c17a08dca7c27bf3a6d78572623c3ac8d34b4141bad0f53c",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/cooking_spit.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-22T00:03:18+00:00",
-      "hash": "d876b3a0eda717012810575b4cc0ceb4e7c8ccf9b1750cb906d4cb761b88c691",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:53:18+00:00",
+      "hash": "d52a27ee04bb108f85671f816a301c55b09abca8a86422aa95142fcd65a76fcd",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/dock.tres": {
-      "agent": "gale43d16e",
-      "at": "2026-08-21T08:34:48+00:00",
-      "hash": "f728835992e5764be3604472de95a7123f3374d1fe521babd89c10c30af26bbc",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:53:18+00:00",
+      "hash": "6330342f2237eceee0067c1ff373ee443b3879c71dec5f5d2e607701e6647fd8",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/door.tres": {
-      "agent": "gale43d16e",
-      "at": "2026-08-21T08:34:48+00:00",
-      "hash": "1b54568e9c9435f6dc810ff93357e19870cfa99dd499a1724e965cff07e05614",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:53:18+00:00",
+      "hash": "746610123fe055737bcf1f2f12f2ae92841c56c8e04dfcc19c9be748547e2bfe",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/floor.tres": {
-      "agent": "coil26502f",
-      "at": "2026-08-21T23:04:24+00:00",
-      "hash": "2382abd35e18aed2cfe8fac4a071ab37a34d212755186d9deb50aadfbd5af9b0",
-      "task": "3.7",
-      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:53:18+00:00",
+      "hash": "9ff812b05e6f160ff2825b29718c26bdff5004e40f0c407eed90d033e79a227b",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/furnace.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-22T00:03:18+00:00",
-      "hash": "10bac94fc203f05c5f8a50af841cef772e50a7fc659f39489e64f5abc03ca534",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:53:18+00:00",
+      "hash": "69555043be1eceaeb7728d5d71b177b67dec9e1e97595a7307a542080d15f0ec",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/gate.tres": {
-      "agent": "gale43d16e",
-      "at": "2026-08-21T08:34:48+00:00",
-      "hash": "4dc664ab0d9dec64064c36c08a0493a11c2c395c1eb91b442dd4be34c6cbd5a7",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:53:18+00:00",
+      "hash": "81a291d4c8f199df5c8c414789acd54b6644ca1cee2f737683ef259c121449a6",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/ladder.tres": {
-      "agent": "gale43d16e",
-      "at": "2026-08-21T08:34:48+00:00",
-      "hash": "baa4e188a3f0bd0b7188f2b9f39df5e894b31af89c18cbfcf92e7f00548cb9ef",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:53:18+00:00",
+      "hash": "2348b5931b729bee315a2733bdf58f9f6e21893a118230dccc23dc2fed83dc71",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/palisade.tres": {
-      "agent": "gale43d16e",
-      "at": "2026-08-21T08:34:48+00:00",
-      "hash": "18d5480e6b5a66036abe3f72091ba650cace2914283c87563bb5f5f86f043d10",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:53:18+00:00",
+      "hash": "4af2ab56d33a4247ab97588d9602b7900fe786b03d9ef62f76141e97b9e50afb",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/palisade_gate.tres": {
-      "agent": "gale43d16e",
-      "at": "2026-08-21T08:34:48+00:00",
-      "hash": "d34a5669c9146fff38c5d416c0fd639a6f23d77529766d896b30e3947584d262",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:53:18+00:00",
+      "hash": "6ba15ebc8860ab420b919bfe3e4c18f1ec11ce78d70ec0704b17753ddeea0528",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/ramp.tres": {
-      "agent": "gale43d16e",
-      "at": "2026-08-21T08:34:48+00:00",
-      "hash": "08e86ffe0758ad906ad809b35180ea853b0b60fb4d5c1eedaf3123c81537fd20",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:53:18+00:00",
+      "hash": "a46d1e5d47af9a53e56d7f8778aa40d7b7df11edcb815213c9c3df360cf3af0c",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/repair_bench.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-22T00:03:18+00:00",
-      "hash": "afff7ba008758416a1dfa61070879aeac62bf923879505620b594ac42a146e1b",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:53:18+00:00",
+      "hash": "b79dac4d8ea064feb0fb9fbf92e8863913990079dcfe514573cea58b06578aba",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/wall.tres": {
-      "agent": "gale43d16e",
-      "at": "2026-08-21T08:34:48+00:00",
-      "hash": "32f7719c68c754f859ae628005458b47a65d7b5a40ba8e817098714c086e6f55",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:53:18+00:00",
+      "hash": "3b6c505c73d79e83d4870e53f0ea0bf9ebd2198cedf4ba714d4d5f4a5c582aa7",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/ward.tres": {
-      "agent": "gale43d16e",
-      "at": "2026-08-21T08:34:48+00:00",
-      "hash": "9e4afaadca62dd4002cee553004566a8fe54fbee5f33344737336f3165ebde1e",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:53:18+00:00",
+      "hash": "8e828552bb39c131fb8449ca3c9dec77b1397298c8e80556a87819ab927ad529",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/ward_post.tres": {
-      "agent": "gale43d16e",
-      "at": "2026-08-21T08:34:48+00:00",
-      "hash": "e7bb0303f80018e98ad19f782457d65a1f6a7a6e1aa98f5210781a88f41291bd",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:53:18+00:00",
+      "hash": "827a9e167783a16257fa22155f73c403e6d8466a507f8f3256eb037e0e5e737d",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/woodcutting_block.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-22T00:03:18+00:00",
-      "hash": "3b1fde4af97179b8c67cfb09c641a7e142b74ccee866b6253b093f22ca78f9bd",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:53:18+00:00",
+      "hash": "0606b58669726a33a003117257cf1a43e1a65e7f8761a0cdc21224f5e5ef26af",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/workbench.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-22T00:03:18+00:00",
-      "hash": "232c72aaa68a64180f276659f474a60347ef2ec5355b772ff53c5c992f24381e",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:53:18+00:00",
+      "hash": "787aab599e887ae0b571ca0f4e700bbc129976068682b918d74636ea10855d1a",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/workbench_upgraded.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-22T00:03:18+00:00",
-      "hash": "2fb71844621b68db51ee33a6c2ba4db957c238ffa29c5d57f0e7655d8c8ef0cb",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:53:18+00:00",
+      "hash": "3f158a7d022e5f011c99f9e91171761b166f4054a36883db07ce949892fe68cf",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/guide/build_anvil.tres": {
       "agent": "birche6b40e",
@@ -3468,11 +3350,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
     },
     "project.godot": {
-      "agent": "coil26502f",
-      "at": "2026-08-21T23:28:27+00:00",
-      "hash": "d016d3661d6742598561686cdc75e35ae266468f4b96f60aca342debdade657a",
-      "task": "F-472",
-      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:53:18+00:00",
+      "hash": "f57a4d35d2496c8d32f9fb8f17d3dd4bfa40537022ea0836d9732f703ace6506",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "scenes/buildables/anvil.tscn": {
       "agent": "birche6b40e",
@@ -3557,6 +3439,13 @@
       "hash": "5c6cc745b5f73e744f72496ba9f198191488c50f4e6fd531612217a8159117b6",
       "task": "F-472",
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+    },
+    "systems/building/buildable_def.gd": {
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:53:18+00:00",
+      "hash": "f7c2d2af2b5ff6b397db39ba26ca005329326e35a6d4d1ff3a69ee7af6efd11b",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "systems/building/placement_validator.gd": {
       "agent": "coil26502f",
@@ -4441,11 +4330,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "ui/building/build_bar.gd": {
-      "agent": "cindere7060a",
-      "at": "2026-08-22T00:03:18+00:00",
-      "hash": "f9cab13557b4e4a51da87540ede605d53b23ef5dfd75c1e015395be5f949678f",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:53:18+00:00",
+      "hash": "4e07eb6d6247b92ff3abe5107149a93dd2f03177c456e66021687b14524df041",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "ui/building/door_prompt.gd": {
       "agent": "wickc3d79c",
@@ -4784,7 +4673,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     }
   },
-  "rev": 1002,
+  "rev": 1011,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -10382,9 +10271,11 @@
       "title": "The sling, longbow and crossbow all shipped as the short bow, and the bolt as an arrow"
     },
     "F-483": {
+      "done_at": "2026-08-22T00:53:18+00:00",
+      "done_by": "galee581ee",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Build mode's piece picker is unreachable: cursor stays captured and the wrapped bar hides the ghost"
     },
@@ -10396,6 +10287,27 @@
       "status": "done",
       "tier": "F",
       "title": "Tool recipes all live at the workbench instead of their proper station"
+    },
+    "F-485": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The anvil costs a wellglass shard, so smithing is gated behind a POI drop"
+    },
+    "F-486": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Pine and willow read wrong against their real subjects; birch is the standard both should meet"
+    },
+    "F-487": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Station tiers: the tier-1 forge and wood stations cost flint and coal, which no run can obtain"
     }
   },
   "version": 1

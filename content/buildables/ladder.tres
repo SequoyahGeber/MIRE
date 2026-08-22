@@ -7,6 +7,7 @@
 [resource]
 script = ExtResource("1_buildabledef")
 icon = ExtResource("ic_ladder")
+category = &"structure"
 id = &"ladder"
 display_name = "Ladder"
 description = "Three metres, nine rungs, tops out level with a palisade. Climbing it is somebody else's task."

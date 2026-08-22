@@ -7,6 +7,7 @@
 [resource]
 script = ExtResource("1_buildabledef")
 icon = ExtResource("ic_anvil")
+category = &"station"
 id = &"anvil"
 display_name = "Anvil"
 description = "The tier-3 station. Costs a Wellglass Shard, which means it costs a Wellspring — that is the point, not a price to be tuned away (D-200)."

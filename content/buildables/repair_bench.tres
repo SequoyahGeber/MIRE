@@ -7,6 +7,7 @@
 [resource]
 script = ExtResource("1_buildabledef")
 icon = ExtResource("ic_repair_bench")
+category = &"station"
 id = &"repair_bench"
 display_name = "Repair Bench"
 description = "A vice and a whetstone on a heavy frame. Where worn gear is brought back rather than replaced."

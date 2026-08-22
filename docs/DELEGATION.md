@@ -9798,3 +9798,75 @@ thirds, no corner posts, no staggered half-offsets; `_mate_points()` is where th
 records what that costs. Snapping does not yet mate to terrain features or to world-gen props, only
 to placed pieces. And `SNAP_TOLERANCE_M` has had no playtest: 0.75 m against a 2.00 m module is a
 reasoned starting value, not a tuned one.
+
+---
+
+## F-483 — the build bar is one row above the hotbar, with tabs, driven without a cursor
+
+Playtest, 2026-08-21: *"the cursor stays captive even when opening the build menu so there's no way
+to select building pieces or view the placement of them."*
+
+Two faults with one symptom, and the fix for each is structural rather than a tuned number.
+
+**Selection is bound input now, not a pointer.** Build mode keeps `Input.mouse_mode` CAPTURED on
+purpose — the ghost follows the camera and LMB confirms the placement — so every selection path the
+bar had (a click; `ui_accept`, which is `jump`; F-217's arrow-key focus chain, which nothing on
+screen mentioned) was unreachable in the mode it existed for. The bar reads four new actions in its
+own `_input` and consumes them:
+
+| Action | Keyboard / mouse | Gamepad |
+| --- | --- | --- |
+| `build_piece_prev` | wheel up | R3 (right stick click) |
+| `build_piece_next` | wheel down | BACK |
+| `build_category_prev` | **Z** | — |
+| `build_category_next` | **C** | — |
+
+`step_piece()` walks the **whole set in tab order**, not the open tab, so stepping off the end of a
+tab carries into the next one and `set_selected_piece()` brings that tab open behind you. That is
+what makes two pad buttons enough to reach all 22 pieces with no tab binding — there was nothing
+free left to bind one to.
+
+The shoulder buttons are **not** available, and this is worth knowing before the next feature wants
+them. The first cut shared them with `hotbar_prev`/`hotbar_next` on the theory that BuildBar — built
+by the player, deeper in the tree than the `InventoryUI` autoload — would win `_input`'s
+reverse-tree-order propagation and consume them for the duration of build mode. It does not.
+`InventoryUI` sees them first, steps the hotbar, and returns *without* consuming, so the press then
+also reached the bar: one button, two effects, silently swapping the held item out from under a
+player who was only changing walls. `tools/build_picker_check.gd` guards it.
+
+**Tabs, so the row cannot grow back over the ghost.** F-477 took the set from 15 pieces to 22 and
+the fixed-width `HFlowContainer` wrapped to four rows ~340 px tall, parked exactly where a
+first-person builder looks. `BuildableDef.category` is a new authored `StringName`, `CATEGORY_ORDER`
+fixes the tab order, and an unlisted category sorts last alphabetically rather than being dropped —
+so a new tab is one .tres field away and adding a buildable never needs a number changed in the UI.
+
+| Tab | Pieces |
+| --- | --- |
+| STRUCTURE | wall, floor, ramp, door, gate, bridge, ladder, dock |
+| DEFENCE | barricade, spike barricade, palisade, palisade gate, ward, ward post |
+| STATION | workbench, reinforced workbench, campfire, cooking spit, furnace, anvil, repair bench, woodcutting block |
+
+Two smaller consequences of the row being a row: the per-slot cost line moved to a single line under
+the row describing the **armed** piece only (eight slots each sized to their own cost string ran the
+panel 1 268 px wide of a 1 280 px window), and slots are `FOCUS_NONE` — F-217's focus ring outranked
+the selected ring, so the armed piece rendered in "focused" blue instead of amber, and a focused
+Control during first-person play leaves `ui_accept` and the arrow keys doing UI things mid-aim.
+
+**Verified headless, 0 failures each:**
+
+```bash
+.agent/bin/agent godot --script tools/build_picker_check.gd
+.agent/bin/agent godot --script tools/build_check.gd
+.agent/bin/agent godot --script tools/buildable_content_check.gd
+.agent/bin/agent godot --script tools/station_buildable_check.gd
+.agent/bin/agent godot --script tools/build_snap_check.gd
+```
+
+Layout evidence — one PNG per tab, with the hotbar's own band drawn in so "above the hotbar" is
+something the image shows:
+
+```bash
+.agent/bin/agent godot --windowed --script tools/build_bar_shot.gd
+```
+
+`assets/audit/ui/build_bar_{structure,defence,station}.png`.

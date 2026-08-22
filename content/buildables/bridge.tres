@@ -7,6 +7,7 @@
 [resource]
 script = ExtResource("1_buildabledef")
 icon = ExtResource("ic_bridge")
+category = &"structure"
 id = &"bridge"
 display_name = "Bridge Section"
 description = "One module of trestle bridge, railed both sides. Place them in a row and the seam vanishes."

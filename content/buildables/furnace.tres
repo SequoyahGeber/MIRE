@@ -7,6 +7,7 @@
 [resource]
 script = ExtResource("1_buildabledef")
 icon = ExtResource("ic_furnace")
+category = &"station"
 id = &"furnace"
 display_name = "Stone Furnace"
 description = "A stone smelter with a coal bed. Ore goes in, ingots come out — the gate between stone tools and iron ones."

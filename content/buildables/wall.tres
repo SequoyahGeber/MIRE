@@ -8,6 +8,7 @@
 script = ExtResource("1_buildabledef")
 icon = ExtResource("ic_wall")
 scene = ExtResource("2_wallscene")
+category = &"structure"
 id = &"wall_wood"
 display_name = "Wooden Wall"
 description = "Two metres of plank between you and whatever is out there. Snaps to the metre grid so a run of them actually lines up."
