@@ -5,6 +5,15 @@ extends SceneTree
 ## Renders one crawler at yaw 0 from a camera placed along -Z — the direction the asset docs say the
 ## model faces. If the render shows its head, the asset and the code agree and the bug is elsewhere;
 ## if it shows its tail, the model's forward is +Z and `Enemy._face()` is pointing the wrong end.
+##
+## A PROBE, not a check (F-559). It renders and prints; it asserts nothing and has no `failures=N`
+## verdict, because the verdict is a human looking at the PNG. It was named `_check.gd` until F-559,
+## which meant `agent verify` collected it, demanded a verdict it never prints, and scored it red on
+## every run — and, because it needs a framebuffer, hung for the full silent-hang timeout first.
+##
+## Needs a window for its render capture (F-077). Run it standalone:
+##
+##   .agent/bin/agent godot --windowed --script tools/enemy_facing_probe.gd
 
 const ENEMY_DEF := preload("res://systems/enemies/enemy_def.gd")
 const OUTPUT_PATH: String = "/tmp/mire_crawler_facing.png"
@@ -72,9 +81,18 @@ func _run() -> void:
 		await process_frame
 		await process_frame
 		await process_frame
-		var image: Image = root.get_texture().get_image()
+		# Guarded, and the guard exits rather than erroring (F-557). Headless has no root viewport
+		# texture, so `get_image()` returns null — and every `quit()` in this function is downstream
+		# of this line, so an unguarded `save_png` on null does not fail the run, it parks the
+		# process in an idle main loop holding the shared Godot lock until something kills it.
+		var texture: ViewportTexture = root.get_texture()
+		var image: Image = texture.get_image() if texture != null else null
+		if image == null:
+			push_error("no rendered frame to capture — this probe needs --windowed (F-077)")
+			quit(1)
+			return
 		if image.save_png(String(view["path"])) != OK:
-			push_error("render failed")
+			push_error("render failed: could not write %s" % view["path"])
 			quit(1)
 			return
 		print("ENEMY_FACING_RENDER %s (%s)" % [view["path"], view["label"]])

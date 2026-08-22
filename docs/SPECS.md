@@ -1888,7 +1888,7 @@ attack exactly, `EnemyWorld.host_spawn()` instantiating `Boss` (not plain `Enemy
 and `BossMusicDirector` actually starting playback on all three `EventBus` hooks. `failures=0`.
 Regression: `tools/enemy_check.gd`, `tools/enemy_ai_check.gd`, `tools/enemy_net_check.gd`,
 `tools/entity_check.gd`, `tools/combat_feel_check.gd` all still `failures=0` unmodified;
-`tools/enemy_facing_check.gd` (needs `--windowed` for its render capture, F-077) still renders
+`tools/enemy_facing_probe.gd` (needs `--windowed` for its render capture, F-077) still renders
 correctly; `tools/enemy_crawler_check.gd`'s import checks still pass. `tools/audio_import_check.gd`
 extended (not touched in a regression sense — it needed a new assertion group for the one-shot
 stinger alongside its existing looped-music assertions) — `failures=0`. Full boot (`agent godot

@@ -75,6 +75,39 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-22 — F-558: never `preload` product code in a `tools/` harness (bram937a51)
+
+**This is a rule about writing checks, not a fact about one check.** A `--script` harness must bind
+product scripts with `load()` inside `_run()`, never with `preload()` at parse time:
+
+```gdscript
+# WRONG — resolved while this harness compiles, which is before autoloads exist
+const Frontend := preload("res://ui/frontend/frontend.gd")
+
+# RIGHT — resolved after _initialize() has deferred and the autoloads are up
+var Frontend: Variant
+func _run() -> void:
+    Frontend = load("res://ui/frontend/frontend.gd")
+```
+
+**Why.** Under `--script`, Godot compiles the harness *before* it instantiates the autoloads — the
+engine's own log ordering shows the compile error printing ahead of `[info] net: NetTransport ready`.
+Autoload names only become resolvable identifiers once the autoloads come up. So a `preload` of any
+product file that names an autoload — and most of them do — compiles that file at a moment when the
+identifier does not exist yet, and fails with `Compile Error: Identifier not found: <Autoload>`.
+This is not a defect in the product file. Product code is compiled after autoloads exist and is
+entitled to name them.
+
+**The part that costs the time.** A failed `preload` does not abort. It yields a bare, uncompiled
+`GDScript`, so the `const` is bound to an object with no members and the *visible* error is a method
+call failing: `Invalid call. Nonexistent function 'x' in base 'GDScript'`. That names a method which
+is perfectly fine, in a file that had simply failed to compile, and it sends the reader hunting in
+the wrong place. `tools/title_check.gd` sat in exactly that state — 46 assertions, never once run,
+read as an ordinary red row — until F-558.
+
+**If you see `Nonexistent function ... in base 'GDScript'` in a check, look upward in the log for a
+compile error first.** The real cause is always above it.
+
 ### 2026-08-22 — F-541: chests are a five-rung rarity ladder (D-215) (nettled7199c)
 
 **Before this, only two kinds of container ever reached a map** — free `Cache_` crates and the
@@ -4169,7 +4202,7 @@ leash on the boss's own acquisition/retention only (D-116 point 2).
 Verified: `agent godot --script tools/boss_check.gd` (new, 45 assertions) — `failures=0`. No
 regressions: `tools/enemy_check.gd`, `tools/enemy_ai_check.gd`, `tools/enemy_net_check.gd`,
 `tools/entity_check.gd`, `tools/combat_feel_check.gd` all `failures=0` unmodified;
-`tools/enemy_facing_check.gd` (needs `--windowed`, F-077) still renders; `tools/enemy_crawler_check.gd`
+`tools/enemy_facing_probe.gd` (needs `--windowed`, F-077) still renders; `tools/enemy_crawler_check.gd`
 still `ok` on every asset. `tools/audio_import_check.gd` extended with a stinger-specific assertion
 group (the one-shot doesn't fit its prior "every music file is a 224s loop" assumption) —
 `failures=0`. Full boot (`agent godot --quit-after 20`): 0 `ERROR:` lines, both new autoloads silent

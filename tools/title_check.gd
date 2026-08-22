@@ -13,14 +13,38 @@ extends SceneTree
 ##
 ## Run with: .agent/bin/agent godot --script tools/title_check.gd
 
-const Frontend := preload("res://ui/frontend/frontend.gd")
-const TitleScreen := preload("res://ui/frontend/title_screen.gd")
-const TitleBackdrop := preload("res://ui/frontend/backdrop.gd")
-const MireTheme := preload("res://ui/theme/mire_theme.gd")
-## The persistence boundary the SHIPPED title actually reads (MENU-7). This check used to read
-## `salvage_save.gd` and a `last_run` key, which is where the card lived before MENU-7 moved it —
-## so it failed against correct product code and proved nothing about the screen (F-335).
-const RunRecordSave := preload("res://core/save/run_record_save.gd")
+## `load()` in `_run()`, never `preload()` at parse time — F-558, and it is not a style choice.
+##
+## A `preload` is resolved while THIS script is being compiled, and under `--script` that compile
+## happens before the autoloads are instantiated. `frontend.gd` names the `AppExit` autoload (lines
+## 143 and 151), so preloading it compiled that file at a moment when `AppExit` was not yet a
+## resolvable identifier: `Compile Error: Identifier not found: AppExit`, then "Failed to compile
+## depended scripts", then this whole check failing to load. That is not a bug in `frontend.gd` —
+## product code runs after autoloads exist and is entitled to name them.
+##
+## The failure was also actively misleading. A failed `preload` does not abort; it yields a bare,
+## uncompiled `GDScript`, so `Frontend._launch_bypasses_frontend()` reported "Nonexistent function
+## ... in base 'GDScript'" and sent a reader hunting for a method that was never missing.
+##
+## Bound here as plain `var`s rather than `const`s so they are resolved dynamically at call time.
+var Frontend: Variant
+var TitleScreen: Variant
+var TitleBackdrop: Variant
+var MireTheme: Variant
+var RunRecordSave: Variant
+
+
+## Every product script this check drives, bound after `_initialize()` has deferred — by which point
+## the autoloads are up and any autoload identifier inside them resolves normally.
+func _bind_product_scripts() -> void:
+	Frontend = load("res://ui/frontend/frontend.gd")
+	TitleScreen = load("res://ui/frontend/title_screen.gd")
+	TitleBackdrop = load("res://ui/frontend/backdrop.gd")
+	MireTheme = load("res://ui/theme/mire_theme.gd")
+	# The persistence boundary the SHIPPED title actually reads (MENU-7). This check used to read
+	# `salvage_save.gd` and a `last_run` key, which is where the card lived before MENU-7 moved it —
+	# so it failed against correct product code and proved nothing about the screen (F-335).
+	RunRecordSave = load("res://core/save/run_record_save.gd")
 
 ## A path no real player save can collide with. `RunRecord.save_path` is a `var` precisely so a check
 ## can point the service somewhere disposable; the title reads through the service, so redirecting it
@@ -42,6 +66,8 @@ func _initialize() -> void:
 func _run() -> void:
 	await process_frame
 	await process_frame
+
+	_bind_product_scripts()
 
 	var stack: Node = root.get_node_or_null(^"/root/MenuStack")
 	check(stack != null, "MenuStack autoload exists")
