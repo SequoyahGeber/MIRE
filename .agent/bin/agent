@@ -3611,6 +3611,25 @@ def _verify_append(path, row):
         os.fsync(f.fileno())
 
 
+# Godot prints these from its own teardown, AFTER a check has run every assertion and called quit().
+# They are leak diagnostics about the engine shutting down, not anything a check asserts, and they
+# appear in essentially every check that loads a scene. Counting them as failures made 129 of 218
+# checks red with failures=0 and every assertion passing (F-554), which is how a suite stops being
+# readable: with that many rows red for a reason no author controls, a genuinely broken check is
+# invisible inside the noise. They are still COUNTED and reported — a check that leaks more than its
+# neighbours is worth knowing about — they just do not decide pass/fail.
+#
+# The line this draws: an error a check provokes while running is the check's problem, and belongs in
+# its EXPECTED_ERROR_PATTERNS if it is deliberate. An error the engine prints while shutting down is
+# not. F-553 is the counter-example that proves the rule — a per-frame "No multiplayer peer is
+# assigned" was in 53 of 61 rows and was fixed at its source rather than allowlisted here.
+TEARDOWN_LEAK_RE = re.compile(
+    r"resources still in use at exit"
+    r"|RID allocations of type .* were leaked at exit"
+    r"|ObjectDB instances were leaked at exit"
+)
+
+
 def _verify_verdict(output, code):
     failures = None
     for pattern in (r"failures\s*=\s*(\d+)", r"\b(\d+)\s+failures?\b"):
@@ -3626,7 +3645,9 @@ def _verify_verdict(output, code):
         except re.error:
             expected = None
     error_lines = [line for line in output.splitlines() if "ERROR:" in line]
-    unexpected = [line for line in error_lines if expected is None or not expected.search(line)]
+    teardown = [line for line in error_lines if TEARDOWN_LEAK_RE.search(line)]
+    unexpected = [line for line in error_lines
+                  if line not in teardown and (expected is None or not expected.search(line))]
     reasons = []
     if code != 0:
         reasons.append("exit=%d" % code)
@@ -3636,7 +3657,7 @@ def _verify_verdict(output, code):
         reasons.append("failures=%d" % failures)
     if unexpected:
         reasons.append("%d unexpected engine error(s)" % len(unexpected))
-    return not reasons, failures, reasons, unexpected
+    return not reasons, failures, reasons, unexpected, teardown
 
 
 def _run_verify_check(script):
@@ -3672,9 +3693,9 @@ def _run_verify_check(script):
     if hung:
         code = code or 1
         output += "\nERROR: killed after script error and silence\n"
-    passed, failures, reasons, unexpected = _verify_verdict(output, code)
+    passed, failures, reasons, unexpected, teardown = _verify_verdict(output, code)
     return {"script": script, "passed": passed, "failures": failures, "exit_code": code,
-            "reasons": reasons, "unexpected_errors": unexpected,
+            "reasons": reasons, "unexpected_errors": unexpected, "teardown_leaks": teardown,
             "seconds": round(time.time() - started, 3), "completed_at": now()}
 
 
@@ -3722,6 +3743,15 @@ def cmd_verify(args):
     print("\nverify: %d passed, %d failed, %d incomplete" % (len(checks) - len(failed) - len(missing), len(failed), len(missing)))
     for script in failed:
         print("  FAIL %s: %s" % (script, ", ".join(latest[script].get("reasons", []))))
+    leaky = [script for script in checks
+             if script in latest and latest[script].get("teardown_leaks")]
+    if leaky:
+        # Reported, never fatal (F-554). Listed after the failures so it reads as the hygiene note it
+        # is rather than a second failure list.
+        print("\n%d check(s) left resources or RIDs behind at engine teardown — not counted as "
+              "failures:" % len(leaky))
+        for script in leaky:
+            print("  leaks %s: %d line(s)" % (script, len(latest[script]["teardown_leaks"])))
     return 1 if failed or missing else 0
 
 

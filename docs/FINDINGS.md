@@ -3074,6 +3074,65 @@ widened to fail on a duplicate `### D-<n>` heading in docs/DECISIONS.md.
 
 ## Resolved
 
+### F-554 · agent verify fails a check on Godot's exit-time leak diagnostics, so 129 of 218 checks are red with every assertion passing — **fixed**
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-22 by hollowbfcf67
+
+A full `agent verify --fast` run over 218 checks (ledger `.agent/verify/b305c185-fast.jsonl`) fails
+**190** of them. Only 61 of those have any reason of their own — a `failures=N` verdict, a non-zero
+exit, or no verdict line at all. The other **129 fail on engine output alone, with `failures=0` and
+every assertion passing.**
+
+`_verify_verdict()` in `.agent/bin/agent` treats any line containing `ERROR:` that a check has not
+declared in `EXPECTED_ERROR_PATTERNS` as a reason to fail it. Two error families dominate, and
+neither is anything a check asserts:
+
+    ERROR: N resources still in use at exit (run with --verbose for details).
+    ERROR: N RID allocations of type '...' were leaked at exit.
+
+Both are printed by Godot's own teardown, after the check has run its assertions and called `quit()`.
+They appear in essentially every check that loads a scene — `resources still in use at exit` alone is
+in 54 of 61 rows sampled. `tools/door_check.gd` is the clean illustration: `DOOR_CHECK failures=0`,
+exit 0, and red, because a leak line followed it out.
+
+This is worse than a cosmetic annoyance, and F-551 already named the mechanism from the other end:
+*a check that fails at HEAD with no owner is indistinguishable from a check that is supposed to
+fail.* With 129 rows red for a reason no author controls, the suite reports 190/218 failing and a
+genuinely broken check is invisible inside it. Three separate sessions in one day read a red suite as
+normal — correctly, given what it was telling them.
+
+**The fix is not to ignore the leaks.** They are real hygiene, and a check that leaks more than its
+neighbours is worth knowing about. It is to stop conflating them with the check's own verdict:
+recognise exit-time teardown diagnostics as their own class, report them in a separate column that
+does not decide pass/fail, and leave `EXPECTED_ERROR_PATTERNS` doing its real job of classifying
+errors a check provokes *during* its assertions.
+
+Related and already fixed: F-553 removed the third-largest error family, a per-frame
+`No multiplayer peer is assigned` from `SfxDirector`, which was in 53 of 61 sampled rows. That one
+was a genuine defect at source and was fixed there rather than allowlisted here — which is the line
+this finding is drawing: errors a check causes are the check's problem, errors the engine prints
+while shutting down are not.
+
+**Resolved 2026-08-22 by hollowbfcf67.** **Fixed 2026-08-22 by hollowbfcf67.** `_verify_verdict()` now recognises Godot's exit-time teardown
+diagnostics as their own class — `resources still in use at exit`, `RID allocations of type ... were
+leaked at exit`, and `ObjectDB instances were leaked at exit` — and holds them apart from the
+`ERROR:` lines a check provokes while it runs. They are still captured, still stored on the ledger
+row as `teardown_leaks`, and still printed by `agent verify` in their own section under the failure
+list, so a check that leaks more than its neighbours remains visible. They no longer decide pass or
+fail.
+
+The exemption is deliberately narrow, and `tools/harness_check.py` asserts each edge rather than
+trusting the regex: a leak line beside `failures=0` passes; a mid-run `ERROR:` beside a leak line
+still fails and is still counted as one unexpected error, not two; and `failures=2` still fails
+however clean the teardown was. `EXPECTED_ERROR_PATTERNS` is untouched and keeps doing its real job.
+
+The rule being drawn, which is the part worth keeping: **an error a check provokes while running is
+the check's problem; an error the engine prints while shutting down is not.** F-553 is the
+counter-example that proves it — a per-frame `No multiplayer peer is assigned` in 53 of 61 rows was a
+genuine defect in `SfxDirector` and was fixed at its source rather than allowlisted here.
+
+**Verified**: `python3 tools/harness_check.py` → 40/40 passed, including the new F-554 case.
+
 ### F-553 · SfxDirector reads multiplayer.get_unique_id() directly every frame, which errors offline and mis-keys the local player after teardown — **fixed**
 
 **Area:** audio · **Severity:** medium · **Found:** 2026-08-22 by hollowbfcf67

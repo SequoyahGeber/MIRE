@@ -1002,17 +1002,42 @@ def _(harness):
 @case("verify requires an explicit zero-failure verdict and rejects unexpected engine errors (F-293)")
 def _(harness):
     mod = _load_harness(harness)
-    passed, failures, reasons, errors = mod._verify_verdict(
+    passed, failures, reasons, errors, leaks = mod._verify_verdict(
         'CHECK failures=0 · EXPECTED_ERROR_PATTERNS="known problem"\nERROR: known problem\n', 0)
     assert passed and failures == 0 and not reasons and not errors, (
         "a declared expected error made a zero-failure check fail: %r" % (reasons,))
-    passed, failures, reasons, errors = mod._verify_verdict(
+    passed, failures, reasons, errors, leaks = mod._verify_verdict(
         'CHECK failures=0 · EXPECTED_ERROR_PATTERNS="known problem"\nERROR: different problem\n', 0)
     assert not passed and errors, "an unexpected engine error was accepted"
-    passed, failures, reasons, errors = mod._verify_verdict("looks fine\n", 0)
+    passed, failures, reasons, errors, leaks = mod._verify_verdict("looks fine\n", 0)
     assert not passed and "missing failures verdict" in reasons, (
         "exit zero without the check contract was accepted: %r" % (reasons,))
     return "expected errors accepted; unexpected and verdict-less runs rejected"
+
+
+@case("verify counts Godot's exit-time leak diagnostics without failing the check on them (F-554)")
+def _(harness):
+    mod = _load_harness(harness)
+    # Exactly what a clean check's output looks like: its own zero-failure verdict, then the engine
+    # complaining on the way out. This shape was 129 of 218 red rows before F-554.
+    passed, failures, reasons, errors, leaks = mod._verify_verdict(
+        "DOOR_CHECK failures=0\n"
+        "ERROR: 4 resources still in use at exit (run with --verbose for details).\n"
+        "ERROR: 1 RID allocations of type 'N13RendererDummy9DummyMeshE' were leaked at exit.\n", 0)
+    assert passed, "a teardown leak still failed a check with failures=0: %r" % (reasons,)
+    assert not errors, "a teardown leak was counted as an unexpected engine error: %r" % (errors,)
+    assert len(leaks) == 2, "the leak lines were not reported separately: %r" % (leaks,)
+    # The exemption is for teardown only. An error raised while the check runs still fails it, and a
+    # real failures=N verdict is still a failure however clean the teardown was.
+    passed, _f, reasons, errors, leaks = mod._verify_verdict(
+        "CHECK failures=0\nERROR: something broke mid-run\n"
+        "ERROR: 4 resources still in use at exit (run with --verbose for details).\n", 0)
+    assert not passed and len(errors) == 1 and len(leaks) == 1, (
+        "the teardown exemption swallowed a real error: errors=%r leaks=%r" % (errors, leaks))
+    passed, _f, reasons, _e, _l = mod._verify_verdict(
+        "CHECK failures=2\nERROR: 4 resources still in use at exit.\n", 1)
+    assert not passed and "failures=2" in reasons, "a real verdict was masked: %r" % (reasons,)
+    return "teardown leaks reported, not fatal; mid-run errors and real verdicts still fail"
 
 
 @case("verify ledger resumes completed checks and tolerates one torn final line (F-293)")
