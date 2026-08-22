@@ -3862,6 +3862,14 @@ Live playtest 2026-08-22 (Sequoyah): the plant shown in `codex-clipboard-aa40338
 
 ---
 
+### F-636 · The harvestable Boulder asset is only finished from part of its circumference
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest 2026-08-22 (Sequoyah): the object identified by FocusPrompt as `Boulder` does not hold up when walked around. The two supplied first-person screenshots show incompatible unfinished sides: `codex-clipboard-d0319a5b-651b-4fbf-9dea-af2a9397e7fd.png` has a long thin slab/spike projecting from the crown like detached geometry, while `2026-08-22_13-45-21.png` shows dark holes, small disconnected-looking plugs and abrupt intersecting planes on the opposite face. The silhouette reads as partially assembled geometry, not one coherent low-poly boulder. Identify the exact intact-state GLB used by `content/harvestables/boulder.tres`, inspect every side plus the top and ground contact, and rebuild or repair that single asset so all faces are deliberately authored, watertight, free of floating/intersecting pieces and visually consistent with its damaged states. Verification must include an all-sides render and matching in-game first-person captures; a single hero angle cannot close this finding.
+
+---
+
 ## Resolved
 
 ### F-611 · Release build excludes tools/perf_format.gd, so SessionLog fails to parse and instantiate on launch — **fixed**
