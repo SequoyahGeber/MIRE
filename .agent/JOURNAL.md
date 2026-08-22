@@ -10617,3 +10617,27 @@ Commit at time of writing: `5313594b`
 Fauna Phase 1, three co-op parity checks (extraction, item pickup with wick3d4184's review fix, between-run persistence), F-591's threaded-load registry, and F-607's first-session economy measurement. All committed and pushed.
 
 Commit at time of writing: `894abea8`
+
+---
+
+### DONE · F-606 · wick1c650c · 2026-08-22T19:10:42+00:00
+
+**Nobody has measured what today's pressure work costs, and the target is an M1 Air**
+
+Two seeds: draw submissions flat, collision shapes/bodies up 50-150% (F-586). Ambient enemy change invisible headlessly. Filed F-610 on the presets.
+
+Files: `tools/world_weight_check.gd`
+
+Commit at time of writing: `a4900939`
+
+---
+
+### DONE · F-605 · wick3d4184 · 2026-08-22T19:11:23+00:00
+
+**Nothing proves a client that DIES gets back into the run — the two-process checks stop at revive**
+
+two-process wipe walk green: a dead client returns to the run at full hp, respawns at spawn, one death is not a wipe, both down is
+
+Files: `tools/defeat_net_check.gd`
+
+Commit at time of writing: `0d3d3e3e`
