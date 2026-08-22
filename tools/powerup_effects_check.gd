@@ -39,6 +39,7 @@ const CONSUMER_SITES: Dictionary = {
 	&"extra_jumps": ["res://entities/player/player_controller.gd", "local_stat"],
 	&"move_speed_low_hp": ["res://entities/player/player_controller.gd", "local_stat"],
 	&"move_speed_in_mire": ["res://entities/player/player_controller.gd", "local_stat"],
+	&"knockback_taken": ["res://entities/player/player_controller.gd", "local_stat"],
 	&"dodge_iframe_seconds": ["res://entities/player/player_controller.gd", "local_stat"],
 	# health / survival — host
 	&"max_hp": ["res://systems/health/player_health.gd", "stat"],
@@ -49,6 +50,7 @@ const CONSUMER_SITES: Dictionary = {
 	&"hunger_drain": ["res://systems/health/player_health.gd", "stat"],
 	&"food_value": ["res://systems/health/player_health.gd", "stat"],
 	&"blight_rate": ["res://systems/health/player_health.gd", "stat"],
+	&"fall_damage_taken": ["res://systems/health/player_health.gd", "stat"],
 	# stamina — client-local, same row as movement
 	&"max_stamina": ["res://systems/health/player_health.gd", "local_stat"],
 	&"stamina_regen": ["res://systems/health/player_health.gd", "local_stat"],
@@ -81,8 +83,6 @@ const CONSUMER_SITES: Dictionary = {
 ## no system to wire it to" are different bugs with different fixes, and collapsing them would make
 ## this check unactionable the day someone runs it.
 const PENDING: Dictionary = {
-	&"fall_damage_taken": "no fall-damage system exists — nothing in the project damages a player for landing",
-	&"knockback_taken": "no player-knockback system exists; enemy attacks apply damage only",
 	&"ignite_chance": "no status-effect system — Burning is the Fire-Resonance task's, unbuilt",
 	&"slow_chance": "no status-effect system — Chilled is the Cold-Resonance task's, unbuilt",
 	&"slow_potency": "no status-effect system — Chilled is the Cold-Resonance task's, unbuilt",
@@ -109,6 +109,7 @@ func _run() -> void:
 	_check_no_powerup_is_entirely_inert()
 	_check_damage_taken()
 	_check_stamina_stats()
+	_check_fall_damage()
 
 	print("\nPOWERUP_EFFECTS_CHECK failures=%d" % failures)
 	finish()
@@ -258,6 +259,30 @@ func _check_stamina_stats() -> void:
 
 	check(is_equal_approx(float(health.call(&"local_jump_stamina_cost")), bare_jump_cost),
 		"clearing the stacks restores the authored jump cost")
+
+
+## docs/POWERUPS.md §2: `fall_damage_taken` is landing damage, negative mult = softer. Driven through
+## the real host seam, including the floor below which a landing costs nothing at all.
+func _check_fall_damage() -> void:
+	print("\n== fall damage exists, and fall_damage_taken softens it ==")
+	var safe: float = float(health.get(&"FALL_SAFE_SPEED_MPS"))
+	health.call(&"host_reset_for_new_run")
+	powerups.call(&"host_clear_all")
+	check(int(health.call(&"host_apply_fall_damage", HOST_PEER, safe)) == 0,
+		"a landing at exactly the safe speed (%.1f m/s) costs nothing" % safe)
+	var bare: int = int(health.call(&"host_apply_fall_damage", HOST_PEER, safe + 9.0))
+	check(bare > 0, "a hard landing costs real hp (%d)" % bare)
+
+	var cushion: StringName = _powerup_naming(&"fall_damage_taken")
+	if cushion == &"":
+		check(false, "some shipped powerup names fall_damage_taken")
+		return
+	health.call(&"host_reset_for_new_run")
+	powerups.call(&"host_grant", HOST_PEER, cushion, 3)
+	var softened: int = int(health.call(&"host_apply_fall_damage", HOST_PEER, safe + 9.0))
+	check(softened < bare,
+		"3 stacks of '%s' soften the same landing (%d -> %d)" % [cushion, bare, softened])
+	powerups.call(&"host_clear_all")
 
 
 # ── Shared ───────────────────────────────────────────────────────────────────────────────────────

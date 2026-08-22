@@ -377,6 +377,70 @@ func host_apply_damage(peer_id: int, amount: int, instigator_peer_id: int) -> bo
 	return true
 
 
+## F-580 — FALL DAMAGE. `fall_damage_taken` was one of the four stats in docs/POWERUPS.md's pending
+## table that had no consuming SYSTEM at all: nothing in the project damaged a player for landing, so
+## `cat_fall` loaded, granted and did nothing. This is that system.
+##
+## Split the way every other player-damage source here is: the falling player's own controller is the
+## only thing that knows its impact speed (own movement is client authority, ARCHITECTURE §2.2 row
+## 1), so it REPORTS the speed; the host decides what that costs. A client never names its own damage
+## number — it names the physical fact it alone observed, exactly as `net_report_local_stamina()`
+## does, and the host applies `fall_damage_taken` and `damage_taken` on top.
+##
+## Below FALL_SAFE_SPEED_MPS nothing happens at all. That floor is deliberately well clear of a
+## standing jump's own landing speed — at the shipped `jump_height` 1.1 m and `gravity_scale` 2.0 a
+## jump lands at about 6.6 m/s, so a player cannot hurt themselves by jumping on the spot, and the
+## first drop that costs anything is roughly two metres.
+const FALL_SAFE_SPEED_MPS: float = 9.0
+
+## HP per m/s of impact above the floor. At the controller's `terminal_velocity` (18 m/s) this is 27
+## damage against the default 100 hp pool — a long fall is a serious mistake and never an instant
+## death, which is the only version that stays fair in a game with no fall-damage tell.
+const FALL_DAMAGE_PER_MPS: float = 3.0
+
+
+## Called by the LOCAL player's own controller the moment it touches down. Offline and on the host
+## this resolves immediately; on a client it goes to the host, which owns the damage.
+func local_report_landing(impact_speed: float) -> void:
+	if impact_speed <= FALL_SAFE_SPEED_MPS:
+		return
+	if _owns_mutation():
+		host_apply_fall_damage(_local_peer_id(), impact_speed)
+	elif bool(_transport().call("is_active")):
+		net_report_landing.rpc_id(NetConfig.HOST_PEER_ID, impact_speed)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func net_report_landing(impact_speed: float) -> void:
+	if not bool(_transport().call("is_host")):
+		return
+	var peer_id: int = multiplayer.get_remote_sender_id()
+	if peer_id <= 0:
+		return
+	host_apply_fall_damage(peer_id, impact_speed)
+
+
+## Host-only. Converts an impact speed into damage, applies `fall_damage_taken` (negative mult =
+## softer landing), and routes the result through `host_apply_damage()` so the general `damage_taken`
+## stat, god mode, the run-over guard and the downed transition all behave exactly as they do for any
+## other source. Reliable rather than clever: a fall that rounds to zero damage simply does nothing.
+func host_apply_fall_damage(peer_id: int, impact_speed: float) -> int:
+	if not _owns_mutation() or impact_speed <= FALL_SAFE_SPEED_MPS:
+		return 0
+	var raw: float = (impact_speed - FALL_SAFE_SPEED_MPS) * FALL_DAMAGE_PER_MPS
+	var powerups: Node = _powerups()
+	if powerups != null:
+		raw = float(powerups.call(&"stat", peer_id, &"fall_damage_taken", raw))
+	var damage: int = maxi(int(roundi(raw)), 0)
+	if damage <= 0:
+		return 0
+	host_apply_damage(peer_id, damage, 0)
+	MireLog.info(LOG_CHANNEL, "PlayerHealth: peer %d fell %.1f m/s for %d" % [
+		peer_id, impact_speed, damage
+	])
+	return damage
+
+
 func _on_enemy_attack_landed(
 	_enemy_id: StringName, peer_id: int, damage: int, _world_position: Vector3
 ) -> void:
@@ -391,6 +455,63 @@ func _on_enemy_attack_landed(
 	# instigator 0: no player threw this hit. host_apply_damage's instigator arg is only ever used
 	# for logging today; 0 is never a valid peer id so it reads unambiguously as "an enemy."
 	host_apply_damage(peer_id, damage, 0)
+	_host_knock_back(peer_id, _world_position)
+
+
+## F-580 — PLAYER KNOCKBACK. `knockback_taken` was the second stat with no system: enemy attacks
+## applied damage and nothing else, so `root_hold` was inert. This is that system.
+##
+## Authority split, and it is the whole design: the HOST decides that a hit landed and from WHERE,
+## and the struck player's OWN peer applies the impulse to its own velocity (ARCHITECTURE §2.2 row 1
+## — own movement is client authority; the host pushing a remote body would fight the client's own
+## simulation and lose, visibly). So this sends a direction and lets the owner move itself.
+##
+## `knockback_taken` is applied by the RECEIVER, in the controller, for the same reason the movement
+## stats are: it scales the peer's own velocity and a client is only ever sent its own powerup map.
+##
+## Direction is horizontal-only and away from the attack. A vertical component would launch players
+## off the terrain on every crawler hit, and "shoved back" is what DESIGN's melee actually promises.
+func _host_knock_back(peer_id: int, source_position: Vector3) -> void:
+	if not _owns_mutation() or peer_id <= 0:
+		return
+	var body: Node3D = _player_body(peer_id)
+	if body == null:
+		return
+	var away: Vector3 = body.global_position - source_position
+	away.y = 0.0
+	if away.length_squared() < 0.000001:
+		# Struck from exactly overhead or from inside our own footprint: push along the body's own
+		# facing instead of normalising a zero vector, so the shove still reads as a shove.
+		away = -body.global_transform.basis.z
+		away.y = 0.0
+	away = away.normalized()
+	if peer_id == _local_peer_id():
+		_apply_local_knockback(peer_id, away)
+	elif bool(_transport().call("is_active")) and bool(_transport().call("has_peer", peer_id)):
+		net_knock_back.rpc_id(peer_id, away)
+
+
+@rpc("authority", "call_remote", "reliable")
+func net_knock_back(direction: Vector3) -> void:
+	if _owns_mutation():
+		return
+	_apply_local_knockback(_local_peer_id(), direction)
+
+
+## Hands the impulse to the local player's own controller, which owns velocity. Absent body or a
+## controller without the method (a bare harness) means no knockback and never an error — the hit's
+## damage has already landed either way.
+func _apply_local_knockback(peer_id: int, direction: Vector3) -> void:
+	var body: Node3D = _player_body(peer_id)
+	if body == null or not body.has_method(&"local_apply_knockback"):
+		return
+	body.call(&"local_apply_knockback", direction, ENEMY_KNOCKBACK_IMPULSE_MPS)
+
+
+## Horizontal speed an enemy hit imparts, before the struck player's own `knockback_taken`. Chosen
+## against the shipped walk speed (4 m/s): a shove you have to walk back from, not one that removes
+## control. Wellspring's own note already assumes a knockback round trip of about two seconds.
+const ENEMY_KNOCKBACK_IMPULSE_MPS: float = 6.0
 
 
 ## `EventBus.run_wiped` reaches every peer's own local bus (`DefeatService`'s replicated-property

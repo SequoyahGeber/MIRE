@@ -1328,7 +1328,43 @@ func _detect_landing(fall_speed: float) -> void:
 	var on_floor: bool = is_on_floor()
 	if on_floor and not _was_on_floor:
 		landed.emit(fall_speed)
+		# F-580: report the impact to PlayerHealth, which owns what a landing COSTS. This peer is the
+		# only one that can observe its own impact speed (own movement is client authority), so it
+		# reports the physical fact and never a damage number — the host applies
+		# `fall_damage_taken` and decides. A harness with no PlayerHealth simply lands.
+		var health: Node = _health_node()
+		if health != null:
+			health.call(&"local_report_landing", fall_speed)
 	_was_on_floor = on_floor
+
+
+## F-580 — the receiving half of PlayerHealth's knockback. Called on the STRUCK player's own peer,
+## which is the only one allowed to move this body (ARCHITECTURE §2.2 row 1).
+##
+## `knockback_taken` is applied here, by the receiver, through `local_stat()`: a client is only ever
+## sent its own powerup map, so this is the one place the stat can be read honestly. A negative
+## multiplier is stability (`root_hold`), and the result is clamped at zero so a stacked resist
+## cannot invert the shove into a pull TOWARD the thing that just hit you.
+##
+## Added to horizontal velocity rather than assigned, so being hit while already moving reads as
+## being shoved off course instead of having your momentum replaced. Vertical velocity is untouched:
+## a hit does not pop you into the air, and leaving `velocity.y` alone means a knockback mid-fall
+## cannot cancel the fall damage that fall was about to cost.
+func local_apply_knockback(direction: Vector3, impulse: float) -> void:
+	if not is_local_authority or _is_dead():
+		return
+	var flat := Vector3(direction.x, 0.0, direction.z)
+	if flat.length_squared() < 0.000001:
+		return
+	var powerups: Node = _powerup_service()
+	var scaled: float = impulse
+	if powerups != null:
+		scaled = maxf(float(powerups.call(&"local_stat", &"knockback_taken", impulse)), 0.0)
+	if scaled <= 0.0:
+		return
+	var pushed: Vector3 = Vector3(velocity.x, 0.0, velocity.z) + flat.normalized() * scaled
+	velocity.x = pushed.x
+	velocity.z = pushed.z
 
 
 func _capture_mouse(captured: bool) -> void:
