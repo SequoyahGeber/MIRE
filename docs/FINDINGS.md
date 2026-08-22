@@ -3271,39 +3271,6 @@ because the assets are authored, generated, committed and maintained, and cannot
 
 ---
 
-### F-590 · The ground-drop budget evicts persistent island loot first, oldest-first regardless of persistence
-
-**Area:** loot · **Severity:** high · **Found:** 2026-08-22 by wick1c650c
-
-`ItemDropService._enforce_budget()` caps live drops at `MAX_LIVE_DROPS` (256) and evicts by taking
-`_container.get_child(0)` — the OLDEST child — until it is back under the cap. It does not look at
-`persistent` at all.
-
-Two facts make that the wrong order:
-
-  · `host_spawn_placed_drop()` spawns with `"persistent": true`, and its own doc comment promises
-    "it never expires before a player discovers it". `ItemDrop._physics_process()` honours that
-    against `LIFETIME_SEC`, so the promise holds for the timer — and is then broken by the budget,
-    which frees the node outright.
-  · placed loot is spawned EARLY. F-570 (`9ba5a036`) places 50 supply caches per island at world
-    build, so those drops are the oldest children in the container by a wide margin, which makes
-    them precisely the ones eviction reaches first.
-
-Since F-535 (`b8d8d67c`) every harvest yield is also a live drop competing for those 256 slots. So
-a player harvesting steadily is quietly deleting the island's authored loot behind them, oldest
-first, and the caches they have not walked to yet are the first to go. Nothing surfaces this: the
-only trace is one `MireLog.warn` saying how many were despawned.
-
-Eviction should prefer non-persistent drops, and reach a persistent one only when there is nothing
-else left to take (if it should reach one at all — an alternative is a separate budget per kind, so
-authored loot cannot be crowded out by yields no matter how many are dropped).
-
-Not a check failure. Found by reading the budget while proving F-588's harvest path end to end;
-wick3d4184 saw the cap firing in a `procedural_world_check` run on 2026-08-22, so it is reached in
-practice on a populated island, not only in theory.
-
----
-
 ### F-591 · The scatter/material warm pumps corrupt the heap — a real data race, not a flaky check (supersedes F-495's framing)
 
 **Area:** world · **Severity:** high · **Found:** 2026-08-22 by larchcc2572
@@ -3504,6 +3471,99 @@ item. Worth a roadmap task rather than a finding, if the next triage agrees.
 ---
 
 ## Resolved
+
+### F-590 · The ground-drop budget evicts persistent island loot first, oldest-first regardless of persistence — **fixed**
+
+**Area:** loot · **Severity:** high · **Found:** 2026-08-22 by wick1c650c
+
+`ItemDropService._enforce_budget()` caps live drops at `MAX_LIVE_DROPS` (256) and evicts by taking
+`_container.get_child(0)` — the OLDEST child — until it is back under the cap. It does not look at
+`persistent` at all.
+
+Two facts make that the wrong order:
+
+  · `host_spawn_placed_drop()` spawns with `"persistent": true`, and its own doc comment promises
+    "it never expires before a player discovers it". `ItemDrop._physics_process()` honours that
+    against `LIFETIME_SEC`, so the promise holds for the timer — and is then broken by the budget,
+    which frees the node outright.
+  · placed loot is spawned EARLY. F-570 (`9ba5a036`) places 50 supply caches per island at world
+    build, so those drops are the oldest children in the container by a wide margin, which makes
+    them precisely the ones eviction reaches first.
+
+Since F-535 (`b8d8d67c`) every harvest yield is also a live drop competing for those 256 slots. So
+a player harvesting steadily is quietly deleting the island's authored loot behind them, oldest
+first, and the caches they have not walked to yet are the first to go. Nothing surfaces this: the
+only trace is one `MireLog.warn` saying how many were despawned.
+
+Eviction should prefer non-persistent drops, and reach a persistent one only when there is nothing
+else left to take (if it should reach one at all — an alternative is a separate budget per kind, so
+authored loot cannot be crowded out by yields no matter how many are dropped).
+
+Not a check failure. Found by reading the budget while proving F-588's harvest path end to end;
+wick3d4184 saw the cap firing in a `procedural_world_check` run on 2026-08-22, so it is reached in
+practice on a populated island, not only in theory.
+
+---
+
+**Resolved 2026-08-22 by wick1c650c (fixed).** Fixed by wick1c650c.
+
+## The measurement first
+
+Booted the shipped composer and counted rather than trusting the code or my own finding: seed
+20260822 places **71 persistent drops**. My own F-590 body said "50 supply caches" — that was the
+figure I had read, and it was wrong, the same way `LooseLootService`'s comment claimed 20-30 while
+the truth was 71-86 (F-536). Every threshold below is stated against the measured number.
+
+## The fix
+
+`_enforce_budget()` now walks the container forward and despawns the oldest **transient** drops
+only, skipping persistent ones entirely. Children are in spawn order, so oldest-first survives —
+applied at last to the only population it was ever correct for. The original comment, "oldest
+first, because the drop a player is standing over is the newest one", is sound reasoning about
+harvest yields that was silently governing authored loot too.
+
+It now returns a bool, and `host_spawn_drop()` declines when it comes back false rather than
+reaching for a persistent drop.
+
+## The starvation question, which is the real design problem underneath
+
+Exempting persistent drops raises: what stops authored loot filling the budget? Answer: a second
+cap, `MAX_PERSISTENT_DROPS = 128`, enforced at PLACEMENT. `host_spawn_placed_drop()` refuses the
+129th pile and warns; it no longer calls `_enforce_budget()` at all, so authored loot cannot
+despawn a yield the player is walking towards either. That guarantees `MAX_LIVE_DROPS -
+MAX_PERSISTENT_DROPS` = 128 slots are always reachable by transient drops no matter what the world
+places, which is what makes the exemption safe rather than a deadlock waiting for a bigger island.
+
+128 against a measured 71 clears the real ceiling by half again, so content can grow substantially
+before anyone has to revisit it.
+
+Refusing at placement rather than evicting is the deliberate half: refusing the 129th pile is
+visible and recoverable — the world has one fewer heap and the log says so — while evicting to make
+room silently deletes loot a player may already have seen from across a clearing.
+
+## Why declining a drop is not a lost item
+
+`InventoryService._on_harvest_yielded()` treats a null from `host_spawn_drop()` as "no drop
+service" and credits the pack directly. So a full budget degrades to the pre-F-535 behaviour — the
+yield skips the ground and goes to the player — rather than destroying anything. The check asserts
+this as a disjunction over both destinations ("pack rose OR ground rose"), because the weaker
+"the pack did not shrink" passes when nothing happens at all, which is the exact failure it exists
+to catch.
+
+## Verification
+
+`tools/drop_budget_check.gd`, failures=0. It boots the real procedural island, counts what was
+placed, fires 400 harvest yields spaced wider than `MERGE_RADIUS_M` so none of them merge, and
+asserts the island's loot is all still standing. 256 live at the cap, 71 persistent, cap enforced.
+
+**Negative control — restoring the old behaviour by disabling only the persistence skip:**
+
+    FAIL: every piece of authored loot survived the harvest (0 of 71 still standing)
+
+Not "some": one harvest burst deleted the island's entire authored loot population. That is what
+was shipping.
+
+`tools/loose_loot_world_check.gd` re-run green, so the placement side is unaffected.
 
 ### F-592 · Performance is reported in milliseconds, which is not a unit the person deciding can judge — **fixed**
 

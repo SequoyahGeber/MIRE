@@ -34,9 +34,30 @@ const POP_SIDE_SPEED: float = 1.1
 ## Where the item appears relative to the harvested prop's origin. Chest-high rather than at the
 ## feet, so the arc reads as "it fell out" rather than "it grew".
 const SPAWN_HEIGHT_M: float = 0.9
-## Bounded so a pathological run cannot fill the world with rigid bodies. Oldest first, because the
-## drop a player is standing over is the newest one.
+## Bounded so a pathological run cannot fill the world with rigid bodies.
+##
+## F-590: eviction is oldest-first among TRANSIENT drops only, and never touches a persistent one.
+## The original rule was "oldest first, because the drop a player is standing over is the newest
+## one" — sound for harvest yields and exactly wrong for authored loot. Placed loot is spawned at
+## world build, so it is the oldest thing in the container by a wide margin, and a player harvesting
+## steadily was deleting the island's loot behind them, oldest first, with one `MireLog.warn` as the
+## only trace. `host_spawn_placed_drop()` promises the opposite in its own docstring — "it never
+## expires before a player discovers it" — a promise honoured against `LIFETIME_SEC` and then broken
+## here.
 const MAX_LIVE_DROPS: int = 256
+## The persistent half of that budget, and the answer to the question exempting them raises: if
+## authored loot cannot be evicted, what stops it starving the budget entirely?
+##
+## It is capped at spawn time instead. `MAX_LIVE_DROPS - MAX_PERSISTENT_DROPS` slots are therefore
+## always reachable by transient drops no matter what the world places, which is what makes the
+## exemption safe rather than a deadlock waiting for a big enough island.
+##
+## 128 is chosen against the MEASURED population, not the documented one: `LooseLootService` places
+## 71-86 live drops on the procedural island (F-536 measured that across three seeds, after the
+## comment there claimed 20-30 for a long time). 128 clears the real ceiling by half again, so
+## content can grow substantially before anyone has to think about this number, and still leaves 128
+## transient slots — comfortably more than a harvesting player generates between pickups.
+const MAX_PERSISTENT_DROPS: int = 128
 
 var _container: Node3D
 var _spawner: MultiplayerSpawner
@@ -113,7 +134,8 @@ func host_spawn_drop(item_id: StringName, amount: int, world_position: Vector3) 
 	if mate != null and bool(mate.call(&"host_merge", amount)):
 		return mate
 
-	_enforce_budget()
+	if not _enforce_budget():
+		return null
 	var angle: float = _rng.randf_range(0.0, TAU)
 	return _spawner.spawn({
 		"item": String(item_id),
@@ -133,7 +155,17 @@ func host_spawn_drop(item_id: StringName, amount: int, world_position: Vector3) 
 func host_spawn_placed_drop(item_id: StringName, amount: int, world_position: Vector3) -> Node3D:
 	if not _owns_mutation() or amount <= 0 or not _item_exists(item_id):
 		return null
-	_enforce_budget()
+	# F-590: placed loot is bounded at PLACEMENT rather than by eviction. Refusing the 129th cache
+	# is visible and recoverable — the world simply has one fewer pile, and the warning says so —
+	# whereas evicting to make room silently deletes loot a player may already have seen from
+	# across a clearing. It also never calls `_enforce_budget()`: authored loot must not be able to
+	# despawn a yield the player is walking towards either, and its own cap already guarantees the
+	# transient half of the budget stays reachable.
+	if persistent_count() >= MAX_PERSISTENT_DROPS:
+		MireLog.warn(LOG_CHANNEL,
+			"placed loot is at its %d cap — refusing to place another rather than evicting one already in the world"
+				% MAX_PERSISTENT_DROPS)
+		return null
 	return _spawner.spawn({
 		"item": String(item_id),
 		"amount": amount,
@@ -191,20 +223,54 @@ func _merge_target(item_id: StringName, origin: Vector3) -> Node3D:
 ## Frees the oldest drops rather than refusing the new one: the item a player just knocked loose is
 ## the one they are about to walk to, and silently dropping THAT is the failure this budget exists to
 ## avoid. Container children are in spawn order, so the front of the list is the oldest.
-func _enforce_budget() -> void:
+## Makes room for one more TRANSIENT drop, by despawning the oldest transient drops and nothing
+## else. Returns false when it could not — the caller must then decline to spawn rather than reach
+## for a persistent drop (F-590).
+##
+## Declining is safe, and that is not an accident of this file: `InventoryService._on_harvest_yielded()`
+## treats a null from `host_spawn_drop()` as "no drop service" and credits the pack directly instead.
+## So the worst case of a full budget is a yield that skips the ground and goes straight to the
+## player — which is the pre-F-535 behaviour, not a lost item. Evicting authored loot to make room
+## would have destroyed something to avoid that.
+func _enforce_budget() -> bool:
 	if _container == null:
-		return
+		return true
 	var over: int = _container.get_child_count() - (MAX_LIVE_DROPS - 1)
 	if over <= 0:
-		return
-	for index: int in range(over):
-		var child: Node = _container.get_child(0)
-		if child != null:
-			_container.remove_child(child)
-			child.queue_free()
-	MireLog.warn(LOG_CHANNEL, "ground drops hit the %d cap — despawned %d oldest" % [
-		MAX_LIVE_DROPS, over
-	])
+		return true
+	var freed: int = 0
+	for child: Node in _container.get_children():
+		if freed >= over:
+			break
+		# The whole fix: a persistent drop is skipped, not taken. Children are in spawn order, so
+		# walking forward still takes the OLDEST transient drop first — the original policy, now
+		# applied to the only population it was ever correct for.
+		if bool(child.get(&"persistent")):
+			continue
+		_container.remove_child(child)
+		child.queue_free()
+		freed += 1
+	if freed > 0:
+		MireLog.warn(LOG_CHANNEL, "ground drops hit the %d cap — despawned %d oldest transient drop(s)" % [
+			MAX_LIVE_DROPS, freed
+		])
+	if freed < over:
+		MireLog.warn(LOG_CHANNEL,
+			"ground drops are at the %d cap with nothing transient left to despawn — declining the new drop rather than deleting authored loot (%d persistent live)"
+				% [MAX_LIVE_DROPS, persistent_count()])
+		return false
+	return true
+
+
+## How many of the live drops are authored world loot rather than harvest yields.
+func persistent_count() -> int:
+	if _container == null:
+		return 0
+	var total: int = 0
+	for child: Node in _container.get_children():
+		if bool(child.get(&"persistent")):
+			total += 1
+	return total
 
 
 func live_count() -> int:
