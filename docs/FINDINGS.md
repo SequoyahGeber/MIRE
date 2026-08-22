@@ -3582,26 +3582,6 @@ hotbar's own band drawn in. Full write-up in `docs/DELEGATION.md`.
 
 ---
 
-### F-485 · The anvil costs a wellglass shard, so smithing is gated behind a POI drop
-
-**Area:** progression · **Severity:** medium · **Found:** 2026-08-22 by quillb947a7
-
-content/buildables/anvil.tres costs 6 iron_ingot, 4 log and 1 wellglass_shard. wellglass_shard has
-exactly one source in the game — the wellspring loot table (content/loot/wellspring.tres) — so the
-anvil cannot be built until the player has found and looted that POI.
-
-That was tolerable while the anvil only held the four tier-4/5 bogsilver and wellglass recipes. As
-of F-484 the anvil is where all iron gear is smithed, so a run that has smelted iron but has not
-happened across a wellspring can no longer make an iron axe, pickaxe, sword, cleaver, repair hammer
-or skewer at all — the iron tier hangs off a drop the world may not have placed nearby.
-
-Suggested fix: the anvil's cost should be reachable from the furnace's own output — e.g. 6
-iron_ingot, 4 log, 10 stone — and the wellglass shard should gate a station above it, not the
-first smithing station. Not applied here: content/buildables/anvil.tres was claimed by another
-agent (galee581ee, F-483) at the time.
-
----
-
 ### F-486 · Pine and willow read wrong against their real subjects; birch is the standard both should meet
 
 **Area:** art · **Severity:** high · **Found:** 2026-08-22 by moss7f4dd3
@@ -3642,7 +3622,50 @@ F-424/F-434 fixed the bole and got the curtain to exist, but the curtain itself 
 
 ---
 
-### F-487 · Station tiers: the tier-1 forge and wood stations cost flint and coal, which no run can obtain
+### F-488 · Food gatherables never spawn: apple tree, berry bush and mushroom patch have definitions and art but no HarvestLibrary rule and no scatter entry
+
+**Area:** world · **Severity:** high · **Found:** 2026-08-22 by tine0bda72
+
+`content/harvestables/apple_tree.tres`, `berry_bush.tres` and `mushroom_patch.tres` exist with full
+and depleted GLBs under `assets/gatherables/exports/`, but:
+
+- `systems/harvesting/harvest_library.gd` HARVEST_RULES has no prefix for `apple_tree_*`,
+  `berry_bush_*` or `mushroom_patch_*`, so even a placed one would be inert scenery.
+- No `content/scatter/*.tres` table references any of the three, so procedural worlds place none.
+
+Net effect reported from play: no food gatherables anywhere on the map.
+
+---
+
+## Resolved
+
+### F-485 · The anvil costs a wellglass shard, so smithing is gated behind a POI drop — **fixed**
+
+**Area:** progression · **Severity:** medium · **Found:** 2026-08-22 by quillb947a7
+
+content/buildables/anvil.tres costs 6 iron_ingot, 4 log and 1 wellglass_shard. wellglass_shard has
+exactly one source in the game — the wellspring loot table (content/loot/wellspring.tres) — so the
+anvil cannot be built until the player has found and looted that POI.
+
+That was tolerable while the anvil only held the four tier-4/5 bogsilver and wellglass recipes. As
+of F-484 the anvil is where all iron gear is smithed, so a run that has smelted iron but has not
+happened across a wellspring can no longer make an iron axe, pickaxe, sword, cleaver, repair hammer
+or skewer at all — the iron tier hangs off a drop the world may not have placed nearby.
+
+Suggested fix: the anvil's cost should be reachable from the furnace's own output — e.g. 6
+iron_ingot, 4 log, 10 stone — and the wellglass shard should gate a station above it, not the
+first smithing station. Not applied here: content/buildables/anvil.tres was claimed by another
+agent (galee581ee, F-483) at the time.
+
+---
+
+**Resolved 2026-08-22 by quillb947a7.** Resolved with F-487 / D-203: content/buildables/anvil.tres now costs iron_ingot 6, log 4, stone 12.
+The wellglass_shard is gone, so the anvil — tier 2 of the forge family — is reachable from the
+furnace's own output rather than from a wellspring POI drop. tools/station_tier_check.gd keeps
+tier-1 costs to gathered resources, and tools/resource_reachability_check.gd keeps every ingredient
+in the game produced by something.
+
+### F-487 · Station tiers: the tier-1 forge and wood stations cost flint and coal, which no run can obtain — **fixed**
 
 **Area:** progression · **Severity:** high · **Found:** 2026-08-22 by quillb947a7
 
@@ -3685,7 +3708,39 @@ galee581ee for F-483. It must be applied as soon as that claim releases.
 
 ---
 
-## Resolved
+**Resolved 2026-08-22 by quillb947a7.** Fixed in both halves, and both are now guarded by checks.
+
+Half 1 — the base resources exist:
+  · content/recipes/flint.tres (new) — 3 stone -> 2 flint, knapped at the workbench. flint had NO
+    source in the game at all; the arrow recipe, the spike barricade, the furnace and the
+    woodcutting block all wanted it.
+  · content/recipes/charcoal.tres — moved from the furnace to the campfire. It made coal out of
+    logs at the station whose own build cost was coal; the campfire is tier-1 and costs stone and
+    branches, so the fuel chain now reads campfire -> charcoal -> furnace.
+
+Half 2 — tier-1 station costs name only what the world yields (D-203). StationDef gained a `family`
+field so the ladder is data rather than convention, and validation_errors() rejects a station
+without one:
+
+  workbench  1 Workbench (log 8, fibre 2)          2 Reinforced Workbench (+ iron_ingot 2)
+  fire       1 Campfire (stone 10, branch 5)       2 Cooking Spit (log 6, fibre 3, stone 4, coal 2)
+  forge      1 Furnace (stone 20, log 6, branch 8) 2 Anvil (iron_ingot 6, log 4, stone 12)
+  repair     1 Repair Bench (log 8, stone 6, branch 6)
+  wood       1 Woodcutting Block (log 6, stone 4, branch 4)
+
+  furnace dropped flint 4 + coal 4; woodcutting_block dropped flint 2; repair_bench dropped
+  iron_ingot 3 (it is the only station in its family, so it is that family's entry point); anvil
+  dropped the wellglass_shard, which also resolves F-485.
+
+Verified headlessly, all green: tools/station_tier_check.gd (new, 0 failures),
+tools/resource_reachability_check.gd (new, 0 failures — and it reds with
+"FAIL flint is obtainable (wanted by recipe arrow, buildable barricade_spike, buildable furnace,
+buildable woodcutting_block)" the moment content/recipes/flint.tres is removed, which is the state
+the game shipped in), plus recipe_station_check, crafting_check, crafting_ui_check, build_check,
+station_buildable_check, progression_check and guide_check — 0 failures each.
+
+Also repaired two `## Pine` / `## Willow` body headings in F-486, which sat at section level and
+made `agent claim` read every finding after them as living outside '## Open'.
 
 ### F-484 · Tool recipes all live at the workbench instead of their proper station — **fixed**
 
