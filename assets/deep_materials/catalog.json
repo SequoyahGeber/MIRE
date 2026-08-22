@@ -1,0 +1,62 @@
+[
+  {
+    "name": "pickup_bogsilver_ore",
+    "family": "mineral",
+    "width_m": 0.22,
+    "depth_m": 0.201,
+    "height_m": 0.197,
+    "mesh_parts": 17,
+    "polygons": 340,
+    "materials": [
+      "MIRE_Bogsilver",
+      "MIRE_BogsilverCrust",
+      "MIRE_BogsilverDark",
+      "MIRE_BogsilverLight",
+      "MIRE_Stone",
+      "MIRE_StoneDark"
+    ]
+  },
+  {
+    "name": "pickup_bogsilver_ingot",
+    "family": "crafted",
+    "width_m": 0.26,
+    "depth_m": 0.11,
+    "height_m": 0.062,
+    "mesh_parts": 8,
+    "polygons": 104,
+    "materials": [
+      "MIRE_Bogsilver",
+      "MIRE_BogsilverDark",
+      "MIRE_BogsilverLight"
+    ]
+  },
+  {
+    "name": "pickup_wellglass_shard",
+    "family": "mineral",
+    "width_m": 0.18,
+    "depth_m": 0.136,
+    "height_m": 0.166,
+    "mesh_parts": 8,
+    "polygons": 64,
+    "materials": [
+      "MIRE_Wellglass",
+      "MIRE_WellglassDark",
+      "MIRE_WellglassLight"
+    ]
+  },
+  {
+    "name": "pickup_guardian_core",
+    "family": "crafted",
+    "width_m": 0.134,
+    "depth_m": 0.12,
+    "height_m": 0.2,
+    "mesh_parts": 24,
+    "polygons": 275,
+    "materials": [
+      "MIRE_Bogsilver",
+      "MIRE_BogsilverDark",
+      "MIRE_Wellglass",
+      "MIRE_WellglassLight"
+    ]
+  }
+]

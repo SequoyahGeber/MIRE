@@ -259,5 +259,93 @@
       "MIRE_IronDark",
       "MIRE_StoneDark"
     ]
+  },
+  {
+    "name": "bogsilver_node_intact",
+    "family": "bogsilver",
+    "state": "intact",
+    "width_m": 2.254,
+    "depth_m": 1.857,
+    "height_m": 1.77,
+    "mesh_parts": 14,
+    "polygons": 280,
+    "materials": [
+      "MIRE_Bogsilver",
+      "MIRE_BogsilverCrust",
+      "MIRE_BogsilverDark",
+      "MIRE_BogsilverLight",
+      "MIRE_Stone"
+    ]
+  },
+  {
+    "name": "bogsilver_node_chipped",
+    "family": "bogsilver",
+    "state": "chipped",
+    "width_m": 2.287,
+    "depth_m": 1.93,
+    "height_m": 1.77,
+    "mesh_parts": 21,
+    "polygons": 420,
+    "materials": [
+      "MIRE_Bogsilver",
+      "MIRE_BogsilverCrust",
+      "MIRE_BogsilverDark",
+      "MIRE_BogsilverLight",
+      "MIRE_Stone",
+      "MIRE_StoneLight"
+    ]
+  },
+  {
+    "name": "bogsilver_node_cracked",
+    "family": "bogsilver",
+    "state": "cracked",
+    "width_m": 2.571,
+    "depth_m": 2.498,
+    "height_m": 1.666,
+    "mesh_parts": 37,
+    "polygons": 701,
+    "materials": [
+      "MIRE_Bogsilver",
+      "MIRE_BogsilverCrust",
+      "MIRE_BogsilverDark",
+      "MIRE_BogsilverLight",
+      "MIRE_Coal",
+      "MIRE_Stone",
+      "MIRE_StoneLight"
+    ]
+  },
+  {
+    "name": "bogsilver_node_shattered",
+    "family": "bogsilver",
+    "state": "shattered",
+    "width_m": 2.704,
+    "depth_m": 2.624,
+    "height_m": 1.72,
+    "mesh_parts": 55,
+    "polygons": 1022,
+    "materials": [
+      "MIRE_Bogsilver",
+      "MIRE_BogsilverCrust",
+      "MIRE_BogsilverDark",
+      "MIRE_BogsilverLight",
+      "MIRE_Coal",
+      "MIRE_Stone",
+      "MIRE_StoneLight"
+    ]
+  },
+  {
+    "name": "bogsilver_node_depleted",
+    "family": "bogsilver",
+    "state": "depleted",
+    "width_m": 1.589,
+    "depth_m": 1.263,
+    "height_m": 0.603,
+    "mesh_parts": 7,
+    "polygons": 140,
+    "materials": [
+      "MIRE_Bogsilver",
+      "MIRE_BogsilverDark",
+      "MIRE_StoneDark"
+    ]
   }
 ]

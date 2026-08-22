@@ -80,6 +80,46 @@
     "source_polygons": 80
   },
   {
+    "id": "bogsilver_ore",
+    "source": "assets/deep_materials/exports/pickup_bogsilver_ore.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.2734,
+    "source_polygons": 340
+  },
+  {
+    "id": "bogsilver_ingot",
+    "source": "assets/deep_materials/exports/pickup_bogsilver_ingot.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.2623,
+    "source_polygons": 128
+  },
+  {
+    "id": "wellglass_shard",
+    "source": "assets/deep_materials/exports/pickup_wellglass_shard.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 0.1898,
+    "source_polygons": 64
+  },
+  {
+    "id": "guardian_core",
+    "source": "assets/deep_materials/exports/pickup_guardian_core.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.2085,
+    "source_polygons": 380
+  },
+  {
     "id": "salvage_fragment",
     "source": "assets/pickups/exports/pickup_salvage_fragment.glb",
     "size_px": 256,
@@ -200,6 +240,16 @@
     "source_polygons": 746
   },
   {
+    "id": "iron_axe",
+    "source": "assets/tools_weapons/exports/iron_axe_world.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 1.5584,
+    "source_polygons": 614
+  },
+  {
     "id": "iron_pickaxe",
     "source": "assets/tools_weapons/exports/iron_pickaxe_world.glb",
     "size_px": 256,
@@ -208,6 +258,46 @@
     "roll_deg": 45.0,
     "ortho_scale_m": 1.4558,
     "source_polygons": 672
+  },
+  {
+    "id": "bogsilver_axe",
+    "source": "assets/tools_weapons/exports/bogsilver_axe_world.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 1.6063,
+    "source_polygons": 666
+  },
+  {
+    "id": "bogsilver_pickaxe",
+    "source": "assets/tools_weapons/exports/bogsilver_pickaxe_world.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 1.4505,
+    "source_polygons": 672
+  },
+  {
+    "id": "wellglass_axe",
+    "source": "assets/tools_weapons/exports/wellglass_axe_world.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 1.6138,
+    "source_polygons": 838
+  },
+  {
+    "id": "wellglass_pickaxe",
+    "source": "assets/tools_weapons/exports/wellglass_pickaxe_world.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 1.4505,
+    "source_polygons": 832
   },
   {
     "id": "cleaver",

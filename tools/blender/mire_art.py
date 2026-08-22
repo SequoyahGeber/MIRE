@@ -132,6 +132,34 @@ PALETTE: dict[str, Swatch] = {
     "iron_light": Swatch("#D0DDDE", 0.26, 0.80, note="ground cutting edges only"),
     "brass": Swatch("#EAB342", 0.34, 0.62, note="caps, quillons, fittings"),
     "gold": Swatch("#FFD738", 0.30, 0.66, note="coins and treasure"),
+    # Bogsilver, the tier-4 metal (D-200). It has to be told apart from `iron` at a
+    # glance and across a clearing, and iron already owns cool mid-grey — so the
+    # separation is HUE and CONTRAST, not lightness. Modelled on what actually
+    # happens to silver in a bog: anoxic, sulphur-rich water tarnishes it, and real
+    # tarnish runs pale straw -> brown -> blue-black rather than simply darker grey.
+    # So the body carries a faint warm-green cast, the recesses go almost black, and
+    # the ground edge is nearly white. That spread is the tell; a flat pale grey head
+    # would read as "iron, lit slightly differently" in fog, which is the failure.
+    # Deliberately NOT gold-warm: brass and gold own warm metal already.
+    "bogsilver_dark": Swatch("#2F3742", 0.58, 0.68, note="bogsilver tarnish: eyes, sockets, crevices"),
+    "bogsilver": Swatch("#C6C9B6", 0.34, 0.84, note="bogsilver tool bodies and fittings"),
+    "bogsilver_light": Swatch("#F0F2E2", 0.16, 0.90, note="ground bogsilver cutting edges only"),
+    "bogsilver_crust": Swatch("#6B7362", 0.88, 0.10, note="dull mineral crust on unworked bogsilver in rock"),
+    # Wellglass, the tier-5 material (D-200). It comes out of a capped Wellspring, so
+    # it belongs to the cleansed side of that language — but Ward teal is RESERVED and
+    # means "you are safe here", and an axe must never make that promise. Wellglass is
+    # therefore greener and much dimmer than `ward_crystal`/`clear_liquid`: emission
+    # 0.7-1.3 against the Ward's 2.2-3.4, so a shard catches light without glowing at
+    # you. Modelled on obsidian and on sea glass rather than on gemstone: real volcanic
+    # glass breaks by CONCHOIDAL FRACTURE, shallow curved facets meeting at edges
+    # thinner than steel can hold, which is both why the tools are built knapped rather
+    # than forged and why "the edge does not dull" is a true sentence about it.
+    "wellglass_dark": Swatch("#2C5A5C", 0.30, 0.00, note="wellglass body seen through thickness; shadowed facets"),
+    # Emission stays LOW here — 0.30/0.90, not the Ward's 2.2-3.4. The first pass ran 0.7/1.3 and
+    # the render came back near-white: at that strength the emission drowns the base colour and a
+    # teal blade reads as a bulb. It has to catch light, not make it.
+    "wellglass": Swatch("#5FA79B", 0.20, 0.00, "#6FC9B4", 0.30, note="wellglass blade faces"),
+    "wellglass_light": Swatch("#C4EDDD", 0.12, 0.00, "#B6FFE6", 0.90, note="fresh conchoidal fracture and the edge itself"),
     # -- foliage ------------------------------------------------------------
     "pine_dark": Swatch("#277C59", 0.94),
     "pine": Swatch("#30A273", 0.94),
@@ -323,6 +351,12 @@ SCALE: dict[str, float] = {
     "pickup_coal": 0.16,            # small heap of lumps
     "pickup_iron_ore": 0.20,
     "pickup_iron_ingot": 0.26,
+    # Tier 4/5 (D-200). Bogsilver ore is a shade larger than iron ore because it comes out of the
+    # rock as one nodule rather than as a broken chunk; the ingot shares the iron mould exactly.
+    "pickup_bogsilver_ore": 0.22,
+    "pickup_bogsilver_ingot": 0.26,
+    "pickup_wellglass_shard": 0.18,   # three pieces of one break, largest ~0.10
+    "pickup_guardian_core": 0.20,     # two-handed, but it fits in a pack
     "pickup_salvage_fragment": 0.19,
     "pickup_fibre_bundle": 0.32,
     "pickup_branch": 0.85,

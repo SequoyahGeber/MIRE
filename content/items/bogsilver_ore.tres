@@ -1,8 +1,8 @@
 [gd_resource type="Resource" script_class="ItemDef" format=3]
 
 [ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="1_bsore"]
-[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_iron_ore.png" id="2_bsore"]
-[ext_resource type="PackedScene" path="res://assets/pickups/exports/pickup_iron_ore.glb" id="3_bsore"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_bogsilver_ore.png" id="2_bsore"]
+[ext_resource type="PackedScene" path="res://assets/deep_materials/exports/pickup_bogsilver_ore.glb" id="3_bsore"]
 
 [resource]
 script = ExtResource("1_bsore")

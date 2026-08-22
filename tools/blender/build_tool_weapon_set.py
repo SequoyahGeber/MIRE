@@ -74,7 +74,12 @@ DESIGNS = [
     "stone_axe",
     "wooden_pickaxe",
     "stone_pickaxe",
+    "iron_axe",
     "iron_pickaxe",
+    "bogsilver_axe",
+    "bogsilver_pickaxe",
+    "wellglass_axe",
+    "wellglass_pickaxe",
     "cleaver",
     "skewer",
     "short_bow",
@@ -83,8 +88,9 @@ DESIGNS = [
     "iron_sword",
 ]
 EXPECTED_NAMES = [f"{design}_{presentation}" for design in DESIGNS for presentation in ("world", "viewmodel")]
-#: Preview grid. Eleven designs no longer fit the original five columns in two rows.
-PREVIEW_COLUMNS = 6
+#: Preview grid. Sixteen designs across four rows of four reads better than six-wide, and keeps each
+#: tier's axe and pickaxe adjacent instead of wrapping between rows.
+PREVIEW_COLUMNS = 4
 PREVIEW_COLUMN_SPACING = 2.75
 PREVIEW_ROW_SPACING = 3.4
 
@@ -508,6 +514,234 @@ def build_stone_axe(mats: dict[str, bpy.types.Material]) -> None:
     add_lashing(mats, AXE_HAFT, AXE_RADII, (0.780, 0.835, 0.890), 0.835)
 
 
+#: Forged-axe tiers. The wooden and stone axes above are *knapped-and-lashed*: a wedge of material
+#: tied to a stick. From iron up the construction changes, and the construction IS the tier read —
+#: the haft passes THROUGH an eye, so there is no lashing, and the head grows a squared poll behind
+#: that eye which no lashed head can have. Real felling-axe anatomy, in the order the profile below
+#: walks it: poll (the flat back), eye (the hole, with a proud collar), cheek (the tapering side),
+#: beard (the bit reaching back down toward the haft), then toe and heel at the ends of the edge.
+#:
+#: Thinner than stone at every station, because that is the actual advantage of the material and the
+#: silhouette should say so. Bogsilver is thinner and longer again, and adds a forged rib down the
+#: cheek — one raised line is the whole difference at a glance, and a glance in fog is the test.
+FORGED_AXE_TIERS = {
+    "iron": {
+        "body": "iron",
+        "edge": "iron_light",
+        "socket": "iron_dark",
+        "rivet": "iron_light",
+        "reach": 0.268,
+        "edge_reach": 0.548,
+        "girth": 1.00,
+        "rib": False,
+    },
+    "bogsilver": {
+        "body": "bogsilver",
+        "edge": "bogsilver_light",
+        "socket": "bogsilver_dark",
+        "rivet": "bogsilver_light",
+        "reach": 0.286,
+        "edge_reach": 0.604,
+        "girth": 0.88,
+        "rib": True,
+    },
+}
+
+
+def build_forged_axe(mats: dict[str, bpy.types.Material], tier: str) -> None:
+    spec = FORGED_AXE_TIERS[tier]
+    add_haft(mats, AXE_HAFT, AXE_RADII, (0.05, 0.33), 6)
+    body = mats[spec["body"]]
+    reach = spec["reach"]
+    girth = spec["girth"]
+
+    # One loop: bottom edge back-to-front, the seam point the bit is butted onto, then the top edge
+    # front-to-back. Same order the wooden and stone heads use, so the three read as one family.
+    ground_profile(
+        f"{tier.title()}_Axe_Head",
+        [
+            (-0.115, 1.052),
+            (-0.010, 1.028),
+            (0.130, 0.998),
+            (reach, 0.958),
+            (reach + 0.056, 1.128),
+            (reach, 1.328),
+            (0.130, 1.292),
+            (-0.010, 1.270),
+            (-0.115, 1.248),
+        ],
+        [
+            0.068 * girth, 0.062 * girth, 0.050 * girth, 0.036 * girth,
+            0.030 * girth, 0.036 * girth, 0.050 * girth, 0.062 * girth, 0.068 * girth,
+        ],
+        # Zero at the poll: a square wall is what makes a poll read as a hammer face rather than as
+        # the blunt end of a wedge. It grinds away toward the bit.
+        [0.000, 0.014, 0.032, 0.048, 0.052, 0.048, 0.032, 0.014, 0.000],
+        body,
+        center=(0.080, 1.128),
+    )
+    # The bit, butted along the seam rather than laid over the body — an overlaid bright strip loses
+    # to the body's own silhouette at exactly the rim it exists to show (the A-004R lesson).
+    ground_profile(
+        f"{tier.title()}_Axe_Bit",
+        [
+            (reach, 0.958),
+            (reach + 0.120, 0.888),
+            (spec["edge_reach"] - 0.032, 0.972),
+            (spec["edge_reach"], 1.128),
+            (spec["edge_reach"] - 0.032, 1.284),
+            (reach + 0.120, 1.366),
+            (reach, 1.328),
+            (reach + 0.056, 1.128),
+        ],
+        [
+            0.036 * girth, 0.024 * girth, 0.015 * girth, 0.012 * girth,
+            0.015 * girth, 0.024 * girth, 0.036 * girth, 0.030 * girth,
+        ],
+        [0.030, 0.050, 0.068, 0.072, 0.068, 0.050, 0.030, 0.026],
+        mats[spec["edge"]],
+        center=(reach + 0.075, 1.128),
+    )
+    # The eye's collar, proud of the cheeks on both faces. This is the piece that says the haft goes
+    # THROUGH the head; without it a forged axe reads as a lashed one whose cord was forgotten.
+    swept_shaft(
+        f"{tier.title()}_Axe_Socket",
+        [(0.030, 0.0, 1.036), (0.040, 0.0, 1.150), (0.048, 0.0, 1.266)],
+        [0.076 * girth, 0.070 * girth, 0.065 * girth],
+        mats[spec["socket"]],
+        8,
+        0.88,
+    )
+    if spec["rib"]:
+        # A single forged rib down the cheek, on both faces. Stops at the bevel line so it never
+        # crosses onto ground metal, where a raised line would read as a chip.
+        for side_index, side in enumerate((-1.0, 1.0)):
+            swept_shaft(
+                f"{tier.title()}_Axe_Rib_{side_index + 1}",
+                [
+                    (-0.076, side * 0.056 * girth, 1.140),
+                    (0.060, side * 0.048 * girth, 1.136),
+                    (0.220, side * 0.034 * girth, 1.130),
+                ],
+                [0.030, 0.026, 0.015],
+                mats[spec["edge"]],
+                5,
+                0.55,
+            )
+    add_rivets(mats, ((-0.072, 1.150),), 0.064 * girth, spec["rivet"], 0.022)
+
+
+def _knapped_facets(
+    name: str,
+    mats: dict[str, bpy.types.Material],
+    spots: Sequence[tuple[float, float, float]],
+    half_thickness: float,
+) -> None:
+    """Conchoidal fracture scars, both faces.
+
+    Volcanic glass does not break along planes the way a mineral does — it breaks in shallow curved
+    dishes that ripple outward from the strike point. That is what makes a knapped edge sharper than
+    anything forged, and it is the one visual fact that has to survive at flat-shaded low-poly, so
+    each scar is a squashed ico standing a hair proud of the blade face rather than a flat decal.
+    `spots` are (x, z, radius); every scar is mirrored onto both faces so the blade is never
+    one-sided (task 2.1j — look at the back of the asset).
+    """
+    for index, (x, z, radius) in enumerate(spots):
+        for side_index, side in enumerate((-1.0, 1.0)):
+            # Shallow and ELONGATED. The first pass used near-spherical icos standing well proud of
+            # the face and they rendered as white polka dots — a fracture scar is a dish a few
+            # millimetres deep and several centimetres long, so depth is a fifth of the length and
+            # the ripple direction is fanned per scar rather than shared.
+            ico(
+                f"{name}_{index + 1}_{side_index + 1}",
+                (x, side * half_thickness * 0.72, z),
+                (radius * 1.35, half_thickness * 0.30, radius * 0.72),
+                mats["wellglass_light"],
+                (0.30 + 0.22 * index, 0.0, 0.55 * (index - 1.5)),
+            )
+
+
+def build_wellglass_axe(mats: dict[str, bpy.types.Material]) -> None:
+    """Tier 5. Deliberately NOT a forged head in a new colour.
+
+    The ladder opens with a knapped stone wedge lashed to a stick and closes with a knapped GLASS
+    wedge socketed in bogsilver — the two ends of the run rhyme, and the middle three tiers are the
+    forged ones between them. It is also the honest construction: nobody forges glass, and real
+    hafted obsidian is bedded in a socket and bound, which is exactly what is built here.
+    """
+    add_haft(mats, AXE_HAFT, AXE_RADII, (0.05, 0.33), 6)
+
+    # Bogsilver hardware first: the socket the glass is bedded into, and the collar behind it.
+    swept_shaft(
+        "Wellglass_Axe_Socket",
+        [(0.024, 0.0, 1.042), (0.036, 0.0, 1.150), (0.046, 0.0, 1.262)],
+        [0.070, 0.064, 0.058],
+        mats["bogsilver_dark"],
+        8,
+        0.88,
+    )
+    ground_profile(
+        "Wellglass_Axe_Cradle",
+        [
+            (-0.088, 1.062),
+            (0.108, 1.032),
+            (0.166, 1.078),
+            (0.166, 1.206),
+            (0.108, 1.268),
+            (-0.088, 1.242),
+        ],
+        [0.056, 0.052, 0.044, 0.044, 0.052, 0.056],
+        [0.000, 0.014, 0.020, 0.020, 0.014, 0.000],
+        mats["bogsilver"],
+        center=(0.040, 1.150),
+    )
+
+    # The blade. Thicker at the bedded end and grinding to nothing at the edge, with the bit swept
+    # slightly forward of the socket so the glass — not the metal — is what meets the wood.
+    ground_profile(
+        "Wellglass_Axe_Blade",
+        [
+            (0.150, 1.020),
+            (0.320, 0.944),
+            (0.452, 0.912),
+            (0.512, 1.150),
+            (0.452, 1.386),
+            (0.320, 1.352),
+            (0.150, 1.282),
+        ],
+        [0.046, 0.036, 0.026, 0.019, 0.026, 0.036, 0.046],
+        [0.010, 0.038, 0.054, 0.060, 0.054, 0.038, 0.010],
+        mats["wellglass_dark"],
+        center=(0.300, 1.150),
+    )
+    # The edge itself: the fracture is fresh, so it is the brightest thing on the tool and the only
+    # place `wellglass_light` covers area rather than dotting it.
+    ground_profile(
+        "Wellglass_Axe_Edge",
+        [
+            (0.452, 0.912),
+            (0.548, 0.980),
+            (0.580, 1.150),
+            (0.548, 1.320),
+            (0.452, 1.386),
+            (0.512, 1.150),
+        ],
+        [0.024, 0.015, 0.012, 0.015, 0.024, 0.019],
+        [0.048, 0.064, 0.070, 0.064, 0.048, 0.044],
+        mats["wellglass_light"],
+        center=(0.482, 1.150),
+    )
+    _knapped_facets(
+        "Wellglass_Axe_Scar",
+        mats,
+        ((0.276, 1.078, 0.058), (0.358, 1.216, 0.048), (0.212, 1.198, 0.042), (0.392, 1.044, 0.038)),
+        0.034,
+    )
+    # Sinew binding over the bedded end — glass in a socket is held by wrap and mastic, never by a
+    # rivet, because a rivet hole in glass is a crack waiting for the first swing.
+    add_lashing(mats, AXE_HAFT, AXE_RADII, (0.792, 0.848), 0.848)
+
+
 PICK_HAFT = [(-0.065, 0.0, 0.03), (-0.035, 0.0, 0.34), (0.000, 0.0, 0.66), (0.025, 0.0, 0.95), (0.035, 0.0, 1.18)]
 PICK_RADII = [0.052, 0.047, 0.045, 0.050, 0.043]
 
@@ -522,10 +756,24 @@ def build_pickaxe(mats: dict[str, bpy.types.Material], tier: str) -> None:
         head_key, edge_key = "stone", "stone_edge"
         left_reach, right_reach = 0.50, 0.57
         girth, sides = 0.095, 5
-    else:
+    elif tier == "iron":
         head_key, edge_key = "iron", "iron_light"
         left_reach, right_reach = 0.60, 0.66
         girth, sides = 0.075, 4
+    elif tier == "bogsilver":
+        # Longer arms and a thinner section than iron: the same forged pick, made of better metal,
+        # so it reaches further on less mass. That is the tier read at a glance in the hotbar.
+        head_key, edge_key = "bogsilver", "bogsilver_light"
+        left_reach, right_reach = 0.66, 0.74
+        girth, sides = 0.066, 4
+    else:
+        # Wellglass. The arms stay bogsilver — glass in tension across a 0.7 m arm would shatter, and
+        # a tool the player is told is the best in the game must not look structurally silly — but
+        # both TIPS are knapped glass, bedded into the metal. Only the working ends are the new
+        # material, which is also how every real composite tool has ever been made.
+        head_key, edge_key = "bogsilver", "wellglass_light"
+        left_reach, right_reach = 0.68, 0.76
+        girth, sides = 0.064, 4
 
     head_mat = mats[head_key]
     # The eye: a collar the haft passes through, with cheeks flaring into each arm.
@@ -553,18 +801,23 @@ def build_pickaxe(mats: dict[str, bpy.types.Material], tier: str) -> None:
         sides,
         0.90,
     )
+    # Where the working point starts. On a forged pick that is a ground bevel over the last fifth of
+    # the arm; on the wellglass one it is a knapped insert bedded over the last third, because a
+    # glass point long enough to matter has to be seated in the metal well behind where it bites.
+    tip_start = 0.66 if tier == "wellglass" else 0.80
+    tip_girth = 0.78 if tier == "wellglass" else 0.40
     swept_shaft(
         "Pick_Tip_Right",
-        [(right_reach * 0.80, 0.0, 1.055), (right_reach, 0.0, 0.975)],
-        [girth * 0.40, 0.008],
+        [(right_reach * tip_start, 0.0, 1.055 + 0.030 * (1.0 - tip_start)), (right_reach, 0.0, 0.975)],
+        [girth * tip_girth, 0.008],
         mats[edge_key],
         sides,
         0.90,
     )
     swept_shaft(
         "Pick_Tip_Left",
-        [(-left_reach * 0.82, 0.0, 1.095), (-left_reach, 0.0, 1.040)],
-        [girth * 0.42, 0.010],
+        [(-left_reach * (tip_start + 0.02), 0.0, 1.095 + 0.026 * (1.0 - tip_start)), (-left_reach, 0.0, 1.040)],
+        [girth * (tip_girth + 0.02), 0.010],
         mats[edge_key],
         sides,
         0.90,
@@ -572,18 +825,38 @@ def build_pickaxe(mats: dict[str, bpy.types.Material], tier: str) -> None:
     if tier == "stone":
         for index, (x, z) in enumerate(((-0.255, 1.135), (0.265, 1.115))):
             ico(f"Stone_Knuckle_{index + 1}", (x, 0.0, z), (0.075, 0.090, 0.070), head_mat, (0.2, -0.3, 0.1))
-    if tier == "iron":
+    if tier in ("iron", "bogsilver", "wellglass"):
+        socket_key = "iron_dark" if tier == "iron" else "bogsilver_dark"
+        rivet_key = "iron_light" if tier == "iron" else "bogsilver_light"
         swept_shaft(
-            "Iron_Socket",
+            f"{tier.title()}_Socket" if tier != "iron" else "Iron_Socket",
             [(0.020, 0.0, 0.960), (0.028, 0.0, 1.030), (0.032, 0.0, 1.090)],
             [0.082, 0.072, 0.066],
-            mats["iron_dark"],
+            mats[socket_key],
             8,
             0.88,
         )
-        add_rivets(mats, ((0.0, 1.075), (0.0, 1.185)), 0.100, "iron_light", 0.024)
+        add_rivets(mats, ((0.0, 1.075), (0.0, 1.185)), 0.100, rivet_key, 0.024)
     else:
         add_lashing(mats, PICK_HAFT, PICK_RADII, (0.800, 0.855, 0.910), 0.855)
+    if tier == "wellglass":
+        # Knapped glass tips bedded over the last stretch of each arm, with fracture scars on both
+        # faces so the pick is never one-sided from the side a player actually mines from.
+        # Scars sit ON the glass, not near it. The first pass sized them off the blade version and
+        # placed them at the arm's outer stations, where the arm has already tapered below their own
+        # radius — they rendered as flecks floating in the air beside the tool.
+        _knapped_facets(
+            "Wellglass_Pick_Scar_Right",
+            mats,
+            ((right_reach * 0.78, 1.032, 0.022), (right_reach * 0.90, 1.005, 0.015)),
+            0.016,
+        )
+        _knapped_facets(
+            "Wellglass_Pick_Scar_Left",
+            mats,
+            ((-left_reach * 0.80, 1.078, 0.021), (-left_reach * 0.92, 1.052, 0.014)),
+            0.016,
+        )
 
 
 def build_cleaver(mats: dict[str, bpy.types.Material]) -> None:
@@ -1116,6 +1389,12 @@ def build_materials() -> dict[str, bpy.types.Material]:
         "leather": mat("leather"),
         "stone": mat("stone"),
         "stone_edge": mat("stone_light"),
+        "bogsilver": mat("bogsilver"),
+        "bogsilver_light": mat("bogsilver_light"),
+        "bogsilver_dark": mat("bogsilver_dark"),
+        "wellglass": mat("wellglass"),
+        "wellglass_light": mat("wellglass_light"),
+        "wellglass_dark": mat("wellglass_dark"),
         "iron": mat("iron"),
         "iron_light": mat("iron_light"),
         "iron_dark": mat("iron_dark"),
@@ -1151,7 +1430,12 @@ def main() -> None:
         "stone_axe": lambda: build_stone_axe(mats),
         "wooden_pickaxe": lambda: build_pickaxe(mats, "wooden"),
         "stone_pickaxe": lambda: build_pickaxe(mats, "stone"),
+        "iron_axe": lambda: build_forged_axe(mats, "iron"),
         "iron_pickaxe": lambda: build_pickaxe(mats, "iron"),
+        "bogsilver_axe": lambda: build_forged_axe(mats, "bogsilver"),
+        "bogsilver_pickaxe": lambda: build_pickaxe(mats, "bogsilver"),
+        "wellglass_axe": lambda: build_wellglass_axe(mats),
+        "wellglass_pickaxe": lambda: build_pickaxe(mats, "wellglass"),
         "cleaver": lambda: build_cleaver(mats),
         "skewer": lambda: build_skewer(mats),
         "short_bow": lambda: build_short_bow(mats),

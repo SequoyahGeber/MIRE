@@ -1,8 +1,8 @@
 [gd_resource type="Resource" script_class="ItemDef" format=3]
 
 [ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="1_wgshard"]
-[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_flint.png" id="2_wgshard"]
-[ext_resource type="PackedScene" path="res://assets/pickups/exports/pickup_flint.glb" id="3_wgshard"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_wellglass_shard.png" id="2_wgshard"]
+[ext_resource type="PackedScene" path="res://assets/deep_materials/exports/pickup_wellglass_shard.glb" id="3_wgshard"]
 
 [resource]
 script = ExtResource("1_wgshard")

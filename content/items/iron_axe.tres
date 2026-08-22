@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="ItemDef" format=3]
 
 [ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="1_ironaxe"]
-[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_stone_axe.png" id="2_ironaxe"]
-[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/stone_axe_world.glb" id="3_ironaxe"]
-[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/stone_axe_viewmodel.glb" id="4_ironaxe"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_iron_axe.png" id="2_ironaxe"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/iron_axe_world.glb" id="3_ironaxe"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/iron_axe_viewmodel.glb" id="4_ironaxe"]
 
 [resource]
 script = ExtResource("1_ironaxe")

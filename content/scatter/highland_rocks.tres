@@ -123,6 +123,14 @@ weight = 0.6
 min_scale = 0.9
 max_scale = 1.1
 
+[sub_resource type="Resource" id="Resource_15_bogsilver_node_intact"]
+script = ExtResource("1_entry")
+asset = &"bogsilver_node_intact"
+kit = "harvestables"
+weight = 0.14
+min_scale = 0.9
+max_scale = 1.1
+
 [resource]
 script = ExtResource("2_def")
 id = &"highland_rocks"
@@ -132,4 +140,4 @@ jitter_fraction = 0.7
 coverage = 0.4
 min_height = 0.9
 max_height = 1000
-entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_boulder_e"), SubResource("Resource_01_boulder_f"), SubResource("Resource_02_boulder_g"), SubResource("Resource_03_boulder_h"), SubResource("Resource_04_rock_cluster_d"), SubResource("Resource_05_rock_cluster_e"), SubResource("Resource_06_rock_cluster_f"), SubResource("Resource_07_scree_pile"), SubResource("Resource_08_rocky_slope"), SubResource("Resource_09_mire_mossy_boulder"), SubResource("Resource_10_stone_marker_a"), SubResource("Resource_11_stone_marker_b"), SubResource("Resource_12_stone_node_intact"), SubResource("Resource_13_stone_node_cracked"), SubResource("Resource_14_iron_node_intact")])
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_boulder_e"), SubResource("Resource_01_boulder_f"), SubResource("Resource_02_boulder_g"), SubResource("Resource_03_boulder_h"), SubResource("Resource_04_rock_cluster_d"), SubResource("Resource_05_rock_cluster_e"), SubResource("Resource_06_rock_cluster_f"), SubResource("Resource_07_scree_pile"), SubResource("Resource_08_rocky_slope"), SubResource("Resource_09_mire_mossy_boulder"), SubResource("Resource_10_stone_marker_a"), SubResource("Resource_11_stone_marker_b"), SubResource("Resource_12_stone_node_intact"), SubResource("Resource_13_stone_node_cracked"), SubResource("Resource_14_iron_node_intact"), SubResource("Resource_15_bogsilver_node_intact")])

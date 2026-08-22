@@ -1,9 +1,14 @@
 [gd_resource type="Resource" script_class="HarvestableDef" format=3]
 
-[ext_resource type="Script" path="res://systems/harvesting/harvestable_def.gd" id="1_bsnode"]
+[ext_resource type="PackedScene" path="res://assets/harvestables/exports/bogsilver_node_intact.glb" id="1_intact"]
+[ext_resource type="PackedScene" path="res://assets/harvestables/exports/bogsilver_node_chipped.glb" id="2_chipped"]
+[ext_resource type="PackedScene" path="res://assets/harvestables/exports/bogsilver_node_cracked.glb" id="3_cracked"]
+[ext_resource type="PackedScene" path="res://assets/harvestables/exports/bogsilver_node_shattered.glb" id="4_shattered"]
+[ext_resource type="PackedScene" path="res://assets/harvestables/exports/bogsilver_node_depleted.glb" id="5_depleted"]
+[ext_resource type="Script" path="res://systems/harvesting/harvestable_def.gd" id="6_def"]
 
 [resource]
-script = ExtResource("1_bsnode")
+script = ExtResource("6_def")
 id = &"bogsilver_node"
 display_name = "Bogsilver Seam"
 max_health = 12
@@ -12,3 +17,5 @@ wrong_tool_scale = 0.0
 yield_item_id = &"bogsilver_ore"
 yield_amount = 1
 respawn_seconds = 420.0
+active_state_scenes = Array[PackedScene]([ExtResource("1_intact"), ExtResource("2_chipped"), ExtResource("3_cracked"), ExtResource("4_shattered")])
+depleted_scene = ExtResource("5_depleted")

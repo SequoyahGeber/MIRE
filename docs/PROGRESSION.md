@@ -326,12 +326,61 @@ Three smaller seams worth knowing, because they are the reusable half:
 
 ### Known gaps, each with a finding
 
-- **F-473 — art.** Five tools share two models: `iron_axe`/`bogsilver_axe`/`wellglass_axe` are all on
-  the stone axe's exports, both new pickaxes on the iron pickaxe's, and the four new materials borrow
-  iron/flint art. The bogsilver seam has **no** art, so its `HarvestLibrary` rule claims nothing and it
-  never appears in a world — tier 4 is reachable meanwhile only because a cap grants ore outright.
 - **F-474 — the co-op texture of rung 4.** §2.1 promises bogsilver drops as a two-player Heavy Chunk;
   it ships as a plain stackable item, because `HarvestableDef` can only name a `yield_item_id`. The
   rung's objective gate is unaffected and proven; what is missing is the reason to carry it together.
 - **F-469 — unrelated, found in passing.** Four recent decision headings use a shape
   `decision_ref_check.py` cannot see.
+
+---
+
+## 10 · The art (F-480, resolved)
+
+Everything the ladder needs is modelled, exported, iconed and wired. **No placeholder art remains on
+any tier-3/4/5 item.** Blender 5.2.0 LTS, every asset inspected on the eight-azimuth-plus-poles
+contact sheet before being accepted, several of them rebuilt after that sheet said no.
+
+| | |
+|---|---|
+| `tools_weapons` | `iron_axe`, `bogsilver_axe`, `bogsilver_pickaxe`, `wellglass_axe`, `wellglass_pickaxe` — 10 exports (world + viewmodel each) |
+| `deep_materials` (new kit) | `pickup_bogsilver_ore`, `pickup_bogsilver_ingot`, `pickup_wellglass_shard`, `pickup_guardian_core` |
+| `harvestables` | `bogsilver_node_` intact/chipped/cracked/shattered/depleted |
+| `icons` | nine new, rendered from the shipped GLBs by the same camera as every other icon |
+
+**The construction carries the tier, not the colour.** Wooden and stone tools are knapped wedges
+lashed to a stick. From iron up the haft passes THROUGH an eye, so there is no lashing and the head
+grows a squared poll — a forged axe and a lashed one are different objects, not different palettes.
+Bogsilver is the same forging, thinner and longer, with a rib down the cheek. And the top rung goes
+back to knapping: wellglass is a chipped glass bit bedded in a bogsilver socket and bound with
+sinew, because nobody forges glass and real hafted obsidian is socketed exactly that way. The ladder
+opens and closes on a knapped edge, and the three forged tiers sit between them.
+
+**Every material is modelled on what the real thing does**, which is recorded in each builder's
+docstring so the next editor knows why a shape is that shape:
+
+- **Bogsilver** is native silver in a bog. Silver grows in *wires*, not seams — so the ore is a nest
+  of fine threads standing out of one stained pocket, and the node exposes vugs rather than bands.
+  Sulphur water tarnishes it blue-black, which is where the dark recesses come from and why the
+  palette entry is a high-contrast spread rather than "iron, but paler".
+- **Cast bogsilver** sinks and spits as it freezes, because molten silver takes up oxygen and throws
+  it back out. Same mould as the iron ingot, different top face.
+- **Wellglass** breaks conchoidally: shallow curved dishes, no cleavage planes, edges thinner than
+  steel holds. That is why the tools are knapped, why "the edge does not dull" is true, and why the
+  fracture scars are elongated dishes rather than dots.
+
+**Palette.** Six new tokens in `mire_art.PALETTE`, none of them reserved-hue violations: bogsilver's
+three plus a crust, and wellglass's three. Wellglass emission is 0.30/0.90 against the Ward's
+2.2–3.4 — it catches light, it does not make it, so a wellglass axe never promises the safety a Ward
+does.
+
+**Findability was a real fix, not a polish pass.** The seam's first cut opened one pocket at full
+health and came back off the contact sheet as a grey boulder with an olive dot on it — unfindable on
+a generated island, which would have made tier 4 unreachable in practice however correct the recipe
+graph was. Two pockets are open at damage 0 now, spread around the rock's azimuth rather than
+clustered on one cheek the way iron's four seams are. It scatters in `highland_rocks` at weight 0.14
+against iron's 0.60.
+
+Three other things the sheet caught and sent back: the wellglass pickaxe's glass tips were floating
+beside the tool rather than on it; the guardian core's cage was *inside* its own heart, leaving four
+dark studs on a teal ball; and the shard cluster's pieces did not touch, so a pickup read as five
+objects instead of one.

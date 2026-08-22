@@ -54,6 +54,11 @@ EXPECTED_NAMES = [
     "iron_node_cracked",
     "iron_node_shattered",
     "iron_node_depleted",
+    "bogsilver_node_intact",
+    "bogsilver_node_chipped",
+    "bogsilver_node_cracked",
+    "bogsilver_node_shattered",
+    "bogsilver_node_depleted",
 ]
 
 
@@ -589,7 +594,15 @@ def build_node(mats: dict[str, bpy.types.Material], family: str, damage: int) ->
     doing the same job; what separates them is the ore, and the ore is what the
     damage progressively exposes.
     """
-    stone_mat = mats["stone"] if family == "stone" else mats["iron_stone"]
+    if family == "stone":
+        stone_mat = mats["stone"]
+    elif family == "iron":
+        stone_mat = mats["iron_stone"]
+    else:
+        # Bogsilver's host is ORDINARY grey rock, lighter than iron's dark host, because the ore has
+        # to be the pale thing on it. On iron the seams are darker than nothing around them and the
+        # host is nearly black; invert that here and the wires would vanish.
+        stone_mat = mats["bogsilver_stone"]
     if damage >= 4:
         rubble = (
             ((-0.52, 0.04, 0.16), (0.34, 0.28, 0.19)),
@@ -602,6 +615,12 @@ def build_node(mats: dict[str, bpy.types.Material], family: str, damage: int) ->
             ico(f"Rubble_{index + 1}", location, scale, mats["stone_dark"], (index * 0.21, index * 0.37, index * 0.18))
         if family == "iron":
             ico("Spent_Iron_Fleck", (-0.24, -0.29, 0.09), (0.13, 0.08, 0.05), mats["iron_dull"], (0.2, 0.4, 0.1))
+        if family == "bogsilver":
+            # Two flecks, not one: bogsilver is the tier the party walked across the island for, and
+            # a spent seam that leaves nothing behind reads as "you got here too late" rather than
+            # as "someone already worked this".
+            ico("Spent_Bogsilver_Fleck", (-0.24, -0.29, 0.09), (0.11, 0.07, 0.05), mats["bogsilver_dull"], (0.2, 0.4, 0.1))
+            ico("Spent_Bogsilver_Wire", (0.30, 0.22, 0.08), (0.030, 0.028, 0.070), mats["bogsilver"], (0.5, 0.2, 0.3))
         return
 
     # The rocks themselves. Only stage 3 takes material off the SILHOUETTE, and
@@ -617,6 +636,63 @@ def build_node(mats: dict[str, bpy.types.Material], family: str, damage: int) ->
             stone_mat,
             rotation,
         )
+    if family == "bogsilver":
+        # Bogsilver does not seam. It grows in wire nests inside cavities — the same fact
+        # `build_deep_materials.build_bogsilver_ore` is built on — so the node exposes VUGS, and each
+        # vug is a stained pocket with wires standing out of it.
+        #
+        # TWO pockets are open at damage 0, not one. This node's whole job is to be SPOTTED: it is
+        # the tier-4 source on a generated island, and a player who cannot tell it from the grey
+        # boulder beside it will never mine one. The first cut opened a single pocket at full health
+        # and the all-sides sheet came back as a plain rock with an olive dot on it. Damage still
+        # pays — pockets three and four open as the rock comes apart, and every wire lengthens — but
+        # the reward read is on top of a findable node, not instead of one.
+        spread = (1.0, 1.08, 1.22, 1.48)[damage]
+        # Spread around the rock's azimuth on purpose, unlike iron's four seams, which all sit on
+        # the -Y face: this node has to be recognisable from whichever side a player walks up on,
+        # and a pocket cluster on one cheek is the exact one-sidedness task 2.1j exists to catch.
+        vugs = (
+            ((-0.46, -0.40, 0.50), (0.38, 0.27, 0.32), 0),
+            ((0.50, 0.26, 0.42), (0.42, 0.29, 0.34), 0),
+            ((-0.28, 0.52, 0.60), (0.34, 0.25, 0.28), 2),
+            ((0.08, -0.18, 0.92), (0.36, 0.29, 0.29), 3),
+        )
+        for index, (location, scale, opens_at) in enumerate(vugs):
+            if damage < opens_at:
+                continue
+            height = location[2] * (crown if index == 3 else 1.0)
+            centre = Vector((location[0], location[1], height))
+            ico(
+                f"Bogsilver_Vug_{index + 1}",
+                tuple(centre),
+                (scale[0] * spread, scale[1] * spread, scale[2] * spread),
+                mats["bogsilver_crust"],
+                (0.2 + 0.3 * index, 0.4 - 0.2 * index, 0.1 * index),
+            )
+            # Wires stand OUT of the pocket along the rock's own outward normal. Placed on the vug's
+            # local axes instead, they sit inside a 2.2 m boulder and are never seen.
+            outward = Vector((location[0], location[1], location[2] * 0.35))
+            outward = outward.normalized() if outward.length > 1e-6 else Vector((0.0, 0.0, 1.0))
+            side = outward.cross(Vector((0.0, 0.0, 1.0)))
+            side = side.normalized() if side.length > 1e-6 else Vector((1.0, 0.0, 0.0))
+            up = outward.cross(side).normalized()
+            wire_count = 4 + damage
+            for wire in range(wire_count):
+                angle = (wire / wire_count) * math.tau + index * 0.7
+                fan = side * math.cos(angle) + up * math.sin(angle)
+                length = (0.40 + 0.10 * damage) * (0.68 + 0.32 * ((wire % 3) / 2.0))
+                position = centre + fan * (0.15 * spread) + outward * (0.14 + length * 0.45)
+                ico(
+                    f"Bogsilver_Wire_{index + 1}_{wire + 1}",
+                    tuple(position),
+                    (0.070, 0.062, length),
+                    mats["bogsilver_bright"] if wire % 3 else mats["bogsilver"],
+                    (0.3 + 0.2 * wire, 0.25 - 0.1 * wire, 0.4 * wire + index),
+                )
+        # One tarnished pocket that never opens further — bog water got to this one first, and it is
+        # the dark note that stops the ore reading as snow on a rock.
+        ico("Bogsilver_Tarnish", (0.30, -0.46, 0.28), (0.26, 0.20, 0.20), mats["bogsilver_dull"], (0.4, 0.2, 0.5))
+
     if family == "iron":
         # Four seams, and the last two are only reachable once the rock over them
         # is gone. `spread` widens what is left as the node comes apart.
@@ -641,7 +717,12 @@ def build_node(mats: dict[str, bpy.types.Material], family: str, damage: int) ->
     # whole read, and it is why the scars use `stone_light` on a `stone` node and
     # `stone` on the darker iron host rock. Painted in the node's own body colour
     # they are invisible, which is what the first cut of this did.
-    scar_mat = mats["stone_light"] if family == "stone" else mats["stone"]
+    if family == "stone":
+        scar_mat = mats["stone_light"]
+    elif family == "iron":
+        scar_mat = mats["stone"]
+    else:
+        scar_mat = mats["stone_light"]
     for index, (location, scale, rotation) in enumerate(CHIP_SCARS[: (0, 3, 5, 6)[damage]]):
         ico(f"Chip_Scar_{index + 1}", location, scale, scar_mat, rotation)
     for face in range((0, 0, 1, 2)[damage]):
@@ -736,6 +817,11 @@ def main() -> None:
         "iron_stone": mat("stone_dark"),
         "iron": mat("iron"),
         "iron_dull": mat("iron_dark"),
+        "bogsilver_stone": mat("stone"),
+        "bogsilver_crust": mat("bogsilver_crust"),
+        "bogsilver": mat("bogsilver"),
+        "bogsilver_bright": mat("bogsilver_light"),
+        "bogsilver_dull": mat("bogsilver_dark"),
         "crack": mat("coal"),
         "ground": mat("preview_ground"),
         "scale": mat("reference_blue"),
@@ -759,6 +845,11 @@ def main() -> None:
         ("iron_node_cracked", "iron", "cracked", lambda: build_node(mats, "iron", 2), (6.2, -3.0, 0.0)),
         ("iron_node_shattered", "iron", "shattered", lambda: build_node(mats, "iron", 3), (8.6, -3.0, 0.0)),
         ("iron_node_depleted", "iron", "depleted", lambda: build_node(mats, "iron", 4), (11.0, -3.0, 0.0)),
+        ("bogsilver_node_intact", "bogsilver", "intact", lambda: build_node(mats, "bogsilver", 0), (1.4, -5.4, 0.0)),
+        ("bogsilver_node_chipped", "bogsilver", "chipped", lambda: build_node(mats, "bogsilver", 1), (3.8, -5.4, 0.0)),
+        ("bogsilver_node_cracked", "bogsilver", "cracked", lambda: build_node(mats, "bogsilver", 2), (6.2, -5.4, 0.0)),
+        ("bogsilver_node_shattered", "bogsilver", "shattered", lambda: build_node(mats, "bogsilver", 3), (8.6, -5.4, 0.0)),
+        ("bogsilver_node_depleted", "bogsilver", "depleted", lambda: build_node(mats, "bogsilver", 4), (11.0, -5.4, 0.0)),
     ]
     if [spec[0] for spec in specs] != EXPECTED_NAMES:
         raise RuntimeError("A-001 specification and expected export list diverged")
