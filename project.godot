@@ -92,6 +92,7 @@ GuideHud="*res://ui/hud/guide_hud.gd"
 ItemDropService="*res://autoload/item_drop_service.gd"
 AppExit="*res://autoload/app_exit.gd"
 MaterialWarmer="*res://autoload/material_warmer.gd"
+ForagerSenseHud="*res://ui/hud/forager_sense_hud.gd"
 
 [display]
 

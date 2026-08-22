@@ -621,6 +621,142 @@
     "unapplied_transforms": [],
     "vertices": 312
   },
+  "deep_materials/exports/pickup_bogsilver_ingot.glb": {
+    "_source_mtime": 1787356588.5156434,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.26,
+      0.11,
+      0.0592
+    ],
+    "duplicate_vertices": 256,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Bogsilver",
+      "MIRE_BogsilverDark",
+      "MIRE_BogsilverLight"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 336,
+    "objects": 8,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 128,
+    "sheet": "sheets/deep_materials__exports__pickup_bogsilver_ingot.png",
+    "smooth_shaded_faces": 7,
+    "triangles": 128,
+    "unapplied_transforms": [],
+    "vertices": 336
+  },
+  "deep_materials/exports/pickup_bogsilver_ore.glb": {
+    "_source_mtime": 1787356439.5224936,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.22,
+      0.2013,
+      0.1972
+    ],
+    "duplicate_vertices": 816,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Bogsilver",
+      "MIRE_BogsilverCrust",
+      "MIRE_BogsilverDark",
+      "MIRE_BogsilverLight",
+      "MIRE_Stone",
+      "MIRE_StoneDark"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1020,
+    "objects": 17,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      -0.0,
+      0.0
+    ],
+    "polygons": 340,
+    "sheet": "sheets/deep_materials__exports__pickup_bogsilver_ore.png",
+    "smooth_shaded_faces": 10,
+    "triangles": 340,
+    "unapplied_transforms": [],
+    "vertices": 1020
+  },
+  "deep_materials/exports/pickup_guardian_core.glb": {
+    "_source_mtime": 1787356588.5718637,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.1344,
+      0.1198,
+      0.2
+    ],
+    "duplicate_vertices": 692,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Bogsilver",
+      "MIRE_BogsilverDark",
+      "MIRE_Wellglass",
+      "MIRE_WellglassLight"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 930,
+    "objects": 24,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 380,
+    "sheet": "sheets/deep_materials__exports__pickup_guardian_core.png",
+    "smooth_shaded_faces": 13,
+    "triangles": 380,
+    "unapplied_transforms": [],
+    "vertices": 930
+  },
+  "deep_materials/exports/pickup_wellglass_shard.glb": {
+    "_source_mtime": 1787356630.6969001,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.18,
+      0.1361,
+      0.1655
+    ],
+    "duplicate_vertices": 144,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Wellglass",
+      "MIRE_WellglassDark",
+      "MIRE_WellglassLight"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 192,
+    "objects": 8,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      -0.0,
+      0.0
+    ],
+    "polygons": 64,
+    "sheet": "sheets/deep_materials__exports__pickup_wellglass_shard.png",
+    "smooth_shaded_faces": 2,
+    "triangles": 64,
+    "unapplied_transforms": [],
+    "vertices": 192
+  },
   "environment/exports/tree_bare_a.glb": {
     "_source_mtime": 1787296273.5160277,
     "degenerate_faces": 0,
@@ -1038,220 +1174,220 @@
     "vertices": 1400
   },
   "environment/exports/tree_pine_a.glb": {
-    "_source_mtime": 1787296273.3228407,
+    "_source_mtime": 1787360781.8734605,
     "degenerate_faces": 0,
     "dimensions_m": [
-      5.6831,
-      5.7605,
-      19.7096
+      7.1526,
+      6.0181,
+      19.6901
     ],
-    "duplicate_vertices": 1572,
+    "duplicate_vertices": 1460,
     "inside_out_objects": [],
     "loose_vertices": 0,
     "materials": [
       "MIRE_Pine",
       "MIRE_PineDark",
       "MIRE_PineLight",
-      "MIRE_WoodBark.008",
-      "MIRE_WoodBarkDark.008",
-      "MIRE_WoodBarkLight.008"
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkDark",
+      "MIRE_WoodBarkLight"
     ],
     "min_z_m": -0.1517,
     "ngons": 0,
-    "non_manifold_edges": 2170,
+    "non_manifold_edges": 2002,
     "objects": 1,
     "open_surface_objects": [],
     "origin_offset_m": [
-      0.0552,
-      -0.1512,
+      -0.1169,
+      -0.0588,
       -0.1517
     ],
-    "polygons": 1008,
+    "polygons": 932,
     "sheet": "sheets/environment__exports__tree_pine_a.png",
-    "smooth_shaded_faces": 106,
-    "triangles": 1008,
+    "smooth_shaded_faces": 96,
+    "triangles": 932,
     "unapplied_transforms": [],
-    "vertices": 2170
+    "vertices": 2002
   },
   "environment/exports/tree_pine_b.glb": {
-    "_source_mtime": 1787296273.3563578,
+    "_source_mtime": 1787360781.8939495,
     "degenerate_faces": 0,
     "dimensions_m": [
-      5.5243,
-      5.5073,
-      16.0819
+      4.582,
+      3.9116,
+      15.3702
     ],
-    "duplicate_vertices": 1540,
+    "duplicate_vertices": 1236,
     "inside_out_objects": [],
     "loose_vertices": 0,
     "materials": [
       "MIRE_Pine.001",
       "MIRE_PineDark.001",
       "MIRE_PineLight.001",
-      "MIRE_WoodBark.009",
-      "MIRE_WoodBarkDark.009",
-      "MIRE_WoodBarkLight.009"
+      "MIRE_WoodBark.001",
+      "MIRE_WoodBarkDark.001",
+      "MIRE_WoodBarkLight.001"
     ],
     "min_z_m": -0.1403,
     "ngons": 0,
-    "non_manifold_edges": 2122,
+    "non_manifold_edges": 1702,
     "objects": 1,
     "open_surface_objects": [],
     "origin_offset_m": [
-      0.2386,
-      -0.3913,
+      0.0477,
+      -0.4208,
       -0.1403
     ],
-    "polygons": 980,
+    "polygons": 808,
     "sheet": "sheets/environment__exports__tree_pine_b.png",
-    "smooth_shaded_faces": 108,
-    "triangles": 980,
+    "smooth_shaded_faces": 93,
+    "triangles": 808,
     "unapplied_transforms": [],
-    "vertices": 2122
+    "vertices": 1702
   },
   "environment/exports/tree_pine_c.glb": {
-    "_source_mtime": 1787296273.3892343,
+    "_source_mtime": 1787360781.9207282,
     "degenerate_faces": 0,
     "dimensions_m": [
-      6.2267,
-      7.5995,
-      19.7944
+      6.8646,
+      6.6584,
+      19.2755
     ],
-    "duplicate_vertices": 1604,
+    "duplicate_vertices": 1492,
     "inside_out_objects": [],
     "loose_vertices": 0,
     "materials": [
       "MIRE_Pine.002",
       "MIRE_PineDark.002",
       "MIRE_PineLight.002",
-      "MIRE_WoodBark.010",
-      "MIRE_WoodBarkDark.010",
-      "MIRE_WoodBarkLight.010"
+      "MIRE_WoodBark.002",
+      "MIRE_WoodBarkDark.002",
+      "MIRE_WoodBarkLight.002"
     ],
-    "min_z_m": -0.1519,
+    "min_z_m": -0.152,
     "ngons": 0,
-    "non_manifold_edges": 2218,
+    "non_manifold_edges": 2050,
     "objects": 1,
     "open_surface_objects": [],
     "origin_offset_m": [
-      -0.0237,
-      0.226,
-      -0.1519
+      0.0144,
+      0.238,
+      -0.152
     ],
-    "polygons": 1036,
+    "polygons": 960,
     "sheet": "sheets/environment__exports__tree_pine_c.png",
-    "smooth_shaded_faces": 109,
-    "triangles": 1036,
+    "smooth_shaded_faces": 100,
+    "triangles": 960,
     "unapplied_transforms": [],
-    "vertices": 2218
+    "vertices": 2050
   },
   "environment/exports/tree_pine_d.glb": {
-    "_source_mtime": 1787296273.4237573,
+    "_source_mtime": 1787360781.9465268,
     "degenerate_faces": 0,
     "dimensions_m": [
-      5.6589,
-      4.9936,
-      17.5463
+      6.1365,
+      6.3265,
+      17.3572
     ],
-    "duplicate_vertices": 1572,
+    "duplicate_vertices": 1460,
     "inside_out_objects": [],
     "loose_vertices": 0,
     "materials": [
       "MIRE_Pine.003",
       "MIRE_PineDark.003",
       "MIRE_PineLight.003",
-      "MIRE_WoodBark.011",
-      "MIRE_WoodBarkDark.011",
-      "MIRE_WoodBarkLight.011"
+      "MIRE_WoodBark.003",
+      "MIRE_WoodBarkDark.003",
+      "MIRE_WoodBarkLight.003"
     ],
     "min_z_m": -0.1449,
     "ngons": 0,
-    "non_manifold_edges": 2170,
+    "non_manifold_edges": 2002,
     "objects": 1,
     "open_surface_objects": [],
     "origin_offset_m": [
-      0.4576,
-      -0.0137,
+      -0.0538,
+      0.1125,
       -0.1449
     ],
-    "polygons": 1008,
+    "polygons": 932,
     "sheet": "sheets/environment__exports__tree_pine_d.png",
-    "smooth_shaded_faces": 107,
-    "triangles": 1008,
+    "smooth_shaded_faces": 97,
+    "triangles": 932,
     "unapplied_transforms": [],
-    "vertices": 2170
+    "vertices": 2002
   },
   "environment/exports/tree_pine_e.glb": {
-    "_source_mtime": 1787296273.4576228,
+    "_source_mtime": 1787360781.96878,
     "degenerate_faces": 0,
     "dimensions_m": [
-      6.1282,
-      7.3243,
-      19.5066
+      5.1969,
+      5.484,
+      19.4536
     ],
-    "duplicate_vertices": 1540,
+    "duplicate_vertices": 1236,
     "inside_out_objects": [],
     "loose_vertices": 0,
     "materials": [
       "MIRE_Pine.004",
       "MIRE_PineDark.004",
       "MIRE_PineLight.004",
-      "MIRE_WoodBark.012",
-      "MIRE_WoodBarkDark.012",
-      "MIRE_WoodBarkLight.012"
+      "MIRE_WoodBark.004",
+      "MIRE_WoodBarkDark.004",
+      "MIRE_WoodBarkLight.004"
     ],
     "min_z_m": -0.151,
     "ngons": 0,
-    "non_manifold_edges": 2122,
+    "non_manifold_edges": 1702,
     "objects": 1,
     "open_surface_objects": [],
     "origin_offset_m": [
-      0.1335,
-      -0.2023,
+      -0.2303,
+      -0.2866,
       -0.151
     ],
-    "polygons": 980,
+    "polygons": 808,
     "sheet": "sheets/environment__exports__tree_pine_e.png",
-    "smooth_shaded_faces": 110,
-    "triangles": 980,
+    "smooth_shaded_faces": 91,
+    "triangles": 808,
     "unapplied_transforms": [],
-    "vertices": 2122
+    "vertices": 1702
   },
   "environment/exports/tree_pine_f.glb": {
-    "_source_mtime": 1787296273.4960148,
+    "_source_mtime": 1787360781.997201,
     "degenerate_faces": 0,
     "dimensions_m": [
-      6.0347,
-      6.7545,
-      19.492
+      5.4173,
+      5.4938,
+      18.8678
     ],
-    "duplicate_vertices": 1606,
+    "duplicate_vertices": 1492,
     "inside_out_objects": [],
     "loose_vertices": 0,
     "materials": [
       "MIRE_Pine.005",
       "MIRE_PineDark.005",
       "MIRE_PineLight.005",
-      "MIRE_WoodBark.013",
-      "MIRE_WoodBarkDark.013",
-      "MIRE_WoodBarkLight.013"
+      "MIRE_WoodBark.005",
+      "MIRE_WoodBarkDark.005",
+      "MIRE_WoodBarkLight.005"
     ],
     "min_z_m": -0.151,
     "ngons": 0,
-    "non_manifold_edges": 2218,
+    "non_manifold_edges": 2050,
     "objects": 1,
     "open_surface_objects": [],
     "origin_offset_m": [
-      0.1897,
-      0.193,
+      0.0024,
+      -0.4796,
       -0.151
     ],
-    "polygons": 1036,
+    "polygons": 960,
     "sheet": "sheets/environment__exports__tree_pine_f.png",
-    "smooth_shaded_faces": 126,
-    "triangles": 1036,
+    "smooth_shaded_faces": 110,
+    "triangles": 960,
     "unapplied_transforms": [],
-    "vertices": 2218
+    "vertices": 2050
   },
   "flora/exports/bracken_a.glb": {
     "degenerate_faces": 0,
@@ -3767,109 +3903,187 @@
     "vertices": 1519
   },
   "flora/exports/tree_willow_a.glb": {
-    "_source_mtime": 1787287844.4333167,
-    "degenerate_faces": 0,
+    "_source_mtime": 1787360893.7761245,
+    "degenerate_faces": 528,
     "dimensions_m": [
-      8.3114,
-      7.0733,
+      11.2524,
+      11.4194,
       13.6173
     ],
-    "duplicate_vertices": 2646,
+    "duplicate_vertices": 3425,
     "inside_out_objects": [],
     "loose_vertices": 0,
     "materials": [
-      "MIRE_Leaf.008",
-      "MIRE_LeafDeep",
-      "MIRE_LeafLight.008",
-      "MIRE_WoodBark.014",
-      "MIRE_WoodBarkDark.014"
+      "MIRE_Leaf",
+      "MIRE_LeafLight",
+      "MIRE_LeafPale",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkDark"
     ],
-    "min_z_m": 0.0,
+    "min_z_m": -0.0,
     "ngons": 0,
-    "non_manifold_edges": 3390,
+    "non_manifold_edges": 4542,
     "objects": 1,
-    "open_surface_objects": [],
+    "open_surface_objects": [
+      "TreeWillowA"
+    ],
     "origin_offset_m": [
       0.0,
       0.0,
-      0.0
+      -0.0
     ],
-    "polygons": 1336,
+    "polygons": 2266,
     "sheet": "sheets/flora__exports__tree_willow_a.png",
-    "smooth_shaded_faces": 58,
-    "triangles": 1336,
+    "smooth_shaded_faces": 423,
+    "triangles": 2266,
     "unapplied_transforms": [],
-    "vertices": 3390
+    "vertices": 4630
   },
   "flora/exports/tree_willow_b.glb": {
-    "_source_mtime": 1787287844.490568,
-    "degenerate_faces": 0,
+    "_source_mtime": 1787360893.9241664,
+    "degenerate_faces": 396,
     "dimensions_m": [
-      6.6892,
-      7.3035,
+      9.153,
+      5.6523,
       11.1446
     ],
-    "duplicate_vertices": 2884,
+    "duplicate_vertices": 2661,
     "inside_out_objects": [],
     "loose_vertices": 0,
     "materials": [
-      "MIRE_Leaf.009",
-      "MIRE_LeafDeep.001",
-      "MIRE_LeafLight.009",
-      "MIRE_WoodBark.015",
-      "MIRE_WoodBarkDark.015"
+      "MIRE_Leaf.001",
+      "MIRE_LeafLight.001",
+      "MIRE_LeafPale.001",
+      "MIRE_WoodBark.001",
+      "MIRE_WoodBarkDark.001"
     ],
     "min_z_m": -0.0,
     "ngons": 0,
-    "non_manifold_edges": 3690,
+    "non_manifold_edges": 3528,
     "objects": 1,
-    "open_surface_objects": [],
+    "open_surface_objects": [
+      "TreeWillowB"
+    ],
     "origin_offset_m": [
       0.0,
       -0.0,
       -0.0
     ],
-    "polygons": 1448,
+    "polygons": 1754,
     "sheet": "sheets/flora__exports__tree_willow_b.png",
-    "smooth_shaded_faces": 63,
-    "triangles": 1448,
+    "smooth_shaded_faces": 325,
+    "triangles": 1754,
     "unapplied_transforms": [],
-    "vertices": 3690
+    "vertices": 3594
   },
   "flora/exports/tree_willow_c.glb": {
-    "_source_mtime": 1787287844.5466366,
-    "degenerate_faces": 0,
+    "_source_mtime": 1787360894.1324458,
+    "degenerate_faces": 528,
     "dimensions_m": [
-      7.3504,
-      7.6386,
+      11.4099,
+      11.3591,
       13.3555
     ],
-    "duplicate_vertices": 2646,
+    "duplicate_vertices": 3425,
     "inside_out_objects": [],
     "loose_vertices": 0,
     "materials": [
-      "MIRE_Leaf.010",
-      "MIRE_LeafDeep.002",
-      "MIRE_LeafLight.010",
-      "MIRE_WoodBark.016",
-      "MIRE_WoodBarkDark.016"
+      "MIRE_Leaf.002",
+      "MIRE_LeafLight.002",
+      "MIRE_LeafPale.002",
+      "MIRE_WoodBark.002",
+      "MIRE_WoodBarkDark.002"
     ],
     "min_z_m": -0.0,
     "ngons": 0,
-    "non_manifold_edges": 3390,
+    "non_manifold_edges": 4542,
     "objects": 1,
-    "open_surface_objects": [],
+    "open_surface_objects": [
+      "TreeWillowC"
+    ],
     "origin_offset_m": [
-      -0.0,
+      0.0,
       -0.0,
       -0.0
     ],
-    "polygons": 1336,
+    "polygons": 2266,
     "sheet": "sheets/flora__exports__tree_willow_c.png",
-    "smooth_shaded_faces": 67,
-    "triangles": 1336,
+    "smooth_shaded_faces": 406,
+    "triangles": 2266,
     "unapplied_transforms": [],
-    "vertices": 3390
+    "vertices": 4630
+  },
+  "harvestables/exports/bogsilver_node_intact.glb": {
+    "_source_mtime": 1787356913.2046285,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      2.2535,
+      1.8567,
+      1.7697
+    ],
+    "duplicate_vertices": 672,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Bogsilver",
+      "MIRE_BogsilverCrust",
+      "MIRE_BogsilverDark",
+      "MIRE_BogsilverLight",
+      "MIRE_Stone"
+    ],
+    "min_z_m": -0.4049,
+    "ngons": 0,
+    "non_manifold_edges": 840,
+    "objects": 14,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      -0.0564,
+      -0.0294,
+      -0.4049
+    ],
+    "polygons": 280,
+    "sheet": "sheets/harvestables__exports__bogsilver_node_intact.png",
+    "smooth_shaded_faces": 1,
+    "triangles": 280,
+    "unapplied_transforms": [],
+    "vertices": 840
+  },
+  "harvestables/exports/bogsilver_node_shattered.glb": {
+    "_source_mtime": 1787356915.120965,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      2.7037,
+      2.6241,
+      1.7204
+    ],
+    "duplicate_vertices": 2472,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Bogsilver",
+      "MIRE_BogsilverCrust",
+      "MIRE_BogsilverDark",
+      "MIRE_BogsilverLight",
+      "MIRE_Coal",
+      "MIRE_Stone",
+      "MIRE_StoneLight"
+    ],
+    "min_z_m": -0.2948,
+    "ngons": 0,
+    "non_manifold_edges": 3120,
+    "objects": 55,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      -0.0261,
+      0.1795,
+      -0.2948
+    ],
+    "polygons": 1076,
+    "sheet": "sheets/harvestables__exports__bogsilver_node_shattered.png",
+    "smooth_shaded_faces": 36,
+    "triangles": 1076,
+    "unapplied_transforms": [],
+    "vertices": 3120
   },
   "harvestables/exports/harvest_tree_damaged_a.glb": {
     "_source_mtime": 1787146264.7142096,
@@ -4368,5 +4582,514 @@
       "Stone 4 scale=(1.35, 0.85, 0.62)"
     ],
     "vertices": 2670
+  },
+  "tools_weapons/exports/bogsilver_axe_viewmodel.glb": {
+    "_source_mtime": 1787355933.7535264,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.775,
+      0.1612,
+      1.386
+    ],
+    "duplicate_vertices": 849,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Bogsilver",
+      "MIRE_BogsilverDark",
+      "MIRE_BogsilverLight",
+      "MIRE_ClothRed",
+      "MIRE_WoodBark",
+      "MIRE_WoodTimber"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1212,
+    "objects": 15,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 666,
+    "sheet": "sheets/tools_weapons__exports__bogsilver_axe_viewmodel.png",
+    "smooth_shaded_faces": 105,
+    "triangles": 666,
+    "unapplied_transforms": [],
+    "vertices": 1212
+  },
+  "tools_weapons/exports/bogsilver_axe_world.glb": {
+    "_source_mtime": 1787356043.5480566,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.7331,
+      0.1546,
+      1.394
+    ],
+    "duplicate_vertices": 849,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Bogsilver",
+      "MIRE_BogsilverDark",
+      "MIRE_BogsilverLight",
+      "MIRE_ClothRed",
+      "MIRE_WoodBark",
+      "MIRE_WoodTimber"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1212,
+    "objects": 15,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      -0.0,
+      0.0
+    ],
+    "polygons": 666,
+    "sheet": "sheets/tools_weapons__exports__bogsilver_axe_world.png",
+    "smooth_shaded_faces": 115,
+    "triangles": 666,
+    "unapplied_transforms": [],
+    "vertices": 1212
+  },
+  "tools_weapons/exports/bogsilver_pickaxe_viewmodel.glb": {
+    "_source_mtime": 1787355934.1200812,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.4074,
+      0.238,
+      1.2781
+    ],
+    "duplicate_vertices": 864,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Bogsilver.002",
+      "MIRE_BogsilverDark.002",
+      "MIRE_BogsilverLight.002",
+      "MIRE_ClothRed.002",
+      "MIRE_WoodBark.002",
+      "MIRE_WoodTimber.002"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1236,
+    "objects": 18,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 672,
+    "sheet": "sheets/tools_weapons__exports__bogsilver_pickaxe_viewmodel.png",
+    "smooth_shaded_faces": 119,
+    "triangles": 672,
+    "unapplied_transforms": [],
+    "vertices": 1236
+  },
+  "tools_weapons/exports/bogsilver_pickaxe_world.glb": {
+    "_source_mtime": 1787356173.1041772,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.4077,
+      0.238,
+      1.2781
+    ],
+    "duplicate_vertices": 864,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Bogsilver",
+      "MIRE_BogsilverDark",
+      "MIRE_BogsilverLight",
+      "MIRE_ClothRed",
+      "MIRE_WoodBark",
+      "MIRE_WoodTimber"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1236,
+    "objects": 18,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 672,
+    "sheet": "sheets/tools_weapons__exports__bogsilver_pickaxe_world.png",
+    "smooth_shaded_faces": 122,
+    "triangles": 672,
+    "unapplied_transforms": [],
+    "vertices": 1236
+  },
+  "tools_weapons/exports/bolt_world.glb": {
+    "_source_mtime": 1787357716.6671154,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.144,
+      0.1643,
+      0.76
+    ],
+    "duplicate_vertices": 225,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Iron",
+      "MIRE_IronDark",
+      "MIRE_Leather",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkLight",
+      "MIRE_WoodTimber"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 324,
+    "objects": 7,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 170,
+    "sheet": "sheets/tools_weapons__exports__bolt_world.png",
+    "smooth_shaded_faces": 84,
+    "triangles": 170,
+    "unapplied_transforms": [],
+    "vertices": 324
+  },
+  "tools_weapons/exports/crossbow_world.glb": {
+    "_source_mtime": 1787357716.125008,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.2003,
+      0.0985,
+      1.1748
+    ],
+    "duplicate_vertices": 561,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Fibre",
+      "MIRE_Iron",
+      "MIRE_IronDark",
+      "MIRE_IronLight",
+      "MIRE_Rope",
+      "MIRE_WoodBark",
+      "MIRE_WoodTimber"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 764,
+    "objects": 13,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 354,
+    "sheet": "sheets/tools_weapons__exports__crossbow_world.png",
+    "smooth_shaded_faces": 91,
+    "triangles": 354,
+    "unapplied_transforms": [],
+    "vertices": 764
+  },
+  "tools_weapons/exports/iron_axe_viewmodel.glb": {
+    "_source_mtime": 1787355933.353801,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.72,
+      0.178,
+      1.386
+    ],
+    "duplicate_vertices": 779,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_ClothRed",
+      "MIRE_Iron",
+      "MIRE_IronDark",
+      "MIRE_IronLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodTimber"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1112,
+    "objects": 13,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 614,
+    "sheet": "sheets/tools_weapons__exports__iron_axe_viewmodel.png",
+    "smooth_shaded_faces": 106,
+    "triangles": 614,
+    "unapplied_transforms": [],
+    "vertices": 1112
+  },
+  "tools_weapons/exports/iron_axe_world.glb": {
+    "_source_mtime": 1787355933.2920341,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.72,
+      0.178,
+      1.386
+    ],
+    "duplicate_vertices": 779,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_ClothRed.001",
+      "MIRE_Iron.001",
+      "MIRE_IronDark.001",
+      "MIRE_IronLight.001",
+      "MIRE_WoodBark.001",
+      "MIRE_WoodTimber.001"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1112,
+    "objects": 13,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 614,
+    "sheet": "sheets/tools_weapons__exports__iron_axe_world.png",
+    "smooth_shaded_faces": 106,
+    "triangles": 614,
+    "unapplied_transforms": [],
+    "vertices": 1112
+  },
+  "tools_weapons/exports/longbow_world.glb": {
+    "_source_mtime": 1787357715.8276932,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.4128,
+      0.1027,
+      1.9112
+    ],
+    "duplicate_vertices": 565,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_ClothRed",
+      "MIRE_Fibre",
+      "MIRE_Leather",
+      "MIRE_WoodBarkLight",
+      "MIRE_WoodTimberLight"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 804,
+    "objects": 11,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 434,
+    "sheet": "sheets/tools_weapons__exports__longbow_world.png",
+    "smooth_shaded_faces": 87,
+    "triangles": 434,
+    "unapplied_transforms": [],
+    "vertices": 804
+  },
+  "tools_weapons/exports/sling_world.glb": {
+    "_source_mtime": 1787357715.5968194,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.2262,
+      0.12,
+      1.1241
+    ],
+    "duplicate_vertices": 388,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_ClothRed",
+      "MIRE_Fibre",
+      "MIRE_Leather",
+      "MIRE_Rope",
+      "MIRE_Stone"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 530,
+    "objects": 8,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 254,
+    "sheet": "sheets/tools_weapons__exports__sling_world.png",
+    "smooth_shaded_faces": 135,
+    "triangles": 254,
+    "unapplied_transforms": [],
+    "vertices": 530
+  },
+  "tools_weapons/exports/wellglass_axe_viewmodel.glb": {
+    "_source_mtime": 1787355934.53325,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.7091,
+      0.1877,
+      1.414
+    ],
+    "duplicate_vertices": 1275,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Bogsilver",
+      "MIRE_BogsilverDark",
+      "MIRE_ClothRed",
+      "MIRE_Rope",
+      "MIRE_Wellglass",
+      "MIRE_WellglassLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodTimber"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1740,
+    "objects": 23,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 838,
+    "sheet": "sheets/tools_weapons__exports__wellglass_axe_viewmodel.png",
+    "smooth_shaded_faces": 121,
+    "triangles": 838,
+    "unapplied_transforms": [],
+    "vertices": 1740
+  },
+  "tools_weapons/exports/wellglass_axe_world.glb": {
+    "_source_mtime": 1787356116.5220172,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.7091,
+      0.1857,
+      1.414
+    ],
+    "duplicate_vertices": 1275,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Bogsilver",
+      "MIRE_BogsilverDark",
+      "MIRE_ClothRed",
+      "MIRE_Rope",
+      "MIRE_WellglassDark",
+      "MIRE_WellglassLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodTimber"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1740,
+    "objects": 23,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0051,
+      0.0
+    ],
+    "polygons": 838,
+    "sheet": "sheets/tools_weapons__exports__wellglass_axe_world.png",
+    "smooth_shaded_faces": 128,
+    "triangles": 838,
+    "unapplied_transforms": [],
+    "vertices": 1740
+  },
+  "tools_weapons/exports/wellglass_pickaxe_viewmodel.glb": {
+    "_source_mtime": 1787355935.1676896,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.4473,
+      0.238,
+      1.2781
+    ],
+    "duplicate_vertices": 1248,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Bogsilver.002",
+      "MIRE_BogsilverDark.002",
+      "MIRE_BogsilverLight",
+      "MIRE_ClothRed.002",
+      "MIRE_WellglassLight.002",
+      "MIRE_WoodBark.002",
+      "MIRE_WoodTimber.002"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1716,
+    "objects": 26,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 832,
+    "sheet": "sheets/tools_weapons__exports__wellglass_pickaxe_viewmodel.png",
+    "smooth_shaded_faces": 118,
+    "triangles": 832,
+    "unapplied_transforms": [],
+    "vertices": 1716
+  },
+  "tools_weapons/exports/wellglass_pickaxe_world.glb": {
+    "_source_mtime": 1787356173.7029665,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.4472,
+      0.238,
+      1.2781
+    ],
+    "duplicate_vertices": 1248,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Bogsilver",
+      "MIRE_BogsilverDark",
+      "MIRE_BogsilverLight",
+      "MIRE_ClothRed",
+      "MIRE_WellglassLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodTimber"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1716,
+    "objects": 26,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 832,
+    "sheet": "sheets/tools_weapons__exports__wellglass_pickaxe_world.png",
+    "smooth_shaded_faces": 124,
+    "triangles": 832,
+    "unapplied_transforms": [],
+    "vertices": 1716
   }
 }

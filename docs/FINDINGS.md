@@ -468,49 +468,6 @@ makes every seam assertion below it meaningless.
 
 ---
 
-### F-295 · Every batched Hollowmere harvestable had a per-process node name, so none of the map's 794 batch-drawn props ever replicated
-
-**Area:** netcode · **Severity:** high · **Found:** 2026-08-20 by lp
-
-Found by F-276 while building the two-process half of `tools/harvest_restart_check.gd`, and fixed
-under that task's claim. Filed as its own finding because it is a distinct, older and more severe
-defect than the one F-276 asserts, and nothing in the repo recorded it.
-
-`world/gen/authored_world.gd:860` named each batch-drawn harvestable holder
-`"HarvestBatch_%s_%03d" % [asset, index]`, where `index` counts within ONE (chunk, kit, asset)
-group. The moment a second chunk carried the same asset — which on Hollowmere is every asset, since
-the map has 794 batched flora props spread over dozens of chunks — the name collided with a sibling
-already under the shared `World/Harvestables` root.
-
-Godot resolves a sibling name collision in `add_child(node)` (the default `force_readable_name =
-false` path) by assigning an unreadable `@<ClassName>@<id>`, NOT by appending a number. That id comes
-from a per-PROCESS counter. So the host called the same bush `@Node3D@1234` and the client called it
-`@Node3D@1770`, and every one of those props' code-built `MultiplayerSynchronizer` failed to resolve
-on the far peer:
-
-    ERROR: Node not found: "Hollowmere/World/Harvestables/@Node3D@1770/Harvestable/HarvestSync"
-
-The consequence is not subtle. No batched harvestable's `health`, `visual_state` or `active` ever
-reached a client, for any reason — not a teammate chopping it, not the respawn clock, not F-276's
-restart restore. Every client saw all 794 bushes permanently standing and could keep swinging at
-props the host had already depleted. It also means the shipped `harvestable_net_check` /
-`harvest_world_net_check` coverage never exercised a batched prop across two processes.
-
-**Fixed** in `world/gen/authored_world.gd` by naming the holder off `batch_holder.name` — which is
-already `"<chunk_x>_<chunk_z>_<kit>_<asset>"` and unique per group — so the result is unique
-map-wide, still derived only from the layout, and therefore identical on every peer. The trailing
-`_%03d` is kept because `HarvestWorld._layout_index()` parses it.
-
-`tools/harvest_restart_check.gd` phase 1 now asserts no wired prop's node path contains `@`, which
-is the general regression guard: an engine-assigned name is always a per-process name.
-
-`world/gen/resource_scatter_field.gd:320` names its own batch holders off `point_id` and was already
-unique; `wellspring_service`, `chest_placement_service` and `extraction_service` all add their node
-as the marker's only child. A sweep of every `\.name = "…%…"` assignment under `world/`, `systems/`,
-`autoload/` and `core/` found no other collision.
-
----
-
 ### F-296 · NetInterest.configure() installs authority-only visibility processing on every peer, so each client logs ERR_BUG from _update_spawn_visibility on join
 
 **Area:** netcode · **Severity:** low · **Found:** 2026-08-20 by lp
@@ -1970,52 +1927,6 @@ placement system (paths), two small systems (crawler gibs, water placement), and
 
 ---
 
-### F-440 · Five pickups have been 16-24% under their declared true size since world_bounds stopped using the inflated bound_box ruler
-
-**Area:** art · **Severity:** medium · **Found:** 2026-08-21 by gale43d16e
-
-Hit while adding `pickup_apple` (2026-08-21): `build_pickup_kit.py` aborts on its own scale contract,
-and has been doing so at HEAD. Five of the fourteen shipped pickups measure well under the size
-`mire_art.SCALE` declares for them:
-
-    pickup_stone      0.151 m vs 0.180   0.84x
-    pickup_flint      0.098 m vs 0.130   0.76x
-    pickup_iron_ore   0.160 m vs 0.200   0.80x
-    pickup_coal       0.134 m vs 0.160   0.84x
-    pickup_berry      0.075 m vs 0.090   0.84x
-
-**Nothing shrank. The tape measure got honest.** `mire_art.world_bounds` used to measure
-`obj.bound_box`, and was corrected — rightly — to measure VERTICES, because a bound box is
-axis-aligned in the object's LOCAL space, so once an object is rotated (which is every cone
-`cylinder_between` and `tapered_between` produce) transforming its eight corners gives a box strictly
-larger than the geometry inside it. That fix is documented in `world_bounds` itself; it was found
-because it was leaving up to 76 mm of air under every willow.
-
-The pickups' `SCALE` targets were set by eye against the OLD ruler, so they encode an inflated
-measurement. When the ruler was fixed, the geometry stayed exactly where it was and the numbers
-stopped agreeing — the assets in `assets/pickups/exports/` are the same ones that shipped, and the
-catalog beside them still records the old, larger figures. The contract has been red ever since, and
-because nothing enumerates the tools/ check suite (F-293) nobody saw it.
-
-**Fixed by normalising rather than by hand-growing five builders.** `create_asset` now scales each
-finished pickup onto its `SCALE` entry, which is what every other kit in the repo already does with
-its own size table (`build_flora_set.py`'s `SIZE_BANDS`, `build_gatherable_plants.py`'s `SIZE`,
-`build_camp_set.py`'s `SIZE`). That keeps the table as the single source of truth — an asset is the
-size the table says it is, and a builder's job is its SHAPE — and it means the contract can no longer
-be red without also being fixed. All fifteen pickups now measure their declared size exactly.
-
-Two things worth noting for whoever reads the catalog diff: the nine pickups that were already
-passing move by up to 12% as well, onto their exact declared figures rather than merely within
-tolerance of them; and this is a real gameplay-visible change, because a flint that was 98 mm is now
-130 mm on the ground.
-
-**The general lesson is about the second failure this caused.** A measurement fix silently
-invalidated a table of numbers derived from the old measurement, and there was no link between them
-to notice it. Anywhere a constant was calibrated by eye against a tool, fixing the tool is a change
-to the constant too.
-
----
-
 ### F-441 · The berry bushes' fruit was hidden under their own canopy, so the fruiting and picked states looked the same
 
 **Area:** art · **Severity:** medium · **Found:** 2026-08-21 by gale43d16e
@@ -3389,6 +3300,115 @@ is how a red check becomes two red checks.
 ---
 
 ## Resolved
+
+### F-552 · Shared worktree has 178 uncommitted artifacts — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by coil9c136f
+
+The shared worktree retained generated art exports, previews, audit captures, catalog/layout updates, project.godot autoload registration, and Godot UID sidecars after their producing tasks completed. This makes ownership and future commits unsafe. Recover intentional outputs in a bounded cleanup commit, remove only orphaned scratch-script UID sidecars, and prove `git status --porcelain` is empty.
+
+**Resolved 2026-08-22 by coil9c136f.** Recovered the completed generated art, preview, audit, catalog, layout, autoload, and matching Godot UID outputs under one exact-claim cleanup. Removed six orphan UID sidecars whose scratch scripts no longer exist. Verified with `git diff --check`, parsed every changed JSON plus all 224 JSONL records, and proved every remaining untracked UID has a corresponding source file. Final zero-status proof follows after shipping.
+
+### F-440 · Five pickups have been 16-24% under their declared true size since world_bounds stopped using the inflated bound_box ruler — **fixed**
+
+**Area:** art · **Severity:** medium · **Found:** 2026-08-21 by gale43d16e
+
+Hit while adding `pickup_apple` (2026-08-21): `build_pickup_kit.py` aborts on its own scale contract,
+and has been doing so at HEAD. Five of the fourteen shipped pickups measure well under the size
+`mire_art.SCALE` declares for them:
+
+    pickup_stone      0.151 m vs 0.180   0.84x
+    pickup_flint      0.098 m vs 0.130   0.76x
+    pickup_iron_ore   0.160 m vs 0.200   0.80x
+    pickup_coal       0.134 m vs 0.160   0.84x
+    pickup_berry      0.075 m vs 0.090   0.84x
+
+**Nothing shrank. The tape measure got honest.** `mire_art.world_bounds` used to measure
+`obj.bound_box`, and was corrected — rightly — to measure VERTICES, because a bound box is
+axis-aligned in the object's LOCAL space, so once an object is rotated (which is every cone
+`cylinder_between` and `tapered_between` produce) transforming its eight corners gives a box strictly
+larger than the geometry inside it. That fix is documented in `world_bounds` itself; it was found
+because it was leaving up to 76 mm of air under every willow.
+
+The pickups' `SCALE` targets were set by eye against the OLD ruler, so they encode an inflated
+measurement. When the ruler was fixed, the geometry stayed exactly where it was and the numbers
+stopped agreeing — the assets in `assets/pickups/exports/` are the same ones that shipped, and the
+catalog beside them still records the old, larger figures. The contract has been red ever since, and
+because nothing enumerates the tools/ check suite (F-293) nobody saw it.
+
+**Fixed by normalising rather than by hand-growing five builders.** `create_asset` now scales each
+finished pickup onto its `SCALE` entry, which is what every other kit in the repo already does with
+its own size table (`build_flora_set.py`'s `SIZE_BANDS`, `build_gatherable_plants.py`'s `SIZE`,
+`build_camp_set.py`'s `SIZE`). That keeps the table as the single source of truth — an asset is the
+size the table says it is, and a builder's job is its SHAPE — and it means the contract can no longer
+be red without also being fixed. All fifteen pickups now measure their declared size exactly.
+
+Two things worth noting for whoever reads the catalog diff: the nine pickups that were already
+passing move by up to 12% as well, onto their exact declared figures rather than merely within
+tolerance of them; and this is a real gameplay-visible change, because a flint that was 98 mm is now
+130 mm on the ground.
+
+**The general lesson is about the second failure this caused.** A measurement fix silently
+invalidated a table of numbers derived from the old measurement, and there was no link between them
+to notice it. Anywhere a constant was calibrated by eye against a tool, fixing the tool is a change
+to the constant too.
+
+---
+
+**Resolved 2026-08-22 by hollowbfcf67.** Bookkeeping only — the fix is described in the entry itself and is live at HEAD. `create_asset` in
+`tools/blender/build_pickup_kit.py` normalises every finished pickup onto its `mire_art.SCALE`
+entry, the same way `build_flora_set.py` and `build_gatherable_plants.py` already did with their own
+size tables, so the honest vertex-based `world_bounds` ruler and the declared sizes agree again.
+The kit rebuilds and its own scale contract passes rather than aborting.
+
+### F-295 · Every batched Hollowmere harvestable had a per-process node name, so none of the map's 794 batch-drawn props ever replicated — **fixed**
+
+**Area:** netcode · **Severity:** high · **Found:** 2026-08-20 by lp
+
+Found by F-276 while building the two-process half of `tools/harvest_restart_check.gd`, and fixed
+under that task's claim. Filed as its own finding because it is a distinct, older and more severe
+defect than the one F-276 asserts, and nothing in the repo recorded it.
+
+`world/gen/authored_world.gd:860` named each batch-drawn harvestable holder
+`"HarvestBatch_%s_%03d" % [asset, index]`, where `index` counts within ONE (chunk, kit, asset)
+group. The moment a second chunk carried the same asset — which on Hollowmere is every asset, since
+the map has 794 batched flora props spread over dozens of chunks — the name collided with a sibling
+already under the shared `World/Harvestables` root.
+
+Godot resolves a sibling name collision in `add_child(node)` (the default `force_readable_name =
+false` path) by assigning an unreadable `@<ClassName>@<id>`, NOT by appending a number. That id comes
+from a per-PROCESS counter. So the host called the same bush `@Node3D@1234` and the client called it
+`@Node3D@1770`, and every one of those props' code-built `MultiplayerSynchronizer` failed to resolve
+on the far peer:
+
+    ERROR: Node not found: "Hollowmere/World/Harvestables/@Node3D@1770/Harvestable/HarvestSync"
+
+The consequence is not subtle. No batched harvestable's `health`, `visual_state` or `active` ever
+reached a client, for any reason — not a teammate chopping it, not the respawn clock, not F-276's
+restart restore. Every client saw all 794 bushes permanently standing and could keep swinging at
+props the host had already depleted. It also means the shipped `harvestable_net_check` /
+`harvest_world_net_check` coverage never exercised a batched prop across two processes.
+
+**Fixed** in `world/gen/authored_world.gd` by naming the holder off `batch_holder.name` — which is
+already `"<chunk_x>_<chunk_z>_<kit>_<asset>"` and unique per group — so the result is unique
+map-wide, still derived only from the layout, and therefore identical on every peer. The trailing
+`_%03d` is kept because `HarvestWorld._layout_index()` parses it.
+
+`tools/harvest_restart_check.gd` phase 1 now asserts no wired prop's node path contains `@`, which
+is the general regression guard: an engine-assigned name is always a per-process name.
+
+`world/gen/resource_scatter_field.gd:320` names its own batch holders off `point_id` and was already
+unique; `wellspring_service`, `chest_placement_service` and `extraction_service` all add their node
+as the marker's only child. A sweep of every `\.name = "…%…"` assignment under `world/`, `systems/`,
+`autoload/` and `core/` found no other collision.
+
+---
+
+**Resolved 2026-08-22 by hollowbfcf67.** Bookkeeping only — the fix landed under F-276's claim and the entry's own text already records it.
+`world/gen/authored_world.gd` names each batch-drawn harvestable holder off `batch_holder.name`
+(`<chunk_x>_<chunk_z>_<kit>_<asset>`), which is unique per group, so no sibling collision reaches
+`add_child()` and no `@Node3D@<pid-counter>` name is ever minted. Confirmed still true at HEAD, and
+`harvest_batch_check` / `harvest_restart_check` pass in the current full-suite run.
 
 ### F-291 · A `--script` check that fires a real `EventBus` event as a state-setup shortcut can be broken by an unrelated later feature that subscribes to the same event — **fixed in `tools/unlock_check.gd`, same class not yet swept project-wide** — **fixed**
 
