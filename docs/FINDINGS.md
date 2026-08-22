@@ -3539,7 +3539,46 @@ there, not in the JSON, or the next regeneration restores it.
 
 ---
 
-### F-601 · The Sling exists as a full item and ranged weapon but nothing in the game produces it
+### F-603 · hitstop_seconds stalls only the attacker's own swing clock, so it can never deliver the punch its name promises
+
+**Area:** combat · **Severity:** low · **Found:** 2026-08-22 by wick3d4184
+
+Anyone tuning "hits feel weak" will reach for `WeaponDef.hitstop_seconds` first, because that is what
+the field is called and it is authored per weapon (0.055-0.115 across the roster). It cannot do what
+they want, and the failure is silent: they raise it, get nothing, and raise it further.
+
+`CombatService` (`autoload/combat_service.gd`, `_apply_resolution` and the note above the
+"Client-local feel" section) sets `_local_hitstop_remaining = weapon.hitstop_seconds`, and that value
+stalls **the attacker's own swing clock and nothing else**. The world keeps running, the struck
+creature keeps moving, no other peer sees anything. It is not the whole-screen freeze that the word
+"hitstop" means in every other engine.
+
+That is deliberate and correct, not an oversight. `Engine.time_scale` would give the usual freeze and
+is ruled out by **D-033**: it stalls this peer's frame loop and with it the network pump every
+transport is polled from, so in a co-op session one player's satisfying hit would be every player's
+hitch. The comment at the top of that section says so now.
+
+**The consequence to write down**: raising `hitstop_seconds` buys RECOVERY WEIGHT, not punch. Past
+about 0.15 s the weapon reads as sluggish and still does not feel like it connected, because the
+frame the player is looking at never stopped. The cues that actually land are the ones on the target
+and the camera — `Enemy`'s white flash (`enemy.gd:57`), the shake, and the knockback added in
+`2eb33b7e`, which was the one genuinely missing piece when Sequoyah reported the weapons having no
+impact.
+
+Filed at Sequoyah's report and wick410d34's request rather than as a defect: nothing here is broken.
+It is a name that promises something the implementation deliberately does not do, and the next person
+to chase heavier hits will grep the findings before they read the code.
+
+**If someone does want a real freeze later**, the shape that does not violate D-033 is a freeze scoped
+to presentation rather than to the frame loop — pausing the viewmodel's animation and the target's
+own `_process` for a few frames while physics and the network pump continue. That is a bigger change
+than a constant, and it should be its own task rather than a tuning pass.
+
+---
+
+## Resolved
+
+### F-601 · The Sling exists as a full item and ranged weapon but nothing in the game produces it — **fixed**
 
 **Area:** content · **Severity:** medium · **Found:** 2026-08-22 by birch1db63e
 
@@ -3580,9 +3619,39 @@ has no harvestable or recipe source. That is consistent with there being no hunt
 it is probably correct today, but it is the other item in the catalog with no production path of its
 own.
 
----
+**Resolved 2026-08-22 by birch1db63e (fixed).** **Fixed in 57762f7b: `content/recipes/sling.tres` — 3 fibre_bundle at the workbench.**
 
-## Resolved
+`tools/progression_reachability_check.gd` now reports **46 of 46 items on all five seeds,
+failures=0**, where it previously reported 45 of 46 with the sling as the only gap. The check that
+found it is the check that proves it closed.
+
+**Recipe over loot entry, and the reasoning.** ITEMS.md line 240 puts the sling at T1 beside the
+wooden/stone axe and the short bow, all of which are workbench recipes. Its two nearest siblings —
+`crossbow` (epic table) and `longbow` (rare table) — are loot-only and have no recipe either, so a
+loot line would have matched the local precedent. It would also have been wrong: **a T1 item gated
+behind a rare chest is not a T1 item.**
+
+**The cost, and why it sits under the short bow's.** 3 fibre against the bow's 3 branch + 2 fibre.
+The sling is damage 3 to the bow's 4, 26 m range to its 60, and its ammo is `stone` — which a player
+trips over — while every arrow costs a craft. So it is the bridge weapon *before* the bow: cheaper,
+weaker, and never out of ammo, which is exactly ITEMS.md's own "eats plain stones" framing.
+
+**The material is INTERIM and this is the line to revisit.** ITEMS.md line 177 lists "grips, slings,
+bucklers" among the uses of Cured Leather, so leather is the authored intent for this recipe. No
+leather, hide or pelt item exists in `content/items/` today. **Sequoyah confirmed mid-task that
+leather is coming from a cow currently being designed.** Fibre is therefore the shipped-materials
+answer rather than the final one — a braided cord and a woven pouch is a real sling, and it makes
+the weapon obtainable for the imminent playtest instead of leaving it invisible through it. When
+leather lands, this cost is the natural first thing to re-author, and doing so needs no code: it is
+one `ext_resource` path and one `count` in this file.
+
+**On `raw_meat`, the sibling this finding also flagged:** still reachable only through loot tables,
+with no harvestable or recipe source. That is consistent with there being no huntable animals yet —
+and the cow now makes it a live question rather than a dormant one, since a huntable animal is the
+obvious source for both `raw_meat` and the leather above.
+
+Verified: `progression_reachability_check` failures=0, `crafting_check` confirmations=7 failures=0,
+`recipe_station_check` 0, `loot_content_check` 0, `item_icons_check` PASS.
 
 ### F-602 · Whether a run ever meets the Mire is decided by a dice roll — **fixed**
 
