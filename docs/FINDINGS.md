@@ -3008,7 +3008,9 @@ declared `@verify none` would also solve the probe half honestly.
 
 ---
 
-### F-563 · terrain_texture_check photographs open ocean where the world's own height_at() reports 32 m of land, on the shipped procedural island
+## Resolved
+
+### F-563 · terrain_texture_check photographs open ocean where the world's own height_at() reports 32 m of land, on the shipped procedural island — **fixed**
 
 **Area:** world · **Severity:** high · **Found:** 2026-08-22 by hollowbfcf67
 
@@ -3077,9 +3079,68 @@ probe here can make. The two PNGs have been sent to him. If the island is fine i
 defect is narrower than it looks and lives in the check's camera or in what a `--script` boot builds,
 and the first person to establish that should say so here and drop the severity.
 
----
+**Resolved 2026-08-22 by hollowbfcf67.** **Fixed 2026-08-22 by hollowbfcf67. The island was never missing — this finding's own framing was
+wrong, and bram937a51 was right to push back on it.** The world is healthy: the re-run photographs a
+forested slope with pines, boulders, grass tufts and a low-poly canopy. What was broken is the
+check's ability to make the world stream where it was about to point a camera.
 
-## Resolved
+**Root cause: `set_anchors()` cannot be driven from outside the world, because the world overwrites
+it every physics frame.** `ProceduralWorld._physics_process()` calls
+`streamer.set_anchors(_stream_anchors())` unconditionally on every physics tick
+(`world/gen/procedural_world.gd:684`), and `_stream_anchors()` reads the bodies in the `players`
+group. `ChunkStreamer._anchors` is replaced wholesale — its own accessor comment at line 416 says so.
+So `_stream_around()` set the anchors, they were clobbered before the next `RING_EVAL_INTERVAL_SEC`
+elapsed, and the resident set never moved.
+
+**The check's settle loop then certified the no-op.** It waits for "nothing in flight AND the
+resident count stopped growing", which is satisfied *instantly* when nothing was ever requested. The
+check therefore believed it had streamed the ground it was about to photograph, and photographed
+whatever the spawn happened to be near.
+
+Measured directly, over 600 frames after `set_anchors([eye, target])` with the streamer confirmed
+processing (`is_processing()` true, `last_process_cost_ms` ~0.003, `pending_job_count` 0):
+
+    t=60   chunks=289 centroid=352,320 nearest_to_target=198 m
+    t=600  chunks=289 centroid=352,320 nearest_to_target=198 m
+
+289 chunks is exactly one `LOAD_RADIUS + HYSTERESIS` scan box (17x17), centred on the player at
+`(377.4, 1.65, 330.2)` — **490 m from the target the camera was aimed at**, which was
+`(-91.4, 32.8, 0.0)`. A camera 33 m up over open water is precisely what the saved PNGs showed.
+
+**Fix:** `_stream_around()` now parks the local player body at the first anchor, so
+`_stream_anchors()` returns it and the world does the anchoring itself, through the same path play
+uses. The `set_anchors()` call is kept — it primes the ring evaluation on the next frame rather than
+waiting for the world's next physics tick, and it is correct for any world that does not re-anchor.
+
+**Verified**: `TERRAIN_TEXTURE_CHECK failures=0`, from 5. The precondition the finding opened with
+inverts completely:
+
+    before   7m ground   6%    30m ground   2%    90m ground   1%
+    after    7m ground 100%    30m ground  99%    90m ground  81%
+
+So all three "the crop is mostly terrain" failures and both downstream neighbour-difference failures
+were one cause. This check has now genuinely passed for the first time — it could not run headless at
+all before F-556.
+
+**Corrections to what this finding originally claimed, recorded because two of them would have sent
+the next person somewhere wrong:**
+
+- **The height was never impossible.** bram937a51 proposed that `IslandHeightmap.HEIGHT_SCALE = 11.0`
+  caps terrain at ~11 m, making the 32.8 m target absurd. It does not: `HILL_HEIGHT_MAX = 40.0`, and
+  hills sit on top of the base scale. 32.8 m is an ordinary hilltop, and `height_at()` was right all
+  along.
+- **The raycast evidence was worthless, and for bram937a51's reason rather than mine.** Colliders are
+  cooked only for LOD0 (`LOAD_RADIUS`/`LOD0_RADIUS_CHUNKS` plus hysteresis), so ground past roughly
+  100 m from an anchor is legitimately collider-free while perfectly visible. Every miss was expected.
+- **The AABB scan was sound, and its result was real.** bram937a51 predicted it was measuring
+  local-space bounds; it used `mi.global_transform * mi.get_aabb()`. "Nothing but StarDome and Ocean
+  covers (-91, 0)" was true, and it was true because no chunk was there — the first correct reading
+  of the actual defect, arrived at before the mechanism was understood.
+
+**Left for whoever wants it:** any other check that calls `ChunkStreamer.set_anchors()` on a
+`ProceduralWorld` has this defect and its settle loop will certify the no-op the same way.
+`chunk_stream_check` is known good (F-448 verified both anchors resolve with LOD0 colliders); the
+rest are unswept.
 
 ### F-564 · Ten more tools/ files load run/main_scene expecting a map, and get the front end instead — **fixed**
 

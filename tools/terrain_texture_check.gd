@@ -350,6 +350,25 @@ func _stream_around(streamer: Node, anchors: Array) -> void:
 	var typed: Array[Vector3] = []
 	for anchor: Variant in anchors:
 		typed.append(anchor as Vector3)
+	# Move the LOCAL PLAYER, not the streamer. Calling `set_anchors()` from outside the world does
+	# nothing that survives a physics tick: `ProceduralWorld._physics_process()` calls
+	# `streamer.set_anchors(_stream_anchors())` EVERY physics frame, and `_stream_anchors()` reads
+	# the bodies in the `players` group. So an externally-set anchor is overwritten before the next
+	# ring evaluation, and this function used to be a no-op with a settle loop attached — the
+	# resident set stayed one scan box around the spawn, 490 m from where the camera was pointed,
+	# and every shot below photographed open sea while the check's own settle condition ("count
+	# stopped growing") was satisfied instantly because nothing was ever requested (F-563).
+	#
+	# Parking the player at the first anchor makes `_stream_anchors()` return it, so the world does
+	# the anchoring itself, through the same path play uses. The `set_anchors()` call is kept
+	# because it primes the ring evaluation on the very next frame rather than waiting for the
+	# world's next physics tick, and because it is correct for any world that does NOT re-anchor.
+	if not typed.is_empty():
+		for node: Node in get_nodes_in_group(&"players"):
+			var body := node as Node3D
+			if body != null:
+				body.global_position = typed[0]
+				break
 	streamer.call(&"set_anchors", typed)
 	# Both conditions, and held: nothing in flight AND the resident set stopped growing. Ring
 	# evaluation only runs every RING_EVAL_INTERVAL_SEC, so "no jobs pending" alone is true in the
