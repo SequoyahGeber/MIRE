@@ -268,7 +268,20 @@ func _stream_around_spawn() -> int:
 	if streamer == null:
 		return 0
 	var spawn: Vector3 = world.get(&"spawn_position")
-	streamer.call("set_anchors", PackedVector3Array([spawn]))
+	# Anchor at the SPAWN on purpose, and say so, because this harness boots with
+	# `build_player = false` and that does NOT protect an externally-set anchor (F-566, bram937a51).
+	# `ProceduralWorld._physics_process()` calls `set_anchors(_stream_anchors())` unconditionally
+	# every physics tick, and `_stream_anchors()` does not return empty when the `players` group is
+	# empty — it falls back to `spawn_position`. So the clobber still happens; only its destination
+	# changes. This check happens to ask for the same point the fallback supplies, which is why it
+	# works — and "right answer for the wrong reason" stops being right the moment anyone anchors
+	# somewhere else. Anywhere but the spawn, this function would have to move the world's own
+	# `spawn_position` (F-566's fix) rather than call this.
+	#
+	# Typed as `Array[Vector3]`, not `PackedVector3Array`: the parameter is `Array[Vector3]` and
+	# `procedural_world.gd:555` records that `call()` will not coerce the wrong array type into it.
+	var anchors: Array[Vector3] = [spawn]
+	streamer.call("set_anchors", anchors)
 	var frames: int = 0
 	var before: int = _total_sites()
 	while frames < STREAM_FRAME_BUDGET:
@@ -276,7 +289,7 @@ func _stream_around_spawn() -> int:
 		await process_frame
 		# Anchors are a per-tick contract, not a setting — re-stated every frame, which is what the
 		# player's own `_process` does.
-		streamer.call("set_anchors", PackedVector3Array([spawn]))
+		streamer.call("set_anchors", anchors)
 		if _total_sites() > before:
 			break
 	# A few more frames so the whole first ring of chunks lands, not just the one that tripped the
@@ -284,7 +297,7 @@ func _stream_around_spawn() -> int:
 	# the "nothing survived" comparison weaker than it looks.
 	for _extra: int in 30:
 		await process_frame
-		streamer.call("set_anchors", PackedVector3Array([spawn]))
+		streamer.call("set_anchors", anchors)
 	return frames
 
 

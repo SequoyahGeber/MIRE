@@ -2934,6 +2934,59 @@ instead of an artefact of it.
 
 ## Resolved
 
+### F-568 · environment_vfx_reseed_check has a real pre-existing failure: sway_asset_count does not carry the ended island's dressed meshes — **fixed**
+
+**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-22 by hollowbfcf67
+
+Found 2026-08-22 by hollowbfcf67 while confirming the anchoring clearance bram937a51 challenged in
+F-566. Established as **pre-existing**, not a regression from F-547:
+
+    shared tree   FAIL: sway_asset_count did not carry the ended island's dressed meshes (55 -> 60)
+    agent baseline FAIL: sway_asset_count did not carry the ended island's dressed meshes (53 -> 60)
+
+Both fail; only the first number moves, and it moves because the two runs dress slightly different
+islands, not because F-547 changed the outcome. `ENVIRONMENT_VFX_RESEED_CHECK failures=1` either way.
+
+The assertion is about a run boundary: when an island ends and the next one is generated,
+`EnvironmentVfx`'s sway registry must let go of the ended island's dressed meshes. It does not — the
+count climbs (53 → 60) rather than being carried across, so something from the previous island is
+still registered after the reseed. That is a leak across the run boundary in a per-frame system, which
+is the shape F-547 was about from the other end.
+
+**Not diagnosed here, and deliberately not started.** This wants a real look at what `sway_asset_count`
+counts and where the reseed is supposed to clear it, at the end of a long session it would be guessed
+rather than established. The reproduction is one command and the baseline is already taken, so the
+next session starts with the evidence rather than the discovery.
+
+**Resolved 2026-08-22 by hollowbfcf67.** **Fixed 2026-08-22 by hollowbfcf67, and the diagnosis in the body above was wrong — there is no leak.**
+The `sway_asset_count` failure was a symptom of the anchoring defect bram937a51 challenged in F-566,
+not a separate defect.
+
+`_stream_around_spawn()` passed `PackedVector3Array([spawn])` to `ChunkStreamer.set_anchors()`, whose
+parameter is `Array[Vector3]`. `procedural_world.gd:555` already records that `call()` will not coerce
+the wrong array type into a typed parameter — the trap was documented and this file walked into it.
+So **the anchor was never set at all**, at any of the three call sites, and the island the check
+dresses was whatever the world's own `_physics_process()` fallback happened to stream. The two islands
+either side of the reseed were dressed to different extents, the sway counts did not match, and the
+check reported that honestly as "did not carry the ended island's dressed meshes".
+
+Typing the array correctly is the whole fix:
+
+    var anchors: Array[Vector3] = [spawn]
+    streamer.call("set_anchors", anchors)
+
+**Verified**: `ENVIRONMENT_VFX_RESEED_CHECK failures=0`, twice in a row, against `failures=1` in both
+the shared tree (55 → 60) and `agent baseline` at clean HEAD (53 → 60). The differing "before" numbers
+were the tell and I read them as noise: they were two runs dressing two differently-streamed islands,
+which is exactly what an unset anchor produces.
+
+The comment at the call site now also records bram937a51's F-566 result — that `build_player = false`
+does **not** protect an externally-set anchor, because `_stream_anchors()` falls back to
+`spawn_position` rather than returning empty, so the clobber still happens and only its destination
+changes. This check asks for the same point the fallback supplies, so it is now correct *on purpose*
+rather than by coincidence; anywhere but the spawn it would have to move the world's own
+`spawn_position`, which is F-566's fix.
+
 ### F-469 · Four recent decisions use a heading shape decision_ref_check.py cannot see — **fixed**
 
 **Area:** docs · **Severity:** low · **Found:** 2026-08-21 by birche6b40e
