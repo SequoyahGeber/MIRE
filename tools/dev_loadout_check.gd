@@ -1,5 +1,11 @@
 extends SceneTree
 
+## @verify windowed — this check loads the REAL main scene, which brings up the world's materials,
+## so `agent verify` must launch it with a framebuffer instead of the `--headless` it injects by
+## default (F-556).
+## It carries no headless guard of its own: without a rendering device it does not refuse, it
+## drives the draw loop into the dummy driver until the engine aborts.
+
 ## Proves the two things that were missing when Sequoyah pressed Play: you start holding something,
 ## and there are crawlers in the world.
 ##

@@ -2994,7 +2994,67 @@ widened to fail on a duplicate `### D-<n>` heading in docs/DECISIONS.md.
 
 ---
 
-### F-556 · agent verify runs every check headless, so the ten checks that require a window can only ever fail or skip
+### F-557 · A check whose `quit()` is downstream of its own failure holds the shared Godot lock until something kills it
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-22 by bram937a51
+
+Two rows on the fast-suite ledger `.agent/verify/b305c185-fast.jsonl` cost 46 seconds each and
+neither of those seconds was work:
+
+    tools/enemy_facing_check.gd   exit -9   46.4s   "ERROR: killed after script error and silence"
+    tools/title_check.gd          exit -9   46.3s   "ERROR: killed after script error and silence"
+
+`agent verify` kills a check after a script error followed by silence (`SILENT_HANG_SECONDS` in
+`.agent/bin/agent`), so the runner already contains the only thing that stops these. That backstop
+is doing real work and should stay — but it is a timeout, not a fix, and it only exists inside
+`agent verify`. An agent running the same check by hand through `agent godot` gets no backstop at
+all, and holds the shared lock indefinitely.
+
+**The shape.** A `tools/*_check.gd` harness is a `SceneTree` whose `_initialize()` defers a `_run()`
+that ends in `quit()`. The process exits only because `quit()` is reached. So any error that
+prevents `_run()` from reaching its final line does not end the process — it parks it in an idle
+main loop with no frames to draw and nothing left to do, forever. Two concrete instances:
+
+- **`quit()` downstream of the failing statement.** In `enemy_facing_check.gd` the failing
+  `save_png` sits inside the `for view` loop, and BOTH the error path's `quit(1)` and the final
+  `quit(0)` are after it. The one event the script is most likely to hit is the one event that
+  guarantees `quit()` is never called.
+- **A body that never runs at all.** A `SceneTree` script defining `func _run()` with no
+  `_initialize()` to call it never executes, and because `quit()` lives inside `_run()` the process
+  idles from the first frame. `title_check.gd` reaches the same state by a different door: it fails
+  at *load*, so `_initialize()` never runs and `quit()` is unreachable (see F-558 for why it fails).
+
+**Why this is worth its own finding.** It is not a property of these two files. It is the default
+failure mode of every harness in `tools/`, and the next check written to the existing pattern
+inherits it. The cost is not hypothetical and it is not paid by the author — `agent locks --days=1`
+today reports **85 acquisitions, p95 wait 1058s, max wait 1311s**. Seventeen to twenty-two minutes
+of waiting per turn, on a lock every agent on this repo shares, and hanging checks are a direct
+contributor.
+
+**Proposed defence — a check must not be able to error its way into an idle main loop.** In
+preference order:
+
+1. **A watchdog inside the harness, not only inside the runner.** The shared harness base (or a
+   snippet every check opens with) arms a deadline at `_initialize()` and calls `quit(1)` when it
+   expires, so a check kills itself wherever it is run from. This is the only option that also
+   protects a hand-run `agent godot`.
+2. **Make the exit unconditional rather than terminal.** Structure `_run()` so the verdict print and
+   `quit()` cannot be skipped by an early error — the pattern the existing checks already reach for
+   with a `finish()` helper, but reached from a place that runs regardless.
+3. **Fail loudly on an absent `_initialize()`.** A `SceneTree` script with a `_run()` and no
+   `_initialize()` is always a bug; `agent verify` can detect it statically and refuse to launch it.
+
+**Not fixed in this task.** This finding is filed by bram937a51 while working F-556 and F-558, and
+is deliberately left unclaimed rather than half-done — the defence above touches the harness pattern
+that all ~218 checks share, and `.agent/bin/agent` is held by hollowbfcf67. It wants its own task
+with the lock free. What IS fixed under F-558 and F-559 is the two individual hangs, so the suite
+stops paying 92 seconds a run in the meantime.
+
+---
+
+## Resolved
+
+### F-556 · agent verify runs every check headless, so the ten checks that require a window can only ever fail or skip — **fixed**
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-22 by hollowbfcf67
 
@@ -3067,65 +3127,56 @@ design, not a check.
 
 ---
 
-### F-557 · A check whose `quit()` is downstream of its own failure holds the shared Godot lock until something kills it
+**Resolved 2026-08-22 by hollowbfcf67.** **Fixed 2026-08-22 by hollowbfcf67, with the diagnosis and the design argument from bram937a51.**
 
-**Area:** tooling · **Severity:** high · **Found:** 2026-08-22 by bram937a51
+A check now declares that it needs a framebuffer by carrying `@verify windowed` in its header, and
+`_run_verify_check()` launches those through the same `--windowed` path `agent godot --windowed`
+already uses instead of the `--headless` it injects by default. `cmd_verify` names the windowed set
+up front, because "this suite ran N checks with a framebuffer" is the fact a reader needs before
+trusting any render result, and the ledger row records `windowed` so a past run can be read the same
+way.
 
-Two rows on the fast-suite ledger `.agent/verify/b305c185-fast.jsonl` cost 46 seconds each and
-neither of those seconds was work:
+**A declared marker, not a grep — and that is the whole design.** The finding as filed proposed
+grepping check sources for the `DisplayServer.get_name() == "headless"` guard, with the marker only
+preferred. bram937a51 settled it while diagnosing the two worst cases: `material_warm_check` and
+`dev_loadout_check` have no guard at all. Run without a rendering device they do not refuse — they
+drive the draw loop into the dummy driver until the engine dies, `material_warm` on SIGSEGV after 106
+`Attempting to initialize the wrong RID` / `Parameter "mem" is null` lines, `dev_loadout` on SIGABRT
+after 15. **Not having the guard is precisely their defect**, so a detector that looks for the guard
+can only ever see the checks that already behave.
 
-    tools/enemy_facing_check.gd   exit -9   46.4s   "ERROR: killed after script error and silence"
-    tools/title_check.gd          exit -9   46.3s   "ERROR: killed after script error and silence"
+Twelve checks now carry the marker: the ten that had the guard, plus those two.
 
-`agent verify` kills a check after a script error followed by silence (`SILENT_HANG_SECONDS` in
-`.agent/bin/agent`), so the runner already contains the only thing that stops these. That backstop
-is doing real work and should stay — but it is a timeout, not a fix, and it only exists inside
-`agent verify`. An agent running the same check by hand through `agent godot` gets no backstop at
-all, and holds the shared lock indefinitely.
+**Verified**, and the results are the argument for the finding:
 
-**The shape.** A `tools/*_check.gd` harness is a `SceneTree` whose `_initialize()` defers a `_run()`
-that ends in `quit()`. The process exits only because `quit()` is reached. So any error that
-prevents `_run()` from reaching its final line does not end the process — it parks it in an idle
-main loop with no frames to draw and nothing left to do, forever. Two concrete instances:
+- `material_warm_check`: SIGSEGV with 106 engine errors → `MATERIAL_WARM_CHECK failures=0`, and
+  **zero** `ERROR:` lines in the whole run.
+- `dev_loadout_check`: SIGABRT with 15 engine errors → `DEV_LOADOUT_CHECK alive=4 nav_ready=true
+  failures=0`, zero `ERROR:` lines.
+- `terrain_texture_check`: refused to run at all headless → runs, and reports
+  `TERRAIN_TEXTURE_CHECK failures=5`. **Five real failures that no suite run has ever been able to
+  see.** They are not in scope here — this finding is about the runner — but they are now visible,
+  and somebody should take them.
+- Argv selection asserted directly against the harness: `material_warm` and `terrain_texture` resolve
+  to the `--resolution 64x64 --position 2400,1400` form, `combat_check` still to `--headless`.
 
-- **`quit()` downstream of the failing statement.** In `enemy_facing_check.gd` the failing
-  `save_png` sits inside the `for view` loop, and BOTH the error path's `quit(1)` and the final
-  `quit(0)` are after it. The one event the script is most likely to hit is the one event that
-  guarantees `quit()` is never called.
-- **A body that never runs at all.** A `SceneTree` script defining `func _run()` with no
-  `_initialize()` to call it never executes, and because `quit()` lives inside `_run()` the process
-  idles from the first frame. `title_check.gd` reaches the same state by a different door: it fails
-  at *load*, so `_initialize()` never runs and `quit()` is unreachable (see F-558 for why it fails).
+**Also landed here, because it is the same lesson and it costs nothing to run:
+`tools/findings_hygiene_check.py` gained a structural detector.** F-134 has now happened three times
+— a `## Resolved` heading eaten by a hand-edit — and each time the file was already broken before
+anything noticed. It now asserts that `## Open` and `## Resolved` each appear exactly once, and
+F-464's assertion that the scanner sees as many `### F-` headings under `## Open` as are physically
+there. A boundary fault suppresses the derived count fault rather than burying it. Five self-test
+cases reproduce the real failures rather than asserting in the abstract: the swallowed heading, the
+duplicated boundary from splicing at a `## Resolved` mention inside a body, F-464's hidden section,
+and the suppression rule. `--self-test` passes 9/9, and the check needs no Godot and no lock.
 
-**Why this is worth its own finding.** It is not a property of these two files. It is the default
-failure mode of every harness in `tools/`, and the next check written to the existing pattern
-inherits it. The cost is not hypothetical and it is not paid by the author — `agent locks --days=1`
-today reports **85 acquisitions, p95 wait 1058s, max wait 1311s**. Seventeen to twenty-two minutes
-of waiting per turn, on a lock every agent on this repo shares, and hanging checks are a direct
-contributor.
+The instruction "never hand-edit docs/FINDINGS.md" was already correct and had already failed twice,
+because it was a rule and not a guard. `agent resolve` refusing to write when the marker is missing
+is what caught the third occurrence; this is that same assertion made where anyone can run it.
 
-**Proposed defence — a check must not be able to error its way into an idle main loop.** In
-preference order:
-
-1. **A watchdog inside the harness, not only inside the runner.** The shared harness base (or a
-   snippet every check opens with) arms a deadline at `_initialize()` and calls `quit(1)` when it
-   expires, so a check kills itself wherever it is run from. This is the only option that also
-   protects a hand-run `agent godot`.
-2. **Make the exit unconditional rather than terminal.** Structure `_run()` so the verdict print and
-   `quit()` cannot be skipped by an early error — the pattern the existing checks already reach for
-   with a `finish()` helper, but reached from a place that runs regardless.
-3. **Fail loudly on an absent `_initialize()`.** A `SceneTree` script with a `_run()` and no
-   `_initialize()` is always a bug; `agent verify` can detect it statically and refuse to launch it.
-
-**Not fixed in this task.** This finding is filed by bram937a51 while working F-556 and F-558, and
-is deliberately left unclaimed rather than half-done — the defence above touches the harness pattern
-that all ~218 checks share, and `.agent/bin/agent` is held by hollowbfcf67. It wants its own task
-with the lock free. What IS fixed under F-558 and F-559 is the two individual hangs, so the suite
-stops paying 92 seconds a run in the meantime.
-
----
-
-## Resolved
+**Not swept, deliberately:** every check that reads `application/run/main_scene` expecting a map has
+the defect bram937a51 fixed in `world_contract_check` under F-549 — the main scene is the front end
+now. That is a separate sweep and wants its own finding.
 
 ### F-549 · world_contract_check has 3 failures at a clean HEAD — the [shipped] map publishes no ground and no Undergrowth, and the procedural map builds two extraction ships — **fixed**
 

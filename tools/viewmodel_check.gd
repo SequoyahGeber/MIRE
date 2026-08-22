@@ -1,5 +1,9 @@
 extends SceneTree
 
+## @verify windowed — this check renders the swing so the grip values can be judged by eye, so
+## `agent verify` must launch it with a framebuffer instead of the `--headless` it injects by
+## default (F-556).
+
 ## Proves F-041 is actually fixed, and renders the swing so the grip values can be judged by eye.
 ##
 ## Runs against the REAL main scene with the real player, because the bug was that nothing connected

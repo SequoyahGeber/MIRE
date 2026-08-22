@@ -1,5 +1,9 @@
 extends SceneTree
 
+## @verify windowed — this check renders both inventory views and measures them at a phone width,
+## so `agent verify` must launch it with a framebuffer instead of the `--headless` it injects by
+## default (F-556).
+
 ## Focused task 2.5 proof: the autoload renders both views, follows authoritative snapshots,
 ## routes moves through InventoryService, restores cursor ownership, and fits a phone-width viewport.
 

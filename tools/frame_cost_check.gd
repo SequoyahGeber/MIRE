@@ -1,5 +1,9 @@
 extends SceneTree
 
+## @verify windowed — this check reads the renderer's own counters, which are all zero headless,
+## so `agent verify` must launch it with a framebuffer instead of the `--headless` it injects by
+## default (F-556).
+
 ## Ground truth for what a frame costs, straight from the renderer's own counters.
 ##
 ##   .agent/bin/agent godot --windowed --script tools/frame_cost_check.gd

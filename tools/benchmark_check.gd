@@ -1,5 +1,9 @@
 extends SceneTree
 
+## @verify windowed — this check samples a real scene through the renderer's own counters, so
+## `agent verify` must launch it with a framebuffer instead of the `--headless` it injects by
+## default (F-556).
+
 ## Verifies the in-game benchmark (F-453) — the statistics, the suite's shape, the advisor's
 ## decisions, the ledger's resume behaviour, and one real sampled scene end to end.
 ##

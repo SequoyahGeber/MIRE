@@ -1,5 +1,9 @@
 extends SceneTree
 
+## @verify windowed — this check renders a real Control tree and needs a viewport to lay it out,
+## so `agent verify` must launch it with a framebuffer instead of the `--headless` it injects by
+## default (F-556).
+
 ## Focused task 2.7 proof: the workbench panel only opens in range, renders authoritative
 ## requirements, routes crafts through CraftingService, never predicts an inventory change, shows the
 ## host's rejection verbatim, and gives the cursor back when it closes.

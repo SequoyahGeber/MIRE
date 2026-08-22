@@ -40,6 +40,7 @@ import argparse
 import importlib.util
 import json
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -57,6 +58,47 @@ def _load_harness(root):
     return mod
 
 
+def structure(root):
+    """Structural faults in docs/FINDINGS.md, as a list of human-readable strings.
+
+    The two detectors below both ask "is this finding in the right SECTION?", which quietly assumes
+    the sections exist and that the parser agrees with the file about where they are. Three times now
+    that assumption has been the thing that broke (F-134), and each time it was a hand-edit rather
+    than the tooling: a slice from a heading to the next `### F-` steps over the boundary when the
+    finding being moved is the last one under `## Open`, and a splice at `text.index("## Resolved")`
+    can land on a mention of that string inside a finding's own BODY — which is exactly how
+    bram937a51 spliced two entries into the middle of F-464 on 2026-08-22, F-464 being the finding
+    about parsers being fooled by `##` inside a body.
+
+    `agent resolve` already refuses to write when the marker is missing, and that refusal is what
+    caught it. This is the same assertion made where it costs nothing to run: no Godot, no lock. A
+    rule that says "never hand-edit" failed precisely because it was a rule and not a guard.
+    """
+    faults = []
+    with open(os.path.join(root, "docs", "FINDINGS.md"), encoding="utf-8") as f:
+        text = f.read()
+    for heading in ("## Open", "## Resolved"):
+        n = len(re.findall(r"^%s\s*$" % re.escape(heading), text, re.M))
+        if n != 1:
+            faults.append("docs/FINDINGS.md has %d '%s' heading(s), expected exactly 1 — a hand-edit "
+                          "has eaten or duplicated a section boundary (F-134)" % (n, heading))
+    if faults:
+        # Counting entries per section is meaningless once the boundary itself is wrong, and would
+        # bury the one fault that matters under a wall of derived ones.
+        return faults
+    open_text = text.split("\n## Resolved\n", 1)[0].split("\n## Open\n", 1)[1]
+    physical = len(re.findall(r"^### F-\d+", open_text, re.M))
+    parsed = len(_load_harness(root)._open_findings())
+    if parsed != physical:
+        # F-464: a level-2 heading inside a finding's body closes the open section early for the
+        # scanner, so every finding filed after it becomes invisible to every tool that reads the
+        # doc — while still being visibly present to a human reading the file.
+        faults.append("docs/FINDINGS.md has %d '### F-' heading(s) physically under '## Open' but "
+                      "the scanner sees %d — a '## ' heading inside a finding body is hiding the "
+                      "rest of the section (F-464)" % (physical, parsed))
+    return faults
+
+
 def scan(root):
     """(drift, self_resolved) for the records under `root`, using the harness's own detectors."""
     harness = _load_harness(root)
@@ -70,8 +112,16 @@ def scan(root):
 
 
 def report(root, label="live records"):
-    drift, settled = scan(root)
     print("FINDINGS_HYGIENE_CHECK — %s" % label)
+    faults = structure(root)
+    for fault in faults:
+        print("  FAIL: %s" % fault)
+    if faults:
+        # A broken section boundary makes every per-finding verdict below it a guess, so stop here
+        # rather than printing verdicts derived from a file we have just proved we cannot read.
+        print("  (skipping the per-finding detectors — they read the sections this fault breaks)")
+        return len(faults)
+    drift, settled = scan(root)
     for fid in settled:
         print("  FAIL: %s sits under '## Open' but its own text says it is resolved — move the "
               "section with `agent resolve %s`, or delete the claim from its body" % (fid, fid))
@@ -172,6 +222,47 @@ def _self_test():
                                         "**Found:** 2026-08-20 by synth\n\nShape 2")
         write(clean, {})
         expect("a clean file passes both detectors", [], [])
+
+        def expect_structure(name, want_count, must_mention):
+            nonlocal failures
+            faults = structure(tmp)
+            if len(faults) != want_count or not all(
+                    any(needle in f for f in faults) for needle in must_mention):
+                failures += 1
+                print("  FAIL: %s — got %r" % (name, faults))
+            else:
+                print("  PASS: %s" % name)
+
+        # An assertion that has never failed is not evidence, so each structural fault is reproduced
+        # from the way it actually happened rather than asserted in the abstract.
+        write(_SYNTH_FINDINGS, {})
+        expect_structure("a well-formed file has no structural fault", 0, [])
+
+        # F-134, three times over: a slice from a heading to the next '### F-' steps past the
+        # boundary when the finding being moved is the LAST one under '## Open', and takes the
+        # '## Resolved' heading with it.
+        write(_SYNTH_FINDINGS.replace("\n## Resolved\n", "\n"), {})
+        expect_structure("a swallowed '## Resolved' heading is caught", 1, ["'## Resolved' heading"])
+
+        # The repair that goes wrong the other way: splicing at text.index("## Resolved") can land on
+        # a mention of that string inside a finding's own body, duplicating the boundary.
+        write(_SYNTH_FINDINGS.replace("\n## Resolved\n", "\n## Resolved\n\n## Resolved\n"), {})
+        expect_structure("a duplicated boundary is caught too", 1, ["2 '## Resolved' heading"])
+
+        # F-464: a level-2 heading inside a body closes the open section early for the scanner, so
+        # every finding filed after it is invisible to every tool while still visible to a human.
+        write(_SYNTH_FINDINGS.replace("Nothing about this one is resolved.",
+                                      "Nothing about this one is resolved.\n\n## Notes\n\nmore"), {})
+        expect_structure("a '## ' heading inside a body hides the rest of the section", 1,
+                         ["hiding the rest of the section"])
+
+        # And the boundary fault wins: with no '## Resolved' at all, the count assertion below it is
+        # derived from a file we have just proved we cannot read, so it must not also be reported.
+        write(_SYNTH_FINDINGS.replace("\n## Resolved\n", "\n").replace(
+            "Nothing about this one is resolved.",
+            "Nothing about this one is resolved.\n\n## Notes\n\nmore"), {})
+        expect_structure("a broken boundary suppresses the derived count fault", 1,
+                         ["'## Resolved' heading"])
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     print("SELF_TEST failures=%d" % failures)

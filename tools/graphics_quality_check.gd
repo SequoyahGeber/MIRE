@@ -1,5 +1,9 @@
 extends SceneTree
 
+## @verify windowed — this check asserts against a real shadow configuration on a real device, so
+## `agent verify` must launch it with a framebuffer instead of the `--headless` it injects by
+## default (F-556).
+
 ## Proof for F-377: the LOW graphics preset's shadow configuration is internally consistent, and
 ## MEDIUM and HIGH still get the level's authored one.
 ##

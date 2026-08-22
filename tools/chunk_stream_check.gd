@@ -1,5 +1,9 @@
 extends SceneTree
 
+## @verify windowed — this check meshes real chunks, which the dummy driver cannot upload, so
+## `agent verify` must launch it with a framebuffer instead of the `--headless` it injects by
+## default (F-556).
+
 ## Verifies task 4.3 — world/chunk/chunk_streamer.gd + the real world/chunk/chunk_mesher.gd.
 ##
 ##   .agent/bin/agent godot --windowed --script tools/chunk_stream_check.gd

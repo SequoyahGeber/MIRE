@@ -14,6 +14,7 @@ import fcntl
 import glob
 import hashlib
 import io
+import itertools
 import json
 import os
 import re
@@ -3578,6 +3579,32 @@ VERIFY_FULL_ONLY_HINTS = (
 )
 
 
+# A check declares that it needs a framebuffer by carrying this line in its source. `agent verify`
+# injects `--headless` into every run, and headless has no rendering device, so a render check under
+# it can only ever refuse to run or — worse — SKIP and exit 0, silently measuring nothing and
+# reporting success (F-556).
+#
+# It is a DECLARED marker rather than a grep for the `DisplayServer.get_name() == "headless"` guard
+# those checks tend to carry, and that distinction is the whole design. bram937a51 made the argument
+# while diagnosing the two worst cases: `material_warm_check` and `dev_loadout_check` have no guard
+# at all — they drive the draw loop straight into the dummy driver until the engine SIGSEGVs or
+# SIGABRTs, having printed a hundred `Attempting to initialize the wrong RID` lines on the way. Not
+# having the guard is precisely their defect, so a detector that looks for the guard can only see the
+# checks that already behave. The marker is what a check cannot accidentally omit twice.
+VERIFY_WINDOWED_MARKER = "@verify windowed"
+
+
+def _verify_needs_window(script):
+    """True when `script` declares it needs a framebuffer. Reads the header only — the marker belongs
+    in the file's doc comment, and scanning a whole check to find it would be reading the wrong
+    thing."""
+    try:
+        with open(os.path.join(ROOT, script), encoding="utf-8") as f:
+            return any(VERIFY_WINDOWED_MARKER in line for line in itertools.islice(f, 40))
+    except OSError:
+        return False
+
+
 def _verify_checks(fast=False):
     checks = sorted(os.path.relpath(p, ROOT) for p in glob.glob(os.path.join(ROOT, "tools", "*_check.gd")))
     if fast:
@@ -3661,7 +3688,8 @@ def _verify_verdict(output, code):
 
 
 def _run_verify_check(script):
-    argv = _godot_argv(ROOT, ["--script", script])
+    windowed = _verify_needs_window(script)
+    argv = _godot_argv(ROOT, (["--windowed"] if windowed else []) + ["--script", script])
     print("%s· %s%s" % (C["dim"], " ".join(argv[1:]), C["x"]), flush=True)
     started = time.time()
     proc = subprocess.Popen(argv, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=0)
@@ -3696,6 +3724,7 @@ def _run_verify_check(script):
     passed, failures, reasons, unexpected, teardown = _verify_verdict(output, code)
     return {"script": script, "passed": passed, "failures": failures, "exit_code": code,
             "reasons": reasons, "unexpected_errors": unexpected, "teardown_leaks": teardown,
+            "windowed": windowed,
             "seconds": round(time.time() - started, 3), "completed_at": now()}
 
 
@@ -3726,8 +3755,15 @@ def cmd_verify(args):
     prior = _verify_ledger_rows(ledger)
     completed = {row.get("script") for row in prior}
     pending = [script for script in checks if script not in completed]
+    windowed = [c for c in checks if _verify_needs_window(c)]
     print("verify: %d checks, %d complete, %d pending; ledger %s" %
           (len(checks), len(checks) - len(pending), len(pending), os.path.relpath(ledger, ROOT)))
+    if windowed:
+        # Named up front rather than left to the per-check header, because "this suite ran N checks
+        # with a framebuffer" is the fact a reader needs to trust a render result at all (F-556).
+        print("  %d of them declare %r and run with a framebuffer: %s"
+              % (len(windowed), VERIFY_WINDOWED_MARKER,
+                 ", ".join(os.path.basename(c) for c in windowed)))
     with file_lock("godot", timeout=1800, label="verify"):
         if pending:
             _import_pass()

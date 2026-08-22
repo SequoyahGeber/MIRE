@@ -1,5 +1,8 @@
 extends SceneTree
 
+## @verify windowed — this check renders and clicks a real Control tree, so `agent verify` must
+## launch it with a framebuffer instead of the `--headless` it injects by default (F-556).
+
 ## F-527: the build bar is one row above the hotbar, categorized into mouse-clickable tabs and
 ## pieces, and releases/recaptures the first-person cursor with its lifetime.
 ##

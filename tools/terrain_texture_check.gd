@@ -1,5 +1,9 @@
 extends SceneTree
 
+## @verify windowed — this check photographs the ground, and a capture needs a framebuffer, so
+## `agent verify` must launch it with a framebuffer instead of the `--headless` it injects by
+## default (F-556).
+
 ## F-399 — the ground is no longer one flat value per biome, and this both PROVES it and
 ## PHOTOGRAPHS it.
 ##

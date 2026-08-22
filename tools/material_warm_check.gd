@@ -1,5 +1,11 @@
 extends SceneTree
 
+## @verify windowed — this check draws every shipped GLB through an off-screen viewport, so `agent
+## verify` must launch it with a framebuffer instead of the `--headless` it injects by default
+## (F-556).
+## It carries no headless guard of its own: without a rendering device it does not refuse, it
+## drives the draw loop into the dummy driver until the engine SIGSEGVs.
+
 ## F-516 proof, headless: every shipped GLB is enumerated and drawn once through `MaterialWarmer`'s
 ## off-screen viewport, and the rig tears itself down afterwards.
 ##
