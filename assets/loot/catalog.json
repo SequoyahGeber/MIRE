@@ -2,9 +2,9 @@
   {
     "name": "loot_chest_crate_closed",
     "family": "chest",
-    "width_m": 0.624,
-    "depth_m": 0.415,
-    "height_m": 0.464,
+    "width_m": 0.78,
+    "depth_m": 0.519,
+    "height_m": 0.581,
     "mesh_parts": 17,
     "polygons": 102,
     "materials": [
@@ -16,9 +16,9 @@
   {
     "name": "loot_chest_crate_open",
     "family": "chest",
-    "width_m": 0.624,
-    "depth_m": 0.611,
-    "height_m": 0.74,
+    "width_m": 0.78,
+    "depth_m": 0.764,
+    "height_m": 0.925,
     "mesh_parts": 20,
     "polygons": 132,
     "materials": [
@@ -32,9 +32,9 @@
   {
     "name": "loot_chest_small_closed",
     "family": "chest",
-    "width_m": 0.749,
-    "depth_m": 0.486,
-    "height_m": 0.566,
+    "width_m": 0.936,
+    "depth_m": 0.607,
+    "height_m": 0.708,
     "mesh_parts": 16,
     "polygons": 96,
     "materials": [
@@ -47,9 +47,9 @@
   {
     "name": "loot_chest_small_open",
     "family": "chest",
-    "width_m": 0.749,
-    "depth_m": 0.752,
-    "height_m": 0.848,
+    "width_m": 0.936,
+    "depth_m": 0.94,
+    "height_m": 1.06,
     "mesh_parts": 20,
     "polygons": 138,
     "materials": [
@@ -64,9 +64,9 @@
   {
     "name": "loot_chest_wellspring_closed",
     "family": "chest",
-    "width_m": 0.832,
-    "depth_m": 0.587,
-    "height_m": 0.658,
+    "width_m": 1.04,
+    "depth_m": 0.733,
+    "height_m": 0.822,
     "mesh_parts": 21,
     "polygons": 140,
     "materials": [
@@ -79,9 +79,9 @@
   {
     "name": "loot_chest_wellspring_open",
     "family": "chest",
-    "width_m": 0.832,
-    "depth_m": 0.899,
-    "height_m": 0.941,
+    "width_m": 1.04,
+    "depth_m": 1.124,
+    "height_m": 1.177,
     "mesh_parts": 24,
     "polygons": 260,
     "materials": [
@@ -94,9 +94,9 @@
   {
     "name": "loot_chest_reinforced_closed",
     "family": "chest",
-    "width_m": 0.957,
-    "depth_m": 0.645,
-    "height_m": 0.708,
+    "width_m": 1.196,
+    "depth_m": 0.806,
+    "height_m": 0.885,
     "mesh_parts": 24,
     "polygons": 144,
     "materials": [
@@ -109,9 +109,9 @@
   {
     "name": "loot_chest_reinforced_open",
     "family": "chest",
-    "width_m": 0.957,
-    "depth_m": 0.964,
-    "height_m": 1.068,
+    "width_m": 1.196,
+    "depth_m": 1.204,
+    "height_m": 1.335,
     "mesh_parts": 30,
     "polygons": 198,
     "materials": [
@@ -127,9 +127,9 @@
   {
     "name": "loot_chest_warded_closed",
     "family": "chest",
-    "width_m": 1.04,
-    "depth_m": 0.728,
-    "height_m": 0.748,
+    "width_m": 1.3,
+    "depth_m": 0.91,
+    "height_m": 0.935,
     "mesh_parts": 26,
     "polygons": 170,
     "materials": [
@@ -145,9 +145,9 @@
   {
     "name": "loot_chest_warded_open",
     "family": "chest",
-    "width_m": 1.04,
-    "depth_m": 1.064,
-    "height_m": 1.139,
+    "width_m": 1.3,
+    "depth_m": 1.331,
+    "height_m": 1.424,
     "mesh_parts": 32,
     "polygons": 320,
     "materials": [
@@ -166,9 +166,9 @@
   {
     "name": "loot_chest_gilded_closed",
     "family": "chest",
-    "width_m": 1.123,
-    "depth_m": 0.795,
-    "height_m": 1.013,
+    "width_m": 1.404,
+    "depth_m": 0.993,
+    "height_m": 1.266,
     "mesh_parts": 30,
     "polygons": 268,
     "materials": [
@@ -183,9 +183,9 @@
   {
     "name": "loot_chest_gilded_open",
     "family": "chest",
-    "width_m": 1.123,
-    "depth_m": 1.286,
-    "height_m": 1.226,
+    "width_m": 1.404,
+    "depth_m": 1.608,
+    "height_m": 1.533,
     "mesh_parts": 39,
     "polygons": 374,
     "materials": [
