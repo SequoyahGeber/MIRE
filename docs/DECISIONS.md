@@ -7384,3 +7384,28 @@ what actually place these, so if `AnimalDef` already says `animal_deer` or per-s
 Phase 1 wins and this entry is amended to match rather than the other way round. Also: if a species
 turns out to need a clip the other five do not (the Fen Stilt's motionless stand, in Phase 5), that
 is an argument for per-species clip lists and this uniform vocabulary would be the thing in the way.
+
+### D-219 · 2026-08-22 · Medicinal Herb IS marshwort — cooking recipes use `herb`, and no second item is authored
+`docs/ITEMS.md` §4.4/§4.5 write several recipes against an ingredient called **marshwort** — Healing
+Stew ("meat + 2 marshwort"), Fish Stew, Healing Draught, Moss Poultice. No `content/items/marshwort.tres`
+exists and none should be authored.
+
+`content/items/herb.tres` already ships as **"Medicinal Herb — bitter leaves and a white flower head.
+Chewed for what it mends, not for the taste."** That is the same item: a gathered medicinal plant
+whose job in every recipe that names marshwort is "the healing ingredient". It has an icon, a world
+model, a pickup mesh and a harvestable (`content/harvestables/medicinal_herb.tres`) already placed by
+the scatter tables.
+
+Authoring marshwort as a second item would put **two indistinguishable green plants** in the player's
+pack, each with its own icon to draw, its own harvestable to place, and its own line in every recipe
+UI — and the player would have no way to know which one a recipe wanted except by trying. That is a
+worse game and more work, for a distinction that exists only because two docs were written months
+apart.
+
+So: **cooking recipes use `herb`.** Where ITEMS.md says marshwort, read `herb`.
+
+**Would change my mind:** if the two ever need to be mechanically distinct — say marshwort becomes a
+wetland-only gather that Bog Loaf and the tonics require, while `herb` stays the common forest one, so
+that biome access gates the medicine tree. That is a real design idea and a reason to split them
+later. It is not a reason to ship two identical items now, and whoever splits them should do it as a
+deliberate content decision rather than by discovering the name mismatch and filling the gap.
