@@ -7,66 +7,57 @@
 
 ## Status
 
-> **2026-08-19 — the engineering spine is close to done; what's left is mostly play, content, and
-> polish.** 126/165 tasks (2026-08-20). M0 ✅ · M1 13/14 (only 1.12's three-machine evidence run) ·
-> M2 21/25 · M3 23/27 · M4 24/30 · M5 9/14 · M6 17/18 · M7 5/13 · M8 2/12. The full check battery
-> was swept on 2026-08-19 — `docs/AUDIT-2026-08-19.md` is the report; everything runnable on this
-> machine is now green, including `boss_check`'s exit-leak diagnostic (F-193) and `lobby_menu_check` (F-170),
-> both since resolved.
+> The counts below are **generated** — `python3 tools/next_gen.py --write` rewrites them from
+> `.agent/state.json` and `docs/FINDINGS.md`, and `tools/next_gen.py` fails when the committed file
+> has drifted. They used to be hand-maintained, and two different reviewers corrected the same
+> numbers in one night before that was filed as F-306. Everything outside the generated block is
+> judgement and stays hand-written.
+
+<!-- BEGIN GENERATED — python3 tools/next_gen.py --write. Do not hand-edit. -->
+
+**Tasks: 135/171 done.** M0 12/12 · M1 13/14 · M2 21/25 · M3 26/29 · M4 28/32 · M5 10/15 · M6 18/19 · M7 5/13 · M8 2/12
+
+**Findings: 88 under `## Open`.** 5 in flight · 3 externally gated · **74 available to pick up now** · 6 marked done but still under `## Open`
+
+Externally gated — do not route these to a lane:
+
+- **F-023** — needs the physical Windows PC and a real Steam lobby
+- **F-025** — needs a first-join latency measured on real hardware
+- **F-174** — no dev machine here stands in for mid-range
+
+Marked done but still under `## Open` — read the entry before claiming; `agent board` hides these while `agent brief` still offers them:
+
+- F-012 · F-472 · F-488 · F-519 · F-522 · F-537
+
+Available now, oldest first: F-285, F-295, F-296, F-300, F-304, F-305, F-309, F-310, F-317, F-319, F-320, F-322, F-323, F-325, F-344, F-350, F-352, F-358, F-359, F-360, F-362, F-364, F-371, F-388, F-389, F-393, F-394, F-406, F-412, F-420, F-422, F-424, F-425, F-426, F-427, F-428, F-429, F-436, F-437, F-438, F-439, F-440, F-441, F-444, F-446, F-448, F-454, F-455, F-457, F-463, F-465, F-466, F-467, F-468, F-469, F-470, F-474, F-476, F-479, F-481, F-495, F-497, F-498, F-499, F-513, F-515, F-521, F-523, F-524, F-536, F-544, F-545, F-546, F-547
+
+<!-- END GENERATED -->
+
+> **The engineering spine is close to done; what is left is mostly play, content, and polish.**
+> The full check battery was swept on 2026-08-19 — `docs/AUDIT-2026-08-19.md` is the report.
 >
-> **Findings: 33 under `## Open` (counted 2026-08-20 by `agent godot --script tools/findings_numbering_check.gd`, which prints the number — do not hand-count this line again).** This section
-> said "7 open, and not one of them is code you can sit down and write" from 2026-08-19 until
-> F-261's review re-counted it to 23; both of those numbers are now stale, in the direction that
-> matters — the day's fix lanes closed fourteen (F-259, F-268, F-269, F-271, F-274, F-275, F-276,
-> F-277, F-278, F-280, F-284, F-287, F-288, F-290) and filed more than that while doing it, because
-> a review that actually reads the code finds things. Six are still the hardware/external set —
-> F-020, F-023, F-024, F-025 (Steam/LAN join, needs a second machine and a real network), F-044 (the shared Godot
-> import cache), F-174 (no dev machine here stands in for mid-range). Two are fixed and merely sit
-> in the wrong section (F-236, F-299) — that mismatch is the recurring one filed as **F-269**, and
-> `agent board` hides them while `agent brief` still offers them, so check an entry's own text
-> before claiming it (`python3 tools/findings_hygiene_check.py` names them, and fails on nothing
-> else at HEAD). **The other twenty-five ARE ordinary code work a lane can pick up today.**
-> Clusters worth knowing before you route any of them:
+> Clusters worth knowing before routing any finding:
 >
-> - **The tooling itself is red or unwatched** — F-285/F-292 (`nav_bake_check` has had 4 failures at
->   a clean HEAD since 4.13/4.14), F-293 (nothing enumerates and runs the `tools/` suite, so a red
->   check sits at HEAD unnoticed — this is the one that makes the others possible), F-291, F-305,
->   F-316 (`## F-226` heads two disagreeing blocks in `docs/SPECS.md`, and `agent brief` slices
->   that file by heading — the D-number half of this shape is closed as F-283).
-> - **The agent harness** — F-265, F-267, F-289, F-304: `ship` sweeping a sibling's uncommitted
->   hunks, and `ship` structurally unable to stage `docs/FINDINGS.md`. The claim race itself is
->   **closed** (F-266): `state.json` writes are transactional and atomic, D-176 sets the scope rule,
->   and `python3 tools/agent_state_lock_check.py` is the concurrency check to extend — run it after
->   any edit to `load()`/`save()` alongside `tools/harness_check.py`.
 > - **Procedural reseed leftovers**, all from F-258's fresh-seed restart — F-279, F-281, F-282,
 >   F-286, F-298.
 > - **The terminal run-summary screens still have one way to strand a player** — F-307: a client
 >   whose host quits while the defeat/extraction overlay is up keeps a disabled "waiting on the
 >   host" button and cannot open any menu over it, because the overlay holds
 >   `blocks_gameplay_input`. Reproduced two-process. Severity high; the fix needs a decision
->   about what a terminal screen offers a peer with no host, which is why F-275's review filed
->   it rather than picking one.
+>   about what a terminal screen offers a peer with no host.
 > - **Worldgen performance and correctness** — F-294 (per-sample Array rebuilds under every surface
 >   sample, doubled by F-274), F-295, F-296, F-300..F-303.
-> - **Seed replication and the record** — F-272 and F-273 (`seed_ready` is a run boundary now, and
->   the re-broadcast still has no two-process proof), F-264 (`Boss` duplicates `Enemy`'s lunge
->   instead of reusing it).
+> - **The tooling suite is unwatched** — F-293: nothing enumerates and runs the `tools/` suite, so a
+>   red check sits at HEAD unnoticed. This is the one that makes the others possible.
 >
-> Count these from `docs/FINDINGS.md`'s `## Open` section, not from `state.json` or `agent report`:
-> the two disagree, which is what F-269 and F-270 are about. The three double-allocated D-numbers
-> this note used to warn about are gone (F-283): the entry that resolved F-189 — "keep file claims,
-> fix claim staleness instead of moving to per-agent worktrees", worth reading before anyone
-> proposes worktrees again — is now **D-180**, and `D-144` means task 4.13's terrain split and
-> nothing else. `python3 tools/decision_ref_check.py` now fails on a duplicate heading, so this
-> cannot come back.
+> Count open findings from `docs/FINDINGS.md`'s `## Open` section, not from `state.json` or
+> `agent report`: the two disagree, which is what F-269 and F-270 are about — and the generated
+> block above takes FINDINGS as the authority for exactly that reason.
 >
-> **The content, not the engine, is now the thin part — but less thin than this line used to say.**
-> The boot line counts 5 enemy definitions, 7 cycle modifiers and 7 unlocks against 72 powerups and
-> 13 buildables (2026-08-20; it was 2 / 1 / 1 on 2026-08-19, before 5.2 and F-245 landed). 5.2
-> (enemy types) and 6.3 (cycle modifiers) are where the game gets deeper, and both are authoring
-> tasks — one asset at a time, with attention, never a batch of stat blocks generated in one pass. **5.2 went out to LM on
-> 2026-08-19 scoped to three enemies, not the roadmap line's eight to twelve,** for exactly that
-> reason; expect it to close with a handoff naming what is left rather than a full directory.
+> **The content, not the engine, is the thin part.** 5.2 (enemy types) and 6.3 (cycle modifiers) are
+> where the game gets deeper, and both are authoring tasks — one asset at a time, with attention,
+> never a batch of stat blocks generated in one pass (D-073).
+
 
 **The game is a real roguelike now.** Press Play: you spawn in **Hollowmere** with a stocked
 hotbar. Walk, sprint, jump, dodge (with i-frames — Thin Step extends them), harvest with the tool
@@ -159,6 +150,10 @@ editor import before treating startup errors as game defects.
 Input map, the autoload floor (44 today), scene structure, live physics, §5a effective settings (F-003) — run it
 after anything structural. `agent godot` serialises engine runs against the lanes (F-044); a bare
 `Godot --headless` is how two engines corrupt one import cache.
+
+`python3 tools/next_gen.py` fails when this file's generated Status block has drifted from
+`.agent/state.json` and `docs/FINDINGS.md`; `--write` regenerates it (F-306). Run it before you trust
+a count here, and after closing anything out.
 
 `tools/setup_project.gd` regenerates the input map and both scenes — its header now tells the truth
 about re-running (F-048): destructive once tuning starts, and it no longer touches an existing

@@ -222,9 +222,9 @@
     },
     "docs/FINDINGS.md": {
       "agent": "moss8598bb",
-      "at": "2026-08-22T06:07:08+00:00",
-      "dirty_at_claim": false,
-      "task": "F-236",
+      "at": "2026-08-22T06:20:06+00:00",
+      "dirty_at_claim": true,
+      "task": "F-291",
       "token": "CLAUDE_CODE_SESSION_ID:ba8e8bdc-1c55-4638-b9e8-b5fc2b5623fd"
     },
     "docs/POWERUPS.md": {
@@ -314,6 +314,13 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "tools/blocking_ui_event_check.gd": {
+      "agent": "moss8598bb",
+      "at": "2026-08-22T06:20:06+00:00",
+      "dirty_at_claim": false,
+      "task": "F-291",
+      "token": "CLAUDE_CODE_SESSION_ID:ba8e8bdc-1c55-4638-b9e8-b5fc2b5623fd"
+    },
     "tools/forager_sense_check.gd": {
       "agent": "larch543bba",
       "at": "2026-08-22T05:50:26+00:00",
@@ -321,11 +328,25 @@
       "task": "F-543",
       "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
     },
+    "tools/hollowmere_check.gd": {
+      "agent": "coil8be837",
+      "at": "2026-08-22T06:15:24+00:00",
+      "dirty_at_claim": false,
+      "task": "F-302",
+      "token": "CLAUDE_CODE_SESSION_ID:9f85a50f-dcca-4078-b6c0-522f46a43f77"
+    },
     "tools/item_icons_check.gd": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:52:45+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "tools/mapgen/hollowmere_layout.py": {
+      "agent": "coil8be837",
+      "at": "2026-08-22T06:15:24+00:00",
+      "dirty_at_claim": false,
+      "task": "F-302",
+      "token": "CLAUDE_CODE_SESSION_ID:9f85a50f-dcca-4078-b6c0-522f46a43f77"
     },
     "tools/nav_bake_check.gd": {
       "agent": "cinder9818da",
@@ -334,6 +355,13 @@
       "task": "F-292",
       "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
     },
+    "tools/run_reseed_net_check.gd": {
+      "agent": "coil8be837",
+      "at": "2026-08-22T06:07:50+00:00",
+      "dirty_at_claim": false,
+      "task": "F-272",
+      "token": "CLAUDE_CODE_SESSION_ID:9f85a50f-dcca-4078-b6c0-522f46a43f77"
+    },
     "tools/setup_attunement_content.gd": {
       "agent": "larch543bba",
       "at": "2026-08-22T05:57:00+00:00",
@@ -341,12 +369,26 @@
       "task": "F-543",
       "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
     },
+    "tools/world_contract_check.gd": {
+      "agent": "coil8be837",
+      "at": "2026-08-22T06:15:24+00:00",
+      "dirty_at_claim": false,
+      "task": "F-302",
+      "token": "CLAUDE_CODE_SESSION_ID:9f85a50f-dcca-4078-b6c0-522f46a43f77"
+    },
     "ui/hud/forager_sense_hud.gd": {
       "agent": "larch543bba",
       "at": "2026-08-22T05:50:26+00:00",
       "dirty_at_claim": false,
       "task": "F-543",
       "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
+    },
+    "world/gen/layouts/hollowmere.json": {
+      "agent": "coil8be837",
+      "at": "2026-08-22T06:15:24+00:00",
+      "dirty_at_claim": false,
+      "task": "F-302",
+      "token": "CLAUDE_CODE_SESSION_ID:9f85a50f-dcca-4078-b6c0-522f46a43f77"
     }
   },
   "in_flight": {
@@ -377,6 +419,25 @@
       "started": "2026-08-22T06:07:08+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:ba8e8bdc-1c55-4638-b9e8-b5fc2b5623fd"
     },
+    "F-272": {
+      "agent": "coil8be837",
+      "files": [
+        "tools/run_reseed_net_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-22T06:07:50+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:9f85a50f-dcca-4078-b6c0-522f46a43f77"
+    },
+    "F-291": {
+      "agent": "moss8598bb",
+      "files": [
+        "tools/blocking_ui_event_check.gd",
+        "docs/FINDINGS.md"
+      ],
+      "notes": [],
+      "started": "2026-08-22T06:20:03+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:ba8e8bdc-1c55-4638-b9e8-b5fc2b5623fd"
+    },
     "F-292": {
       "agent": "cinder9818da",
       "files": [
@@ -385,6 +446,18 @@
       "notes": [],
       "started": "2026-08-22T05:56:04+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
+    },
+    "F-302": {
+      "agent": "coil8be837",
+      "files": [
+        "world/gen/layouts/hollowmere.json",
+        "tools/mapgen/hollowmere_layout.py",
+        "tools/hollowmere_check.gd",
+        "tools/world_contract_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-22T06:15:24+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:9f85a50f-dcca-4078-b6c0-522f46a43f77"
     },
     "F-473": {
       "agent": "birche6b40e",
@@ -534,34 +607,6 @@
       "hash": null,
       "task": "F-432",
       "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
-    },
-    "assets/audit/lighting/f415_10_noon_control.png": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T06:17:41+00:00",
-      "hash": "f1ea045af6379c27d810852108982884e11dd833210bc3a4e54976c0458ff01b",
-      "task": "F-415",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/audit/lighting/f415_11_blue_hour.png": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T06:17:41+00:00",
-      "hash": "1e2b11c3827156895d8eeb4980043c3778e2857d84edad203b59ee1b46ee6e1f",
-      "task": "F-415",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/audit/lighting/f415_12_dark_moonlit_night.png": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T06:17:41+00:00",
-      "hash": "67e109a2eac191a8ebe8977b3fad9ad412d703d4e15cf141a9506a5da8963737",
-      "task": "F-415",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/audit/lighting/f415_dark_night_render.jsonl": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T06:17:41+00:00",
-      "hash": "1b1c59c91f28cd968dda81eea1a97f54c199262187565a98349b222b65ac3585",
-      "task": "F-415",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
     },
     "assets/audit/lighting/f419/forest_sunward.png": {
       "agent": "kilnd3a089",
@@ -3196,7 +3241,7 @@
     },
     "docs/FINDINGS.md": {
       "agent": "cinder9818da",
-      "at": "2026-08-22T06:07:28+00:00",
+      "at": "2026-08-22T06:30:37+00:00",
       "hash": null,
       "task": "F-292",
       "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
@@ -3209,6 +3254,15 @@
       "hash": "e00fd72be4a5ea400ae89710c3b06c14eea4800825579968d142b6f593111fd1",
       "task": "F-541",
       "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+    },
+    "docs/NEXT.md": {
+      "agent": "cinder9818da",
+      "at": "2026-08-22T06:30:37+00:00",
+      "claimed_at": "2026-08-22T06:28:36+00:00",
+      "dirty_at_claim": false,
+      "hash": "1c91c81ab7f3f3e20bbe1b7530a37a2a35436de13d2cd0e066a4560cc1f81a3a",
+      "task": "F-306",
+      "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
     },
     "docs/PERFORMANCE.md": {
       "agent": "wick5e2d04",
@@ -3546,13 +3600,6 @@
       "hash": "097072c2d6e344843311e217d508920633219e05584918622746501f829cc8e7",
       "task": "F-439",
       "token": "CLAUDE_CODE_SESSION_ID:1e714a39-d8b1-4450-9d79-102af2c5081f"
-    },
-    "tools/atmosphere_night_check.gd": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T06:17:41+00:00",
-      "hash": "7727467ed067f9171380f60a5557b006a9e5526f34fcc305cca47e8c3bbde05f",
-      "task": "F-415",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
     },
     "tools/attunement_ui_check.gd": {
       "agent": "ivyf16b98",
@@ -3982,20 +4029,6 @@
       "task": "F-514",
       "token": "CODEX_SESSION_ID:01a02772-862e-7242-889a-a20257660bfa"
     },
-    "tools/f356_night_probe.gd": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T06:17:41+00:00",
-      "hash": "a9893f2841caeb84230bc71226973881e5fa5417c5aee137b779a03e5cf30775",
-      "task": "F-415",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "tools/f356_night_probe.gd.uid": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T06:17:41+00:00",
-      "hash": "f69523d472392c1aaf569af11c91dd8e961ac45a28d0f8bd26d66c8158e3c5fe",
-      "task": "F-415",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
     "tools/f492_pinecone_check.gd": {
       "agent": "hollow25eed7",
       "at": "2026-08-22T01:45:21+00:00",
@@ -4030,20 +4063,6 @@
       "hash": "7989098e60154db9eb715b4e4f121f93eeccf4a0d2f103225253a0cc5e3b1d9f",
       "task": "F-472",
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
-    },
-    "tools/god_mode_check.gd": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T06:17:58+00:00",
-      "hash": "b3af2cedad7c3880a7612f3d05d11a5c33ae80809848bdc5487525bb937fe14e",
-      "task": "F-413",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
-    },
-    "tools/grade_check.gd": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T06:17:41+00:00",
-      "hash": "5d86a48285f76cf29dfec0850d8ffff59f246f020b59ef3ef54b0e85f94080f2",
-      "task": "F-415",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
     },
     "tools/guide_check.gd": {
       "agent": "tine5ad92a",
@@ -4151,13 +4170,6 @@
       "hash": "5c0e2735b4778af53840386147a9393abfe41aa4a6fe2b253412f5b486dc2744",
       "task": "F-541",
       "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
-    },
-    "tools/main_menu_check.gd": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T06:17:58+00:00",
-      "hash": "fc9d01aa74448beb6af23cb95de92fff4afdd5d14d93d2fdc45a9374d1dff767",
-      "task": "F-413",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
     "tools/mapgen/hollow_layout.py": {
       "agent": "birchf37d06",
@@ -4608,13 +4620,6 @@
       "task": "F-514",
       "token": "CODEX_SESSION_ID:01a02772-862e-7242-889a-a20257660bfa"
     },
-    "ui/frontend/graphics_settings_page.gd.uid": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T06:29:30+00:00",
-      "hash": "36a13b6e496dcb39d48516c8f3dda23efdf3bcde6bd7437e8061b829d0e937f9",
-      "task": "F-414",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
-    },
     "ui/frontend/settings_screen.gd": {
       "agent": "hollowe6edef",
       "at": "2026-08-22T03:35:54+00:00",
@@ -4692,40 +4697,12 @@
       "task": "F-431",
       "token": "CLAUDE_CODE_SESSION_ID:80d76563-dcca-426a-ad54-2909c9fa380a"
     },
-    "ui/menu/focus_ring_slider.gd": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T06:17:58+00:00",
-      "hash": "1f5e072c90419204d6871dd528302c11e73a4a38e3af38487135745f1ed745ec",
-      "task": "F-413",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
-    },
     "ui/menu/main_menu.gd": {
       "agent": "duska7668b",
       "at": "2026-08-22T05:22:43+00:00",
       "hash": "0c67cec16b9893a8721fd0c25ff6fff1e3c0581e771ea779772615a120a37816",
       "task": "F-537",
       "token": "CLAUDE_CODE_SESSION_ID:e53e22ff-f266-497e-84fe-9d2939e5d427"
-    },
-    "ui/menu/settings_menu.gd": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T06:17:58+00:00",
-      "hash": null,
-      "task": "F-413",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
-    },
-    "ui/menu/settings_menu.gd.uid": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T06:17:58+00:00",
-      "hash": null,
-      "task": "F-413",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
-    },
-    "ui/menu_stack.gd": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T06:17:58+00:00",
-      "hash": "ceee1ae506822d3336ce50c175663646644f780ed4370dd645490480c7cdf225",
-      "task": "F-413",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
     "ui/theme/mire_theme.gd": {
       "agent": "hollowe6edef",
@@ -4782,13 +4759,6 @@
       "hash": null,
       "task": "F-516",
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
-    },
-    "world/environment/playtest_atmosphere.gd": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T06:17:41+00:00",
-      "hash": "8e40ec9b18ac9e658d9b68bf37a89bbc678ba9f9960d377365b1e14a37f1c763",
-      "task": "F-415",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
     },
     "world/environment/river_water.gd": {
       "agent": "vaneabd52b",
@@ -4924,7 +4894,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1562,
+  "rev": 1575,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -8890,7 +8860,7 @@
     "F-272": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "The seed re-broadcast has no two-process proof \u2014 `run_reseed_check` calls the client's own receive path by hand"
     },
@@ -9077,7 +9047,7 @@
     "F-291": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "A `--script` check that fires a real `EventBus` event as a state-setup shortcut can be broken by an unrelated later feature that subscribes to the same event \u2014 **fixed in `tools/unlock_check.gd`, same class not yet swept project-wide**"
     },
@@ -9162,7 +9132,7 @@
     "F-302": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "The two shipped layout JSONs write the spawn record in two different shapes, so every generic reader needs both"
     },
@@ -9190,9 +9160,11 @@
       "title": "tools/wave_spawner_check.gd intermittently emits 6 undeclared 'Parameter \"material\" is null' ERRORs while printing failures=0 and exiting 0"
     },
     "F-306": {
+      "done_at": "2026-08-22T06:30:37+00:00",
+      "done_by": "cinder9818da",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "docs/NEXT.md is hand-maintained but summarises a board that moves hourly, so it goes stale within hours \u2014 corrected twice in one night by two different reviewers"
     },
@@ -11094,6 +11066,20 @@
       "status": "todo",
       "tier": "F",
       "title": "Hollowmere's only extraction ship marker was hand-edited into a GENERATED file, and the next regeneration deleted it"
+    },
+    "F-546": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "21 citations of D-215 across ITEMS.md and FINDINGS.md have no heading in DECISIONS.md"
+    },
+    "F-547": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "EnvironmentVfx does per-node work for all 44,000 nodes a traversal adds, and 1,821 of them raise a backtraced warning"
     }
   },
   "version": 1

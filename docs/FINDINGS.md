@@ -383,72 +383,6 @@ checked against anything but relative deltas on the fastest machine in the proje
 
 ---
 
-### F-236 · Three shipped systems have essentially no content in them: the Cycle Modifier deck holds 1 card, the unlock tree 1 unlock, the ranged rack 1 weapon
-
-**Area:** content · **Severity:** high · **Found:** 2026-08-19 by nettle12
-
-The engine work is done and the systems boot clean, which makes this easy to miss on a status line:
-every framework reports green because a deck of one card draws successfully.
-
-Counted from `content/`:
-
-| Category | Files | Framework that consumes it |
-|---|---|---|
-| `cycle_modifiers/` | ~~1~~ **7** (2026-08-19, lm, task 6.3) | 6.2 — deck, draw, stacking, Cycle-weighted rules. Done. |
-| `unlocks/` | ~~1~~ **7** (2026-08-19, lp) | 6.9 — unlock tree + UI, and 6.6's Salvage curve. Both done. |
-| `ranged_weapons/` | **1** | 5.3 — bow, projectiles, host-authoritative hit validation. Done. |
-| `haulables/`, `hooks/` | 1 each | |
-| `stations/`, `scatter/` | 2 each | |
-
-Against `powerups/` at 72 and `buildables/` at 13, which are the two categories that did get authored.
-
-**What each of these means at the table, which is the point:**
-
-- **A Cycle Modifier deck of one card means every run escalates identically.** 6.2 built draw,
-  stacking and Cycle-weighting so that runs diverge; with one card there is nothing to draw, nothing
-  to stack, and no weighting to express. The entire variety system was inert, and it kept testing
-  green regardless. **Fixed for this row by task 6.3 (2026-08-19, lm)** — deck now holds 7
-  (`long_night` + 6 more spanning distinct systems: harvesting, Wellspring presence, chest loot, mire
-  recession, enemy death, enemy targeting; see `docs/DECISIONS.md` D-146). The roadmap line asked for
-  20–30; D-146 explains why 6.3 shipped 7 instead — not a shortfall against this finding's own bar,
-  which was "nothing to draw, nothing to stack," now false. `ranged_weapons/` (below) is this
-  finding's only remaining open row of the three named in its title — `unlocks/` was already fixed
-  above.
-- **An unlock tree of one unlock means Salvage has nothing to buy.** 6.6 shipped a superlinear reward
-  curve and an extract-vs-die split; 6.9 shipped the tree and its UI. The meta-progression loop — the
-  reason to do a second run after a wipe — terminates immediately. **No task covers authoring this
-  content.** 6.9 is marked done because the tree and UI shipped, exactly the shape F-140 recorded for
-  3.5: the system landed, the content it exists to present never did.
-- **One ranged weapon** against nine melee, after 5.3 built projectiles and hit validation.
-
-**This is the honest answer to "is the game ready to playtest?" — no, and not because the systems are
-unfinished.** A playtest right now measures one modifier, one unlock and one bow, so it cannot find
-the balance and variety problems it would be run to find. Content first, then 2.14/3.11/4.12/6.11.
-
-**Not a bug in any of the systems named**, and not an argument that they were built wrong. It is the
-gap between "the framework is done" and "the game has things in it", and it is currently the largest
-gap in the project. The one-at-a-time authoring rule applies: these want real attention per file, not
-a directory generated in a pass.
-
-**2026-08-19 (lp) — the `unlocks/` third is fixed; `cycle_modifiers/` and `ranged_weapons/` are not,
-so this finding stays under `## Open`.** Six unlocks authored one at a time (`unlock_loping_gait`,
-`unlock_coin_worm`, `unlock_bottomless_quiver`, `unlock_thin_step`, `unlock_night_pyre`,
-`unlock_cauter_seal` — see `docs/SPECS.md`'s new F-236 block for what each one changes about how a
-run is played and why). All six are `category = "powerup"`, gating an existing PowerupDef that
-already rolls in a real `content/loot/*.tres` table — confirmed live before authoring against it
-(D-111/F-173: `is_content_unlocked()` currently has no consumer for the other seven §4.6 categories,
-so an `attunement`/`poi`/`enemy`/`cycle_modifier`/`island_modifier`/`cosmetic`/`loadout` row would
-sell but gate nothing yet — D-111's 2026-08-19 addendum records this so the next author doesn't
-rediscover it the hard way). `tools/unlock_check.gd` gained `_check_authored_content()`, which now validates every
-`content/unlocks/*.tres` file generically (not just the worked example): schema-clean, no two rows
-silently shadow the same `gates_id`, and every `powerup`-category row's `gates_id` both resolves to a
-real `PowerupDef` and actually appears as a POWERUP entry in an authored loot table. Verified:
-`.agent/bin/agent godot --script tools/unlock_check.gd` → `UNLOCK_CHECK failures=0` (7 rows total).
-**Left for whoever picks up the rest:** `cycle_modifiers/` (task 6.3, `todo`) and `ranged_weapons/`
-(no task id yet, per the roadmap — DELEGATION.md's Current state entry for this task says the same).
-
----
-
 ### F-272 · The seed re-broadcast has no two-process proof — `run_reseed_check` calls the client's own receive path by hand
 
 **Area:** netcode · **Severity:** low · **Found:** 2026-08-20 by lp
@@ -826,31 +760,6 @@ blessing an error pattern to quiet a check is the wrong end of the problem.
 **Reproducing:** run `.agent/bin/agent godot --script tools/wave_spawner_check.gd` repeatedly and
 grep for `material_storage.cpp:264`; it appeared on 1 of 3 runs here. Machine load plausibly matters
 — the working-tree run that produced it was the first of a batch behind a contended engine lock.
-
----
-
-### F-306 · docs/NEXT.md is hand-maintained but summarises a board that moves hourly, so it goes stale within hours — corrected twice in one night by two different reviewers
-
-**Area:** process · **Severity:** medium · **Found:** 2026-08-20 by bram1
-
-`docs/NEXT.md` is the plan a human reads first, and it restates numbers that live authoritatively
-elsewhere: task counts from `.agent/state.json`, open-finding counts and the "pick up today" list from
-`docs/FINDINGS.md`, boot content counts from the content data. In a repo where several lanes land work
-every hour, a hand-maintained restatement of fast-moving state is stale almost immediately.
-
-Measured on 2026-08-19/20: the F-261 review corrected it (120/165 tasks when it was 126, "7 open
-findings" when there were 23, boot content 3/1/1/2 when it was 6/7/7/5). Roughly nine hours later the
-F-271 review corrected it again (23 open when it was 34, and a nine-item "pick up today" list of which
-four — F-259, F-268, F-271, F-274 — were already resolved). Two different reviewers, two different
-lanes, same document, same failure. The cost is not just reviewer time: a stale "pick up today" list is
-a routing hazard, because the director and any fresh agent read it as current work.
-
-The fix is to stop restating and start generating. A `agent next` (or a check that regenerates the
-file) can derive the counts from state.json and FINDINGS' Open section, and produce the candidate list
-by filtering out done/in-flight tasks — leaving NEXT.md's prose sections (what the project is trying to
-do next, and why) hand-written, since those are judgement and do not drift. A `next_check` in the
-harness suite would then fail when the generated numbers disagree with the committed file, the same way
-findings_numbering_check guards F-numbers.
 
 ---
 
@@ -3309,6 +3218,169 @@ batches, so `placements` is published and the vfx actually attach.
 ---
 
 ## Resolved
+
+### F-306 · docs/NEXT.md is hand-maintained but summarises a board that moves hourly, so it goes stale within hours — corrected twice in one night by two different reviewers — **fixed**
+
+**Area:** process · **Severity:** medium · **Found:** 2026-08-20 by bram1
+
+`docs/NEXT.md` is the plan a human reads first, and it restates numbers that live authoritatively
+elsewhere: task counts from `.agent/state.json`, open-finding counts and the "pick up today" list from
+`docs/FINDINGS.md`, boot content counts from the content data. In a repo where several lanes land work
+every hour, a hand-maintained restatement of fast-moving state is stale almost immediately.
+
+Measured on 2026-08-19/20: the F-261 review corrected it (120/165 tasks when it was 126, "7 open
+findings" when there were 23, boot content 3/1/1/2 when it was 6/7/7/5). Roughly nine hours later the
+F-271 review corrected it again (23 open when it was 34, and a nine-item "pick up today" list of which
+four — F-259, F-268, F-271, F-274 — were already resolved). Two different reviewers, two different
+lanes, same document, same failure. The cost is not just reviewer time: a stale "pick up today" list is
+a routing hazard, because the director and any fresh agent read it as current work.
+
+The fix is to stop restating and start generating. A `agent next` (or a check that regenerates the
+file) can derive the counts from state.json and FINDINGS' Open section, and produce the candidate list
+by filtering out done/in-flight tasks — leaving NEXT.md's prose sections (what the project is trying to
+do next, and why) hand-written, since those are judgement and do not drift. A `next_check` in the
+harness suite would then fail when the generated numbers disagree with the committed file, the same way
+findings_numbering_check guards F-numbers.
+
+---
+
+**Resolved 2026-08-22 by cinder9818da.** **Fixed 2026-08-21 by cinder9818da.** The numbers are generated; the judgement is not.
+
+`tools/next_gen.py` derives the Status counts from their authoritative sources — task totals and
+per-milestone progress from `.agent/state.json`, open findings from `docs/FINDINGS.md`'s `## Open`
+section — and writes them into `docs/NEXT.md` between two markers. `--write` regenerates the block;
+the bare invocation is the check, and it fails with the exact command to run when the committed file
+has drifted. Everything outside the markers is untouched: what the project is trying to do next, and
+why, does not drift, and this entry was explicit that it should stay hand-written.
+
+Three choices worth recording:
+
+- **FINDINGS is the authority for the open count, not `state.json`**, because the two disagree and
+  F-269/F-270 are about that disagreement. Counting from the section boundary is the whole of the
+  definition.
+- **The candidate list is what a router actually wants**, so it subtracts three things rather than
+  printing every open id: findings in flight, findings marked done but still under `## Open` (the
+  F-269 drift, surfaced separately with the warning that `agent board` hides them while `agent brief`
+  still offers them), and an `EXTERNALLY_GATED` set — F-023, F-025, F-174 — which needs hardware or a
+  human and is data rather than inferred, since nothing in a finding's text reliably says "this needs
+  a second PC". That is precisely the routing hazard this entry named: the F-271 review found four of
+  nine "pick up today" items already resolved.
+- **Sorted oldest first**, not file order. `agent finding` inserts at the top, so file order is
+  newest-first and buries the entries that have survived three hundred numbers — which are either the
+  hardest or the most avoided.
+
+The stale hand-written paragraphs are gone with it: "126/165 tasks", "33 under `## Open`", and the
+list of six hardware findings that had drifted to three. The cluster notes — which are judgement
+about *why* a group of findings hangs together — are kept.
+
+**Verified** `python3 tools/next_gen.py --self-test` — **9/9**, including that findings are excluded
+from milestone counts, that an in-flight finding is not offered, that a done-but-open one is called
+out instead of listed as available, that a file with no markers gains one, and that a second apply is
+idempotent. Against the repo: `--write` produced `Tasks: 135/171` and `Findings: 89 under ## Open`,
+matching `agent board` and `findings_numbering_check` respectively, and the bare check then reports
+`NEXT_GEN failures=0`. `python3 tools/harness_check.py` re-run — 39/39, no regression.
+
+Not done, and deliberately: wiring this into a suite runner. F-293 is the finding that nothing
+enumerates and runs `tools/`, and adding one more unwatched check is that problem, not a fix for it.
+`docs/NEXT.md`'s own Tools section now names the command instead.
+
+### F-236 · Three shipped systems have essentially no content in them: the Cycle Modifier deck holds 1 card, the unlock tree 1 unlock, the ranged rack 1 weapon — **fixed**
+
+**Area:** content · **Severity:** high · **Found:** 2026-08-19 by nettle12
+
+The engine work is done and the systems boot clean, which makes this easy to miss on a status line:
+every framework reports green because a deck of one card draws successfully.
+
+Counted from `content/`:
+
+| Category | Files | Framework that consumes it |
+|---|---|---|
+| `cycle_modifiers/` | ~~1~~ **7** (2026-08-19, lm, task 6.3) | 6.2 — deck, draw, stacking, Cycle-weighted rules. Done. |
+| `unlocks/` | ~~1~~ **7** (2026-08-19, lp) | 6.9 — unlock tree + UI, and 6.6's Salvage curve. Both done. |
+| `ranged_weapons/` | **1** | 5.3 — bow, projectiles, host-authoritative hit validation. Done. |
+| `haulables/`, `hooks/` | 1 each | |
+| `stations/`, `scatter/` | 2 each | |
+
+Against `powerups/` at 72 and `buildables/` at 13, which are the two categories that did get authored.
+
+**What each of these means at the table, which is the point:**
+
+- **A Cycle Modifier deck of one card means every run escalates identically.** 6.2 built draw,
+  stacking and Cycle-weighting so that runs diverge; with one card there is nothing to draw, nothing
+  to stack, and no weighting to express. The entire variety system was inert, and it kept testing
+  green regardless. **Fixed for this row by task 6.3 (2026-08-19, lm)** — deck now holds 7
+  (`long_night` + 6 more spanning distinct systems: harvesting, Wellspring presence, chest loot, mire
+  recession, enemy death, enemy targeting; see `docs/DECISIONS.md` D-146). The roadmap line asked for
+  20–30; D-146 explains why 6.3 shipped 7 instead — not a shortfall against this finding's own bar,
+  which was "nothing to draw, nothing to stack," now false. `ranged_weapons/` (below) is this
+  finding's only remaining open row of the three named in its title — `unlocks/` was already fixed
+  above.
+- **An unlock tree of one unlock means Salvage has nothing to buy.** 6.6 shipped a superlinear reward
+  curve and an extract-vs-die split; 6.9 shipped the tree and its UI. The meta-progression loop — the
+  reason to do a second run after a wipe — terminates immediately. **No task covers authoring this
+  content.** 6.9 is marked done because the tree and UI shipped, exactly the shape F-140 recorded for
+  3.5: the system landed, the content it exists to present never did.
+- **One ranged weapon** against nine melee, after 5.3 built projectiles and hit validation.
+
+**This is the honest answer to "is the game ready to playtest?" — no, and not because the systems are
+unfinished.** A playtest right now measures one modifier, one unlock and one bow, so it cannot find
+the balance and variety problems it would be run to find. Content first, then 2.14/3.11/4.12/6.11.
+
+**Not a bug in any of the systems named**, and not an argument that they were built wrong. It is the
+gap between "the framework is done" and "the game has things in it", and it is currently the largest
+gap in the project. The one-at-a-time authoring rule applies: these want real attention per file, not
+a directory generated in a pass.
+
+**2026-08-19 (lp) — the `unlocks/` third is fixed; `cycle_modifiers/` and `ranged_weapons/` are not,
+so this finding stays under `## Open`.** Six unlocks authored one at a time (`unlock_loping_gait`,
+`unlock_coin_worm`, `unlock_bottomless_quiver`, `unlock_thin_step`, `unlock_night_pyre`,
+`unlock_cauter_seal` — see `docs/SPECS.md`'s new F-236 block for what each one changes about how a
+run is played and why). All six are `category = "powerup"`, gating an existing PowerupDef that
+already rolls in a real `content/loot/*.tres` table — confirmed live before authoring against it
+(D-111/F-173: `is_content_unlocked()` currently has no consumer for the other seven §4.6 categories,
+so an `attunement`/`poi`/`enemy`/`cycle_modifier`/`island_modifier`/`cosmetic`/`loadout` row would
+sell but gate nothing yet — D-111's 2026-08-19 addendum records this so the next author doesn't
+rediscover it the hard way). `tools/unlock_check.gd` gained `_check_authored_content()`, which now validates every
+`content/unlocks/*.tres` file generically (not just the worked example): schema-clean, no two rows
+silently shadow the same `gates_id`, and every `powerup`-category row's `gates_id` both resolves to a
+real `PowerupDef` and actually appears as a POWERUP entry in an authored loot table. Verified:
+`.agent/bin/agent godot --script tools/unlock_check.gd` → `UNLOCK_CHECK failures=0` (7 rows total).
+**Left for whoever picks up the rest:** `cycle_modifiers/` (task 6.3, `todo`) and `ranged_weapons/`
+(no task id yet, per the roadmap — DELEGATION.md's Current state entry for this task says the same).
+
+---
+
+**Resolved 2026-08-22 by moss8598bb.** **2026-08-21, moss8598bb — the last of the three rows is filled; all three counts re-verified.**
+
+F-236's bar was never "enough content to be balanced", it was "a framework whose content set is so
+small that the system it exists to express is inert". All three rows named in the title are now past
+that bar:
+
+| Category | At filing | Now |
+|---|---|---|
+| `cycle_modifiers/` | 1 | **7** — `bloom`, `drought`, `long_night`, `rooted`, `static`, `the_hunt`, `tithe` (task 6.3, D-146) |
+| `unlocks/` | 1 | **7** — six authored one at a time by lp, plus the worked example |
+| `ranged_weapons/` | 1 | **5** — `short_bow`, `sling`, `longbow`, `crossbow`, `pinecone` |
+
+The ranged rack is the row that was still open, and it is now a real spread rather than five copies
+of the bow: five weapons across **four** ammo types (`arrow` ×2, `bolt`, `stone`, `pinecone`) and a
+genuine curve in both axes — 15 → 85 m/s projectile speed, 2 → 16 damage. `pinecone` (F-492) is
+deliberately the floor case: a thrown improvised weapon gathered under pines, so the rack starts with
+something a player has before any crafting at all, rather than starting at the bow.
+
+Verified: `tools/cycle_modifier_check.gd` → `CYCLE_MODIFIER_CHECK failures=0`. `tools/unlock_check.gd`
+validates all 7 authored rows generically (schema, no shadowed `gates_id`, every `powerup` row
+resolving to a real PowerupDef in an authored loot table). `tools/ranged_combat_check.gd` currently
+reports 1 failure, but that is **not this finding** — `systems/health/player_health.gd` is mid-edit in
+the shared working tree under larch543bba's F-543 claim, and `agent godot` flags it as such; the
+failing assertion is in the damage path, not in rack content.
+
+**What this does not close:** F-482 (sling/longbow/crossbow all shipped on the same mesh) is the art
+half of the same rack and remains open under birche6b40e's claim — the content rows exist and differ
+mechanically, which is what F-236 asked for; that they do not yet *look* different is F-482's ask.
+Nor does it close the broader question the finding raised in passing about whether the counts are
+enough to *playtest* against — that is a balance question for 2.14/3.11/4.12/6.11, not a content-
+inventory one.
 
 ### F-316 · docs/SPECS.md carries two different F-226 blocks under one heading, and nothing checks SPECS for duplicate headings — **fixed**
 
