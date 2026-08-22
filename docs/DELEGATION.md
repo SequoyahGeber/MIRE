@@ -75,6 +75,44 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-22 — F-541: chests are a five-rung rarity ladder (D-215) (nettled7199c)
+
+**Before this, only two kinds of container ever reached a map** — free `Cache_` crates and the
+key-locked Gilded Chest — while seven loot tables existed. `small`/`bog`/`strongbox` are RETIRED;
+if you reference one of those tier ids anywhere, it will fail `Chest._validate_configuration()`.
+
+**The APIs the next task builds on:**
+
+- **The tier ids are now `basic` / `common` / `rare` / `epic` / `legendary`**, in price order, plus
+  the four that were never bought and are unchanged: `gilded`, `wellspring`, `sunken`, `boss`.
+  `Registry.get_loot_table(tier)` is unchanged.
+- **`Chest.locator_tint: Color`** — new `@export`, presentation only, never on the wire. Tints the
+  discoverability mote and its light. `ChestPlacementService` sets it per tier; anything placing a
+  Chest by hand should set it too, or it gets the original amber default.
+- **`ChestPlacementService._ECONOMY_FOR_TIER`** — one row per tier gives `cost_coins` and
+  `locked_by`. Adding a sixth rung is a row here plus a marker name in the layout; it is deliberately
+  NOT a scene edit, a prefab, or a per-instance property.
+- **Marker names are the whole contract.** `Chest_<tier>_<n>` takes its tier from its own name;
+  `Cache_<n>` builds the `basic` TABLE at cost 0 (the price comes from the marker prefix, not the
+  tier — that is how free caches survive a priced `basic` rung).
+- **`build_ladder_chests()`** in `tools/mapgen/hollowmere_layout.py` — budgets 5/4/3/2/1 per island
+  with a deterministic ring-search fallback per candidate site. `validate()` FAILS the build if any
+  rung comes up short. On procedural, four PoiDefs (`content/poi/chest_{common,rare,epic,legendary}
+  .tres`) do the same job; `treasure_strongbox.tres` is gone.
+- **Every `*_open` chest mesh is in `RUNTIME_ONLY_ASSETS`** — the open state belongs to
+  `Chest._refresh_visual()`. Do not scatter one as scenery.
+
+**If you tune a `.tres`, the ladder re-grades itself.** `tools/chest_placement_check.gd::_check_ladder()`
+computes each rung's powerup share from the authored weights rather than asserting a number, and
+fails on any of: a price that does not exceed the rung below, two rungs sharing a mesh or a locator
+tint, a rung gated on a key rather than coins, or a budget the layout did not place. It runs against
+the REAL Hollowmere boot, not a synthetic scene.
+
+**Also fixed here (F-545):** `build_extraction_yard()` now emits Hollowmere's `Shipwreck` marker.
+F-166 had hand-edited it into `world/gen/layouts/hollowmere.json`, which is GENERATED — the next
+regeneration deleted the map's only exit. If you ever need a marker in that file, add it to the
+generator.
+
 ### 2026-08-22 — F-543: Attunement effects are real now, and `PowerupService.stat()` has readers (larch543bba)
 
 **Before this, picking a role changed a label and nothing else.** `PowerupService.stat()` had three
