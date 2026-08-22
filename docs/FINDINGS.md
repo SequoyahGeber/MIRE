@@ -3052,8 +3052,15 @@ procedural marker is ever named `Chest_sunken_*`, so that rung only exists on th
 
 ### F-575 · Four buildable crafting stations have zero recipes bound to them
 
-**Area:** content · **Severity:** medium · **Found:** 2026-08-22 by wick3d4184 during a
+**Area:** content · **Severity:** high · **Found:** 2026-08-22 by wick3d4184 during a
 never-runs audit
+
+> **Severity raised medium -> high 2026-08-22 by wick3d4184,** after F-578's root cause was folded
+> in below. As filed this was a content gap — three stations nobody wrote recipes for, which ships
+> shabby but not broken. The `workbench_upgraded` half is a different animal: the player spends real
+> resources on an advertised upgrade and ends up with *strictly less* than the tier-1 bench it
+> replaces. That is "ships broken" by this file's own table, and it is a code bug rather than
+> missing content, so it can be fixed without authoring a single recipe.
 
 Across all of `content/recipes/*.tres` the `station` field only ever takes four values:
 `anvil` (10 recipes), `workbench` (7), `furnace` (2) and `campfire` (1, and that one is
@@ -3157,7 +3164,12 @@ are held back. Likewise every marker `kind` a service consumes (`objective`, `sh
 
 ## Resolved
 
-### F-578 · Four of the eight craftable stations do nothing: StationDef's family/tier are never read, so the Reinforced Workbench unlocks no recipes — **fixed**
+### F-578 · Four of the eight craftable stations do nothing: StationDef's family/tier are never read, so the Reinforced Workbench unlocks no recipes — **duplicate of F-575**
+
+> **Not fixed — folded.** This entry was resolved as a duplicate in commit c40a2807: F-575 was
+> filed first for the same four stations, and this entry's unique half (the family/tier root
+> cause) was merged into it. No code has changed. The heading previously read *fixed*, which
+> would have led triage to skip the live bug. **The open work is tracked in F-575.**
 
 **Area:** crafting · **Severity:** high · **Found:** 2026-08-22 by wick410d34
 
