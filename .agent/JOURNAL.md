@@ -9826,3 +9826,30 @@ Harvest yields drop on the ground as floating item icons; auto-pickup within 1.7
 Files: `systems/loot/item_drop.gd`, `autoload/item_drop_service.gd`, `autoload/inventory_service.gd`, `ui/hud/focus_prompt.gd`, `tools/item_drop_check.gd`, `docs/FINDINGS.md`, `tools/inventory_check.gd`, `tools/mire_interaction_check.gd`, `tools/harvest_world_check.gd`, `tools/inventory_net_check.gd`, `tools/item_drop_shot.gd`, `docs/ARCHITECTURE.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `3ff465bd`
+
+---
+
+### DONE · F-024 · cinder9818da · 2026-08-22T05:37:24+00:00
+
+**A shipped LAN first join has no retry — only the debug launcher does**
+
+LAN first-join retry moved into NetSession; DevLaunch defers on any non-LOCAL client timeout
+
+Files: `core/dev/dev_launch.gd`, `tools/connect_retry_check.gd`, `core/net/net_session.gd`
+
+Commit at time of writing: `b8d8d67c`
+
+---
+
+### DONE · F-542 · ivyf16b98 · 2026-08-22T05:38:12+00:00
+
+**Remote players do not visibly display the item they are holding**
+
+Remote players now display the owner's selected hotbar world model on a third-person hand socket. Held id uses existing owner-authoritative replication; focused check failures=0 and synced-group check PASS.
+
+Notes along the way:
+- Authority: the owning client publishes only its selected hotbar item id through the existing Player MultiplayerSynchronizer; every peer instantiates that ItemDef.world_model on the remote body. Inventory contents remain host-authoritative and are not exposed through this presentation flag.
+
+Files: `entities/player/player_controller.gd`, `tools/remote_held_item_check.gd`
+
+Commit at time of writing: `ccc48f53`

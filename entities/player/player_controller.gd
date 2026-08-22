@@ -197,6 +197,11 @@ const STEP_CONTINUE_GRACE_SEC: float = 0.12
 ## tick, so a negative modifier must not be able to quietly undercut it.
 var dodging: bool = false
 
+## F-542: selected hotbar identity published by the owning player for third-person presentation.
+## This is not inventory authority: it grants nothing and remote peers only use it to choose an
+## ItemDef.world_model. It rides the same owner-authoritative synchronizer as look and movement.
+var replicated_held_item_id: StringName = &""
+
 ## Set false on remote copies of this player so they are driven by replication only.
 var is_local_authority: bool = true
 
@@ -276,6 +281,12 @@ var _god_mode: Node = null
 ## place this can ever disagree with itself.
 var _build_ghost: Node3D
 var _build_bar: CanvasLayer
+var _remote_hand: Node3D
+var _remote_held_instance: Node3D
+var _presented_remote_item_id: StringName = &""
+var _inventory_service: Node
+var _inventory_ui: Node
+var _registry: Node
 
 
 func _ready() -> void:
@@ -313,6 +324,13 @@ func _ready() -> void:
 			_capture_mouse(true)
 		else:
 			_capture_deferred = true
+
+
+func _process(_delta: float) -> void:
+	if is_local_authority:
+		replicated_held_item_id = _local_selected_item_id()
+	else:
+		_refresh_remote_held_item()
 
 
 ## The held item lives under the Camera3D, not the pivot, so it inherits pitch as well as yaw and
@@ -380,6 +398,55 @@ func _build_debug_avatar() -> void:
 	face.material_override = face_material
 	face.visible = not is_local_authority
 	add_child(face)
+
+	# A separate socket keeps third-person presentation out of the first-person camera/viewmodel.
+	# It follows body yaw and sits at the proxy's right hand until a real character rig replaces the
+	# debug capsule. The world model is intentionally static; F-542 is visibility, not an animation
+	# pipeline.
+	_remote_hand = Node3D.new()
+	_remote_hand.name = "RemoteHand"
+	_remote_hand.position = Vector3(0.48, 1.05, -0.18)
+	_remote_hand.rotation_degrees = Vector3(-18.0, 0.0, -12.0)
+	_remote_hand.visible = not is_local_authority
+	add_child(_remote_hand)
+
+
+func _local_selected_item_id() -> StringName:
+	if not is_instance_valid(_inventory_service):
+		_inventory_service = get_node_or_null(^"/root/InventoryService")
+	if not is_instance_valid(_inventory_ui):
+		_inventory_ui = get_node_or_null(^"/root/InventoryUI")
+	if _inventory_service == null or _inventory_ui == null:
+		return &""
+	var hotbar_index: int = int(_inventory_ui.call(&"selected_hotbar_slot"))
+	return StringName(_inventory_service.call(&"local_item_id", 24 + hotbar_index))
+
+
+func _refresh_remote_held_item() -> void:
+	if _remote_hand == null or replicated_held_item_id == _presented_remote_item_id:
+		return
+	_presented_remote_item_id = replicated_held_item_id
+	if _remote_held_instance != null:
+		_remote_held_instance.queue_free()
+		_remote_held_instance = null
+	if replicated_held_item_id == &"":
+		return
+	if not is_instance_valid(_registry):
+		_registry = get_node_or_null(^"/root/Registry")
+	if _registry == null:
+		return
+	var item: ItemDef = _registry.call(&"get_item", replicated_held_item_id)
+	if item == null or item.world_model == null:
+		return
+	_remote_held_instance = item.world_model.instantiate() as Node3D
+	if _remote_held_instance == null:
+		return
+	_remote_held_instance.name = "RemoteHeldItem"
+	_remote_hand.add_child(_remote_held_instance)
+
+
+func remote_held_instance() -> Node3D:
+	return _remote_held_instance
 
 
 ## The shared melee target seam (2.8): entities that join &"damageable" implement this. Authority for
@@ -453,8 +520,8 @@ func _adopt_spawn_authority() -> void:
 ## CONFIGURATION differs, in who holds authority. A synchronizer built on one side only fails as
 ## silence, which is the expensive kind of bug.
 ##
-## Replicates position, body yaw, camera pitch, and (task 3.8b) the `dodging` i-frame flag, and
-## nothing else. Yaw is on the body and pitch is on the pivot (see player_camera.gd), so a remote
+## Replicates position, body yaw, camera pitch, the `dodging` i-frame flag, and F-542's held-item
+## presentation id. Yaw is on the body and pitch is on the pivot (see player_camera.gd), so a remote
 ## player needs both to face the right way. Velocity is deliberately absent: if 1.6 needs it for
 ## interpolation, 1.6 adds it and pays for it.
 ##
@@ -466,7 +533,8 @@ func _adopt_spawn_authority() -> void:
 func _build_synchronizer() -> void:
 	var config: SceneReplicationConfig = SceneReplicationConfig.new()
 	for property: NodePath in [
-		^".:position", ^".:rotation:y", ^"CameraPivot:rotation:x", ^".:dodging"
+		^".:position", ^".:rotation:y", ^"CameraPivot:rotation:x", ^".:dodging",
+		^".:replicated_held_item_id",
 	]:
 		config.add_property(property)
 		config.property_set_replication_mode(

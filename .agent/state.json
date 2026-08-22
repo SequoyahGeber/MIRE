@@ -54,6 +54,12 @@
       "task": "F-516",
       "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
+    "autoload/net_transport.gd": {
+      "agent": "cinder9818da",
+      "at": "2026-08-22T05:37:39+00:00",
+      "task": "F-025",
+      "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
+    },
     "content/harvestables/apple_tree.tres": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:45:13+00:00",
@@ -198,12 +204,6 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "entities/player/player_controller.gd": {
-      "agent": "ivyf16b98",
-      "at": "2026-08-22T05:35:28+00:00",
-      "task": "F-542",
-      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
-    },
     "systems/loot/chest.gd": {
       "agent": "nettled7199c",
       "at": "2026-08-22T05:26:31+00:00",
@@ -288,12 +288,6 @@
       "task": "F-516",
       "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
-    "tools/remote_held_item_check.gd": {
-      "agent": "ivyf16b98",
-      "at": "2026-08-22T05:35:28+00:00",
-      "task": "F-542",
-      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
-    },
     "tools/terminal_focus_check.gd": {
       "agent": "onyxbe8065",
       "at": "2026-08-22T05:27:47+00:00",
@@ -325,6 +319,15 @@
       "notes": [],
       "started": "2026-08-21T17:13:34+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "F-025": {
+      "agent": "cinder9818da",
+      "files": [
+        "autoload/net_transport.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-22T05:37:39+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
     },
     "F-321": {
       "agent": "onyxbe8065",
@@ -404,22 +407,6 @@
       "notes": [],
       "started": "2026-08-22T05:26:31+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
-    },
-    "F-542": {
-      "agent": "ivyf16b98",
-      "files": [
-        "entities/player/player_controller.gd",
-        "tools/remote_held_item_check.gd"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-22T05:35:28+00:00",
-          "by": "ivyf16b98",
-          "text": "Authority: the owning client publishes only its selected hotbar item id through the existing Player MultiplayerSynchronizer; every peer instantiates that ItemDef.world_model on the remote body. Inventory contents remain host-authoritative and are not exposed through this presentation flag."
-        }
-      ],
-      "started": "2026-08-22T05:35:28+00:00",
-      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     }
   },
   "recent": {
@@ -3260,9 +3247,9 @@
     },
     "entities/player/player_controller.gd": {
       "agent": "ivyf16b98",
-      "at": "2026-08-22T05:32:37+00:00",
-      "hash": "aac6bbd74481b8a7950d6777115d53acd9d88ba45bcbbf83c515ddb0053379bc",
-      "task": "F-527",
+      "at": "2026-08-22T05:38:12+00:00",
+      "hash": "b67cee7524f3eef252db373dfb45bf21581a248e43d5dfa32bf59ffeae144695",
+      "task": "F-542",
       "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     },
     "export_presets.cfg": {
@@ -4301,6 +4288,13 @@
       "task": "F-487",
       "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
+    "tools/remote_held_item_check.gd": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:38:12+00:00",
+      "hash": "5646f3ef090496ac258f6fd35ea152c58d11bcf0ceeb27773c3868c2b5fad0eb",
+      "task": "F-542",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
     "tools/render_census.gd": {
       "agent": "wick5e2d04",
       "at": "2026-08-21T21:17:45+00:00",
@@ -4890,7 +4884,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1514,
+  "rev": 1516,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -6596,7 +6590,7 @@
     "F-025": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Steam's callback pump runs once per rendered frame, so a slow frame rate slows the handshake"
     },
@@ -11018,9 +11012,11 @@
       "title": "Chest tiers: only three loot tiers are actually placeable and only three chest silhouettes exist"
     },
     "F-542": {
+      "done_at": "2026-08-22T05:38:12+00:00",
+      "done_by": "ivyf16b98",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Remote players do not visibly display the item they are holding"
     }
