@@ -37,6 +37,12 @@ const DELIBERATELY_RETUNED: Dictionary = {
 	&"ambient_enemy_population": 4.0,   # F-599 -> 18.0; 4 bodies over 1.09 km2 read as an empty world
 }
 
+## The range a retuned rule is allowed to sit in. Asserted alongside `DELIBERATELY_RETUNED` so a
+## retune that goes to 0 or to 10000 fails as loudly as one that gets reverted.
+const RETUNE_BANDS: Dictionary = {
+	&"ambient_enemy_population": [12.0, 64.0],
+}
+
 const SHIPPED_DEFAULTS: Dictionary = {
 	&"day_length_seconds": 900.0,
 	&"wave_base_count": 4.0,
@@ -127,10 +133,17 @@ func _check_defaults_unchanged() -> void:
 		if retuned == null:
 			check(false, "retuned rule '%s' still has a def" % id)
 			continue
-		check(not is_equal_approx(float(retuned.get(&"default_value")),
-				float(DELIBERATELY_RETUNED[id])),
+		# A band, not merely "not the old number" — review catch (birch1db63e): `!= 4.0` passes for
+		# 0 and for 10000 just as happily as for 18, so it asserted "somebody changed it" rather
+		# than "it is set to something sane". The band catches a bad retune as well as a revert.
+		var now: float = float(retuned.get(&"default_value"))
+		var band: Array = RETUNE_BANDS.get(id, [])
+		check(not is_equal_approx(now, float(DELIBERATELY_RETUNED[id])),
 			"'%s' is still deliberately retuned away from its migration value %s (now %s)"
-				% [id, DELIBERATELY_RETUNED[id], retuned.get(&"default_value")])
+				% [id, DELIBERATELY_RETUNED[id], now])
+		if band.size() == 2:
+			check(now >= float(band[0]) and now <= float(band[1]),
+				"'%s' default %s is inside its sane band %s-%s" % [id, now, band[0], band[1]])
 
 	for id: StringName in SHIPPED_DEFAULTS:
 		var rule: Resource = rules.call("def", id)

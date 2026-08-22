@@ -421,10 +421,19 @@ func _pick_ambient_position(points: Array[Vector3], players: Array[Vector3]) -> 
 ## exist beyond ambience, and it makes capping a Wellspring feel like it did something, because the
 ## pressure near it drops with the corruption.
 ##
-## 4.0 means a fully corrupted nest is 5x as likely as clean ground, which is a strong pull without
-## being an exclusion: clean nests keep weight 1.0 and keep spawning, so the field never abandons the
-## uncorrupted half of the island and leave the player with an empty world to walk through.
-const CORRUPTION_SPAWN_BIAS: float = 4.0
+## 2.0 means a fully corrupted nest is 3x as likely as clean ground. **Lowered from 4.0 on review
+## (birch1db63e), and the reasoning is worth keeping because it is not obvious.** Bodies land within
+## `ambient_scatter_m` (4 m) of their nest, so weight does not spread population over the island — it
+## decides how big a CLUMP is at one point. At bias 4 the worst case is one corrupted nest among four
+## clean ones, which puts 5/9 — 56% — of the entire ambient field inside a single 8 m box. Against a
+## broodcaller's 28 m alert radius and `_alert_nearby()` handing a target to every untargeted
+## packmate in one hop, that is not pressure, it is an unsurvivable ambush at Cycle 1.
+##
+## Note also that the skew exists only while corruption is UNEVEN: an all-clean island and a fully
+## saturated one both give uniform weights. This is a mid-run signal by construction, which is
+## correct — it is at its strongest exactly when part of the island has turned and part has not, and
+## that is the moment the information is worth having.
+const CORRUPTION_SPAWN_BIAS: float = 2.0
 
 
 ## Per-nest selection weight, `1 + corruption * CORRUPTION_SPAWN_BIAS`.
