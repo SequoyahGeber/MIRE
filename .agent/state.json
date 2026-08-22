@@ -198,17 +198,119 @@
       "task": "F-490",
       "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
+    "content/scatter/birchwood_deadwood.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:08:44+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/scatter/birchwood_floor.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:08:44+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/scatter/cliff_rubble.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:12:10+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/scatter/forest_canopy.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:08:44+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/scatter/forest_deadwood.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:08:44+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/scatter/forest_floor.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:08:44+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/scatter/forest_undergrowth.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:08:44+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/scatter/grassland_meadow.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:08:44+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/scatter/heath_scrub.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:08:44+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/scatter/heath_turf.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:08:44+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/scatter/highland_pines.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:08:44+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
     "content/scatter/highland_rocks.tres": {
       "agent": "birche6b40e",
       "at": "2026-08-22T00:06:31+00:00",
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "content/scatter/highland_steps.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:12:10+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/scatter/marsh_floor.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:08:44+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/scatter/marsh_reeds.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:08:44+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/scatter/shore_beach.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:08:44+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/scatter/shore_shallows.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:12:10+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
     "docs/ASSET_TRACKER.md": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:13:34+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "docs/ENEMIES.md": {
+      "agent": "ember5da2c4",
+      "at": "2026-08-22T01:08:05+00:00",
+      "task": "5.11",
+      "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
     },
     "systems/harvesting/harvest_library.gd": {
       "agent": "tine0bda72",
@@ -221,12 +323,6 @@
       "at": "2026-08-21T23:53:11+00:00",
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
-    },
-    "tools/blender/build_flora_set.py": {
-      "agent": "moss7f4dd3",
-      "at": "2026-08-22T00:47:57+00:00",
-      "task": "F-486",
-      "token": "CLAUDE_CODE_SESSION_ID:7a55bc0f-4fc2-48cf-9c62-318569fb449e"
     },
     "tools/blender/build_forage_pickups.py": {
       "agent": "tine0bda72",
@@ -245,12 +341,6 @@
       "at": "2026-08-21T23:59:20+00:00",
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
-    },
-    "tools/blender/build_mire_map_kit.py": {
-      "agent": "moss7f4dd3",
-      "at": "2026-08-22T00:47:57+00:00",
-      "task": "F-486",
-      "token": "CLAUDE_CODE_SESSION_ID:7a55bc0f-4fc2-48cf-9c62-318569fb449e"
     },
     "tools/blender/build_pickup_kit.py": {
       "agent": "gale43d16e",
@@ -302,6 +392,15 @@
       "started": "2026-08-21T17:13:34+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "5.11": {
+      "agent": "ember5da2c4",
+      "files": [
+        "docs/ENEMIES.md"
+      ],
+      "notes": [],
+      "started": "2026-08-22T01:08:05+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
+    },
     "F-469": {
       "agent": "coil26502f",
       "files": [
@@ -351,16 +450,6 @@
       "started": "2026-08-22T00:29:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "F-486": {
-      "agent": "moss7f4dd3",
-      "files": [
-        "tools/blender/build_mire_map_kit.py",
-        "tools/blender/build_flora_set.py"
-      ],
-      "notes": [],
-      "started": "2026-08-22T00:47:57+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:7a55bc0f-4fc2-48cf-9c62-318569fb449e"
-    },
     "F-490": {
       "agent": "tine0bda72",
       "files": [
@@ -380,7 +469,23 @@
         "content/harvestables/clay_deposit.tres",
         "content/harvestables/peat_deposit.tres",
         "content/harvestables/poison_berry_bush.tres",
-        "systems/harvesting/harvest_library.gd"
+        "systems/harvesting/harvest_library.gd",
+        "content/scatter/grassland_meadow.tres",
+        "content/scatter/heath_turf.tres",
+        "content/scatter/forest_floor.tres",
+        "content/scatter/birchwood_floor.tres",
+        "content/scatter/forest_deadwood.tres",
+        "content/scatter/birchwood_deadwood.tres",
+        "content/scatter/highland_pines.tres",
+        "content/scatter/forest_canopy.tres",
+        "content/scatter/shore_beach.tres",
+        "content/scatter/marsh_floor.tres",
+        "content/scatter/marsh_reeds.tres",
+        "content/scatter/forest_undergrowth.tres",
+        "content/scatter/heath_scrub.tres",
+        "content/scatter/cliff_rubble.tres",
+        "content/scatter/highland_steps.tres",
+        "content/scatter/shore_shallows.tres"
       ],
       "notes": [],
       "started": "2026-08-22T01:02:58+00:00",
@@ -1410,13 +1515,6 @@
       "task": "F-472",
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
-    "autoload/command_service.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T01:08:42+00:00",
-      "hash": "b2103dd840ed6f70d4af75dde4b310a3d5fd2f283667eddf2d3e70a0f7a46121",
-      "task": "F-333",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
     "autoload/crafting_service.gd": {
       "agent": "birche6b40e",
       "at": "2026-08-21T23:26:09+00:00",
@@ -1473,26 +1571,12 @@
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "autoload/ranged_combat_service.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T01:08:41+00:00",
-      "hash": "16d8628e90187cff224e23b51cbd64ea777a27a0684760b0035fea9001dbead6",
-      "task": "F-327",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
     "autoload/registry.gd": {
       "agent": "birche6b40e",
       "at": "2026-08-21T23:26:09+00:00",
       "hash": "bcb9750da44f73390b4515256f51ee0c37e2f743eef807d04e35eacaf68520b8",
       "task": "3.19",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
-    },
-    "autoload/run_record.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T01:08:41+00:00",
-      "hash": "fa1e3f202b0db869f246d29ade1896870840b6684798df79468758de739d464e",
-      "task": "F-328",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "autoload/salvage_service.gd": {
       "agent": "birche6b40e",
@@ -3356,13 +3440,6 @@
       "task": "F-472",
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
-    "docs/GAMELOOP.md": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T01:08:42+00:00",
-      "hash": "0931169beca9c211c8ec9346622a8d24dfd76533e02c9195fb52095087ec6c49",
-      "task": "F-336",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
     "docs/ITEMS.md": {
       "agent": "birche6b40e",
       "at": "2026-08-21T23:26:09+00:00",
@@ -3643,13 +3720,6 @@
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "systems/wellspring/wellspring.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T01:08:42+00:00",
-      "hash": "7a00b949f967d02c2c95c13ee577b37480da24e3e46149114ea5ca731f589a3c",
-      "task": "F-337",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
     "tools/_f421_frontend_stage.gd": {
       "agent": "mossb81aeb",
       "at": "2026-08-21T08:29:38+00:00",
@@ -3819,11 +3889,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "tools/blender/build_flora_set.py": {
-      "agent": "kiln384569",
-      "at": "2026-08-21T17:50:16+00:00",
-      "hash": "fe1113af461f0bf7f802552aaee62b70aa9607866501f9b05703a3354996c54c",
-      "task": "F-434",
-      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
+      "agent": "moss7f4dd3",
+      "at": "2026-08-22T01:12:11+00:00",
+      "hash": "146010e0717036d23dfe8bdd1783b3222369740eec7d2a33ada31d906b673959",
+      "task": "F-486",
+      "token": "CLAUDE_CODE_SESSION_ID:7a55bc0f-4fc2-48cf-9c62-318569fb449e"
     },
     "tools/blender/build_harvestable_resources.py": {
       "agent": "gale43d16e",
@@ -3833,11 +3903,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
     "tools/blender/build_mire_map_kit.py": {
-      "agent": "gale43d16e",
-      "at": "2026-08-21T08:34:48+00:00",
-      "hash": "53d089df8ef1a0e95f398bd293bdfadeab535c5df701c972056fb87631a9a066",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+      "agent": "moss7f4dd3",
+      "at": "2026-08-22T01:12:11+00:00",
+      "hash": "d642887bf1169b0a96ff2f082d44d4a9fe5d81e37c2e990092bfbdebf2452028",
+      "task": "F-486",
+      "token": "CLAUDE_CODE_SESSION_ID:7a55bc0f-4fc2-48cf-9c62-318569fb449e"
     },
     "tools/blender/build_powerup_icons.py": {
       "agent": "gale43d16e",
@@ -3909,13 +3979,6 @@
       "task": "F-464",
       "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
     },
-    "tools/client_stream_budget_check.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T01:08:42+00:00",
-      "hash": "084ec34f941d206cb5e195cf1bcc419395d4f005bc4c7d14aa063ff01cce58ed",
-      "task": "F-330",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
     "tools/cliff_check.gd": {
       "agent": "onyx059945",
       "at": "2026-08-21T23:21:42+00:00",
@@ -3964,13 +4027,6 @@
       "hash": "09b83a8cc882d06e497e9c994f1c32fe14afa473c5a20c18ad0984da23dd05ca",
       "task": "F-351",
       "token": "CLAUDE_CODE_SESSION_ID:34f19dd1-60f4-4279-b7ba-e40ce133b27f"
-    },
-    "tools/enemy_ai_check.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T01:08:42+00:00",
-      "hash": "5294454a62a93c21474e702a5ea170c10bffd3db9e1215b7772f70b270e90685",
-      "task": "F-331",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "tools/enemy_nav_map_check.gd": {
       "agent": "ivycc0920",
@@ -4210,13 +4266,6 @@
       "task": "F-452",
       "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
     },
-    "tools/poi_required_station_check.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T01:08:42+00:00",
-      "hash": "5c9db7cfd29eb65c690e0332c9aa21fea12f28afd0a9edcd128491ea6e87a1c4",
-      "task": "F-335",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
     "tools/powerup_icon_check.gd": {
       "agent": "gale43d16e",
       "at": "2026-08-21T08:34:48+00:00",
@@ -4244,13 +4293,6 @@
       "hash": "c791dc91314fad1760f4bef3858edd8781eac54b58d1faa720444e226127a3aa",
       "task": "F-421",
       "token": "CLAUDE_CODE_SESSION_ID:53027a2a-9613-416b-bd3c-e7a62777eff1"
-    },
-    "tools/ranged_combat_net_check.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T01:08:41+00:00",
-      "hash": "032134779f8ce7a651cbe6ba8e46ec40d50c512bc68b113fef346056a659e539",
-      "task": "F-327",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "tools/recipe_station_check.gd": {
       "agent": "quillb947a7",
@@ -4328,13 +4370,6 @@
       "hash": "c27c0897bfecb5aeec60aa49e0122f5df9c25fa730d76ee2ec1a114bb83948b1",
       "task": "7.1",
       "token": "CLAUDE_CODE_SESSION_ID:4cd6e8b1-20ed-494f-89b5-5bbf9904d4e2"
-    },
-    "tools/spawn_ground_check.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T01:08:42+00:00",
-      "hash": "6c2f2254821dc778032465cd99321b31118dc6d9e22e1b347c816434a76a5cbf",
-      "task": "F-345",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "tools/station_buildable_check.gd": {
       "agent": "cindere7060a",
@@ -4792,7 +4827,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:120f1976-6c96-46a1-8784-38dd75780df4"
     }
   },
-  "rev": 1028,
+  "rev": 1040,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -5824,6 +5859,13 @@
       "status": "todo",
       "tier": "T0",
       "title": "Combat balance pass across the Cycle curve, not at one difficulty"
+    },
+    "5.11": {
+      "est": "10",
+      "milestone": "M5",
+      "status": "in_flight",
+      "tier": "T1",
+      "title": "Tiered enemy ladder: 5 authored enemies \u2014 own model, rig, clips, unique attack, stats \u2014 one per escalation step, entering the night pool as Cycles advance (`docs/ENEMIES.md`)"
     },
     "5.2": {
       "done_at": "2026-08-19T17:33:59+00:00",
@@ -10415,9 +10457,11 @@
       "title": "The anvil costs a wellglass shard, so smithing is gated behind a POI drop"
     },
     "F-486": {
+      "done_at": "2026-08-22T01:12:11+00:00",
+      "done_by": "moss7f4dd3",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Pine and willow read wrong against their real subjects; birch is the standard both should meet"
     },
@@ -10454,6 +10498,22 @@
       "status": "in_flight",
       "tier": "F",
       "title": "Eleven nature assets are exported and catalogued but never placed by map generation"
+    },
+    "F-491": {
+      "done_at": "2026-08-22T01:12:12+00:00",
+      "done_by": "moss7f4dd3",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "mire_art hull() bakes world coordinates, so setting rotation_euler on one spins it around the world origin"
+    },
+    "F-492": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Pinecones: a thrown starter projectile gathered under pine trees"
     }
   },
   "version": 1

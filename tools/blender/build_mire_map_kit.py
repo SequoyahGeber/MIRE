@@ -23,7 +23,7 @@ sys.path.append(str(Path(__file__).resolve().parent))
 from mire_art import (mat, radial, around, reset_materials, hull, fork,  # noqa: E402
                       trunk_tube)
 from godot_import_lock import import_cache_guard  # noqa: E402
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -382,49 +382,184 @@ def main() -> None:
         )
 
         needles = (mats["pine_dark"], mats["pine_mid"], mats["pine_tip"])
-        # Lowest live branch well above head height: a conifer whose skirts start
-        # at your knees is a bush, and it is also what hid the trunk entirely.
-        crown_start = 0.32 + rng.uniform(-0.03, 0.07)
+        # F-486. The old crown was a stack of clean flat discs on evenly-spaced
+        # tiers, shrinking monotonically, and it read as a toy Christmas tree.
+        # Three facts about real pines, and what each one costs here:
+        #
+        # 1. **Whorls are ANNUAL and irregular.** Recorded spacing on one species
+        #    runs 6 to 24 inches — a four-fold spread between neighbouring whorls
+        #    on the SAME tree. `tier / (tiers - 1)` gives a perfectly even ladder,
+        #    which is the single strongest toy signal in the old silhouette, so
+        #    the tiers now sit on jittered, accumulated gaps instead.
+        # 2. **Older pines lose their lower branches and flatten on top**, and
+        #    "no branches for one-half or more of their height" is the mature
+        #    form; young ones stay conical spires. That is a per-tree difference,
+        #    not a species one, so `age` below spreads the six variants across it
+        #    — and deliberately as a SPREAD: most stay ordinary, a couple go old.
+        # 3. **Lower branches droop steeply**, upper ones stay level. Nothing in
+        #    the old asset drooped at all, which is why the skirts read as discs.
+        age = rng.random()
+        # Crown base: a young tree carries branches down to a third of its height,
+        # an old one is bare past halfway.
+        crown_start = 0.30 + age * 0.26 + rng.uniform(-0.03, 0.04)
         tiers = 8 + (seed % 3)
-        widest = height * 0.150
+        widest = height * (0.150 - age * 0.022)
+
+        # Irregular whorl spacing: accumulate jittered gaps and normalise, so the
+        # tiers still span the crown but no two gaps match.
+        # Weighted so the gaps CLOSE toward the top. A pine's annual growth
+        # shortens as the leader ages, so the whorls crowd together near the tip
+        # and spread out down the bole. Drawing every gap from one flat range
+        # ignored that, and the wide draws happened to land high, which left bare
+        # trunk showing between the top three whorls — a stack of separate hats
+        # on a pole rather than a crown coming to a point.
+        gaps = [rng.uniform(0.55, 1.55) * (1.0 - 0.50 * i / max(1, tiers - 2))
+                for i in range(tiers - 1)]
+        total = sum(gaps)
+        stops = [0.0]
+        for gap in gaps:
+            stops.append(stops[-1] + gap / total)
+
         for tier in range(tiers):
-            t = tier / (tiers - 1)
+            # Clamped because `stops` is an accumulated normalised sum, so its
+            # last entry lands on 1.0 give or take an ulp — and every fractional
+            # power below turns complex the moment its base goes negative.
+            t = min(1.0, stops[tier])
             centre = spine_point(points, crown_start + (0.94 - crown_start) * t)
-            spread = (1.0 - t) ** 0.80
-            radius = widest * (0.22 + 0.78 * spread) * rng.uniform(0.90, 1.10)
-            depth = height * 0.075 * (0.55 + 0.70 * spread)
+            # The widest whorl is a little way UP the crown, not at its very
+            # bottom. A pine's lowest live branches are its oldest and are dying
+            # back; a crown that is widest at its first tier is a cone standing on
+            # its base, which is the other half of the Christmas-tree read.
+            shoulder = 0.20 + age * 0.14
+            if t < shoulder:
+                spread = 0.72 + 0.28 * (t / shoulder)
+            else:
+                # max(0.0, ...) is not decoration: `t` reaches exactly 1.0 at the
+                # top whorl, and a float error of one ulp puts the base slightly
+                # negative, which raised to a fractional power is a COMPLEX number
+                # in Python — it does not raise where it happens, it raises later
+                # inside `Vector()` with an unhelpful message.
+                spread = max(0.0, 1.0 - (t - shoulder) / (1.0 - shoulder)) ** 0.85
+            # The floor on the radius is what keeps consecutive upper whorls
+            # overlapping instead of shrinking apart into separate discs; the
+            # floor on the depth does the same job vertically.
+            radius = widest * (0.30 + 0.70 * spread) * rng.uniform(0.86, 1.14)
+            depth = height * 0.075 * (0.72 + 0.55 * spread)
             skirt = cone(f"Skirt_{tier + 1}", radius, radius * 0.17, depth,
                          tuple(centre + Vector((0.0, 0.0, depth * 0.20))),
-                         needles[min(2, (tier * 3) // tiers)], 8)
-            skirt.rotation_euler = (rng.uniform(-0.08, 0.08), rng.uniform(-0.08, 0.08),
+                         # Tone by SEED, not by height. `(tier * 3) // tiers` put
+                         # the tiers into three contiguous blocks, so the crown was
+                         # three hard horizontal colour bands — a dark bottom half
+                         # and a pale top, in every shipped render.
+                         #
+                         # The whorls draw from the two DARK tones only. Letting
+                         # them reach `pine_tip` as well was the first cut of this
+                         # and it was worse than the banding it fixed: two adjacent
+                         # full-width whorls came up pale and the tree wore a white
+                         # collar. `pine_tip` is a highlight tone — it belongs on
+                         # the small stuff, the sprays and the leader, where it
+                         # reads as light caught on needles. On a two-metre disc it
+                         # reads as snow.
+                         needles[(0, 1, 0, 0, 1, 0, 1)[(seed + tier * 5) % 7]], 8)
+            # Lower whorls droop; upper ones sit level. This is the tilt that
+            # turns a disc into a branch.
+            droop = 0.34 * (1.0 - t) ** 1.4
+            skirt.rotation_euler = (rng.uniform(-0.08, 0.08) - droop, rng.uniform(-0.08, 0.08),
                                     tier * 0.79 + rng.uniform(-0.22, 0.22))
             # Every other tier grows a real branch past the skirt edge with a
             # needle SPRAY on the end, so the silhouette is ragged rather than a
             # stack of clean circles.
             #
-            # The spray has to be flat and it has to overlap the skirt: the first
-            # pass hung a near-spherical tuft at the branch tip and it read as a
-            # green boulder orbiting the tree, because a mass that touches nothing
-            # is a separate object however close it sits. Wide, thin, and anchored
-            # back at 0.72 of the branch fixes both.
+            # Both the branch and the spray are placed in the SKIRT'S OWN ROTATED
+            # FRAME, and that is the whole point of the arithmetic below.
+            #
+            # Sequoyah, on the first cut of the drooping whorls: *"why is there
+            # parts of the tree floating next to it???"* — the audit sheet showed
+            # a loose green blob hanging in the gap beside the crown on several
+            # pines. `skirt.rotation_euler` rotates the cone bodily about its own
+            # origin, so once the whorls droop, a point computed in world space at
+            # "0.6 of the way out at the spine's height" is no longer anywhere
+            # near the skirt: the cone has swung out from under it. Irregular whorl
+            # spacing made it visible rather than causing it — the gaps between
+            # tiers got big enough that a spray adrift had nothing to touch. Every
+            # previous attempt to fix this by nudging the anchor fraction was
+            # treating a frame mismatch as a distance problem, which is why it kept
+            # coming back.
+            #
+            # `local` is a point inside the frustum by construction: the cone is
+            # centred on its origin and tapers from `radius` at its base to 17% of
+            # that at its top, so at 30% of the depth up from the base its solid
+            # radius is still above 0.8 of `radius`. Anchoring the spray at 0.70
+            # and letting it reach out 0.52 puts most of its mass past the rim —
+            # which is what makes the outline ragged — while its inner half stays
+            # buried in the cone. Rotating that point by the skirt's own matrix
+            # means the two cannot come apart however far the whorl droops.
             if tier % 2 == 0 and t < 0.86:
+                spin = skirt.rotation_euler.to_matrix()
+                origin = centre + Vector((0.0, 0.0, depth * 0.20))
                 for index, (angle, rad) in enumerate(radial(3, radius * 0.45, seed=seed + tier * 29,
                                                             jitter=0.4, radius_jitter=0.2)):
-                    tip = tree_limb(
-                        f"Branch_{tier + 1}_{index + 1}", centre,
-                        Vector((math.cos(angle), math.sin(angle), -0.16)),
-                        radius * rng.uniform(0.95, 1.20), base_radius * 0.22,
-                        mats["bark_dark"], rng, segments=2, rise=-0.10, shrink=0.55, vertices=4,
-                    )
-                    spray = hull(f"Needle_Spray_{tier + 1}_{index + 1}",
-                                 tuple(centre.lerp(tip, 0.72)),
-                                 (radius * 0.52, radius * 0.30, depth * 0.20),
-                                 needles[min(2, (tier * 3) // tiers)], seed + tier * 13 + index,
-                                 subdivisions=0, lumps=3, lump=0.44, sharpness=2.0)
-                    spray.rotation_euler = (0.0, rng.uniform(-0.18, 0.05), angle)
-        cone("Leader", widest * 0.30, 0.02, height * 0.13,
-             tuple(spine_point(points, 0.955) + Vector((0.0, 0.0, height * 0.055))),
-             mats["pine_tip"], 7)
+                    out = Vector((math.cos(angle), math.sin(angle), 0.0))
+                    root = origin + spin @ (out * radius * 0.30 + Vector((0.0, 0.0, -depth * 0.24)))
+                    tip = origin + spin @ (out * radius * rng.uniform(1.18, 1.42)
+                                           + Vector((0.0, 0.0, -depth * rng.uniform(0.34, 0.46))))
+                    tapered_between(f"Branch_{tier + 1}_{index + 1}", tuple(root), tuple(tip),
+                                    max(0.02, base_radius * 0.20), max(0.012, base_radius * 0.09),
+                                    mats["bark_dark"], 4)
+                    seat = origin + spin @ (out * radius * 0.70 + Vector((0.0, 0.0, -depth * 0.30)))
+                    # The spray is NOT rotated, and that is the actual answer to
+                    # Sequoyah's *"why is there parts of the tree floating next to
+                    # it???"*. It is a pre-existing bug that the drooping whorls
+                    # only made obvious.
+                    #
+                    # `hull` bakes absolute world coordinates into its mesh and
+                    # `mesh_object` leaves the object's origin at (0, 0, 0). So
+                    # `spray.rotation_euler = (..., ..., angle)` never spun the
+                    # spray in place — it swung the whole thing around the WORLD
+                    # ORIGIN, and `angle` runs the full circle. A spray sitting
+                    # 1.6 m out and 10 m up came out metres away at a random
+                    # bearing; measured on `tree_pine_b`, twelve of them were
+                    # adrift by up to 3.4 m. `cone` is safe from this because
+                    # `primitive_cone_add` puts the object origin at `location`,
+                    # which is why the skirts rotate correctly and the sprays did
+                    # not, and why the bug survived every previous look at this
+                    # function.
+                    #
+                    # A hull's radii are axis-aligned, so orienting the spray
+                    # outward has to be done by resolving its long axis onto X and
+                    # Y rather than by rotating it afterwards. Flat in Z is what
+                    # makes it read as a spray of needles instead of a green
+                    # boulder, and that survives the projection unchanged.
+                    long, wide = radius * 0.52, radius * 0.30
+                    spray = hull(
+                        f"Needle_Spray_{tier + 1}_{index + 1}", tuple(seat),
+                        (abs(out.x) * long + abs(out.y) * wide,
+                         abs(out.y) * long + abs(out.x) * wide,
+                         depth * 0.20),
+                        needles[(1, 0, 2, 0, 1)[(seed + tier * 3 + index) % 5]],
+                        seed + tier * 13 + index,
+                        subdivisions=0, lumps=3, lump=0.44, sharpness=2.0)
+
+        # The leader. This used to be ONE smooth cone 13% of the tree's height in
+        # `pine_tip` — a pale party hat sitting on a dark tree, in a tone that
+        # appeared nowhere else in the silhouette. A conifer's top is the same
+        # thing as the rest of the crown, only tighter: the last few whorls
+        # compressed together around a thin shoot. So it is built as three small
+        # skirts and a spike, in the crown's own tones, and an old tree barely
+        # gets one at all — a mature pine's top is blunt, not a spire.
+        spire = height * (0.13 - age * 0.06)
+        crest = spine_point(points, 0.955)
+        for step in range(3):
+            f = step / 2.0
+            # Started at the crest itself, not lifted clear of it: the leader is
+            # the continuation of the crown, and any daylight between the two
+            # turns the tip into a television aerial.
+            cone(f"Leader_{step + 1}", widest * (0.30 - 0.18 * f), widest * 0.06,
+                 spire * (0.56 - 0.16 * f),
+                 tuple(crest + Vector((0.0, 0.0, spire * (0.02 + 0.44 * f)))),
+                 needles[(1, 0, 1)[step]], 7)
+        cone("Leader_Tip", widest * 0.075, 0.015, spire * 0.46,
+             tuple(crest + Vector((0.0, 0.0, spire * 0.70))), needles[1], 6)
 
     def build_bare(seed: int) -> None:
         """Dead, 12-17 m, and the one tree with nowhere to hide: with no leaves,
@@ -480,10 +615,23 @@ def main() -> None:
                 f"Bracket_{index + 1}",
                 around(tuple(spine_point(points, shelf_z / (height * crotch_fraction))),
                        angle, rad * 0.62),
-                (base_radius * 0.62, base_radius * 1.05, base_radius * 0.19),
+                # Axes resolved onto X and Y rather than rotated afterwards —
+                # F-491. `hull` bakes world coordinates and leaves the object
+                # origin at (0, 0, 0), so the `shelf.rotation_euler = (0, 0, angle)`
+                # this replaces was swinging each bracket around the WORLD ORIGIN,
+                # not turning it to face out of the bark. On a trunk half a metre
+                # off centre that is a bracket sitting in mid-air beside the tree,
+                # which is the same defect the pine's needle sprays had.
+                #
+                # `radially` is the shallow axis (a bracket does not stick far out
+                # of the bark) and `across` is the wide one (it wraps the trunk).
+                (abs(math.cos(angle)) * base_radius * 0.62
+                 + abs(math.sin(angle)) * base_radius * 1.05,
+                 abs(math.sin(angle)) * base_radius * 0.62
+                 + abs(math.cos(angle)) * base_radius * 1.05,
+                 base_radius * 0.19),
                 mats["cut"], seed + 411 + index, subdivisions=0, lumps=3, lump=0.40,
                 taper=0.30, flat_base=0.42)
-            shelf.rotation_euler = (0.0, 0.0, angle)
 
     def build_birch(seed: int) -> None:
         """13-18 m of slim pale trunk with the crown held high and clean.

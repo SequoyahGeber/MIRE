@@ -8919,3 +8919,25 @@ Mire seed centre is land-tested; 400-seed check added
 Files: `world/mire/mire_grid_sim.gd`
 
 Commit at time of writing: `3fe8ef4`
+
+---
+
+### DONE · F-486 · moss7f4dd3 · 2026-08-22T01:12:11+00:00
+
+**Pine and willow read wrong against their real subjects; birch is the standard both should meet**
+
+Completed.
+
+Files: `tools/blender/build_mire_map_kit.py`, `tools/blender/build_flora_set.py`
+
+Commit at time of writing: `cad53c1`
+
+---
+
+### DONE · F-491 · moss7f4dd3 · 2026-08-22T01:12:12+00:00
+
+**mire_art hull() bakes world coordinates, so setting rotation_euler on one spins it around the world origin**
+
+Completed.
+
+Commit at time of writing: `cad53c1`

@@ -563,6 +563,75 @@ def spine_point(points: list[Vector], fraction: float) -> Vector:
     return points[low].lerp(points[low + 1], position - low)
 
 
+def whip_strand(name: str, anchor: Vector, outward: Vector, arc: float, fall: float,
+                width: float, material, seed: int, segments: int = 5) -> None:
+    """One pendulous willow shoot: out along the limb, over the top of its arc,
+    then falling nearly vertically and thinning to a point.
+
+    `hull` cannot do this, and that is the whole reason this exists. A hull is a
+    deformed sphere around one centre, so a whip built from one is an upright box
+    — which is exactly what the shipped willow was: sixty dead-straight vertical
+    bars, a bead curtain rather than a curtain of shoots. The reference is
+    unambiguous that the shape is a curve: a weeping willow's branches *arch
+    upward from the trunk, then turn steeply downward, with the tips hanging to
+    or near the ground*. A curve needs a swept spine, so this sweeps one.
+
+    Cross-section is a TRIANGLE — three vertices per ring, like `mire_art`'s
+    `ribbon` — for the same two reasons: it is solid, so it survives Godot's
+    back-face culling from every angle, and its crease catches light differently
+    along its length, which is most of what makes a flat-shaded strand read as
+    foliage rather than as a painted stick. `ribbon` itself is no use here: it
+    builds its side vector from the spine's tangent projected onto XY, which is
+    degenerate for anything hanging, and it has no taper.
+
+    The last ring collapses to a single point, so the shoot ENDS in a tip instead
+    of the flat cut face the hulls left. Cost is `segments * 3 + 1` vertices — a
+    six-ring strand is 19, against 42 for the icosphere it replaces, which is what
+    pays for having many more of them.
+    """
+    rng = random.Random(seed)
+    side = Vector((-outward.y, outward.x, 0.0))
+    if side.length < 1e-6:
+        side = Vector((1.0, 0.0, 0.0))
+    side.normalize()
+
+    vertices: list[tuple[float, float, float]] = []
+    faces: list[tuple[int, ...]] = []
+    for ring in range(segments):
+        t = ring / (segments - 1)
+        # Out-and-over: the horizontal reach is a half-sine, so the shoot leaves
+        # the limb travelling outward and has stopped spreading by the time it is
+        # falling. The rise is the arch — up for the first third, then down.
+        centre = anchor + outward * (arc * math.sin(t * math.pi * 0.62)) \
+            + Vector((0.0, 0.0, arc * 0.30 * math.sin(t * math.pi * 1.35) - fall * t * t))
+        centre.x += rng.uniform(-0.03, 0.03)
+        centre.y += rng.uniform(-0.03, 0.03)
+        # Thins to nothing: a willow shoot is a few centimetres across at the limb
+        # and a leaf-tip at the bottom.
+        half = width * (1.0 - t) ** 0.85 * rng.uniform(0.86, 1.14)
+        vertices.extend([
+            (centre.x - side.x * half, centre.y - side.y * half, centre.z),
+            (centre.x + side.x * half, centre.y + side.y * half, centre.z),
+            (centre.x - outward.x * half * 1.15, centre.y - outward.y * half * 1.15,
+             centre.z + half * 0.55),
+        ])
+    tip = len(vertices)
+    last = anchor + outward * (arc * math.sin(math.pi * 0.62)) \
+        + Vector((0.0, 0.0, arc * 0.30 * math.sin(math.pi * 1.35) - fall))
+    vertices.append((last.x, last.y, last.z))
+    for ring in range(segments - 1):
+        a, b = ring * 3, (ring + 1) * 3
+        faces.extend([
+            (a + 0, b + 0, b + 2, a + 2),
+            (a + 2, b + 2, b + 1, a + 1),
+            (a + 1, b + 1, b + 0, a + 0),
+        ])
+    base = (segments - 1) * 3
+    faces.extend([(base + 0, base + 2, tip), (base + 2, base + 1, tip),
+                  (base + 1, base + 0, tip), (0, 2, 1)])
+    mesh_object(name, vertices, faces, material, recalculate=True)
+
+
 def build_tree_willow(seed: int) -> None:
     """A weeping willow, built from what a weeping willow actually is.
 
@@ -641,7 +710,7 @@ def build_tree_willow(seed: int) -> None:
     # the crown up to the tree's stated height (see `rise` below) narrowed the
     # footprint to 8.7 m on a 13.6 m tree, which is an oak's proportion, not a
     # willow's. `SIZE_BANDS`' 13.0 m footprint cap is the ceiling.
-    reach = 4.85
+    reach = 4.20
     for index, (angle, _rad) in enumerate(radial(limbs, 1.0, seed=seed + 43, jitter=0.30)):
         # The limbs have to carry the crown to very near the tree's stated height.
         # This is not a proportion choice, it is the flare rule again: `create_asset`
@@ -663,19 +732,62 @@ def build_tree_willow(seed: int) -> None:
         tapered_between(f"Limb_{index + 1}_2", tuple(elbow), tuple(shoulder),
                         radii[-1] * 0.44, radii[-1] * 0.24, mat("wood_bark"), 5)
 
-        # Two more whips hung straight off the limb between elbow and shoulder.
-        # A willow's crown is full to its middle; without these the interior is
-        # an empty cone with the structural limbs on show inside it.
+        # Foliage riding ON the limb, and this is the part F-486 was missing.
+        # Every description of the species leads with the same two words — a
+        # **broad, ROUNDED crown** — and the shipped asset had no crown at all:
+        # the top-down view was a bare spider of limbs with daylight through it,
+        # and from the side the dark limbs showed straight through a flat, open
+        # top. Curtain alone does not make a willow; the curtain hangs off a
+        # rounded mass, and without the mass the strands are a beaded doorway on
+        # a stick.
+        #
+        # These are wide and shallow — pressed onto the limb rather than balled
+        # around it — so together they arch over into one dome instead of reading
+        # as three separate bushes on three separate branches. `droop` pulls
+        # tongues out of the underside, which is where the curtain starts.
         for inner in range(2):
-            anchor = elbow.lerp(shoulder, 0.35 + 0.40 * inner)
-            drop = max(0.8, anchor.z - 0.5)
-            fall = drop * rng.uniform(0.45, 0.85)
-            width = rng.uniform(0.26, 0.36)
-            hull(f"Inner_{index + 1}_{inner + 1}",
-                 (anchor.x, anchor.y, anchor.z - width - fall * 0.48),
-                 (width, width * rng.uniform(0.82, 1.18), fall * 0.58),
-                 leaves[(seed + index + inner) % 3], seed + index * 23 + inner * 7,
-                 subdivisions=0, lumps=3, lump=0.34, sharpness=2.4, taper_low=0.66)
+            # Biased toward the ELBOW, i.e. down and inboard. Sitting these at the
+            # shoulders put every mass in the crown at the same height and the tree
+            # grew a flat table with the curtain hanging off its rim — a patio
+            # umbrella. A rounded crown needs its outer foliage LOWER than its
+            # middle, which is what this bias plus the raised centre masses below
+            # actually build.
+            anchor = elbow.lerp(shoulder, 0.05 + 0.40 * inner)
+            mass = reach * (0.40 - 0.05 * inner) * rng.uniform(0.88, 1.12)
+            hull(f"Crown_{index + 1}_{inner + 1}",
+                 (anchor.x, anchor.y, anchor.z - mass * 0.10),
+                 # Wide and SHALLOW. Made as tall as they are broad, these read as
+                 # two or three green boulders balanced on the limbs rather than as
+                 # one canopy; flattening them is what lets neighbouring limbs'
+                 # masses overlap into a single dome, which is the "broad, rounded
+                 # crown" the species is described by.
+                 (mass, mass * rng.uniform(0.84, 1.16), mass * rng.uniform(0.40, 0.50)),
+                 # The crown mass never takes `leaf_pale`. The first cut let it,
+                 # and three near-white boulders sat on top of a green curtain
+                 # reading as rocks in the branches — the pale tone is the silver
+                 # underside of a narrow leaf, which is a highlight on a moving
+                 # strand, not the colour of a cubic metre of canopy.
+                 leaves[(seed + index + inner) % 2], seed + index * 23 + inner * 7,
+                 subdivisions=0, lumps=4, lump=0.36, sharpness=2.2,
+                 droop=0.34, droop_lobes=3)
+
+            # Shoots off the limb itself. Without these the curtain is a rim and
+            # nothing else: from any side view there was a metre of daylight
+            # between the trunk and the nearest strand, and the tree read as a
+            # ring of hanging brooms rather than as a canopy you could stand
+            # under. A willow's interior is as full as its edge.
+            for hangs in range(2):
+                seat = anchor + Vector((0.0, 0.0, -mass * 0.42))
+                whip_strand(
+                    f"Inner_Whip_{index + 1}_{inner + 1}_{hangs + 1}",
+                    seat,
+                    Vector((math.cos(angle + rng.uniform(-1.1, 1.1)),
+                            math.sin(angle + rng.uniform(-1.1, 1.1)), 0.0)),
+                    reach * rng.uniform(0.05, 0.13),
+                    max(0.8, seat.z - 0.5) * rng.uniform(0.44, 0.86),
+                    rng.uniform(0.085, 0.135),
+                    leaves[(seed + index + inner + hangs) % 2],
+                    seed + index * 71 + inner * 13 + hangs, segments=3)
 
         # Each limb divides into arching branches that go OVER and start falling.
         # The arch is where the weeping begins; without it the strands hang off a
@@ -704,12 +816,18 @@ def build_tree_willow(seed: int) -> None:
             # Mixed widths on purpose: the broad ones are the only thing visible
             # at 60 m, the thin ones the only thing that reads as strands at 3 m,
             # and a curtain of one width is a bedsheet at both distances.
-            for strand in range(5):
+            # The outer branches carry fewer shoots than the inner ones, which is
+            # both true of the tree — the youngest, thinnest branch tips support
+            # the least — and where the triangles for the centre-of-crown masses
+            # above came from. `small_trees` allows 2400 and this asset is the one
+            # that spends all of it.
+            count = 5 if sub < 2 else 4
+            for strand in range(count):
                 # From the shoulder outward, not from a fifth of the way along.
                 # Starting at 0.12 left a hole around every limb junction and the
                 # tree read as four separate hanging brooms with the bare limbs
                 # visible between them.
-                along = 0.02 + 0.23 * strand + rng.uniform(-0.05, 0.05)
+                along = 0.02 + (0.95 / count) * strand + rng.uniform(-0.04, 0.04)
                 anchor = shoulder.lerp(tip, along)
                 broad = strand % 3 == 1
                 # Length as a FRACTION of how high the shoot starts, not an
@@ -719,36 +837,73 @@ def build_tree_willow(seed: int) -> None:
                 # willow never has. Proportional lengths keep the hem ragged at
                 # every tree size.
                 drop = max(0.8, anchor.z - 0.5)
-                fall = drop * (rng.uniform(0.58, 1.0) if broad else rng.uniform(0.38, 0.94))
-                width = rng.uniform(0.30, 0.42) if broad else rng.uniform(0.17, 0.26)
-                hull(
+                fall = drop * (rng.uniform(0.62, 1.02) if broad else rng.uniform(0.40, 0.96))
+                width = rng.uniform(0.15, 0.20) if broad else rng.uniform(0.075, 0.125)
+                # F-486: the shoots ARC now instead of dropping as boxes.
+                #
+                # The hull this replaces could only be an upright lump around one
+                # centre, so the finished curtain was sixty dead-straight vertical
+                # bars with blunt ends — a bead curtain, and the single loudest
+                # thing wrong with the tree. The species is defined by the
+                # opposite: shoots that leave the limb travelling OUTWARD and
+                # UPWARD, go over the top of an arch, and only then turn steeply
+                # down and hang, thinning to a leaf-tip. `whip_strand` sweeps that
+                # spine, so the curve, the taper and the pointed end all come for
+                # free — and at 19 vertices against the hull's 42, which is what
+                # pays for going from five shoots per branch to seven and halving
+                # their width. Thin and many is what reads as a curtain; the old
+                # widths were set by what a 42-vertex sphere could afford.
+                # Outward follows the branch this shoot hangs on, fanned a little,
+                # so the arcs open away from the trunk rather than crossing it.
+                spread_angle = swing + rng.uniform(-0.85, 0.85)
+                outward = Vector((math.cos(spread_angle), math.sin(spread_angle), 0.0))
+                whip_strand(
                     f"Whip_{index + 1}_{sub + 1}_{strand + 1}",
-                    # Hung on the branch LINE with no lateral scatter at all, and
-                    # overlapping it by a tenth of its own length. Every version
-                    # of this that jittered the anchor sideways — even by less
-                    # than the strand's own width — detached two to four whips
-                    # per tree, because the far end of a branch is 45 mm thick and
-                    # there is nothing there to miss by. A shoot with daylight
-                    # between it and its own branch is the same defect as a root
-                    # cone lying beside a trunk (F-422). Variety comes from length,
-                    # width and lump seed instead, which cannot come unstuck.
-                    # Tucked down by its own width so the strand's crown sits
-                    # INSIDE the branch instead of standing above it. Without the
-                    # tuck the top of every whip pokes through as a pale spike and
-                    # the crown's upper edge reads as a row of flames; a willow's
-                    # outline above its foliage is bare limb.
-                    (anchor.x, anchor.y, anchor.z - width * 0.55 - fall * 0.45),
-                    (width, width * rng.uniform(0.82, 1.18), fall * 0.62),
-                    leaves[(seed + index * 3 + sub + strand) % 3],
+                    # Still hung on the branch LINE with no lateral scatter, and
+                    # still started slightly INSIDE it. Every version of this that
+                    # jittered the anchor sideways — even by less than the strand's
+                    # own width — detached two to four whips per tree, because the
+                    # far end of a branch is 45 mm thick and there is nothing there
+                    # to miss by. A shoot with daylight between it and its own
+                    # branch is the same defect as a root cone lying beside a
+                    # trunk (F-422). Variety comes from arc, length, width and seed
+                    # instead, none of which can come unstuck.
+                    anchor + Vector((0.0, 0.0, -width * 0.4)),
+                    outward, reach * rng.uniform(0.08, 0.17), fall,
+                    width,
+                    # Pale is the MINORITY tone, not a third of the curtain.
+                    # Weighting the three leaf greens evenly put full-length
+                    # near-white columns down the crown and the tree read as a
+                    # barcode; a willow shows silver on the moving underside of a
+                    # narrow leaf, which is a highlight, not half the canopy.
+                    leaves[(0, 1, 0, 1, 0, 2, 0, 1, 0)[(seed + index * 3 + sub + strand) % 9]],
                     seed + index * 59 + sub * 17 + strand,
-                    subdivisions=0, lumps=3, lump=0.34, sharpness=2.4,
-                    # `taper` narrows the top; a hanging shoot thins DOWNWARD, so
-                    # this wants `taper_low`, which F-424 added to `hull` for it.
-                    # `taper=-0.62` reads like the right answer and is not — a
-                    # negative taper FLARES the top, which is what the camp set's
-                    # pot rims depend on, so the sign was not free to repurpose.
-                    taper_low=0.66,
+                    segments=4 if broad else 3,
                 )
+
+    # The middle of the crown, over the fork, and this is the last hole F-486
+    # left open: with foliage only on the limbs, the top-down view was a bare Y
+    # of branches with daylight straight down onto the trunk, and from the side
+    # the tree read as three separate hanging brooms leaning together. A willow's
+    # crown closes over its own trunk. Two overlapping masses rather than one
+    # sphere, so the top stays irregular instead of becoming the smooth capping
+    # hull this asset was explicitly built without.
+    # Three smaller masses rather than two big ones. Two came out as a single
+    # angular block sitting on the crown like a cut gem — an icosahedron only has
+    # twenty faces, so the bigger it is the more each flat face reads as a facet
+    # rather than as foliage. Three overlapping smaller ones cover the same span
+    # with a broken outline, which is what a canopy edge looks like.
+    for centre_mass in range(3):
+        lid = reach * rng.uniform(0.38, 0.46)
+        seat = crotch.z + height * rng.uniform(0.58, 0.70)
+        hull(f"Crown_Centre_{centre_mass + 1}",
+             (crotch.x + rng.uniform(-1.0, 1.0), crotch.y + rng.uniform(-1.0, 1.0), seat),
+             # Deeper than the limb masses, and higher: this is the top of the
+             # dome. Flat here as well and the whole crown is a lid.
+             (lid, lid * rng.uniform(0.86, 1.14), lid * rng.uniform(0.56, 0.70)),
+             leaves[centre_mass % 2], seed + 331 + centre_mass * 17,
+             subdivisions=0, lumps=5, lump=0.44, sharpness=1.9,
+             droop=0.30, droop_lobes=3)
 
 
 def build_tree_snag(seed: int) -> None:
