@@ -3382,16 +3382,6 @@ tools/graphics_quality_check.gd loads res://levels/frontend.tscn and immediately
 
 ---
 
-### F-514 · Settings lacks the approved advanced graphics, accessibility and privacy controls
-
-**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by hollowe6edef
-
-`autoload/settings_service.gd` and `ui/frontend/graphics_settings_page.gd` currently expose presets and a small set of overrides, but the approved follow-up batch is absent: UI scale; camera-shake intensity while preserving Reduce Motion as a zero-motion shortcut; foliage density; shadow quality and distance; volumetric fog; controller deadzones and vibration; crosshair size/opacity/colour/high-contrast options; and Streamer Mode hiding lobby codes, player identifiers and seed values.
-
-Implement these as client-local presentation settings persisted through the existing SettingsSave migration. Keep Low/Medium/High as coherent defaults; changing a per-knob graphics control must show CUSTOM. Controls should preview live where judgeable, restore on cancel, commit on SAVE, and reset through RESTORE DEFAULTS. Add focused persistence, runtime-application, and menu checks. Coordinate with in-flight F-512's fullscreen render-resolution work rather than duplicating or overwriting it.
-
----
-
 ### F-515 · BuildBar controller focus regression reopened after F-217
 
 **Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by brambe4999
@@ -3403,6 +3393,18 @@ F-217 is marked fixed on the strength of these exact assertions, so this is a re
 ---
 
 ## Resolved
+
+### F-514 · Settings lacks the approved advanced graphics, accessibility and privacy controls — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by hollowe6edef
+
+`autoload/settings_service.gd` and `ui/frontend/graphics_settings_page.gd` currently expose presets and a small set of overrides, but the approved follow-up batch is absent: UI scale; camera-shake intensity while preserving Reduce Motion as a zero-motion shortcut; foliage density; shadow quality and distance; volumetric fog; controller deadzones and vibration; crosshair size/opacity/colour/high-contrast options; and Streamer Mode hiding lobby codes, player identifiers and seed values.
+
+Implement these as client-local presentation settings persisted through the existing SettingsSave migration. Keep Low/Medium/High as coherent defaults; changing a per-knob graphics control must show CUSTOM. Controls should preview live where judgeable, restore on cancel, commit on SAVE, and reset through RESTORE DEFAULTS. Add focused persistence, runtime-application, and menu checks. Coordinate with in-flight F-512's fullscreen render-resolution work rather than duplicating or overwriting it.
+
+---
+
+**Resolved 2026-08-22 by hollowe6edef.** Added schema-v4 advanced client-local settings: live UI scale, camera-shake intensity, foliage density, shadow quality/distance, volumetric fog, movement/look deadzones, controller vibration intensity/API, crosshair size/opacity/colour/contrast, and Streamer Mode masking. Graphics overrides report CUSTOM and presets clear them. Verified with `agent godot --script tools/settings_check.gd` (`failures=0`), `settings_screen_check.gd` (`failures=0`), and `focus_prompt_check.gd` (`failures=0`); full boot produced no parse/runtime errors. `expedition_check.gd`'s one far-corner minimap failure reproduces unchanged under `agent baseline --script tools/expedition_check.gd` and is not an F-514 regression.
 
 ### F-363 · The Mire tick still costs most of a frame at saturation, on the host main thread — **fixed**
 

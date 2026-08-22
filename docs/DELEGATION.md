@@ -75,6 +75,21 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-22 — F-514: advanced client-local settings (hollowe6edef)
+
+`SettingsService` schema 4 adds UI scale, camera-shake intensity, foliage/shadow/fog overrides,
+left/right stick deadzones, vibration intensity, crosshair size/opacity/colour/contrast, and Streamer
+Mode. All remain client-local presentation. Per-knob graphics changes make
+`graphics_selection() == 3` (CUSTOM); choosing Low/Medium/High clears those overrides. Deadzones are
+applied centrally with `InputMap.action_set_deadzone()`, so movement and look consumers require no
+special controller code. `vibrate_controller(weak, strong, duration, device)` is the only call site
+future feedback should use, because it applies the saved intensity. UI scale is applied once through
+the root Window's `content_scale_factor`; do not multiply dimensions by the setting again.
+
+`FocusPrompt` live-applies crosshair settings. `ExpeditionScreen` masks the seed, lobby code and
+party names while Streamer Mode is enabled. The focused settings, screen, focus-prompt checks pass;
+`expedition_check.gd` retains its clean-HEAD far-corner minimap failure, proven with `agent baseline`.
+
 ### 2026-08-21 — 5.11: the enemy ladder is complete, tiers 4 and 5 (ember5da2c4)
 
 All five rungs are authored. `roster_order` is now
