@@ -3136,32 +3136,6 @@ Full list of the twenty-two, for whoever triages: `_rpc_result_received`, `attac
 
 ---
 
-### F-577 · `content/hooks/` ships one hook and it is disabled, so the family never executes
-
-**Area:** content · **Severity:** low · **Found:** 2026-08-22 by wick3d4184 during a
-never-runs audit
-
-`Registry` loads `content/hooks/` as a first-class content family
-(`autoload/registry.gd:179`, exposed through `hook_defs()`/`get_hook()`), and
-`CommandService.wire_hook()` binds each one to a shipped `EventBus` signal at boot. The directory
-contains exactly one file, `content/hooks/night_siege.tres`, and it carries `enabled = false` with
-the description "Worked example (COMMANDS.md §5.2) … Ships disabled — flip `enabled` to try it."
-
-So the whole hook subsystem — registry loading, validation, `wire_hook()`, the event binding table
-that `tools/hook_events_check.gd` and `tools/function_check.gd` exercise — runs on an empty set in
-every real run. This is a deliberate state (D-094 parks gameplay-by-hook behind M6 Cycle Modifiers)
-rather than a defect, and it is filed here only so the audit's ledger is complete: if M6 lands and
-hooks stay a one-entry worked example, the machinery should be deleted rather than shipped inert.
-
-Worth noting what the same audit did **not** find, so nobody re-derives it: the unlock gate is not a
-content-reachability problem. `UnlockService.is_content_unlocked()` returns true for any content id
-nothing gates, so the 65 powerups without an `UnlockDef` roll freely — only the 7 with a `gates_id`
-are held back. Likewise every marker `kind` a service consumes (`objective`, `shipwreck`, `station`,
-`enemy_nest`, `loot`) is genuinely produced procedurally, verified by the marker census in F-573, so
-`LooseLootService` and its five sibling consumers do all fire on `procedural_island`.
-
----
-
 ### F-579 · `agent resolve` stamps "— **fixed**" on every finding it moves, including the three outcomes that are not fixes
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-22 by wick3d4184 during a
@@ -3215,57 +3189,6 @@ the same shared list so writer and reader cannot drift again, and require the no
 roadmap task for `promoted` and the surviving F-number for `duplicate`. `agent reopen` already
 exists for the status correction (F-131), so the recovery path is there; this is about not needing
 it.
-
----
-
-### F-580 · 30 of 72 powerups are fully inert — the stat name they modify has no consumer
-
-**Area:** powerups · **Severity:** high · **Found:** 2026-08-22 by birch1db63e
-
-Reported by Sequoyah as "power ups from chests do nothing", and that is literally true for most of
-the roster. The grant path is fine end to end: loot tables carry POWERUP entries (`kind = 1`) in all
-nine tiers, `Chest._accept_open_request()` routes them to `PowerupService.host_grant()`,
-`_commit()` replicates them, and `powerup list` shows them held. What is missing is the READ.
-
-`PowerupDef.KNOWN_STATS` names 43 stats. Only 19 are ever asked of `PowerupService.stat()` anywhere
-in the shipped code: melee_damage, bow_damage, max_hp, move_speed, sprint_speed,
-dodge_iframe_seconds, coin_gain, craft_seconds, ward_radius_m, structure_hp, food_value,
-blight_rate, chest_price, loot_luck, harvest_yield, harvest_damage, revive_seconds,
-revive_radius_m, bleed_out_seconds. The other 24 appear exactly once in the whole repo — in the
-KNOWN_STATS whitelist itself:
-
-  air_control, extra_jumps, jump_height, fall_damage_taken, move_speed_low_hp, move_speed_in_mire,
-  damage_taken, knockback_taken, hunger_drain, max_stamina, stamina_regen, stamina_cost,
-  melee_range_m, attack_seconds, melee_damage_low_hp, melee_damage_at_night, ignite_chance,
-  slow_chance, slow_potency, on_hit_lifesteal, on_kill_heal_hp, arrow_save_chance, aggro_radius_m,
-  haul_speed
-
-Consequence, counted over content/powerups (72 files): 30 powerups modify ONLY unread stats and
-therefore do nothing at all when granted — adrenal_bloom, air_writ, ashen_temper, bellows_lung,
-bottomless_quiver, cat_fall, cauter_seal, cellar_cache, chill_edge, damp_stride, deep_frost,
-far_grasp, flashover, fletchers_debt, long_bound, moss_shroud, night_pyre, pack_frame, red_quench,
-rime_shell, root_hold, scab_feast, sealed_veins, second_wind, skip_step, slow_gut, spent_spring,
-still_breath, tinder_snap, unseen_seam. A further five (empty_vessel, open_flame, quiet_bloom,
-whetted_thirst, white_quiet) declare no modifiers at all and are presumably resonance-only, which
-needs its own confirmation. Several more are partially inert (eggshell_warlord, rime_shell and
-sealed_veins carry `damage_taken`, the single most player-visible defensive stat in the vocabulary,
-which nothing reads).
-
-`powerup_def.gd`'s own comment says a name in KNOWN_STATS "does NOT mean a system reads it yet" and
-that stats wire up one line at a time per system task. That was a reasonable staging rule while the
-systems were being built; it has now produced a shipped chest economy whose most common outcome is
-a placebo. The vocabulary is not the bug — the missing reads are.
-
-Fix is per-system, each a single line at the point the quantity is computed, in the system that
-already owns it: player_controller (jump_height, air_control, extra_jumps, fall_damage_taken, and
-the two condition-suffixed move_speed variants chained onto the unconditional pass per D-179),
-player_health (damage_taken, knockback_taken, hunger_drain, max_stamina, stamina_regen,
-stamina_cost), combat_service (melee_range_m, attack_seconds, the two condition-suffixed
-melee_damage variants, ignite_chance, slow_chance, slow_potency, on_hit_lifesteal, on_kill_heal_hp),
-ranged_combat_service (arrow_save_chance), enemy AI (aggro_radius_m) and haul_service (haul_speed).
-
-Worth a standing check: a tools/ probe that fails when a KNOWN_STATS name has no reader, or when a
-shipped powerup's every modifier is unread, so this cannot silently regrow.
 
 ---
 
@@ -3353,7 +3276,176 @@ names, which is the shape F-046/F-047 exist to prevent.
 
 ---
 
+### F-585 · Resonance is entirely unimplemented — DESIGN 4.4's twelve run-defining effects do not exist
+
+**Area:** powerups · **Severity:** high · **Found:** 2026-08-22 by larchcc2572
+
+`DESIGN.md` §4.4 calls Resonance "the single highest-value system for replayability": holding 3+ of a
+family triggers a qualitative, run-defining effect, and 6+ upgrades it. Twelve effects are specified
+in that table. **None of them exist.**
+
+`PowerupService` computes the thresholds correctly — `resonance_tier()`, `resonance_active()`,
+`greater_resonance_active()` and the `resonance_changed` signal all work and are covered by
+`tools/powerup_check.gd`. The whole layer is a flag nobody reads. Grepped across
+`autoload/ core/ entities/ systems/ ui/ world/`, the only consumer of any of it is
+`SfxDirector._on_resonance_changed()`, which plays a sting. **Crossing a Resonance threshold in MIRE
+today makes a noise and changes nothing.**
+
+This is the same shape as F-580 (stat names with no reader) one level up, and it has the same cause:
+the framework shipped, the consumers were left to "their own task", and that task was never written.
+F-580 is the read side of the *stat* vocabulary; this is the read side of the *tag* vocabulary.
+
+**It also makes five shipped powerups fully inert on purpose and with no payoff.** `empty_vessel`,
+`open_flame`, `quiet_bloom`, `whetted_thirst` and `white_quiet` deliberately declare no modifiers —
+their authored descriptions say so outright ("It does nothing... the Void pays out at depth or not at
+all"). They are pure family counters whose entire value is reaching a Resonance. With Resonance
+unimplemented they are exactly what their flavour text jokes about, which is not the joke landing.
+
+Four of the six Resonances also need mechanisms that do not exist:
+
+  · Fire ("attacks ignite", "ignited enemies explode, chaining") and Cold ("attacks slow", "frozen
+    enemies shatter") need a **status-effect system**. Burning and Chilled do not exist — which is
+    the same hole that leaves F-580's `ignite_chance`, `slow_chance` and `slow_potency` unreadable.
+  · Fungal ("corpses sprout spore clouds", "spores spread") and Void ("blinking leaves a damaging
+    rift") need a **lingering area-hazard** primitive. Nothing in the project spawns a damaging
+    volume that outlives the frame that made it; `Enemy._burst()` is instantaneous and only ever
+    hits players.
+  · Kinetic ("sprinting builds a damage charge") needs a charge accumulator fed by the player's
+    sprint state, which `PlayerController` does not currently expose.
+  · Blood 6 ("you take double damage") and Fungal 6 ("walk in Mire safely") need reads in
+    `PlayerHealth` that do not exist.
+
+Wanted: the status-effect system, the area-hazard primitive, and a service that owns all twelve
+effects — plus a check that fails when a family's Resonance has no implementation, so this cannot
+regrow the way F-580's stat list did.
+
+---
+
 ## Resolved
+
+### F-580 · 30 of 72 powerups are fully inert — the stat name they modify has no consumer — **fixed**
+
+**Area:** powerups · **Severity:** high · **Found:** 2026-08-22 by birch1db63e
+
+Reported by Sequoyah as "power ups from chests do nothing", and that is literally true for most of
+the roster. The grant path is fine end to end: loot tables carry POWERUP entries (`kind = 1`) in all
+nine tiers, `Chest._accept_open_request()` routes them to `PowerupService.host_grant()`,
+`_commit()` replicates them, and `powerup list` shows them held. What is missing is the READ.
+
+`PowerupDef.KNOWN_STATS` names 43 stats. Only 19 are ever asked of `PowerupService.stat()` anywhere
+in the shipped code: melee_damage, bow_damage, max_hp, move_speed, sprint_speed,
+dodge_iframe_seconds, coin_gain, craft_seconds, ward_radius_m, structure_hp, food_value,
+blight_rate, chest_price, loot_luck, harvest_yield, harvest_damage, revive_seconds,
+revive_radius_m, bleed_out_seconds. The other 24 appear exactly once in the whole repo — in the
+KNOWN_STATS whitelist itself:
+
+  air_control, extra_jumps, jump_height, fall_damage_taken, move_speed_low_hp, move_speed_in_mire,
+  damage_taken, knockback_taken, hunger_drain, max_stamina, stamina_regen, stamina_cost,
+  melee_range_m, attack_seconds, melee_damage_low_hp, melee_damage_at_night, ignite_chance,
+  slow_chance, slow_potency, on_hit_lifesteal, on_kill_heal_hp, arrow_save_chance, aggro_radius_m,
+  haul_speed
+
+Consequence, counted over content/powerups (72 files): 30 powerups modify ONLY unread stats and
+therefore do nothing at all when granted — adrenal_bloom, air_writ, ashen_temper, bellows_lung,
+bottomless_quiver, cat_fall, cauter_seal, cellar_cache, chill_edge, damp_stride, deep_frost,
+far_grasp, flashover, fletchers_debt, long_bound, moss_shroud, night_pyre, pack_frame, red_quench,
+rime_shell, root_hold, scab_feast, sealed_veins, second_wind, skip_step, slow_gut, spent_spring,
+still_breath, tinder_snap, unseen_seam. A further five (empty_vessel, open_flame, quiet_bloom,
+whetted_thirst, white_quiet) declare no modifiers at all and are presumably resonance-only, which
+needs its own confirmation. Several more are partially inert (eggshell_warlord, rime_shell and
+sealed_veins carry `damage_taken`, the single most player-visible defensive stat in the vocabulary,
+which nothing reads).
+
+`powerup_def.gd`'s own comment says a name in KNOWN_STATS "does NOT mean a system reads it yet" and
+that stats wire up one line at a time per system task. That was a reasonable staging rule while the
+systems were being built; it has now produced a shipped chest economy whose most common outcome is
+a placebo. The vocabulary is not the bug — the missing reads are.
+
+Fix is per-system, each a single line at the point the quantity is computed, in the system that
+already owns it: player_controller (jump_height, air_control, extra_jumps, fall_damage_taken, and
+the two condition-suffixed move_speed variants chained onto the unconditional pass per D-179),
+player_health (damage_taken, knockback_taken, hunger_drain, max_stamina, stamina_regen,
+stamina_cost), combat_service (melee_range_m, attack_seconds, the two condition-suffixed
+melee_damage variants, ignite_chance, slow_chance, slow_potency, on_hit_lifesteal, on_kill_heal_hp),
+ranged_combat_service (arrow_save_chance), enemy AI (aggro_radius_m) and haul_service (haul_speed).
+
+Worth a standing check: a tools/ probe that fails when a KNOWN_STATS name has no reader, or when a
+shipped powerup's every modifier is unread, so this cannot silently regrow.
+
+---
+
+**Resolved 2026-08-22 by birch1db63e (fixed).** Fixed across two commits — 0d2ffae7 (the 20 unwired reads) and d25c9602 (fall damage and player
+knockback, two of the missing systems) — plus a standing guard,
+`tools/powerup_effects_check.gd`.
+
+**What the fix was.** Not what the finding first assumed. The grant path was correct end to end and
+needed no change at all; every read was missing. 20 stats now have a consumer at the point the
+consuming system already computes the quantity: jump_height, air_control, extra_jumps and the two
+condition-suffixed move_speed variants in `player_controller`; damage_taken, hunger_drain,
+bleed_out_seconds, revive_seconds, revive_radius_m, max_stamina, stamina_regen and stamina_cost in
+`player_health`; melee_range_m, attack_seconds, the two condition-suffixed melee_damage variants,
+on_hit_lifesteal and on_kill_heal_hp in `combat_service`; arrow_save_chance in
+`ranged_combat_service`; aggro_radius_m in `enemy.gd`. Then `fall_damage_taken` and
+`knockback_taken` got the systems they were waiting on.
+
+**Correction to this finding's own count.** It said 24 unread stats. Three more were unread than it
+recorded — `bleed_out_seconds`, `revive_seconds` and `revive_radius_m` read as live to a grep,
+because the export is read by name in three places and none of those reads went through
+`PowerupService` at all. `second_sunrise` and `pale_guard` were inert too. The check caught it; the
+grep that produced the finding did not. **The lesson worth carrying: audit a stat by its
+`stat(`/`local_stat(` CALL SITES, never by occurrences of its name.**
+
+**What is deliberately NOT fixed here.** Four stats remain PENDING — `ignite_chance`, `slow_chance`,
+`slow_potency` (no status-effect system exists) and `haul_speed` (hauling has no shipped gameplay
+caller; `HaulService.host_spawn()` is reached only from `tools/`). These are missing SYSTEMS, not
+missing lines, and they are owned by **F-585** (mire-0a), which also found the bigger sibling of this
+bug: Resonance is entirely unimplemented, and crossing a threshold today plays a sound and changes
+nothing. The four inert powerups are `ashen_temper`, `chill_edge`, `deep_frost` and `pack_frame`.
+
+**How it cannot regrow.** `tools/powerup_effects_check.gd` fails when a stat any shipped powerup
+names is in neither `CONSUMER_SITES` nor `PENDING`, when a recorded consumer's source does not
+actually read its stat, and when any powerup is inert for want of a read. `PENDING` prints its
+entries with the system each waits on rather than passing them silently — the distinction between
+"nobody wired the read" and "there is no system to wire it to" is the one that makes the check
+actionable. The behaviour half drives damage_taken, the stamina trio and fall damage for real
+against a peer holding nothing.
+
+Verified headless, all green: powerup_effects_check (new), powerup_check, player_health_check,
+player_vitals_check, combat_check, ranged_combat_check, enemy_ai_check, revive_interaction_check,
+attunement_effects_check. `tools/dodge_check.gd` fails its final assertion on a clean checkout as
+well — pre-existing, filed as F-584.
+
+### F-577 · `content/hooks/` ships one hook and it is disabled, so the family never executes — **won't fix**
+
+**Area:** content · **Severity:** low · **Found:** 2026-08-22 by wick3d4184 during a
+never-runs audit
+
+`Registry` loads `content/hooks/` as a first-class content family
+(`autoload/registry.gd:179`, exposed through `hook_defs()`/`get_hook()`), and
+`CommandService.wire_hook()` binds each one to a shipped `EventBus` signal at boot. The directory
+contains exactly one file, `content/hooks/night_siege.tres`, and it carries `enabled = false` with
+the description "Worked example (COMMANDS.md §5.2) … Ships disabled — flip `enabled` to try it."
+
+So the whole hook subsystem — registry loading, validation, `wire_hook()`, the event binding table
+that `tools/hook_events_check.gd` and `tools/function_check.gd` exercise — runs on an empty set in
+every real run. This is a deliberate state (D-094 parks gameplay-by-hook behind M6 Cycle Modifiers)
+rather than a defect, and it is filed here only so the audit's ledger is complete: if M6 lands and
+hooks stay a one-entry worked example, the machinery should be deleted rather than shipped inert.
+
+Worth noting what the same audit did **not** find, so nobody re-derives it: the unlock gate is not a
+content-reachability problem. `UnlockService.is_content_unlocked()` returns true for any content id
+nothing gates, so the 65 powerups without an `UnlockDef` roll freely — only the 7 with a `gates_id`
+are held back. Likewise every marker `kind` a service consumes (`objective`, `shipwreck`, `station`,
+`enemy_nest`, `loot`) is genuinely produced procedurally, verified by the marker census in F-573, so
+`LooseLootService` and its five sibling consumers do all fire on `procedural_island`.
+
+---
+
+**Resolved 2026-08-22 by wick3d4184 (won't fix).** Deliberate, and recorded as such rather than left open to be re-triaged forever. D-094 parks
+gameplay-by-hook behind M6 Cycle Modifiers, so `content/hooks/night_siege.tres` shipping with
+`enabled = false` is the intended state, not an oversight — the entry existed to make the audit's
+ledger complete, and that job is done. Reopen it if M6 lands and hooks are still a one-entry worked
+example, because at that point the machinery should be deleted rather than shipped inert.
 
 ### F-581 · Loot has no moment: chests resolve into a modal list, and picking anything up is silent and invisible — **fixed**
 
