@@ -353,7 +353,9 @@ func top_up_ambient() -> int:
 	# its own _ready, so it is already counted by the next iteration. Adding both stopped the loop at
 	# half the population.
 	var attempts: int = 0
-	while live_count() < ambient_population and attempts < ambient_population:
+	# F-599 review: the target grows with corruption, so the bias adds pressure instead of moving it.
+	var target: int = _corruption_scaled_population(points)
+	while live_count() < target and attempts < target:
 		attempts += 1
 		if host_spawn(_roll_ambient_kind(), _pick_ambient_position(points, players)) == null:
 			break
@@ -400,6 +402,12 @@ func _roll_ambient_kind() -> StringName:
 ## daytime population to zero and stay there. `top_up_ambient()` is the daytime population by design
 ## — `systems/waves/wave_spawner.gd` disables it for the night and owns the field then — so it must
 ## always produce a body, just never an ambush.
+## The ambient target for the island as it stands right now.
+func _corruption_scaled_population(points: Array[Vector3]) -> int:
+	var mean: float = _mean_nest_corruption(_corruption_weights(points))
+	return maxi(int(roundf(float(ambient_population) * (1.0 + mean * POPULATION_CORRUPTION_GAIN))), 0)
+
+
 func _pick_ambient_position(points: Array[Vector3], players: Array[Vector3]) -> Vector3:
 	var minimum_sq: float = ambient_min_player_distance_m * ambient_min_player_distance_m
 	var weights: PackedFloat32Array = _corruption_weights(points)
@@ -439,6 +447,39 @@ func _pick_ambient_position(points: Array[Vector3], players: Array[Vector3]) -> 
 ## correct — it is at its strongest exactly when part of the island has turned and part has not, and
 ## that is the moment the information is worth having.
 const CORRUPTION_SPAWN_BIAS: float = 2.0
+
+
+## F-599 review (wick1c650c): how much the ambient population GROWS with mean corruption.
+##
+## The bias above decides which nests are hot; on its own it redistributes a fixed pool, and they
+## measured what that costs: at half the nests corrupted the clean half keeps 17% of the field —
+## about 3 bodies over half an island, back to roughly the density this finding exists to fix, and at
+## its worst in the middle of a run where players spend most of their time. Biasing *placement*
+## without growing the *pool* moves pressure rather than adding it.
+##
+## So the pool grows with how much of the island has turned: 0.6 means a fully corrupted island
+## carries 1.6x the ambient population of a clean one. The clean half then keeps roughly its original
+## absolute density while the corrupted half genuinely intensifies, which is the behaviour the bias
+## was supposed to produce on its own.
+##
+## Deliberately modest. The population is also what the night waves stack on top of, and
+## birch1db63e's clump analysis is the standing warning here: a broodcaller's 28 m alert radius plus
+## `_alert_nearby()` means bodies that land together fight together.
+const POPULATION_CORRUPTION_GAIN: float = 0.6
+
+
+## Mean corruption across the nests, 0..1 — the cheap stand-in for "how much of the island has
+## turned". Sampled at the nests rather than over the island because the nests are where it changes
+## what happens; a corrupted lake nobody spawns at should not inflate the population.
+func _mean_nest_corruption(weights: PackedFloat32Array) -> float:
+	if weights.is_empty():
+		return 0.0
+	var total: float = 0.0
+	for weight: float in weights:
+		# Invert `1 + corruption * BIAS` rather than re-sampling the grid — same numbers, no second
+		# pass over `corruption_at()`.
+		total += (weight - 1.0) / maxf(CORRUPTION_SPAWN_BIAS, 0.001)
+	return clampf(total / float(weights.size()), 0.0, 1.0)
 
 
 ## Per-nest selection weight, `1 + corruption * CORRUPTION_SPAWN_BIAS`.
