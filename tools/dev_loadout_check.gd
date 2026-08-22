@@ -65,6 +65,8 @@ func _run() -> void:
 	check(int(inventory.call("host_count", NetConfig.HOST_PEER_ID, &"log")) >= 2
 		and int(inventory.call("host_count", NetConfig.HOST_PEER_ID, &"stone")) >= 3,
 		"and enough log and stone to craft the one workbench recipe")
+	check(int(inventory.call("host_count", NetConfig.HOST_PEER_ID, &"coins")) == 50,
+		"and exactly 50 starting coins for two Bog Chests")
 
 	# The part that decides whether any of this is usable: 2.4 fills the backpack first, so without
 	# an explicit move you start holding nothing and have to open Tab and drag before you can swing.
@@ -79,6 +81,8 @@ func _run() -> void:
 
 	# Granting twice must not double the loadout — a rebind or a late signal would otherwise stack.
 	check(not bool(dev.call("grant", NetConfig.HOST_PEER_ID)), "a second grant is refused")
+	check(int(inventory.call("host_count", NetConfig.HOST_PEER_ID, &"coins")) == 50,
+		"a refused second grant does not duplicate starting coins")
 
 	# ── and there are crawlers ────────────────────────────────────────────────────────────────────
 	print("\n-- ambient crawlers --")

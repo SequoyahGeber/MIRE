@@ -60,6 +60,9 @@ const HOTBAR_START_INDEX: int = 24
 	{"item": &"stone_pickaxe", "count": 1},
 	{"item": &"arrow", "count": 12},
 	{"item": &"iron_ore", "count": 10},
+	# Two Bog Chests from the first minute, while the 60-coin Strongbox still asks the player to
+	# earn or find a little more. Currency stays in the backpack; the eight-slot action bar is full.
+	{"item": &"coins", "count": 50},
 ]
 
 ## Peers already granted this session, so a rebind or a late signal cannot hand out a second set.

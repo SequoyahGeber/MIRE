@@ -9529,3 +9529,30 @@ Recovered the omitted deep-material Blender source. Blender 5.2.0 LTS opened it 
 Files: `assets/source/deep_materials.blend`
 
 Commit at time of writing: `d540706d`
+
+---
+
+### HANDOFF · F-516 · vane99f1bb · 2026-08-22T03:47:58+00:00
+
+**Nothing pre-warms shipped materials, so every player pays shader/pipeline compilation as hitches during their first minutes of play**
+
+Prewarm built twice (MeshInstance and MultiMesh), both confirmed to draw all 1030 mesh parts, neither moved leg A. Both reverted. Two unconfirmed explanations recorded in the finding: sub-pixel draws may never have rasterized, or the cost is not materials. Also found a flaw in the A/B metric (1% low across unequal window lengths); conclusion survives on hitch rate. No files left claimed.
+
+Files: `world/environment/material_prewarm.gd`, `world/gen/procedural_world.gd`
+
+Commit at time of writing: `18e78f7f`
+
+---
+
+### DONE · F-518 · tine7d9d62 · 2026-08-22T04:14:10+00:00
+
+**Fresh runs should start each player with 50 coins so the chest economy is immediately usable**
+
+Fresh players now receive exactly 50 coins through DevLoadout; duplicate grants remain blocked. dev_loadout_check failures=0 and findings numbering is clean.
+
+Notes along the way:
+- Use the existing host-authoritative DevLoadout path. Add 50 coins as a backpack stack, not hotbar, so the existing 8/8 actionable hotbar stays unchanged; verify exact count and idempotence.
+
+Files: `core/dev/dev_loadout.gd`, `tools/dev_loadout_check.gd`
+
+Commit at time of writing: `18e78f7f`
