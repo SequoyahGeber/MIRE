@@ -9694,3 +9694,15 @@ Kills pay coins, priced per kind on EnemyDef and paid to the killer. New EventBu
 Files: `systems/enemies/enemy_def.gd`, `systems/enemies/enemy.gd`, `core/events/event_bus.gd`, `autoload/reward_service.gd`, `content/enemies/peatling.tres`, `content/enemies/fen_stalker.tres`, `content/enemies/bog_bulwark.tres`, `content/enemies/bloatcap.tres`, `content/enemies/mire_herald.tres`, `content/enemies/crawler.tres`, `content/enemies/bog_crawler.tres`, `content/enemies/broodcaller.tres`, `content/enemies/strider.tres`, `content/enemies/tusker.tres`, `docs/ENEMIES.md`, `docs/ITEMS.md`, `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `tools/kill_bounty_check.gd`
 
 Commit at time of writing: `db626b01`
+
+---
+
+### DONE · F-534 · wickec4384 · 2026-08-22T05:14:48+00:00
+
+**Dev console has no TAB completion for commands or arguments**
+
+TAB completion in the dev console: CommandService.complete() + DebugConsole TAB binding, guarded by tools/command_complete_check.gd
+
+Files: `autoload/command_service.gd`, `autoload/debug_console.gd`, `tools/command_complete_check.gd`
+
+Commit at time of writing: `f475414a`

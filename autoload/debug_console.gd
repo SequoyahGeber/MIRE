@@ -103,6 +103,13 @@ func _input(event: InputEvent) -> void:
 		if is_open and (key.keycode == KEY_UP or key.keycode == KEY_DOWN):
 			_recall_history(-1 if key.keycode == KEY_UP else 1)
 			get_viewport().set_input_as_handled()
+			return
+		# Caught here rather than in the LineEdit's own gui_input: TAB is `ui_focus_next`, so by the
+		# time GUI input sees it the entry has already handed focus to whatever is next. `_input`
+		# runs before that (same reason the history keys live here).
+		if is_open and key.keycode == KEY_TAB:
+			_complete()
+			get_viewport().set_input_as_handled()
 
 
 func toggle() -> void:
@@ -211,6 +218,44 @@ func _on_command_result(handle: int, result: Dictionary) -> void:
 		_print_line(message)
 	else:
 		_print_line("[color=#f77]%s[/color]" % message)
+
+
+## TAB completion (F-534). CommandService owns what the candidates ARE — it is the only thing that
+## knows the spec table and every argument type — and this file owns what TAB DOES with them:
+## one candidate completes and adds the trailing space that starts the next argument, several
+## advance to their longest shared prefix and print the list, readline-style. Nothing is inserted
+## when there is nothing to offer, so TAB in an unknown command is a no-op rather than a surprise.
+func _complete() -> void:
+	var command_service: Node = get_node_or_null(^"/root/CommandService")
+	if command_service == null:
+		return
+
+	var line: String = _entry.text
+	var caret: int = _entry.caret_column
+	var result: Dictionary = command_service.call("complete", line, caret)
+	var candidates: PackedStringArray = result.get("candidates", PackedStringArray())
+	if candidates.is_empty():
+		return
+
+	var start: int = int(result.get("start", caret))
+	var typed: String = line.substr(start, caret - start)
+	# The separator a single completion adds finishes the token so the next argument can be typed
+	# straight away — but only when there is not already one there, or completing mid-line would
+	# double it.
+	var trailing: String = "" if caret < line.length() and line[caret] == " " else " "
+	var insertion: String = (candidates[0] + trailing) if candidates.size() == 1 \
+			else String(command_service.call("common_prefix", candidates))
+
+	if candidates.size() > 1:
+		_print_line("[color=#8a8]%s[/color]" % "  ".join(candidates))
+	# `insertion` can be shorter than what was typed only when the casing differs (completion is
+	# case-insensitive), and rewriting the token to the candidates' casing is the right answer there
+	# too — but a strictly shorter insertion would delete characters, so leave the line alone.
+	if insertion.length() < typed.length():
+		return
+
+	_entry.text = line.substr(0, start) + insertion + line.substr(caret)
+	_entry.caret_column = start + insertion.length()
 
 
 func _recall_history(direction: int) -> void:

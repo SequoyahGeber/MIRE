@@ -983,3 +983,181 @@ func _transport() -> Node:
 	if _transport_node == null or not is_instance_valid(_transport_node):
 		_transport_node = get_node_or_null(^"/root/NetTransport")
 	return _transport_node
+
+
+# ── Completion (F-534) ───────────────────────────────────────────────────────────────────────────
+
+
+## What TAB in the console offers for the token the caret sits in. LOCAL and read-only: it answers
+## from this process's own specs and registries, so a client completing `op <TAB>` lists the peers
+## its NetTransport already knows about rather than asking the host — no new RPC, no new authority
+## (docs/ARCHITECTURE.md §2.2 leaves this on the CLIENT-LOCAL presentation row with the console).
+##
+## Returns {"start": int, "candidates": PackedStringArray}: `start` is the byte offset in `line`
+## where the token being completed begins, so a caller replaces `line[start..caret]` with a
+## candidate. Candidates are sorted and already filtered by the typed prefix; an empty array means
+## "nothing to offer", never "replace with nothing".
+##
+## The first token completes against command names; every later one completes against the type of
+## the argument it lands on, walked through the spec so `vec3`'s three tokens do not shift the
+## count (COMMANDS.md §2.2). A `rest` argument swallows the remainder and offers nothing.
+func complete(line: String, caret_column: int = -1) -> Dictionary:
+	var caret: int = line.length() if caret_column < 0 else clampi(caret_column, 0, line.length())
+	var typed: String = line.substr(0, caret)
+
+	var start: int = caret
+	while start > 0 and not _is_token_break(typed[start - 1]):
+		start -= 1
+	var prefix: String = typed.substr(start, caret - start)
+	var before: PackedStringArray = _tokens(typed.substr(0, start))
+
+	var candidates: PackedStringArray
+	if before.is_empty():
+		candidates = _command_name_candidates()
+	else:
+		candidates = _argument_candidates(StringName(before[0]), before.slice(1))
+
+	return {"start": start, "candidates": _filter_by_prefix(candidates, prefix)}
+
+
+func _is_token_break(character: String) -> bool:
+	return character == " " or character == "\t"
+
+
+func _tokens(text: String) -> PackedStringArray:
+	var out: PackedStringArray = PackedStringArray()
+	for token: String in text.split(" ", false):
+		var trimmed: String = token.strip_edges()
+		if not trimmed.is_empty():
+			out.append(trimmed)
+	return out
+
+
+func _command_name_candidates() -> PackedStringArray:
+	var out: PackedStringArray = PackedStringArray()
+	for name: StringName in spec_names():
+		out.append(String(name))
+	return out
+
+
+## `done` is the arguments already typed BEFORE the token being completed, so its size is the index
+## of the argument the caret is on — once `vec3`'s three-token appetite is accounted for.
+func _argument_candidates(head: StringName, done: PackedStringArray) -> PackedStringArray:
+	var spec: Dictionary = _specs.get(head, {})
+	var arg_specs: Array = spec.get("args", [])
+	var consumed: int = 0
+
+	for arg_spec_v: Variant in arg_specs:
+		var arg_spec: Dictionary = arg_spec_v
+		var type_name: StringName = arg_spec.get("type", &"string")
+		if type_name == &"rest":
+			return PackedStringArray()
+		var width: int = 3 if type_name == &"vec3" else 1
+		if done.size() < consumed + width:
+			return _type_candidates(type_name, arg_spec)
+		consumed += width
+
+	return PackedStringArray()
+
+
+func _type_candidates(type_name: StringName, arg_spec: Dictionary) -> PackedStringArray:
+	match type_name:
+		&"bool":
+			return PackedStringArray(["off", "on"])
+		&"enum":
+			var values: PackedStringArray = PackedStringArray()
+			for value: Variant in arg_spec.get("values", []):
+				values.append(String(value))
+			return values
+		&"peer":
+			return _peer_candidates()
+		&"rule_id":
+			var rule_service: Node = get_node_or_null(^"/root/RuleService")
+			if rule_service == null:
+				return PackedStringArray()
+			return _as_strings(rule_service.call("rule_ids"))
+		&"function_id":
+			return _as_strings(function_names())
+		&"enemy_id":
+			var enemy_world: Node = get_node_or_null(^"/root/EnemyWorld")
+			if enemy_world == null:
+				return PackedStringArray()
+			return _as_strings((enemy_world.get("defs") as Dictionary).keys())
+		&"item_id":
+			return _registry_candidates(&"items")
+		&"recipe_id":
+			return _registry_candidates(&"recipes")
+		&"powerup_id":
+			return _registry_candidates(&"powerups")
+		&"buildable_id":
+			return _registry_candidates(&"buildables")
+		&"station_id":
+			return _registry_candidates(&"stations")
+		&"loot_table_id":
+			return _registry_candidates(&"loot_tables")
+	return PackedStringArray()
+
+
+func _registry_candidates(property: StringName) -> PackedStringArray:
+	var registry: Node = get_node_or_null(^"/root/Registry")
+	if registry == null:
+		return PackedStringArray()
+	var table: Variant = registry.get(property)
+	if not (table is Dictionary):
+		return PackedStringArray()
+	return _as_strings((table as Dictionary).keys())
+
+
+## Both halves of what `_parse_peer` accepts — the display name AND the peer id — because either is
+## a legal answer and which one someone wants depends on why they are opping. A name that is not
+## unique is still offered: `_parse_peer` refuses an ambiguous one with an error naming the ids, and
+## hiding the name from completion would make that error unreachable rather than avoidable.
+func _peer_candidates() -> PackedStringArray:
+	var transport: Node = _transport()
+	if transport == null:
+		return PackedStringArray()
+	var names: Dictionary = transport.call("display_names")
+	var out: PackedStringArray = PackedStringArray()
+	for id_v: Variant in names:
+		out.append(str(int(id_v)))
+		var display_name: String = String(names[id_v]).strip_edges()
+		# A name with a space in it cannot round-trip through the console's token split, so offering
+		# it would complete to something `_parse_peer` never sees whole — the peer id always works.
+		if not display_name.is_empty() and not display_name.contains(" "):
+			out.append(display_name)
+	return out
+
+
+func _as_strings(values: Variant) -> PackedStringArray:
+	var out: PackedStringArray = PackedStringArray()
+	for value: Variant in (values as Array):
+		out.append(String(value))
+	return out
+
+
+## Case-INSENSITIVE matching, case-preserving output: ids are lower_snake_case but a display name is
+## whatever the player typed, and `_parse_peer` itself resolves names case-insensitively — so `bo` +
+## TAB has to reach "Bob" for completion to agree with what the parser would have accepted.
+func _filter_by_prefix(candidates: PackedStringArray, prefix: String) -> PackedStringArray:
+	var lowered: String = prefix.to_lower()
+	var out: PackedStringArray = PackedStringArray()
+	for candidate: String in candidates:
+		if candidate.to_lower().begins_with(lowered):
+			out.append(candidate)
+	out.sort()
+	return out
+
+
+## The longest text every candidate shares, so TAB on an ambiguous prefix still advances as far as
+## it unambiguously can (readline's behaviour) instead of doing nothing. Compared case-insensitively
+## for the same reason `_filter_by_prefix` is; the first candidate supplies the casing.
+func common_prefix(candidates: PackedStringArray) -> String:
+	if candidates.is_empty():
+		return ""
+	var shared: String = candidates[0]
+	for candidate: String in candidates:
+		while not candidate.to_lower().begins_with(shared.to_lower()):
+			shared = shared.substr(0, shared.length() - 1)
+			if shared.is_empty():
+				return ""
+	return shared
