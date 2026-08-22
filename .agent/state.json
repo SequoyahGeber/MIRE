@@ -18,6 +18,18 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "assets/loot/README.md": {
+      "agent": "nettled7199c",
+      "at": "2026-08-22T05:26:31+00:00",
+      "task": "F-541",
+      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+    },
+    "assets/loot/catalog.json": {
+      "agent": "nettled7199c",
+      "at": "2026-08-22T05:26:31+00:00",
+      "task": "F-541",
+      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+    },
     "assets/pickups/catalog.json": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:31:01+00:00",
@@ -30,6 +42,12 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "autoload/chest_placement_service.gd": {
+      "agent": "nettled7199c",
+      "at": "2026-08-22T05:26:31+00:00",
+      "task": "F-541",
+      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+    },
     "autoload/inventory_service.gd": {
       "agent": "flint04a51d",
       "at": "2026-08-22T05:10:38+00:00",
@@ -41,6 +59,12 @@
       "at": "2026-08-22T05:10:38+00:00",
       "task": "F-535",
       "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
+    },
+    "autoload/material_warmer.gd": {
+      "agent": "onyxbe8065",
+      "at": "2026-08-22T05:31:41+00:00",
+      "task": "F-516",
+      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "content/harvestables/apple_tree.tres": {
       "agent": "gale43d16e",
@@ -126,11 +150,65 @@
       "task": "F-482",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "content/loot/basic.tres": {
+      "agent": "nettled7199c",
+      "at": "2026-08-22T05:26:31+00:00",
+      "task": "F-541",
+      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+    },
+    "content/loot/bog.tres": {
+      "agent": "nettled7199c",
+      "at": "2026-08-22T05:26:31+00:00",
+      "task": "F-541",
+      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+    },
+    "content/loot/common.tres": {
+      "agent": "nettled7199c",
+      "at": "2026-08-22T05:26:31+00:00",
+      "task": "F-541",
+      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+    },
+    "content/loot/epic.tres": {
+      "agent": "nettled7199c",
+      "at": "2026-08-22T05:26:31+00:00",
+      "task": "F-541",
+      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+    },
+    "content/loot/legendary.tres": {
+      "agent": "nettled7199c",
+      "at": "2026-08-22T05:26:31+00:00",
+      "task": "F-541",
+      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+    },
+    "content/loot/rare.tres": {
+      "agent": "nettled7199c",
+      "at": "2026-08-22T05:26:31+00:00",
+      "task": "F-541",
+      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+    },
+    "content/loot/small.tres": {
+      "agent": "nettled7199c",
+      "at": "2026-08-22T05:26:31+00:00",
+      "task": "F-541",
+      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+    },
+    "content/loot/strongbox.tres": {
+      "agent": "nettled7199c",
+      "at": "2026-08-22T05:26:31+00:00",
+      "task": "F-541",
+      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+    },
     "content/scatter/highland_rocks.tres": {
       "agent": "birche6b40e",
       "at": "2026-08-22T00:06:31+00:00",
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "core/net/net_session.gd": {
+      "agent": "cinder9818da",
+      "at": "2026-08-22T05:29:34+00:00",
+      "task": "F-020",
+      "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
     },
     "docs/ASSET_TRACKER.md": {
       "agent": "gale43d16e",
@@ -143,6 +221,12 @@
       "at": "2026-08-22T05:10:38+00:00",
       "task": "F-535",
       "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
+    },
+    "systems/loot/chest.gd": {
+      "agent": "nettled7199c",
+      "at": "2026-08-22T05:26:31+00:00",
+      "task": "F-541",
+      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
     },
     "systems/loot/item_drop.gd": {
       "agent": "flint04a51d",
@@ -168,6 +252,12 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "tools/blender/build_loot_set.py": {
+      "agent": "nettled7199c",
+      "at": "2026-08-22T05:26:31+00:00",
+      "task": "F-541",
+      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+    },
     "tools/blender/build_pickup_kit.py": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:31:01+00:00",
@@ -186,6 +276,18 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "tools/chest_placement_check.gd": {
+      "agent": "nettled7199c",
+      "at": "2026-08-22T05:26:31+00:00",
+      "task": "F-541",
+      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+    },
+    "tools/cycle_modifier_effects_check.gd": {
+      "agent": "nettled7199c",
+      "at": "2026-08-22T05:26:31+00:00",
+      "task": "F-541",
+      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+    },
     "tools/harvest_world_check.gd": {
       "agent": "flint04a51d",
       "at": "2026-08-22T05:21:21+00:00",
@@ -195,6 +297,12 @@
     "tools/inventory_check.gd": {
       "agent": "flint04a51d",
       "at": "2026-08-22T05:20:10+00:00",
+      "task": "F-535",
+      "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
+    },
+    "tools/inventory_net_check.gd": {
+      "agent": "flint04a51d",
+      "at": "2026-08-22T05:30:08+00:00",
       "task": "F-535",
       "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
     },
@@ -210,11 +318,41 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "tools/loot_content_check.gd": {
+      "agent": "nettled7199c",
+      "at": "2026-08-22T05:26:31+00:00",
+      "task": "F-541",
+      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+    },
+    "tools/mapgen/hollowmere_layout.py": {
+      "agent": "nettled7199c",
+      "at": "2026-08-22T05:26:31+00:00",
+      "task": "F-541",
+      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+    },
+    "tools/material_warm_check.gd": {
+      "agent": "onyxbe8065",
+      "at": "2026-08-22T05:31:41+00:00",
+      "task": "F-516",
+      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
+    },
     "tools/mire_interaction_check.gd": {
       "agent": "flint04a51d",
       "at": "2026-08-22T05:21:21+00:00",
       "task": "F-535",
       "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
+    },
+    "tools/steam_rejoin_check.gd": {
+      "agent": "cinder9818da",
+      "at": "2026-08-22T05:29:34+00:00",
+      "task": "F-020",
+      "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
+    },
+    "tools/terminal_focus_check.gd": {
+      "agent": "onyxbe8065",
+      "at": "2026-08-22T05:27:47+00:00",
+      "task": "F-321",
+      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "ui/attunement/attunement_ui.gd": {
       "agent": "onyxbe8065",
@@ -248,29 +386,25 @@
       "started": "2026-08-21T17:13:34+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "F-020": {
+      "agent": "cinder9818da",
+      "files": [
+        "core/net/net_session.gd",
+        "tools/steam_rejoin_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-22T05:29:34+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
+    },
     "F-321": {
       "agent": "onyxbe8065",
       "files": [
-        "ui/attunement/attunement_ui.gd"
+        "ui/attunement/attunement_ui.gd",
+        "tools/terminal_focus_check.gd"
       ],
       "notes": [],
       "started": "2026-08-22T05:25:47+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
-    },
-    "F-469": {
-      "agent": "coil26502f",
-      "files": [
-        "systems/building/placement_validator.gd",
-        "systems/building/build_ghost.gd",
-        "autoload/build_service.gd",
-        "core/net/net_version.gd",
-        "core/net/rpc_manifest.gd",
-        "entities/player/player_controller.gd",
-        "ui/building/build_bar.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-21T23:06:31+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "F-473": {
       "agent": "birche6b40e",
@@ -306,6 +440,16 @@
       "started": "2026-08-22T00:29:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "F-516": {
+      "agent": "onyxbe8065",
+      "files": [
+        "autoload/material_warmer.gd",
+        "tools/material_warm_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-22T05:29:58+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
+    },
     "F-535": {
       "agent": "flint04a51d",
       "files": [
@@ -317,11 +461,37 @@
         "docs/FINDINGS.md",
         "tools/inventory_check.gd",
         "tools/mire_interaction_check.gd",
-        "tools/harvest_world_check.gd"
+        "tools/harvest_world_check.gd",
+        "tools/inventory_net_check.gd"
       ],
       "notes": [],
       "started": "2026-08-22T05:10:38+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
+    },
+    "F-541": {
+      "agent": "nettled7199c",
+      "files": [
+        "content/loot/basic.tres",
+        "content/loot/common.tres",
+        "content/loot/rare.tres",
+        "content/loot/epic.tres",
+        "content/loot/legendary.tres",
+        "content/loot/small.tres",
+        "content/loot/bog.tres",
+        "content/loot/strongbox.tres",
+        "autoload/chest_placement_service.gd",
+        "systems/loot/chest.gd",
+        "tools/blender/build_loot_set.py",
+        "tools/mapgen/hollowmere_layout.py",
+        "tools/chest_placement_check.gd",
+        "tools/loot_content_check.gd",
+        "tools/cycle_modifier_effects_check.gd",
+        "assets/loot/README.md",
+        "assets/loot/catalog.json"
+      ],
+      "notes": [],
+      "started": "2026-08-22T05:26:31+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
     }
   },
   "recent": {
@@ -1545,9 +1715,9 @@
     },
     "autoload/build_service.gd": {
       "agent": "coil26502f",
-      "at": "2026-08-21T23:28:27+00:00",
+      "at": "2026-08-22T05:27:56+00:00",
       "hash": "438c83aa297b16185dca3bd5da31cbf411d68d9a81d478463232c4d7bc13656a",
-      "task": "F-472",
+      "task": "F-469",
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "autoload/chest_placement_service.gd": {
@@ -3687,16 +3857,16 @@
     },
     "core/net/net_version.gd": {
       "agent": "coil26502f",
-      "at": "2026-08-21T23:28:27+00:00",
+      "at": "2026-08-22T05:27:56+00:00",
       "hash": "b3688d09c13339952e958419cb2b3fa078811fb7d5a01b91428aa17f033d9882",
-      "task": "F-472",
+      "task": "F-469",
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "core/net/rpc_manifest.gd": {
       "agent": "coil26502f",
-      "at": "2026-08-21T23:28:27+00:00",
+      "at": "2026-08-22T05:27:56+00:00",
       "hash": "b8ca6c5920c3acedfa456368c3ab31d1b06c23f292b621e818dc9070d8a9fa8e",
-      "task": "F-472",
+      "task": "F-469",
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "core/render/hardware_tier.gd": {
@@ -3805,11 +3975,11 @@
       "token": "CODEX_SESSION_ID:01a02772-862e-7242-889a-a20257660bfa"
     },
     "entities/player/player_controller.gd": {
-      "agent": "reed8d5690",
-      "at": "2026-08-22T04:20:23+00:00",
-      "hash": "ec8093b9bc5553a4423095b5f25b4e34bb60646c6dba725de024b658f62c6479",
-      "task": "F-520",
-      "token": "CLAUDE_CODE_SESSION_ID:d83b3646-0972-4048-bb3e-180c6c8ce54e"
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:32:37+00:00",
+      "hash": "aac6bbd74481b8a7950d6777115d53acd9d88ba45bcbbf83c515ddb0053379bc",
+      "task": "F-527",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     },
     "entities/props/camp_abandoned.tscn": {
       "agent": "kilnd3a089",
@@ -3960,9 +4130,9 @@
     },
     "systems/building/build_ghost.gd": {
       "agent": "coil26502f",
-      "at": "2026-08-21T23:28:27+00:00",
+      "at": "2026-08-22T05:27:56+00:00",
       "hash": "5c6cc745b5f73e744f72496ba9f198191488c50f4e6fd531612217a8159117b6",
-      "task": "F-472",
+      "task": "F-469",
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "systems/building/buildable_def.gd": {
@@ -3974,9 +4144,9 @@
     },
     "systems/building/placement_validator.gd": {
       "agent": "coil26502f",
-      "at": "2026-08-21T23:28:27+00:00",
+      "at": "2026-08-22T05:27:56+00:00",
       "hash": "d6e50ac9fe49b0679435fc1ab1319b942b2828e24b0444d040913c5d3a2b397c",
-      "task": "F-472",
+      "task": "F-469",
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "systems/crafting/station_def.gd": {
@@ -4391,6 +4561,13 @@
       "hash": "01566a7c3a336d8e2e98469dab152ed4bfe2e1f60f72de4f13259f9bdf2c9b34",
       "task": "F-472",
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+    },
+    "tools/build_picker_check.gd": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:32:37+00:00",
+      "hash": "416898a017903f54fcc2314fdcbf2c03e4a46f0eda09afb44c03f35159e52933",
+      "task": "F-527",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     },
     "tools/build_snap_check.gd": {
       "agent": "coil26502f",
@@ -5079,11 +5256,11 @@
       "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     },
     "ui/building/build_bar.gd": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:53:18+00:00",
-      "hash": "4e07eb6d6247b92ff3abe5107149a93dd2f03177c456e66021687b14524df041",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:32:37+00:00",
+      "hash": "25303f943cbc4774f06dce6e5224fc6c702a18fd6cdd8262ad4f5d2f7427105d",
+      "task": "F-527",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     },
     "ui/building/door_prompt.gd": {
       "agent": "wickc3d79c",
@@ -5450,7 +5627,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1480,
+  "rev": 1497,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -7113,7 +7290,7 @@
     "F-020": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Steam sessions cannot use NetSession's direct-address auto-rejoin loop"
     },
@@ -10974,7 +11151,7 @@
     "F-469": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "F",
       "title": "Four recent decisions use a heading shape decision_ref_check.py cannot see"
     },
@@ -11356,7 +11533,7 @@
     "F-516": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Nothing pre-warms shipped materials, so every player pays shader/pipeline compilation as hitches during their first minutes of play"
     },
@@ -11445,9 +11622,11 @@
       "title": "Teammate revive interaction does not revive a downed player"
     },
     "F-527": {
+      "done_at": "2026-08-22T05:32:37+00:00",
+      "done_by": "ivyf16b98",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Build menu again leaves the cursor captive, preventing station and item selection"
     },
@@ -11561,6 +11740,13 @@
       "status": "done",
       "tier": "F",
       "title": "First multiplayer join can miss the promised 50 starting coins"
+    },
+    "F-541": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Chest tiers: only three loot tiers are actually placeable and only three chest silhouettes exist"
     }
   },
   "version": 1

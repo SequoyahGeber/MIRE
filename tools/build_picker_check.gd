@@ -1,15 +1,14 @@
 extends SceneTree
 
-## F-483: the build bar is one row above the hotbar, categorized into tabs, and reachable without a
-## cursor.
+## F-527: the build bar is one row above the hotbar, categorized into mouse-clickable tabs and
+## pieces, and releases/recaptures the first-person cursor with its lifetime.
 ##
 ##   .agent/bin/agent godot --script tools/build_picker_check.gd
 ##
 ## Proves the three things the playtest report needed. That every authored buildable declares a tab
-## and the tabs are the ones we meant; that the bar only ever puts ONE row of slots on screen, so it
-## cannot go back to covering the ghost the way F-477's wrapped flow did; and — the actual fault —
-## that a piece can be selected with the mouse CAPTURED, through the real InputMap actions fed into
-## the real `_input()`, with no click anywhere in the path.
+## and the tabs are the ones we meant; that the bar only ever puts ONE row of slots on screen; and
+## — the actual fault — that opening gives the pointer back, real tab/slot mouse handlers select the
+## ghost, and closing recaptures first-person aim. Bound keyboard/gamepad selection remains covered.
 ##
 ## Runs against a real player from player.tscn rather than a bare BuildBar, because the seam that
 ## was broken is the round trip: bar emits `piece_selected` -> player_controller
@@ -45,7 +44,7 @@ func _run() -> void:
 
 	_check_content_declares_categories()
 	_check_actions_are_bound()
-	await _check_bar_is_one_row_and_cursor_free()
+	await _check_bar_is_one_row_and_mouse_driven()
 
 	print("\nBUILD_PICKER_CHECK failures=%d" % failures)
 	finish()
@@ -109,8 +108,8 @@ func _check_actions_are_bound() -> void:
 				"and '%s' is actually bound to something" % action)
 
 
-func _check_bar_is_one_row_and_cursor_free() -> void:
-	print("\n== a piece can be picked with the cursor captured ==")
+func _check_bar_is_one_row_and_mouse_driven() -> void:
+	print("\n== tabs and pieces can be picked with a free mouse cursor ==")
 	var player_net: Node = root.get_node_or_null(^"PlayerNet")
 	var players_root: Node = player_net.call(&"players_root") as Node if player_net != null else null
 	check(players_root != null, "PlayerNet's players_root exists")
@@ -138,23 +137,34 @@ func _check_bar_is_one_row_and_cursor_free() -> void:
 
 	root.push_input(_key_event(KEY_B, true))
 	check(bool(bar.call(&"is_active")), "the 'build' action shows the bar")
+	check(Input.mouse_mode == Input.MOUSE_MODE_VISIBLE,
+		"opening build mode releases the cursor for pointing")
 
-	# The premise of the whole finding, stated as the invariant a headless run can actually see:
-	# `Input.mouse_mode` is meaningless without a window, but "the bar never takes the cursor" is
-	# not. Joining `blocks_gameplay_input` is what every cursor-owning panel in this project does to
-	# claim it (D-032, and MenuStack's own `_sync_open_state`), so the bar staying out of that group
-	# while active IS the statement that build mode keeps aiming and the picker must work without a
-	# pointer. If that ever changes, this check should fail rather than quietly keep passing.
+	# BuildBar deliberately stays outside blocks_gameplay_input: it needs the pointer, but clicking
+	# bare world space must still reach PlayerController's existing placement branch.
 	check(not bar.is_in_group(&"blocks_gameplay_input"),
-		"the open bar does not claim the cursor — the picker has to work without one")
+		"the open bar does not disable world placement input")
 	check(bool(player.call(&"gameplay_input_allowed")),
-		"and build mode is still taking gameplay input, so the ghost is still being aimed")
+		"and build mode can still place the armed ghost")
 
 	check(int(bar.call(&"category_count")) >= 2, "the bar built more than one tab")
 	check(int(bar.call(&"visible_slot_count")) <= 8,
 		"only one row of slots is on screen (%d)" % int(bar.call(&"visible_slot_count")))
 	check(int(bar.call(&"visible_slot_count")) < int(bar.call(&"slot_count")),
 		"and that is fewer than the whole set — the tabs are actually hiding something")
+
+	# These seams construct a left mouse press and feed the actual Control._gui_input handlers.
+	var mouse_first_tab: StringName = StringName(bar.call(&"open_category"))
+	bar.call(&"select_category", 1)
+	var mouse_second_tab: StringName = StringName(bar.call(&"open_category"))
+	check(mouse_second_tab != mouse_first_tab,
+		"clicking a category tab opens it (%s -> %s)" % [mouse_first_tab, mouse_second_tab])
+	check(StringName(bar.call(&"_category_of", ghost.call(&"current_piece_id"))) == mouse_second_tab,
+		"and a tab click arms that category's first piece")
+	var clicked_piece: StringName = StringName(bar.call(&"slot_piece_id", 0))
+	bar.call(&"select_slot", 0)
+	check(StringName(ghost.call(&"current_piece_id")) == clicked_piece,
+		"clicking a piece slot arms that exact piece (%s)" % clicked_piece)
 
 	# Stepping the piece. Fed as the real action event into the real _input(), exactly as the engine
 	# would deliver a wheel press, with nothing clicked and no slot method called directly.
@@ -169,7 +179,7 @@ func _check_bar_is_one_row_and_cursor_free() -> void:
 	root.push_input(_wheel_event(MOUSE_BUTTON_WHEEL_DOWN))
 	var after: StringName = StringName(ghost.call(&"current_piece_id"))
 	check(after != &"" and after != before,
-		"wheel-down changes the armed piece with no cursor (%s -> %s)" % [before, after])
+		"wheel-down still changes the armed piece (%s -> %s)" % [before, after])
 
 	root.push_input(_wheel_event(MOUSE_BUTTON_WHEEL_UP))
 	check(StringName(ghost.call(&"current_piece_id")) == before,
@@ -231,8 +241,13 @@ func _check_bar_is_one_row_and_cursor_free() -> void:
 			% [seen.size(), int(bar.call(&"category_count"))])
 
 	# Out of build mode the shared bindings go back to the hotbar untouched.
+	check(bool(player.call(&"gameplay_input_allowed")),
+		"no other cursor-owning panel is open when build mode closes")
 	root.push_input(_key_event(KEY_B, true))
 	check(not bool(bar.call(&"is_active")), "the 'build' action closes the bar again")
+	var close_mode: Input.MouseMode = Input.mouse_mode
+	check(DisplayServer.get_name() == "headless" or close_mode == Input.MOUSE_MODE_CAPTURED,
+		"closing build mode recaptures the cursor for first-person aim (mode %d)" % close_mode)
 	var armed_after_close: StringName = StringName(ghost.call(&"current_piece_id"))
 	root.push_input(_wheel_event(MOUSE_BUTTON_WHEEL_DOWN))
 	check(StringName(ghost.call(&"current_piece_id")) == armed_after_close,

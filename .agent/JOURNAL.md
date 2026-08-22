@@ -9787,3 +9787,18 @@ Notes along the way:
 Files: `tools/revive_interaction_check.gd`
 
 Commit at time of writing: `69a0a5cf`
+
+---
+
+### DONE · F-527 · ivyf16b98 · 2026-08-22T05:32:37+00:00
+
+**Build menu again leaves the cursor captive, preventing station and item selection**
+
+Build mode now frees the mouse; category tabs and piece slots are clickable; closing safely recaptures aim. Headless and windowed build_picker_check failures=0, windowed close mode=2.
+
+Notes along the way:
+- User explicitly authorized takeover of F-469 after its six-hour idle claim blocked this playtest fix. Build mode will release the cursor for mouse selection and recapture it on close; placement remains a deliberate click on the world after leaving picker interaction.
+
+Files: `entities/player/player_controller.gd`, `ui/building/build_bar.gd`, `tools/build_picker_check.gd`
+
+Commit at time of writing: `694b72e3`

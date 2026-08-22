@@ -1106,6 +1106,12 @@ func toggle_build_mode() -> void:
 		_build_ghost.call(&"set_piece", &"")
 		if _build_bar != null:
 			_build_bar.call(&"set_active", false)
+		# Build mode owns a pointer so its tabs and pieces are genuinely clickable. Return to
+		# first-person aiming only when no other cursor-owning UI has appeared in the meantime.
+		if gameplay_input_allowed():
+			_capture_mouse(true)
+		else:
+			_capture_deferred = true
 		return
 	var piece_id: StringName = StringName(_build_ghost.call(&"current_piece_id"))
 	if piece_id == &"":
@@ -1124,6 +1130,10 @@ func set_selected_build_piece(piece_id: StringName) -> bool:
 	if _build_bar != null:
 		_build_bar.call(&"set_active", true)
 		_build_bar.call(&"set_selected_piece", piece_id)
+	# F-527: the picker is a mouse UI. Camera look pauses while it is open; clicking outside the
+	# Controls still reaches the existing attack/build-confirm branch and places the armed ghost.
+	_capture_deferred = false
+	_capture_mouse(false)
 	return true
 
 

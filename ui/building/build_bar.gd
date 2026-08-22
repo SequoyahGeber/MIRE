@@ -23,18 +23,16 @@ extends CanvasLayer
 ## finding it was answering was real; the mechanism was the wrong one, because focus and `ui_accept`
 ## are not available to a mode that has the cursor captured and `ui_accept` bound to `jump`.
 ##
-## ## F-483: one row, tabs, and no cursor
+## ## F-527: one row, clickable tabs, and a free cursor
 ##
 ## Two faults with one symptom, from the 2026-08-21 playtest: *"the cursor stays captive even when
 ## opening the build menu so there is no way to select building pieces or view the placement of
 ## them."*
 ##
-## The first is that every selection path this bar had needed something build mode does not give
-## you. A click needs a free cursor, and build mode keeps the cursor CAPTURED on purpose — the ghost
-## follows the camera and LMB confirms the placement, so a picker that took the cursor would break
-## the aiming it exists to serve. `ui_accept` is `jump`. That left F-217's focus chain, i.e. the
-## arrow keys, which nothing on screen mentions. In practice the player was stuck with whatever
-## `toggle_build_mode()` auto-picked.
+## The no-cursor decision was wrong in playtesting: the visible row looks like a conventional menu,
+## and players naturally try to point at a station or piece. PlayerController now frees the cursor
+## for the life of build mode and recaptures it on close. Clicking outside the Controls still uses
+## the existing placement action, so choosing a piece and placing it remain distinct clicks.
 ##
 ## So selection is now bound, not pointed at: `build_piece_prev`/`build_piece_next` (wheel up/down,
 ## and the shoulder buttons on a pad) step through the open tab, and
@@ -43,8 +41,8 @@ extends CanvasLayer
 ## built by the player, which sits deeper in the tree than the `InventoryUI` autoload, `_input`
 ## propagates in reverse tree order, and `InventoryUI._input` opens with an `is_input_handled()`
 ## guard — so consuming them here while build mode is on cleanly takes them over for the duration
-## and hands them straight back when it is off. The click path is left intact underneath; it simply
-## has no cursor to be reached by today.
+## and hands them straight back when it is off. F-527 subsequently made the existing click path the
+## primary mouse interaction by releasing the cursor while this bar is active.
 ##
 ## The second is that the bar covered what it was previewing. F-477 took the set from 15 pieces to
 ## 22, and the wrapped `HFlowContainer` this file used to hold them was four rows and ~340 px tall,
@@ -225,22 +223,23 @@ class PieceSlot extends PanelContainer:
 		# the jump key on the frame a cursor happened to be over it.
 
 
-## One tab in the strip above the row (F-483). Display only — the tab a player is on is changed by
-## `build_category_prev`/`build_category_next`, never by pointing at this, because build mode has no
-## cursor to point with. It is a `PanelContainer` rather than a `Button` for exactly that reason:
-## nothing here is pressable, so nothing here should look pressable or take focus off a piece slot.
+## One clickable tab in the strip above the row. Keyboard/gamepad category stepping remains an
+## equivalent path, but mouse players can point directly at the category they want.
 class CategoryTab extends PanelContainer:
 	var category: StringName = &""
+	var select_requested: Callable
 
 	var _label: Label
 	var _open_style: StyleBoxFlat
 	var _shut_style: StyleBoxFlat
 
 
-	func setup(name_key: StringName, text: String, count: int) -> void:
+	func setup(name_key: StringName, text: String, count: int, select_callback: Callable) -> void:
 		category = name_key
+		select_requested = select_callback
 		name = "BuildTab_%s" % String(name_key)
-		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		mouse_filter = Control.MOUSE_FILTER_STOP
+		mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		focus_mode = Control.FOCUS_NONE
 
 		var margin := MarginContainer.new()
@@ -265,6 +264,14 @@ class CategoryTab extends PanelContainer:
 	func present(open: bool) -> void:
 		add_theme_stylebox_override("panel", _open_style if open else _shut_style)
 		_label.add_theme_color_override("font_color", COLOUR_READY if open else COLOUR_MUTED)
+
+
+	func _gui_input(event: InputEvent) -> void:
+		if event is InputEventMouseButton \
+				and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT \
+				and (event as InputEventMouseButton).pressed:
+			select_requested.call(category)
+			accept_event()
 
 
 	func _tab_style(border: Color, fill: Color, border_width: int) -> StyleBoxFlat:
@@ -368,7 +375,7 @@ func set_active(active: bool) -> void:
 		# The picker's own bindings lead, because F-483 was a discoverability failure as much as an
 		# input one: nothing on screen had ever said how to change the piece.
 		_show_status(
-			"wheel piece  ·  Z / C tab  ·  R rotate  ·  V snapping  ·  click place  ·  "
+			"click tab / piece  ·  wheel piece  ·  R rotate  ·  V snapping  ·  click ground to place  ·  "
 			+ "right-click destroy",
 			false,
 		)
@@ -523,7 +530,14 @@ func slot_piece_id(index: int) -> StringName:
 func select_slot(index: int) -> void:
 	if index < 0 or index >= _slots.size():
 		return
-	piece_selected.emit(_slots[index].piece_id)
+	(_slots[index] as PieceSlot)._gui_input(_left_click_event())
+
+
+## Check seam that drives the tab's real mouse handler rather than changing category state directly.
+func select_category(index: int) -> void:
+	if index < 0 or index >= _categories.size():
+		return
+	(_tabs[_categories[index]] as CategoryTab)._gui_input(_left_click_event())
 
 
 func _build_ui() -> void:
@@ -652,7 +666,7 @@ func _populate_slots() -> void:
 	for category: StringName in _categories:
 		var tab := CategoryTab.new()
 		var bucket: Array = _slots_by_category[category]
-		tab.setup(category, BuildableDef.category_label(category), bucket.size())
+		tab.setup(category, BuildableDef.category_label(category), bucket.size(), _on_tab_pressed)
 		_tabs[category] = tab
 		_tab_row.add_child(tab)
 		for slot: PieceSlot in bucket:
@@ -703,6 +717,25 @@ func _present_category() -> void:
 
 func _on_slot_pressed(piece_id: StringName) -> void:
 	piece_selected.emit(piece_id)
+
+
+func _on_tab_pressed(category: StringName) -> void:
+	var index: int = _categories.find(category)
+	if index < 0:
+		return
+	_open_category = category
+	_present_category()
+	category_changed.emit(category)
+	var bucket: Array = _open_slots()
+	if not bucket.is_empty():
+		piece_selected.emit((bucket[0] as PieceSlot).piece_id)
+
+
+func _left_click_event() -> InputEventMouseButton:
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_LEFT
+	event.pressed = true
+	return event
 
 
 ## Fires for both a place and a destroy request (BuildService.build_confirmed carries no "kind"), so
