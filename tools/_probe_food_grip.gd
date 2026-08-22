@@ -8,6 +8,12 @@ extends SceneTree
 ##
 ##   Godot --windowed --path . --script tools/_probe_food_grip.gd
 
+## The MAP, not `run/main_scene` (F-564). Since MENU-3's cutover the main scene is the front
+## end, so loading that setting and treating the result as a level boots a menu. `ProbeScene`
+## asks the front end what world it bypasses into (F-561).
+const ProbeScene := preload("res://tools/probe_scene.gd")
+
+
 const ITEMS: Array[StringName] = [&"mushroom", &"berry", &"raw_meat"]
 
 var viewmodel: Node3D
@@ -19,9 +25,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	root.size = Vector2i(1280, 720)
-	var packed: PackedScene = load(
-		str(ProjectSettings.get_setting("application/run/main_scene", ""))
-	) as PackedScene
+	var packed: PackedScene = load(ProbeScene.shipped_map_path()) as PackedScene
 	var level: Node = packed.instantiate()
 	root.add_child(level)
 	root.get_tree().current_scene = level

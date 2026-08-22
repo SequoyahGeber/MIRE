@@ -17,6 +17,12 @@ extends SceneTree
 ##
 ## Run with: .agent/bin/agent godot --script tools/ground_fog_check.gd
 
+## The MAP, not `run/main_scene` (F-564). Since MENU-3's cutover the main scene is the front
+## end, so loading that setting and treating the result as a level boots a menu. `ProbeScene`
+## asks the front end what world it bypasses into (F-561).
+const ProbeScene := preload("res://tools/probe_scene.gd")
+
+
 const TERRAIN_GROUP: StringName = &"authored_world_terrain"
 
 var failures: int = 0
@@ -27,7 +33,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	var scene_path := String(ProjectSettings.get_setting("application/run/main_scene", ""))
+	var scene_path := String(ProbeScene.shipped_map_path())
 	var packed := load(scene_path) as PackedScene
 	check(packed != null, "main scene %s loads" % scene_path)
 	if packed == null:

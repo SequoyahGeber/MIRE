@@ -1,10 +1,9 @@
 extends SceneTree
 
-## THE GAME-LOOP AUDIT (2026-08-19, hollow7). Boots the SHIPPED map — levels/hollowmere.tscn, the
-## exact scene project.godot names as run/main_scene — and walks the whole player arc through the
-## real front doors: spawn, harvest, craft, build, eat, night wave, chest, powerup, Wellspring
-## downstream, Mire response, Cycle advance, modifier draw, extraction. Two runs, because the run
-## has two endings and both are terminal:
+## THE GAME-LOOP AUDIT (2026-08-19, hollow7). Boots levels/hollowmere.tscn and walks the whole
+## player arc through the real front doors: spawn, harvest, craft, build, eat, night wave, chest,
+## powerup, Wellspring downstream, Mire response, Cycle advance, modifier draw, extraction. Two
+## runs, because the run has two endings and both are terminal:
 ##
 ##   .agent/bin/agent godot --script tools/loop_audit_check.gd                # arc + EXTRACT ending
 ##   .agent/bin/agent godot --script tools/loop_audit_check.gd -- defeat     # DEFEAT ending

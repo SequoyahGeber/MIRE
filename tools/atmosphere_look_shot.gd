@@ -30,6 +30,12 @@ extends SceneTree
 ## camera. That line is the honest answer to "was there anything in frame to look at" — a shot
 ## reporting `props=0` is a shot nobody should draw a conclusion from, whatever it looks like.
 
+## The MAP, not `run/main_scene` (F-564). Since MENU-3's cutover the main scene is the front
+## end, so loading that setting and treating the result as a level boots a menu. `ProbeScene`
+## asks the front end what world it bypasses into (F-561).
+const ProbeScene := preload("res://tools/probe_scene.gd")
+
+
 const WIDTH: int = 1280
 const HEIGHT: int = 720
 const OUT_DIR: String = "user://atmosphere_look"
@@ -126,7 +132,7 @@ func _run() -> void:
 		push_error("atmosphere_look_shot needs a renderer — run it with --windowed")
 		quit(1)
 		return
-	var scene_path := String(ProjectSettings.get_setting("application/run/main_scene", ""))
+	var scene_path := String(ProbeScene.shipped_map_path())
 	var scene := (load(scene_path) as PackedScene).instantiate() as Node3D
 	root.add_child(scene)
 	current_scene = scene

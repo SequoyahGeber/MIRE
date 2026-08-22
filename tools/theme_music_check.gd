@@ -108,9 +108,13 @@ func _check_streams() -> void:
 			"%s: %.1fs >= %.0fs" % [cue, player.stream.get_length(), MIN_THEME_LEN_S])
 
 
-## `project.godot`'s `run/main_scene` still boots straight into the world (4.19's cutover is in
-## flight), so this process has no front end and the director must treat that as "landfall already
-## happened" rather than sitting silent waiting for a title screen that will never appear.
+## This process has no front end, so the director must treat that as "landfall already happened"
+## rather than sitting silent waiting for a title screen that will never appear.
+##
+## F-564 corrected the reason, which had aged out: `run/main_scene` no longer boots straight into
+## the world — MENU-3's cutover pointed it at `res://levels/frontend.tscn`. The conclusion survives
+## intact, by a different route: `Frontend._launch_bypasses_frontend()` returns true for any
+## `--script` launch, so the front end skips itself and no title screen is ever built here.
 func _check_landfall_at_boot() -> void:
 	print("\n== landfall at boot ==")
 	check(root.get_tree().get_nodes_in_group(THEME_SCRIPT.FRONTEND_GROUP).is_empty(),

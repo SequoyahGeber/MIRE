@@ -95,7 +95,9 @@ func _check_wiring() -> bool:
 
 ## Every bed measurement below is a gain reading, and `ThemeMusicDirector` multiplies exactly that:
 ## a theme ducks the bed to `THEME_DUCK_GAIN`. Booting with no front end starts the landfall cue
-## (that IS the shipped boot — `run/main_scene` is still the world), so unless the cue is retired
+## (F-564: `run/main_scene` is the FRONT END now, not the world — but a `--script` launch bypasses
+## it, so this process still has no front end and this is still the shipped boot), so unless the
+## cue is retired
 ## first, "the day bed is at full gain" is measuring the duck instead of the bed.
 ##
 ## This file used to pass anyway, by luck: the theme started at gain 0 and only became audible a

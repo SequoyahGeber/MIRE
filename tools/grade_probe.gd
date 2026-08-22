@@ -14,6 +14,12 @@ extends SceneTree
 ## file is an array of the same four-or-five element entries. That is what makes a tuning round cheap
 ## — the 420-frame settle is the expensive part and it is paid once per run either way.
 
+## The MAP, not `run/main_scene` (F-564). Since MENU-3's cutover the main scene is the front
+## end, so loading that setting and treating the result as a level boots a menu. `ProbeScene`
+## asks the front end what world it bypasses into (F-561).
+const ProbeScene := preload("res://tools/probe_scene.gd")
+
+
 const OUT_DIR: String = "res://assets/audit/lighting"
 const SETTLE_FRAMES: int = 420
 const PER_SHOT_FRAMES: int = 90
@@ -62,7 +68,7 @@ func _run() -> void:
 		quit(1)
 		return
 	var variants: Array = _load_variants()
-	var scene_path := String(ProjectSettings.get_setting("application/run/main_scene", ""))
+	var scene_path := String(ProbeScene.shipped_map_path())
 	var scene := (load(scene_path) as PackedScene).instantiate() as Node3D
 	root.add_child(scene)
 	current_scene = scene

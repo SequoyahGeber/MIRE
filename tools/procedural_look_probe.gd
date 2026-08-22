@@ -8,6 +8,12 @@ extends SceneTree
 ## Needs a renderer: run with `.agent/bin/agent godot --windowed --script tools/procedural_look_probe.gd`.
 ## Writes to `assets/audit/terrain/`, which is where terrain-look evidence already lives.
 
+## The MAP, not `run/main_scene` (F-564). Since MENU-3's cutover the main scene is the front
+## end, so loading that setting and treating the result as a level boots a menu. `ProbeScene`
+## asks the front end what world it bypasses into (F-561).
+const ProbeScene := preload("res://tools/probe_scene.gd")
+
+
 const OUT_DIR: String = "res://assets/audit/terrain"
 ## Frames given to chunk streaming before each shot. First scatter lands in ~45 frames (F-287's
 ## measurement); LOD0 rings near the anchor take longer, and this is evidence, not a benchmark.
@@ -23,7 +29,7 @@ func _run() -> void:
 		push_error("procedural_look_probe needs a renderer — run it with --windowed")
 		quit(1)
 		return
-	var scene_path := String(ProjectSettings.get_setting("application/run/main_scene", ""))
+	var scene_path := String(ProbeScene.shipped_map_path())
 	var packed := load(scene_path) as PackedScene
 	var scene := packed.instantiate() as Node3D
 	# The shipped main scene is the non-playable frontend now. Follow its declared PLAY target just

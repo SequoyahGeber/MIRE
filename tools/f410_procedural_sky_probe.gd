@@ -10,6 +10,12 @@ extends SceneTree
 ##
 ##   .agent/bin/agent godot --windowed --script tools/f410_procedural_sky_probe.gd
 
+## The MAP, not `run/main_scene` (F-564). Since MENU-3's cutover the main scene is the front
+## end, so loading that setting and treating the result as a level boots a menu. `ProbeScene`
+## asks the front end what world it bypasses into (F-561).
+const ProbeScene := preload("res://tools/probe_scene.gd")
+
+
 const OUT_DIR: String = "res://assets/audit/lighting"
 const LEDGER_PATH: String = OUT_DIR + "/f410_final_render.jsonl"
 const FIXED_SEED: int = 4242
@@ -37,7 +43,7 @@ func _run() -> void:
 	var game_state: Node = root.get_node_or_null(^"GameState")
 	if game_state != null:
 		game_state.call(&"set_replicated_seed", FIXED_SEED)
-	var scene_path := String(ProjectSettings.get_setting("application/run/main_scene", ""))
+	var scene_path := String(ProbeScene.shipped_map_path())
 	var packed := load(scene_path) as PackedScene
 	if packed == null:
 		push_error("could not load main scene %s" % scene_path)

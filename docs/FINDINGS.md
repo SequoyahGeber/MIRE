@@ -2953,7 +2953,7 @@ ones that *look* like they have a verdict.
 `\b(\d+)\s+failures?\b`. Anything else is recorded as **"missing failures verdict"** and the row
 fails however green the check ran.
 
-## Two render text the parser cannot read
+### Two render text the parser cannot read
 
     tools/steam_check.gd:116        print("%d check(s) failed" % _failures)
     tools/steam_lobby_check.gd:175  print("%d check(s) failed" % _failures)
@@ -2972,7 +2972,7 @@ The parenthesised `(s)` is harmless — `\b` holds against `(`.
 **Fix for these two:** print `STEAM_CHECK failures=%d` / `STEAM_LOBBY_CHECK failures=%d`. Keep the
 human line if it reads better; the verdict is additive.
 
-## Four have no verdict string at all
+### Four have no verdict string at all
 
     tools/crafting_ui_render_check.gd
     tools/hollowmere_render_check.gd
@@ -2996,7 +2996,7 @@ The judgement each one needs is which half it is:
 Deciding that per file is the work. Bolting `failures=0` onto all four would turn four honest red
 rows into four dishonest green ones, which is worse than the current state.
 
-## Why the verdict contract keeps being missed
+### Why the verdict contract keeps being missed
 
 Both halves come from the same place: `_verify_checks()` collects by **filename glob**, and the
 verdict is enforced by **output parsing**. Nothing declares anything. A file becomes part of the
@@ -3008,7 +3008,202 @@ declared `@verify none` would also solve the probe half honestly.
 
 ---
 
+### F-563 · terrain_texture_check photographs open ocean where the world's own height_at() reports 32 m of land, on the shipped procedural island
+
+**Area:** world · **Severity:** high · **Found:** 2026-08-22 by hollowbfcf67
+
+Found by hollowbfcf67 immediately after F-556 let `agent verify` run render checks with a framebuffer.
+`tools/terrain_texture_check.gd` had never once run to completion in the suite — it refused headless —
+so **nobody has ever looked at the pictures it saves.** They are the reason this is filed.
+
+**What the check reports.** Run through `agent godot --windowed`: `TERRAIN_TEXTURE_CHECK failures=5`.
+Three of the five are its own precondition, not its subject:
+
+    FAIL  7m:  the crop is mostly terrain (6%) — the statistics below are about the ground
+    FAIL  30m: the crop is mostly terrain (2%)
+    FAIL  90m: the crop is mostly terrain (1%)
+
+The remaining two are neighbour-difference ceilings measured over those same crops, so they are
+downstream of the precondition and mean nothing until it holds.
+
+**What the pictures show.** `slope_7m_after.png` and `slope_90m_after.png`, in
+`user://terrain_texture/`, are **open ocean**. Sky, a cloud layer, a flat sea to the horizon, a
+handful of props sitting on the water at the horizon line, and some faint translucent quads on the
+surface. There is no island in either frame.
+
+**Why that is a contradiction rather than a bad camera.** The check does not guess where to point. It
+asks the world: `_height()` is `_world.call(&"height_at", x, z)`, and `_pick_slope()` walks rings
+looking for relief, refusing any candidate under 3 m and any camera position under 1.5 m. It settled
+on `SLOPE target=-91.4,32.8,0.0 (radius 91 m of 590)`. A probe run against the same world at the same
+seed (20260819) shows the height function reports land continuously across the whole disc:
+
+    height_at(   0, 0) = 32.376      height_at(-150, 0) = 31.731
+    height_at( -45, 0) = 32.470      height_at(-250, 0) = 28.874
+    height_at( -91, 0) = 32.835      height_at(-400, 0) = 29.354
+
+So the world's own height function claims a ~32 m plateau where its renderer draws sea. The camera
+sits at `height_at(eye) + EYE_M`, and a sea horizon a quarter of the way up the frame is exactly what
+a camera 33 m above water looks like — the placement is consistent with the height function, and the
+geometry is not.
+
+**Streaming is not obviously the cause.** `loaded_chunk_count` settles at 289, and the check's own
+assertions *"the procedural world built a ChunkStreamer"* and *"resident terrain chunks bind a
+ShaderMaterial"* both pass. Each shot calls `_stream_around()` first, which holds for 45 frames of
+"no jobs pending AND resident count stopped growing" before capturing.
+
+**What is NOT established, stated plainly so nobody builds on it:**
+
+- A downward raycast from y=300 missed at every x from 0 to −250. That evidence is weak and should
+  not be cited: the probe broke out of its settle loop the moment `pending_job_count` hit 0, which is
+  the exact mistake `terrain_texture_check`'s own comment warns about, and it contradicts F-448's
+  result that LOD0 colliders are present at both anchors.
+- A tree scan found no `MeshInstance3D` whose AABB covers `(-91, 0)` other than `StarDome` and
+  `Ocean`. Also weak: if `ChunkMesher` uploads through `RenderingServer` rather than as scene nodes,
+  such a scan cannot see terrain at all. **Someone should establish which it is — that single fact
+  decides whether the observation means anything.**
+- A top-down orthographic probe was attempted and produced a black 3D view under the HUD and the
+  attunement picker, because the added camera never became current. It proves nothing either way and
+  was deleted rather than left in the tree.
+
+**Why this is filed as high rather than fixed here.** If the island really is absent at this seed,
+that is a worldgen or streaming defect that reaches far past one check. If instead the renderer is
+drawing `Ocean` over resident terrain — the faint translucent quads on the water are consistent with
+terrain seen through a water sheet — it is a material or draw-order defect. Those want different
+fixes, and the evidence in hand does not separate them.
+
+**This wants Sequoyah's eyes before anyone rewrites terrain code.** He plays this map and will know
+in one glance whether the island looks like that in a real session, which is a judgement no headless
+probe here can make. The two PNGs have been sent to him. If the island is fine in play, then the
+defect is narrower than it looks and lives in the check's camera or in what a `--script` boot builds,
+and the first person to establish that should say so here and drop the severity.
+
+---
+
 ## Resolved
+
+### F-564 · Ten more tools/ files load run/main_scene expecting a map, and get the front end instead — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by bram937a51
+
+The scope F-549 and F-561 left unswept, now measured. Filed by bram937a51, 2026-08-22.
+
+`run/main_scene` has been `res://levels/frontend.tscn` since MENU-3's cutover (`2b13db16`,
+2026-08-21). Every file that reads that setting and instantiates the result expecting a world now
+gets a menu. F-549 fixed `world_contract_check.gd` and F-561 fixed `probe_scene.gd`; twenty-one
+files under `tools/` reference the setting, and this is what the rest of them do.
+
+### Ten have the defect
+
+All ten load `run/main_scene` and immediately treat the result as a level:
+
+    tools/_probe_new_grips.gd:23          instantiate, add_child, set current_scene
+    tools/_probe_food_grip.gd:23          instantiate, add_child, set current_scene
+    tools/atmosphere_look_shot.gd:129     instantiate as Node3D, add_child, current_scene
+    tools/f410_procedural_sky_probe.gd:40 load, then boot as the world
+    tools/f356_night_probe.gd:32          load, then boot as the world
+    tools/grade_probe.gd:65               instantiate as Node3D, add_child, current_scene
+    tools/ground_fog_check.gd:30          load, asserts against it as a map
+    tools/procedural_look_probe.gd:26     header says "Boots run/main_scene" for the SHIPPED island
+    tools/spawn_ground_probe.gd:19        load, expects a spawn-bearing level
+    tools/viewmodel_check.gd:60           handled, but by a hard-coded path — see below
+
+Nine of the ten are render probes that save PNGs a human looks at, which is what has kept this
+quiet: nobody diffed the images, and a probe that photographs a menu still exits 0. `procedural_look_probe.gd`
+is the sharpest example — its own header promises "the spawn view a player actually lands in" and
+"a high orbit of the whole island", and it has been photographing a title screen.
+
+`ground_fog_check.gd` is the one that is a real check with assertions, so it is the one whose green
+row is actively false.
+
+### The tenth is fixed but fragile
+
+`viewmodel_check.gd:60-64` already handles the cutover, under F-505, by comparing the setting to a
+**hard-coded string**:
+
+    if scene_path == "res://levels/frontend.tscn":
+
+That works today and silently stops working the moment the front end scene is renamed or a second
+entry scene appears — the exact failure mode F-342 recorded when the instruments hard-coded
+`hollowmere.tscn`. It should ask rather than compare.
+
+### The fix, and why it is one line each
+
+`ProbeScene.shipped_map_path()` (F-561) already answers "what world does a launched process end up
+in?", by asking `Frontend._world_scene_path()` rather than by knowing a path. Every one of these
+files should call it instead of reading the setting. `tools/probe_scene.gd` is safe to `preload`
+here — it names no autoload at compile time, so F-558's trap does not apply.
+
+### Five are already correct, and should be left alone
+
+Recorded so nobody "fixes" them: `cliff_render.gd:106`, `river_water_shot.gd:28` and
+`ruin_look_probe.gd:25` each deliberately load the island scene by path and carry a comment saying
+why ("that is the frontend, and a title screen has no cliffs"). `setup_project.gd:37` only writes
+the setting when it is empty, which is F-048's trap already handled. `verify_setup.gd:214` reads it
+to report it, which is correct by definition.
+
+### Three carry stale comments rather than stale code
+
+`ambient_music_check.gd:98`, `theme_music_check.gd:111` and `loop_audit_check.gd:4` all assert in
+prose that `run/main_scene` is still the world — "that IS the shipped boot", "still boots straight
+into the world (4.19's cutover is in flight)". The code around them does not depend on it, so
+nothing is broken, but each is a confident, finding-citing statement that is now false. Third
+instance tonight of the same class, after F-560's `_teardown()` comment and F-555's two headless
+bails: **a comment that cites a finding ages worse than an uncited one, because it reads as
+authoritative.**
+
+**Resolved 2026-08-22 by bram937a51.** **Fixed** by bram937a51, 2026-08-22. Ten files converted, five confirmed correct and left alone,
+three stale comments corrected.
+
+### The fix
+
+All ten now ask `ProbeScene.shipped_map_path()` (F-561) instead of reading
+`application/run/main_scene`, so there is ONE definition of "which world does a launched process end
+up in" and it comes from `Frontend._world_scene_path()` rather than from any path spelled out in a
+tool. `tools/probe_scene.gd` is safe to `preload` in these files — it names no autoload at compile
+time, so F-558's trap does not apply.
+
+`viewmodel_check.gd` had two flaws, not one. Its F-505 fix compared against the literal
+`"res://levels/frontend.tscn"` — which breaks silently on a rename, F-342's original sin in
+miniature — and then read the `WORLD_SCENE_PATH` constant straight off the script, which skips
+`_world_scene_path()`'s `ResourceLoader.exists()` guard and would hand back a path to a missing
+scene instead of falling through to `WORLD_SCENE_FALLBACK`. Both are gone.
+
+### How it was verified
+
+- **All twelve edited files parse clean**: `agent godot --check-only --script tools/<file>.gd`, zero
+  `Compile Error` / `Parse Error` / `SCRIPT ERROR` across the set.
+- **`ground_fog_check`** — the only real check among the ten, and the one whose green row was
+  actively false: `GROUND_FOG_CHECK base_height=0.75 failures=0`.
+- **`ambient_music_check` / `theme_music_check`** (comment-only edits, run to prove no regression):
+  `failures=0` each.
+- **`procedural_look_probe` run windowed, and the PNGs looked at** — which is the only verification
+  that means anything for a probe whose output is an image. `assets/audit/terrain/island_orbit.png`
+  and `island_spawn_view.png` now show the procedural island: terrain, beach, low-poly trees, rocks,
+  grass tufts, ocean, clouds. Before this fix the same probe was photographing a title screen while
+  exiting 0.
+
+That last point is the whole finding in one sentence: **nine of the ten are render probes, and a
+probe that photographs the wrong thing still exits 0.** Nothing was ever going to catch this except
+someone opening the images.
+
+### Left alone deliberately, with the reason
+
+`cliff_render.gd:106`, `river_water_shot.gd:28`, `ruin_look_probe.gd:25` each already load the island
+by path with a comment explaining why the setting is wrong for them. `setup_project.gd:37` writes
+the setting only when it is empty (F-048's trap, already handled). `verify_setup.gd:214` reads it to
+report it, which is correct by definition. Recorded here so a future sweep does not "fix" them.
+
+### Stale comments corrected
+
+`ambient_music_check.gd:98`, `theme_music_check.gd:111` and `loop_audit_check.gd:4` each asserted in
+prose that `run/main_scene` is still the world. Worth noting that **their conclusions were right and
+only their reasons had rotted**: a `--script` launch has no front end, but because
+`Frontend._launch_bypasses_frontend()` skips it, not because the setting still names a map. The
+comments now say that, so the next reader does not "correct" working code against a false premise.
+
+Fourth instance tonight of the same class, after F-560's `_teardown()` claim and F-555's two
+headless bails: **a comment that cites a finding reads as authoritative, so it ages worse than an
+uncited one.**
 
 ### F-448 · chunk_stream_check's union-of-interest assertions fail at HEAD: neither anchor gets a LOD0 collider or a live Harvestable — **fixed**
 

@@ -8,6 +8,12 @@ extends SceneTree
 ## physics assertions run against a FLAT FIXTURE level. Both passed while the real map was a hole you
 ## fell through for eternity. This drops the real player into the real main scene and watches.
 
+## The MAP, not `run/main_scene` (F-564). Since MENU-3's cutover the main scene is the front
+## end, so loading that setting and treating the result as a level boots a menu. `ProbeScene`
+## asks the front end what world it bypasses into (F-561).
+const ProbeScene := preload("res://tools/probe_scene.gd")
+
+
 const SETTLE_STEPS: int = 60
 
 
@@ -16,7 +22,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	var packed: PackedScene = load(str(ProjectSettings.get_setting("application/run/main_scene", ""))) as PackedScene
+	var packed: PackedScene = load(ProbeScene.shipped_map_path()) as PackedScene
 	if packed == null:
 		push_error("FAIL: no main scene")
 		quit(1)

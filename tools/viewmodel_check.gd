@@ -13,6 +13,9 @@ extends SceneTree
 
 ## Designs whose head runs bit-to-poll along local +X with its flat cheeks on local ±Z, so "which way
 ## is it turned" is a meaningful question. A skewer and an arrow are axial and a bow has no edge.
+const ProbeScene := preload("res://tools/probe_scene.gd")
+
+
 const BLADE_PLANE_ITEMS: Dictionary[StringName, bool] = {
 	&"wooden_axe": true, &"stone_axe": true, &"cleaver": true,
 	&"wooden_pickaxe": true, &"stone_pickaxe": true, &"iron_pickaxe": true,
@@ -57,14 +60,17 @@ func _initialize() -> void:
 
 func _run() -> void:
 	root.size = Vector2i(1280, 720)
-	var scene_path: String = str(ProjectSettings.get_setting("application/run/main_scene", ""))
 	# F-505 made the frontend the shipped main scene. This check needs the frontend's declared
 	# gameplay world because its subject is the real owning player and camera, not menu dressing.
-	if scene_path == "res://levels/frontend.tscn":
-		var frontend_script: Script = load("res://ui/frontend/frontend.gd") as Script
-		if frontend_script != null:
-			scene_path = String(frontend_script.get_script_constant_map().get(
-				"WORLD_SCENE_PATH", scene_path))
+	#
+	# F-564: this used to compare `scene_path` against the literal "res://levels/frontend.tscn" and
+	# then read the `WORLD_SCENE_PATH` constant off the script. Both halves were fragile. The
+	# comparison stops working the moment the front end scene is renamed or a second entry scene
+	# exists — F-342's original sin, in miniature — and reading the constant directly skips
+	# `_world_scene_path()`'s `ResourceLoader.exists()` guard, so it would hand back a path to a
+	# missing scene instead of falling through to `WORLD_SCENE_FALLBACK`. Asking `ProbeScene` does
+	# both correctly and keeps ONE definition of "which world does a launched process end up in".
+	var scene_path: String = String(ProbeScene.shipped_map_path())
 	var packed: PackedScene = load(scene_path) as PackedScene
 	if packed == null:
 		push_error("FAIL: no main scene")
