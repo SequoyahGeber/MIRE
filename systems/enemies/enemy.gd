@@ -397,6 +397,13 @@ func _resolve_attack() -> void:
 	var damage: int = definition.attack_damage
 	if ambush and definition.ambush_damage_multiplier > 1.0:
 		damage = maxi(roundi(float(damage) * definition.ambush_damage_multiplier), damage)
+
+	# docs/ENEMIES.md §6.2 — an area burst instead of a single-target hit. Reached only after the
+	# range check above, so a Bloatcap still has to have COMMITTED to a target in reach before it
+	# goes off; the burst is what the attack does, not a replacement for deciding to attack.
+	if definition.burst_radius_m > 0.0:
+		_burst(damage, definition.burst_radius_m)
+		return
 	# Player health is task 2.13's. Emitting the event rather than inventing a health field here
 	# keeps the authority story honest: the host decided a hit landed, and whoever owns player state
 	# decides what that costs.
@@ -456,7 +463,45 @@ func _enter_death(instigator_peer_id: int) -> void:
 	remove_from_group(DAMAGEABLE_GROUP)
 	_maybe_bloom_split()
 	_stain_ground()
+	# docs/ENEMIES.md §6.2 — a kind that bursts on attack bursts again when it dies, for a fraction.
+	# AFTER `collision_layer = 0` above, so nothing about the burst can interact with a body that is
+	# already a corpse, and after the bloom split for the same reason the stain is: a bloomed
+	# Bloatcap costs the ground three bursts, which is the correct reading of two modifiers stacking
+	# and falls out of the order rather than needing a rule.
+	if definition.burst_radius_m > 0.0 and definition.death_burst_fraction > 0.0:
+		_burst(
+			maxi(roundi(float(definition.attack_damage) * definition.death_burst_fraction), 1),
+			definition.burst_radius_m,
+		)
 	died.emit(instigator_peer_id)
+
+
+## docs/ENEMIES.md §6.2. Damages every player within `radius_m` of this enemy, horizontally.
+##
+## Horizontally on purpose: a burst that a player escapes by standing on a rock is a burst nobody can
+## reason about, and the same flattening is what every other distance decision in this class already
+## uses. It goes out through the SAME `EventBus` event a single-target hit uses, once per player, so
+## `PlayerHealth` needed no change and dodge i-frames, Blight, downed state and every other consumer
+## treat a burst hit exactly like any other hit — which is the point of having one seam.
+##
+## Host-only, like every decision in this class: both callers sit behind `host_apply_damage()`'s or
+## `_tick_attack()`'s own authority gates.
+func _burst(damage: int, radius_m: float) -> void:
+	if damage <= 0 or radius_m <= 0.0:
+		return
+	var radius_squared: float = radius_m * radius_m
+	for node: Node in get_tree().get_nodes_in_group(&"players"):
+		var player := node as Node3D
+		if player == null or not is_instance_valid(player):
+			continue
+		var offset: Vector3 = player.global_position - global_position
+		offset.y = 0.0
+		if offset.length_squared() > radius_squared:
+			continue
+		var peer_id: int = _peer_of(player)
+		if peer_id <= 0:
+			continue
+		EVENT_BUS.emit_enemy_attack_landed(definition.id, peer_id, damage, player.global_position)
 
 
 ## docs/ENEMIES.md §3.5 — a kind whose `EnemyDef` asks for it pours corruption into the Mire grid

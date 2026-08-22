@@ -221,3 +221,42 @@ scenery.
 The correct fix is to change the `eye` token itself in `mire_art.PALETTE`, which repoints every
 enemy at once. That file was claimed by another agent for the whole of task 5.11, so these are
 per-generator overrides until it is free.
+
+
+---
+
+# The Bloatcap (enemy ladder, tier 4)
+
+Task 5.11, `docs/ENEMIES.md` §6. Fifth rigged family here.
+
+| Asset | Family | Contents |
+|---|---|---|
+| `enemy_bloatcap` | enemy | Walking puffball — skinned mesh, 12-bone rig, the same 6 clips |
+| `enemy_bloatcap_fragment_husk` | debris | Torn sac skin with the warts still on it |
+| `enemy_bloatcap_fragment_gleba` | debris | A clot of spore mass, still lit, in a scrap of the ostiole |
+
+1.38 m across and 1.22 m tall, 592 polygons. The ladder's first **pale** creature, and deliberately
+the most visible thing in a night wave.
+
+Modelled on *Lycoperdon*. Pear-shaped with a flattened top and a stem-like base; covered in short
+cone-shaped spines and granular warts; and pierced at the top by an **ostiole** through which the
+spores are ejected at about a metre per second, forming a cloud in a hundredth of a second. So the
+tell is the sac FILLING and the attack is it EMPTYING — the strike is a deflation, not a swing. The
+gleba inside is corrupted purple and visible through the dilating ostiole, which is how a player
+reads how close it is to going off.
+
+The `sac` bone carries almost the whole creature and acts almost entirely through **scale**; the
+`ostiole` is its own bone specifically so it can dilate, and the check asserts that it still is one,
+because if it stops being one the telegraph stops existing.
+
+```bash
+Blender --background --python tools/blender/build_enemy_bloatcap.py
+.agent/bin/agent godot --headless --script tools/enemy_bloatcap_check.gd
+```
+
+The check covers the import; that the model really is radially symmetric (this is the one family
+whose facing assertion is the *opposite* of the others' — it has no front, and `vision_angle_deg =
+360` has to be an accurate description rather than a shortcut); and the burst from the outside in —
+everyone inside the radius including a player who was never targeted, nobody outside it, height not
+saving you, the death burst, and a kind with no burst authored still resolving exactly one
+single-target hit.

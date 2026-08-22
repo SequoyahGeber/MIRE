@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="EnemyDef" format=3]
+
+[ext_resource type="PackedScene" path="res://assets/enemies/exports/enemy_bloatcap.glb" id="1_bltcp"]
+[ext_resource type="Script" path="res://systems/enemies/enemy_def.gd" id="2_d3gob"]
+
+[resource]
+script = ExtResource("2_d3gob")
+id = &"bloatcap"
+display_name = "Bloatcap"
+model = ExtResource("1_bltcp")
+model_yaw_offset_degrees = 180.0
+radius_m = 0.7
+height_m = 1.22
+max_health = 40
+corpse_seconds = 4.0
+move_speed = 3.0
+stop_distance_m = 3.4
+turn_speed_rad = 3.0
+aggro_radius_m = 20.0
+deaggro_radius_m = 28.0
+attack_range_m = 4.0
+attack_damage = 18
+attack_tell_seconds = 0.7
+attack_seconds = 0.3
+attack_recovery_seconds = 1.4
+burst_radius_m = 4.5
+death_burst_fraction = 0.55
+vision_angle_deg = 360.0
+alert_radius_m = 18.0
+max_concurrent_attackers = 3

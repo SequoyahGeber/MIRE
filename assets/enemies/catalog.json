@@ -134,5 +134,64 @@
       "MIRE_MireBlack",
       "MIRE_Stone"
     ]
+  },
+  {
+    "name": "enemy_bloatcap",
+    "family": "enemy",
+    "width_m": 1.383,
+    "depth_m": 1.383,
+    "height_m": 1.22,
+    "mesh_parts": 1,
+    "polygons": 592,
+    "bones": 12,
+    "animations": [
+      "idle-loop",
+      "locomotion-loop",
+      "attack_tell",
+      "attack",
+      "hit",
+      "death"
+    ],
+    "materials": [
+      "MIRE_Bone",
+      "MIRE_Critical",
+      "MIRE_FlowerWhite",
+      "MIRE_FungusEdible",
+      "MIRE_FungusGill",
+      "MIRE_MireGlow",
+      "MIRE_Peat",
+      "MIRE_WoodDead"
+    ]
+  },
+  {
+    "name": "enemy_bloatcap_fragment_husk",
+    "family": "debris",
+    "width_m": 0.363,
+    "depth_m": 0.263,
+    "height_m": 0.168,
+    "mesh_parts": 5,
+    "polygons": 58,
+    "bones": 0,
+    "animations": [],
+    "materials": [
+      "MIRE_Bone",
+      "MIRE_FungusEdible",
+      "MIRE_FungusGill"
+    ]
+  },
+  {
+    "name": "enemy_bloatcap_fragment_gleba",
+    "family": "debris",
+    "width_m": 0.323,
+    "depth_m": 0.175,
+    "height_m": 0.115,
+    "mesh_parts": 3,
+    "polygons": 60,
+    "bones": 0,
+    "animations": [],
+    "materials": [
+      "MIRE_FungusEdible",
+      "MIRE_MireGlow"
+    ]
   }
 ]

@@ -3935,7 +3935,9 @@ the vertex stage.
 
 ---
 
-### F-500 · tools/wave_director_check.gd's Cycle 6 live-count assertion is intermittently red
+## Resolved
+
+### F-500 · tools/wave_director_check.gd's Cycle 6 live-count assertion is intermittently red — **fixed**
 
 **Area:** waves · **Severity:** low · **Found:** 2026-08-22 by ember5da2c4
 
@@ -3964,9 +3966,28 @@ same frame, e.g. the Hunt elite).
 To resolve: get one failing run's diagnostic line, then either await an extra frame between
 `host_start_wave()` and the count, or fix whatever the diagnostic names.
 
----
+**Resolved 2026-08-22 by ember5da2c4.** Diagnosed and fixed. The intermittent failure was real and had a concrete cause, caught by the
+diagnostic the finding itself describes:
 
-## Resolved
+    DIAG spawned=9 expected=9 live=10 kinds={ "tusker": 1, "peatling": 9 }
+
+`EnemyWorld.live_count()` counts every body on the field, and the field is not only the wave's.
+Firing `cycle_advanced` also reaches `CycleModifierService`, which draws that Cycle's modifier; when
+the draw comes up `the_hunt`, `WaveSpawner._maybe_spawn_hunt_elite()` puts a `tusker` on the map in
+the same frame and the count comes back one high. The draw is seeded per RUN, which is why it failed
+roughly one run in five and passed every time anybody re-ran it to look.
+
+Nothing was wrong with the wave director. The check was asserting a broader fact than the one it
+meant to: "the field holds exactly N bodies" instead of "the wave director put N bodies on the
+field".
+
+The fix is `_live_of_wave_kind()`, which counts only enemies whose `definition.id` matches the
+wave's own `enemy_id`. It asserts what the test is about and is indifferent to anything else
+legitimately spawning alongside it. Both the Cycle 1 and Cycle 6 assertions use it now. Eight
+consecutive runs green, where the previous shape went red once in five.
+
+The temporary printing diagnostic is gone with it — it was scaffolding for this hunt, and leaving a
+printf behind in a check that now passes deterministically is just noise.
 
 ### F-501 · ChunkStreamer rebuilds every mesh it has already built — nothing is cached, on a machine using 1.1% of its memory — **fixed**
 

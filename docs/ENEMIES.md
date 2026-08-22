@@ -34,7 +34,7 @@ lunge or with a mechanic, never with a bigger `attack_range_m`.
 | 1 | **Peatling** | Cycle 1 (night 1) | *Where* you fight starts to matter | Dies into a stain of corruption — it spreads the Mire by being killed |
 | 2 | **Fen Stalker** | Cycle 2 (night 4) | You cannot stand in the open | Strikes *through* your retreat — the first kind in the game that lunges — and its first strike out of ambush hits far harder |
 | 3 | **Bog Bulwark** | Cycle 4 (night 10) | You cannot trade hits head-on | Armoured through a 160-degree frontal arc, and it never stops following you |
-| 4 | *tier 4* | Cycle 6 (night 16) | You cannot just close the distance | (authored at tier 4) |
+| 4 | **Bloatcap** | Cycle 6 (night 16) | You cannot just close the distance | An area burst that ignores facing and dodging entirely — and it bursts again when it dies |
 | 5 | *tier 5* | Cycle 8 (night 22) | The night stops being survivable by habit | (authored at tier 5) |
 
 Tiers 2–5 are named and specified in full **in their own pass**, one at a time, each one authored and
@@ -404,3 +404,113 @@ attached to.
 | `attack_recovery_seconds` | 1.6 | The window. Every rung of the ladder has one; this one's is the widest, and it is where the fight is won. |
 | `alert_radius_m` | 0 | It calls nobody. It does not need to. |
 | `max_concurrent_attackers` | 1 | Only one commits at a time — two simultaneous 26-damage snaps is not a fight, it is a coin flip. |
+
+
+---
+
+## 6. Tier 4 — **Bloatcap**
+
+> A pale, swollen, spine-covered sac on four root legs, a ring of small red eyes around its middle,
+> and a slow purple light pulsing out of a hole in the top of it.
+
+**The verb: you cannot just close the distance.** Every rung so far has ultimately been answered by
+walking up to the thing and hitting it — the Peatling somewhere harmless, the Stalker after circling
+it, the Bulwark from behind. Against a burst that is the losing move. There is no facing to get
+behind and no swing to step around; there is only a **distance**, and if you are inside 4.5 m when
+the sac empties you take all 18 of it whether you were its target or not.
+
+And **killing it does not save you**. It bursts again on death for 55%, so the melee answer —
+"telegraph is long, I'll just kill it during the wind-up" — costs you ten damage for the privilege.
+
+The counterplay is the one thing the game has been quietly handing players since tier 2 and which
+nothing has previously *required*: **shoot it**. The sling, the longbow and the crossbow all ship
+(`content/ranged_weapons/`), and this is the enemy that makes a player actually build one. That is
+what a tier-4 rung should do — not add a number, but cash in a system the run has been carrying
+unused.
+
+Failing that, the tell is 0.7 s, the longest telegraph in the game, and it is enormous: the whole
+creature inflates by a third. You *can* outrun it. You just have to start when it starts.
+
+### 6.1 The real thing it is modelled on
+
+Puffball fungi, *Lycoperdon*. Four facts, and the third is the whole fight:
+
+- The fruit body is **pear-shaped with a flattened top and a stem-like base** — not the sphere
+  people draw. The flattening is load-bearing, because it is where the ostiole has to sit.
+- The surface is covered in **short cone-shaped spines interspersed with granular warts**, which rub
+  off and leave pock marks. On a pale sac at night that texture is the only thing giving the
+  silhouette any form at all.
+- There is a pre-formed hole in the top — the **ostiole** — and the spores leave through it when the
+  body is compressed, **ejected at around a metre per second, forming a visible cloud within a
+  hundredth of a second**. So this creature's strike is not a swing, it is a *deflation*, and it is
+  over before the eye finishes reading it. The tell is the sac filling; the attack is it emptying.
+- The **gleba**, the spore mass inside, is white and firm in a young puffball and brown and powdery
+  in a mature one. In a corrupted one it is purple and lit, and it is visible through the dilating
+  ostiole — which is how a player reads how close this thing is to going off.
+
+### 6.2 The mechanic: the burst
+
+Two new `EnemyDef` fields, both defaulting to "no burst", so nothing authored before it changes:
+
+- `burst_radius_m` — above 0.0, this kind's attack stops being single-target and becomes an **area**
+  hit centred on the enemy: every player inside the radius takes `attack_damage`, target or not.
+- `death_burst_fraction` — what fraction of the same damage the same radius takes when it **dies**.
+
+Both go out through the *same* `EventBus` event a single-target hit uses, once per player, so
+`PlayerHealth` needed no change and dodge i-frames, Blight, downed state and every other consumer
+treat a burst hit exactly like any other hit. That is the point of having one seam.
+
+Measured **horizontally**, like every other distance decision in `Enemy`: a burst you escape by
+standing on a rock is a burst nobody can reason about. And the burst is reached only *after* the
+range check, so a Bloatcap still has to commit to a target in reach before it goes off — the burst is
+what its attack does, not a replacement for deciding to attack.
+
+The death burst fires after `_maybe_bloom_split()` and `_stain_ground()`, which means a bloomed
+Bloatcap under the `bloom` Cycle Modifier costs the ground **three** bursts. That falls out of the
+ordering rather than needing a rule, and it is the correct reading of two modifiers stacking.
+
+### 6.3 The asset (`assets/enemies/exports/enemy_bloatcap.glb`)
+
+1.38 m across and **1.22 m tall** — chest height, and by far the widest silhouette per metre of
+height in the roster. 592 polygons on a 12-bone rig, of which the one that matters is `sac`: it
+carries almost the whole creature and does almost all of its acting through **scale**.
+
+This is the ladder's first **pale** creature. Tier 1 is purple gel, tier 2 cold grey plumage, tier 3
+near-black peat; this is a bloated off-white sac, which is both what a puffball actually looks like
+and the single most visible thing in a night wave. That visibility is deliberate — a Bloatcap is
+meant to be seen early and dealt with from range, so one you failed to notice is a *mistake* rather
+than an ambush.
+
+It has **no front**: no face, no limbs to lead with, and a ring of seven small red eyes around its
+middle instead of a pair. `vision_angle_deg` is 360 because that is an accurate description of the
+model rather than a shortcut, and `tools/enemy_bloatcap_check.gd` asserts the model really is
+symmetric so the two cannot drift apart.
+
+| Clip | Length | Loops | What it does |
+|---|---:|---|---|
+| `idle` | 3.00 s | yes | Slow asymmetric breathing — a long fill, a quicker release, with the ostiole's light brightening and dimming through it. From across a clearing a Bloatcap is a slow purple pulse at chest height, which is how you are supposed to find one. |
+| `locomotion` | 1.00 s | yes | The waddle. Diagonal pairs, and the sac **lags** the legs — it is a bag of gas balanced on a stem, so it arrives a beat late and rocks past centre before it settles. |
+| `attack_tell` | 0.70 s | no | **It swells.** The longest telegraph in the game and it needs every frame: the sac inflates by a third, the creature rises onto its legs, and the ostiole dilates until the gleba is a hole full of light. Nothing else in the roster gets *bigger* as it winds up. |
+| `attack` | 0.30 s | no | It vents. Two frames after the extreme the sac has collapsed past its own resting size and the ostiole is gaping. |
+| `hit` | 0.30 s | no | A dent that crosses the skin. Explicitly not a flinch backwards — that would imply somewhere to flinch to. |
+| `death` | 1.40 s | no | One last involuntary swell — the reflex that makes killing one in melee a mistake — then it tears, empties, and slumps into a sagging bag on a stem that can no longer hold it up. Ends as an empty husk with the ostiole gaping and the gleba dark. |
+
+Companions: `enemy_bloatcap_fragment_husk` (torn skin with the warts still on the outside) and
+`enemy_bloatcap_fragment_gleba` — a clot of the spore mass, still lit, in a scrap of the ostiole. A
+player who has been caught by one burst and then finds that on the ground has been told exactly what
+happened to them.
+
+### 6.4 Stats (`content/enemies/bloatcap.tres`)
+
+| Field | Value | Why that number |
+|---|---:|---|
+| `max_health` | 40 | Soft. It is a bomb, not a wall — the Bulwark is the wall. |
+| `burst_radius_m` | 4.5 | Wider than any melee reach in the game, so "back off a bit" is not enough; you have to actually leave. |
+| `attack_damage` | 18 | Serious but not lethal from full, so the first one teaches instead of killing. |
+| `death_burst_fraction` | 0.55 | Ten damage for killing it at your feet. Enough to be a real cost, not enough to make melee suicide. |
+| `attack_range_m` | 4.0 | Deliberately **inside** `burst_radius_m`, so a committed burst always reaches whoever it committed against. |
+| `attack_tell_seconds` | 0.7 | The longest in the game. A burst does not care which way you dodge, only how far you got, so the warning has to cover the distance. |
+| `move_speed` | 3.0 | Below a walk. It cannot chase you out of its own radius, and that is the entire reason 4.5 m is survivable. |
+| `alert_radius_m` | 18 | Wide. Two Bloatcaps that go off together cover 9 m, and there is no answer to that but not being there. |
+| `max_concurrent_attackers` | 3 | They *do* stack. This is the rung where a night stops being a series of fights and becomes a problem of spacing. |
+| `vision_angle_deg` | 360 | It has no front. See §6.3. |

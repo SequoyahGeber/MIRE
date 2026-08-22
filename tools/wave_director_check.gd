@@ -49,7 +49,7 @@ func _run() -> void:
 	var spawned_cycle1: int = int(wave.call(&"host_start_wave"))
 	check(spawned_cycle1 == expected_cycle1,
 		"Cycle 1 wave size is unchanged: base + per_player (%d)" % expected_cycle1)
-	check(int(world.call("live_count")) == expected_cycle1,
+	check(_live_of_wave_kind(world, wave) == expected_cycle1,
 		"Cycle 1 field actually holds that many live enemies")
 	wave.call(&"host_stop_wave")
 	world.call("host_despawn_all")
@@ -68,14 +68,7 @@ func _run() -> void:
 	var spawned_cycle6: int = int(wave.call(&"host_start_wave"))
 	check(spawned_cycle6 == expected_cycle6,
 		"Cycle 6 wave size is (base + per_player) * 1.75 = %d" % expected_cycle6)
-	if int(world.call("live_count")) != expected_cycle6:
-		var seen := {}
-		for e in world.call("live_enemies"):
-			var d = e.get("definition")
-			var k = String(d.get(&"id")) if d != null else "?"
-			seen[k] = int(seen.get(k, 0)) + 1
-		print("DIAG spawned=%d expected=%d live=%d kinds=%s" % [spawned_cycle6, expected_cycle6, int(world.call("live_count")), str(seen)])
-	check(int(world.call("live_count")) == expected_cycle6,
+	check(_live_of_wave_kind(world, wave) == expected_cycle6,
 		"Cycle 6 field actually holds that many live enemies")
 	wave.call(&"host_stop_wave")
 	world.call("host_despawn_all")
@@ -194,6 +187,29 @@ func _check_wiring() -> bool:
 	marker.set_meta(&"kind", "enemy_spawn")
 	root.add_child(marker)
 	return true
+
+
+## How many live enemies are of the wave's own base kind — NOT `EnemyWorld.live_count()` (F-500).
+##
+## `live_count()` counts every body on the field, and the field is not only this wave's. Firing
+## `cycle_advanced` also reaches `CycleModifierService`, which draws that Cycle's modifier; when the
+## draw comes up `the_hunt`, `WaveSpawner._maybe_spawn_hunt_elite()` puts a `tusker` on the map in the
+## same frame, and the count comes back one high. The draw is seeded per RUN, so this failed roughly
+## one run in five and passed every time anybody re-ran it to look — which is the worst way for a
+## check to be wrong. Diagnosed by exactly the failure it describes: `spawned=9 expected=9 live=10
+## kinds={"tusker": 1, "peatling": 9}`.
+##
+## Counting the wave's own kind asserts the thing the test is actually about — the wave director put
+## the right number of bodies on the field — and is indifferent to anything else legitimately
+## spawning alongside it.
+func _live_of_wave_kind(world: Node, wave: Node) -> int:
+	var wanted := StringName(wave.get(&"enemy_id"))
+	var total: int = 0
+	for enemy: Node in world.call("live_enemies"):
+		var def: Resource = enemy.get("definition")
+		if def != null and StringName(def.get(&"id")) == wanted:
+			total += 1
+	return total
 
 
 func check(condition: bool, description: String) -> void:

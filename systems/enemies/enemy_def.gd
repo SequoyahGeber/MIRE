@@ -110,6 +110,23 @@ extends Resource
 ## rather than merely wrong.
 @export_range(0.05, 1.0, 0.05) var armor_damage_multiplier: float = 1.0
 
+@export_group("Burst")
+## docs/ENEMIES.md §6.2 — the tier-4 Bloatcap's spore burst. Above 0.0, this kind's attack stops
+## being a single-target hit and becomes an AREA one centred on the enemy itself: every player within
+## this radius takes `attack_damage`, whether or not they were the target. 0.0 — the default — keeps
+## the single-target resolve every other kind uses, unchanged.
+##
+## It is the ladder's answer to "you cannot just close the distance". Every rung so far has been
+## beaten by walking up and hitting the thing, and against a burst that is the losing move: there is
+## no facing to get behind and no swing to step around, only a distance. The counterplay is the
+## ranged weapons the game already ships (`content/ranged_weapons/`) — this is the enemy that makes a
+## player actually build the sling.
+@export_range(0.0, 16.0, 0.5) var burst_radius_m: float = 0.0
+## What fraction of `attack_damage` the same burst does when the enemy DIES, inside the same radius.
+## 0.0 means dying is safe. Above 0.0, killing one in melee costs you — which is the second half of
+## the same lesson and the reason a Bloatcap is worth shooting rather than charging.
+@export_range(0.0, 1.0, 0.05) var death_burst_fraction: float = 0.0
+
 @export_group("Death")
 ## docs/ENEMIES.md §3.5 — how much corruption this kind pours into the Mire grid where it dies, and
 ## how wide. 0.0 — the default — means it leaves nothing, so every `EnemyDef` authored before the
@@ -172,4 +189,8 @@ func validation_errors() -> PackedStringArray:
 	# arc both mean "no armour", and both do it silently.
 	if (armor_arc_degrees > 0.0) != (armor_damage_multiplier < 1.0):
 		errors.append("armor_arc_degrees and armor_damage_multiplier must both be set or neither")
+	# A death burst with no burst radius has nowhere to happen, and it fails silently — the same
+	# authoring slip the two pairs above are guarded against.
+	if death_burst_fraction > 0.0 and burst_radius_m <= 0.0:
+		errors.append("death_burst_fraction needs a burst_radius_m to burst into")
 	return errors
