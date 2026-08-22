@@ -2352,7 +2352,13 @@ def main() -> None:
         "bound": BOUND,
         "ring_outer": RING_OUTER,
         "chunk": CHUNK,
-        "spawn": [round(v, 3) for v in spawn],
+        # F-302: the record shape, not a bare triple. `playtest_hollow.json` already wrote
+        # `{"pos": [...], "yaw": ...}` and this file wrote `[x, y, z]`, so every generic reader
+        # (`tools/world_contract_check.gd`'s `_layout_spawn()`) had to carry both — and the cast
+        # that is wrong for the other shape returns an empty default rather than erroring, so a
+        # schema mismatch read as "this layout has no spawn". One shape, and it is the one with
+        # room for the yaw a spawn eventually needs.
+        "spawn": {"pos": [round(v, 3) for v in spawn], "yaw": 0.0},
         "materials": MATERIALS,
         "water_materials": WATER_MATERIALS,
         "heightfield": {

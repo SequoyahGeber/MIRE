@@ -383,29 +383,6 @@ checked against anything but relative deltas on the fastest machine in the proje
 
 ---
 
-### F-272 · The seed re-broadcast has no two-process proof — `run_reseed_check` calls the client's own receive path by hand
-
-**Area:** netcode · **Severity:** low · **Found:** 2026-08-20 by lp
-
-`tools/run_reseed_check.gd` phase 3 exercises F-258's receive half by calling
-`WorldDeltaLog.net_delta_applied(0, 0, "world", "seed", v)` directly — byte-for-byte the arguments a
-client's ENet callback passes, and enough to prove the discrimination (an ordinary delta must not be
-treated as a reseed, and vice versa) plus `_reseed_local()`'s wipe-and-adopt. It is NOT proof that
-the record actually crosses a real socket, nor that it arrives BEFORE `CycleService`'s `RUN_KIND`
-record — and that ordering is load-bearing: `host_restart_run()` depends on a client adopting the new
-seed before its re-derived `run_restarted` reaches the subscribers that re-derive from the seed. The
-ordering is guaranteed by the channel being reliable-ordered, which is a property of ENet this repo
-has never asserted for itself.
-
-This is the same gap **F-260** records for `run_restarted` itself, arriving one record later on the
-same channel, and the fix is the same shape: a real two-process check in the mould of
-`tools/cycle_advanced_net_check.gd` / `tools/cycle_modifier_net_check.gd`, whose client asserts (a)
-`GameState.run_seed` changed, (b) its `WorldDeltaLog` was wiped, and (c) it saw the seed land before
-`run_restarted` fired. Worth folding into whatever task takes F-260 rather than standing alone —
-they would be two phases of one check.
-
----
-
 ### F-285 · `tools/nav_bake_check.gd` has 4 pre-existing failures at a clean HEAD — chunk-streamed terrain reports NaN heights to the check's seam search
 
 **Area:** worldgen · **Severity:** medium · **Found:** 2026-08-20 by lp
@@ -454,40 +431,6 @@ board before claiming; a NaN in the mesher's height sampling would be visible fr
 becomes queryable, and `NAV_BAKE_CHECK failures=0` — or, if one of the four is genuinely
 environment-dependent rather than a defect, that assertion is either made robust or removed with the
 reason written in, so the check's clean state is `failures=0` and a future regression is visible.
-
----
-
-### F-291 · A `--script` check that fires a real `EventBus` event as a state-setup shortcut can be broken by an unrelated later feature that subscribes to the same event — **fixed in `tools/unlock_check.gd`, same class not yet swept project-wide**
-
-**Area:** verification · **Severity:** low · **Found:** 2026-08-20 by lp during F-236 (unlocks scope)
-
-`tools/unlock_check.gd` calls `EVENT_BUS.emit_run_extracted(20, Vector3.ZERO)` twice, purely as a
-shortcut to top up `SalvageService`'s balance so the purchase-flow assertions have something to
-spend. This was correct when task 6.9/F-173 wrote it — nothing else in the project subscribed to
-`run_extracted`. F-238 (2f69f81, 2026-08-19) later gave `ui/hud/extraction_hud.gd` a real
-`subscribe_run_extracted` handler that shows a terminal summary overlay and joins
-`blocks_gameplay_input` "until the run itself resets" (`_on_run_restarted()` is the only path out).
-`unlock_check.gd` has no idea that node exists, never resets it, so from that emit onward
-`MainMenu._other_blocking_ui_open()` sees ExtractionHud still in the group and refuses every
-`set_open(true)` for the rest of the process — three `_check_menu()` assertions
-("sanity: MainMenu opens", "UnlockMenu opens", "open UnlockMenu blocks gameplay input") failed with
-`UNLOCK_CHECK failures=3` at HEAD before this fix, even though nothing about unlocks had regressed.
-
-**Fixed in `tools/unlock_check.gd`**: `EVENT_BUS.emit_run_restarted()` — the real "next run" reset
-path, not a test-only workaround — now runs once after the last `emit_run_extracted()` shortcut and
-before `_check_menu()`. Verified: `.agent/bin/agent godot --script tools/unlock_check.gd` →
-`UNLOCK_CHECK failures=0`, run twice.
-
-**Not swept project-wide.** The same shape — a check firing a real `EventBus.emit_*` as a shortcut,
-with no reset before asserting unrelated UI/group state later in the same script — could recur
-anywhere a check does this and a future feature grows a new subscriber. Audited every other
-`tools/*.gd` that calls `emit_run_extracted`/`emit_run_wiped` directly
-(`run_summary_check.gd`, `salvage_check.gd`, `steam_stats_check.gd`, `extraction_check.gd`): none of
-them assert `MainMenu`/`blocks_gameplay_input` state afterward, so none share this exact symptom
-today — but the general risk (any check that emits a real cross-system event without knowing every
-current subscriber) is not something a one-file fix closes. Worth a lint/convention if it recurs a
-second time: a check that needs a service's side effect should prefer calling the service directly
-(`SalvageService.host_add`-style) over emitting the bus event that has cross-system fan-out.
 
 ---
 
@@ -608,38 +551,6 @@ task rather than a one-line guard.
 It is now half wrong. The RULES half still holds — `RuleService` is not a `run_restarted` subscriber, so rules an autoexec sets survive every restart. The LOADOUT half does not: `InventoryService` clears on `EventBus.run_restarted` (F-243/D-164), so an autoexec that grants a starting kit is wiped by the second run and nothing ever re-runs it. Same class as F-280 — a boot-scoped lifecycle hook in a codebase where runs now repeat — found by F-280's sweep for exactly that shape.
 
 Cheap to fix now that F-280 exists: `run_started` is the per-run seam §5.3 lacked when it was written. Either re-run autoexec from a `run_started` subscription (careful — it is host/offline-gated the same way, and re-running `rule set` lines is idempotent), or split the documented purpose so §5.3 says "session-scoped preferences, not per-run setup — use a `run_started` hook for that" and ship the one-line worked example. The second is probably right: silently re-running arbitrary boot script on every restart is a surprise, and an author who wants it can now ask for it explicitly.
-
----
-
-### F-302 · The two shipped layout JSONs write the spawn record in two different shapes, so every generic reader needs both
-
-**Area:** worldgen · **Severity:** low · **Found:** 2026-08-20 by lp
-
-Found by F-284, which had to read the spawn record from any layout-convention map.
-
-`world/gen/layouts/hollowmere.json` writes the spawn as a bare triple:
-
-    "spawn": [-6.614, 2.423, 1.622]
-
-`world/gen/layouts/playtest_hollow.json` writes it as a record with a `pos` field:
-
-    "spawn": {"pos": [...]}
-
-Both are read today, each by exactly one map-specific check (`tools/hollowmere_check.gd:138` takes
-`layout.get("spawn", []) as Array`; `tools/playtest_hollow_check.gd:67` takes
-`(layout.get("spawn", {}) as Dictionary).get("pos", [])`), so the divergence has cost nothing while
-every reader knew its map. It stops being free the moment a reader is generic: F-284's
-`_layout_spawn()` in `tools/world_contract_check.gd` carries both shapes, and the cast that is
-wrong for the other shape returns an empty default rather than erroring — a schema mismatch reads
-as "this layout has no spawn", which is the F-076 blind spot in miniature.
-
-Every other layout field agrees across the two files. This one does not because the two generators
-(`tools/mapgen/hollowmere_layout.py` and Playtest Hollow's) were written apart.
-
-Fix: pick one shape, migrate the other layout and its generator, and drop the second branch from
-`_layout_spawn()`. `{"pos": [...]}` is the better target — it is the only one with room for the
-yaw a spawn eventually needs, and PlayerNet already reads a full `Transform3D` off the spawn point.
-Small, and worth doing before a third map picks a third shape.
 
 ---
 
@@ -3097,7 +3008,7 @@ about what is missing rather than quietly shipping four-line identities with thr
 
 **Tinker — "can build Ward turrets".** No turret exists: `grep -ril turret` over the repo hits only
 the Attunement content and its generator. `BuildableDef` now carries `required_attunement_id`
-(F-543/D-197), so the gate is already in place — a `content/buildables/ward_turret.tres` with
+(F-543/D-212), so the gate is already in place — a `content/buildables/ward_turret.tres` with
 `required_attunement_id = &"tinker"` is buildable by a Tinker and nobody else the moment the piece
 and its behaviour exist. What is missing is the turret: a Ward-adjacent structure that acquires and
 shoots, which is an enemy-facing combat system, not a build piece.
@@ -3217,7 +3128,406 @@ batches, so `placements` is published and the vfx actually attach.
 
 ---
 
+### F-548 · A long Godot-lock hold is indistinguishable from a wedged lock, and 'agent verify' is the worst possible shape to hold it in
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-22 by larch543bba
+
+Found 2026-08-22 by larch543bba, from a live incident, and corroborated independently by
+`nettled7199c` and `coil8be837` — three agents who could each only see their own half of it.
+
+**The measurement.** Over 30 minutes, four agents on the shared Godot import lock:
+
+    moss8598bb   waited 2403.7s   worked  33.9s
+    coil8be837   waited 2204.6s   worked  14.2s
+    larch543bba  waited 1301.8s   worked  50.6s
+    onyxbe8065   waited  499.5s   worked  54.5s
+    -----------------------------------------------
+    TOTAL        waited  107 min  worked 153s   ->  42:1
+
+D-211 decided one shared cache on measured contention and set the trigger to revisit at a **godot
+wait p95 above ~12s**. `agent locks` reported p95 = 3.2s shortly before this, because its window
+averages over quiet periods. The tail above is what the same lock looks like under four concurrent
+agents, so D-211's trigger is real but its instrument is too coarse to fire on it — the p95 needs a
+short window (last 30-60 min) alongside the 7-day one, or it will keep reporting 3.2s through
+incidents like this one.
+
+**Three separate defects, one queue.**
+
+1. **`agent verify` takes ONE acquisition for the whole suite.** `nettled7199c`'s `agent verify
+   --fast` held the lock 723s in a single hold, and its own words on it are the clearest statement
+   of the problem: a long hold "whose individual units are single-digit seconds each, exactly the
+   thing everyone else was queueing behind." Worse, they only needed the six checks covering their
+   task (well under a minute); the sweep bought them almost nothing for 12 minutes of everyone
+   else's time. `agent verify` should release between checks so the queue can drain, or at minimum
+   say loudly that it is a whole-suite hold.
+
+2. **A hold by something outside `tools/*_check.gd` is invisible, and reads as a wedge.**
+   `cinder9818da` held the lock 20m43s with `tools/_f292_census.gd` and, at the time of writing,
+   9m36s+ with `tools/_f292_bench.gd`. Both are `_f292_`-prefixed scratch scripts: they appear in no
+   `agent verify` run and in no `tools/*_check.gd` listing, so from any other session the only
+   observable is that the lock has been gone for twenty minutes. `nettled7199c` put the general form
+   well — **a lock held by something that appears nowhere is indistinguishable from a wedged lock,
+   so the correct read from outside is "something is broken" rather than "someone is working."**
+   Suggested fix: `file_lock` requires (or `agent` auto-writes) an `agent note` for any acquisition
+   projected past ~60s, and `agent locks` grows a "held right now, by whom, since when, and why"
+   line. `.agent/locks/godot.holder` already carries pid/agent/label/at — it is simply not surfaced
+   anywhere an agent would look.
+
+3. **Duplicate suppression needs a second clause.** Four agents independently converged on "don't
+   re-run a check a peer already ran this cycle," which is right and saved real time. But
+   `moss8598bb` ran `findings_numbering_check` at 06:31:35, and `coil8be837`'s `agent resolve F-272`
+   took the findings lock at 06:32:58 — 83 seconds later — plus three more FINDINGS writes after
+   that. The cached PASS described a file that no longer existed. The rule must be **"a peer already
+   ran it AND nothing has written its inputs since,"** or the heuristic silently suppresses exactly
+   the run that matters. It nearly did so here on the one check whose job is catching a malformed
+   `docs/FINDINGS.md` — the file `agent resolve` warns has had its section heading eaten twice.
+
+**UPDATE, same session — the wedge was not hypothetical, and this is the worked example.**
+
+The 20m43s and 18m04s holds were `cinder9818da`'s `tools/_f292_census.gd` and `tools/_f292_bench.gd`.
+Neither was slow. **Neither was running at all.** Both were `extends SceneTree` defining only
+`func _run()`, with no `_initialize()`. Godot calls `_initialize()`; nothing calls `_run()`, so the
+body never executed — and `quit(0)` lived inside that body, so the process never exited either. Each
+sat in an idle main loop holding the Godot import lock, and would have held it indefinitely.
+
+Diagnosis was one command, and nobody ran it for half an hour:
+
+    ps -o pid,etime,time,%cpu -p <godot pid>
+    86951   18:04   0:38.23   2.5
+
+**18 minutes elapsed against 38 seconds of CPU.** A 2000-iteration noise-sampler loop is CPU-bound
+and would peg a core for seconds; 2.5% is an idle tick. It had printed its one `BENCH` line exactly
+zero times. `cinder9818da` has since confirmed all of this, deleted both scripts, and recorded in
+`agent handoff F-292` that NO measurement was taken — the numbers it reported about terrain cost were
+never produced by anything.
+
+**Why nobody caught it is the finding, more than the wedge itself.** Four agents queued behind a
+dead process for ~40 minutes and every one of us, including the author, read it as "someone is doing
+slow work":
+
+- **From inside the holder's session it reads as slowness.** A silent hang produces no error and no
+  output, so `cinder9818da` rationalised it for half an hour ("the census is impractically slow —
+  which is itself F-294's symptom"). The `await process_frame` at the top made that plausible.
+- **From outside there is nothing to look at.** `.agent/locks/godot.holder` has carried
+  pid/agent/label/at all along, and NOTHING surfaces it. No command prints who holds the lock, since
+  when, or whether they are burning CPU.
+- **Nothing times out.** `STATE_LOCK_TIMEOUT` caps the state lock at 120s with the comment "a state
+  transaction is milliseconds; 120s means something is wedged." The godot lock has no such cap, so a
+  wedge is indistinguishable from a long legitimate run *forever*, not merely for a while.
+- **Every agent treated the queue as weather.** Including this one: I reported "it's contention, I'm
+  letting it finish" while holding everything needed to disprove it, and only ran `ps` when Sequoyah
+  asked whether the benchmarks were even running.
+
+**Reproducible after the fact, thanks to F-044's ledger** (landed the same day by `cinder9818da`).
+`agent locks --days=1` reads: `godot n=56, wait avg 232.1s, wait p95 1125.2s, wait max 1311.3s,
+held max 723.0s`.
+
+**And that number tripped a decision's stated trip-wire.** D-211 says it would reconsider the single
+shared cache at "a sustained godot-lock wait p95 above ~12 s". The observed p95 is 1125.2s — two
+orders of magnitude past it — **entirely because of one wedged process.** F-044 is deliberately NOT
+reopened on this sample: it is not sustained normal contention. But it demonstrates the failure mode
+sharply: one silent wedge can move a decision's evidence base far enough to invert it, and the
+follow-up measurement has to come from `agent locks` once the queue is honest again.
+
+**Alarm on longest single acquisition, not wait p95** (`nettled7199c`'s point, and it is the better
+one): *one 723s hold and 723 one-second holds are identical to a p95 and nothing alike to the queue.*
+p95 describes how long a typical waiter waits, which is a symptom; max-hold describes whether anyone
+else can make progress, which is the cause.
+
+**The general class, worth more than this incident:** a threshold guarding a decision, measured over
+a window that averages the signal away, reports healthy right up to the moment the decision is
+provably wrong. `agent locks` reported p95 = 3.2s over its 7-day window minutes before an incident
+with 107 minutes of queueing in it. The 7-day number was not wrong; it was the wrong question asked
+correctly.
+
+**Concrete asks this adds to the three defects above:**
+
+5. **A hard cap on the godot lock**, matching what the state lock already does — hold past N minutes
+   is a wedge until proven otherwise, and should say so loudly rather than being waited on politely.
+6. **`agent locks` should print the LIVE holder** — agent, label, held-for, and %CPU — and lead its
+   report with max-single-acquisition. Everything needed is already in `godot.holder` and the ledger.
+7. **A check that a `tools/*.gd` SceneTree script defines `_initialize()`.** Every real check uses
+   `_initialize() -> _run.call_deferred()`; the idiom is universal, enforced nowhere, and its absence
+   fails silently by hanging forever rather than by erroring. A scratch script skips every check that
+   would have caught it, which is exactly the population most likely to get it wrong.
+
+**Not filed as a fix, because the shape is a protocol call, not a code call** — AGENTS.md is the
+contract and `agent`/`file_lock` are shared infrastructure. Recording the numbers and the three
+shapes so whoever owns that decision has them; all three agents above changed their own behaviour
+immediately (named checks only, long runs into `agent baseline`'s throwaway worktree), but a norm
+four sessions happen to remember is not a protocol.
+
+---
+
+### F-549 · world_contract_check has 3 failures at a clean HEAD — the [shipped] map publishes no ground and no Undergrowth, and the procedural map builds two extraction ships
+
+**Area:** worldgen · **Severity:** high · **Found:** 2026-08-22 by coil8be837
+
+Found during F-302 (spawn-record migration), and confirmed NOT to be that change: `agent baseline
+--script tools/world_contract_check.gd` reproduces the identical three failures in a throwaway
+worktree at clean HEAD.
+
+    WORLD_CONTRACT_CHECK FAIL (3)
+      [shipped]    the authored map has no Undergrowth node — the flora layer went missing
+      [shipped]    no node answers height_at() — this map publishes no ground to stand a spawn on
+      [procedural] 2 extraction ship(s) — the run needs exactly one exit
+
+Three separate defects that happen to share a check, and the third is the one that changes a run.
+
+**`[procedural] 2 extraction ships` is a gameplay bug, not a test bug.** The extraction ship is the
+run's single exit; the check's own wording ("the run needs exactly one exit") is the contract. Two
+of them means the procedural map — the one that SHIPS — offers two ways out. Note the same run
+reports `wellsprings=8` and `chests=124` against the authored map's 1 and 25, i.e. exactly 2x the
+`[shipped]` row's 4 and 62, which reads like the procedural world is being built or counted twice
+rather than like a POI-placement bug. That doubling is the first thing to check, and if it is real
+it inflates every procedural count in this check, not just the ships.
+
+**The two `[shipped]` rows are the F-076 blind-spot shape.** `_check_undergrowth_required()` exists
+precisely because "silently skipping when it is missing is how F-076-shaped blind spots ship" (its
+own comment), and it is now failing for real. `no node answers height_at()` is worse than it reads:
+it is the assertion that the map publishes ground at all, so the spawn-standability check that
+F-284 and D-169 built cannot run on the `[shipped]` map. A spawn nobody can grade is how a player
+ends up under the floor, which is the original F-195/F-284 failure this whole check exists to catch.
+
+**Not stale, and not nobody's job.** `docs/FINDINGS.md` records `world_contract_check` PASS at
+several past dates (F-284's own verification among them), so this went red at some point since and
+no finding tracks it. It is the repo's only both-map matrix check, which makes it the one check
+that would notice a divergence between the map that is authored and the map that ships.
+
+Whoever takes this: run the baseline first to confirm all three still reproduce, then split them —
+the extraction-ship doubling is worth its own task and is the only one of the three a player would
+feel this week.
+
+---
+
 ## Resolved
+
+### F-291 · A `--script` check that fires a real `EventBus` event as a state-setup shortcut can be broken by an unrelated later feature that subscribes to the same event — **fixed in `tools/unlock_check.gd`, same class not yet swept project-wide** — **fixed**
+
+**Area:** verification · **Severity:** low · **Found:** 2026-08-20 by lp during F-236 (unlocks scope)
+
+`tools/unlock_check.gd` calls `EVENT_BUS.emit_run_extracted(20, Vector3.ZERO)` twice, purely as a
+shortcut to top up `SalvageService`'s balance so the purchase-flow assertions have something to
+spend. This was correct when task 6.9/F-173 wrote it — nothing else in the project subscribed to
+`run_extracted`. F-238 (2f69f81, 2026-08-19) later gave `ui/hud/extraction_hud.gd` a real
+`subscribe_run_extracted` handler that shows a terminal summary overlay and joins
+`blocks_gameplay_input` "until the run itself resets" (`_on_run_restarted()` is the only path out).
+`unlock_check.gd` has no idea that node exists, never resets it, so from that emit onward
+`MainMenu._other_blocking_ui_open()` sees ExtractionHud still in the group and refuses every
+`set_open(true)` for the rest of the process — three `_check_menu()` assertions
+("sanity: MainMenu opens", "UnlockMenu opens", "open UnlockMenu blocks gameplay input") failed with
+`UNLOCK_CHECK failures=3` at HEAD before this fix, even though nothing about unlocks had regressed.
+
+**Fixed in `tools/unlock_check.gd`**: `EVENT_BUS.emit_run_restarted()` — the real "next run" reset
+path, not a test-only workaround — now runs once after the last `emit_run_extracted()` shortcut and
+before `_check_menu()`. Verified: `.agent/bin/agent godot --script tools/unlock_check.gd` →
+`UNLOCK_CHECK failures=0`, run twice.
+
+**Not swept project-wide.** The same shape — a check firing a real `EventBus.emit_*` as a shortcut,
+with no reset before asserting unrelated UI/group state later in the same script — could recur
+anywhere a check does this and a future feature grows a new subscriber. Audited every other
+`tools/*.gd` that calls `emit_run_extracted`/`emit_run_wiped` directly
+(`run_summary_check.gd`, `salvage_check.gd`, `steam_stats_check.gd`, `extraction_check.gd`): none of
+them assert `MainMenu`/`blocks_gameplay_input` state afterward, so none share this exact symptom
+today — but the general risk (any check that emits a real cross-system event without knowing every
+current subscriber) is not something a one-file fix closes. Worth a lint/convention if it recurs a
+second time: a check that needs a service's side effect should prefer calling the service directly
+(`SalvageService.host_add`-style) over emitting the bus event that has cross-system fan-out.
+
+---
+
+**Resolved 2026-08-22 by moss8598bb.** **2026-08-21, moss8598bb — the project-wide sweep exists, as `tools/blocking_ui_event_check.gd`.**
+
+What kept this open was the last paragraph: the one-file fix landed, but "any check that emits a real
+cross-system event without knowing every current subscriber" was audited by hand once and then left
+to rot. The audit is now a check, and it re-derives both halves on every run rather than trusting a
+list — hard-coding is precisely the failure mode, since F-238 added a latching subscriber to an event
+that previously had none and no hand-maintained list would have grown to include it.
+
+    .agent/bin/agent godot --script tools/blocking_ui_event_check.gd
+    BLOCKING_UI_EVENT_CHECK scanned=261 acknowledged=4 failures=0
+
+**How it derives the latching set.** Every shipped script under `ui/`, `autoload/`, `systems/`,
+`entities/`, `world/` that mentions `BLOCKING_UI_GROUP` gets its `EVENT_BUS.subscribe_<event>(...)`
+calls mapped onto the handler bodies they name; the event is LATCHING if that body calls
+`add_to_group`, RELEASING if it calls `remove_from_group`, and neutral otherwise. Today that yields:
+
+    latching:   run_extracted  → extraction_hud.gd:_on_run_extracted
+                run_wiped      → defeat_hud.gd:_on_run_wiped
+    releasing:  run_restarted  → defeat_hud.gd, extraction_hud.gd
+
+`salvage_banked` is subscribed by both terminal HUDs and is correctly classified neutral, which is
+the sort of distinction a hand-written list gets wrong.
+
+**Two modelling problems had to be solved for it to be honest, and both are worth recording because
+any future source-text check over these files will hit them.**
+
+*Call order, not text order.* `unlock_check.gd` — the one check F-291 already fixed — emits its
+`run_restarted` reset at line 103 inside `_run()`, while the two shortcut emits it resets live at
+lines 227 and 274 inside helpers `_run()` calls earlier in that same function. Read top to bottom the
+fixed file still looks broken. A naive line walk therefore *failed the fix*, which would have been the
+worst possible outcome: a lint that punishes the correct pattern. The walk now starts at the entry
+function and expands local `_helper()` calls in place, depth-first, with any function it never reaches
+walked afterwards as its own entry (in these checks an unreached function is normally a second-process
+probe body dispatched by argv, not dead code).
+
+*Sibling branches are alternatives, not a sequence.* `terminal_focus_check.gd` dispatches three probe
+bodies from one `if`/`elif`/`else` on `OS.get_cmdline_user_args()`. Walked as a sequence, the first
+probe's `run_extracted` latch leaked into the third probe's assertions and reported a failure in a
+branch that cannot run in the same process. The walker now saves the window state at each `if` and
+restores it at every `elif`/`else` at the same indent.
+
+**Why it asks rather than guesses, which is the design decision here.** Source text cannot tell an
+assertion that *depends* on the latch being absent from one that *proves* the latch is doing its job.
+`terminal_focus_check.gd` deliberately calls `set_open(true)` under a live overlay to assert D-032
+refuses it — correct, and textually identical to `unlock_check.gd`'s bug. Guessing would either miss
+real defects or fail a correct check forever. So a latch-sensitive line inside an open window must
+carry `# latch-ok: <reason>` on itself or the line above, and the failure message names the three ways
+out in preference order: call the service directly instead of emitting; emit the real reset path
+afterwards, as `unlock_check.gd` does; or mark the line. That is the "lint/convention" this finding
+said would be worth having if the class recurred — and it had: `terminal_focus_check.gd` carries six
+such lines, all legitimate, none previously documented as deliberate.
+
+**Deliberately not flagged:** emitting a latching event at all. F-310 wants *more* checks driving real
+producers, and roughly thirty checks emit these events because the fan-out is their subject. The
+defect is only ever the pairing.
+
+**Known cosmetic residue, recorded rather than silently left:** eight `latch-ok:` markers were added to
+`terminal_focus_check.gd` before the branch-isolation fix; four are now inert, because the lines they
+sit on are no longer inside a window. Each still states accurately why that line asserts what it
+asserts, so they were left rather than spend another turn on the shared godot lock (the queue was
+running ~100 minutes of collective wait at the time) purely to delete comments. Anyone editing that
+file can drop the inert four; the check will not miss anything if they do.
+
+**Also worth knowing about the probe set:** `set_open` is matched bare, not as `set_open(`. The first
+version used the paren form and silently matched nothing, because these checks reach menus through
+`menu.call(&"set_open", true)` far more often than through a direct call.
+
+Scope note: this is `tools/*_check.gd` only. Shipped code emitting these events is not the hazard —
+a real extraction *should* latch.
+
+### F-302 · The two shipped layout JSONs write the spawn record in two different shapes, so every generic reader needs both — **fixed**
+
+**Area:** worldgen · **Severity:** low · **Found:** 2026-08-20 by lp
+
+Found by F-284, which had to read the spawn record from any layout-convention map.
+
+`world/gen/layouts/hollowmere.json` writes the spawn as a bare triple:
+
+    "spawn": [-6.614, 2.423, 1.622]
+
+`world/gen/layouts/playtest_hollow.json` writes it as a record with a `pos` field:
+
+    "spawn": {"pos": [...]}
+
+Both are read today, each by exactly one map-specific check (`tools/hollowmere_check.gd:138` takes
+`layout.get("spawn", []) as Array`; `tools/playtest_hollow_check.gd:67` takes
+`(layout.get("spawn", {}) as Dictionary).get("pos", [])`), so the divergence has cost nothing while
+every reader knew its map. It stops being free the moment a reader is generic: F-284's
+`_layout_spawn()` in `tools/world_contract_check.gd` carries both shapes, and the cast that is
+wrong for the other shape returns an empty default rather than erroring — a schema mismatch reads
+as "this layout has no spawn", which is the F-076 blind spot in miniature.
+
+Every other layout field agrees across the two files. This one does not because the two generators
+(`tools/mapgen/hollowmere_layout.py` and Playtest Hollow's) were written apart.
+
+Fix: pick one shape, migrate the other layout and its generator, and drop the second branch from
+`_layout_spawn()`. `{"pos": [...]}` is the better target — it is the only one with room for the
+yaw a spawn eventually needs, and PlayerNet already reads a full `Transform3D` off the spawn point.
+Small, and worth doing before a third map picks a third shape.
+
+---
+
+**Resolved 2026-08-22 by coil8be837.** **Resolved 2026-08-22 by coil8be837.** One spawn shape across every layout, and it is the one the
+finding picked: `{"pos": [x, y, z], "yaw": r}`.
+
+* `tools/mapgen/hollowmere_layout.py` now emits the record shape rather than the bare triple. The
+  regenerated `world/gen/layouts/hollowmere.json` was diffed against its predecessor key by key:
+  `spawn` is the ONLY key that changed (`[-6.614, 2.423, 1.622]` -> `{"pos": [-6.614, 2.423,
+  1.622], "yaw": 0.0}`), which also re-confirms the generator is still deterministic — same seed,
+  same 2866 props, byte-stable everywhere else. `yaw` is carried at 0.0 to match
+  `playtest_hollow.json`; it is the reason this shape was the right target, per the finding.
+* `tools/hollowmere_check.gd` reads the new shape. **Deliberately no fallback to the old triple** —
+  a layout still writing `[x, y, z]` now fails loudly with "layout has no spawn record — expected
+  {"pos": [x, y, z]}" instead of being quietly accommodated.
+* `tools/world_contract_check.gd`'s `_layout_spawn()` lost its second branch, which is the whole
+  point of the finding: the dual-shape reader was the cost, and the cast that was wrong for the
+  other shape returned an empty default rather than erroring, so a schema mismatch read as "this
+  layout has no spawn" (the F-076 blind spot in miniature). One branch now, and a layout that does
+  not match returns `null`, which the caller already reports as a failure rather than a skip.
+
+**Verified, including an honest account of two checks that do not pass.**
+
+`agent godot --script tools/hollowmere_check.gd` -> `HOLLOWMERE_CHECK PASS`, with
+`HOLLOWMERE_SPAWN at (-6.614, 2.423, 1.622) clear=true` — the migrated record read correctly.
+
+`world_contract_check` and `playtest_hollow_check` both still FAIL, and **neither failure is this
+change.** Proved rather than asserted, with `agent baseline` (F-080) at clean HEAD in a throwaway
+worktree:
+
+  · `world_contract_check` — FAIL(3) in the working tree, the IDENTICAL FAIL(3) at HEAD. All three
+    are pre-existing and none mention spawn; the spawn assertions themselves pass, printing
+    `WORLD_CONTRACT_AUTHORED spawn=(-6.614, 2.423, 1.622) ground=2.02`, which is `_layout_spawn()`
+    reading the new shape successfully. **Filed as F-549** rather than left in this note, because a
+    both-map matrix check red at HEAD with no finding tracking it is its own problem.
+  · `playtest_hollow_check` — failures=1 in the working tree, failures=2 at HEAD. The one remaining
+    ("physical sky is active") reproduces at HEAD, and `PASS: scene player matches the shared
+    horizontal spawn record` holds. The HEAD-only second failure ("all visual prop origins match
+    the shared layout (733)") is almost certainly a throwaway-worktree artefact — that worktree
+    lacks untracked generated assets — so this is NOT a claim that this change fixed anything.
+
+`playtest_hollow.json` and its generator were already on the target shape and are untouched.
+
+### F-272 · The seed re-broadcast has no two-process proof — `run_reseed_check` calls the client's own receive path by hand — **fixed**
+
+**Area:** netcode · **Severity:** low · **Found:** 2026-08-20 by lp
+
+`tools/run_reseed_check.gd` phase 3 exercises F-258's receive half by calling
+`WorldDeltaLog.net_delta_applied(0, 0, "world", "seed", v)` directly — byte-for-byte the arguments a
+client's ENet callback passes, and enough to prove the discrimination (an ordinary delta must not be
+treated as a reseed, and vice versa) plus `_reseed_local()`'s wipe-and-adopt. It is NOT proof that
+the record actually crosses a real socket, nor that it arrives BEFORE `CycleService`'s `RUN_KIND`
+record — and that ordering is load-bearing: `host_restart_run()` depends on a client adopting the new
+seed before its re-derived `run_restarted` reaches the subscribers that re-derive from the seed. The
+ordering is guaranteed by the channel being reliable-ordered, which is a property of ENet this repo
+has never asserted for itself.
+
+This is the same gap **F-260** records for `run_restarted` itself, arriving one record later on the
+same channel, and the fix is the same shape: a real two-process check in the mould of
+`tools/cycle_advanced_net_check.gd` / `tools/cycle_modifier_net_check.gd`, whose client asserts (a)
+`GameState.run_seed` changed, (b) its `WorldDeltaLog` was wiped, and (c) it saw the seed land before
+`run_restarted` fired. Worth folding into whatever task takes F-260 rather than standing alone —
+they would be two phases of one check.
+
+---
+
+**Resolved 2026-08-22 by coil8be837.** **Resolved 2026-08-22 by coil8be837.** `tools/run_reseed_net_check.gd` is new, and it is the
+two-process proof this finding asked for — same driver/probe shape as
+`tools/cycle_modifier_net_check.gd`: the driver plays the HOST in-process, a spawned child process
+is a real ENet CLIENT, and they talk through a `user://` JSON file written by atomic rename (F-290).
+
+The three assertions the finding named, plus the ordering it was actually about. The client samples
+its state **inside** its own `EventBus.run_restarted` handler rather than after the fact — reading
+it from the driver afterwards would pass no matter which record arrived first, which is precisely
+the hole `run_reseed_check` phase 3 left. At the instant `run_restarted` fires on the client:
+
+  (a) `GameState.run_seed` has ALREADY moved off the seed it joined on, to the host's new value,
+  (b) its `WorldDeltaLog` has ALREADY dropped the ended run's chunk record (phase 1 plants a real
+      ordinary delta first, so "wiped" is not vacuously true of an empty log),
+  (c) the new seed is ALREADY re-laid as the wiped log's own first entry.
+
+That is `host_restart_run()`'s seed-then-run ordering asserted end to end over a real socket, and
+with it ENet's reliable-ordered guarantee — which this repo had leaned on and never proved for
+itself. Phase 3 then keeps F-258's discrimination honest over the wire: an ordinary post-restart
+delta on another chunk is applied, does not trigger a second reseed, and does not move the seed.
+
+Verified: `.agent/bin/agent godot --script tools/run_reseed_net_check.gd` -> `RUN_RESEED_NET_CHECK
+failures=0`, all 16 assertions PASS including the client's own 0 self-failures (301300385 ->
+2958949862 across the restart). The results line declares
+`EXPECTED_ERROR_PATTERNS="resources still in use"` — the one pattern this project already carries
+for a check that tears down a live session at exit (SPECS standing rule 4).
+
+F-260, which this finding suggested folding into, is already resolved, so this stands alone.
 
 ### F-306 · docs/NEXT.md is hand-maintained but summarises a board that moves hourly, so it goes stale within hours — corrected twice in one night by two different reviewers — **fixed**
 
@@ -3675,13 +3985,13 @@ silhouette, for the two reasons in that file's header — the catalogue shares n
 tree drawn through solid rock reads as broken depth sorting rather than as knowledge.
 
 The Reaver's "can't build Wards" is authored, not coded: `BuildableDef` gained
-`forbidden_attunement_ids` and `required_attunement_id` (D-197), the two Wards name the Reaver, and
+`forbidden_attunement_ids` and `required_attunement_id` (D-212), the two Wards name the Reaver, and
 `BuildService._attunement_refusal()` is one host check in the same block as every other refusal. The
 same field is what the Tinker's Ward turret will use when that content exists.
 
 **The design tension, flagged not buried:** DESIGN §4.5's table says the Reaver can't build Wards and
 its prose four lines down says "Nobody is locked out of anything". Specific rule implemented over
-general principle; D-197 records why, and reverting it is one line in each of two `.tres` files
+general principle; D-212 records why, and reverting it is one line in each of two `.tres` files
 because nothing in code names a role.
 
 **Verified:** `.agent/bin/agent godot --script tools/attunement_effects_check.gd` →

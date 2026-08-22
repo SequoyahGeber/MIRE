@@ -413,13 +413,13 @@ func _check_spawn_matches_layout(level: Node, spawn: Vector3) -> void:
 			% [drift, authored] + "drifted apart")
 
 
-## The layout's own spawn record, in BOTH shapes the shipped layouts use: `hollowmere.json` writes a
-## bare `[x, y, z]`, `playtest_hollow.json` writes `{"pos": [x, y, z]}` (F-302). Returns `null` when
-## the layout has no usable record, which is a failure for the caller to report rather than a skip.
+## The layout's own spawn record. ONE shape across every layout — `{"pos": [x, y, z], "yaw": r}`
+## (F-302). This used to carry a second branch for `hollowmere.json`'s bare `[x, y, z]`; that
+## layout and its generator were migrated, so the branch is gone and a layout that writes the old
+## triple now returns `null` here instead of being quietly accommodated. Returns `null` when the
+## layout has no usable record, which is a failure for the caller to report rather than a skip.
 func _layout_spawn(layout: Dictionary) -> Variant:
-	var record: Variant = layout.get("spawn")
-	if record is Dictionary:
-		record = (record as Dictionary).get("pos")
+	var record: Variant = (layout.get("spawn", {}) as Dictionary).get("pos")
 	if not (record is Array):
 		return null
 	var values: Array = record as Array

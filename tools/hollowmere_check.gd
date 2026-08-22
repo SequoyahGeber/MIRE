@@ -144,9 +144,12 @@ func _probe_ground(level: Node, world: Node, layout: Dictionary) -> void:
 ## makes the scene prove it still agrees.
 func _check_spawn(level: Node, layout: Dictionary, player: Node3D,
 		player_position: Vector3) -> void:
-	var spawn: Array = layout.get("spawn", []) as Array
+	# F-302: one spawn shape across every layout — `{"pos": [x, y, z], "yaw": r}`. Read as a
+	# Dictionary and not a bare triple, and note there is no fallback to the old shape on purpose:
+	# a layout still writing `[x, y, z]` must fail loudly here rather than read as "no spawn".
+	var spawn: Array = (layout.get("spawn", {}) as Dictionary).get("pos", []) as Array
 	if spawn.size() < 3:
-		failures.append("layout has no spawn")
+		failures.append("layout has no spawn record — expected {\"pos\": [x, y, z]}")
 		return
 	var authored := Vector3(float(spawn[0]), float(spawn[1]), float(spawn[2]))
 	if player == null:
