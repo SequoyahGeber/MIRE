@@ -30,12 +30,21 @@ static func target_position(carrier_positions: Array, current: Vector3) -> Vecto
 ## full track speed; two (or more, though HaulService caps it at two) track at full speed. Either
 ## way this is `move_toward` at a capped rate, never an assignment — that cap is the whole
 ## teleport-proofing, not a stylistic choice.
+## [param speed_scale] is the carriers' `haul_speed` powerup stat, folded in by the caller — F-580's
+## last unread stat. It arrives as a plain multiplier rather than as a PowerupService lookup because
+## this file is pure math by design (see the class docstring): a static function that reached for an
+## autoload could not be tested standalone, and `tools/haul_check.gd` proves the teleport bound by
+## calling it with nothing else in the tree. Clamped at zero so a hostile modifier can slow a haul to
+## a standstill but can never reverse it — a negative track speed would drive the object AWAY from
+## its carriers, which is not a balance decision anyone would be making on purpose.
 static func step(
-	current: Vector3, target: Vector3, carrier_count: int, def: Resource, delta: float
+	current: Vector3, target: Vector3, carrier_count: int, def: Resource, delta: float,
+	speed_scale: float = 1.0
 ) -> Vector3:
 	if carrier_count <= 0 or def == null:
 		return current
 	var speed: float = float(def.get(&"carry_track_speed_mps"))
 	if carrier_count == 1:
 		speed *= float(def.get(&"solo_drag_multiplier"))
+	speed *= maxf(speed_scale, 0.0)
 	return current.move_toward(target, speed * delta)

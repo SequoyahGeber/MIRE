@@ -10388,3 +10388,27 @@ standing_stones POI builds a seeded stone circle; 62 megalith pieces on an islan
 Files: `content/poi/standing_stones.tres`, `world/gen/stone_circle_site.gd`, `world/gen/poi_structures.gd`, `tools/stone_circle_check.gd`
 
 Commit at time of writing: `df95c356`
+
+---
+
+### DONE · F-586 · wick1c650c · 2026-08-22T17:51:30+00:00
+
+**Scattered rocks and boulders have no collider at all — you walk through them**
+
+Batched scatter now builds collision; rocks are solid. scatter_collision_check failures=0, negative control confirms it witnesses the defect. Filed F-588 (pre-existing red).
+
+Files: `world/gen/resource_scatter_field.gd`, `world/gen/prop_collider.gd`, `tools/scatter_collision_check.gd`
+
+Commit at time of writing: `d86b0e1c`
+
+---
+
+### DONE · F-585 · larchcc2572 · 2026-08-22T17:55:32+00:00
+
+**Resonance is entirely unimplemented — DESIGN 4.4's twelve run-defining effects do not exist**
+
+Twelve Resonances implemented (StatusService + HazardField + ResonanceService), plus F-580's last four stats. Two new checks, 68 assertions, 0 failures.
+
+Files: `autoload/status_service.gd`, `autoload/resonance_service.gd`, `systems/combat/hazard_field.gd`, `tools/status_effects_check.gd`, `tools/resonance_check.gd`, `systems/enemies/enemy.gd`, `autoload/haul_service.gd`, `entities/player/player_controller.gd`, `systems/hauling/haulable.gd`, `systems/hauling/haul_math.gd`, `autoload/combat_service.gd`, `autoload/ranged_combat_service.gd`, `systems/health/player_health.gd`
+
+Commit at time of writing: `d86b0e1c`

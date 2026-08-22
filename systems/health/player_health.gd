@@ -1392,6 +1392,13 @@ func _tick_blight(peer_id: int, downed_state: DOWNED_STATE, delta: float) -> boo
 		drain_per_sec = maxf(
 			float(powerup_service.call(&"stat", peer_id, &"blight_rate", drain_per_sec)), 0.0
 		)
+	# F-585: Fungal's Greater Resonance is "you can walk in Mire safely". A clean zero rather than a
+	# large resist — §4.4 says *safely*, and six slots committed to one family should buy the
+	# sentence it promised. Below the corruption threshold this function has already returned, so
+	# there is no interaction with that early exit.
+	var resonance: Node = get_node_or_null(^"/root/ResonanceService")
+	if resonance != null:
+		drain_per_sec = maxf(float(resonance.call(&"modify_blight_rate", peer_id, drain_per_sec)), 0.0)
 	var accum: float = float(_blight_accum.get(peer_id, 0.0)) + drain_per_sec * delta
 	var whole: int = int(accum)
 	if whole <= 0:
@@ -1477,9 +1484,15 @@ func _damage_taken_for(peer_id: int, amount: int) -> int:
 	var powerups: Node = _powerups()
 	if powerups == null:
 		return amount
-	return maxi(
-		int(roundi(float(powerups.call(&"stat", peer_id, &"damage_taken", float(amount))))), 1
-	)
+	var scaled: int = int(roundi(float(powerups.call(&"stat", peer_id, &"damage_taken", float(amount)))))
+	# F-585: Blood's Greater Resonance is "kills heal the whole team, **you take double damage**".
+	# That is qualitative, not a stat — it is the price of a threshold rather than a per-stack
+	# modifier — so it is applied here, after the stat and before the floor. Returns `scaled`
+	# unchanged for every peer not six deep in Blood.
+	var resonance: Node = get_node_or_null(^"/root/ResonanceService")
+	if resonance != null:
+		scaled = int(resonance.call(&"modify_damage_taken", peer_id, scaled))
+	return maxi(scaled, 1)
 
 
 ## F-543: re-seat one peer's ceiling after their stack map changed. A DownedState is built at spawn

@@ -44,26 +44,12 @@
       "task": "F-575",
       "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
     },
-    "autoload/haul_service.gd": {
-      "agent": "larchcc2572",
-      "at": "2026-08-22T17:44:04+00:00",
+    "autoload/loose_loot_service.gd": {
+      "agent": "birch1db63e",
+      "at": "2026-08-22T17:54:10+00:00",
       "dirty_at_claim": false,
-      "task": "F-585",
-      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
-    },
-    "autoload/resonance_service.gd": {
-      "agent": "larchcc2572",
-      "at": "2026-08-22T17:40:54+00:00",
-      "dirty_at_claim": false,
-      "task": "F-585",
-      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
-    },
-    "autoload/status_service.gd": {
-      "agent": "larchcc2572",
-      "at": "2026-08-22T17:40:54+00:00",
-      "dirty_at_claim": false,
-      "task": "F-585",
-      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
+      "task": "F-536",
+      "token": "CLAUDE_CODE_SESSION_ID:f4f7b0ab-0b40-4c88-a2d0-b7de993492f1"
     },
     "content/harvestables/apple_tree.tres": {
       "agent": "gale43d16e",
@@ -168,47 +154,12 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "entities/player/player_controller.gd": {
-      "agent": "larchcc2572",
-      "at": "2026-08-22T17:44:04+00:00",
-      "dirty_at_claim": false,
-      "task": "F-585",
-      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
-    },
-    "systems/combat/hazard_field.gd": {
-      "agent": "larchcc2572",
-      "at": "2026-08-22T17:40:54+00:00",
-      "dirty_at_claim": false,
-      "task": "F-585",
-      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
-    },
     "systems/crafting/station_def.gd": {
       "agent": "wick410d34",
       "at": "2026-08-22T17:15:43+00:00",
       "dirty_at_claim": false,
       "task": "F-575",
       "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
-    },
-    "systems/enemies/enemy.gd": {
-      "agent": "larchcc2572",
-      "at": "2026-08-22T17:44:04+00:00",
-      "dirty_at_claim": false,
-      "task": "F-585",
-      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
-    },
-    "systems/hauling/haul_math.gd": {
-      "agent": "larchcc2572",
-      "at": "2026-08-22T17:48:51+00:00",
-      "dirty_at_claim": false,
-      "task": "F-585",
-      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
-    },
-    "systems/hauling/haulable.gd": {
-      "agent": "larchcc2572",
-      "at": "2026-08-22T17:48:51+00:00",
-      "dirty_at_claim": false,
-      "task": "F-585",
-      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
     },
     "tools/blender/build_deep_materials.py": {
       "agent": "birche6b40e",
@@ -253,11 +204,32 @@
       "task": "F-574",
       "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
     },
+    "tools/chest_placement_check.gd": {
+      "agent": "wick410d34",
+      "at": "2026-08-22T17:49:02+00:00",
+      "dirty_at_claim": false,
+      "task": "F-574",
+      "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
+    },
+    "tools/graphics_quality_check.gd": {
+      "agent": "wick3d4184",
+      "at": "2026-08-22T17:53:00+00:00",
+      "dirty_at_claim": false,
+      "task": "F-513",
+      "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
+    },
     "tools/item_icons_check.gd": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:52:45+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "tools/loose_loot_world_check.gd": {
+      "agent": "birch1db63e",
+      "at": "2026-08-22T17:54:10+00:00",
+      "dirty_at_claim": true,
+      "task": "F-536",
+      "token": "CLAUDE_CODE_SESSION_ID:f4f7b0ab-0b40-4c88-a2d0-b7de993492f1"
     },
     "tools/recipe_station_check.gd": {
       "agent": "wick410d34",
@@ -266,18 +238,11 @@
       "task": "F-575",
       "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
     },
-    "tools/resonance_check.gd": {
-      "agent": "larchcc2572",
-      "at": "2026-08-22T17:40:54+00:00",
-      "dirty_at_claim": false,
-      "task": "F-585",
-      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
-    },
-    "tools/scatter_collision_check.gd": {
+    "tools/resource_scatter_check.gd": {
       "agent": "wick1c650c",
-      "at": "2026-08-22T17:44:47+00:00",
+      "at": "2026-08-22T17:53:48+00:00",
       "dirty_at_claim": false,
-      "task": "F-586",
+      "task": "F-588",
       "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
     },
     "tools/station_tier_check.gd": {
@@ -286,27 +251,6 @@
       "dirty_at_claim": false,
       "task": "F-575",
       "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
-    },
-    "tools/status_effects_check.gd": {
-      "agent": "larchcc2572",
-      "at": "2026-08-22T17:40:54+00:00",
-      "dirty_at_claim": false,
-      "task": "F-585",
-      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
-    },
-    "world/gen/prop_collider.gd": {
-      "agent": "wick1c650c",
-      "at": "2026-08-22T17:44:47+00:00",
-      "dirty_at_claim": false,
-      "task": "F-586",
-      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
-    },
-    "world/gen/resource_scatter_field.gd": {
-      "agent": "wick1c650c",
-      "at": "2026-08-22T17:44:47+00:00",
-      "dirty_at_claim": false,
-      "task": "F-586",
-      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
     }
   },
   "in_flight": {
@@ -362,11 +306,31 @@
       "started": "2026-08-22T00:29:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "F-513": {
+      "agent": "wick3d4184",
+      "files": [
+        "tools/graphics_quality_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-22T17:53:00+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
+    },
+    "F-536": {
+      "agent": "birch1db63e",
+      "files": [
+        "tools/loose_loot_world_check.gd",
+        "autoload/loose_loot_service.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-22T17:54:10+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:f4f7b0ab-0b40-4c88-a2d0-b7de993492f1"
+    },
     "F-574": {
       "agent": "wick410d34",
       "files": [
         "autoload/chest_placement_service.gd",
-        "tools/chest_gate_check.gd"
+        "tools/chest_gate_check.gd",
+        "tools/chest_placement_check.gd"
       ],
       "notes": [],
       "started": "2026-08-22T17:38:59+00:00",
@@ -385,33 +349,13 @@
       "started": "2026-08-22T17:10:26+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
     },
-    "F-585": {
-      "agent": "larchcc2572",
-      "files": [
-        "autoload/status_service.gd",
-        "autoload/resonance_service.gd",
-        "systems/combat/hazard_field.gd",
-        "tools/status_effects_check.gd",
-        "tools/resonance_check.gd",
-        "systems/enemies/enemy.gd",
-        "autoload/haul_service.gd",
-        "entities/player/player_controller.gd",
-        "systems/hauling/haulable.gd",
-        "systems/hauling/haul_math.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-22T17:40:54+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
-    },
-    "F-586": {
+    "F-588": {
       "agent": "wick1c650c",
       "files": [
-        "world/gen/resource_scatter_field.gd",
-        "world/gen/prop_collider.gd",
-        "tools/scatter_collision_check.gd"
+        "tools/resource_scatter_check.gd"
       ],
       "notes": [],
-      "started": "2026-08-22T17:44:47+00:00",
+      "started": "2026-08-22T17:53:48+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
     }
   },
@@ -1982,13 +1926,13 @@
       "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
     },
     "autoload/combat_service.gd": {
-      "agent": "wick3d4184",
-      "at": "2026-08-22T17:46:26+00:00",
-      "claimed_at": "2026-08-22T17:43:49+00:00",
+      "agent": "larchcc2572",
+      "at": "2026-08-22T17:55:32+00:00",
+      "claimed_at": "2026-08-22T17:53:25+00:00",
       "dirty_at_claim": false,
-      "hash": "048d6b8d3ffc0bf7a14d62e96352bb29db74954d6bb2f10e26d3c5f5836af680",
-      "task": "F-576",
-      "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
+      "hash": "861cac3e6c54a8493e4a869f4d16a3be86bfe0dc5cc96e6df7817b1034ea207a",
+      "task": "F-585",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
     },
     "autoload/command_service.gd": {
       "agent": "wickec4384",
@@ -2062,13 +2006,13 @@
       "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
     },
     "autoload/haul_service.gd": {
-      "agent": "birch1db63e",
-      "at": "2026-08-22T17:42:38+00:00",
-      "claimed_at": "2026-08-22T17:13:03+00:00",
+      "agent": "larchcc2572",
+      "at": "2026-08-22T17:55:32+00:00",
+      "claimed_at": "2026-08-22T17:44:04+00:00",
       "dirty_at_claim": false,
       "hash": "8de3d2fb16eb8e7a58b23fb523b91e3d4e81c296bf339e9e25f6c9af479832a5",
-      "task": "F-580",
-      "token": "CLAUDE_CODE_SESSION_ID:f4f7b0ab-0b40-4c88-a2d0-b7de993492f1"
+      "task": "F-585",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
     },
     "autoload/inventory_service.gd": {
       "agent": "flint04a51d",
@@ -2157,13 +2101,13 @@
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
     "autoload/ranged_combat_service.gd": {
-      "agent": "wick3d4184",
-      "at": "2026-08-22T17:46:26+00:00",
-      "claimed_at": "2026-08-22T17:43:49+00:00",
+      "agent": "larchcc2572",
+      "at": "2026-08-22T17:55:32+00:00",
+      "claimed_at": "2026-08-22T17:53:25+00:00",
       "dirty_at_claim": false,
-      "hash": "f144978fb901512262c4684a6cff038e94c1b60f7c8eff07a92086bbf1a99437",
-      "task": "F-576",
-      "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
+      "hash": "66e82f2bee68c968331435615ed1cce7f707bfb2159448db1b501c810625958e",
+      "task": "F-585",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
     },
     "autoload/registry.gd": {
       "agent": "birche6b40e",
@@ -2171,6 +2115,15 @@
       "hash": "bcb9750da44f73390b4515256f51ee0c37e2f743eef807d04e35eacaf68520b8",
       "task": "3.19",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "autoload/resonance_service.gd": {
+      "agent": "larchcc2572",
+      "at": "2026-08-22T17:55:32+00:00",
+      "claimed_at": "2026-08-22T17:40:54+00:00",
+      "dirty_at_claim": false,
+      "hash": "5107f42b3cf7a66716b50ef2ddce3da31e9be518b0dd74ebc305f58a0700f34f",
+      "task": "F-585",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
     },
     "autoload/reward_service.gd": {
       "agent": "larch543bba",
@@ -2203,6 +2156,15 @@
       "hash": "eee6a209fceebd94192f7d3c695660c1b4cc1f341bf026c9c28c89bed61d7a5b",
       "task": "F-560",
       "token": "CLAUDE_CODE_SESSION_ID:cfe6388b-b9bd-49ce-be58-b822595f97fb"
+    },
+    "autoload/status_service.gd": {
+      "agent": "larchcc2572",
+      "at": "2026-08-22T17:55:32+00:00",
+      "claimed_at": "2026-08-22T17:40:54+00:00",
+      "dirty_at_claim": false,
+      "hash": "690838f6d3a3b5844bc0ba92129ea88ab504d67a45243a07c0adbd374f55945e",
+      "task": "F-585",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
     },
     "autoload/steam_lobby.gd": {
       "agent": "duska7668b",
@@ -3690,11 +3652,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "docs/FINDINGS.md": {
-      "agent": "hollowbfcf67",
-      "at": "2026-08-22T17:48:39+00:00",
+      "agent": "larchcc2572",
+      "at": "2026-08-22T17:55:32+00:00",
       "hash": null,
-      "task": "F-584",
-      "token": "CLAUDE_CODE_SESSION_ID:cfe6388b-b9bd-49ce-be58-b822595f97fb"
+      "task": "F-585",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
     },
     "docs/ITEMS.md": {
       "agent": "larchcc2572",
@@ -3759,13 +3721,13 @@
       "token": "CODEX_SESSION_ID:01a02772-862e-7242-889a-a20257660bfa"
     },
     "entities/player/player_controller.gd": {
-      "agent": "birch1db63e",
-      "at": "2026-08-22T17:42:38+00:00",
-      "claimed_at": "2026-08-22T17:13:03+00:00",
+      "agent": "larchcc2572",
+      "at": "2026-08-22T17:55:32+00:00",
+      "claimed_at": "2026-08-22T17:44:04+00:00",
       "dirty_at_claim": false,
-      "hash": "5edc01f2a107841299efaa40ab466e5ce5dcd0a5e43a997c2dcc8e86d4b6b2a1",
-      "task": "F-580",
-      "token": "CLAUDE_CODE_SESSION_ID:f4f7b0ab-0b40-4c88-a2d0-b7de993492f1"
+      "hash": "bffc835eb039e687804143b51b3c10239ce9fc86210347d336a04d938f4c1407",
+      "task": "F-585",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
     },
     "export_presets.cfg": {
       "agent": "slatef9bff1",
@@ -3883,6 +3845,15 @@
       "task": "F-469",
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
+    "systems/combat/hazard_field.gd": {
+      "agent": "larchcc2572",
+      "at": "2026-08-22T17:55:32+00:00",
+      "claimed_at": "2026-08-22T17:40:54+00:00",
+      "dirty_at_claim": false,
+      "hash": "63b9f97e12e6a662e22e1887548a8bf43ce642dbbb8101b7becf0555fc5d068a",
+      "task": "F-585",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
+    },
     "systems/crafting/station_def.gd": {
       "agent": "quillb947a7",
       "at": "2026-08-22T00:58:58+00:00",
@@ -3909,13 +3880,13 @@
       "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
     },
     "systems/enemies/enemy.gd": {
-      "agent": "birch1db63e",
-      "at": "2026-08-22T17:42:38+00:00",
-      "claimed_at": "2026-08-22T17:21:32+00:00",
+      "agent": "larchcc2572",
+      "at": "2026-08-22T17:55:32+00:00",
+      "claimed_at": "2026-08-22T17:44:04+00:00",
       "dirty_at_claim": false,
-      "hash": "059539d3886dc8c7994aa1e164603f55df9054cab46a15dfc1fdeb5c3f92466f",
-      "task": "F-580",
-      "token": "CLAUDE_CODE_SESSION_ID:f4f7b0ab-0b40-4c88-a2d0-b7de993492f1"
+      "hash": "8b08a1043ee9c405402943cf528b1d07d8eb3e22e6ec00b13d395fb7aa168cb9",
+      "task": "F-585",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
     },
     "systems/enemies/enemy_def.gd": {
       "agent": "larch28fcaa",
@@ -3961,14 +3932,23 @@
       "task": "F-432",
       "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
-    "systems/hauling/haulable.gd": {
-      "agent": "wick3d4184",
-      "at": "2026-08-22T17:46:26+00:00",
-      "claimed_at": "2026-08-22T17:18:38+00:00",
+    "systems/hauling/haul_math.gd": {
+      "agent": "larchcc2572",
+      "at": "2026-08-22T17:55:32+00:00",
+      "claimed_at": "2026-08-22T17:48:51+00:00",
       "dirty_at_claim": false,
-      "hash": "ad9906943c53f2faf5945e83dcd15ecf1d38ebe7440daae9f46b439515429f18",
-      "task": "F-576",
-      "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
+      "hash": "a93deaf69fba55b3d8ead93f0290600dbf41fdc1a23d4c8a3ca92ed0e074e657",
+      "task": "F-585",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
+    },
+    "systems/hauling/haulable.gd": {
+      "agent": "larchcc2572",
+      "at": "2026-08-22T17:55:32+00:00",
+      "claimed_at": "2026-08-22T17:48:51+00:00",
+      "dirty_at_claim": false,
+      "hash": "9bee0d95b9e22dd554ab7b0763eab5bc1a3b1ec98e270b475f0060692c75122e",
+      "task": "F-585",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
     },
     "systems/health/downed_state.gd": {
       "agent": "larch543bba",
@@ -3980,13 +3960,13 @@
       "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
     },
     "systems/health/player_health.gd": {
-      "agent": "wick3d4184",
-      "at": "2026-08-22T17:46:26+00:00",
-      "claimed_at": "2026-08-22T17:43:49+00:00",
+      "agent": "larchcc2572",
+      "at": "2026-08-22T17:55:32+00:00",
+      "claimed_at": "2026-08-22T17:53:25+00:00",
       "dirty_at_claim": false,
-      "hash": "4c2e7ecddcb5e22fb560b3ce4856b2e760f16bd4655da496b103884815a15a0b",
-      "task": "F-576",
-      "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
+      "hash": "aa4484e3f42414d35a6744e4cf20a7bf36727dc460d30252fa6eb2eb4023d5e7",
+      "task": "F-585",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
     },
     "systems/inventory/item_def.gd": {
       "agent": "birche6b40e",
@@ -4101,13 +4081,6 @@
       "hash": "492c5b6381cbfaa7b13fdd07e378f9d9fb710536787827eae354dc94f0e6e180",
       "task": "F-555",
       "token": "CLAUDE_CODE_SESSION_ID:cfe6388b-b9bd-49ce-be58-b822595f97fb"
-    },
-    "tools/asset_usage_check.gd": {
-      "agent": "mossecba4b",
-      "at": "2026-08-21T17:55:28+00:00",
-      "hash": "097072c2d6e344843311e217d508920633219e05584918622746501f829cc8e7",
-      "task": "F-439",
-      "token": "CLAUDE_CODE_SESSION_ID:1e714a39-d8b1-4450-9d79-102af2c5081f"
     },
     "tools/atmosphere_look_shot.gd": {
       "agent": "bram937a51",
@@ -5236,6 +5209,15 @@
       "task": "F-452",
       "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
     },
+    "tools/resonance_check.gd": {
+      "agent": "larchcc2572",
+      "at": "2026-08-22T17:55:32+00:00",
+      "claimed_at": "2026-08-22T17:40:54+00:00",
+      "dirty_at_claim": false,
+      "hash": "45806ca843580a66f61053192e58b46657575b9a6ce4a569f6375e8ee61afa13",
+      "task": "F-585",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
+    },
     "tools/resource_reachability_check.gd": {
       "agent": "quillb947a7",
       "at": "2026-08-22T00:58:58+00:00",
@@ -5330,6 +5312,15 @@
       "task": "F-272",
       "token": "CLAUDE_CODE_SESSION_ID:9f85a50f-dcca-4078-b6c0-522f46a43f77"
     },
+    "tools/scatter_collision_check.gd": {
+      "agent": "wick1c650c",
+      "at": "2026-08-22T17:51:30+00:00",
+      "claimed_at": "2026-08-22T17:44:47+00:00",
+      "dirty_at_claim": false,
+      "hash": "a054d9344459f2a643fafe4aa1bd6a9eb4102a3e3d5f2004526e38635a03a972",
+      "task": "F-586",
+      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
+    },
     "tools/settings_check.gd": {
       "agent": "hollowe6edef",
       "at": "2026-08-22T03:35:54+00:00",
@@ -5411,6 +5402,15 @@
       "hash": "97a78913a83cee08d0de0af6202bad26d619ce9ab36ecfd2191f8c09ed5d1f69",
       "task": "F-552",
       "token": "CODEX_SESSION_ID:01a02843-9dd7-7d02-8070-e22390284df7"
+    },
+    "tools/status_effects_check.gd": {
+      "agent": "larchcc2572",
+      "at": "2026-08-22T17:55:32+00:00",
+      "claimed_at": "2026-08-22T17:40:54+00:00",
+      "dirty_at_claim": false,
+      "hash": "f5a00acd56d9543f3543ddd679f39557d9de13d2be1866ab69750b6dbec68a0c",
+      "task": "F-585",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
     },
     "tools/steam_check.gd": {
       "agent": "bram937a51",
@@ -5520,13 +5520,6 @@
       "hash": "63ad00acfbb0840e120bc4ffa0e2bed55607805b9d16a7f34f1770b875fe72fb",
       "task": "F-456",
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
-    },
-    "tools/tree_collider_check.gd": {
-      "agent": "kiln384569",
-      "at": "2026-08-21T17:50:16+00:00",
-      "hash": "0f4713d220db2a90693b1fe1178b59835c609abd733ea7cb9cf7ce4c3005400c",
-      "task": "F-434",
-      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
     "tools/verify_setup.gd": {
       "agent": "galedc2f76",
@@ -5873,11 +5866,13 @@
       "token": "CODEX_SESSION_ID:01a027da-eedc-7792-b9fe-5a08f5de632e"
     },
     "world/gen/prop_collider.gd": {
-      "agent": "kiln384569",
-      "at": "2026-08-21T17:50:16+00:00",
-      "hash": "c7d728eaef3a38aa6732c12c1e336c6a52097b8484e4df66f4dd7bf94b55b9e3",
-      "task": "F-434",
-      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
+      "agent": "wick1c650c",
+      "at": "2026-08-22T17:51:30+00:00",
+      "claimed_at": "2026-08-22T17:44:47+00:00",
+      "dirty_at_claim": false,
+      "hash": "918aa3def6d8fcfe9b068802c0b72c7293580dbf5c2cb4b26b688c4df39d0999",
+      "task": "F-586",
+      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
     },
     "world/gen/resource_scatter.gd": {
       "agent": "emberf4d564",
@@ -5887,13 +5882,13 @@
       "token": "CODEX_SESSION_ID:01a0276b-4bee-7931-9a83-6fd6ab5c5c86"
     },
     "world/gen/resource_scatter_field.gd": {
-      "agent": "bram937a51",
-      "at": "2026-08-22T17:44:47+00:00",
-      "claimed_at": "2026-08-22T08:35:01+00:00",
+      "agent": "wick1c650c",
+      "at": "2026-08-22T17:51:30+00:00",
+      "claimed_at": "2026-08-22T17:44:47+00:00",
       "dirty_at_claim": false,
-      "hash": "71fab9239ead17fcfe0483740ce6b37eb00829caf3825c4e763c587b6a295dd8",
-      "task": "F-547",
-      "token": "CLAUDE_CODE_SESSION_ID:280d7fb3-3816-4517-a003-ea21b2ca6f66"
+      "hash": "6a14653a1d454d64cb15478406c4e973fac908d026654c0e9de54b741ce5495c",
+      "task": "F-586",
+      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
     },
     "world/gen/ruin_site.gd": {
       "agent": "tine0bda72",
@@ -5949,7 +5944,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1764,
+  "rev": 1777,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -11862,7 +11857,7 @@
     "F-513": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "graphics_quality_check fails at clean HEAD because frontend has no shadow-casting sun"
     },
@@ -12057,7 +12052,7 @@
     "F-536": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Scattered pickup models are decorative and cannot be collected as loose world loot"
     },
@@ -12423,16 +12418,20 @@
       "title": "tools/dodge_check.gd fails its last assertion on a clean checkout"
     },
     "F-585": {
+      "done_at": "2026-08-22T17:55:32+00:00",
+      "done_by": "larchcc2572",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Resonance is entirely unimplemented \u2014 DESIGN 4.4's twelve run-defining effects do not exist"
     },
     "F-586": {
+      "done_at": "2026-08-22T17:51:30+00:00",
+      "done_by": "wick1c650c",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Scattered rocks and boulders have no collider at all \u2014 you walk through them"
     },
@@ -12442,6 +12441,13 @@
       "status": "todo",
       "tier": "F",
       "title": "The Reinforced Workbench is now exactly equal to the bench it replaces, not better"
+    },
+    "F-588": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "resource_scatter_check's harvest-yield assertion fails at a clean HEAD"
     }
   },
   "version": 1

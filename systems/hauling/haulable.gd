@@ -75,7 +75,28 @@ func _physics_process(delta: float) -> void:
 		return
 	var positions: Array = _carrier_positions()
 	var target: Vector3 = HAUL_MATH.target_position(positions, global_position)
-	global_position = HAUL_MATH.step(global_position, target, positions.size(), _def, delta)
+	global_position = HAUL_MATH.step(
+		global_position, target, positions.size(), _def, delta, _haul_speed_scale()
+	)
+
+
+## F-580's last unread stat. `haul_speed` scales how fast a carried object tracks its carriers, and
+## the BEST carrier sets the pace: a haul is a shared effort, and taking the max means one player's
+## Pack Frame helps the pair rather than being averaged away by a teammate holding nothing. Host-side
+## — this runs inside `_physics_process`, which only the host processes — so `stat()` per peer is the
+## right seam rather than `local_stat()`.
+##
+## Worth knowing before tuning it: nothing in a shipped run spawns a haulable yet (`HaulService`'s
+## spawn is reached only from `tools/`), so this read is correct and currently unreachable in play.
+## It is wired now so that whatever places the first crate does not have to remember to.
+func _haul_speed_scale() -> float:
+	var powerups: Node = get_node_or_null(^"/root/PowerupService")
+	if powerups == null:
+		return 1.0
+	var best: float = 1.0
+	for peer_id: int in carriers:
+		best = maxf(best, float(powerups.call(&"stat", peer_id, &"haul_speed", 1.0)))
+	return best
 
 
 # ── Client-facing request seam ───────────────────────────────────────────────────────────────────

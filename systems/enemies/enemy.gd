@@ -72,6 +72,11 @@ const DISSOLVE_HOLD_FRACTION: float = 0.35
 ## the cost and not the corruption.
 const AURA_INTERVAL_SEC: float = 1.0
 
+## How fast a shockwave's push bleeds off, as a fraction per second. Tuned so a knockback is spent in
+## roughly the length of the stagger that accompanies it (F-585) — a push that outlives the stagger
+## would drag a creature that has already started fighting back.
+const KNOCKBACK_DECAY_PER_SEC: float = 6.0
+
 const REPATH_DISTANCE_M: float = 1.0
 ## How often an agent whose map is not live yet re-asks for it. A streamed world bakes its first
 ## chunk region some frames after the level loads, so an enemy that spawns into that window would
@@ -169,6 +174,11 @@ var _nav_recheck_wait: float = 0.0
 
 ## Client-local hit/death feedback (2.9). Runs on EVERY peer, including the host's own copy, and is
 ## never networked beyond the two replicated values that trigger it — §2.2's last row.
+## F-585: host-only. Set by `host_apply_knockback()`, decayed every physics frame. Never replicated —
+## enemies are host-simulated, so a client sees the resulting POSITION through the synchroniser and
+## needs no knowledge of the impulse that caused it.
+var _knockback_velocity: Vector3 = Vector3.ZERO
+
 var _flash_remaining: float = 0.0
 var _flash_material: StandardMaterial3D
 ## The visual's mesh list, walked once at build time — not re-found per overlay frame (F-099).
@@ -318,6 +328,37 @@ func _is_frontal_hit(instigator_peer_id: int) -> bool:
 	return angle <= definition.armor_arc_degrees * 0.5
 
 
+## F-585, Kinetic's Greater Resonance. Shoves this creature away from a blast. Host-only, and
+## deliberately NOT the shape of `PlayerController.local_apply_knockback()`: a player's knockback is
+## client-authoritative and scales by their own `knockback_taken` stat, whereas an enemy is simulated
+## entirely here, so there is no client half and no stat to consult.
+##
+## `direction` is any vector pointing away from the blast; its length is ignored, so a caller can
+## hand over the raw offset without normalising. Vertical component is dropped — a shockwave that
+## launched creatures into the air would fling them off the navmesh and strand them.
+func host_apply_knockback(direction: Vector3, impulse: float) -> void:
+	if not _owns_simulation() or state == State.DEAD or impulse <= 0.0:
+		return
+	var flat := Vector3(direction.x, 0.0, direction.z)
+	if flat.length_squared() < 0.000001:
+		return
+	_knockback_velocity = flat.normalized() * impulse
+
+
+## Whether `StatusService` currently has this creature staggered. Its own method rather than an
+## inline lookup because `_physics_process()` asks every frame and the null-guard belongs in one
+## place — the service is an autoload, but a headless check may run an enemy without it.
+func _is_staggered() -> bool:
+	var status: Node = get_node_or_null(^"/root/StatusService")
+	return status != null and bool(status.call(&"is_staggered", self))
+
+
+## 1.0 unless something is chilling this creature. See `_tick_pursuit()`.
+func _status_speed_scale() -> float:
+	var status: Node = get_node_or_null(^"/root/StatusService")
+	return float(status.call(&"speed_scale", self)) if status != null else 1.0
+
+
 func is_alive() -> bool:
 	return state != State.DEAD
 
@@ -366,13 +407,36 @@ func _physics_process(delta: float) -> void:
 	if definition.aura_corruption_per_second > 0.0:
 		_tick_aura(delta)
 
-	match state:
-		State.DEAD:
-			_tick_corpse(delta)
-		State.TELL, State.ATTACK, State.RECOVER:
-			_tick_attack(delta)
-		_:
-			_tick_pursuit(delta)
+	# F-585: Kinetic's Greater Resonance staggers what its shockwave catches. A staggered creature
+	# keeps its gravity and its knockback but runs no state tick at all — it neither steers nor
+	# advances its attack phase, which is what makes "staggered" different from "slowed" and is the
+	# whole payoff for committing six slots to one family. The check is cheap and returns false
+	# instantly for the overwhelmingly common case of a creature with no statuses at all.
+	var staggered: bool = state != State.DEAD and _is_staggered()
+	if not staggered:
+		match state:
+			State.DEAD:
+				_tick_corpse(delta)
+			State.TELL, State.ATTACK, State.RECOVER:
+				_tick_attack(delta)
+			_:
+				_tick_pursuit(delta)
+	else:
+		velocity.x = 0.0
+		velocity.z = 0.0
+
+	# Applied AFTER the state machine, because the state machine writes `velocity.x`/`z` outright
+	# every frame — a knockback added before it would be overwritten on the same tick and the
+	# shockwave would move nothing. Decays exponentially rather than being cleared, so the push
+	# reads as a shove with weight behind it instead of a single-frame teleport.
+	if _knockback_velocity.length_squared() > 0.01:
+		velocity.x += _knockback_velocity.x
+		velocity.z += _knockback_velocity.z
+		_knockback_velocity = _knockback_velocity.lerp(
+			Vector3.ZERO, clampf(KNOCKBACK_DECAY_PER_SEC * delta, 0.0, 1.0)
+		)
+	else:
+		_knockback_velocity = Vector3.ZERO
 
 	move_and_slide()
 
@@ -403,8 +467,12 @@ func _tick_pursuit(delta: float) -> void:
 
 	state = State.CHASE
 	var step: Vector3 = _steer_toward(target.global_position)
-	velocity.x = step.x * definition.move_speed
-	velocity.z = step.z * definition.move_speed
+	# F-585: Cold's Resonance ("attacks slow") and the `slow_chance`/`slow_potency` powerup stats both
+	# land here, through `StatusService`. `speed_scale()` is 1.0 for a creature carrying no chill, so
+	# this is the authored speed unchanged in every other case.
+	var speed: float = definition.move_speed * _status_speed_scale()
+	velocity.x = step.x * speed
+	velocity.z = step.z * speed
 
 
 func _tick_attack(delta: float) -> void:
@@ -532,6 +600,16 @@ func _enter_death(instigator_peer_id: int) -> void:
 			maxi(roundi(float(definition.attack_damage) * definition.death_burst_fraction), 1),
 			definition.burst_radius_m,
 		)
+	# F-585: the Resonance layer gets the death BEFORE the bounty and before anything clears this
+	# creature's statuses, because two of the twelve effects key off what it was carrying when it
+	# died — Fire's Greater Resonance explodes an ignited corpse and chains, Cold's shatters a frozen
+	# one. `ResonanceService` clears the statuses itself once it has read them, which is why nothing
+	# here does. Host-only by construction: `_enter_death()` is reached only through
+	# `host_apply_damage()`'s `_owns_simulation()` guard.
+	var resonance: Node = get_node_or_null(^"/root/ResonanceService")
+	if resonance != null:
+		resonance.call(&"host_on_enemy_death", self, instigator_peer_id)
+
 	# F-539's kill bounty. Emitted here rather than from a `died` listener because `died` is also
 	# how `SfxDirector` hears a death on a CLIENT's own copy, and a bounty must be paid exactly once,
 	# by the host: `_enter_death()` is only ever reached through `host_apply_damage()`'s

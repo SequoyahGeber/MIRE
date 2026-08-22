@@ -1024,6 +1024,14 @@ func _apply_horizontal_movement(
 	velocity.z = horizontal.z
 
 	camera.set_sprinting(sprinting and is_on_floor())
+	# F-585, Kinetic's Resonance: "sprinting builds a damage charge". Only the owning peer knows it
+	# is sprinting — sprint is client-authoritative input (ARCHITECTURE §2.2 row 1) — so the charge
+	# necessarily accumulates here and is reported to the host when it fills. On the ground only: a
+	# charge built while falling would make bunny-hopping the optimal way to earn one.
+	if sprinting and is_on_floor():
+		var resonance: Node = get_node_or_null(^"/root/ResonanceService")
+		if resonance != null:
+			resonance.call(&"local_sprint_tick", delta)
 
 
 # ── Wade (F-375) ──────────────────────────────────────────────────────────────────────────────────
@@ -1285,7 +1293,17 @@ func _execute_dodge() -> bool:
 		dash_dir = -transform.basis.z
 	dash_dir = dash_dir.normalized()
 
-	_dodge_velocity = dash_dir * dodge_impulse
+	# F-585, Void's Resonance: "dodge blinks". The extra distance is spent over the SAME dash window,
+	# so the blink is a faster crossing rather than a longer roll — that is what makes it read as a
+	# blink and what keeps the i-frame window (below) covering the whole of it. Zero for a player
+	# without the Resonance, so the term is added unconditionally. Greater Void also leaves a rift
+	# behind, which the service requests of the host from inside this same call: a damaging volume is
+	# world mutation and a client never spawns one.
+	var blink_metres: float = 0.0
+	var resonance: Node = get_node_or_null(^"/root/ResonanceService")
+	if resonance != null:
+		blink_metres = float(resonance.call(&"local_on_dodge", global_position))
+	_dodge_velocity = dash_dir * (dodge_impulse + blink_metres / maxf(dodge_duration_sec, 0.01))
 	_dodge_time_remaining = dodge_duration_sec
 	# The i-frame window is the dash window extended by `dodge_iframe_seconds` (F-125/D-087), asked of
 	# PowerupService for THIS peer: dodging is client-authoritative movement (ARCHITECTURE §2.2

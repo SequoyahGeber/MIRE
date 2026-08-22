@@ -2548,14 +2548,6 @@ come first.
 
 ---
 
-### F-536 · Scattered pickup models are decorative and cannot be collected as loose world loot
-
-**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivyf16b98
-
-Split from F-528 after its 50-chest density target was implemented. The map and asset kits already scatter pickup_* meshes, but MIRE has no host-authoritative ordinary-item world-pickup component/service: only Haulable.request_pickup exists, for two-person carried objects. Build a stable seed-derived loose-loot placement path, host-validate pickup range and inventory capacity, replicate consumed state/rejoin state, and wire FocusPrompt interaction. Preserve the active 2.1d pickup asset lane; do not edit its claimed generator/catalog files until released.
-
----
-
 ### F-544 · Three DESIGN §4.5 Attunement promises name systems that do not exist — Ward turrets, taunts, and station tiers
 
 **Area:** gameplay · **Severity:** medium · **Found:** 2026-08-22 by larch543bba
@@ -3183,51 +3175,6 @@ belongs to birch1db63e — reaping another session's process is theirs or Sequoy
 
 ---
 
-### F-585 · Resonance is entirely unimplemented — DESIGN 4.4's twelve run-defining effects do not exist
-
-**Area:** powerups · **Severity:** high · **Found:** 2026-08-22 by larchcc2572
-
-`DESIGN.md` §4.4 calls Resonance "the single highest-value system for replayability": holding 3+ of a
-family triggers a qualitative, run-defining effect, and 6+ upgrades it. Twelve effects are specified
-in that table. **None of them exist.**
-
-`PowerupService` computes the thresholds correctly — `resonance_tier()`, `resonance_active()`,
-`greater_resonance_active()` and the `resonance_changed` signal all work and are covered by
-`tools/powerup_check.gd`. The whole layer is a flag nobody reads. Grepped across
-`autoload/ core/ entities/ systems/ ui/ world/`, the only consumer of any of it is
-`SfxDirector._on_resonance_changed()`, which plays a sting. **Crossing a Resonance threshold in MIRE
-today makes a noise and changes nothing.**
-
-This is the same shape as F-580 (stat names with no reader) one level up, and it has the same cause:
-the framework shipped, the consumers were left to "their own task", and that task was never written.
-F-580 is the read side of the *stat* vocabulary; this is the read side of the *tag* vocabulary.
-
-**It also makes five shipped powerups fully inert on purpose and with no payoff.** `empty_vessel`,
-`open_flame`, `quiet_bloom`, `whetted_thirst` and `white_quiet` deliberately declare no modifiers —
-their authored descriptions say so outright ("It does nothing... the Void pays out at depth or not at
-all"). They are pure family counters whose entire value is reaching a Resonance. With Resonance
-unimplemented they are exactly what their flavour text jokes about, which is not the joke landing.
-
-Four of the six Resonances also need mechanisms that do not exist:
-
-  · Fire ("attacks ignite", "ignited enemies explode, chaining") and Cold ("attacks slow", "frozen
-    enemies shatter") need a **status-effect system**. Burning and Chilled do not exist — which is
-    the same hole that leaves F-580's `ignite_chance`, `slow_chance` and `slow_potency` unreadable.
-  · Fungal ("corpses sprout spore clouds", "spores spread") and Void ("blinking leaves a damaging
-    rift") need a **lingering area-hazard** primitive. Nothing in the project spawns a damaging
-    volume that outlives the frame that made it; `Enemy._burst()` is instantaneous and only ever
-    hits players.
-  · Kinetic ("sprinting builds a damage charge") needs a charge accumulator fed by the player's
-    sprint state, which `PlayerController` does not currently expose.
-  · Blood 6 ("you take double damage") and Fungal 6 ("walk in Mire safely") need reads in
-    `PlayerHealth` that do not exist.
-
-Wanted: the status-effect system, the area-hazard primitive, and a service that owns all twelve
-effects — plus a check that fails when a family's Resonance has no implementation, so this cannot
-regrow the way F-580's stat list did.
-
----
-
 ### F-587 · The Reinforced Workbench is now exactly equal to the bench it replaces, not better
 
 **Area:** content · **Severity:** medium · **Found:** 2026-08-22 by birch1db63e
@@ -3302,7 +3249,216 @@ against the commits landed today rather than reading as an old known failure.
 
 ---
 
+### F-589 · 45 items author a world_model and ~30 pickup GLBs exist, but the branch that renders them is unreachable
+
+**Area:** art · **Severity:** medium · **Found:** 2026-08-22 by birch1db63e
+
+Found while establishing ground truth for F-536, and it is the only part of that finding's
+complaint that survived measurement. **It is a design question for Sequoyah, not a bug to fix** —
+the current behaviour is his own recorded call, and this entry exists so the cost of that call is
+visible rather than implied.
+
+`ItemDrop._build_visual()` (`systems/loot/item_drop.gd`) tries three visuals in order: the item's
+inventory ICON as a billboarded `Sprite3D`, then its `world_model` PackedScene, then a fallback
+cube. The function's own docstring records why the icon is first — "every item already authors an
+icon (`tools/item_icons_check.gd` asserts it), while `world_model` is authored for only a handful,
+so the icon is the one visual that is guaranteed to exist and to be instantly recognisable as the
+same thing the player will see in their pack", and it names this as Sequoyah's call.
+
+The consequence nobody wrote down: because `item_icons_check.gd` **guarantees** every item has an
+icon, the first branch always wins, and **the `world_model` branch is unreachable for every shipped
+item**. Not "rarely taken" — unreachable by construction, and it will stay unreachable for as long
+as that check passes.
+
+What that costs, counted:
+
+  · **45 items in `content/items/` author a `world_model`.**
+  · **`assets/pickups/exports` holds 30 files** — 15 `pickup_*.glb` meshes and their `.import`
+    siblings — with a generator (`tools/blender/build_pickup_kit.py`), a catalog and previews
+    behind them.
+
+None of it can render as a world drop. The only other consumer is decorative: the `pickup_*` props
+`tools/mapgen/hollowmere_layout.py` scatters into the AUTHORED map, which is the interim playtest
+map and not the shipped procedural world — the same "content that never runs in a shipped run"
+category as F-573..F-577.
+
+Three ways this could go, and the choice is Sequoyah's because it is art direction:
+
+  · **Keep the icon and retire the models.** Honest, and cheapest. `world_model` comes off
+    `ItemDef`, the pickup kit stops being maintained, and `asset_usage_check` stops carrying 15
+    meshes nothing reaches. The cost is losing a modelled look the assets were built for.
+  · **Prefer `world_model` when one is authored, icon otherwise.** One line — swap the two branches
+    — and the icon fallback still guarantees every item is visible. This is what the existing data
+    was clearly authored FOR, and it makes 45 items and 15 meshes live at once. The cost is exactly
+    the readability the icon call was made to protect: a modelled flint on dark ground at night is
+    harder to spot than a flat unshaded icon, which is the specific thing the docstring worries
+    about.
+  · **Both, by distance.** Model up close, icon beyond a few metres. Best-looking and most work, and
+    it needs a per-drop LOD swap that does not exist today.
+
+Worth deciding either way rather than leaving it: the current state is the worst of the three,
+because the assets are authored, generated, committed and maintained, and cannot be seen.
+
+---
+
 ## Resolved
+
+### F-585 · Resonance is entirely unimplemented — DESIGN 4.4's twelve run-defining effects do not exist — **fixed**
+
+**Area:** powerups · **Severity:** high · **Found:** 2026-08-22 by larchcc2572
+
+`DESIGN.md` §4.4 calls Resonance "the single highest-value system for replayability": holding 3+ of a
+family triggers a qualitative, run-defining effect, and 6+ upgrades it. Twelve effects are specified
+in that table. **None of them exist.**
+
+`PowerupService` computes the thresholds correctly — `resonance_tier()`, `resonance_active()`,
+`greater_resonance_active()` and the `resonance_changed` signal all work and are covered by
+`tools/powerup_check.gd`. The whole layer is a flag nobody reads. Grepped across
+`autoload/ core/ entities/ systems/ ui/ world/`, the only consumer of any of it is
+`SfxDirector._on_resonance_changed()`, which plays a sting. **Crossing a Resonance threshold in MIRE
+today makes a noise and changes nothing.**
+
+This is the same shape as F-580 (stat names with no reader) one level up, and it has the same cause:
+the framework shipped, the consumers were left to "their own task", and that task was never written.
+F-580 is the read side of the *stat* vocabulary; this is the read side of the *tag* vocabulary.
+
+**It also makes five shipped powerups fully inert on purpose and with no payoff.** `empty_vessel`,
+`open_flame`, `quiet_bloom`, `whetted_thirst` and `white_quiet` deliberately declare no modifiers —
+their authored descriptions say so outright ("It does nothing... the Void pays out at depth or not at
+all"). They are pure family counters whose entire value is reaching a Resonance. With Resonance
+unimplemented they are exactly what their flavour text jokes about, which is not the joke landing.
+
+Four of the six Resonances also need mechanisms that do not exist:
+
+  · Fire ("attacks ignite", "ignited enemies explode, chaining") and Cold ("attacks slow", "frozen
+    enemies shatter") need a **status-effect system**. Burning and Chilled do not exist — which is
+    the same hole that leaves F-580's `ignite_chance`, `slow_chance` and `slow_potency` unreadable.
+  · Fungal ("corpses sprout spore clouds", "spores spread") and Void ("blinking leaves a damaging
+    rift") need a **lingering area-hazard** primitive. Nothing in the project spawns a damaging
+    volume that outlives the frame that made it; `Enemy._burst()` is instantaneous and only ever
+    hits players.
+  · Kinetic ("sprinting builds a damage charge") needs a charge accumulator fed by the player's
+    sprint state, which `PlayerController` does not currently expose.
+  · Blood 6 ("you take double damage") and Fungal 6 ("walk in Mire safely") need reads in
+    `PlayerHealth` that do not exist.
+
+Wanted: the status-effect system, the area-hazard primitive, and a service that owns all twelve
+effects — plus a check that fails when a family's Resonance has no implementation, so this cannot
+regrow the way F-580's stat list did.
+
+---
+
+**Resolved 2026-08-22 by larchcc2572 (fixed).** **Fixed.** All twelve Resonances exist, and the three status-dependent stats F-580 left pending have
+a consumer.
+
+**Three new pieces.** `StatusService` (autoload) owns Burning, Chilled and Staggered — host-applied,
+host-ticked, mirrored to clients for VFX through one NodePath broadcast. Burn damage goes through the
+target's own `host_apply_damage()`, so armour, the flinch counter, death, the kill bounty and the
+igniter's lifesteal all behave exactly as they do for a sword. Statuses refresh rather than stack
+(longer time, stronger potency, original source keeps the credit), and a chill is clamped at 0.75 so
+Cold can never become a stunlock. `HazardField` is the lingering-area primitive four effects needed
+and the project did not have. `ResonanceService` implements the table in DESIGN §4.4 —
+Blood/Fungal/Kinetic/Fire/Cold/Void, at 3 and at 6.
+
+**The five modifier-less powerups now pay out.** `open_flame`, `whetted_thirst`, `quiet_bloom`,
+`white_quiet` and `empty_vessel` are pure family counters by design, and `tools/resonance_check.gd`
+drives every effect through them on purpose: an effect observed that way can only have come from the
+Resonance layer.
+
+**Two orderings are load-bearing.** `host_on_hit()` runs before `host_apply_damage()` in both combat
+services, so Kinetic's charge folds into one damage event and Fire/Cold get their status onto the
+target before the killing blow — which is what makes Fire 6 (explode and chain) and Cold 6 (shatter)
+fire at all. `Enemy._enter_death()` calls `host_on_enemy_death()` before the bounty and before
+anything clears the statuses; the service reads them, then clears them itself.
+
+**The two client-authoritative halves are bounded, not trusted.** Kinetic's charge builds from sprint
+state only the owner knows, so the client reports and the HOST rate-limits to no faster than the
+charge could honestly be earned. Void's blink extends a client-authoritative dodge locally, but the
+rift is requested of the host, which checks the requester holds the Greater Resonance before spawning
+a damaging volume.
+
+**F-580's remainder, closed here:** `ignite_chance`, `slow_chance` and `slow_potency` live in
+`ResonanceService.host_on_hit()` rather than in `CombatService`, because they apply the same two
+statuses the Fire and Cold Resonances do and one place deciding "this hit ignites" stops a player
+holding both from getting two competing burns. `slow_potency` is asked against a base of
+`COLD_CHILL_FRACTION`, not zero (F-140's shape). `haul_speed` is wired in `Haulable` with the best
+carrier setting the pace — correct, and unreachable in play until something outside `tools/` spawns a
+haulable, which is recorded in the code rather than left for the next agent to rediscover.
+
+Verified: `tools/status_effects_check.gd` 0 failures (27 assertions), `tools/resonance_check.gd` 0
+failures (41, every effect end to end). Neighbours re-run and still green: `powerup_check`,
+`powerup_effects_check`, `combat_check`, `haul_check`. `resonance_check` also asserts
+`IMPLEMENTED_FAMILIES` covers `PowerupDef.KNOWN_FAMILIES` exactly, so a seventh family added without
+an effect fails — the regrowth F-580 and F-585 both were.
+
+**Found and fixed while building:** a freed `Object` read from a `Dictionary` into a typed `Node`
+variable throws "Trying to assign invalid previously freed instance", and a target dying between two
+ticks is the normal case for a status service, not an exceptional one. Every such read now goes
+through one `_node_for()` helper. The check caught it on its first run.
+
+### F-536 · Scattered pickup models are decorative and cannot be collected as loose world loot — **partly fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivyf16b98
+
+Split from F-528 after its 50-chest density target was implemented. The map and asset kits already scatter pickup_* meshes, but MIRE has no host-authoritative ordinary-item world-pickup component/service: only Haulable.request_pickup exists, for two-person carried objects. Build a stable seed-derived loose-loot placement path, host-validate pickup range and inventory capacity, replicate consumed state/rejoin state, and wire FocusPrompt interaction. Preserve the active 2.1d pickup asset lane; do not edit its claimed generator/catalog files until released.
+
+---
+
+**Resolved 2026-08-22 by birch1db63e (partly fixed).** **Resolved as measured, not as filed — and the measurement refuted the plan, including my own
+hypothesis and the director's.**
+
+**The service the finding asks for already exists and ships.** F-536's body says "MIRE has no
+host-authoritative ordinary-item world-pickup component/service: only Haulable.request_pickup
+exists". That was true when it was filed and is not true now: **F-570** shipped `LooseLootService`
+(a registered autoload) which turns `authored_world_marker` nodes with `kind == "loot"` into real
+drops through `ItemDropService.host_spawn_placed_drop()` — host-authoritative, replicated through a
+MultiplayerSpawner, with `ItemDrop` revalidating pickup range and inventory capacity and consumed
+drops simply absent for late joiners. Every clause of the finding's requested design is already
+built.
+
+**The density hypothesis was wrong, and it was wrong by 25x.** I proposed, and the director agreed,
+that the live bug was "the service exists but places almost nothing" — reasoning from the content
+files, where only six POI defs carry `marker_kind = &"loot"` and `LooseLootService` then coin-flips
+half of those away, which would leave about three piles on an island whose own comment claimed
+"20-30". That reasoning was wrong because marker count does not come from the number of POI DEFS; it
+comes from their `target_count` fields, which sum to 152.
+
+Measured on the real composer rather than argued from content — `tools/loose_loot_world_check.gd`,
+three seeds:
+
+    seed 536536    152 loot markers -> 77 live drops
+    seed 991177    152 loot markers -> 86 live drops
+    seed 20260822  152 loot markers -> 71 live drops
+
+So a real procedural run leaves 71-86 collectible piles on the ground. Loose loot is not sparse; it
+is roughly three times as common as its own comment claimed.
+
+**What was actually fixed here.**
+
+  · `LooseLootService`'s comment no longer misdescribes the code. It claimed 20-30 piles on "the
+    50-chest procedural island"; it is 71-86 from 152 markers, and the corrected comment carries the
+    measurement and points at the check.
+  · **`tools/loose_loot_world_check.gd` closes a real verification gap.** `tools/loose_loot_check.gd`
+    (F-570) proves the SERVICE works by building 40 synthetic markers in a bare tree. That is the
+    right test for the service and it is structurally blind to the question F-536 asks — a fixture
+    cannot tell you whether the shipped world puts any loot in front of a player. The new check
+    boots the composer exactly as `--procedural` does, across three seeds, and pins a floor (a run
+    must leave at least 8 drops, or the pickup layer exists and the player never meets it) and a
+    ceiling (not above 200, so a runaway is caught and the comment cannot drift again).
+
+**Why this is partly-fixed and not fixed.** The finding's title — "scattered pickup models are
+decorative and cannot be collected" — has one surviving true reading, and it is not something I
+should fix on my own initiative. `ItemDrop._build_visual()` prefers the item's inventory icon and
+only falls back to `world_model`; `tools/item_icons_check.gd` guarantees every item has an icon, so
+**the `world_model` branch is unreachable by construction** and the 45 authored models and 15
+`pickup_*` meshes can never render as a world drop. That ordering is Sequoyah's own recorded call,
+documented in the function's docstring. Overturning a recorded decision to close a finding that did
+not ask for it would be the wrong move, so it is filed as **F-589** for him to decide as art
+direction, with the count of what the current call costs.
+
+**The lesson worth carrying, and it is the same one F-580 taught:** two agents reasoned from the
+content files and got the same answer, and the answer was off by a factor of 25. Boot the thing and
+count.
 
 ### F-586 · Scattered rocks and boulders have no collider at all — you walk through them — **fixed**
 

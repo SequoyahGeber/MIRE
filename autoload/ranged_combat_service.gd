@@ -349,6 +349,14 @@ func _resolve_flight(peer_id: int, shot: Dictionary, hit_node: Node, hit_positio
 	# the shooter's real peer id. The SAME value is applied and reported, so the damage number the
 	# HUD shows is the damage the target took.
 	var applied: int = maxi(_modified_damage(peer_id, &"bow_damage", weapon.damage), 1)
+	# F-585: the same Resonance seam melee uses, for the same reasons — Kinetic's charge folds into
+	# one damage event, and Fire/Cold get their statuses onto the target before this arrow can kill
+	# it. An arrow spends a charge exactly as a swing does: the charge is earned by sprinting, not by
+	# a weapon class, and making it melee-only would quietly tax every ranged build in Kinetic.
+	if valid_target:
+		var resonance: Node = get_node_or_null(^"/root/ResonanceService")
+		if resonance != null:
+			applied += int(resonance.call(&"host_on_hit", peer_id, damageable, applied))
 	var connected: bool = valid_target and bool(damageable.call("host_apply_damage", applied, peer_id))
 	if connected:
 		# F-580: `on_hit_lifesteal`/`on_kill_heal_hp`, through CombatService's shared accumulator so

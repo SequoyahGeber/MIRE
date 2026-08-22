@@ -318,6 +318,13 @@ func _resolve_hit(peer_id: int, weapon: WeaponDef) -> void:
 		# `applied` is reassigned as well as passed, so the damage number the HUD shows is the
 		# damage the enemy took. `maxi(..., 1)` keeps a connected swing from reading as a whiff.
 		applied = maxi(_modified_melee_damage(peer_id, weapon.damage), 1)
+		# F-585: the Resonance layer gets the hit BEFORE the damage lands, and for two reasons that
+		# both matter. Its bonus (Kinetic's spent charge) folds into `applied`, so a charged hit is
+		# ONE damage event rather than two — two would flinch the creature twice and pay two hits'
+		# worth of lifesteal. And the statuses it applies (Fire ignites, Cold chills, plus the
+		# `ignite_chance`/`slow_chance` stats) are on the target BEFORE this swing can kill it, which
+		# is what lets Fire's and Cold's Greater Resonances fire off the corpse.
+		applied += _resonance_bonus(peer_id, target, applied)
 		connected = bool(target.call("host_apply_damage", applied, peer_id))
 		if connected:
 			host_apply_hit_rewards(peer_id, applied, target)
@@ -325,6 +332,16 @@ func _resolve_hit(peer_id: int, weapon: WeaponDef) -> void:
 		_broadcast(peer_id, false, Vector3.ZERO, 0, &"")
 		return
 	_broadcast(peer_id, true, target_position, applied, StringName(String(target.name)))
+
+
+## F-585's seam. Returns the extra damage the attacker's Resonances add to this hit, and applies
+## whatever statuses they call for as a side effect. Zero, and no statuses, for a peer holding
+## nothing — so the call is unconditional and costs a null check in the common case.
+func _resonance_bonus(peer_id: int, target: Node, _applied: int) -> int:
+	var resonance: Node = get_node_or_null(^"/root/ResonanceService")
+	if resonance == null:
+		return 0
+	return int(resonance.call(&"host_on_hit", peer_id, target, _applied))
 
 
 ## Nearest damageable inside the swing's reach and horizontal arc. The arc is measured on the
