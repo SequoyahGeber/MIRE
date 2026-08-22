@@ -3485,6 +3485,19 @@ there is nowhere to hang a drop on an enemy death. The key shipped bosses-only f
   so a meta flag set at spawn and read at death is the small honest version, and it is what unlocks
   ITEMS.md's second and third Gilded Key sources.
 
+**Where to hang the per-instance case, confirmed by larchcc2572 (F-585) rather than guessed.** Do NOT
+widen `Enemy.died(instigator_peer_id)`: it reaches `SfxDirector` on client copies, so changing its
+payload has a blast radius. A node-carrying, host-only seam already exists —
+`Enemy._enter_death()` calls `ResonanceService.host_on_enemy_death(self, instigator_peer_id)`, which
+passes the node itself. Adding a consumer there costs nothing and changes no signal two systems
+already depend on.
+
+One ordering caveat if anything reads state off the enemy at death, because it is load-bearing rather
+than incidental: `_enter_death()` sets `collision_layer = 0` and drops the DAMAGEABLE group *before*
+the bounty is emitted, and `ResonanceService` clears the enemy's statuses at the end of its own
+handler. "What was this creature carrying" is only answerable inside that window. Whatever gets added
+should say so in a comment.
+
 Ten enemy kinds with authored art and no drop of their own is a bigger content gap than any single
 item. Worth a roadmap task rather than a finding, if the next triage agrees.
 
