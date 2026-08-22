@@ -55,6 +55,11 @@ var _nodes_added_this_frame: int = 0
 ## One row per sampled frame.
 var _frames: Array[Dictionary] = []
 
+## F-456. How long to wait for a run to stand its world up before settling. The shipped scene boots
+## into a menu, so the streamer does not exist on frame one; generous because this is a wait for a
+## world build, not a per-frame budget.
+const STREAMER_WAIT_FRAMES: int = 600
+
 
 func _initialize() -> void:
 	_run.call_deferred()
@@ -91,19 +96,29 @@ func _run() -> void:
 
 	for _i: int in 8:
 		await physics_frame
-	var settle: Dictionary = await ProbeScene.settle(_level)
+	# F-456: the shipped scene is a menu that builds `ProceduralWorld` (and with it the streamer)
+	# only once a run starts, and it does not parent that world under the scene this tool
+	# instantiated. Searching `_level` therefore found no streamer, so `settle()` returned
+	# instantly, "0 chunk(s) in 0 frame(s)", and the whole walk was measured against an empty
+	# world. Wait for the streamer to actually exist, and search from `root` so it is found
+	# wherever the run puts it.
+	for _i: int in STREAMER_WAIT_FRAMES:
+		if _find_streamer(root) != null:
+			break
+		await process_frame
+	var settle: Dictionary = await ProbeScene.settle(root)
 	print("settled: %d chunk(s) in %d frame(s)" % [
 		int(settle.get("chunks", 0)), int(settle.get("frames", 0))])
 
-	_player = _level.get_node_or_null(^"Player") as Node3D
+	_player = _find_player()
 	if _player == null:
-		push_error("no Player node — nothing to anchor the walk on")
+		push_error("no player found — nothing to anchor the walk on")
 		quit(1)
 		return
 	_travel_origin = _player.global_position
-	_streamer = _find_streamer(_level)
-	_nav_baker = _find_with(_level, &"pending_bake_count")
-	_scatter = _find_with(_level, &"pending_group_count")
+	_streamer = _find_streamer(root)
+	_nav_baker = _find_with(root, &"pending_bake_count")
+	_scatter = _find_with(root, &"pending_group_count")
 	if _streamer == null:
 		print("  (no ChunkStreamer found — per-frame streamer cost will read 0)")
 	print("walking %.0f m/s for %.0f s from %s\n" % [
@@ -139,7 +154,7 @@ func _walk() -> void:
 			# F-461: the streamer's own cost split across the three things `_process()` does, plus
 			# what it actually did. "The streamer spent 60 ms" is not a diagnosis; "it spent 60 ms
 			# cooking two colliders" is.
-			"phases": ([0.0, 0.0, 0.0] as Array[float]) if _streamer == null \
+			"phases": ([0.0, 0.0, 0.0, 0.0] as Array[float]) if _streamer == null \
 				or not _streamer.has_method(&"last_phase_costs_ms") \
 				else (_streamer.call(&"last_phase_costs_ms") as Array),
 			"counts": ([0, 0] as Array[int]) if _streamer == null \
@@ -206,17 +221,21 @@ func _report() -> void:
 		nodes_total, float(nodes_total) / float(_frames.size())])
 
 	print("\n=== the %d worst frames ===" % WORST_FRAMES_SHOWN)
-	print("  %8s %8s %8s %8s | %7s %7s %7s %5s %5s | %6s %6s %6s" % [
+	# F-456 added `s:emit` — the share of `s:drain` spent inside OTHER nodes' `chunk_mesh_ready`
+	# handlers (scatter dressing, nav bake queueing). It is a subset of drain, not a fourth column
+	# of disjoint cost, so `s:drain` minus `s:emit` is what the streamer itself actually spent.
+	print("  %8s %8s %8s %8s | %7s %7s %7s %7s %5s %5s | %6s %6s %6s" % [
 		"frame ms", "process", "physics", "streamer",
-		"s:eval", "s:drain", "s:cook", "up", "cook",
+		"s:eval", "s:drain", "s:emit", "s:cook", "up", "cook",
 		"nodes", "grpQ", "at s"])
 	for i: int in mini(WORST_FRAMES_SHOWN, sorted.size()):
 		var frame: Dictionary = sorted[i]
 		var phases: Array = frame["phases"]
 		var counts: Array = frame["counts"]
-		print("  %8.2f %8.2f %8.2f %8.2f | %7.2f %7.2f %7.2f %5d %5d | %6d %6d %6.1f" % [
+		var emit_ms: float = float(phases[3]) if phases.size() > 3 else 0.0
+		print("  %8.2f %8.2f %8.2f %8.2f | %7.2f %7.2f %7.2f %7.2f %5d %5d | %6d %6d %6.1f" % [
 			frame["ms"], frame["process_ms"], frame["physics_ms"], frame["streamer_ms"],
-			phases[0], phases[1], phases[2], counts[0], counts[1],
+			phases[0], phases[1], emit_ms, phases[2], counts[0], counts[1],
 			frame["nodes_added"], frame["groups_pending"],
 			frame["at_second"]])
 
@@ -283,6 +302,19 @@ func _attribute(sorted: Array[Dictionary]) -> void:
 
 ## First node in the tree with [param method]. Duck-typed so an instrument never needs a class
 ## reference to something it only reads counters off.
+## The shipped scene (`levels/frontend.tscn`) is a bare `Node3D` that BUILDS its world at runtime,
+## so there is no authored `Player` child to fetch by name — this used to read
+## `_level.get_node_or_null(^"Player")` and abort every run with "no Player node". The player
+## controller adds itself to the `players` group (`entities/player/player_controller.gd`), which is
+## the same handle every shipped system uses to find it, so ask the tree for that instead. The
+## named-child lookup stays as a fallback for an authored fixture (`--scene`) that does have one.
+func _find_player() -> Node3D:
+	for node: Node in get_nodes_in_group(&"players"):
+		if node is Node3D:
+			return node as Node3D
+	return _level.get_node_or_null(^"Player") as Node3D
+
+
 func _find_with(node: Node, method: StringName) -> Node:
 	if node.has_method(method):
 		return node

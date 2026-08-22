@@ -126,6 +126,20 @@ var _last_process_cost_usec: int = 0
 var _cost_eval_usec: int = 0
 var _cost_drain_usec: int = 0
 var _cost_cook_usec: int = 0
+## F-456. The part of `_cost_drain_usec` that is NOT this node's own work: `_upload_chunk()` ends in
+## a synchronous `chunk_mesh_ready` emit, and `ResourceScatterField` and `NavBaker` both do real
+## per-chunk work inside their handlers. Their cost lands on this node's stopwatch and on this
+## node's frame budget, which is why the streamer can report 55 ms against a 4 ms budget without any
+## single thing it does itself taking longer than a millisecond. Split out so the profile can say
+## whose millisecond it was.
+var _cost_emit_usec: int = 0
+## F-456. Coords that are resident at LOD0 and have no collider yet — the exact set
+## `_cook_lazy_collision()` has work for. It used to walk all of `_loaded` every frame looking for
+## them, which at a settled 289 chunks is 289 dictionary fetches and 289 `Time.get_ticks_usec()`
+## calls per frame to discover, almost always, that there is nothing to do. Membership only changes
+## on upload, cook and unload, so tracking it costs three one-line edits and makes the common case
+## (nothing to cook) a single `is_empty()`.
+var _cook_pending: Dictionary[Vector2i, bool] = {}
 ## How many chunks the most recent `_process()` uploaded and how many colliders it cooked — the
 ## per-frame counts that turn a phase cost into a per-chunk cost.
 var _uploads_this_frame: int = 0
@@ -366,13 +380,16 @@ func last_process_cost_ms() -> float:
 	return float(_last_process_cost_usec) / 1000.0
 
 
-## F-461: the phase split, so a 60 ms streamer frame can be attributed. `[eval, drain, cook]` in
-## milliseconds, for the most recent `_process()` call.
+## F-461: the phase split, so a 60 ms streamer frame can be attributed. `[eval, drain, cook, emit]`
+## in milliseconds, for the most recent `_process()` call. F-456 added the fourth: `emit` is the
+## share of `drain` spent inside other nodes' `chunk_mesh_ready` handlers, so it is a SUBSET of
+## `drain`, not a fourth disjoint slice.
 func last_phase_costs_ms() -> Array[float]:
 	return [
 		float(_cost_eval_usec) / 1000.0,
 		float(_cost_drain_usec) / 1000.0,
 		float(_cost_cook_usec) / 1000.0,
+		float(_cost_emit_usec) / 1000.0,
 	] as Array[float]
 
 
@@ -386,6 +403,7 @@ func _process(delta: float) -> void:
 		return
 	var t0_usec: int = Time.get_ticks_usec()
 	_cost_eval_usec = 0
+	_cost_emit_usec = 0
 	_uploads_this_frame = 0
 	_cooks_this_frame = 0
 
@@ -523,6 +541,7 @@ func _unload_chunk(coord: Vector2i) -> void:
 		return
 	var entry: ChunkEntry = _loaded[coord]
 	_loaded.erase(coord)
+	_cook_pending.erase(coord)
 	if is_instance_valid(entry.mesh_instance):
 		# Frees the collision StaticBody3D too — it is a child of the mesh instance, not a sibling.
 		entry.mesh_instance.queue_free()
@@ -581,7 +600,16 @@ func _upload_chunk(job: ChunkJob) -> void:
 	entry.lod = job.lod
 	entry.mesh_instance = mi
 	_loaded[job.coord] = entry
+	# F-456. A fresh mesh instance never carries the old one's collider, so an LOD0 upload always
+	# owes a cook and any other LOD never does — this replaces the per-frame scan over `_loaded`.
+	if job.lod == 0:
+		_cook_pending[job.coord] = true
+	else:
+		_cook_pending.erase(job.coord)
+	# F-456: this emit is synchronous and its listeners are not cheap. See `_cost_emit_usec`.
+	var emit_start_usec: int = Time.get_ticks_usec()
 	chunk_mesh_ready.emit(job.coord, job.lod)
+	_cost_emit_usec += Time.get_ticks_usec() - emit_start_usec
 
 
 static func _chunk_origin(coord: Vector2i) -> Vector3:
@@ -592,13 +620,20 @@ static func _chunk_origin(coord: Vector2i) -> Vector3:
 ## gets one, budgeted against whatever is left of this frame's slice after uploads. `ConcavePolygonShape3D.set_faces()`
 ## is a synchronous PhysicsServer/Jolt call (D-074) and cannot move to WorkerThreadPool.
 func _cook_lazy_collision(deadline_usec: int) -> void:
-	for coord: Vector2i in _loaded:
+	if _cook_pending.is_empty():
+		return
+	for coord: Vector2i in _cook_pending.keys():
 		if Time.get_ticks_usec() >= deadline_usec:
 			return
-		var entry: ChunkEntry = _loaded[coord]
-		if entry.lod != 0 or entry.has_collision:
+		var entry: ChunkEntry = _loaded.get(coord)
+		if entry == null or entry.lod != 0 or entry.has_collision:
+			# Stale membership (unloaded, or re-uploaded at a coarser LOD, between the frame that
+			# queued it and this one). Dropping it here rather than asserting keeps this the one
+			# place that has to be right about the set's contents.
+			_cook_pending.erase(coord)
 			continue
 		_cook_collision(entry)
+		_cook_pending.erase(coord)
 
 
 ## Terrain triangles only, never `mesh.get_faces()` — the mesh also carries F-128's visual skirt,
