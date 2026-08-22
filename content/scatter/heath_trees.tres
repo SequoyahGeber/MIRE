@@ -91,6 +91,14 @@ weight = 0.4
 min_scale = 0.85
 max_scale = 1.15
 
+[sub_resource type="Resource" id="Resource_90_apple_tree_full"]
+script = ExtResource("1_entry")
+asset = &"apple_tree_full"
+kit = "gatherables"
+weight = 1.2
+min_scale = 1.0
+max_scale = 1.3
+
 [resource]
 script = ExtResource("2_def")
 id = &"heath_trees"
@@ -100,4 +108,4 @@ jitter_fraction = 0.8
 coverage = 0.2
 min_height = 0.8
 max_height = 1000
-entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_tree_bare_a"), SubResource("Resource_01_tree_bare_b"), SubResource("Resource_02_tree_bare_c"), SubResource("Resource_03_tree_bare_d"), SubResource("Resource_04_tree_crooked_a"), SubResource("Resource_05_tree_crooked_b"), SubResource("Resource_06_tree_crooked_c"), SubResource("Resource_07_tree_crooked_d"), SubResource("Resource_08_tree_snag_a"), SubResource("Resource_09_tree_snag_b"), SubResource("Resource_10_tree_snag_c")])
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_tree_bare_a"), SubResource("Resource_01_tree_bare_b"), SubResource("Resource_02_tree_bare_c"), SubResource("Resource_03_tree_bare_d"), SubResource("Resource_04_tree_crooked_a"), SubResource("Resource_05_tree_crooked_b"), SubResource("Resource_06_tree_crooked_c"), SubResource("Resource_07_tree_crooked_d"), SubResource("Resource_08_tree_snag_a"), SubResource("Resource_09_tree_snag_b"), SubResource("Resource_10_tree_snag_c"), SubResource("Resource_90_apple_tree_full")])

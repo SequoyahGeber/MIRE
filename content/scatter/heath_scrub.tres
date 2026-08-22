@@ -91,6 +91,14 @@ weight = 0.4
 min_scale = 0.85
 max_scale = 1.2
 
+[sub_resource type="Resource" id="Resource_11_berry_bush_full"]
+script = ExtResource("1_entry")
+asset = &"berry_bush_full"
+kit = "gatherables"
+weight = 1.2
+min_scale = 0.85
+max_scale = 1.15
+
 [resource]
 script = ExtResource("2_def")
 id = &"heath_scrub"
@@ -100,4 +108,4 @@ jitter_fraction = 0.7
 coverage = 0.195
 min_height = 0.6
 max_height = 1000
-entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_bush_thorn_a"), SubResource("Resource_01_bush_thorn_b"), SubResource("Resource_02_bush_thorn_c"), SubResource("Resource_03_bush_dead_a"), SubResource("Resource_04_bush_dead_b"), SubResource("Resource_05_bush_dead_c"), SubResource("Resource_06_bush_round_c"), SubResource("Resource_07_plant_creeper_a"), SubResource("Resource_08_plant_creeper_b"), SubResource("Resource_09_plant_creeper_c"), SubResource("Resource_10_sapling_d")])
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_bush_thorn_a"), SubResource("Resource_01_bush_thorn_b"), SubResource("Resource_02_bush_thorn_c"), SubResource("Resource_03_bush_dead_a"), SubResource("Resource_04_bush_dead_b"), SubResource("Resource_05_bush_dead_c"), SubResource("Resource_06_bush_round_c"), SubResource("Resource_07_plant_creeper_a"), SubResource("Resource_08_plant_creeper_b"), SubResource("Resource_09_plant_creeper_c"), SubResource("Resource_10_sapling_d"), SubResource("Resource_11_berry_bush_full")])

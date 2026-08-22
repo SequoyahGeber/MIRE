@@ -30,12 +30,6 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "autoload/harvest_world.gd": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T00:58:22+00:00",
-      "task": "F-488",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
     "content/harvestables/apple_tree.tres": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:45:13+00:00",
@@ -120,83 +114,17 @@
       "task": "F-482",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "content/scatter/birchwood_canopy.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T00:55:49+00:00",
-      "task": "F-488",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/scatter/birchwood_floor.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T00:53:51+00:00",
-      "task": "F-488",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/scatter/forest_canopy.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T00:55:49+00:00",
-      "task": "F-488",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/scatter/forest_floor.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T00:53:51+00:00",
-      "task": "F-488",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/scatter/forest_undergrowth.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T00:53:51+00:00",
-      "task": "F-488",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/scatter/grassland_shrubs.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T00:53:51+00:00",
-      "task": "F-488",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/scatter/grassland_trees.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T00:54:11+00:00",
-      "task": "F-488",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/scatter/heath_scrub.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T00:53:51+00:00",
-      "task": "F-488",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/scatter/heath_trees.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T00:55:32+00:00",
-      "task": "F-488",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
     "content/scatter/highland_rocks.tres": {
       "agent": "birche6b40e",
       "at": "2026-08-22T00:06:31+00:00",
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "content/scatter/marsh_floor.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T00:53:51+00:00",
-      "task": "F-488",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
     "docs/ASSET_TRACKER.md": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:13:34+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
-    },
-    "systems/harvesting/harvest_library.gd": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T00:53:51+00:00",
-      "task": "F-488",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "tools/blender/build_deep_materials.py": {
       "agent": "birche6b40e",
@@ -330,26 +258,6 @@
       "notes": [],
       "started": "2026-08-22T00:47:57+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:7a55bc0f-4fc2-48cf-9c62-318569fb449e"
-    },
-    "F-488": {
-      "agent": "tine0bda72",
-      "files": [
-        "systems/harvesting/harvest_library.gd",
-        "content/scatter/forest_floor.tres",
-        "content/scatter/forest_undergrowth.tres",
-        "content/scatter/grassland_shrubs.tres",
-        "content/scatter/birchwood_floor.tres",
-        "content/scatter/marsh_floor.tres",
-        "content/scatter/heath_scrub.tres",
-        "content/scatter/grassland_trees.tres",
-        "content/scatter/heath_trees.tres",
-        "content/scatter/forest_canopy.tres",
-        "content/scatter/birchwood_canopy.tres",
-        "autoload/harvest_world.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-22T00:53:51+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     }
   },
   "recent": {
@@ -1425,11 +1333,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
     "autoload/harvest_world.gd": {
-      "agent": "quillcfd8d7",
-      "at": "2026-08-21T23:01:17+00:00",
-      "hash": "cbfefb0f4ea5c6fabe74bbb66c825e6a8ab7fe65d2226d7c852ab98fe659b047",
-      "task": "F-461",
-      "token": "CLAUDE_CODE_SESSION_ID:ef18b3c8-16fb-47c5-852c-09d362e8f2c4"
+      "agent": "tine0bda72",
+      "at": "2026-08-22T00:59:33+00:00",
+      "hash": "b69704beebefe954993053258c78466e618d8aae1f9a418c3595932b6f1d2713",
+      "task": "F-488",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "autoload/progression_service.gd": {
       "agent": "birche6b40e",
@@ -2895,11 +2803,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
     "content/scatter/birchwood_canopy.tres": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T05:34:42+00:00",
-      "hash": "23ae5aa67e2dfc3d166545da800d0f49dfab55845cda8dc147ee1c580a455965",
-      "task": "F-401",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "tine0bda72",
+      "at": "2026-08-22T00:59:33+00:00",
+      "hash": "80ea2c2761530766ede3af77c34e46c7ee09a2fd5ca68ea1189908e44efe0a73",
+      "task": "F-488",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/birchwood_deadwood.tres": {
       "agent": "kilnf96279",
@@ -2909,11 +2817,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     },
     "content/scatter/birchwood_floor.tres": {
-      "agent": "galeb0891e",
-      "at": "2026-08-21T19:56:27+00:00",
-      "hash": "b2e19891cca75a432b2d68379dfb80573d2eaf3baa32f752bec77085ba440378",
-      "task": "F-451",
-      "token": "CLAUDE_CODE_SESSION_ID:496677a1-162a-4bfd-a57f-5ef81aacc0df"
+      "agent": "tine0bda72",
+      "at": "2026-08-22T00:59:33+00:00",
+      "hash": "e014ddad77258ed4825a696e2f2bace74de74b6c4e46bd14e91a3d5684782799",
+      "task": "F-488",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/birchwood_undergrowth.tres": {
       "agent": "galeb0891e",
@@ -2930,11 +2838,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
     },
     "content/scatter/forest_canopy.tres": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T05:34:42+00:00",
-      "hash": "33ddbf8b82839126c9630207b084e532d3a8bb4a0376cd02c17348e1c55367e8",
-      "task": "F-401",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "tine0bda72",
+      "at": "2026-08-22T00:59:33+00:00",
+      "hash": "9cd515199f5ceb733189fc3c4323297a84eff2d83affbdca45c68ee256eedce8",
+      "task": "F-488",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/forest_deadwood.tres": {
       "agent": "kilnf96279",
@@ -2944,11 +2852,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     },
     "content/scatter/forest_floor.tres": {
-      "agent": "galeb0891e",
-      "at": "2026-08-21T19:56:27+00:00",
-      "hash": "a81e029137ee6df00a304b8363c32fffb2d2f119ca60d997b5e1f06cdf3ae65a",
-      "task": "F-451",
-      "token": "CLAUDE_CODE_SESSION_ID:496677a1-162a-4bfd-a57f-5ef81aacc0df"
+      "agent": "tine0bda72",
+      "at": "2026-08-22T00:59:33+00:00",
+      "hash": "562e0565a7f0d459c94a895bab1a21b65440d47b3374888d4dd8bd13b436a294",
+      "task": "F-488",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/forest_rocks.tres": {
       "agent": "kilnd3a089",
@@ -2958,11 +2866,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "content/scatter/forest_undergrowth.tres": {
-      "agent": "galeb0891e",
-      "at": "2026-08-21T19:56:27+00:00",
-      "hash": "a2d1ee02c5e90536a812a4719831c4a1a354c342f6f037218a8454dba5b7a2ba",
-      "task": "F-451",
-      "token": "CLAUDE_CODE_SESSION_ID:496677a1-162a-4bfd-a57f-5ef81aacc0df"
+      "agent": "tine0bda72",
+      "at": "2026-08-22T00:59:33+00:00",
+      "hash": "a354726ec9aa3aa15c4eb346050514045989a6d9e4ed1554f7282286f062258c",
+      "task": "F-488",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/grassland_meadow.tres": {
       "agent": "galeb0891e",
@@ -2979,18 +2887,18 @@
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "content/scatter/grassland_shrubs.tres": {
-      "agent": "galeb0891e",
-      "at": "2026-08-21T19:56:27+00:00",
-      "hash": "7b3abbdc3eb002f81977c99e7613b24d20b1722d68512eeabe69dad7e67aa898",
-      "task": "F-451",
-      "token": "CLAUDE_CODE_SESSION_ID:496677a1-162a-4bfd-a57f-5ef81aacc0df"
+      "agent": "tine0bda72",
+      "at": "2026-08-22T00:59:33+00:00",
+      "hash": "ca7c3665965cdda7b591d4dd0e48b4dc19c2eafd5b696d63b0e8644d6a128764",
+      "task": "F-488",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/grassland_trees.tres": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T05:34:42+00:00",
-      "hash": "11bcc4b956c3a630c22fce10e058d6f9689f13099bb6cb4e9d19616adea044a9",
-      "task": "F-401",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "tine0bda72",
+      "at": "2026-08-22T00:59:33+00:00",
+      "hash": "b750533961475981a7ef5db28c25b97d22eeb5e6abdfbf0865540f61b86f9da3",
+      "task": "F-488",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/grassland_turf.tres": {
       "agent": "galeb0891e",
@@ -3000,11 +2908,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:496677a1-162a-4bfd-a57f-5ef81aacc0df"
     },
     "content/scatter/heath_scrub.tres": {
-      "agent": "galeb0891e",
-      "at": "2026-08-21T19:56:27+00:00",
-      "hash": "bfc0ec200a526f5971f7ddd2b701f034727ad33189b2821ae99c5f5e5455ee2d",
-      "task": "F-451",
-      "token": "CLAUDE_CODE_SESSION_ID:496677a1-162a-4bfd-a57f-5ef81aacc0df"
+      "agent": "tine0bda72",
+      "at": "2026-08-22T00:59:33+00:00",
+      "hash": "8cca5bb154492e8cb9b9791d687b0d5d4175851e6ac9bd8045acb573876bb75a",
+      "task": "F-488",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/heath_stones.tres": {
       "agent": "kilnd3a089",
@@ -3014,11 +2922,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "content/scatter/heath_trees.tres": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T05:34:42+00:00",
-      "hash": "2513a8039c3bc0e371a510636014e2f32144582230dee6139a4ec05d1cd8783d",
-      "task": "F-401",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "tine0bda72",
+      "at": "2026-08-22T00:59:33+00:00",
+      "hash": "ddaa6741007c109a2e61633652b51aeff751411ce50b600d1db13f39ebdffa2f",
+      "task": "F-488",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/heath_turf.tres": {
       "agent": "galeb0891e",
@@ -3070,11 +2978,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     },
     "content/scatter/marsh_floor.tres": {
-      "agent": "galeb0891e",
-      "at": "2026-08-21T19:56:27+00:00",
-      "hash": "49ebf99f181f9a375a6c46bf72a89a43c4d21c6b2d6f1ce0e2a257f480447779",
-      "task": "F-451",
-      "token": "CLAUDE_CODE_SESSION_ID:496677a1-162a-4bfd-a57f-5ef81aacc0df"
+      "agent": "tine0bda72",
+      "at": "2026-08-22T00:59:33+00:00",
+      "hash": "f2834a3d984ef17092f3cb084b2311a0e1aba010b4d55a0bd9fb10f6f6c84850",
+      "task": "F-488",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/marsh_reeds.tres": {
       "agent": "galeb0891e",
@@ -3553,11 +3461,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
     "systems/harvesting/harvest_library.gd": {
-      "agent": "birche6b40e",
-      "at": "2026-08-21T23:26:09+00:00",
-      "hash": "3630a09ae225f714b55309e8bc397bd39592e5e634becb8533ceb78b1b939be8",
-      "task": "3.18",
-      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+      "agent": "tine0bda72",
+      "at": "2026-08-22T00:59:33+00:00",
+      "hash": "9053d97c74bac97ee91c68845933542c0bbb0162b95f95a4f0402d030ee08990",
+      "task": "F-488",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "systems/harvesting/harvestable.gd": {
       "agent": "kiln384569",
@@ -4764,7 +4672,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     }
   },
-  "rev": 1021,
+  "rev": 1022,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -10403,9 +10311,11 @@
       "title": "Station tiers: the tier-1 forge and wood stations cost flint and coal, which no run can obtain"
     },
     "F-488": {
+      "done_at": "2026-08-22T00:59:33+00:00",
+      "done_by": "tine0bda72",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Food gatherables never spawn: apple tree, berry bush and mushroom patch have definitions and art but no HarvestLibrary rule and no scatter entry"
     }

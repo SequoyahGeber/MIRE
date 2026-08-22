@@ -203,6 +203,14 @@ weight = 0.5
 min_scale = 0.8
 max_scale = 1.25
 
+[sub_resource type="Resource" id="Resource_25_mushroom_patch_full"]
+script = ExtResource("1_entry")
+asset = &"mushroom_patch_full"
+kit = "gatherables"
+weight = 1.1
+min_scale = 0.9
+max_scale = 1.3
+
 [resource]
 script = ExtResource("2_def")
 id = &"birchwood_floor"
@@ -212,4 +220,4 @@ jitter_fraction = 0.8
 coverage = 0.3
 min_height = 0.7
 max_height = 1000
-entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_fern_a"), SubResource("Resource_01_fern_b"), SubResource("Resource_02_fern_c"), SubResource("Resource_03_fern_d"), SubResource("Resource_04_fern_e"), SubResource("Resource_05_fern_f"), SubResource("Resource_06_grass_clump_a"), SubResource("Resource_07_grass_clump_b"), SubResource("Resource_08_grass_clump_c"), SubResource("Resource_09_grass_clump_d"), SubResource("Resource_10_grass_clump_e"), SubResource("Resource_11_grass_clump_f"), SubResource("Resource_12_leaf_litter_a"), SubResource("Resource_13_leaf_litter_b"), SubResource("Resource_14_leaf_litter_c"), SubResource("Resource_15_leaf_litter_d"), SubResource("Resource_16_moss_patch_a"), SubResource("Resource_17_moss_patch_b"), SubResource("Resource_18_moss_patch_c"), SubResource("Resource_19_moss_patch_d"), SubResource("Resource_20_plant_broadleaf_a"), SubResource("Resource_21_plant_broadleaf_b"), SubResource("Resource_22_plant_broadleaf_c"), SubResource("Resource_23_grass_short_a"), SubResource("Resource_24_grass_short_b")])
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_fern_a"), SubResource("Resource_01_fern_b"), SubResource("Resource_02_fern_c"), SubResource("Resource_03_fern_d"), SubResource("Resource_04_fern_e"), SubResource("Resource_05_fern_f"), SubResource("Resource_06_grass_clump_a"), SubResource("Resource_07_grass_clump_b"), SubResource("Resource_08_grass_clump_c"), SubResource("Resource_09_grass_clump_d"), SubResource("Resource_10_grass_clump_e"), SubResource("Resource_11_grass_clump_f"), SubResource("Resource_12_leaf_litter_a"), SubResource("Resource_13_leaf_litter_b"), SubResource("Resource_14_leaf_litter_c"), SubResource("Resource_15_leaf_litter_d"), SubResource("Resource_16_moss_patch_a"), SubResource("Resource_17_moss_patch_b"), SubResource("Resource_18_moss_patch_c"), SubResource("Resource_19_moss_patch_d"), SubResource("Resource_20_plant_broadleaf_a"), SubResource("Resource_21_plant_broadleaf_b"), SubResource("Resource_22_plant_broadleaf_c"), SubResource("Resource_23_grass_short_a"), SubResource("Resource_24_grass_short_b"), SubResource("Resource_25_mushroom_patch_full")])

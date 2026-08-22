@@ -340,10 +340,14 @@ func _wire_node_holder(
 	# but a family that keeps the world builder's own mesh may legitimately have no collider at all
 	# (soft flora is walked through). `CombatService` finds its target in the `&"damageable"` group
 	# by distance and arc, not by raycast, so a collider-less harvestable is still swingable.
+	#
+	# F-488 widened that to state-swap props as well. `berry_bush` and `mushroom_patch` bring their
+	# own picked geometry — so they are NOT `uses_authored_visual` — and are also soft flora that
+	# `world/gen/prop_collider.gd` deliberately emits no body for (a mushroom patch is 0.19 m tall,
+	# under COLLIDER_MIN_HEIGHT_M; a berry bush is foliage down to the trunk band). Refusing to wire
+	# them left the scattered ones inert, which is the exact bug F-488 was filed about. Nothing here
+	# needs the collider except the reparent below, which already tolerates its absence.
 	var collision_body: CollisionObject3D = holder.get_node_or_null(^"CollisionBody") as CollisionObject3D
-	if collision_body == null and not keeps_authored_visual:
-		MireLog.error(&"harvest", "%s has no CollisionBody" % holder.name)
-		return
 	if keeps_authored_visual:
 		harvestable.call("set_visual_hook", func(shown: bool) -> void:
 			if is_instance_valid(original_visual):

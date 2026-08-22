@@ -117,6 +117,23 @@ const HARVEST_RULES: Array = [
 	## harvestable, so the player learns them by accident, and the note above is about exactly the
 	## kind of lockout that follows when fibre is hard to recognise.
 	["fibre_plant", "nettle", Represent.BATCH],
+
+	## Food (F-488). The `gatherables` kit shipped `apple_tree_*`, `berry_bush_*` and
+	## `mushroom_patch_*` art alongside definitions in `content/harvestables/`, and then nothing
+	## classified them — so even a placed one was scenery, and no scatter table placed one anyway.
+	## All three are NODE despite the small ones being cheap-looking: each has authored picked art
+	## (`*_picked`/`*_harvested`) and BATCH depletion can only hide an instance, which would read as
+	## a bush vanishing when you pick a berry. Their scatter weights are kept low
+	## (`content/scatter/*.tres`) so the count stays in NODE's budget.
+	##
+	## The picked/harvested exports are explicitly inert: they are the depleted state the definition
+	## swaps in, and a scattered one is dressing, not a second berry bush.
+	["apple_tree_full", "apple_tree", Represent.NODE],
+	["apple_tree_", "", Represent.NODE],
+	["berry_bush_full", "berry_bush", Represent.NODE],
+	["berry_bush_", "", Represent.NODE],
+	["mushroom_patch_full", "mushroom_patch", Represent.NODE],
+	["mushroom_patch_", "", Represent.NODE],
 ]
 
 

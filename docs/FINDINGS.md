@@ -3635,6 +3635,23 @@ and depleted GLBs under `assets/gatherables/exports/`, but:
 
 Net effect reported from play: no food gatherables anywhere on the map.
 
+**Resolved 2026-08-22 by tine0bda72.** Three parts:
+
+1. `systems/harvesting/harvest_library.gd` gained rules for `apple_tree_full`, `berry_bush_full` and
+   `mushroom_patch_full` (all `Represent.NODE`, because each has authored picked art that BATCH
+   depletion could not show), with the `*_picked`/`*_harvested` exports explicitly inert.
+2. Scatter entries: apple tree in `grassland_trees`, `heath_trees`, `forest_canopy` and
+   `birchwood_canopy`; berry bush in `forest_undergrowth`, `grassland_shrubs` and `heath_scrub`;
+   mushroom patch in `forest_floor`, `birchwood_floor` and `marsh_floor`. Weights are tuned so each
+   stays under ~1% of placed props — a find, not dressing.
+3. `autoload/harvest_world.gd` no longer refuses to wire a state-swap harvestable that has no
+   `CollisionBody`. Berry bushes and mushroom patches are soft flora `world/gen/prop_collider.gd`
+   deliberately emits no body for, so every scattered one was being dropped on the floor.
+
+Verified headless with `tools/f488_food_scatter_check.gd` (classification, definition/yield
+resolution, and placement counts over 144 chunks on two seeds); `resource_scatter_check`,
+`harvest_batch_check`, `harvest_state_chain_check` and `harvest_restart_check` all still pass.
+
 ---
 
 ## Resolved
