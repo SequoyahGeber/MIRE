@@ -3659,6 +3659,39 @@ table, `world/gen/**` and the layout JSONs. Everything is placed except:
 
 Sequoyah's instruction: "we shouldnt have any nature assets not being used during map generation".
 
+**Resolved 2026-08-22 by tine0bda72.**
+
+*The seven gatherables.* Each needed three things it did not have. `assets/forage/` is a new pickup
+kit (`tools/blender/build_forage_pickups.py` — its own generator, because `build_pickup_kit.py`
+deletes and rewrites `assets/pickups/catalog.json` from its own builder list, so a second author's
+asset would silently fall out of it). `tools/blender/render_item_icons.py` renders their icons from
+those same GLBs. `content/items/` gained herb, wild_onion, honey, resin, clay, peat and
+poison_berry; `content/harvestables/` gained the seven definitions; `harvest_library.gd` gained the
+rules. Placement follows the real plant: herb in meadow, heath turf and forest floor; wild onion in
+meadow and birchwood; honeycomb in forest and birchwood deadwood (rare — it is a find); resin only
+on the pines (`highland_pines`, `forest_canopy`); clay on the shore and the marsh floor; peat in
+the bog and the heath above it; poison berries in deep forest and the reed beds, and deliberately
+NOT in the meadow, where they would sit next to the edible ones.
+
+*The terrain accents.* `cliff_face` and `cliff_corner` joined `cliff_rubble`, the ANY_BIOME table
+already gated to 30-90 degrees of slope where `cliff_overhang` and `rocky_slope` live. `stone_steps`
+got a table of its own, `highland_steps`: a rare cut stair on a highland hillside, 14-32 degrees, so
+it reads as something someone built into the hill rather than a prop dropped on flat ground.
+
+*The fish.* `shore_shallows` places `fish_shoal` on the seabed between -3.2 m and -0.1 m, where it
+is visible through shallow water.
+
+*Three entries that were listed but never landed.* Found by the new check, not by eye:
+`hollow_tree` and `uprooted_tree` (0.5/0.4 weight in the sparse 11 m `marsh_canopy` table) and
+`harvest_tree_depleted_stump` (0.2 in `forest_deadwood`) placed ZERO times across 392 chunks.
+Weights raised to 1.6/1.3/0.7 — being in a `.tres` is not the same as being in a world.
+
+*The check that keeps this true:* `tools/nature_asset_coverage_check.gd` reads every nature kit's
+`catalog.json` and asserts each export is scattered, is a damage state a harvestable definition
+swaps in, or is placed by an authored layout (reported separately, since a procedural run never
+shows those). It then generates 392 chunks and fails any scatter entry that never lands while its
+own table placed 40+ props — which is what "gated out" looks like as opposed to "small biome".
+
 ---
 
 ### Audit of every other caller (done)

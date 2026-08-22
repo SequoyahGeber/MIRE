@@ -127,7 +127,7 @@ max_scale = 1.15
 script = ExtResource("1_entry")
 asset = &"harvest_tree_depleted_stump"
 kit = "harvestables"
-weight = 0.2
+weight = 0.7
 min_scale = 0.9
 max_scale = 1.15
 

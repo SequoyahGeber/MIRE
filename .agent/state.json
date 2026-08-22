@@ -6,6 +6,12 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "assets/enemies/catalog.json": {
+      "agent": "ember5da2c4",
+      "at": "2026-08-22T01:12:51+00:00",
+      "task": "5.11",
+      "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
+    },
     "assets/gatherables/catalog.json": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:16:22+00:00",
@@ -48,53 +54,17 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "content/harvestables/clay_deposit.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:02:58+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/harvestables/honeycomb.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:02:58+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/harvestables/medicinal_herb.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:02:58+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
     "content/harvestables/mushroom_patch.tres": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:45:13+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "content/harvestables/peat_deposit.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:02:58+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/harvestables/poison_berry_bush.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:02:58+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/harvestables/resin_node.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:02:58+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/harvestables/wild_onion.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:02:58+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    "content/harvestables/pinecone.tres": {
+      "agent": "hollow25eed7",
+      "at": "2026-08-22T01:12:37+00:00",
+      "task": "F-492",
+      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
     },
     "content/items/apple.tres": {
       "agent": "gale43d16e",
@@ -120,29 +90,11 @@
       "task": "F-482",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "content/items/clay.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:02:58+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
     "content/items/crossbow.tres": {
       "agent": "birche6b40e",
       "at": "2026-08-22T00:29:56+00:00",
       "task": "F-482",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
-    },
-    "content/items/herb.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:02:58+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/items/honey.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:02:58+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/items/iron_axe.tres": {
       "agent": "birche6b40e",
@@ -156,23 +108,11 @@
       "task": "F-482",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "content/items/peat.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:02:58+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/items/poison_berry.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:02:58+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/items/resin.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:02:58+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    "content/items/pinecone.tres": {
+      "agent": "hollow25eed7",
+      "at": "2026-08-22T01:12:37+00:00",
+      "task": "F-492",
+      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
     },
     "content/items/sling.tres": {
       "agent": "birche6b40e",
@@ -192,113 +132,29 @@
       "task": "F-482",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "content/items/wild_onion.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:02:58+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    "content/ranged_weapons/pinecone.tres": {
+      "agent": "hollow25eed7",
+      "at": "2026-08-22T01:12:37+00:00",
+      "task": "F-492",
+      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
     },
-    "content/scatter/birchwood_deadwood.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:08:44+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    "content/scatter/forest_pine_litter.tres": {
+      "agent": "hollow25eed7",
+      "at": "2026-08-22T01:12:37+00:00",
+      "task": "F-492",
+      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
     },
-    "content/scatter/birchwood_floor.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:08:44+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/scatter/cliff_rubble.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:12:10+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/scatter/forest_canopy.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:08:44+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/scatter/forest_deadwood.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:08:44+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/scatter/forest_floor.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:08:44+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/scatter/forest_undergrowth.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:08:44+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/scatter/grassland_meadow.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:08:44+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/scatter/heath_scrub.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:08:44+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/scatter/heath_turf.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:08:44+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/scatter/highland_pines.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:08:44+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    "content/scatter/highland_pine_litter.tres": {
+      "agent": "hollow25eed7",
+      "at": "2026-08-22T01:12:37+00:00",
+      "task": "F-492",
+      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
     },
     "content/scatter/highland_rocks.tres": {
       "agent": "birche6b40e",
       "at": "2026-08-22T00:06:31+00:00",
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
-    },
-    "content/scatter/highland_steps.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:12:10+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/scatter/marsh_floor.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:08:44+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/scatter/marsh_reeds.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:08:44+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/scatter/shore_beach.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:08:44+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
-    "content/scatter/shore_shallows.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:12:10+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "docs/ASSET_TRACKER.md": {
       "agent": "gale43d16e",
@@ -312,11 +168,11 @@
       "task": "5.11",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
     },
-    "systems/harvesting/harvest_library.gd": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:02:58+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    "tools/blender/build_conifer_litter.py": {
+      "agent": "hollow25eed7",
+      "at": "2026-08-22T01:12:37+00:00",
+      "task": "F-492",
+      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
     },
     "tools/blender/build_deep_materials.py": {
       "agent": "birche6b40e",
@@ -324,11 +180,11 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "tools/blender/build_forage_pickups.py": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:02:58+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    "tools/blender/build_enemy_peatling.py": {
+      "agent": "ember5da2c4",
+      "at": "2026-08-22T01:12:51+00:00",
+      "task": "5.11",
+      "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
     },
     "tools/blender/build_gatherable_plants.py": {
       "agent": "gale43d16e",
@@ -360,12 +216,6 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "tools/blender/render_item_icons.py": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:02:58+00:00",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
-    },
     "tools/item_icons_check.gd": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:52:45+00:00",
@@ -395,7 +245,9 @@
     "5.11": {
       "agent": "ember5da2c4",
       "files": [
-        "docs/ENEMIES.md"
+        "docs/ENEMIES.md",
+        "tools/blender/build_enemy_peatling.py",
+        "assets/enemies/catalog.json"
       ],
       "notes": [],
       "started": "2026-08-22T01:08:05+00:00",
@@ -450,46 +302,19 @@
       "started": "2026-08-22T00:29:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "F-490": {
-      "agent": "tine0bda72",
+    "F-492": {
+      "agent": "hollow25eed7",
       "files": [
-        "tools/blender/build_forage_pickups.py",
-        "tools/blender/render_item_icons.py",
-        "content/items/herb.tres",
-        "content/items/wild_onion.tres",
-        "content/items/honey.tres",
-        "content/items/resin.tres",
-        "content/items/clay.tres",
-        "content/items/peat.tres",
-        "content/items/poison_berry.tres",
-        "content/harvestables/medicinal_herb.tres",
-        "content/harvestables/wild_onion.tres",
-        "content/harvestables/honeycomb.tres",
-        "content/harvestables/resin_node.tres",
-        "content/harvestables/clay_deposit.tres",
-        "content/harvestables/peat_deposit.tres",
-        "content/harvestables/poison_berry_bush.tres",
-        "systems/harvesting/harvest_library.gd",
-        "content/scatter/grassland_meadow.tres",
-        "content/scatter/heath_turf.tres",
-        "content/scatter/forest_floor.tres",
-        "content/scatter/birchwood_floor.tres",
-        "content/scatter/forest_deadwood.tres",
-        "content/scatter/birchwood_deadwood.tres",
-        "content/scatter/highland_pines.tres",
-        "content/scatter/forest_canopy.tres",
-        "content/scatter/shore_beach.tres",
-        "content/scatter/marsh_floor.tres",
-        "content/scatter/marsh_reeds.tres",
-        "content/scatter/forest_undergrowth.tres",
-        "content/scatter/heath_scrub.tres",
-        "content/scatter/cliff_rubble.tres",
-        "content/scatter/highland_steps.tres",
-        "content/scatter/shore_shallows.tres"
+        "tools/blender/build_conifer_litter.py",
+        "content/items/pinecone.tres",
+        "content/harvestables/pinecone.tres",
+        "content/ranged_weapons/pinecone.tres",
+        "content/scatter/highland_pine_litter.tres",
+        "content/scatter/forest_pine_litter.tres"
       ],
       "notes": [],
-      "started": "2026-08-22T01:02:58+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+      "started": "2026-08-22T01:12:37+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
     }
   },
   "recent": {
@@ -2019,12 +1844,26 @@
       "task": "F-431",
       "token": "CLAUDE_CODE_SESSION_ID:80d76563-dcca-426a-ad54-2909c9fa380a"
     },
+    "content/harvestables/clay_deposit.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "8122b93d8bd1c666ce9839436423eea54b8923dcda022ed3e2f8110825e95222",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
     "content/harvestables/fallen_log.tres": {
       "agent": "wickc3d79c",
       "at": "2026-08-21T17:37:48+00:00",
       "hash": "a6bcb973fcace2e1ed9c39b0e408a30e067cd5bb12bcd6f44a474877e708634c",
       "task": "F-431",
       "token": "CLAUDE_CODE_SESSION_ID:80d76563-dcca-426a-ad54-2909c9fa380a"
+    },
+    "content/harvestables/honeycomb.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "af9019407d7c5e5467f08ebfee85d71ca50896402ca2a9c9603b1012f33de760",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/harvestables/iron_node.tres": {
       "agent": "wickc3d79c",
@@ -2033,12 +1872,40 @@
       "task": "F-431",
       "token": "CLAUDE_CODE_SESSION_ID:80d76563-dcca-426a-ad54-2909c9fa380a"
     },
+    "content/harvestables/medicinal_herb.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "ae6bf4167ef8d2e1024f8c3e2ba0bee20982185510bbc135ff556ae5ee4e8d71",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
     "content/harvestables/nettle.tres": {
       "agent": "wickc3d79c",
       "at": "2026-08-21T17:37:48+00:00",
       "hash": "7fa477666fc1c4d9ba4eef85de83709efa55806b2b2c3097ed98e08564df7298",
       "task": "F-431",
       "token": "CLAUDE_CODE_SESSION_ID:80d76563-dcca-426a-ad54-2909c9fa380a"
+    },
+    "content/harvestables/peat_deposit.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "c1e1d79a0628deafb4af0977e5f0d0b5aa30829c7ecaed9f0bc874b65615b2d9",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/harvestables/poison_berry_bush.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "2c37cbe12ff8242894bf83efdb8a987b69394008cf5d810f05907ca4278718ff",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/harvestables/resin_node.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "43b5c02b1966aad1cf580a071e02de0bb44e0d7143e9adf40f4a616d6669a7bb",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/harvestables/rock_cluster.tres": {
       "agent": "wickc3d79c",
@@ -2074,6 +1941,13 @@
       "hash": "2f619b800d85552107c356217befd56283b4e08eb25e208530793bfc65e42799",
       "task": "F-431",
       "token": "CLAUDE_CODE_SESSION_ID:80d76563-dcca-426a-ad54-2909c9fa380a"
+    },
+    "content/harvestables/wild_onion.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "a57a861f712d9804240bbdbee504d34d44fe80dda21cc90d2ce0fb3f791ef0d4",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/harvestables/wild_tree.tres": {
       "agent": "wickc3d79c",
@@ -2131,6 +2005,13 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "content/items/clay.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "0247988393d35274538bdc4d650d42111f6cdc40eb6a4d9ce8baf31d8fb23ca3",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
     "content/items/cleaver.tres": {
       "agent": "birche6b40e",
       "at": "2026-08-21T23:26:09+00:00",
@@ -2179,6 +2060,20 @@
       "hash": "d7e70cb4748f82c16d3bdec9a5113697d0ef060313d5d709f4fa6780ae10f246",
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/herb.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "ffefeed01037254e3cff06cf3e7dd6e0b136f7fbc3c32ff12d6d03a88091ce37",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/items/honey.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "10bfdc61df7d6576e88347f6f3234893546f5764c9519bce7efe27c45bb7a5e7",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/items/iron_axe.tres": {
       "agent": "birche6b40e",
@@ -2229,12 +2124,33 @@
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "content/items/peat.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "a797c460413bb472003c22a058876eddb60e9b983cb1c616a0e3c6ab8b41166c",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/items/poison_berry.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "28276eb5d422f67b01839038bd0bfe814d8c60d27ffacf498d665bf15079d2a8",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
     "content/items/repair_hammer.tres": {
       "agent": "birche6b40e",
       "at": "2026-08-21T23:26:09+00:00",
       "hash": "b8fb0adbfadaf7af82eeb9f9ad55e7f116a7b5d5e1ae066b7d0172d104f06812",
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/resin.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "cfcde91891c97794ad7792f46e2948cc3393f216778514bc9229437b5867a9f8",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/items/short_bow.tres": {
       "agent": "birche6b40e",
@@ -2298,6 +2214,13 @@
       "hash": "7133f26de2853f2b0a5747cb1ce189b5838205bc6309958c3004ab403326305a",
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/wild_onion.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "3034dacc5bc94520ee4bbc73ed4586accc1050e345a19aad7e47047a94ddd2d2",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/items/wooden_axe.tres": {
       "agent": "birche6b40e",
@@ -3021,17 +2944,17 @@
       "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/birchwood_deadwood.tres": {
-      "agent": "kilnf96279",
-      "at": "2026-08-21T19:17:13+00:00",
-      "hash": "d4055c868a100dfe8fd661b2ae82d0a103438927730818ba00650262b557be2b",
-      "task": "F-445",
-      "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "20c2e168a9cf5924aca78dc50e1ab6d61053c3222997c5d019a43513b72d05a3",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/birchwood_floor.tres": {
       "agent": "tine0bda72",
-      "at": "2026-08-22T00:59:33+00:00",
-      "hash": "e014ddad77258ed4825a696e2f2bace74de74b6c4e46bd14e91a3d5684782799",
-      "task": "F-488",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "4cc7e6a084808eee1120108e24f3f5a7c7addb0ed2065cefc8e77f8d8ab11440",
+      "task": "F-490",
       "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/birchwood_undergrowth.tres": {
@@ -3042,31 +2965,31 @@
       "token": "CLAUDE_CODE_SESSION_ID:496677a1-162a-4bfd-a57f-5ef81aacc0df"
     },
     "content/scatter/cliff_rubble.tres": {
-      "agent": "onyx059945",
-      "at": "2026-08-21T23:21:06+00:00",
-      "hash": "551a34c261e834e31e8971767b47e2cf0a32ed79d1afef7566fcbe5c0b7f255e",
-      "task": "F-471",
-      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "7c3eb0f20e953f1947c0260620108078594637fb2be4f5bfb825769d9cfec285",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/forest_canopy.tres": {
       "agent": "tine0bda72",
-      "at": "2026-08-22T00:59:33+00:00",
-      "hash": "9cd515199f5ceb733189fc3c4323297a84eff2d83affbdca45c68ee256eedce8",
-      "task": "F-488",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "dca1caaa9e77df5722f8010d65c3b400e7cce2e01ef6724e846fa9f3ce40d0e7",
+      "task": "F-490",
       "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/forest_deadwood.tres": {
-      "agent": "kilnf96279",
-      "at": "2026-08-21T19:17:13+00:00",
-      "hash": "fd9c92f2a1beff6a9689820903e3afd77a5977f3f15bc8d445495901d24bd4a8",
-      "task": "F-445",
-      "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "ab2adbff3fbac3cd0948f25349d8a1c00567ebeaafc2732a306b57bd15ecefdf",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/forest_floor.tres": {
       "agent": "tine0bda72",
-      "at": "2026-08-22T00:59:33+00:00",
-      "hash": "562e0565a7f0d459c94a895bab1a21b65440d47b3374888d4dd8bd13b436a294",
-      "task": "F-488",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "c994050693f2db7ff67d28275a7950bc1aad961503ed8bc46a46fd3acab80507",
+      "task": "F-490",
       "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/forest_rocks.tres": {
@@ -3078,17 +3001,17 @@
     },
     "content/scatter/forest_undergrowth.tres": {
       "agent": "tine0bda72",
-      "at": "2026-08-22T00:59:33+00:00",
-      "hash": "a354726ec9aa3aa15c4eb346050514045989a6d9e4ed1554f7282286f062258c",
-      "task": "F-488",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "96dcc36755d3c82f30103056ce46435a17c01e5d14bed2209a73b94b4b4fce00",
+      "task": "F-490",
       "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/grassland_meadow.tres": {
-      "agent": "galeb0891e",
-      "at": "2026-08-21T19:56:27+00:00",
-      "hash": "5d475aa9344c68879e0fc5be33517b5ef62ce23c5c648e942a03bd73a1a684db",
-      "task": "F-451",
-      "token": "CLAUDE_CODE_SESSION_ID:496677a1-162a-4bfd-a57f-5ef81aacc0df"
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "6cfb4123e1fc1255407a81e77e6b4145b585b3ac463c659d78fb32f30ca9dc7b",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/grassland_rocks.tres": {
       "agent": "kilnd3a089",
@@ -3120,9 +3043,9 @@
     },
     "content/scatter/heath_scrub.tres": {
       "agent": "tine0bda72",
-      "at": "2026-08-22T00:59:33+00:00",
+      "at": "2026-08-22T01:16:32+00:00",
       "hash": "8cca5bb154492e8cb9b9791d687b0d5d4175851e6ac9bd8045acb573876bb75a",
-      "task": "F-488",
+      "task": "F-490",
       "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/heath_stones.tres": {
@@ -3140,11 +3063,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/heath_turf.tres": {
-      "agent": "galeb0891e",
-      "at": "2026-08-21T19:56:27+00:00",
-      "hash": "2f80ff9085433953641f287b9dc4b6ab294b00c0f27315b8ebf11a8d4e8eed2c",
-      "task": "F-451",
-      "token": "CLAUDE_CODE_SESSION_ID:496677a1-162a-4bfd-a57f-5ef81aacc0df"
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "a6203632ae780884befb26a01947ce5a9fe91e77c206af9420aea8cb378e7ef2",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/highland_floor.tres": {
       "agent": "galeb0891e",
@@ -3154,11 +3077,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:496677a1-162a-4bfd-a57f-5ef81aacc0df"
     },
     "content/scatter/highland_pines.tres": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T05:34:42+00:00",
-      "hash": "500c8afaf5cf3080e913add95216c888a8708c52b5924c9f9fc8697807bf948c",
-      "task": "F-401",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "4931a32cfcaf4d9c4860eabb8f2ba45a57780b3e34123325856e47c4308f91bd",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/highland_rocks.tres": {
       "agent": "kilnd3a089",
@@ -3174,12 +3097,19 @@
       "task": "F-451",
       "token": "CLAUDE_CODE_SESSION_ID:496677a1-162a-4bfd-a57f-5ef81aacc0df"
     },
+    "content/scatter/highland_steps.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "1629c99254c7d48e56208ace4aead3a74c563e616c96395c66167131eed9ffa6",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
     "content/scatter/marsh_canopy.tres": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T05:34:42+00:00",
-      "hash": "a08924933d632d54398d847c275129a692f60cce5926a1394a7efd35e2319c4a",
-      "task": "F-401",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "7e62b406dd384b310fc4d9f7b48ae27398f66420dba5cefb722e1adf35eb80d0",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/marsh_deadwood.tres": {
       "agent": "kilnf96279",
@@ -3190,17 +3120,17 @@
     },
     "content/scatter/marsh_floor.tres": {
       "agent": "tine0bda72",
-      "at": "2026-08-22T00:59:33+00:00",
-      "hash": "f2834a3d984ef17092f3cb084b2311a0e1aba010b4d55a0bd9fb10f6f6c84850",
-      "task": "F-488",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "9fc044fbb2b47c476d38646fb6b3201ce977f10add62f26e7f62f8dde18b235d",
+      "task": "F-490",
       "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/marsh_reeds.tres": {
-      "agent": "galeb0891e",
-      "at": "2026-08-21T19:56:27+00:00",
-      "hash": "70b3a1842aac5438b9ae39ffcf7dd99949c22ae74700a29f0ba11b2705dc8b48",
-      "task": "F-451",
-      "token": "CLAUDE_CODE_SESSION_ID:496677a1-162a-4bfd-a57f-5ef81aacc0df"
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "d4a12f55f75d41af75df254c8e4113dcd24110a6599c28928edbe5c949d09f3f",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/mire_growth.tres": {
       "agent": "kilnf96279",
@@ -3217,11 +3147,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     },
     "content/scatter/shore_beach.tres": {
-      "agent": "galeb0891e",
-      "at": "2026-08-21T19:56:27+00:00",
-      "hash": "837d0e2b3fc5342bc7a5cedbae762b59cb1cf88a89f9611e44f0d8ddb8924617",
-      "task": "F-451",
-      "token": "CLAUDE_CODE_SESSION_ID:496677a1-162a-4bfd-a57f-5ef81aacc0df"
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "bf4701b03d01b561aaf5acd0004c98c20eb11e5db77c31eff0092cfcb92eae87",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/shore_drift.tres": {
       "agent": "kilnd3a089",
@@ -3236,6 +3166,13 @@
       "hash": "083a19ee7573da6a11dda323808e42bcabfd32aa99d06323fd628aada643c86d",
       "task": "F-401",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+    },
+    "content/scatter/shore_shallows.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "0a391a33c4bee706b27328f440e64be3368f5e77a9b6628b95cda737e1b8146c",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/stations/anvil.tres": {
       "agent": "quillb947a7",
@@ -3666,9 +3603,9 @@
     },
     "systems/harvesting/harvest_library.gd": {
       "agent": "tine0bda72",
-      "at": "2026-08-22T00:59:33+00:00",
-      "hash": "9053d97c74bac97ee91c68845933542c0bbb0162b95f95a4f0402d030ee08990",
-      "task": "F-488",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "7756cce53fde2da3ba5a498600e68fe386705a694d6b47f098ee27eff2a907f7",
+      "task": "F-490",
       "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "systems/harvesting/harvestable.gd": {
@@ -3895,6 +3832,13 @@
       "task": "F-486",
       "token": "CLAUDE_CODE_SESSION_ID:7a55bc0f-4fc2-48cf-9c62-318569fb449e"
     },
+    "tools/blender/build_forage_pickups.py": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "c9abe12a18eaaa7c4dd52b419e45438d6f68cda55735e80723cc5252b22e2747",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
     "tools/blender/build_harvestable_resources.py": {
       "agent": "gale43d16e",
       "at": "2026-08-21T08:34:48+00:00",
@@ -3924,11 +3868,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "tools/blender/render_item_icons.py": {
-      "agent": "cindere7060a",
-      "at": "2026-08-22T00:03:18+00:00",
-      "hash": "31a19abf23a7a2583b90154c4c83935f2a502223983074a8d21373e297c0d6a1",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:16:32+00:00",
+      "hash": "1330eaa2b6f7abcfb0e58428c464f766f0f82c244336c1a17f76a1c734d2f538",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "tools/blender/trunk_inspect.py": {
       "agent": "gale43d16e",
@@ -4827,7 +4771,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:120f1976-6c96-46a1-8784-38dd75780df4"
     }
   },
-  "rev": 1040,
+  "rev": 1044,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -10493,9 +10437,11 @@
       "title": "Initial Mire cluster can seed in the ocean"
     },
     "F-490": {
+      "done_at": "2026-08-22T01:16:32+00:00",
+      "done_by": "tine0bda72",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Eleven nature assets are exported and catalogued but never placed by map generation"
     },
@@ -10511,7 +10457,7 @@
     "F-492": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Pinecones: a thrown starter projectile gathered under pine trees"
     }

@@ -59,6 +59,22 @@ weight = 0.7
 min_scale = 0.8
 max_scale = 1.25
 
+[sub_resource type="Resource" id="Resource_05_cliff_face"]
+script = ExtResource("1_entry")
+asset = &"cliff_face"
+kit = "terrain_accents"
+weight = 0.55
+min_scale = 0.85
+max_scale = 1.25
+
+[sub_resource type="Resource" id="Resource_06_cliff_corner"]
+script = ExtResource("1_entry")
+asset = &"cliff_corner"
+kit = "terrain_accents"
+weight = 0.4
+min_scale = 0.85
+max_scale = 1.2
+
 [resource]
 script = ExtResource("2_def")
 id = &"cliff_rubble"
@@ -70,4 +86,4 @@ min_height = 0.5
 max_height = 1000
 min_slope_deg = 30.0
 max_slope_deg = 90.0
-entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_scree_pile"), SubResource("Resource_01_rocky_slope"), SubResource("Resource_02_cliff_overhang"), SubResource("Resource_03_boulder_e"), SubResource("Resource_04_rock_cluster_d")])
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_scree_pile"), SubResource("Resource_01_rocky_slope"), SubResource("Resource_02_cliff_overhang"), SubResource("Resource_03_boulder_e"), SubResource("Resource_04_rock_cluster_d"), SubResource("Resource_05_cliff_face"), SubResource("Resource_06_cliff_corner")])
