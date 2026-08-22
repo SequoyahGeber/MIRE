@@ -16,24 +16,30 @@ extends Node
 ## exactly as `systems/loot/chest.gd`'s own header describes.
 ##
 ## MARKER NAME CONVENTION (`tools/mapgen/hollowmere_layout.py` is the only writer today):
-##   "Cache_<n>"          -> tier `small` (the Reed Cache), free — the 8 waymark caches already
-##                           shipped as decorative `loot_chest_small_closed` props before this
-##                           bridge existed; this is their first live gameplay consumer.
+##   "Cache_<n>"          -> tier `basic` (the Reed Cache), free — the ladder's bottom rung handed
+##                           out rather than sold, so a run always has coins before it has a price.
 ##   "Chest_<tier>_<n>"   -> tier is read straight out of the name and passed to `Chest.tier`
 ##                           unvalidated (Chest's own `_validate_configuration()` rejects an unknown
 ##                           id); cost/lock come from `_ECONOMY_FOR_TIER` below. Today's only writer
 ##                           is `build_gilded_chests()`'s `"Chest_gilded_<n>"`, ITEMS.md §6.4's
-##                           1-2/island budget — `tools/mapgen/hollowmere_layout.py`'s `validate()`
-##                           enforces the count at generation time, this bridge just instances
-##                           whatever the layout actually shipped.
+##                           1-2/island budget, alongside `build_ladder_chests()`'s five priced
+##                           rungs — `tools/mapgen/hollowmere_layout.py`'s `validate()` enforces the
+##                           counts at generation time, this bridge just instances whatever the
+##                           layout actually shipped.
 ## Any other `loot`-kind marker (a decorative loot pickup with no chest behind it), or any marker of
 ## a different `kind` entirely, is left alone — same "only touch what you recognise" discipline
 ## `crafting_service.gd`'s `Station_` prefix already uses on the same marker group.
 const CHEST_SCRIPT := preload("res://systems/loot/chest.gd")
+const CRATE_CLOSED := preload("res://assets/loot/exports/loot_chest_crate_closed.glb")
+const CRATE_OPEN := preload("res://assets/loot/exports/loot_chest_crate_open.glb")
 const SMALL_CLOSED := preload("res://assets/loot/exports/loot_chest_small_closed.glb")
 const SMALL_OPEN := preload("res://assets/loot/exports/loot_chest_small_open.glb")
 const REINFORCED_CLOSED := preload("res://assets/loot/exports/loot_chest_reinforced_closed.glb")
 const REINFORCED_OPEN := preload("res://assets/loot/exports/loot_chest_reinforced_open.glb")
+const WARDED_CLOSED := preload("res://assets/loot/exports/loot_chest_warded_closed.glb")
+const WARDED_OPEN := preload("res://assets/loot/exports/loot_chest_warded_open.glb")
+const GILDED_CLOSED := preload("res://assets/loot/exports/loot_chest_gilded_closed.glb")
+const GILDED_OPEN := preload("res://assets/loot/exports/loot_chest_gilded_open.glb")
 const WELLSPRING_CLOSED := preload("res://assets/loot/exports/loot_chest_wellspring_closed.glb")
 const WELLSPRING_OPEN := preload("res://assets/loot/exports/loot_chest_wellspring_open.glb")
 
@@ -43,22 +49,55 @@ const CACHE_PREFIX: String = "Cache_"
 const CHEST_PREFIX: String = "Chest_"
 const BUILT_META: StringName = &"mire_chest_placed"
 
-## Per-tier (cost_coins, locked_by) for a `"Chest_<tier>_<n>"` marker. `docs/ITEMS.md` §5's
-## "Getting in" column sometimes offers two gates for one tier (Strongbox: "~60 coins **or** a
-## Rusted Key") but `Chest._accept_open_request()` charges `cost_coins` AND `locked_by` together in
-## ONE transaction — it has no "either" mode. A single placed instance can therefore only express
-## ONE gate, so this table picks the coin gate for the tiers that have one (bog, strongbox) and
-## leaves the key-only alternative as a distinct instance a future placement can add, rather than
-## inventing a two-gate mode `Chest` was never built for. Gilded has no coin option in the item
-## catalog itself ("Gilded Key ... opens the Gilded Chest", ITEMS.md line 243) so it is key-only.
-## Sunken is "risk-priced rather than coin-priced" (ITEMS.md §5) — unpriced and unlocked; the hazard
-## IS the price. Recorded as D-122.
+## Per-tier (cost_coins, locked_by) for a `"Chest_<tier>_<n>"` marker.
+##
+## THE LADDER (D-215). Five tiers — basic, common, rare, epic, legendary — priced so each rung costs
+## roughly twice the one below it and pays out visibly better odds, not merely bigger numbers: the
+## powerup share of a roll climbs 5% → 48% → 50% → 55% → 72% across the ladder, and the RARITY of the
+## powerup lines climbs with it (content/loot/*.tres). That is what makes saving up read as a choice
+## rather than as arithmetic — a legendary is four commons, and the player is asking whether four
+## ordinary rolls beat one that is mostly rarity-3.
+##
+## Each rung also has its OWN silhouette (`_visuals_for_tier()` below), because a price ladder a
+## player has to open a UI to read is not a ladder. Sizes run 0.62 m → 1.12 m and the palettes are
+## deliberately unrelated: grey deadwood, warm timber, dark iron, ward teal, gold.
+##
+## `Cache_<n>` is the ladder's free entry point rather than a sixth tier: same `basic` table, same
+## crate mesh, cost 0. Muck's proven loop, kept — free caches seed the coins that priced chests
+## spend (`docs/ITEMS.md` §5), and a run whose first chest wants 10 coins the player cannot have
+## is a run that opens on a locked door.
+##
+## `docs/ITEMS.md` §5's "Getting in" column sometimes offers two gates for one tier ("~60 coins **or**
+## a Rusted Key") but `Chest._accept_open_request()` charges `cost_coins` AND `locked_by` together in
+## ONE transaction — it has no "either" mode. A single placed instance can therefore only express ONE
+## gate, so the ladder is priced in coins throughout and the key-only containers stay their own
+## tiers: `gilded` (Gilded Key, ITEMS.md line 243) and `sunken` ("risk-priced rather than
+## coin-priced" — the hazard IS the price). Recorded as D-122.
 const _ECONOMY_FOR_TIER: Dictionary[StringName, Dictionary] = {
-	&"bog": {"cost_coins": 25, "locked_by": &""},
-	&"strongbox": {"cost_coins": 60, "locked_by": &""},
+	&"basic": {"cost_coins": 10, "locked_by": &""},
+	&"common": {"cost_coins": 30, "locked_by": &""},
+	&"rare": {"cost_coins": 75, "locked_by": &""},
+	&"epic": {"cost_coins": 150, "locked_by": &""},
+	&"legendary": {"cost_coins": 300, "locked_by": &""},
 	&"gilded": {"cost_coins": 0, "locked_by": &"gilded_key"},
 	&"sunken": {"cost_coins": 0, "locked_by": &""},
 }
+
+## Per-tier locator tint, RGB only. The warm mote `Chest._build_locator()` puts over an unopened
+## chest is the FIRST thing a player sees of a container — usually before the mesh resolves through
+## grass — so it carries the tier read at exactly the range where silhouette cannot. Colours match
+## each mesh's own palette so the mote never promises a tier the chest is not.
+const _LOCATOR_TINT_FOR_TIER: Dictionary[StringName, Color] = {
+	&"basic": Color(0.78, 0.74, 0.66),
+	&"common": Color(1.0, 0.72, 0.30),
+	&"rare": Color(0.72, 0.84, 0.92),
+	&"epic": Color(0.36, 0.94, 0.90),
+	&"legendary": Color(1.0, 0.84, 0.22),
+	&"gilded": Color(1.0, 0.84, 0.22),
+	&"sunken": Color(0.70, 0.42, 0.95),
+	&"wellspring": Color(0.70, 0.42, 0.95),
+}
+
 
 var _refresh_scheduled: bool = false
 
@@ -102,7 +141,14 @@ func _maybe_build(marker: Node3D) -> void:
 	marker.set_meta(BUILT_META, true)
 	var chest: Node3D = CHEST_SCRIPT.new() as Node3D
 	chest.name = "Chest_%s" % marker.name
-	var economy: Dictionary = _ECONOMY_FOR_TIER.get(tier, {})
+	# A Reed Cache is the `basic` TABLE handed out rather than sold, so the price comes from the
+	# marker prefix and not from the tier alone: the tier decides what is inside, the marker decides
+	# whether you pay for it. Without this split, `basic`'s own 10-coin rung would price the eight
+	# free caches a run needs before it has any coins to price them with.
+	var economy: Dictionary = (
+		{"cost_coins": 0, "locked_by": &""} if String(marker.name).begins_with(CACHE_PREFIX)
+		else _ECONOMY_FOR_TIER.get(tier, {})
+	)
 	# Property order matches tools/loot_content_check.gd's own worked example: every @export set
 	# BEFORE add_child(), since _ready() (and therefore _validate_configuration()) fires the moment
 	# the chest enters the tree.
@@ -112,23 +158,31 @@ func _maybe_build(marker: Node3D) -> void:
 	var visuals: Array[PackedScene] = _visuals_for_tier(tier)
 	chest.set("closed_scene", visuals[0])
 	chest.set("open_scene", visuals[1])
+	chest.set("locator_tint", _LOCATOR_TINT_FOR_TIER.get(tier, Color(1.0, 0.64, 0.12)))
 	marker.add_child(chest)
 
 
-## The loot kit has three deliberately distinct silhouettes. World-placed economy tiers reuse the
-## closest existing family until a tier-specific art pass exists: free caches are small, priced/keyed
-## containers are reinforced, and Mire/Wellspring reward tiers use the crystal growth model.
+## One silhouette per ladder rung, in price order, plus the Mire's own container for the tiers that
+## are not on the ladder at all. Nothing is shared between two ladder rungs: the moment two prices
+## look alike, the price stops being information.
 func _visuals_for_tier(tier: StringName) -> Array[PackedScene]:
-	if tier == &"small":
+	if tier == &"basic":
+		return [CRATE_CLOSED, CRATE_OPEN]
+	if tier == &"common":
 		return [SMALL_CLOSED, SMALL_OPEN]
-	if tier == &"bog" or tier == &"sunken" or tier == &"wellspring":
-		return [WELLSPRING_CLOSED, WELLSPRING_OPEN]
-	return [REINFORCED_CLOSED, REINFORCED_OPEN]
+	if tier == &"rare":
+		return [REINFORCED_CLOSED, REINFORCED_OPEN]
+	if tier == &"epic":
+		return [WARDED_CLOSED, WARDED_OPEN]
+	if tier == &"legendary" or tier == &"gilded":
+		return [GILDED_CLOSED, GILDED_OPEN]
+	# `sunken` and `wellspring` are the Mire's containers, not purchases.
+	return [WELLSPRING_CLOSED, WELLSPRING_OPEN]
 
 
 func _tier_for_marker_name(marker_name: String) -> StringName:
 	if marker_name.begins_with(CACHE_PREFIX):
-		return &"small"
+		return &"basic"
 	if marker_name.begins_with(CHEST_PREFIX):
 		var rest: String = marker_name.substr(CHEST_PREFIX.length())
 		var underscore: int = rest.find("_")

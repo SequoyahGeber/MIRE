@@ -3,10 +3,14 @@
 Run with:
   Blender --background --python tools/blender/build_loot_set.py
 
-Outputs 10 individual metre-scale GLBs, an editable Blender source, a JSON
+Outputs 16 individual metre-scale GLBs, an editable Blender source, a JSON
 catalog, and two preview renders. Geometry and layout are deterministic.
 
-Three chests each ship a closed and an open state. The pair is built from one
+Six chests each ship a closed and an open state. Five of them are the chest
+RARITY LADDER — crate (basic), small (common), reinforced (rare), warded (epic),
+gilded (legendary) — and each rung has to be told from the one below it at a
+glance, by silhouette size and by palette, before any UI resolves. The sixth,
+the Wellspring chest, is not on that ladder: it is the Mire's own container. The pair is built from one
 shared body function and differs only in lid transform and revealed contents, so
 the closed and open meshes keep an identical footprint — the tracker's state-set
 rule, and what lets the host swap the mesh on open without a collision surprise.
@@ -67,12 +71,18 @@ EXPORT_DIR = ASSET_DIR / "exports"
 PREVIEW_DIR = ASSET_DIR / "preview"
 
 EXPECTED_NAMES = [
+    "loot_chest_crate_closed",
+    "loot_chest_crate_open",
     "loot_chest_small_closed",
     "loot_chest_small_open",
     "loot_chest_wellspring_closed",
     "loot_chest_wellspring_open",
     "loot_chest_reinforced_closed",
     "loot_chest_reinforced_open",
+    "loot_chest_warded_closed",
+    "loot_chest_warded_open",
+    "loot_chest_gilded_closed",
+    "loot_chest_gilded_open",
     "loot_coin_pouch",
     "loot_powerup_orb",
     "loot_item_bag",
@@ -271,6 +281,130 @@ def build_chest_reinforced(mats: dict[str, bpy.types.Material], is_open: bool) -
         box("Rein_Ingot_2", (-0.13, -0.09, 0.438), (0.24, 0.11, 0.07), mats["ingot"], (0.0, 0.0, 0.18), 0.012)
         for index, (x, y) in enumerate(((0.22, 0.03), (0.28, -0.08), (0.16, -0.10))):
             cone(f"Rein_Coin_{index + 1}", 0.058, 0.058, 0.02, (x, y, 0.358), mats["coin"], 10)
+
+
+def build_chest_crate(mats: dict[str, bpy.types.Material], is_open: bool) -> None:
+    """Basic — the free scatter crate, and the bottom rung of the chest ladder.
+
+    Deliberately the ONLY container in the kit with no metal on it anywhere: grey
+    weathered deadwood, corner battens and a rope lashing where every richer tier
+    puts iron. At range that reads as "nothing was worth locking in here", which
+    is exactly what the tier pays out. It is also the smallest silhouette, so the
+    ladder reads by size alone before a single colour resolves.
+    """
+    width, depth = 0.60, 0.40
+    body_height, lid_height = 0.30, 0.11
+    # Skids, not feet: a crate sits on two runners so it can be dragged.
+    for index, y in enumerate((-0.14, 0.14)):
+        box(f"Crate_Foot_{index + 1}", (0.0, y, 0.025), (width * 1.02, 0.09, 0.05), mats["crate_wood_dark"])
+    chest_shell("Crate", 0.05, width, depth, body_height, mats["crate_wood"], mats["crate_wood_dark"], wall=0.05)
+    for index, (x, y) in enumerate(((-0.27, -0.18), (0.27, -0.18), (-0.27, 0.18), (0.27, 0.18))):
+        box(f"Crate_Batten_{index + 1}", (x, y, 0.05 + body_height * 0.5), (0.055, 0.055, body_height * 1.02), mats["crate_wood_dark"])
+    # The lashing replaces the iron band. Two cords, so it reads as tied shut.
+    for index, offset in enumerate((-depth * 0.24, depth * 0.24)):
+        box(f"Crate_Cord_{index + 1}", (0.0, offset, 0.05 + body_height * 0.62), (width * 1.04, depth * 0.055, 0.030), mats["cord"])
+
+    body_top = 0.05 + body_height
+    hinge = (0.0, depth * 0.5, body_top)
+    lid = chest_lid_parts("Crate", depth * 0.5, width, depth, lid_height, body_top, mats, "crate_wood", "cord")
+    if is_open:
+        for part in lid:
+            rotate_about(part, hinge, OPEN_LID_DEGREES)
+        # Straw, not cloth: nothing in a crate was packed carefully.
+        box("Crate_Straw", (0.0, 0.0, 0.190), (width * 0.80, depth * 0.66, 0.16), mats["straw"], bevel=0.02)
+        for index, (x, y, scale) in enumerate((
+            (-0.14, 0.02, 0.048),
+            (0.13, -0.04, 0.045),
+        )):
+            cone(f"Crate_Coin_{index + 1}", scale, scale, 0.016, (x, y, 0.278), mats["coin"], 10)
+
+
+def build_chest_warded(mats: dict[str, bpy.types.Material], is_open: bool) -> None:
+    """Epic — the warded chest: dressed ward-slate bound in bogsilver, sealed by
+    wellglass runes.
+
+    This is the one tier whose read is COLD. Every other container in the kit is
+    warm timber, warm iron or Mire purple, so the teal ward palette (DESIGN.md's
+    reserved ward colour) marks the epic rung from across a clearing with no size
+    comparison needed. The runes are emissive, which also means it survives the
+    night pass that swallows the wooden tiers.
+    """
+    width, depth = 1.00, 0.62
+    body_height, lid_height = 0.44, 0.21
+    for index, (x, y) in enumerate(((-0.43, -0.26), (0.43, -0.26), (-0.43, 0.26), (0.43, 0.26))):
+        box(f"Ward_Foot_{index + 1}", (x, y, 0.045), (0.15, 0.15, 0.09), mats["bogsilver_dark"])
+    chest_shell("Ward", 0.09, width, depth, body_height, mats["ward_slate"], mats["ward_stone_dark"])
+    for index, offset in enumerate((-depth * 0.31, depth * 0.31)):
+        box(f"Ward_Band_{index + 1}", (0.0, offset, 0.09 + body_height * 0.5), (width * 1.04, depth * 0.10, body_height), mats["bogsilver"])
+    for index, (x, y) in enumerate(((-0.48, -0.30), (0.48, -0.30), (-0.48, 0.30), (0.48, 0.30))):
+        box(f"Ward_Corner_{index + 1}", (x, y, 0.09 + body_height * 0.5), (0.06, 0.06, body_height * 1.02), mats["bogsilver_light"])
+    # Rune row across the front face. Alternating heights so it reads as writing
+    # rather than as a row of identical lamps.
+    for index, (x, height_scale) in enumerate(((-0.26, 0.52), (-0.09, 0.68), (0.09, 0.52), (0.26, 0.68))):
+        box(f"Ward_Rune_{index + 1}", (x, -depth * 0.5 - 0.007, 0.09 + body_height * 0.52), (0.042, 0.022, body_height * height_scale), mats["ward_glow"])
+    ico("Ward_Seal", (0.0, -depth * 0.5 - 0.032, 0.09 + body_height * 0.86), (0.085, 0.060, 0.105), mats["ward_crystal"])
+
+    body_top = 0.09 + body_height
+    hinge = (0.0, depth * 0.5, body_top)
+    lid = chest_lid_parts("Ward", depth * 0.5, width, depth, lid_height, body_top, mats, "ward_slate", "bogsilver")
+    for index, x in enumerate((-0.24, 0.24)):
+        lid.append(box(f"Ward_Lid_Rune_{index + 1}", (x, 0.0, body_top + lid_height * 0.5), (0.046, depth * 1.02, lid_height * 1.06), mats["ward_glow"]))
+    if is_open:
+        for part in lid:
+            rotate_about(part, hinge, OPEN_LID_DEGREES)
+        box("Ward_Cloth", (0.0, 0.0, 0.255), (width * 0.82, depth * 0.70, 0.20), mats["canvas_dark"], bevel=0.022)
+        ico("Ward_Prize", (0.0, 0.01, 0.408), (0.15, 0.12, 0.17), mats["ward_crystal_light"], subdivisions=2)
+        for index, (x, y) in enumerate(((-0.26, 0.03), (0.26, -0.05))):
+            ico(f"Ward_Shard_{index + 1}", (x, y, 0.400), (0.06, 0.05, 0.09), mats["ward_glow"])
+        for index, (x, y) in enumerate(((0.14, 0.10), (-0.13, -0.09))):
+            cone(f"Ward_Coin_{index + 1}", 0.058, 0.058, 0.02, (x, y, 0.372), mats["coin"], 10)
+
+
+def build_chest_gilded(mats: dict[str, bpy.types.Material], is_open: bool) -> None:
+    """Legendary — the gilded chest: the largest silhouette in the kit, gold on
+    dark wood, with a gemmed crest on the lid.
+
+    The top rung has to be unmistakable at the moment of SIGHTING, not at the
+    moment of opening, because its price is what a player saves up for. Three
+    signals do that and none of them appears on any other tier: full-width gold
+    banding, a crest that breaks the lid's flat top, and a red interior that is
+    visible the instant it opens.
+    """
+    width, depth = 1.08, 0.68
+    body_height, lid_height = 0.46, 0.24
+    for index, (x, y) in enumerate(((-0.46, -0.29), (0.46, -0.29), (-0.46, 0.29), (0.46, 0.29))):
+        box(f"Gild_Foot_{index + 1}", (x, y, 0.05), (0.16, 0.16, 0.10), mats["brass_dark"])
+    chest_shell("Gild", 0.10, width, depth, body_height, mats["gild_wood"], mats["cloth_rich_red"])
+    for index, offset in enumerate((-depth * 0.33, 0.0, depth * 0.33)):
+        box(f"Gild_Band_{index + 1}", (0.0, offset, 0.10 + body_height * 0.5), (width * 1.04, depth * 0.10, body_height), mats["gold"])
+    for index, (x, y) in enumerate(((-0.52, -0.32), (0.52, -0.32), (-0.52, 0.32), (0.52, 0.32))):
+        box(f"Gild_Corner_{index + 1}", (x, y, 0.10 + body_height * 0.5), (0.07, 0.07, body_height * 1.02), mats["brass"])
+    # Filigree: a shallow gold scrollwork row that catches the sun and says
+    # "someone decorated this", which no other chest in the kit claims.
+    for index, x in enumerate((-0.30, -0.10, 0.10, 0.30)):
+        box(f"Gild_Filigree_{index + 1}", (x, -depth * 0.5 - 0.006, 0.10 + body_height * 0.34), (0.11, 0.018, 0.035), mats["gold"])
+    box("Gild_Lock", (0.0, -depth * 0.5 - 0.013, 0.10 + body_height * 0.80), (0.23, 0.05, 0.19), mats["gold"], bevel=0.014)
+    ico("Gild_Lock_Gem", (0.0, -depth * 0.5 - 0.042, 0.10 + body_height * 0.80), (0.070, 0.050, 0.075), mats["gem_red"])
+
+    body_top = 0.10 + body_height
+    hinge = (0.0, depth * 0.5, body_top)
+    lid = chest_lid_parts("Gild", depth * 0.5, width, depth, lid_height, body_top, mats, "gild_wood", "gold")
+    for index, x in enumerate((-0.46, 0.46)):
+        lid.append(box(f"Gild_Lid_Corner_{index + 1}", (x, 0.0, body_top + lid_height * 0.52), (0.08, depth * 1.02, lid_height * 1.04), mats["brass"]))
+    # The crest. It is part of the LID group, so it swings with the lid and the
+    # closed silhouette is the one that carries it.
+    lid.append(box("Gild_Crest_Base", (0.0, 0.0, body_top + lid_height + 0.030), (0.26, 0.16, 0.060), mats["gold"]))
+    lid.append(ico("Gild_Crest_Gem", (0.0, 0.0, body_top + lid_height + 0.098), (0.115, 0.095, 0.115), mats["gem_red"], subdivisions=2))
+    if is_open:
+        for part in lid:
+            rotate_about(part, hinge, OPEN_LID_DEGREES)
+        box("Gild_Velvet", (0.0, 0.0, 0.270), (width * 0.82, depth * 0.72, 0.21), mats["cloth_rich_red"], bevel=0.022)
+        box("Gild_Ingot_1", (-0.20, 0.03, 0.412), (0.26, 0.12, 0.075), mats["gold"], bevel=0.012)
+        box("Gild_Ingot_2", (-0.17, -0.10, 0.483), (0.26, 0.12, 0.075), mats["gold"], (0.0, 0.0, 0.18), 0.012)
+        for index, (x, y) in enumerate(((0.26, 0.04), (0.32, -0.09), (0.19, -0.11), (0.24, -0.02))):
+            cone(f"Gild_Coin_{index + 1}", 0.062, 0.062, 0.022, (x, y, 0.398 + index * 0.020), mats["coin"], 10)
+        for index, (x, y) in enumerate(((0.05, 0.12), (-0.02, -0.13))):
+            ico(f"Gild_Gem_{index + 1}", (x, y, 0.412), (0.062, 0.055, 0.070), mats["gem_red"])
 
 
 # ── Carried and dropped loot ──────────────────────────────────────────────────
@@ -517,6 +651,32 @@ def main() -> None:
         "mire_dark": mat("mire_black"),
         "mire_glow": mat("mire_glow"),
         "mire_crystal": mat("crystal_tip"),
+        # Basic (crate): grey weathered deadwood and rope, no metal anywhere.
+        "crate_wood": mat("wood_dead"),
+        "crate_wood_dark": mat("wood_bark_dark"),
+        "straw": mat("grass_dry"),
+        # Epic (warded): the reserved ward teal, on dressed slate bound in bogsilver.
+        "ward_slate": mat("ward_slate"),
+        "ward_stone_dark": mat("ward_stone_dark"),
+        "ward_glow": mat("ward_glow"),
+        "ward_crystal": mat("ward_crystal"),
+        "ward_crystal_light": mat("ward_crystal_light"),
+        "bogsilver": mat("bogsilver"),
+        "bogsilver_dark": mat("bogsilver_dark"),
+        "bogsilver_light": mat("bogsilver_light"),
+        # Legendary (gilded): gold and brass over dark wood, red inside.
+        "gold": mat("gold"),
+        "brass": mat("brass"),
+        "brass_dark": mat("brass_dark"),
+        "cloth_rich_red": mat("cloth_red"),
+        # Near-black wood, not the mid-brown every other chest uses. Gold on brown reads as
+        # brass-on-timber — which is the RARE rung's look — and the top of a ladder cannot afford
+        # to resemble the middle of it. Against charred wood the same gold reads as gold.
+        "gild_wood": mat("wood_charred"),
+        # `tonic_red` is the palette's one glossy deep red (roughness 0.30); it is
+        # borrowed here for the crest and lock gems because a gem is exactly a red
+        # that reflects, and adding a second near-identical swatch would be worse.
+        "gem_red": mat("tonic_red"),
         "orb_core": mat("flame"),
         "orb_shell": mat("ember"),
         "ground": mat("preview_ground"),
@@ -527,12 +687,18 @@ def main() -> None:
     # geometry both states share, so the body lands identically in each.
     chest_anchor = ("_Body", "_Foot")
     builders: list[tuple[str, str, Callable[[], None], tuple[str, ...]]] = [
+        ("loot_chest_crate_closed", "chest", lambda: build_chest_crate(mats, False), chest_anchor),
+        ("loot_chest_crate_open", "chest", lambda: build_chest_crate(mats, True), chest_anchor),
         ("loot_chest_small_closed", "chest", lambda: build_chest_small(mats, False), chest_anchor),
         ("loot_chest_small_open", "chest", lambda: build_chest_small(mats, True), chest_anchor),
         ("loot_chest_wellspring_closed", "chest", lambda: build_chest_wellspring(mats, False), chest_anchor),
         ("loot_chest_wellspring_open", "chest", lambda: build_chest_wellspring(mats, True), chest_anchor),
         ("loot_chest_reinforced_closed", "chest", lambda: build_chest_reinforced(mats, False), chest_anchor),
         ("loot_chest_reinforced_open", "chest", lambda: build_chest_reinforced(mats, True), chest_anchor),
+        ("loot_chest_warded_closed", "chest", lambda: build_chest_warded(mats, False), chest_anchor),
+        ("loot_chest_warded_open", "chest", lambda: build_chest_warded(mats, True), chest_anchor),
+        ("loot_chest_gilded_closed", "chest", lambda: build_chest_gilded(mats, False), chest_anchor),
+        ("loot_chest_gilded_open", "chest", lambda: build_chest_gilded(mats, True), chest_anchor),
         ("loot_coin_pouch", "carried", lambda: build_coin_pouch(mats), ()),
         ("loot_powerup_orb", "powerup", lambda: build_powerup_orb(mats), ()),
         ("loot_item_bag", "carried", lambda: build_item_bag(mats), ()),
@@ -543,9 +709,9 @@ def main() -> None:
 
     records: list[dict] = []
     for index, (name, family, builder, anchor) in enumerate(builders):
-        column = index % 5
-        row = index // 5
-        location = ((column - 2) * 1.62, (1.30 - row * 2.60), 0.0)
+        column = index % 4
+        row = index // 4
+        location = ((column - 1.5) * 1.76, (2.15 - row * 2.05), 0.0)
         records.append(create_asset(name, family, builder, location, anchor))
 
     catalog = [
@@ -566,19 +732,22 @@ def main() -> None:
         handle.write("\n")
 
     scene, camera, preview_collection = setup_render(mats)
-    camera.data.ortho_scale = 10.4
-    camera.location = (0.0, -16.0, 10.0)
-    look_at(camera, (0.0, -0.35, 0.30))
+    camera.data.ortho_scale = 9.6
+    camera.location = (0.0, -16.0, 11.5)
+    look_at(camera, (0.0, -0.95, 0.30))
     scene.render.filepath = str(PREVIEW_DIR / "loot_preview.png")
     bpy.ops.render.render(write_still=True)
 
     original_locations = {record["name"]: record["root"].location.copy() for record in records}
+    # The five ladder rungs in price order, left to right, so the scale render is
+    # also the readability test: a player has to tell them apart by silhouette.
     showcase_positions = {
-        "loot_chest_small_closed": (-2.30, 0.55, 0.0),
-        "loot_chest_wellspring_open": (-0.85, 0.45, 0.0),
-        "loot_chest_reinforced_closed": (0.75, 0.50, 0.0),
-        "loot_powerup_orb": (1.95, 0.35, 0.0),
-        "loot_player_backpack": (2.85, 0.40, 0.0),
+        "loot_chest_crate_closed": (-2.30, 0.55, 0.0),
+        "loot_chest_small_closed": (-1.35, 0.52, 0.0),
+        "loot_chest_reinforced_closed": (-0.25, 0.50, 0.0),
+        "loot_chest_warded_closed": (0.95, 0.48, 0.0),
+        "loot_chest_gilded_closed": (2.25, 0.45, 0.0),
+        "loot_powerup_orb": (3.30, 0.35, 0.0),
     }
     for record in records:
         set_visible(record, record["name"] in showcase_positions)
@@ -594,9 +763,9 @@ def main() -> None:
         box("Scale_20cm_Cube", (-2.95, -0.60, 0.10), (0.20, 0.20, 0.20), mats["scale"]),
     ]
     move_to_collection(scale_parts, preview_collection)
-    camera.data.ortho_scale = 8.2
+    camera.data.ortho_scale = 9.4
     camera.location = (7.0, -11.0, 5.2)
-    look_at(camera, (-0.1, 0.0, 0.32))
+    look_at(camera, (0.15, 0.0, 0.32))
     scene.render.filepath = str(PREVIEW_DIR / "loot_scale_preview.png")
     bpy.ops.render.render(write_still=True)
 

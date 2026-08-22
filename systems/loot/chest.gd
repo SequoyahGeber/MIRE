@@ -45,6 +45,11 @@ signal open_confirmed(request_id: int, accepted: bool, granted: Dictionary, deta
 ## The price is charged in the SAME host transaction as the key, so a failed payment grants nothing
 ## and leaves the chest closed and re-openable.
 @export_range(0, 999, 1) var cost_coins: int = 0
+## Locator mote/light colour for this chest's tier, set per placed instance by
+## ChestPlacementService the same way `closed_scene` is. Presentation only — it never reaches the
+## roll, the price or the wire. The default is the original warm amber every chest used before the
+## tier ladder existed, so an instance nothing tints still looks exactly as it did.
+@export var locator_tint: Color = Color(1.0, 0.64, 0.12)
 ## Item id of the key this chest needs, or empty for none. Consumed on a successful open — a key is
 ## spent, not carried. Host-side validation like any other, exactly `docs/ITEMS.md` §6.3.
 @export var locked_by: StringName = &""
@@ -396,9 +401,15 @@ func _build_locator() -> void:
 	mote.height = 0.34
 	_locator.mesh = mote
 	var material := StandardMaterial3D.new()
-	material.albedo_color = Color(1.0, 0.64, 0.12, 1.0)
+	material.albedo_color = Color(locator_tint, 1.0)
 	material.emission_enabled = true
-	material.emission = Color(1.0, 0.36, 0.035, 1.0)
+	# The emission is the tint pushed toward saturation rather than the tint itself: a mote emitting
+	# its own albedo washes to white at 3.5x energy, which is how five differently tinted motes would
+	# all end up as the same white dot at exactly the range this exists to work at. Saturating in HSV
+	# keeps each tier's HUE, which is the only channel that survives the wash.
+	material.emission = Color.from_hsv(
+		locator_tint.h, minf(1.0, locator_tint.s * 1.35 + 0.12), locator_tint.v
+	)
 	material.emission_energy_multiplier = 3.5
 	_locator.material_override = material
 	add_child(_locator)
@@ -406,7 +417,7 @@ func _build_locator() -> void:
 	_locator_light = OmniLight3D.new()
 	_locator_light.name = LOCATOR_LIGHT_NAME
 	_locator_light.position = Vector3(0.0, 0.85, 0.0)
-	_locator_light.light_color = Color(1.0, 0.48, 0.12, 1.0)
+	_locator_light.light_color = Color(locator_tint, 1.0)
 	_locator_light.light_energy = 1.8
 	_locator_light.omni_range = 5.0
 	_locator_light.shadow_enabled = false

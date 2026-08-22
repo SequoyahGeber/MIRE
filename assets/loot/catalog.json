@@ -1,5 +1,35 @@
 [
   {
+    "name": "loot_chest_crate_closed",
+    "family": "chest",
+    "width_m": 0.624,
+    "depth_m": 0.415,
+    "height_m": 0.464,
+    "mesh_parts": 17,
+    "polygons": 102,
+    "materials": [
+      "MIRE_Rope",
+      "MIRE_WoodBarkDark",
+      "MIRE_WoodDead"
+    ]
+  },
+  {
+    "name": "loot_chest_crate_open",
+    "family": "chest",
+    "width_m": 0.624,
+    "depth_m": 0.611,
+    "height_m": 0.74,
+    "mesh_parts": 20,
+    "polygons": 132,
+    "materials": [
+      "MIRE_Gold",
+      "MIRE_GrassDry",
+      "MIRE_Rope",
+      "MIRE_WoodBarkDark",
+      "MIRE_WoodDead"
+    ]
+  },
+  {
     "name": "loot_chest_small_closed",
     "family": "chest",
     "width_m": 0.749,
@@ -92,6 +122,79 @@
       "MIRE_MireLight",
       "MIRE_WoodTimber",
       "MIRE_WoodTimberLight"
+    ]
+  },
+  {
+    "name": "loot_chest_warded_closed",
+    "family": "chest",
+    "width_m": 1.04,
+    "depth_m": 0.728,
+    "height_m": 0.748,
+    "mesh_parts": 26,
+    "polygons": 170,
+    "materials": [
+      "MIRE_Bogsilver",
+      "MIRE_BogsilverDark",
+      "MIRE_BogsilverLight",
+      "MIRE_WardCrystal",
+      "MIRE_WardGlow",
+      "MIRE_WardSlate",
+      "MIRE_WardStoneDark"
+    ]
+  },
+  {
+    "name": "loot_chest_warded_open",
+    "family": "chest",
+    "width_m": 1.04,
+    "depth_m": 1.064,
+    "height_m": 1.139,
+    "mesh_parts": 32,
+    "polygons": 320,
+    "materials": [
+      "MIRE_Bogsilver",
+      "MIRE_BogsilverDark",
+      "MIRE_BogsilverLight",
+      "MIRE_CanvasDark",
+      "MIRE_Gold",
+      "MIRE_WardCrystal",
+      "MIRE_WardCrystalLight",
+      "MIRE_WardGlow",
+      "MIRE_WardSlate",
+      "MIRE_WardStoneDark"
+    ]
+  },
+  {
+    "name": "loot_chest_gilded_closed",
+    "family": "chest",
+    "width_m": 1.123,
+    "depth_m": 0.795,
+    "height_m": 1.013,
+    "mesh_parts": 30,
+    "polygons": 268,
+    "materials": [
+      "MIRE_Brass",
+      "MIRE_BrassDark",
+      "MIRE_ClothRed",
+      "MIRE_Gold",
+      "MIRE_TonicRed",
+      "MIRE_WoodCharred"
+    ]
+  },
+  {
+    "name": "loot_chest_gilded_open",
+    "family": "chest",
+    "width_m": 1.123,
+    "depth_m": 1.286,
+    "height_m": 1.226,
+    "mesh_parts": 39,
+    "polygons": 374,
+    "materials": [
+      "MIRE_Brass",
+      "MIRE_BrassDark",
+      "MIRE_ClothRed",
+      "MIRE_Gold",
+      "MIRE_TonicRed",
+      "MIRE_WoodCharred"
     ]
   },
   {

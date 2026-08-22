@@ -695,6 +695,12 @@ RUNTIME_ONLY_KITS = {"icons", "tools_weapons"}
 RUNTIME_ONLY_ASSETS = {
     # EnemyWorld spawns crawlers; Enemy emits the fragments on death.
     "enemy_crawler", "enemy_crawler_fragment_leg", "enemy_crawler_fragment_shell",
+    # Every chest's OPEN state belongs to `Chest._refresh_visual()`, which swaps it in the moment
+    # the replicated `opened` flag flips. Scattering one as scenery puts a permanently-open,
+    # permanently-empty container on the map — a chest that promises a roll it will never make, and
+    # the exact read the tier ladder exists to keep honest. The closed meshes still place normally.
+    "loot_chest_crate_open", "loot_chest_small_open", "loot_chest_reinforced_open",
+    "loot_chest_warded_open", "loot_chest_gilded_open", "loot_chest_wellspring_open",
 }
 #: Placed by `world/gen/undergrowth.gd` at load, not by this file — one entry per
 #: family named in its `ZONE_PALETTES`. There are tens of thousands of them and
@@ -1614,6 +1620,13 @@ def build_landmarks(placer: Placer, terrain: Terrain, markers: list[dict], light
                          [0.86, 0.92, 0.68], 2.0, 12.0))
     markers.append(_marker("Extraction", "extraction", yard[0],
                            terrain.height_at(yard[0], yard[1]) + 0.24, yard[1], "MereShore"))
+    # F-166 added this marker by hand-editing `world/gen/layouts/hollowmere.json`, because the
+    # generator was under someone else's claim at the time. A hand edit to a GENERATED file survives
+    # exactly until the next regeneration, and the next regeneration is what deleted it — the
+    # authored map silently lost its only exit. Emitted here so it cannot happen again; the position
+    # is the extraction yard's, same as the marker above, because they are the same ship.
+    markers.append(_marker("Shipwreck", "shipwreck", yard[0],
+                           terrain.height_at(yard[0], yard[1]) + 0.24, yard[1], "MereShore"))
 
     # -- the Blight, and where the Mire breeds -------------------------------
     #
@@ -1697,8 +1710,8 @@ def build_landmarks(placer: Placer, terrain: Terrain, markers: list[dict], light
     for index, (x, z) in enumerate(((-24.0, 30.0), (30.0, -20.0), (-40.0, -8.0), (18.0, 40.0),
                                     (60.0, -50.0), (-20.0, -66.0), (52.0, 12.0), (-66.0, 40.0))):
         zone = _zone_at(x, z)
-        placer.place("loot", "loot_chest_small_closed", zone, x, z, spacing=1.6,
-                     note="field cache", force=True)
+        placer.place("loot", "loot_chest_crate_closed", zone, x, z, spacing=1.6,
+                     note="field cache (free basic crate)", force=True)
         markers.append(_marker(f"Cache_{index + 1}", "loot", x, terrain.height_at(x, z), z, zone))
     for index, (x, z) in enumerate(((-18.0, 2.0), (12.0, -30.0), (34.0, 8.0), (-2.0, 40.0),
                                     (46.0, -46.0), (-38.0, 26.0))):
@@ -1716,10 +1729,10 @@ def build_gilded_chests(placer: Placer, terrain: Terrain, markers: list[dict]) -
     everything else. `validate()` re-derives the count from `markers` itself and fails the build if
     it ever drifts outside 1–2, so the budget cannot silently grow or disappear under a future edit.
 
-    No `.tres`/mesh exists yet for the gilded tier's own look (`docs/ITEMS.md` §7, A-047 is still
-    queued) — this borrows `loot_chest_reinforced_closed`, the closest thing already in the loot kit
-    to "a chest that reads as expensive from a distance", as a placeholder. Swap the asset the day
-    A-047 ships; nothing else about the placement changes.
+    The gilded tier shares the legendary rung's own mesh, `loot_chest_gilded_closed` — both are
+    "the chest you saved up for", one gated on coins and one on the Gilded Key, and giving them two
+    different expensive-looking silhouettes would teach the player a distinction the loot behind
+    them does not actually make.
 
     `force` stays False, unlike the waymark loop's — a rare chest earns its rarity by standing
     somewhere the ordinary slope/water/clearance/road rules actually allow, not by being forced
@@ -1735,12 +1748,87 @@ def build_gilded_chests(placer: Placer, terrain: Terrain, markers: list[dict]) -
     for zone, x, z in candidates:
         if placed >= 2:
             break
-        record = placer.place("loot", "loot_chest_reinforced_closed", zone, x, z,
-                               spacing=2.6, note="gilded chest (placeholder art, A-047)")
+        record = placer.place("loot", "loot_chest_gilded_closed", zone, x, z,
+                               spacing=2.6, note="gilded chest (Gilded Key)")
         if record is None:
             continue
         placed += 1
         markers.append(_marker(f"Chest_gilded_{placed}", "loot", x, terrain.height_at(x, z), z, zone))
+
+
+#: The priced chest ladder's per-island budget, in price order (D-215). Rarity is expressed as
+#: SCARCITY as well as cost: a player walks past five crates before they see one legendary, so the
+#: top rung is an event rather than a shop. Every count is asserted in `validate()` against the
+#: markers actually emitted, the same way the gilded budget is — a candidate site that the ordinary
+#: slope/water/clearance rules reject is skipped, so a silently-short ladder has to fail the build
+#: rather than ship as "the seed was unlucky".
+LADDER_CHESTS: tuple[tuple[str, str, int, tuple[tuple[str, float, float], ...]], ...] = (
+    ("basic", "loot_chest_crate_closed", 5, (
+        ("ReedFlats", -52.0, 14.0), ("SouthMarsh", 8.0, 58.0), ("DeepForest", -30.0, -38.0),
+        ("StoneMoor", 44.0, -24.0), ("ReedFlats", 22.0, 26.0), ("SouthMarsh", -14.0, 50.0),
+        ("DeepForest", -56.0, -22.0), ("StoneMoor", 58.0, -8.0),
+    )),
+    ("common", "loot_chest_small_closed", 4, (
+        ("DeepForest", -44.0, -46.0), ("StoneMoor", 52.0, -38.0), ("SouthMarsh", 20.0, 66.0),
+        ("ReedFlats", -62.0, 28.0), ("DeepForest", -24.0, -58.0), ("StoneMoor", 68.0, -22.0),
+        ("SouthMarsh", -6.0, 62.0),
+    )),
+    ("rare", "loot_chest_reinforced_closed", 3, (
+        ("StoneMoor", 60.0, -56.0), ("DeepForest", -60.0, -44.0), ("SouthMarsh", 34.0, 54.0),
+        ("ReedFlats", -70.0, 10.0), ("StoneMoor", 74.0, -40.0), ("DeepForest", -46.0, -66.0),
+    )),
+    ("epic", "loot_chest_warded_closed", 2, (
+        ("DeepForest", -68.0, -58.0), ("StoneMoor", 76.0, -60.0), ("SouthMarsh", 44.0, 70.0),
+        ("ReedFlats", -78.0, 34.0),
+    )),
+    ("legendary", "loot_chest_gilded_closed", 1, (
+        ("StoneMoor", 84.0, -50.0), ("DeepForest", -78.0, -48.0), ("SouthMarsh", 8.0, 84.0),
+        ("ReedFlats", -84.0, 20.0), ("StoneMoor", 70.0, -70.0),
+    )),
+)
+
+
+#: Offsets tried around each authored candidate, nearest first, before that candidate is given up
+#: on. A chest is not scenery — its position is a promise the budget in `validate()` has to keep —
+#: but "this clearing, roughly" is the real authoring intent, and demanding one exact square metre
+#: makes the ladder hostage to whatever tree the scatter dropped there first. Deterministic order,
+#: so the same seed still produces the same map.
+_CHEST_SEARCH: tuple[tuple[float, float], ...] = tuple(
+    [(0.0, 0.0)]
+    + [(round(radius * math.cos(math.tau * step / 8), 3), round(radius * math.sin(math.tau * step / 8), 3))
+       for radius in (3.0, 6.0, 9.0, 13.0) for step in range(8)]
+)
+
+
+def build_ladder_chests(placer: Placer, terrain: Terrain, markers: list[dict]) -> None:
+    """The five priced rungs of the chest ladder, as `"Chest_<tier>_<n>"` markers.
+
+    `autoload/chest_placement_service.gd` reads the tier straight out of the marker name and looks
+    its price, its lock and its silhouette up from that — so this function ships POSITIONS and
+    nothing else. Adding a sixth rung is a marker name here plus a row in that service's economy
+    table; it is deliberately not a scene edit, a prefab, or a per-instance property anywhere.
+
+    Each tier walks its own candidate list until its budget is filled, `force=False` throughout:
+    a chest that had to be forced through a slope check is standing somewhere the player cannot
+    comfortably reach, and the whole point of a priced chest is that reaching it is the cost.
+    Candidate lists are longer than the budgets they feed so an unlucky rejection has somewhere to
+    go; `validate()` fails the build if any tier still comes up short.
+    """
+    for tier, asset, budget, candidates in LADDER_CHESTS:
+        placed = 0
+        for zone, x, z in candidates:
+            if placed >= budget:
+                break
+            for ox, oz in _CHEST_SEARCH:
+                record = placer.place("loot", asset, zone, x + ox, z + oz, spacing=2.4,
+                                      note=f"{tier} chest")
+                if record is None:
+                    continue
+                placed += 1
+                px, _, pz = record["pos"]
+                markers.append(_marker(f"Chest_{tier}_{placed}", "loot",
+                                       px, terrain.height_at(px, pz), pz, zone))
+                break
 
 
 def ensure_coverage(placer: Placer, terrain: Terrain, markers: list[dict]) -> int:
@@ -2174,6 +2262,18 @@ def validate(terrain: Terrain, placer: Placer, markers: list[dict],
             problems.append(
                 f"gilded chest budget is {len(gilded_chests)}, must be 1-2 per island (ITEMS.md §6.4)"
             )
+        # D-215: the same argument, once per priced rung. A tier that placed zero chests is not a
+        # quieter map, it is a price ladder with a missing rung — and since each rung's odds are
+        # what the rung above it is measured against, the ladder only means anything whole.
+        for tier, _asset, budget, _candidates in LADDER_CHESTS:
+            prefix = f"Chest_{tier}_"
+            rung = [m for m in markers if m["kind"] == "loot" and m["name"].startswith(prefix)]
+            if len(rung) != budget:
+                problems.append(
+                    f"{tier} chest budget is {len(rung)}, must be exactly {budget} per island"
+                )
+            gilded_chests.extend(rung)
+
         for marker in gilded_chests:
             mx, _, mz = marker["pos"]
             ix = int(round((mx - ORIGIN[0]) / CELL))
@@ -2207,6 +2307,7 @@ def main() -> None:
     print(f"  landmarks: {landmark_props} props")
 
     build_gilded_chests(placer, terrain, markers)
+    build_ladder_chests(placer, terrain, markers)
 
     # Two passes per zone, and the order is the whole reason a wood looks like a
     # wood. One pass draws from the full table by weight, and ground cover — which

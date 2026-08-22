@@ -248,8 +248,8 @@ this catalog adds are **bolded**.
 
 | Item | Source | Job |
 |---|---|---|
-| Old Coins | kills, caches (exists as `coins`) | the chest economy. **Kills pay since F-539/D-210:** every `EnemyDef` authors a `coin_drop_min`..`coin_drop_max` bounty, paid to whoever landed the killing blow — 3–7 for a Peatling up to 55–90 for a Mire Herald, against a ~25-coin Bog Chest and a ~60-coin Strongbox |
-| Rusted Key | camp chests, hound dens, minibosses | opens Strongboxes without paying |
+| Old Coins | kills, caches (exists as `coins`) | the chest economy. **Kills pay since F-539/D-210:** every `EnemyDef` authors a `coin_drop_min`..`coin_drop_max` bounty, paid to whoever landed the killing blow — 3–7 for a Peatling up to 55–90 for a Mire Herald, against a 30-coin Bound Chest and a 300-coin Gilded Chest (§5.1) |
+| Rusted Key | camp chests, hound dens, minibosses | opens a `rare` Ironbound Chest without paying. **Unplaced as of D-215:** the ladder is priced in coins throughout, because `Chest` charges `cost_coins` AND `locked_by` in one transaction and has no "either" mode — a keyed alternative needs a second placed instance of the same tier, not a second gate on the same one |
 | Gilded Key | elites, the Hunt, bosses | opens the Gilded Chest (§5) |
 | Heavy Mithril Chunk | mithril vein | the 2-player haul object (3.10) — mithril is *earned in pairs* |
 | Salvage Trinket (small/large) | rare chest/boss filler | **proposal for 6.6, needs Sequoyah's call:** carried trinkets convert to bonus Salvage *only if you extract* — a physical reason to say "one more Cycle then we leave" (Q6 lever). If declined, cut cleanly; nothing else references them |
@@ -309,20 +309,50 @@ One `LootTableDef` per row below (`content/loot/`), rolled by the shipped `Chest
 authority already documented in `chest.gd`. Coin ranges/weights are tuning guesses; **shape** is the
 contract. Muck's proven loop stays: free caches seed coins, priced chests spend them.
 
-> **All seven rows are authored as of 2026-08-18** (`content/loot/`), verified by
-> `.agent/bin/agent godot --script tools/loot_content_check.gd`, which resolves all 94 entry ids
-> against the real Registry. Prices and locks are per-placed-chest (`cost_coins`, `locked_by` on the
-> `Chest` node), not on the table — the same tier can be a free scatter-cache in one place and a
-> 60-coin box in another, which is what "getting in" in the column below actually means.
+> **Restructured 2026-08-21 into a five-rung rarity ladder** (D-215, F-541). The old economy rows
+> — `small`, `bog`, `strongbox` — were three tiers with three prices, three overlapping pools and
+> only one of them ever placed by a map. They are replaced by `basic` / `common` / `rare` / `epic` /
+> `legendary`, each with its own price, its own odds, its own silhouette and its own per-island
+> placement budget. The four rows that were never part of that economy — `gilded`, `wellspring`,
+> `sunken`, `boss` — are unchanged: they are granted, keyed or risk-priced, not bought.
+>
+> Verified by `.agent/bin/agent godot --script tools/loot_content_check.gd` (every entry id resolves
+> against the real Registry) and `tools/chest_placement_check.gd`, which grades the ladder against
+> the REAL Hollowmere boot: prices strictly increasing, no two rungs sharing a mesh or a locator
+> tint, and every rung's budget actually placed. Prices and locks are per-placed-chest (`cost_coins`,
+> `locked_by` on the `Chest` node), not on the table — which is how a `Cache_<n>` marker hands the
+> `basic` table out for free while `Chest_basic_<n>` sells it for 10.
+
+### 5.1 The ladder
+
+Each rung costs roughly twice the one below it, and what the extra coins buy is **odds, not bigger
+numbers** (D-063: tune frequency, not potency). The powerup share of a draw and the *rarity* of the
+powerup lines both climb; that is the whole reason to save up rather than open four commons.
+
+| Tier (id) | Price | Rolls | Powerup share | Silhouette | Per island |
+|---|---:|---:|---:|---|---:|
+| Field Crate (`basic`) | 10 (**free** as a `Cache_` scatter) | 2 | 5% | grey deadwood + rope, no metal, 0.62 m | 5 + 8 free |
+| Bound Chest (`common`) | 30 | 2 | 48% | warm timber + iron bands, 0.75 m | 4 |
+| Ironbound Chest (`rare`) | 75 | 3 | 50%, r1+r2 lines | dark timber + heavy iron, 0.96 m | 3 |
+| Warded Chest (`epic`) | 150 | 3 | 55%, r2+r3 lines | ward teal on slate, glowing runes, 1.04 m | 2 |
+| **Gilded Chest** (`legendary`) | 300 | 4 | 72%, mostly r3 | gold on charred wood, gemmed crest, 1.12 m | 1 |
+
+`legendary` also carries the jackpot: a guaranteed Wellglass Shard so the price always buys
+something real, plus low-weight lines for a Guardian Core and a 200–400 coin dump. A legendary is
+allowed to break the run open — that is what the top of a ladder is for.
+
+The ladder is also where 47 authored powerups that appeared in **no loot table at all** finally
+enter the game: the old three-row economy drew from the same 25 ids over and over, so two thirds of
+`content/powerups/` was unreachable from a chest. They are spread across `common` (rarity 1),
+`rare` (rarity 2) and the top two rungs (rarity 3) by how run-defining each one is.
+
+### 5.2 The rows that are not on the ladder
 
 | Tier (id) | Getting in | Rolls | Pool shape |
 |---|---|---|---|
-| Reed Cache (`small`, exists) | free, world-scattered | 2 | coins 5–15 + basic mats. Already shipped; display name "Reed Cache" |
-| Bog Chest (`bog`) | priced — ~25 coins, price grows per Cycle | 2 | common powerups 55%, consumables 25%, mats 12%, coin dribble 8% |
-| Strongbox (`strongbox`) | ~60 coins **or** a Rusted Key | 2–3 | rare powerups 40%, Mechanism 15%, made weapons (iron tier) 15%, mithril mats 15%, tonics 15% |
 | Wellspring Chest (`wellspring`) | granted on a cap — never priced | 3 | guaranteed powerup + Wellglass shot + rare shot; the objective's paycheck |
-| **Gilded Chest** (`gilded`) | rare spawn (≈1–2/island) **or** a Gilded Key; unmistakable at distance | 1 | **the Gleam pool only** (§4.9, Okayest Axe included at weight 1). The D-063 box |
-| Sunken Cache (`sunken`) | strongbox table + a Gleam-chance entry, placed in *hazard* spots — Mire border, deep fen, drowned cellar | 2 | risk-priced rather than coin-priced |
+| Gilded, keyed (`gilded`) | rare spawn (≈1–2/island) **or** a Gilded Key | 1 | **the Gleam pool only** (§4.9, Okayest Axe included at weight 1). The D-063 box. Wears the `legendary` mesh: both are "the chest you saved up for", and two different expensive silhouettes would teach a distinction the loot does not make |
+| Sunken Cache (`sunken`) | placed in *hazard* spots — Mire border, deep fen, drowned cellar | 2 | risk-priced rather than coin-priced |
 | Boss Cache (`boss`) | guardian / titan kills | 3 | guaranteed Gleam-or-rare + boss mats + 100+ coins |
 
 Non-chest reward routes, so they're never invented twice: the **Hunt elite** drops a Gilded Key

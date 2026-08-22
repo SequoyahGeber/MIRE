@@ -131,7 +131,7 @@ func _run() -> void:
 	# chest_price is read, not decorative.
 	var priced: Node3D = CHEST_SCRIPT.new() as Node3D
 	priced.name = "LootCheckPriced"
-	priced.set("tier", &"bog")
+	priced.set("tier", &"common")
 	priced.set("cost_coins", 100)
 	root.add_child(priced)
 	await process_frame

@@ -261,7 +261,7 @@ func _check_static() -> void:
 
 	var chest := CHEST_SCRIPT.new() as Node3D
 	chest.name = "CheckStaticChest"
-	chest.set("tier", &"small")  # a real registered tier (content/loot/small.tres) — avoids the
+	chest.set("tier", &"basic")  # a real registered tier (content/loot/basic.tres) — avoids the
 	# "has no tier" configuration error; irrelevant to _price_for/_unlock_check, which read no
 	# configuration-validated state of their own.
 	chest.set("cost_coins", 100)

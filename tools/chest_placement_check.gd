@@ -10,7 +10,7 @@ extends SceneTree
 ##
 ## Three things a name-keyed or synthetic-only check could not catch:
 ##   1. the 8 pre-existing `Cache_<n>` waymark markers (shipped before this bridge existed) get a
-##      live, OPENABLE `small`-tier Chest, free — proving this bridge is the first real consumer of
+##      live, OPENABLE `basic`-tier Chest, free — proving this bridge is the first real consumer of
 ##      content that has been sitting inert in the map since task 4.7-era authoring;
 ##   2. the gilded markers this task's `build_gilded_chests()` added land as real, LOCKED chests —
 ##      proving the economy table, not just the marker-to-tier name parse;
@@ -56,6 +56,7 @@ func _run() -> void:
 		await process_frame
 
 	_check_live_hollowmere(service)
+	_check_ladder()
 	await _check_synthetic(service)
 
 	finish()
@@ -87,7 +88,7 @@ func _check_live_hollowmere(service: Node) -> void:
 		str(gilded_chests.size()))
 
 	for chest: Node in cache_chests:
-		check(StringName(chest.get("tier")) == &"small", "Cache_ chest resolved to tier 'small'")
+		check(StringName(chest.get("tier")) == &"basic", "Cache_ chest resolved to tier 'basic'")
 		check(int(chest.get("cost_coins")) == 0, "Reed Cache is free")
 		check(StringName(chest.get("locked_by")) == &"", "Reed Cache is unlocked")
 		check(chest.get_node_or_null(^"ChestVisual") != null,
@@ -119,6 +120,87 @@ func _check_live_hollowmere(service: Node) -> void:
 			String(result.get("detail", "")))
 		check(String(result.get("detail", "")).contains("locked"),
 			"the refusal names the lock, not a generic failure", String(result.get("detail", "")))
+
+
+## D-215: the five priced rungs, graded as a LADDER rather than one tier at a time.
+##
+## Each assertion here is a property no single tier can hold on its own, which is exactly why they
+## were the ones that could silently rot: a price that does not rise, two rungs wearing the same
+## mesh, two rungs wearing the same locator tint, or a rung the layout quietly stopped placing. All
+## four are invisible in-game until a player has seen every tier and compared them from memory.
+func _check_ladder() -> void:
+	const LADDER: Array[StringName] = [&"basic", &"common", &"rare", &"epic", &"legendary"]
+	const EXPECTED_COUNT: Dictionary[StringName, int] = {
+		&"basic": 5, &"common": 4, &"rare": 3, &"epic": 2, &"legendary": 1,
+	}
+	var by_tier: Dictionary[StringName, Array] = {}
+	for tier: StringName in LADDER:
+		by_tier[tier] = []
+	for node: Node in get_nodes_in_group(MARKER_GROUP):
+		var name_str: String = String(node.name)
+		for tier: StringName in LADDER:
+			if not name_str.begins_with("Chest_%s_" % tier):
+				continue
+			var chest: Node = node.get_node_or_null(NodePath("Chest_%s" % name_str))
+			if chest != null:
+				(by_tier[tier] as Array).append(chest)
+
+	var previous_price: int = -1
+	var meshes: Dictionary[String, StringName] = {}
+	var tints: Dictionary[String, StringName] = {}
+	for tier: StringName in LADDER:
+		var rung: Array = by_tier[tier]
+		check(rung.size() == int(EXPECTED_COUNT[tier]),
+			"the layout placed %d '%s' chest(s)" % [int(EXPECTED_COUNT[tier]), tier],
+			str(rung.size()))
+		if rung.is_empty():
+			continue
+		var chest: Node = rung[0]
+		var price: int = int(chest.get("cost_coins"))
+		check(price > previous_price,
+			"'%s' costs more than the rung below it (%d > %d)" % [tier, price, previous_price])
+		previous_price = price
+		check(StringName(chest.get("locked_by")) == &"",
+			"'%s' is gated on coins alone — the ladder is a price, not a key hunt" % tier)
+		check(chest.get_node_or_null(^"ChestVisual") != null,
+			"'%s' chest has a visible closed-state model" % tier)
+		_check_locator(chest, "%s chest" % tier)
+
+		var closed: Resource = chest.get("closed_scene") as Resource
+		var mesh_path: String = closed.resource_path if closed != null else ""
+		check(not meshes.has(mesh_path),
+			"'%s' has its own silhouette, not one shared with '%s'"
+				% [tier, meshes.get(mesh_path, &"?")], mesh_path)
+		meshes[mesh_path] = tier
+		var tint_key: String = str(chest.get("locator_tint"))
+		check(not tints.has(tint_key),
+			"'%s' has its own locator tint, not one shared with '%s'"
+				% [tier, tints.get(tint_key, &"?")], tint_key)
+		tints[tint_key] = tier
+
+		# The odds are the other half of what a price buys. Rolled from the table itself rather
+		# than asserted as a number in this file, so re-tuning the .tres re-grades the ladder.
+		var registry: Node = root.get_node_or_null(^"/root/Registry")
+		if registry != null:
+			var table: Resource = registry.call("get_loot_table", tier) as Resource
+			if table != null:
+				print("LADDER %-10s price=%-4d powerup_share=%.0f%%"
+					% [tier, price, _powerup_share(table) * 100.0])
+
+
+## The fraction of one weighted draw that lands on a POWERUP line, computed from the authored
+## weights directly — no rng, so it is the table's real shape rather than a sample of it.
+func _powerup_share(table: Resource) -> float:
+	var total: float = 0.0
+	var powerup: float = 0.0
+	for entry: Resource in (table.get("entries") as Array):
+		if entry == null:
+			continue
+		var weight: float = float(entry.get("weight"))
+		total += weight
+		if int(entry.get("kind")) == 1:
+			powerup += weight
+	return 0.0 if total <= 0.0 else powerup / total
 
 
 ## Connects BEFORE calling request_open(): with no transport active, `Chest._accept_open_request()`

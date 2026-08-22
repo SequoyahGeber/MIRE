@@ -1,14 +1,14 @@
 [gd_resource type="Resource" script_class="PoiDef" format=3]
 
-[ext_resource type="Script" path="res://world/gen/poi_def.gd" id="1_strongbox"]
+[ext_resource type="Script" path="res://world/gen/poi_def.gd" id="1_chest_rare"]
 
 [resource]
-script = ExtResource("1_strongbox")
-id = &"treasure_strongbox"
-display_name = "Strongbox"
+script = ExtResource("1_chest_rare")
+id = &"chest_rare"
+display_name = "Ironbound Chest"
 scene_path = ""
 marker_kind = &"loot"
-marker_name = "Chest_strongbox_poi"
+marker_name = "Chest_rare_poi"
 placement_priority = 66
 target_count = 3
 clearance_m = 14.0
