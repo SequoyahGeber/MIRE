@@ -3073,6 +3073,30 @@ This is the code-side twin of the asset-side gap wick410d34 catalogued under F-4
 `workbench_upgraded` is the more surprising one — it is a *tier-two* station whose whole purpose is
 to unlock recipes the primitive workbench cannot make, and there are none.
 
+**Root cause for that one, added 2026-08-22 by wick410d34 (F-578, folded in here).** It is not
+missing content — it is wired wrong. `content/stations/workbench_upgraded.tres` declares
+`family = &"workbench"` and `tier = 2`, and `content/stations/workbench.tres` is the same family at
+tier 1. But `autoload/crafting_service.gd:85` matches with `recipe.station == station`, an exact id
+comparison, and `family`/`tier` appear nowhere else in that file or in any other script — `grep -n
+'family\|tier' autoload/crafting_service.gd` returns two comment lines. So the tier-2 workbench does
+not satisfy a recipe that asks for `workbench`: **a player who builds the upgrade gets a station
+that unlocks strictly LESS than the one it replaces**, which reads as a broken game rather than as
+missing content.
+
+That splits the fix in two, and only the second half is authoring:
+
+* **The tier rule.** `recipes_for_station()` and `local_station_in_range()` should resolve a
+  recipe's station through family+tier — a station satisfies a recipe when `family` matches and
+  `tier >=` the required tier — rather than by id. That is the shape `StationDef` was authored for
+  and it matches Sequoyah's stated design (tiered station families, the first tier of every family
+  buildable from base gathered resources). It makes every future upgraded station work, not just
+  this one.
+* **The missing cooking content.** All seven CONSUMABLE items are raw forage (`apple`, `berry`,
+  `mushroom`, `raw_meat`, `herb`, `honey`, `wild_onion`); `raw_meat` has no cooked counterpart.
+  `ItemDef` already carries `hunger_restore`/`hp_restore` and `PlayerHealth.request_consume_item()`
+  already works, and `assets/food/exports/` has held all thirteen cooked/tonic models since A-012,
+  so this is item defs, icons and recipes — not systems work.
+
 ---
 
 ### F-576 · Twenty-two signals are emitted every run with nothing in the shipped tree connected
@@ -3131,7 +3155,9 @@ are held back. Likewise every marker `kind` a service consumes (`objective`, `sh
 
 ---
 
-### F-578 · Four of the eight craftable stations do nothing: StationDef's family/tier are never read, so the Reinforced Workbench unlocks no recipes
+## Resolved
+
+### F-578 · Four of the eight craftable stations do nothing: StationDef's family/tier are never read, so the Reinforced Workbench unlocks no recipes — **fixed**
 
 **Area:** crafting · **Severity:** high · **Found:** 2026-08-22 by wick410d34
 
@@ -3184,9 +3210,10 @@ Two separable fixes:
 `repair_bench` is a third case again — it may be intended to drive the repair mechanic rather than a
 recipe list, but nothing references it, so today it is inert either way.
 
----
-
-## Resolved
+**Resolved 2026-08-22 by wick410d34.** Duplicate of F-575, filed minutes apart by two agents auditing the same question from opposite
+sides. F-575 came first and stays; its unique content — the family/tier root cause for
+`workbench_upgraded` and the two-part fix that falls out of it — has been folded into F-575 rather
+than lost.
 
 ### F-570 · Playtest: procedural map shows only basic chests and ChestUI does not display the coin cost before opening — **fixed**
 
