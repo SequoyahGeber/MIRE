@@ -126,9 +126,28 @@ func _ready() -> void:
 	set_process(true)
 
 
+## The local peer, the way every other service in the repo asks — `CombatService._local_peer_id()` is
+## the same three lines. Reading `multiplayer.get_unique_id()` raw is wrong here twice over (F-553):
+## it pushes an engine ERROR once per frame whenever no peer is assigned, and it answers 0 rather than
+## this peer's id across a session teardown, because ENet drops the connection before the quit path
+## finishes — which is the documented reason `NetTransport` caches `_local_id` at all (net_transport.gd
+## line 101). This autoload keeps processing across that window, so every footstep and every
+## "is this cue mine?" test in it needs the cached answer, not the live one.
+func _local_peer_id() -> int:
+	# Resolved by node path rather than by the `NetTransport` global identifier, because this file is
+	# `preload()`ed directly by tools/sfx_check.gd and an autoload name is not in scope when a script
+	# is compiled outside the autoload list — the same reason `_EVENT_BINDINGS` below spells its
+	# sources "/root/NetTransport" instead of naming them.
+	var transport: Node = get_node_or_null(^"/root/NetTransport")
+	if transport == null:
+		return NetConfig.HOST_PEER_ID
+	var peer_id: int = int(transport.call(&"local_peer_id"))
+	return peer_id if peer_id > 0 else NetConfig.HOST_PEER_ID
+
+
 func _process(delta: float) -> void:
 	_clock += delta
-	_drive_footsteps(delta, _player_body(multiplayer.get_unique_id()))
+	_drive_footsteps(delta, _player_body(_local_peer_id()))
 	_tick_ambient()
 	_tick_enemies()
 
@@ -666,7 +685,7 @@ func _on_enemy_died(_enemy_id: StringName, _instigator_peer_id: int,
 func _on_enemy_attack_landed(_enemy_id: StringName, peer_id: int, _damage: int,
 		world_position: Vector3) -> void:
 	play_at(&"creature_attack", world_position)
-	if peer_id == multiplayer.get_unique_id():
+	if peer_id == _local_peer_id():
 		play(&"hit_flesh")
 
 
@@ -719,7 +738,7 @@ const RESONANCE_CUES: Dictionary[StringName, StringName] = {
 
 
 func _on_resonance_changed(peer_id: int, family: StringName, tier: int) -> void:
-	if peer_id != multiplayer.get_unique_id():
+	if peer_id != _local_peer_id():
 		return
 	# Tiers only ever climb during a run, so a drop means a cost was paid —
 	# `powerup_curse` is the same crystal figure inverted, which is how a player
@@ -760,7 +779,7 @@ func _on_consume_confirmed(_request_id: int, accepted: bool, detail: String) -> 
 
 
 func _on_player_downed(peer_id: int) -> void:
-	if peer_id == multiplayer.get_unique_id():
+	if peer_id == _local_peer_id():
 		play(&"player_downed")
 	else:
 		var body: Node3D = _player_body(peer_id)
@@ -802,7 +821,7 @@ func _on_local_stamina_changed(stamina: float, max_stamina: float) -> void:
 
 
 func _on_player_spawned(peer_id: int, body: Node3D) -> void:
-	if peer_id != multiplayer.get_unique_id() or body == null:
+	if peer_id != _local_peer_id() or body == null:
 		return
 	_have_last_pos = false
 	_step_accum = 0.0
@@ -1131,7 +1150,7 @@ func _tick_ambient() -> void:
 	_next_ambient_at = _clock + randf_range(AMBIENT_GAP_MIN_S, AMBIENT_GAP_MAX_S)
 	# Nothing in the world to place a sound relative to — a front end, or a
 	# harness with no player. Silence is correct here, not a fallback position.
-	var body: Node3D = _player_body(multiplayer.get_unique_id())
+	var body: Node3D = _player_body(_local_peer_id())
 	if body == null or not body.is_inside_tree():
 		return
 	var pool: Array = _ambient_pool(body.global_position)
@@ -1384,7 +1403,7 @@ func _drive_creature_step(enemy: Node3D, id: int, state: int) -> void:
 	_enemy_step_accum[id] = 0.0
 	# Out of earshot is silence, not a quiet sound: a dozen creatures stepping
 	# across an island is a wash of noise that hides the one that matters.
-	var body: Node3D = _player_body(multiplayer.get_unique_id())
+	var body: Node3D = _player_body(_local_peer_id())
 	if body == null or not body.is_inside_tree():
 		return
 	if pos.distance_to(body.global_position) > CREATURE_STEP_RANGE_M:
@@ -1397,7 +1416,7 @@ func _tick_enemy_vocal(idle: Array[Node3D]) -> void:
 	if _clock < _next_enemy_vocal or idle.is_empty():
 		return
 	_next_enemy_vocal = _clock + randf_range(ENEMY_VOCAL_GAP_MIN_S, ENEMY_VOCAL_GAP_MAX_S)
-	var body: Node3D = _player_body(multiplayer.get_unique_id())
+	var body: Node3D = _player_body(_local_peer_id())
 	if body == null or not body.is_inside_tree():
 		return
 	# Only something the player could plausibly hear. A creature muttering

@@ -3074,6 +3074,76 @@ widened to fail on a duplicate `### D-<n>` heading in docs/DECISIONS.md.
 
 ## Resolved
 
+### F-553 · SfxDirector reads multiplayer.get_unique_id() directly every frame, which errors offline and mis-keys the local player after teardown — **fixed**
+
+**Area:** audio · **Severity:** medium · **Found:** 2026-08-22 by hollowbfcf67
+
+`autoload/sfx_director.gd` calls `multiplayer.get_unique_id()` at eight sites, one of them in
+`_process()` (line 131, `_drive_footsteps(delta, _player_body(multiplayer.get_unique_id()))`). Every
+other service in the repo reads the local id through `NetTransport.local_peer_id()` and falls back to
+`NetConfig.HOST_PEER_ID` when it is 0 — `CombatService._local_peer_id()` is the canonical shape:
+
+    var peer_id: int = NetTransport.local_peer_id()
+    return peer_id if peer_id > 0 else NetConfig.HOST_PEER_ID
+
+Two consequences.
+
+**Engine-error noise that has swallowed the whole check suite's signal.** With no multiplayer peer
+assigned, `get_unique_id()` pushes `ERROR: No multiplayer peer is assigned. Unable to get unique ID.`
+and returns 0 — once per frame, from `_process`. In a full `agent verify --fast` run over 61 checks
+it is the single most common engine error, appearing in **53** of them. `agent verify` counts any
+undeclared `ERROR:` line as a reason to fail a check, so 42 of those 61 rows fail on engine noise
+alone with `failures=0` — the assertions all passed. F-551 observed that a red check with no owner
+becomes furniture; this is the mechanism that made almost the entire suite red at once, and it is one
+line.
+
+**A real mis-keying window, which is why the fix is not just a guard.** `NetTransport` caches
+`_local_id` specifically because "by the time the host-quit path runs, ENet has already torn the
+connection down and `get_unique_id()` no longer returns our id" (the comment at
+`autoload/net_transport.gd:101`, kept after a two-process probe caught every client emitting a
+`peer_left` for itself). `SfxDirector._process()` keeps running across that same teardown — it is an
+autoload with `set_process(true)` and nothing stops it — so for every frame between the transport
+tearing down and the scene changing, footsteps and local-player cues are keyed to 0 rather than to
+the peer that owns them. The four `peer_id == multiplayer.get_unique_id()` comparisons at lines 669,
+722, 763 and 805 are the same hazard: they decide whether a cue is the *local* player's, and they
+answer "no, and also here is an error" once the peer is gone.
+
+Ordinary play does not show the noise because a solo run really does host a LOCAL session, so a peer
+is assigned for the whole run. That is exactly why this has survived: it is invisible in the place
+people look and deafening in the place they read verdicts.
+
+**The fix** is to add a `_local_peer_id()` helper matching `CombatService`'s and route all eight
+sites through it. `ui/hud/focus_prompt.gd:586` and `autoload/debug_overlay.gd:168` have the same raw
+read and should be swept with it.
+
+**Resolved 2026-08-22 by hollowbfcf67.** **Fixed 2026-08-22 by hollowbfcf67.** `SfxDirector` gained a `_local_peer_id()` helper matching
+`CombatService._local_peer_id()`, and all eight raw `multiplayer.get_unique_id()` reads now route
+through it — the `_process()` footstep driver and the four "is this cue mine?" comparisons included.
+
+Two details worth keeping. The helper resolves NetTransport by **node path**, not by the autoload
+identifier, because `tools/sfx_check.gd` `preload()`s this file directly and an autoload name is not
+in scope when a script compiles outside the autoload list — the first attempt used `NetTransport.…`
+and turned the whole check red with `Compile Error: Identifier not found: NetTransport`. That is the
+same reason `_EVENT_BINDINGS` in this file spells its sources `"/root/NetTransport"`. The fallback is
+`NetConfig.HOST_PEER_ID` rather than an inlined 1, which is safe here because `NetConfig` is a
+`class_name` global, not an autoload.
+
+**Narrower than filed:** the two other raw reads this finding named turned out to be already guarded
+and were left alone. `ui/hud/focus_prompt.gd:586` reads the live id only when
+`NetTransport.is_active()`, and `autoload/debug_overlay.gd:168` only after checking the peer is
+non-null and CONNECTED.
+
+**Verified** with `agent godot`: `SFX_CHECK failures=0`, and the per-frame
+`No multiplayer peer is assigned` line is gone — `sfx_check`, `dodge_check`, `door_check` and
+`combat_check` each now emit **zero** of them, where the pre-fix `agent verify --fast` ledger had the
+error in 53 of 61 checks. `door_check` is a clean example of the payoff: it asserted `failures=0`
+before and after, but only now does `agent verify` agree, because engine noise was its only reason to
+be red.
+
+Still outstanding, and not this finding's: the exit-time `N resources still in use at exit` /
+`ObjectDB instances were leaked` pair, which is the other systemic reason `agent verify` fails checks
+that pass all their own assertions.
+
 ### F-551 · Two checks fail at clean HEAD with nobody owning them — ranged_combat_check (1) and attunement_restart_check (3) — **fixed**
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-22 by larch543bba
