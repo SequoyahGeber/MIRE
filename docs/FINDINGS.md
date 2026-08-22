@@ -3491,7 +3491,75 @@ rather than a duplicate of its list.
 
 ---
 
+### F-481 · The apple swings like an axe — it inherits ItemDef's CHOP default and viewmodel_check is red at HEAD for it
+
+**Area:** content · **Severity:** low · **Found:** 2026-08-22 by birche6b40e
+
+`tools/viewmodel_check.gd` asserts that no item carrying a `view_model` silently inherits
+`ItemDef.attack_style`'s CHOP default — the point being that a swing arc should be a decision someone
+made, not the value the field happened to start at. `content/items/apple.tres` (f3fc0c0, A-041's
+apple) sets no `attack_style` and has a viewmodel, so it fails, and the check has been RED at HEAD
+since that commit. Confirmed with `agent baseline --script tools/viewmodel_check.gd`.
+
+An apple is not chopped with. The right value is almost certainly `AttackStyle.NONE` (0) — the same
+"no arc of its own, just a small nudge so clicking is not dead" case the enum documents for bows and
+carried things — and `mushroom`, `berry` and `raw_meat` are worth checking at the same time, since
+F-162 gave that family reused pickup-mesh grips and may have left the same field unset.
+
+Not fixing it here: `content/items/apple.tres` is held under an exact claim by gale43d16e for 2.1d,
+and an attack style is a feel call that belongs with whoever owns the food family. One line in that
+`.tres`, plus a `CHOP_ITEMS`/allowlist entry only if the answer really is chop.
+
+Filed while adding the tier-3/4/5 axes to the same check's two allowlists (F-480): those three were in
+this failure's list too and are now registered, so `apple` is the only name left in it.
+
+---
+
 ## Resolved
+
+### F-482 · The sling, longbow and crossbow all shipped as the short bow, and the bolt as an arrow — **fixed**
+
+**Area:** assets · **Severity:** medium · **Found:** 2026-08-22 by birche6b40e
+
+Auditing every `content/items/*.tres` for art that does not belong to it — after F-480 finished the
+tier-4/5 models — turned up four more items pointing at a sibling's mesh and icon:
+
+    sling      -> short_bow_world.glb / short_bow_viewmodel.glb / icon_short_bow.png
+    longbow    -> the same three
+    crossbow   -> the same three
+    bolt       -> arrow_world.glb / arrow_viewmodel.glb / icon_arrow.png
+
+So three of the game's four ranged weapons were visually the same weapon, and a crossbow — the one
+shape in the kit that is wider than it is tall and reads as a machine — appeared in hand as a recurve
+bow. `sling` is the tier-1 ranged option a new player meets first.
+
+The only item that legitimately shares art is `coins`, which uses the loot kit's coin pouch.
+
+Fixed in the same session that filed this; see the resolution note.
+
+**Resolved 2026-08-22 by birche6b40e.** Done in d35fd4a. All four now have their own model, viewmodel and icon, and none of them is the same
+weapon with a different number on it:
+
+- **Sling** — two cords, a leather cradle, a finger loop on one end and a release knot on the other.
+  Built hanging with a stone in the pouch: an empty cradle reads as a strap.
+- **Longbow** — a self bow, deliberately the opposite of `short_bow`'s recurve. One stave taller than
+  the archer, a single arc with no recurved tips, no riser and no arrow shelf, D-section. 1.91 m.
+- **Crossbow** — tiller, bolt groove, prod lashed across the front, nut and trigger, and the stirrup
+  at the muzzle. 1.19 m wide against 1.18 tall, the only weapon in the kit wider than it is tall.
+- **Bolt** — a quarrel: half an arrow's length, thicker shaft, four-sided iron head, stiff leather
+  vanes, and a flat butt with no nock because the string pushes it rather than clipping on.
+
+Grips were tuned against real in-game frames rather than guessed — `tools/_probe_new_grips.gd` holds
+each item in first person and saves a screenshot. The sling needed three passes (its origin is at the
+pouch, so the bow's offset had the player holding it by the wrong end).
+
+**One thing still wants a human's eye:** the crossbow's in-hand pose. It is fully in frame and
+unmistakable, but it hangs at an angle rather than shouldered — a pose call, and the same kind of
+"needs your eyes" note A-021S left on the iron sword's grip.
+
+Also registered the three new axes in both of `tools/viewmodel_check.gd`'s allowlists, so a
+deliberate CHOP is still distinguishable from a forgotten one. `apple` is the only name left in that
+check's remaining failure and is filed separately as F-481.
 
 ### F-478 · The procedural river is a dry gully — nothing renders or reports water in the channel — **fixed**
 
