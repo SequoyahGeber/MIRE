@@ -9220,3 +9220,18 @@ Notes along the way:
 Files: `tools/verify_setup.gd`
 
 Commit at time of writing: `51c57a6e`
+
+---
+
+### DONE · F-354 · dusk7d25d3 · 2026-08-22T02:52:32+00:00
+
+**enemy_check's 'it starts idle' races the engine's own physics tick**
+
+Disabled automatic physics on enemy_check's live crawler so manual steps are exclusive; 15/15 consecutive runs passed with failures=0.
+
+Notes along the way:
+- Use the finding's complete fix: disable engine-driven physics immediately after host_spawn so every state transition is driven only by the check's explicit _step calls.
+
+Files: `tools/enemy_check.gd`
+
+Commit at time of writing: `1105c9ab`

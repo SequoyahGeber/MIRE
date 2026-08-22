@@ -270,12 +270,6 @@
       "task": "5.11",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
     },
-    "tools/enemy_check.gd": {
-      "agent": "dusk7d25d3",
-      "at": "2026-08-22T02:49:14+00:00",
-      "task": "F-354",
-      "token": "CODEX_SESSION_ID:01a02754-7c0b-7da0-9c87-c4a174638fc6"
-    },
     "tools/enemy_fen_stalker_check.gd": {
       "agent": "ember5da2c4",
       "at": "2026-08-22T01:48:21+00:00",
@@ -383,21 +377,6 @@
       ],
       "started": "2026-08-22T02:49:34+00:00",
       "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
-    },
-    "F-354": {
-      "agent": "dusk7d25d3",
-      "files": [
-        "tools/enemy_check.gd"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-22T02:49:14+00:00",
-          "by": "dusk7d25d3",
-          "text": "Use the finding's complete fix: disable engine-driven physics immediately after host_spawn so every state transition is driven only by the check's explicit _step calls."
-        }
-      ],
-      "started": "2026-08-22T02:49:14+00:00",
-      "token": "CODEX_SESSION_ID:01a02754-7c0b-7da0-9c87-c4a174638fc6"
     },
     "F-469": {
       "agent": "coil26502f",
@@ -4167,6 +4146,13 @@
       "task": "F-383",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
+    "tools/enemy_check.gd": {
+      "agent": "dusk7d25d3",
+      "at": "2026-08-22T02:52:32+00:00",
+      "hash": "d741640c0082756b679a261c664bb4f0d573a579d77096e50e594b90e3e390be",
+      "task": "F-354",
+      "token": "CODEX_SESSION_ID:01a02754-7c0b-7da0-9c87-c4a174638fc6"
+    },
     "tools/environment_vfx_reseed_check.gd": {
       "agent": "quill3c83cf",
       "at": "2026-08-22T02:47:38+00:00",
@@ -5008,7 +4994,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:120f1976-6c96-46a1-8784-38dd75780df4"
     }
   },
-  "rev": 1163,
+  "rev": 1165,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9655,9 +9641,11 @@
       "title": "Daytime lighting reads washed out: the frame lives in a 0.48-0.71 luminance band with no blacks and no saturation"
     },
     "F-354": {
+      "done_at": "2026-08-22T02:52:32+00:00",
+      "done_by": "dusk7d25d3",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "enemy_check's 'it starts idle' races the engine's own physics tick"
     },

@@ -54,6 +54,9 @@ func _run() -> void:
 	if enemy == null:
 		finish()
 		return
+	# This check drives the state machine through _step(). Keep the engine's physics loop from
+	# advancing the same live node between assertions (F-354), especially across the await below.
+	enemy.set_physics_process(false)
 	await process_frame
 	check(enemy.is_in_group(&"damageable"), "an enemy joins 2.8's damageable group")
 	check(enemy.has_method("host_apply_damage"), "and implements the seam CombatService calls")
