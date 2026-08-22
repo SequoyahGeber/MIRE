@@ -9121,3 +9121,30 @@ Notes along the way:
 Files: `autoload/environment_vfx.gd`, `tools/environment_vfx_reseed_check.gd`
 
 Commit at time of writing: `6966fd6a`
+
+---
+
+### REOPEN · F-454 · dusk7d25d3 · 2026-08-22T02:42:48+00:00
+
+**The felt performance problem is chunk streaming, not rendering: traversal drops the 1% low from 81 fps to 13 fps, and no graphics preset touches it**
+
+Reopened (was marked done 2026-08-21 by wick5e2d04).
+
+Prior DONE explicitly says localized and partly fixed, not solved; traversal still has remaining first-visit/initial-settle hitch work tracked by F-457/F-459, so F-454 must remain open until its stated performance problem is actually closed.
+
+Commit at time of writing: `111ea883`
+
+---
+
+### DONE · F-504 · ember4ba1b4 · 2026-08-22T02:43:48+00:00
+
+**Runtime chest count is a false positive while all chests are invisible**
+
+Visible world chests restored: placed tiers now receive shipped closed/open models, and the placement regression check requires ChestVisual. Placement/opening/powerup checks all pass with zero failures.
+
+Notes along the way:
+- Root cause confirmed: ChestPlacementService built functional Chest nodes with null closed_scene/open_scene, so Chest._refresh_visual returned without instancing art. Tier mapping uses shipped small art for small, reinforced art for strongbox/gilded/default, and wellspring crystal art for bog/sunken/wellspring. Check now requires ChestVisual on live and synthetic placed chests.
+
+Files: `autoload/chest_placement_service.gd`, `tools/chest_placement_check.gd`
+
+Commit at time of writing: `ce9100bf`

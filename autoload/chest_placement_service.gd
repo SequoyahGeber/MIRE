@@ -30,6 +30,12 @@ extends Node
 ## a different `kind` entirely, is left alone — same "only touch what you recognise" discipline
 ## `crafting_service.gd`'s `Station_` prefix already uses on the same marker group.
 const CHEST_SCRIPT := preload("res://systems/loot/chest.gd")
+const SMALL_CLOSED := preload("res://assets/loot/exports/loot_chest_small_closed.glb")
+const SMALL_OPEN := preload("res://assets/loot/exports/loot_chest_small_open.glb")
+const REINFORCED_CLOSED := preload("res://assets/loot/exports/loot_chest_reinforced_closed.glb")
+const REINFORCED_OPEN := preload("res://assets/loot/exports/loot_chest_reinforced_open.glb")
+const WELLSPRING_CLOSED := preload("res://assets/loot/exports/loot_chest_wellspring_closed.glb")
+const WELLSPRING_OPEN := preload("res://assets/loot/exports/loot_chest_wellspring_open.glb")
 
 const MARKER_GROUP: StringName = &"authored_world_marker"
 const MARKER_KIND: String = "loot"
@@ -103,7 +109,21 @@ func _maybe_build(marker: Node3D) -> void:
 	chest.set("tier", tier)
 	chest.set("cost_coins", int(economy.get("cost_coins", 0)))
 	chest.set("locked_by", economy.get("locked_by", &""))
+	var visuals: Array[PackedScene] = _visuals_for_tier(tier)
+	chest.set("closed_scene", visuals[0])
+	chest.set("open_scene", visuals[1])
 	marker.add_child(chest)
+
+
+## The loot kit has three deliberately distinct silhouettes. World-placed economy tiers reuse the
+## closest existing family until a tier-specific art pass exists: free caches are small, priced/keyed
+## containers are reinforced, and Mire/Wellspring reward tiers use the crystal growth model.
+func _visuals_for_tier(tier: StringName) -> Array[PackedScene]:
+	if tier == &"small":
+		return [SMALL_CLOSED, SMALL_OPEN]
+	if tier == &"bog" or tier == &"sunken" or tier == &"wellspring":
+		return [WELLSPRING_CLOSED, WELLSPRING_OPEN]
+	return [REINFORCED_CLOSED, REINFORCED_OPEN]
 
 
 func _tier_for_marker_name(marker_name: String) -> StringName:

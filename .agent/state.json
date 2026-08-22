@@ -180,11 +180,29 @@
       "task": "5.11",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
     },
+    "systems/extraction/extraction_ship.gd": {
+      "agent": "quill3c83cf",
+      "at": "2026-08-22T02:42:36+00:00",
+      "task": "F-312",
+      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
+    },
+    "systems/loot/chest.gd": {
+      "agent": "quill3c83cf",
+      "at": "2026-08-22T02:42:36+00:00",
+      "task": "F-312",
+      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
+    },
     "systems/waves/wave_spawner.gd": {
       "agent": "ember5da2c4",
       "at": "2026-08-22T01:24:04+00:00",
       "task": "5.11",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
+    },
+    "systems/wellspring/wellspring.gd": {
+      "agent": "quill3c83cf",
+      "at": "2026-08-22T02:42:36+00:00",
+      "task": "F-312",
+      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
     },
     "tools/blender/build_deep_materials.py": {
       "agent": "birche6b40e",
@@ -276,6 +294,12 @@
       "task": "5.11",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
     },
+    "tools/environment_vfx_reseed_check.gd": {
+      "agent": "quill3c83cf",
+      "at": "2026-08-22T02:42:36+00:00",
+      "task": "F-312",
+      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
+    },
     "tools/item_icons_check.gd": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:52:45+00:00",
@@ -349,6 +373,24 @@
       "notes": [],
       "started": "2026-08-22T01:08:05+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
+    },
+    "F-312": {
+      "agent": "quill3c83cf",
+      "files": [
+        "systems/wellspring/wellspring.gd",
+        "systems/extraction/extraction_ship.gd",
+        "systems/loot/chest.gd",
+        "tools/environment_vfx_reseed_check.gd"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-22T02:42:37+00:00",
+          "by": "quill3c83cf",
+          "text": "The absolute-path errors are detached procedural nodes receiving later run_restarted callbacks from EventBus's duplicate subscriber list. Guard their root lookups with is_inside_tree(); declare only the dummy-renderer RID family in the verdict."
+        }
+      ],
+      "started": "2026-08-22T02:42:36+00:00",
+      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
     },
     "F-469": {
       "agent": "coil26502f",
@@ -1429,6 +1471,13 @@
       "hash": "438c83aa297b16185dca3bd5da31cbf411d68d9a81d478463232c4d7bc13656a",
       "task": "F-472",
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+    },
+    "autoload/chest_placement_service.gd": {
+      "agent": "ember4ba1b4",
+      "at": "2026-08-22T02:43:48+00:00",
+      "hash": "e4200e86516607cb86c8833893f3c0873caf0b712e6139294ba9f78f133f228f",
+      "task": "F-504",
+      "token": "CODEX_SESSION_ID:01a02757-7a2b-7441-aade-0d362325e85b"
     },
     "autoload/crafting_service.gd": {
       "agent": "birche6b40e",
@@ -4027,6 +4076,13 @@
       "task": "F-472",
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
+    "tools/chest_placement_check.gd": {
+      "agent": "ember4ba1b4",
+      "at": "2026-08-22T02:43:48+00:00",
+      "hash": "1dec927062eb1e1651a4e48a2592026c33f3a51c58272d1297d053c69b94a1f4",
+      "task": "F-504",
+      "token": "CODEX_SESSION_ID:01a02757-7a2b-7441-aade-0d362325e85b"
+    },
     "tools/chunk_mesh_weight.gd": {
       "agent": "vane99f1bb",
       "at": "2026-08-22T02:15:33+00:00",
@@ -4917,7 +4973,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:120f1976-6c96-46a1-8784-38dd75780df4"
     }
   },
-  "rev": 1124,
+  "rev": 1142,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9208,7 +9264,7 @@
     "F-312": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "tools/environment_vfx_reseed_check.gd prints 15 undeclared ERROR: lines at a clean HEAD while reporting failures=0"
     },
@@ -10308,11 +10364,9 @@
       "title": "No in-game benchmark: a player cannot measure their own machine"
     },
     "F-454": {
-      "done_at": "2026-08-21T21:52:49+00:00",
-      "done_by": "wick5e2d04",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "done",
+      "status": "todo",
       "tier": "F",
       "title": "The felt performance problem is chunk streaming, not rendering: traversal drops the 1% low from 81 fps to 13 fps, and no graphics preset touches it"
     },
@@ -10703,6 +10757,15 @@
       "status": "done",
       "tier": "F",
       "title": "Resolution selector silently does nothing outside windowed mode"
+    },
+    "F-504": {
+      "done_at": "2026-08-22T02:43:48+00:00",
+      "done_by": "ember4ba1b4",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Runtime chest count is a false positive while all chests are invisible"
     }
   },
   "version": 1

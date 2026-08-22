@@ -90,11 +90,15 @@ func _check_live_hollowmere(service: Node) -> void:
 		check(StringName(chest.get("tier")) == &"small", "Cache_ chest resolved to tier 'small'")
 		check(int(chest.get("cost_coins")) == 0, "Reed Cache is free")
 		check(StringName(chest.get("locked_by")) == &"", "Reed Cache is unlocked")
+		check(chest.get_node_or_null(^"ChestVisual") != null,
+			"Reed Cache has a visible closed-state model")
 	for chest: Node in gilded_chests:
 		check(StringName(chest.get("tier")) == &"gilded", "gilded marker resolved to tier 'gilded'")
 		check(int(chest.get("cost_coins")) == 0, "gilded chest has no coin price")
 		check(StringName(chest.get("locked_by")) == &"gilded_key",
 			"gilded chest is locked by a Gilded Key (ITEMS.md line 243)")
+		check(chest.get_node_or_null(^"ChestVisual") != null,
+			"gilded chest has a visible closed-state model")
 
 	if not cache_chests.is_empty():
 		var result: Dictionary = await _request_and_await(cache_chests[0])
@@ -165,6 +169,8 @@ func _check_synthetic(service: Node) -> void:
 	if synthetic_chest != null:
 		check(StringName(synthetic_chest.get("tier")) == &"gilded",
 			"the synthetic marker's tier parsed from its own name")
+		check(synthetic_chest.get_node_or_null(^"ChestVisual") != null,
+			"a dynamically placed chest receives a real visual model")
 
 	service.call("refresh_current_scene")
 	for _frame: int in 3:
