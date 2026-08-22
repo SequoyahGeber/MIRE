@@ -94,6 +94,20 @@ func _check_import() -> void:
 		for extra: String in names:
 			check(EXPECTED_CLIPS.has(extra), "no unexpected extra clip (saw '%s')" % extra)
 
+		# The contract every clip in this family is authored to, asserted against the authored `.tres`
+		# rather than against a constant in the generator. It is worth asserting rather than trusting:
+		# Godot reports an imported clip's length as LAST FRAME over fps, not as the number of
+		# intervals, so a clip keyed 1..14 arrives as 0.467 s and not 0.433 s — and this creature's
+		# tell shipped one frame over its own window until the sibling check caught it.
+		var timing: Resource = load("res://content/enemies/peatling.tres")
+		if timing != null:
+			check(player.get_animation("attack_tell").length <= float(timing.get(&"attack_tell_seconds")) + 0.001,
+				"the tell clip (%.3f s) fits inside attack_tell_seconds (%.2f s)"
+					% [player.get_animation("attack_tell").length, float(timing.get(&"attack_tell_seconds"))])
+			check(player.get_animation("attack").length <= float(timing.get(&"attack_seconds")) + 0.001,
+				"the strike clip (%.3f s) fits inside attack_seconds (%.2f s)"
+					% [player.get_animation("attack").length, float(timing.get(&"attack_seconds"))])
+
 	peatling.free()
 
 	for static_name: String in EXPECTED_STATIC:

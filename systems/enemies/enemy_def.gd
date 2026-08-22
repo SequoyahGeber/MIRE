@@ -72,6 +72,21 @@ extends Resource
 ## distance at the end of the tell, exactly as before. Capped at `stop_distance_m`, the same arrival
 ## distance pursuit itself stops at, so a lunge cannot carry the enemy through its own target.
 @export_range(0.0, 20.0, 0.1) var lunge_speed_m_s: float = 0.0
+## docs/ENEMIES.md §4.2 — the tier-2 Fen Stalker's ambush. Multiplies the damage of the FIRST attack
+## this enemy commits to after it has been sitting with no target at all; every attack after that is
+## the plain `attack_damage`. 1.0 — the default — is a no-op, so no kind authored before the ladder
+## moves a byte.
+##
+## It exists so that a kind whose idle is genuine stillness (a bittern freeze) has that stillness
+## MEAN something. A creature that stands motionless and then hits you for its ordinary damage is
+## just an enemy with a quiet idle; a creature whose stillness is how it earns its opening shot
+## changes how a player crosses open ground. It is deliberately spent on the first COMMITTED attack
+## rather than on the first one that lands — dodging the opening strike burns it, which is what makes
+## spotting the thing first worth doing.
+##
+## Front-loaded on purpose: after the opener the enemy is an ordinary fast melee, so the pressure
+## sits on the moment of being surprised instead of turning the whole fight into a damage check.
+@export_range(1.0, 4.0, 0.05) var ambush_damage_multiplier: float = 1.0
 
 @export_group("Death")
 ## docs/ENEMIES.md §3.5 — how much corruption this kind pours into the Mire grid where it dies, and

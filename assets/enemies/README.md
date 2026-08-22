@@ -127,3 +127,46 @@ and asserted against the `.tres`'s `model_yaw_offset_degrees`, so F-039's "the e
 Blender's -Y forward into a model that faces backward" is a fact the suite knows rather than one
 every author re-derives — and the corruption stain end to end, from a real kill through the real
 damage seam to the Mire grid.
+
+
+---
+
+# The Fen Stalker (enemy ladder, tier 2)
+
+Task 5.11, `docs/ENEMIES.md` §4. Third rigged family here, and the third generator sharing this
+directory's `catalog.json` — each replaces only its own rows.
+
+| Asset | Family | Contents |
+|---|---|---|
+| `enemy_fen_stalker` | enemy | Heron-like ambush predator — skinned mesh, 19-bone rig, the same 6 clips |
+| `enemy_fen_stalker_fragment_plume` | debris | Torn flank feathers with one glowing quill |
+| `enemy_fen_stalker_fragment_bill` | debris | The bill, snapped off with a piece of skull |
+
+0.45 x 1.22 x **1.94 m** and 520 polygons. It looks down at a 1.8 m player, which is the point: tier
+1 is knee-high, tier 2 is over your head.
+
+Modelled on grey herons and bitterns. Three facts do all the work. The **legs are 53% of the height**
+— that proportion is the silhouette. The **neck is a spring**: a real heron folds it into a
+mid-cervical Z-bend and fires the head forward on it, so the tell coils and the attack releases, and
+none of that timing had to be invented. And **bitterns freeze** — motionless, bill straight up, held
+until the threat leaves — which is why `idle` here is the least animated clip in the game and why
+`ambush_damage_multiplier` has something to hide behind.
+
+Two traps this family paid for, both worth knowing before authoring the next one:
+
+* **Clip length is LAST FRAME over fps, not the number of intervals.** A clip keyed 1..16 imports as
+  0.533 s, not 0.5 s. Every `*_FRAMES` constant in both generators is therefore one less than the
+  count it looks like, and both checks assert the imported length against the authored `.tres`
+  instead of trusting the generator.
+* **Extending a folded chain means turning every segment the SAME way.** The first pass alternated
+  the extension the way the fold alternates, and the strike came back reading as "the bird looked
+  up" — it kept its S, so it never got longer, which is the only thing a strike is for.
+
+```bash
+Blender --background --python tools/blender/build_enemy_fen_stalker.py
+.agent/bin/agent godot --headless --script tools/enemy_fen_stalker_check.gd
+```
+
+The check covers the import, the yaw offset measured off the mesh (F-039), the ambush end to end
+through the real state machine — first strike doubled, second not, a dodged strike still spends it,
+losing the target re-arms it — and the stat band the tier's identity lives in.

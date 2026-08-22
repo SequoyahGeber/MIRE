@@ -90,8 +90,12 @@ func _run() -> void:
 	# its own further down.
 	var authored_stride: int = int(wave.get(&"roster_unlock_stride"))
 	wave.set(&"roster_unlock_stride", 1)
+	# Read off the authored roster, not hard-coded: `roster_order` grows a rung every time a tier of
+	# docs/ENEMIES.md's ladder is authored, and this test is about `_roll_roster()`'s weighting, which
+	# has no opinion about which archetype it is weighting.
+	var first_rung: StringName = StringName((wave.get(&"roster_order") as Array)[0])
 	var unlocked: StringName = StringName(wave.call(&"host_unlock_next_enemy"))
-	check(unlocked == &"bog_crawler", "one archetype unlocked for the roll test (bog_crawler)")
+	check(unlocked == first_rung, "one archetype unlocked for the roll test (%s)" % first_rung)
 	wave.set(&"roster_unlock_stride", authored_stride)
 	var far_away := Vector3(5000.0, 0.0, 5000.0)  # No Mire corruption out here — an uncontaminated roll.
 	var sample_size: int = 600
@@ -108,17 +112,17 @@ func _run() -> void:
 		var id := StringName(def.get(&"id"))
 		if id == wave.get(&"enemy_id"):
 			base_count_seen += 1
-		elif id == &"bog_crawler":
+		elif id == first_rung:
 			unlocked_count_seen += 1
 	var observed_total: int = base_count_seen + unlocked_count_seen
 	check(observed_total == sample_size, "every sampled body resolved to one of the two known ids")
-	# Weight is 1 (enemy_id) : 2 (first unlock) -> bog_crawler's expected share is 2/3 ~= 0.667.
+	# Weight is 1 (enemy_id) : 2 (first unlock) -> the unlocked rung's expected share is 2/3 ~= 0.667.
 	# Deterministic under DEFAULT_SEED (no live RNG re-seed in this file), so a wide +/-0.12 band
 	# around the expected share never flakes without also catching "the weighting broke".
 	var unlocked_share: float = float(unlocked_count_seen) / float(maxi(observed_total, 1))
-	check(unlocked_share > 0.54, "bog_crawler's observed share (%.3f) beats even odds (0.5)"
+	check(unlocked_share > 0.54, "the unlocked rung's observed share (%.3f) beats even odds (0.5)"
 		% unlocked_share)
-	check(unlocked_share < 0.80, "bog_crawler's observed share (%.3f) is still within its 0.667 weight"
+	check(unlocked_share < 0.80, "the unlocked rung's observed share (%.3f) is still within its 0.667 weight"
 		% unlocked_share)
 	world.call("host_despawn_all")
 	await process_frame

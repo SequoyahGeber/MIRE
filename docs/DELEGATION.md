@@ -75,6 +75,37 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-21 — 5.11: the enemy ladder, tier 2 (ember5da2c4)
+
+The **Fen Stalker** — heron-like, 1.94 m, 19-bone rig, `content/enemies/fen_stalker.tres`. It is now
+`roster_order[0]`, so it is the first rung the night pool unlocks (Cycle 2, night 4). **Tier 3 goes
+in front of `bog_crawler` and behind this one.**
+
+```gdscript
+# systems/enemies/enemy_def.gd — new, in @export_group("Attack"). Default 1.0, a no-op.
+ambush_damage_multiplier: float   # the FIRST attack committed to after having no target at all
+```
+
+Spent in `Enemy._resolve_attack()` at the top, before the range check — the ambush goes on the
+COMMITMENT, so reading the tell and moving burns it. Re-armed by the `_target_peer` setter when the
+target drops to 0 (guarded on DEAD, because `_enter_death()` sets `state` first). `_ambush_ready` is
+host-only; it changes a damage number the host was already deciding, so nothing replicates.
+
+This kind is also the first content anywhere in the project to set **`lunge_speed_m_s`** (F-240 built
+it and nothing used it). Together they are the answer to "just take one step back", which
+`docs/SPECS.md` §5.2 says cannot be bought with a bigger `attack_range_m` — and it is right.
+
+**Two traps this rung paid for, both of which will bite the next one:**
+
+* **An imported clip's length is LAST FRAME over fps**, not the number of intervals — a clip keyed
+  1..16 arrives as 0.533 s, not 0.5 s. The Peatling's tell shipped one frame over its own window
+  until the Stalker's check caught it. Both generators' `*_FRAMES` constants are now one less than
+  the count they look like, and both checks assert the *imported* length against the authored
+  `.tres`.
+* **A check that puts a player near a cone-visioned enemy must put it IN FRONT** — use
+  `-global_transform.basis.z`. Behind a `vision_angle_deg` of 120 the player is genuinely invisible
+  and the enemy never acquires, which is the blind side working, not the check failing.
+
 ### 2026-08-21 — 5.11: the enemy ladder, tier 1 (ember5da2c4)
 
 `docs/ENEMIES.md` is the ladder — five authored enemies, one rung per two Cycles (D-204). Tier 1,

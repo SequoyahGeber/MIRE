@@ -127,10 +127,21 @@ var _target_peer: int = 0:
 		if _target_peer == value:
 			return
 		_target_peer = value
+		# docs/ENEMIES.md §4.2. Losing the target re-arms the ambush: the creature has gone back to
+		# standing in the reeds being scenery, and the next player to walk into it is being surprised
+		# for the first time exactly as much as the last one was. Guarded on DEAD because
+		# `_enter_death()` sets `state` before it clears the target, so a corpse never re-arms.
+		if value == 0 and state != State.DEAD:
+			_ambush_ready = true
 		_sync_engagement()
 ## The held target's node, validated by reference each tick instead of re-found by a group scan
 ## (F-099). Reacquisition scans for a NEW target run at RESCAN_INTERVAL_SEC, not every tick.
 var _target_node: Node3D
+## docs/ENEMIES.md §4.2 — whether this enemy's next committed attack is its ambush opener. True from
+## spawn (nothing has disturbed it yet), spent by `_resolve_attack()`, re-armed by the setter above
+## when the target is lost. Host-only state; it changes a damage number the host was already
+## deciding, so there is nothing here to replicate.
+var _ambush_ready: bool = true
 var _rescan_wait: float = 0.0
 ## Where the nav agent was last asked to path to. Re-pathing only when the goal has moved more than
 ## REPATH_DISTANCE_M keeps a moving target from forcing a repath every physics tick (F-099).
@@ -324,17 +335,27 @@ func _tick_attack(delta: float) -> void:
 
 
 func _resolve_attack() -> void:
+	# docs/ENEMIES.md §4.2. Spent HERE, at the top, before either early return — this enemy committed
+	# to an attack, and the ambush is spent on the commitment rather than on the hit. A player who
+	# reads the tell and moves has beaten the opening strike and should not still be standing in
+	# front of a loaded one; that is the entire reward for having spotted the thing first.
+	var ambush: bool = _ambush_ready
+	_ambush_ready = false
+
 	var target: Node3D = _resolve_target()
 	if target == null:
 		return
 	var to_target: Vector3 = target.global_position - global_position
 	if Vector3(to_target.x, 0.0, to_target.z).length() > definition.attack_range_m:
 		return
+	var damage: int = definition.attack_damage
+	if ambush and definition.ambush_damage_multiplier > 1.0:
+		damage = maxi(roundi(float(damage) * definition.ambush_damage_multiplier), damage)
 	# Player health is task 2.13's. Emitting the event rather than inventing a health field here
 	# keeps the authority story honest: the host decided a hit landed, and whoever owns player state
 	# decides what that costs.
 	EVENT_BUS.emit_enemy_attack_landed(
-		definition.id, _target_peer, definition.attack_damage, target.global_position
+		definition.id, _target_peer, damage, target.global_position
 	)
 
 

@@ -50,7 +50,11 @@ const CORRUPTED_SPAWN_CAP_PROBABILITY: float = 0.75
 ## distinct-stats archetype (task 4.11 authored it for corrupted-spawn substitution); no new content
 ## was authored for this task — AGENTS.md forbids bulk-generating `.tres` content, and task 5.2 ("8-12
 ## enemy types") is the one that grows this list with real new archetypes. See D-100.
-@export var roster_order: Array[StringName] = [&"bog_crawler"]
+## The ladder, in the order its rungs enter the night pool (docs/ENEMIES.md §2). Tier 1 is not here
+## — it is `enemy_id` above, in the pool from night one. `bog_crawler` keeps its place at the back:
+## task 4.11 authored it for corrupted-spawn substitution and it is a legitimate extra archetype, it
+## is simply not a rung. **A newly authored tier goes in front of it, after the tiers below it.**
+@export var roster_order: Array[StringName] = [&"fen_stalker", &"bog_crawler"]
 ## How many Cycle advances one roster unlock costs (docs/ENEMIES.md §2). 1 is the pre-5.11 behaviour
 ## — a new archetype every Cycle.
 ##

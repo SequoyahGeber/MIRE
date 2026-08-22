@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="EnemyDef" format=3]
+
+[ext_resource type="PackedScene" path="res://assets/enemies/exports/enemy_fen_stalker.glb" id="1_fnstk"]
+[ext_resource type="Script" path="res://systems/enemies/enemy_def.gd" id="2_d3gob"]
+
+[resource]
+script = ExtResource("2_d3gob")
+id = &"fen_stalker"
+display_name = "Fen Stalker"
+model = ExtResource("1_fnstk")
+model_yaw_offset_degrees = 180.0
+radius_m = 0.45
+height_m = 1.95
+max_health = 28
+corpse_seconds = 3.0
+move_speed = 4.8
+stop_distance_m = 2.6
+turn_speed_rad = 3.2
+aggro_radius_m = 24.0
+deaggro_radius_m = 32.0
+attack_range_m = 3.2
+attack_damage = 12
+attack_tell_seconds = 0.5
+attack_seconds = 0.25
+attack_recovery_seconds = 1.1
+lunge_speed_m_s = 3.4
+ambush_damage_multiplier = 2.0
+vision_angle_deg = 120.0
+alert_radius_m = 14.0
+max_concurrent_attackers = 2

@@ -95,12 +95,18 @@ FPS = 30
 ## pose the previous one never reached — a visible pop. A clip that ends early
 ## holds its last frame, which is invisible. 0.45 s of tell is 13.5 frames at 30
 ## fps, so the tell is 13.
-TELL_FRAMES = 13       # 0.433 s, under peatling.tres's 0.45 s attack_tell_seconds
-ATTACK_FRAMES = 10     # 0.333 s, under its 0.35 s attack_seconds
-HIT_FRAMES = 9         # 0.300 s
-DEATH_FRAMES = 36      # 1.200 s
-IDLE_FRAMES = 72       # 2.400 s
-LOCOMOTION_FRAMES = 33  # 1.100 s
+##
+## MIND THE OFF-BY-ONE: clips are keyed from frame 1 to `1 + N_FRAMES`, and Godot
+## reports the imported length as LAST FRAME over fps rather than as the number of
+## intervals — a clip keyed 1..14 arrives as 0.467 s, not 0.433 s. Every constant
+## below is one less than the count it looks like, and the sibling check asserts
+## the imported result against the authored `.tres` rather than against these.
+TELL_FRAMES = 12       # last frame 13 -> 0.433 s, under peatling.tres's 0.45 s attack_tell_seconds
+ATTACK_FRAMES = 9      # last frame 10 -> 0.333 s, under its 0.35 s attack_seconds
+HIT_FRAMES = 8         # last frame 9 -> 0.300 s
+DEATH_FRAMES = 35      # last frame 36 -> 1.200 s
+IDLE_FRAMES = 71       # last frame 72 -> 2.400 s
+LOCOMOTION_FRAMES = 32  # last frame 33 -> 1.100 s
 
 ## Forward is -Y in Blender, which becomes -Z after the exporter's +Y-up
 ## conversion — the direction Godot treats as a node's forward.
