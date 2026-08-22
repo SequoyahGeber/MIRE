@@ -17,7 +17,7 @@
 
 **Tasks: 135/171 done.** M0 12/12 · M1 13/14 · M2 21/25 · M3 26/29 · M4 28/32 · M5 10/15 · M6 18/19 · M7 5/13 · M8 2/12
 
-**Findings: 115 under `## Open`.** 2 in flight · 3 externally gated · **97 available to pick up now** · 13 marked done but still under `## Open`
+**Findings: 116 under `## Open`.** 2 in flight · 3 externally gated · **98 available to pick up now** · 13 marked done but still under `## Open`
 
 Externally gated — do not route these to a lane:
 
@@ -29,7 +29,7 @@ Marked done but still under `## Open` — read the entry before claiming; `agent
 
 - F-012 · F-521 · F-550 · F-573 · F-574 · F-576 · F-579 · F-589 · F-591 · F-594 · F-597 · F-605 · F-609
 
-Available now, oldest first: F-296, F-300, F-304, F-305, F-309, F-310, F-317, F-319, F-320, F-322, F-323, F-325, F-344, F-352, F-358, F-359, F-360, F-362, F-364, F-371, F-388, F-389, F-393, F-394, F-412, F-420, F-422, F-424, F-425, F-426, F-427, F-428, F-429, F-436, F-437, F-438, F-439, F-441, F-444, F-446, F-454, F-455, F-457, F-463, F-465, F-466, F-467, F-468, F-470, F-474, F-476, F-479, F-481, F-495, F-497, F-498, F-499, F-515, F-523, F-524, F-544, F-545, F-546, F-548, F-557, F-567, F-569, F-572, F-582, F-587, F-595, F-600, F-603, F-607, F-612, F-613, F-614, F-615, F-616, F-617, F-618, F-619, F-620, F-621, F-622, F-623, F-624, F-625, F-626, F-627, F-628, F-629, F-630, F-631, F-632, F-633, F-634
+Available now, oldest first: F-296, F-300, F-304, F-305, F-309, F-310, F-317, F-319, F-320, F-322, F-323, F-325, F-344, F-352, F-358, F-359, F-360, F-362, F-364, F-371, F-388, F-389, F-393, F-394, F-412, F-420, F-422, F-424, F-425, F-426, F-427, F-428, F-429, F-436, F-437, F-438, F-439, F-441, F-444, F-446, F-454, F-455, F-457, F-463, F-465, F-466, F-467, F-468, F-470, F-474, F-476, F-479, F-481, F-495, F-497, F-498, F-499, F-515, F-523, F-524, F-544, F-545, F-546, F-548, F-557, F-567, F-569, F-572, F-582, F-587, F-595, F-600, F-603, F-607, F-612, F-613, F-614, F-615, F-616, F-617, F-618, F-619, F-620, F-621, F-622, F-623, F-624, F-625, F-626, F-627, F-628, F-629, F-630, F-631, F-632, F-633, F-634, F-635
 
 <!-- END GENERATED -->
 

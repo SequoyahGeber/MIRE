@@ -3854,6 +3854,14 @@ Live playtest 2026-08-22 (Sequoyah): after dying and respawning/restarting the g
 
 ---
 
+### F-635 · A scattered ground-plant asset reads as a flat starburst of green sticks
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest 2026-08-22 (Sequoyah): the plant shown in `codex-clipboard-aa403387-5312-48a6-8204-b4c1a3bd0e0d.png` is not acceptable. At normal first-person distance it reads as six rigid segmented green branches radiating from one point, lying almost flat on the terrain. It has no convincing central mass, stem hierarchy, leaf rhythm, vertical volume, or recognizable species silhouette; several tips look clipped and the identical spoke-like arms make it feel procedurally assembled rather than authored. First identify the exact scatter/harvestable asset with a runtime look-at diagnostic rather than guessing from the screenshot, then rebuild that one asset with a clear plant identity, asymmetrical branching, varied leaf clusters, believable ground contact and enough vertical layering to read from eye height. Verify the exported GLB and an in-game first-person capture from multiple angles. Coordinate with active task 2.1d, which currently claims the gatherable-plant generator/catalog, rather than editing those files concurrently.
+
+---
+
 ## Resolved
 
 ### F-611 · Release build excludes tools/perf_format.gd, so SessionLog fails to parse and instantiate on launch — **fixed**
