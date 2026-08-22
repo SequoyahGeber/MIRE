@@ -484,6 +484,18 @@ func _check_screen() -> void:
 	_expect(bool(screen.call(&"menu_allows_cancel")),
 		"Esc leaves the screen when nothing is running")
 
+	# F-502: the benchmark's static comparison seed belongs only to its temporary world. Leaving it
+	# ready here made the next real expedition reuse BENCH_SEED instead of drawing a fresh run seed.
+	var game_state: Node = root.get_node_or_null(^"/root/GameState")
+	if game_state != null:
+		game_state.call(&"set_pending_seed", BenchmarkRunner.BENCH_SEED)
+		game_state.call(&"host_generate_seed")
+		_expect(int(game_state.get(&"run_seed")) == BenchmarkRunner.BENCH_SEED,
+			"the benchmark itself still uses its static comparison seed")
+		screen.call(&"_teardown_world")
+		_expect(not bool(game_state.call(&"is_seed_ready")),
+			"leaving the benchmark clears its seed before the next gameplay run")
+
 	# The state that matters: while a benchmark is in flight Esc must cancel the benchmark and
 	# refuse to pop, or the stack would free the screen out from under a running measurement and
 	# leave a world parented to the tree.

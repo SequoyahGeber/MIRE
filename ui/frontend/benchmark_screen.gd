@@ -428,6 +428,13 @@ func _teardown_world() -> void:
 	if _world != null and is_instance_valid(_world):
 		_world.queue_free()
 		_world = null
+	# The benchmark deliberately replaces the process-wide run seed with BENCH_SEED. Do not let
+	# that measurement fixture become the next expedition's island: once the benchmark world is
+	# gone, gameplay must be back in the normal "no run yet" state so its first ensure_seed() draws
+	# fresh entropy. A second benchmark run pins BENCH_SEED again in _build_world().
+	var game_state: Node = get_node_or_null(^"/root/GameState")
+	if game_state != null:
+		game_state.call(&"reset")
 	_restore_frontend()
 
 

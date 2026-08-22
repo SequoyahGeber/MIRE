@@ -9001,3 +9001,66 @@ Pinecones: new conifer_litter art kit, item/harvestable/scatter/ranged-weapon da
 Files: `tools/blender/build_conifer_litter.py`, `content/items/pinecone.tres`, `content/harvestables/pinecone.tres`, `content/ranged_weapons/pinecone.tres`, `content/scatter/highland_pine_litter.tres`, `content/scatter/forest_pine_litter.tres`, `tools/f492_pinecone_check.gd`, `systems/harvesting/harvest_library.gd`, `tools/blender/render_item_icons.py`, `assets/icons/catalog.json`, `docs/ITEMS.md`, `docs/FINDINGS.md`
 
 Commit at time of writing: `f145b3d`
+
+---
+
+### HANDOFF · F-497 · dusk544993 · 2026-08-22T01:48:20+00:00
+
+**Every music director leaves its AudioStreamPlayers running at engine shutdown, leaking playbacks and streams past cleanup**
+
+Filed and investigated, NOT fixed. The leak is real and reproducible on any headless run (even a two-line noop script): 8 ObjectDB instances and 4 resources, all music — ambient_day.ogg and theme_landfall.ogg plus their playbacks. The obvious cause is disproven: see the note. _exit_tree DOES run and stopping/nulling the players changes the counts by zero, so the surviving references are held somewhere other than the AudioStreamPlayers. Next thing to check is whether the resource cache is being cleared after the audio server rather than before, and whether a stock empty Godot 4.7.1 project with one autoload-held .ogg shows the same pair — if it does, this is engine behaviour and the finding should be resolved as 'not ours' rather than chased. No files are left modified; the three directors are back at HEAD.
+
+Files: `autoload/ambient_music_director.gd`, `autoload/theme_music_director.gd`, `autoload/boss_music_director.gd`
+
+Commit at time of writing: `98624c7`
+
+---
+
+### DONE · F-496 · vane99f1bb · 2026-08-22T01:50:20+00:00
+
+**ResourceScatterField fills every MultiMesh one Variant-boxed set_instance_transform() at a time, on the main thread, per chunk**
+
+Measured and rejected: MultiMesh.buffer from GDScript is 2.5x slower than set_instance_transform. Benchmark shipped as tools/multimesh_fill_bench.gd so nobody retries it.
+
+Files: `world/gen/resource_scatter_field.gd`, `world/gen/undergrowth.gd`, `autoload/harvest_world.gd`, `world/gen/authored_world.gd`, `tools/multimesh_buffer_check.gd`, `tools/multimesh_fill_bench.gd`
+
+Commit at time of writing: `31f677d`
+
+---
+
+### HANDOFF · F-459 · vane99f1bb · 2026-08-22T01:55:49+00:00
+
+**First visit to a location hitches; the second visit to the same place does not**
+
+Reproduced and instrumented, cause not yet separated. tools/revisit_probe.gd is in the repo and shows the penalty is entirely in the ARRIVAL window (~1.35x frames to settle, 2-3x hitches), not after settle — which contradicts the finding's premise that streamer-idle rules streaming out. The node-count discriminator is too unstable to name GPU vs CPU (1382 then 852 for the same first visit vs a steady 460). Next step, written into the finding: re-run the probe with scatter tables cut to ONE asset so node creation and material variety move independently. No files left claimed.
+
+Files: `tools/revisit_probe.gd`
+
+Commit at time of writing: `7d743ef`
+
+---
+
+### DONE · F-501 · vane99f1bb · 2026-08-22T02:15:33+00:00
+
+**ChunkStreamer rebuilds every mesh it has already built — nothing is cached, on a machine using 1.1% of its memory**
+
+Mesh cache shipped: return trips settle 2.4x faster (144-150 -> 61 frames), 500 m sprint hitches 48 -> 8, for ~2 MB real resident cost. Capacity derived from OS.get_memory_info() so it scales to the low-end target.
+
+Files: `world/chunk/chunk_streamer.gd`, `tools/revisit_probe.gd`, `tools/chunk_mesh_weight.gd`
+
+Commit at time of writing: `df27f430`
+
+---
+
+### DONE · F-502 · kilne8b941 · 2026-08-22T02:30:43+00:00
+
+**Benchmark seed leaks into later gameplay**
+
+Benchmark keeps static BENCH_SEED during measurement and clears shared GameState on teardown, so the next expedition draws fresh entropy. benchmark_check: 214 assertions, 0 failures; diff check clean.
+
+Notes along the way:
+- Benchmark remains deterministic at BENCH_SEED; screen teardown resets GameState so gameplay's next ensure_seed draws entropy. Add a regression assertion at the screen boundary.
+
+Files: `ui/frontend/benchmark_screen.gd`, `tools/benchmark_check.gd`
+
+Commit at time of writing: `ced0228c`
