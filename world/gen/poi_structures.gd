@@ -33,6 +33,7 @@ const DrawPolicy := preload("res://world/environment/draw_policy.gd")
 
 const BUILDERS: Dictionary = {
 	&"ruins": preload("res://world/gen/ruin_site.gd"),
+	&"stone_circle": preload("res://world/gen/stone_circle_site.gd"),
 }
 
 ## A structure's pieces stand on the real surface, so a hall on a gentle slope steps down it. Beyond

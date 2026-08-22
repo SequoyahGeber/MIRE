@@ -7,6 +7,7 @@ script = ExtResource("1_standing_stones")
 id = &"standing_stones"
 display_name = "Standing Stones"
 scene_path = ""
+structure_id = &"stone_circle"
 placement_priority = 50
 target_count = 6
 clearance_m = 30.0
