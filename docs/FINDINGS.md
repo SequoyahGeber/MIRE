@@ -3270,6 +3270,14 @@ fix is that they get exactly the same. Parity is the correct fix for that findin
 upgrade — a tier-2 station a player spends resources on and cannot tell apart from the tier-1 one is
 still a broken promise, just a quieter one.
 
+**The authored intent points at the second option below.** `content/buildables/workbench_upgraded.tres`
+already describes it to the player as *"Same recipes, better light and more room — the tier-2 bench a
+settled camp earns."* So "no exclusive recipes" may well be deliberate, and the promise the player is
+actually being sold is a nicer bench rather than a wider one. If that reading is right, authoring
+exclusive recipes would contradict the description, and the benefit field is the fix — which changes
+what anyone would write, so it is worth settling before any content is authored either way.
+(Observation contributed by the F-575 author while reviewing this entry.)
+
 Two ways out, and it is a design call rather than a code one:
 
   · **Exclusive recipes.** The upgraded bench gets recipes the plain one cannot make. This is the

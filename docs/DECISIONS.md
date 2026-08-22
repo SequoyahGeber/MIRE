@@ -7303,3 +7303,55 @@ second is a claim about what the code is, and claims about what code is should b
 change — an external tool keying on the path, or a rename that breaks a reference nothing else can
 follow. Or evidence that the rename is being avoided *because* it is visible, and files are instead
 sitting red forever, which would mean the safety is buying nothing and costing the suite its signal.
+
+### D-217 · 2026-08-22 · An upgraded station satisfies its predecessor's requirements, never the reverse
+Settled while reviewing F-575 (commit 2fdb7a9b, resolution fc381056). Recorded because the rule is
+asymmetric, the asymmetry is correct, and neither fact is visible at the call sites that depend on
+it — a guide-step author reading `STATION_BUILT` has no way to see which direction it runs.
+
+**The rule.** `CraftingService.station_satisfies(station, required)` is true when `station` IS
+`required`, or reaches it by following `StationDef.upgrades_from` transitively. Everything that asks
+"is this station requirement met" routes through it: `recipes_for_station()`, `_station_in_range()`
+(and so both the client's craft preview and the host's revalidation), and `station_count()`.
+
+**Substitution is DECLARED, never inferred.** `family` + `tier` cannot express it. F-575's first
+attempt inferred "same family, equal or higher tier" and was wrong: `forge` runs furnace (1) then
+anvil (2), so the rule silently moved `iron_ingot` and `bogsilver_ingot` onto the anvil, and
+`tools/recipe_station_check.gd` (F-484) caught it. A family is a themed progression, not a ladder of
+substitutes — an anvil comes after a furnace without being able to do its job. `upgrades_from` is
+constrained by `tools/station_tier_check.gd` to name an existing station in the same family at a
+strictly lower tier, so it can express an upgrade and cannot express a shortcut across a progression.
+
+**The asymmetry, which is the part worth writing down.** The Reinforced Workbench satisfies a
+requirement for the Workbench; the Workbench does not satisfy a requirement for the Reinforced
+Workbench. Applied to `GuideService`'s `STATION_BUILT` condition, that means:
+
+  · A step reading "place a workbench" DOES clear when the party places the Reinforced Workbench.
+  · A step reading "place a Reinforced Workbench" does NOT clear on a plain workbench.
+
+Both are correct, and the first is the load-bearing one: a tutorial step that deadlocks behind a
+bench the player has already replaced is a worse failure than the recipe bug F-575 was filed for.
+This is why `station_count()` sums every satisfying station rather than the one named — it went
+past F-575's letter deliberately.
+
+**The consequence to watch.** Before F-575 the two benches had disjoint recipe sets; now one is a
+superset of the other. `nearby_station_id()` breaks ties by registry iteration order — its own
+comment concedes that order is not meaningfully orderable — so the day someone authors the first
+`workbench_upgraded`-only recipe, a player standing within range of both benches can silently lose
+the upgrade-only rows depending on which bench the registry yields first. Filed as F-587 together
+with the design question of what the upgrade should actually give, and the fix belongs with whoever
+takes it: prefer the highest-tier satisfying station in range rather than the first.
+
+**When adding an upgraded station:** set `upgrades_from` to the station it replaces and nothing else
+— tier alone does not substitute. Write guide steps against the LOWEST tier that should satisfy them,
+because the rule widens upward and never downward.
+
+**Would change my mind:** a station that should substitute for something OUTSIDE its own family, or
+for a station at the same tier. `upgrades_from` plus `station_tier_check`'s same-family,
+strictly-lower-tier constraint cannot express either, and both are plausible content wishes — a
+"universal bench" that satisfies several families, or two sidegrade benches at tier 2 that each
+satisfy the other. If either is wanted, the constraint is the thing to revisit, not the declared-vs-
+inferred call, which the anvil case settles independently. Also: if `station_count()`'s widening ever
+makes a guide step clear that Sequoyah wants to require a SPECIFIC bench, the answer is a new
+condition (`STATION_BUILT_EXACT`) rather than narrowing this rule — narrowing it re-opens the
+tutorial deadlock this decision exists to prevent.
