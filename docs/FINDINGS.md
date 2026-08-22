@@ -3582,17 +3582,6 @@ hotbar's own band drawn in. Full write-up in `docs/DELEGATION.md`.
 
 ---
 
-### F-486 · Pine and willow read wrong against their real subjects; birch is the standard both should meet
-
-**Area:** art · **Severity:** high · **Found:** 2026-08-22 by moss7f4dd3
-
-Sequoyah, 2026-08-21: *"we gotta work on the pine and willow trees, the birch is fine but the
-other 2 need significant improvement"*.
-
-Rendered fresh with `audit_all_sides.py` (the committed sheets under `assets/audit/sheets` for
-the willow were STALE — they still showed the pre-F-424 lollipop, so anyone judging the willow
-from the repo sheet is judging an asset that no longer exists).
-
 ### Pine (`build_pine`, tools/blender/build_mire_map_kit.py)
 
 Reads as a toy Christmas tree, not a forest conifer:
@@ -3672,7 +3661,139 @@ Sequoyah's instruction: "we shouldnt have any nature assets not being used durin
 
 ---
 
+### Audit of every other caller (done)
+
+`grep -n '\.rotation_euler\s*=' tools/blender/*.py` over the whole kit set. Safe callers
+are the ones whose object came from a `bpy.ops.*_add(location=...)` primitive — `cone`,
+`ico`, `cylinder_between`, `tapered_between`, cameras, lights, and preview roots — because
+those get their origin AT `location`. Two real instances of the defect existed besides the
+pine:
+
+* **`build_mire_map_kit.build_bare`, the bracket fungi** — `shelf.rotation_euler = (0, 0, angle)`
+  on a `hull` anchored in the bark of a leaning trunk. **Fixed here**, by resolving the
+  bracket's shallow (radial) and wide (across-the-trunk) axes onto X and Y.
+* **`build_gatherable_plants.py:371-375`, `frame_leaf_*`** — `spray.rotation_euler = (0, 0, angle)`
+  on a `hull` at a point out on a cane. **NOT fixed: that file is claimed by `gale43d16e`
+  for task 2.1d.** The fix there is simply to **delete the line** — the hull's radii are
+  `(0.098, 0.086, 0.052)`, near-circular in plan, so the rotation was never doing anything
+  the geometry needed; it was only flinging each leaf spray around the world origin.
+
+
+---
+
+### F-492 · Pinecones: a thrown starter projectile gathered under pine trees
+
+**Area:** content · **Severity:** low · **Found:** 2026-08-22 by hollow25eed7
+
+Requested by Sequoyah. Pines are everywhere in the highland and forest canopies and drop nothing;
+the player's only ranged option before a bow is the sling, which needs stone.
+
+A pinecone is picked up off the ground around pine trees and thrown at enemies. It is its own ammo:
+one item id serving as both `RangedWeaponDef.item_id` and `ammo_item_id`, which the existing
+host-authoritative ranged path already supports without a code change — the host reads the slot,
+removes one, and simulates the flight.
+
+Needs: art (a real open pine cone, ~75 mm), an ItemDef, a HarvestableDef, a HarvestLibrary rule,
+scatter entries wherever `tree_pine_*` is placed, and a RangedWeaponDef tuned as a weak, arcing,
+short-range throw — a nuisance, not a bow substitute.
+
+---
+
 ## Resolved
+### F-486 · Pine and willow read wrong against their real subjects; birch is the standard both should meet — **fixed**
+
+**Area:** art · **Severity:** high · **Found:** 2026-08-22 by moss7f4dd3
+
+Sequoyah, 2026-08-21: *"we gotta work on the pine and willow trees, the birch is fine but the
+other 2 need significant improvement"*.
+
+Rendered fresh with `audit_all_sides.py` (the committed sheets under `assets/audit/sheets` for
+the willow were STALE — they still showed the pre-F-424 lollipop, so anyone judging the willow
+from the repo sheet is judging an asset that no longer exists).
+
+
+## Resolution
+
+Both trees were rebuilt against the reference, and verified with `audit_all_sides.py` (all
+ten views) plus `tools/tree_collider_check.gd` headless.
+
+**The willow.** `whip_strand` is a new local primitive in `build_flora_set.py`: a swept,
+triangular-section strand along a curved spine that thins to a point. `hull` could only make
+an upright lump around one centre, which is why the curtain was sixty vertical bars. The
+shoots now leave the limb travelling outward, arch over, and fall — the shape the species is
+named for. The crown gained foliage masses ON the limbs, biased low and outboard, plus three
+smaller masses over the fork, which together close the "broad, rounded crown" that was simply
+absent; shoots now hang from the limbs as well as the branch tips, so the interior is full
+rather than a rim. `leaf_pale` was demoted to a minority tone and barred from the crown
+masses entirely. Trunk collider fell from 1.08 m to 0.58-0.68 m, in line with every other
+tree. 2266 triangles against the 2400 `small_trees` budget.
+
+**The pine.** Whorls now sit on accumulated jittered gaps that CLOSE toward the top (annual
+growth shortens as the leader ages), lower whorls droop and upper ones stay level, the widest
+whorl is a little way up the crown rather than at its base, and an `age` value spreads the six
+variants between a young conical spire and an old tree bare past halfway — as a spread, so most
+stay ordinary. The three hard colour bands are gone: whorls draw from the two dark tones only,
+because `pine_tip` on a two-metre disc reads as snow, and it is now spent on the sprays and the
+leader where it reads as light on needles. The party-hat leader is three tight skirts and a
+spike in the crown's own tones, starting at the crest so there is no bare trunk under it.
+
+The floating geometry Sequoyah reported mid-task turned out to be F-491, not the droop.
+
+### F-491 · mire_art hull() bakes world coordinates, so setting rotation_euler on one spins it around the world origin — **fixed**
+
+**Area:** art · **Severity:** high · **Found:** 2026-08-22 by moss7f4dd3
+
+Found while fixing F-486, from play-visible symptoms Sequoyah reported as
+*"why is there parts of the tree floating next to it???"*.
+
+`hull()` builds its vertices as `centre + offset` and hands them to `mesh_object`,
+which creates the object with its origin left at **(0, 0, 0)**. The mesh therefore
+carries absolute world coordinates.
+
+Consequently **`some_hull.rotation_euler = (...)` does not spin the hull in place.**
+It rotates the hull about the world origin, which for anything built away from the
+origin is a translation along an arc. `build_pine` set
+`spray.rotation_euler = (0.0, small, angle)` where `angle` runs the full circle;
+measured on `tree_pine_b`, twelve needle sprays were adrift from the tree by up to
+**3.4 m**.
+
+This is easy to get wrong because the neighbouring primitives are safe:
+
+* `cone()` and `ico()` go through `bpy.ops.*_add(location=...)`, which puts the
+  object origin AT `location`, so their `rotation_euler` behaves as expected. The
+  pine's skirts rotate correctly in the same loop where its sprays did not, which
+  is exactly why the bug survived several passes over that function.
+* `tapered_between` / `cylinder_between` set `rotation_quaternion` on a `cone`, so
+  they are safe for the same reason.
+
+**Rule: never set a transform on the return value of `hull`, `ribbon`,
+`tube_mesh`, or anything else that goes through `mesh_object`.** Bake the
+orientation into the geometry you ask for instead. For an ellipsoid that has to
+point along a horizontal direction `out`, resolve its long and short axes onto X
+and Y:
+
+```python
+rx = abs(out.x) * long + abs(out.y) * wide
+ry = abs(out.y) * long + abs(out.x) * wide
+```
+
+which is what `build_pine`'s needle sprays now do. Anything needing a true
+arbitrary-axis rotation should build its vertices in the rotated frame, as the
+pine's whorl branches do via the skirt's own rotation matrix.
+
+Fixed in `build_pine`.
+
+## Resolution
+
+Fixed in `build_pine`'s needle sprays and `build_bare`'s bracket fungi, both in
+`build_mire_map_kit.py`, by resolving each hull's axes onto X and Y instead of rotating the
+object afterwards. Verified by re-measuring connected components in the exported GLB: the
+worst spray separation on `tree_pine_b` fell from **3.4 m to under the coarse-vertex noise
+floor**, and the all-sides sheets are clean.
+
+The third instance, in `build_gatherable_plants.py`, is left for whoever holds that file —
+see the audit note above for the exact one-line fix.
+
 
 ### F-489 · Initial Mire cluster can seed in the ocean — **fixed**
 
