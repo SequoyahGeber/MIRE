@@ -7133,3 +7133,38 @@ makes the host-only property structural rather than incidental.
 
 **Would change my mind:** a playtest where coins stop being scarce enough for chest prices to mean
 anything. The fix then is the pay scale, not the mechanic — the ranges are data.
+
+
+### D-211 · The headless import cache stays shared and serialised; no per-lane caches
+
+**2026-08-21, cinder9818da, closing F-044.**
+
+F-044 left one question open for three days: *make the checks tolerate a shared `.godot/`, or give
+each lane its own at the price of a full reimport each.* F-196 already answered the first half —
+`import_cache_guard()` makes an asset writer hold the lock for its whole export and forces a clean
+`--import` on release, so a reader can no longer observe a half-written cache at all. What was left
+was throughput, and it was to be decided on measurements rather than on a guess.
+
+**The measurement.** A clean checkout of HEAD in a throwaway worktree imports in **11.7 s** and
+produces a **139 MB** cache — an order of magnitude cheaper than the "full reimport per lane" the
+finding treated as the prohibitive cost. Taken on 2026-08-21 on the dev Mac. So on the reimport cost
+alone, per-lane caches would have been affordable.
+
+**They are still wrong, for a reason the cost never captured.** Godot resolves `.godot/` relative to
+the project path and offers no flag to move it. A per-lane cache therefore is not a cache decision at
+all — it is a per-lane *project copy*, one worktree per lane. The whole coordination protocol assumes
+the opposite: agents claim individual files inside one shared tree, and `agent check` enforces that
+against a single index. Giving lanes their own trees would replace a bounded queue with a merge
+problem, which is strictly the worse failure — a queue costs seconds and is visible, a bad merge
+costs work and is not.
+
+**So: one cache, one lock, and the contention is now measured rather than asserted.** `file_lock`
+appends every acquisition to `.agent/locks/ledger.jsonl` — who, which lock, how long it waited, how
+long it held — and `agent locks [--days=N]` reports the distribution, with the wait **p95** rather
+than the mean, because a queue is felt at its tail. Before this the wait times existed only as a
+line in whichever lane transcript happened to print them, which is why "decide against real hold
+times" had no data to decide against.
+
+**Would change my mind:** a sustained godot-lock wait p95 above ~12 s in `agent locks`. At that point
+queueing costs more than a lane's whole cold import, and the right answer is to cut hold times first
+(the checks, not the cache) and only then reconsider separate trees.

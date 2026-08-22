@@ -37,6 +37,12 @@ ROADMAP = os.path.join(ROOT, "docs", "ROADMAP.md")
 # concurrent lanes from colliding on the two things they genuinely share.
 ORDERS = os.path.join(AGENT_DIR, "orders")
 LOCKS = os.path.join(AGENT_DIR, "locks")
+
+## Every lock acquisition, appended. F-044's open question is a throughput one — is queueing behind
+## the shared import cache cheaper than giving each lane its own — and it was unanswerable because the
+## wait and hold times only ever went to a lane transcript nobody aggregates. One line per acquire,
+## written on release so the hold time is real rather than predicted.
+LOCK_LEDGER = os.path.join(AGENT_DIR, "locks", "ledger.jsonl")
 SILENT_HANG_SECONDS = 45        # silence this long AFTER a script error is F-104, not slowness
 LANE_BIN = os.path.join(AGENT_DIR, "bin", "lane")
 
@@ -2042,9 +2048,13 @@ def _lock_holder(path):
 def file_lock(name, timeout=600, label=None):
     """Serialise the two resources three concurrent lanes actually share.
 
-    `godot` — one headless Godot at a time. Lanes share a single 42 MB import cache, and two engines
-    reimporting it at once is the most plausible explanation for F-038's intermittent failures.
+    `godot` — one headless Godot at a time. Lanes share one import cache, and a reader must never
+    observe one mid-rewrite. F-196's import_cache_guard closed the writer side structurally; this is
+    what keeps two readers from reimporting it at once.
     `git`  — one index at a time. Three lanes running `ship` together means index.lock contention.
+
+    Every acquisition is appended to LOCK_LEDGER on release (F-044), because "the contention is now
+    visible" was only ever true for whoever was watching that terminal.
     """
     os.makedirs(LOCKS, exist_ok=True)
     path = os.path.join(LOCKS, "%s.lock" % name)
@@ -2087,14 +2097,32 @@ def file_lock(name, timeout=600, label=None):
                            "label": label or name, "at": now()}, h)
         except (IOError, OSError):
             pass
+        acquired = time.time()
         try:
             yield
         finally:
+            _log_lock(name, label, began, acquired)
             try:
                 os.remove(held)
             except OSError:
                 pass
             fcntl.flock(fh, fcntl.LOCK_UN)
+
+
+def _log_lock(name, label, began, acquired):
+    """One JSONL line per acquisition. Never raises: a ledger write must not be able to fail a check."""
+    try:
+        with open(LOCK_LEDGER, "a") as fh:
+            fh.write(json.dumps({
+                "at": now(),
+                "lock": name,
+                "agent": whoami(required=False, assign=False) or "?",
+                "label": label or name,
+                "waited_sec": round(acquired - began, 2),
+                "held_sec": round(time.time() - acquired, 2),
+            }) + "\n")
+    except (IOError, OSError, TypeError, ValueError):
+        pass
 
 
 def with_lock(name, fn):
@@ -4321,8 +4349,64 @@ def cmd_report(args):
 # lock held across a subprocess would stall every other lane's board for the length of that run.
 # `start` and `board` are wrapped inside their own bodies rather than here: both print a git summary
 # afterwards that has no business inside the lock.
+def cmd_locks(args):
+    """What the shared locks actually cost, from LOCK_LEDGER (F-044).
+
+    Exists so the import-cache question is decided against numbers instead of impressions. The
+    interesting column is the WAIT tail, not the mean: a queue is felt at its p95.
+    """
+    days = 7
+    for a in args:
+        if a.startswith("--days="):
+            days = int(a.split("=", 1)[1])
+
+    rows = []
+    try:
+        with open(LOCK_LEDGER) as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rows.append(json.loads(line))
+                except ValueError:
+                    continue
+    except (IOError, OSError):
+        pass
+
+    rows = [r for r in rows if age_hours(r.get("at", "")) <= days * 24]
+    if not rows:
+        print("no lock acquisitions recorded in the last %d day(s) — %s"
+              % (days, os.path.relpath(LOCK_LEDGER, ROOT)))
+        return 0
+
+    print("\nlock contention, last %d day(s) — %d acquisition(s)\n" % (days, len(rows)))
+    print("  %-8s %6s  %8s %8s %8s   %8s %8s" % ("lock", "n", "wait avg", "wait p95", "wait max",
+                                                 "held avg", "held max"))
+    for name in sorted({r.get("lock", "?") for r in rows}):
+        mine = [r for r in rows if r.get("lock") == name]
+        waits = sorted(float(r.get("waited_sec", 0.0)) for r in mine)
+        holds = sorted(float(r.get("held_sec", 0.0)) for r in mine)
+        p95 = waits[min(len(waits) - 1, int(len(waits) * 0.95))]
+        print("  %-8s %6d  %7.1fs %7.1fs %7.1fs   %7.1fs %7.1fs"
+              % (name, len(mine), sum(waits) / len(waits), p95, waits[-1],
+                 sum(holds) / len(holds), holds[-1]))
+
+    godot = [r for r in rows if r.get("lock") == "godot"]
+    if godot:
+        queued = sum(float(r.get("waited_sec", 0.0)) for r in godot)
+        print("\n  %.0fs total spent queueing for the import cache across %d run(s)."
+              % (queued, len(godot)))
+        print("  A clean reimport measured 11.7s (2026-08-21, D-211). Queueing is only the worse")
+        print("  deal once the wait tail clears that — and per-lane caches would also cost each")
+        print("  lane its own project copy, which the file-claim protocol assumes does not exist.")
+    print("")
+    return 0
+
+
 COMMANDS = {
     "start": cmd_start, "brief": cmd_brief,
+    "locks": cmd_locks,
     "claim": in_state_txn(cmd_claim), "note": in_state_txn(cmd_note),
     "done": in_state_txn(cmd_done), "handoff": in_state_txn(cmd_handoff),
     "drop": in_state_txn(cmd_drop), "check": cmd_check,
@@ -4357,6 +4441,8 @@ USAGE = """agent — multi-agent coordination for MIRE
   agent reopen <id> "why"         a finding marked done that was never resolved — status
                                   correction, journalled (F-131). Not for new work: file that
   agent check                     verify changes respect claims (pre-commit hook)
+  agent locks [--days=N]          what the shared godot/git locks cost — wait and hold times
+                                  from the durable ledger (F-044). Decide cache questions here
   agent sync                      re-read tasks from docs/ROADMAP.md
 
 Verifying — always launch the engine through this, never bare (F-044):

@@ -377,68 +377,6 @@ the latency, and only then set `STEAM_CONNECT_TIMEOUT_SEC` from evidence.
 
 ---
 
-### F-044 · Concurrent headless Godot runs share one import cache, which is the likely cause of F-038
-
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-17 by yarrow21 during 0.12
-
-Every check in `tools/` runs `Godot --headless --path .`, and every one of them reads and writes the
-same 42 MB `.godot/` import cache. Nothing serialises them. With one agent that was fine; with three
-lanes dispatched at once (D-036) it is a race, and it costs a whole dispatch when it fires.
-
-This is almost certainly what **F-038** is describing — `inventory_net_check` "intermittently fails
-its grant wait under machine load." Machine load is the symptom; a second engine rewriting the
-import cache mid-run is a better explanation than slowness, because a slow machine should make the
-wait *longer*, not make the grant never arrive.
-
-Observed while building 0.12: an audit session was running ten checks in a bare `for` loop
-(`Godot --headless --path . --script tools/$s.gd`) at the same time as this task's own verification.
-
-**Mitigated, not fixed:** `agent godot --script tools/x_check.gd` now takes an exclusive lock
-(`.agent/locks/godot.lock`) and every work order tells lanes to launch the engine that way. The
-mitigation only binds callers who use it — a bare `Godot --headless` still bypasses it. Fixing it
-properly means either making the checks tolerate a shared cache or giving each lane its own
-`.godot/`, which costs a full reimport per lane. Re-test F-038 under the lock before doing either.
-
-**2026-08-18, lp — the F-038 hypothesis here was wrong; this finding's general claim stands on its
-own.** F-038 is fixed (see Resolved) and its actual cause was a pure ordering race inside the two
-checks (grant sent before the host's own `InventoryService` had created the peer's store) —
-reproduced and fixed entirely under the `agent godot` lock, with no import-cache contention involved
-and no other lane running at the same time. So the import-cache race this finding describes is real
-and still open for whatever *does* trigger it, but it was never F-038's cause; the two just happened
-to share a "grant timeout under load" symptom. Retitling would break the F-number-in-title convention
-other entries link against, so left as-is with this correction instead.
-
----
-
-**2026-08-18, bram1 (director) — instrumented, still not decided.** The choice this finding names —
-make the checks tolerate a shared cache, or give each lane its own `.godot/` at the price of a full
-reimport each — is deliberately still open, because it should be made on measurements rather than on
-a guess. What shipped instead is everything needed to take that measurement, after the lock was
-observed serialising four concurrent runs and killing one lane outright:
-
-- `file_lock` names its holder, heartbeats every 30 s with elapsed time, and reports how long a
-  caller waited. A multi-minute wait is normal with six agents; before this it was one dim line and
-  then silence, which is what F-086 misread as a hang before it stopped mid-task.
-- A holder record whose pid is gone now reports itself stale rather than claiming a free lock is held.
-- `agent godot` kills the F-104 silent hang at 45 s instead of letting it hold the lock for eight
-  minutes (see F-104, Resolved).
-
-So the contention is now visible and bounded. **Decide the cache question against real hold times,
-not against this paragraph.**
-
-**2026-08-19, bram1 (director) — most of this is now answered by F-196; re-scope before working it.**
-The open question here was *make the checks tolerate a shared cache, or give each lane its own
-`.godot/` at the price of a full reimport each*. F-196 took the first option further than "tolerate":
-`tools/blender/godot_import_lock.py`'s `import_cache_guard()` makes an asset **writer** hold
-`agent godot`'s own lock for its whole export and forces a clean `--import` on release, wired into
-all 19 asset writers (D-126). A reader can no longer observe a half-written cache at all, so the
-writer/reader race that motivated per-lane caches is structurally closed rather than narrowed.
-
-What remains of F-044 is therefore only **contention** — the lock serialises headless runs, and with
-six agents a check can queue behind several others. That is a throughput question, not a correctness
-one, and the instrumentation added alongside F-104 (holder identity, 30s heartbeat, measured wait on
-acquire) now produces the hold times needed to decide it. Decide against those numbers.
-
 ### F-174 · No dev machine can stand in for "mid-range" — `tools/perf_probe.gd`'s baseline is only ever measured on the fastest hardware in the project
 
 **Area:** perf · **Severity:** low · **Found:** 2026-08-18 by lm during 7.7
@@ -3575,6 +3513,100 @@ refused" — has a check for the first and third and none for the second.
 ---
 
 ## Resolved
+
+### F-044 · Concurrent headless Godot runs share one import cache, which is the likely cause of F-038 — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-17 by yarrow21 during 0.12
+
+Every check in `tools/` runs `Godot --headless --path .`, and every one of them reads and writes the
+same 42 MB `.godot/` import cache. Nothing serialises them. With one agent that was fine; with three
+lanes dispatched at once (D-036) it is a race, and it costs a whole dispatch when it fires.
+
+This is almost certainly what **F-038** is describing — `inventory_net_check` "intermittently fails
+its grant wait under machine load." Machine load is the symptom; a second engine rewriting the
+import cache mid-run is a better explanation than slowness, because a slow machine should make the
+wait *longer*, not make the grant never arrive.
+
+Observed while building 0.12: an audit session was running ten checks in a bare `for` loop
+(`Godot --headless --path . --script tools/$s.gd`) at the same time as this task's own verification.
+
+**Mitigated, not fixed:** `agent godot --script tools/x_check.gd` now takes an exclusive lock
+(`.agent/locks/godot.lock`) and every work order tells lanes to launch the engine that way. The
+mitigation only binds callers who use it — a bare `Godot --headless` still bypasses it. Fixing it
+properly means either making the checks tolerate a shared cache or giving each lane its own
+`.godot/`, which costs a full reimport per lane. Re-test F-038 under the lock before doing either.
+
+**2026-08-18, lp — the F-038 hypothesis here was wrong; this finding's general claim stands on its
+own.** F-038 is fixed (see Resolved) and its actual cause was a pure ordering race inside the two
+checks (grant sent before the host's own `InventoryService` had created the peer's store) —
+reproduced and fixed entirely under the `agent godot` lock, with no import-cache contention involved
+and no other lane running at the same time. So the import-cache race this finding describes is real
+and still open for whatever *does* trigger it, but it was never F-038's cause; the two just happened
+to share a "grant timeout under load" symptom. Retitling would break the F-number-in-title convention
+other entries link against, so left as-is with this correction instead.
+
+---
+
+**2026-08-18, bram1 (director) — instrumented, still not decided.** The choice this finding names —
+make the checks tolerate a shared cache, or give each lane its own `.godot/` at the price of a full
+reimport each — is deliberately still open, because it should be made on measurements rather than on
+a guess. What shipped instead is everything needed to take that measurement, after the lock was
+observed serialising four concurrent runs and killing one lane outright:
+
+- `file_lock` names its holder, heartbeats every 30 s with elapsed time, and reports how long a
+  caller waited. A multi-minute wait is normal with six agents; before this it was one dim line and
+  then silence, which is what F-086 misread as a hang before it stopped mid-task.
+- A holder record whose pid is gone now reports itself stale rather than claiming a free lock is held.
+- `agent godot` kills the F-104 silent hang at 45 s instead of letting it hold the lock for eight
+  minutes (see F-104, Resolved).
+
+So the contention is now visible and bounded. **Decide the cache question against real hold times,
+not against this paragraph.**
+
+**2026-08-19, bram1 (director) — most of this is now answered by F-196; re-scope before working it.**
+The open question here was *make the checks tolerate a shared cache, or give each lane its own
+`.godot/` at the price of a full reimport each*. F-196 took the first option further than "tolerate":
+`tools/blender/godot_import_lock.py`'s `import_cache_guard()` makes an asset **writer** hold
+`agent godot`'s own lock for its whole export and forces a clean `--import` on release, wired into
+all 19 asset writers (D-126). A reader can no longer observe a half-written cache at all, so the
+writer/reader race that motivated per-lane caches is structurally closed rather than narrowed.
+
+What remains of F-044 is therefore only **contention** — the lock serialises headless runs, and with
+six agents a check can queue behind several others. That is a throughput question, not a correctness
+one, and the instrumentation added alongside F-104 (holder identity, 30s heartbeat, measured wait on
+acquire) now produces the hold times needed to decide it. Decide against those numbers.
+
+**Resolved 2026-08-22 by cinder9818da.** **Resolved 2026-08-21 by cinder9818da — decided, and recorded as D-211.**
+
+The correctness half was already closed by F-196 (`import_cache_guard()`: a writer holds the lock for
+its whole export and forces a clean `--import` on release, so no reader can observe a half-written
+cache). What remained was the throughput question this finding kept deferring to "decide against real
+hold times", and the two things it needed both now exist.
+
+**The number nobody had taken.** A clean checkout of HEAD in a throwaway worktree imports in
+**11.7 s** and produces a **139 MB** cache — an order of magnitude cheaper than the "full reimport
+per lane" this entry treated as prohibitive. So the cost argument against per-lane caches was wrong.
+
+**They are still wrong, for a different reason.** Godot resolves `.godot/` relative to the project
+path with no flag to relocate it, so a per-lane cache is really a per-lane *project copy* — one
+worktree per lane. The file-claim protocol assumes the exact opposite: agents claim individual files
+in one shared tree and `agent check` enforces that against a single index. That trades a bounded,
+visible queue for a merge problem, which is the worse failure.
+
+**And the contention is now measured rather than asserted.** `file_lock` appends every acquisition to
+`.agent/locks/ledger.jsonl` (who, which lock, waited, held), and `agent locks [--days=N]` reports the
+distribution with the wait **p95** rather than the mean, because a queue is felt at its tail. The
+2026-08-18 instrumentation made contention visible to whoever was watching that terminal; it was
+never durable, which is why three separate entries here asked for hold times and none could produce
+any. The report prints the 11.7 s reimport figure next to the wait tail, so the trade is legible at
+the point of decision.
+
+**Verified** `agent locks` against live acquisitions from this session's own check runs; the ledger
+write is wrapped so it can never fail a check. `agent godot --script tools/findings_numbering_check.gd`
+re-run through the modified `file_lock` — 0 failures, and the acquisition appears in the ledger.
+
+Reopen this only with evidence: D-211 names a godot-lock wait p95 above ~12 s as the number that
+would change the answer, and `agent locks` is how to show it.
 
 ### F-542 · Remote players do not visibly display the item they are holding — **fixed**
 
