@@ -2953,47 +2953,6 @@ four sessions happen to remember is not a protocol.
 
 ---
 
-### F-549 · world_contract_check has 3 failures at a clean HEAD — the [shipped] map publishes no ground and no Undergrowth, and the procedural map builds two extraction ships
-
-**Area:** worldgen · **Severity:** high · **Found:** 2026-08-22 by coil8be837
-
-Found during F-302 (spawn-record migration), and confirmed NOT to be that change: `agent baseline
---script tools/world_contract_check.gd` reproduces the identical three failures in a throwaway
-worktree at clean HEAD.
-
-    WORLD_CONTRACT_CHECK FAIL (3)
-      [shipped]    the authored map has no Undergrowth node — the flora layer went missing
-      [shipped]    no node answers height_at() — this map publishes no ground to stand a spawn on
-      [procedural] 2 extraction ship(s) — the run needs exactly one exit
-
-Three separate defects that happen to share a check, and the third is the one that changes a run.
-
-**`[procedural] 2 extraction ships` is a gameplay bug, not a test bug.** The extraction ship is the
-run's single exit; the check's own wording ("the run needs exactly one exit") is the contract. Two
-of them means the procedural map — the one that SHIPS — offers two ways out. Note the same run
-reports `wellsprings=8` and `chests=124` against the authored map's 1 and 25, i.e. exactly 2x the
-`[shipped]` row's 4 and 62, which reads like the procedural world is being built or counted twice
-rather than like a POI-placement bug. That doubling is the first thing to check, and if it is real
-it inflates every procedural count in this check, not just the ships.
-
-**The two `[shipped]` rows are the F-076 blind-spot shape.** `_check_undergrowth_required()` exists
-precisely because "silently skipping when it is missing is how F-076-shaped blind spots ship" (its
-own comment), and it is now failing for real. `no node answers height_at()` is worse than it reads:
-it is the assertion that the map publishes ground at all, so the spawn-standability check that
-F-284 and D-169 built cannot run on the `[shipped]` map. A spawn nobody can grade is how a player
-ends up under the floor, which is the original F-195/F-284 failure this whole check exists to catch.
-
-**Not stale, and not nobody's job.** `docs/FINDINGS.md` records `world_contract_check` PASS at
-several past dates (F-284's own verification among them), so this went red at some point since and
-no finding tracks it. It is the repo's only both-map matrix check, which makes it the one check
-that would notice a divergence between the map that is authored and the map that ships.
-
-Whoever takes this: run the baseline first to confirm all three still reproduce, then split them —
-the extraction-ship doubling is worth its own task and is the only one of the three a player would
-feel this week.
-
----
-
 ### F-550 · The locked D-number allocator exists and nobody uses it, because it is in no help text and no check catches a hand-appended entry
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-22 by nettled7199c
@@ -3167,6 +3126,96 @@ stops paying 92 seconds a run in the meantime.
 ---
 
 ## Resolved
+
+### F-549 · world_contract_check has 3 failures at a clean HEAD — the [shipped] map publishes no ground and no Undergrowth, and the procedural map builds two extraction ships — **fixed**
+
+**Area:** worldgen · **Severity:** high · **Found:** 2026-08-22 by coil8be837
+
+Found during F-302 (spawn-record migration), and confirmed NOT to be that change: `agent baseline
+--script tools/world_contract_check.gd` reproduces the identical three failures in a throwaway
+worktree at clean HEAD.
+
+    WORLD_CONTRACT_CHECK FAIL (3)
+      [shipped]    the authored map has no Undergrowth node — the flora layer went missing
+      [shipped]    no node answers height_at() — this map publishes no ground to stand a spawn on
+      [procedural] 2 extraction ship(s) — the run needs exactly one exit
+
+Three separate defects that happen to share a check, and the third is the one that changes a run.
+
+**`[procedural] 2 extraction ships` is a gameplay bug, not a test bug.** The extraction ship is the
+run's single exit; the check's own wording ("the run needs exactly one exit") is the contract. Two
+of them means the procedural map — the one that SHIPS — offers two ways out. Note the same run
+reports `wellsprings=8` and `chests=124` against the authored map's 1 and 25, i.e. exactly 2x the
+`[shipped]` row's 4 and 62, which reads like the procedural world is being built or counted twice
+rather than like a POI-placement bug. That doubling is the first thing to check, and if it is real
+it inflates every procedural count in this check, not just the ships.
+
+**The two `[shipped]` rows are the F-076 blind-spot shape.** `_check_undergrowth_required()` exists
+precisely because "silently skipping when it is missing is how F-076-shaped blind spots ship" (its
+own comment), and it is now failing for real. `no node answers height_at()` is worse than it reads:
+it is the assertion that the map publishes ground at all, so the spawn-standability check that
+F-284 and D-169 built cannot run on the `[shipped]` map. A spawn nobody can grade is how a player
+ends up under the floor, which is the original F-195/F-284 failure this whole check exists to catch.
+
+**Not stale, and not nobody's job.** `docs/FINDINGS.md` records `world_contract_check` PASS at
+several past dates (F-284's own verification among them), so this went red at some point since and
+no finding tracks it. It is the repo's only both-map matrix check, which makes it the one check
+that would notice a divergence between the map that is authored and the map that ships.
+
+Whoever takes this: run the baseline first to confirm all three still reproduce, then split them —
+the extraction-ship doubling is worth its own task and is the only one of the three a player would
+feel this week.
+
+---
+
+**Resolved 2026-08-22 by bram937a51.** **Fixed** by bram937a51, 2026-08-22. All three failures were one root cause, and the finding's
+headline reading of the third was wrong — worth stating plainly, because it was the alarming one.
+
+**Nothing ever built two extraction ships for a player.** The doubled count was this check counting
+one world twice.
+
+**What actually happened.** `run/main_scene` is `res://levels/frontend.tscn` since MENU-3's cutover —
+the main scene is the FRONT END now, not a map. This check loaded it and asked it a map's contract:
+
+- `[shipped] the authored map has no Undergrowth node` and `[shipped] no node answers height_at()`
+  are both simply true of a front end, and mean nothing. The check was reporting a completed cutover
+  as a broken map.
+- `[procedural] 2 extraction ship(s)` followed from the same fact by a longer route. Because the
+  front end's root script is not `procedural_world.gd`, `shipped_procedural` was false, so the third
+  arm built a **second** `ProceduralWorld` — while the world the front end had already bypassed into
+  (`_launch_bypasses_frontend()` is true under `--script`) was still in the tree. That world is a
+  *sibling* of `level`, not its child, so `level.queue_free()` never touched it.
+
+The arithmetic confirms it exactly: every group count doubled between the shipped and procedural
+arms — wellsprings 4 → 8, chests 62 → 124, spawn points 5 → 10, registered stations 4 → 8, and
+extraction ships 1 → 2. A genuine placement bug would not double the chest count too.
+
+**The fix.** `_run()` now resolves the front end to the map behind it *before anything enters the
+tree*, so no `_ready()` fires and no bypass is triggered: if the instantiated main scene's script is
+`frontend.gd`, the check frees it, takes `Frontend._world_scene_path()` as the shipped map, and
+loads that instead. `procedural_island.tscn`'s root carries `procedural_world.gd`, so
+`shipped_procedural` is now correctly true and the third arm is skipped — one world, counted once.
+
+`ui/frontend/frontend.gd`: `_world_scene_path()` is now `static`. It reads no instance state, and a
+harness must be able to ask "which map does a launched process end up in?" without instantiating a
+front end that would immediately bypass into a run. Keeping it as the single definition matters more
+than the keyword: a check that hard-coded `procedural_island.tscn` would silently disagree with the
+game the first time `WORLD_SCENE_FALLBACK` mattered.
+
+Bound with `load()` rather than `preload()`, per F-558 — `frontend.gd` names the `AppExit` autoload,
+and a preload in a `--script` harness resolves before the autoloads exist. This check would have
+inherited that crash otherwise.
+
+**How it was verified.** Before, at clean HEAD 8c3844e3 via `agent baseline`:
+`WORLD_CONTRACT_CHECK FAIL (3)` / `failures=3`, with the three lines quoted above. After, via
+`agent godot --script tools/world_contract_check.gd`: **`WORLD_CONTRACT_CHECK PASS`,
+`failures=0`, exit 0**, with `WORLD_CONTRACT main_scene is the front end — following its bypass to
+res://levels/procedural_island.tscn` in the log and the shipped arm reporting
+`wellsprings=4 ships=1 chests=62 registered_stations=4 spawn_points=5` — single, not doubled.
+
+**Worth knowing for whoever touches this next.** Any other check that reads
+`application/run/main_scene` and expects a map now has the same defect. This one is fixed; the
+pattern is not swept.
 
 ### F-559 · tools/enemy_facing_check.gd is a render diagnostic named as a check, so it is a permanent red row — **fixed**
 

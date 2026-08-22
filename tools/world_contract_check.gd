@@ -67,6 +67,10 @@ const SPAWN_FLOATING_TOLERANCE_M: float = 2.5
 ## whichever contract its scene root actually is, and the fixture arm pins the authored one so
 ## authored-map coverage cannot silently vanish with the cutover.
 const AUTHORED_FIXTURE_PATH: String = "res://levels/hollowmere.tscn"
+
+## The front end, which `run/main_scene` points at since MENU-3's cutover. Held as a path and
+## `load()`ed rather than `preload()`ed — see the F-558 note in `_run()`.
+const FRONTEND_SCRIPT_PATH: String = "res://ui/frontend/frontend.gd"
 ## Preloaded at class level (F-016's standing rule): a --script run must not depend on the
 ## gitignored global-class cache to know what a ProceduralWorld is.
 const ProceduralWorldScript := preload("res://world/gen/procedural_world.gd")
@@ -93,6 +97,41 @@ func _run() -> void:
 		_finish()
 		return
 	var level: Node = packed.instantiate()
+
+	# ── the main scene is the FRONT END now, not a map (MENU-3's cutover) — F-549 ────────────────
+	#
+	# `run/main_scene` points at `res://levels/frontend.tscn`. Under `--script` the front end
+	# bypasses straight to the world rather than showing a menu, so the map this project actually
+	# ships is the front end's world scene — and asking the front end itself for ground, an
+	# Undergrowth layer or a spawn point is asking the wrong node. That is where two of this
+	# check's three failures came from; it was reporting a real cutover as a broken map.
+	#
+	# The third failure came from the same place by a longer route. Because the front end's root
+	# script is not `procedural_world.gd`, `shipped_procedural` was false, so the third arm below
+	# built a SECOND ProceduralWorld — while the world the front end had already bypassed into was
+	# still in the tree, being a sibling of `level` rather than its child and therefore surviving
+	# `level.queue_free()`. Every group count doubled: wellsprings 4 -> 8, chests 62 -> 124, spawn
+	# points 5 -> 10, and extraction ships 1 -> 2. Nothing ever built two ships for a player.
+	#
+	# So: resolve the front end to the map behind it BEFORE adding anything to the tree. Nothing is
+	# instantiated here that would run `_ready()` and trigger the bypass — this instance is freed
+	# and replaced with the real map.
+	#
+	# `load()`, never `preload()` (F-558): `frontend.gd` names the `AppExit` autoload, and a preload
+	# in a `--script` harness resolves before the autoloads exist.
+	var frontend_script: Variant = load(FRONTEND_SCRIPT_PATH)
+	if frontend_script != null and level.get_script() == frontend_script:
+		var world_path: String = String(frontend_script._world_scene_path())
+		print("WORLD_CONTRACT main_scene is the front end — following its bypass to %s" % world_path)
+		level.free()
+		scene_path = world_path
+		packed = load(scene_path) as PackedScene
+		if packed == null:
+			failures.append("[shipped] the front end's world scene %s does not load" % scene_path)
+			_finish()
+			return
+		level = packed.instantiate()
+
 	# Which contract the shipped map owes depends on which kind it is: a scene root carrying
 	# procedural_world.gd IS the composer; anything else is an authored-convention map.
 	var shipped_procedural: bool = level.get_script() == ProceduralWorldScript

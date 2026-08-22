@@ -220,7 +220,12 @@ func _begin_run() -> void:
 	get_tree().change_scene_to_file(_world_scene_path())
 
 
-func _world_scene_path() -> String:
+## `static` so a harness can ask "which map does a launched process actually end up in?" without
+## instantiating the front end — which it must not do, because building one runs `_ready()`, which
+## bypasses straight into a run (F-549). It reads no instance state, so this costs nothing here and
+## keeps the answer in ONE place: a check that hard-coded the path would silently disagree with the
+## game the first time the fallback mattered.
+static func _world_scene_path() -> String:
 	if ResourceLoader.exists(WORLD_SCENE_PATH):
 		return WORLD_SCENE_PATH
 	return WORLD_SCENE_FALLBACK
