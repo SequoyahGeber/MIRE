@@ -2906,6 +2906,56 @@ stops paying 92 seconds a run in the meantime.
 
 ---
 
+### F-567 · Six D-numbers each head two unrelated decisions, hidden until the wrong heading shape was corrected
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-22 by hollowbfcf67
+
+Uncovered 2026-08-22 by hollowbfcf67 while fixing F-469. Ten decisions were authored as
+`## D-NNN — <title>` instead of `### D-NNN · <date> · <title>`, and `decision_ref_check.py` scans for
+`^### D-`. Correcting the shape made them visible to the checker for the first time, and six of them
+turned out to collide with a decision that already held that number:
+
+    D-186  F-353: the daytime varnish is a `daylight`-driven grade  (5971)
+    D-186  a leading underscore does not make a method private       (6302)
+    D-187  The three authored themes are bound to three moments      (6037)
+    D-187  one look-at prompt owns every interaction prompt          (6275)
+    D-188  an island's silhouette comes from its lobes' SHAPE        (6230)
+    D-188  Sound effects are synthesized as *objects*                (6330)
+    D-189  a landform's steepness is specified as an ANGLE           (6252)
+    D-189  Per-target combat feedback is three separate readouts     (6386)
+    D-190  high ground is a flat top plus a ramp                     (6174)
+    D-190  F-435: a simulation a player is standing in ...           (6435)
+    D-191  terrain height is upstream of the biome bands             (6206)
+    D-191  The Mire starts as exactly one corruption area            (6493)
+
+Twelve entries, six numbers, and **no pair is a rewrite of the other** — each is a genuinely different
+decision by a different agent on the same day. This is precisely the collision F-260 described and the
+locked allocator in `agent decision` exists to prevent: two agents read "highest plus one" from an
+unsorted file and both get the same answer.
+
+**The wrong heading shape is what let it survive.** `decision_ref_check.py` reported `dangling=18`
+against these numbers — citations resolving to nothing — because it could not see the `##` blocks at
+all. Nobody could see the duplicates either, for the same reason. The two defects masked each other:
+the citation looked broken, so the collision looked like an absence.
+
+**Why this is high rather than medium.** `D-191` is cited as the authority for *"the Mire starts as
+exactly one corruption area"* — a standing design rule of Sequoyah's — and also for *"terrain height
+is upstream of the biome bands"*. An agent following either citation lands on whichever entry it finds
+first. A duplicate id is worse than a missing one, because `agent brief` and every reader resolve it
+confidently to the wrong decision.
+
+**Not fixed here, deliberately.** F-283's remedy is to renumber the later entry of each pair through
+`agent decision`'s allocator and move its citations with it. That is six renumberings plus a citation
+sweep across `docs/`, every one of which has to be got right, and it is a distinct piece of work from
+the heading-shape fix that revealed it. Doing it half-attentively at the end of a long session is how
+a wrong citation gets moved rather than a right one. The evidence is complete above; the work is
+mechanical and wants a fresh session.
+
+`decision_ref_check.py` now reports `dangling=0 duplicate=6`, so the suite states the real problem
+instead of an artefact of it.
+
+---
+
 ## Resolved
 
 ### F-566 · ProceduralWorld re-anchors its streamer every physics tick even with no player, so build_player=false does NOT protect an externally-set anchor — **fixed**

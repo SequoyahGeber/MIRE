@@ -6083,7 +6083,7 @@ composed lengths, landfall-at-boot, the bounded fade and hand-back, Cycle 1 vs C
 depth and its floor, and a run restart dropping a live cycle cue). `tools/audio_import_check.gd`
 knows the three lengths; `tools/ambient_music_check.gd` still passes unchanged.
 
-## D-212 — an Attunement's stat effects are read at the consumer, and its two non-stat rules are authored on content
+### D-212 · 2026-08-21 · an Attunement's stat effects are read at the consumer, and its two non-stat rules are authored on content
 
 **Context:** F-543. SPECS §3.9 shipped Attunements as "data over 3.3, zero new stat plumbing" and
 that was the right call — but the sentence quietly assumed the stat plumbing on the other side
@@ -6126,7 +6126,7 @@ Sequoyah's to overturn. Reverting it is one line in each of `content/buildables/
 holding the materials when the Mire reaches camp, and the ban reads as the game refusing to let them
 help rather than as a reason to hand the job to the Warden.
 
-## D-196 — the dawn cue is a JIG SET, and the escalation keeps every third morning
+### D-196 · 2026-08-21 · the dawn cue is a JIG SET, and the escalation keeps every third morning
 
 **Sequoyah:** *"im thinking it would be fun to have a happy jig typa theme song play when morning
 starts to kinda celebrate surviving another day"* — then, on hearing the first 32-second pass,
@@ -6171,7 +6171,7 @@ length — dropping the second tune's repeat takes it to ~1:40 without breaking 
 to every *second* Cycle is one condition in `_poll_dawn()`. If two minutes turns out to be too much
 music for a daily event, shorten the set before shortening the tune.
 
-## D-190 — high ground is a flat top plus a ramp, and the two are sized independently
+### D-190 · 2026-08-21 · high ground is a flat top plus a ramp, and the two are sized independently
 
 **F-450.** Sequoyah: *"taller hills please the map is wayy too flat, i do like big flat areas but i
 also like higher areas, i dont like narrow hills that make the map always go up and down."*
@@ -6203,7 +6203,7 @@ original sentence was about. Uplands cost sloping ground; the question is whethe
 comfortable to walk, not whether it is a table.
 
 
-## D-191 — terrain height is upstream of the biome bands, the skirt, and every probe in the tools
+### D-191 · 2026-08-21 · terrain height is upstream of the biome bands, the skirt, and every probe in the tools
 
 **F-450.** Tripling the island's relief (peak ~21 m to ~50 m) broke four things that had no obvious
 connection to the heightmap, and each was a constant authored against the terrain's old size:
@@ -6227,7 +6227,7 @@ waiting for the checks to find them — and prefer deriving from `MAX_HEIGHT` ov
 count, so the next pass does not have to.
 
 
-## D-188 — an island's silhouette comes from its lobes' SHAPE, not from trim on their edges
+### D-188 · 2026-08-21 · an island's silhouette comes from its lobes' SHAPE, not from trim on their edges
 
 **F-447.** Sequoyah has asked three separate times for islands that are not round (2026-08-19 "the
 islands are quite round, they shouldn't be standard shapes"; 2026-08-21 "id like the shape to be a
@@ -6249,7 +6249,7 @@ component multiplied by it — which is what stops a shape control from also bei
 Displacing a circle's edge cannot stop the silhouette being a circle.**
 
 
-## D-189 — a landform's steepness is specified as an ANGLE, and its variety includes the ordinary case
+### D-189 · 2026-08-21 · a landform's steepness is specified as an ANGLE, and its variety includes the ordinary case
 
 **F-447.** Two rules from the same pass, both learned by measuring rather than looking.
 
@@ -6272,7 +6272,7 @@ near-symmetric and some are cliffs — because a fleet average alone cannot tell
 floor.
 
 
-## D-187 — one look-at prompt owns every interaction prompt; the systems keep the input
+### D-187 · 2026-08-21 · one look-at prompt owns every interaction prompt; the systems keep the input
 
 **F-431.** Two prompts existed in the shipped game and they were both proximity driven:
 `ui/building/door_prompt.gd` drew its own panel 168 px above the bottom edge, and `ui/loot/chest_ui.gd`
@@ -6299,7 +6299,7 @@ it misses. The fallback is not a nicety: a live probe of `levels/procedural_isla
 inside a chunk's MultiMesh. Ray-only targeting would have left two thirds of the harvestable world
 silent.
 
-## D-186 — a leading underscore does not make a method private; the engine owns some of those names
+### D-186 · 2026-08-21 · a leading underscore does not make a method private; the engine owns some of those names
 
 **F-421.** `ui/frontend/frontend.gd` had a helper called `_enter_world()`, meaning "leave the menu
 and go into the game world". `Node3D` has an engine virtual of exactly that name, fired on
@@ -6633,7 +6633,7 @@ measurement back.
 
 ---
 
-## D-197 — a signal handler is inside the emitter's frame budget, so a pure pass belongs on a worker
+### D-197 · 2026-08-21 · a signal handler is inside the emitter's frame budget, so a pure pass belongs on a worker
 
 **Context:** F-461. `ChunkStreamer` reported 31-56 ms `_process()` frames against its own
 `FRAME_BUDGET_MS = 4.0` while uploading as little as one chunk. Nothing in the streamer was slow.
@@ -6672,7 +6672,7 @@ falls back to rebuilding, so the failure mode is slow, not wrong.
 
 ---
 
-## D-198 — a chunk crossing an LOD boundary is retargeted, never rebuilt
+### D-198 · 2026-08-21 · a chunk crossing an LOD boundary is retargeted, never rebuilt
 
 **Context:** F-461, from play: "when a new chunk does get loaded the assets in currently generated
 and loaded chunks get reloaded". They were, twice per chunk per pass.
