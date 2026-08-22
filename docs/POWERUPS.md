@@ -41,7 +41,13 @@ across held powerups — so:
 
 `KNOWN_STATS` in `powerup_def.gd` is this table's name column, exactly. **Wiring status** is honest:
 per 3.4's spec, no system reads a stat until its own task routes its base value through
-`PowerupService.stat()` — authoring against a `pending` stat is correct data that waits, which is
+`PowerupService.stat()`. **F-543 closed the gap between this table and reality** for every stat the
+four Attunements name: `move_speed`, `max_hp`, `food_value`, `blight_rate`, `harvest_yield`,
+`harvest_damage`, `melee_damage`, `bow_damage`, `craft_seconds`, `coin_gain`, `ward_radius_m` and the
+new `structure_hp` all have real reads now, guarded by `tools/attunement_effects_check.gd`. The rest
+of the "live systems" table below is still *authored-but-unread* — a `sprint_speed` or `damage_taken`
+powerup loads, validates and does nothing, exactly as this paragraph has always warned. That is the
+next slice of the same work, not a separate bug — authoring against a `pending` stat is correct data that waits, which is
 expected, not a bug (and now, not a typo either).
 
 ### Live systems (the consuming code exists; wiring is that system's one-line route)
@@ -68,6 +74,9 @@ expected, not a bug (and now, not a typo either).
 | `harvest_damage` | damage per hit to a node | | `harvest_world.gd` (host) |
 | `craft_seconds` | timed-craft duration | negative mult = faster | `crafting_service.gd` (host) |
 | `coin_gain` | coins rolled per kill | | loot/kill reward path (host) |
+| `blight_rate` | Blight accumulation per second inside corruption | negative mult = resist | `player_health.gd` `_tick_blight()` (host) |
+| `ward_radius_m` | ward radius of structures YOU placed | flat metres typical | `autoload/build_service.gd` `ward_radii()` (host, attributed to `_placed`'s `"owner"`) |
+| `structure_hp` | hp of a buildable piece YOU placed | flat or mult | `autoload/build_service.gd` (host, resolved at placement and carried in the spawn payload) |
 | `chest_price` | cost to open | negative = discount | `systems/loot/chest.gd` (host) |
 | `loot_luck` | weight bias toward higher-tier chest entries | | loot roll (host) |
 | `dodge_iframe_seconds` | how long past the dash the i-frame flag stays true | flat seconds; cannot shorten the window below `dodge_duration_sec` (D-087) | `player_controller.gd` `_execute_dodge()` (client-local; the host reads the resulting flag) |
@@ -81,10 +90,8 @@ expected, not a bug (and now, not a typo either).
 | `stamina_cost` | cost of sprint/jump/dodge actions (negative mult = cheaper) | 3.8 |
 | `fall_damage_taken` | landing damage (negative mult = softer) | 3.8-adjacent, if fall damage ships |
 | `knockback_taken` | knockback applied to you (negative mult = stability) | enemy knockback |
-| `blight_rate` | Blight accumulation while in the Mire (negative mult = resist) | 4.x Mire |
 | `aggro_radius_m` | enemy detection radius vs this player (negative = stealth) | enemy AI consult |
 | `haul_speed` | heavy-carry drag speed | 3.10 |
-| `ward_radius_m` | ward radius of structures YOU placed | 3.7/4.11 — flags the builder-attribution question §4.5's Warden needs answered anyway |
 | `on_kill_heal_hp` | flat HP healed per kill you land | kill-attribution site (host) |
 | `on_hit_lifesteal` | fraction of dealt damage returned as HP | damage-dealt site (host) |
 | `ignite_chance` | chance per hit to apply Burning | the Fire-Resonance task's status effect |

@@ -156,6 +156,9 @@ var _blight_accum: Dictionary[int, float] = {}
 ## Cached MireGrid ref (F-099 — _tick_blight runs every physics tick per tracked peer). Path-resolved
 ## since MireGrid registers after this autoload (F-011).
 var _mire_grid_node: Node
+## F-543: cached PowerupService, same shape and reason as `_mire_grid_node` above — every host stat
+## read here sits on a per-peer, per-tick or per-event path.
+var _powerup_node: Node
 ## GodModeService is queried on every host damage path, including the per-peer hunger/Blight tick.
 ## Cache the autoload instead of adding two path walks per living player per physics frame.
 var _god_mode_node: Node
@@ -220,6 +223,12 @@ func _ready() -> void:
 		session.connect(&"run_player_expired", _on_run_player_expired)
 
 	_bind_rules()
+
+	# F-543. Host-side only in effect (the handler self-guards on `_owns_mutation()`), but connected
+	# unconditionally so a peer promoted to host mid-session is already listening.
+	var powerups: Node = _powerups()
+	if powerups != null and powerups.has_signal(&"host_powerups_changed"):
+		powerups.connect(&"host_powerups_changed", _on_host_powerups_changed)
 
 	set_physics_process(true)
 	if bool(transport.call("is_active")):
@@ -436,8 +445,15 @@ func _validate_and_apply_consume(peer_id: int, item_id: StringName) -> String:
 	if item.hp_restore > 0:
 		downed_state.heal(item.hp_restore)
 	if item.hunger_restore > 0.0:
+		# F-543: `food_value` scales what one eat restores (docs/POWERUPS.md §2; DESIGN §4.5's
+		# Forager is "better at food", +20%). Read here, at the moment of the eat, rather than
+		# cached — this is an event, not a per-frame path, so there is nothing to cache.
+		var restore: float = item.hunger_restore
+		var powerup_service: Node = _powerups()
+		if powerup_service != null:
+			restore = maxf(float(powerup_service.call(&"stat", peer_id, &"food_value", restore)), 0.0)
 		_hunger[peer_id] = clampf(
-			float(_hunger.get(peer_id, max_hunger)) + item.hunger_restore, 0.0, max_hunger
+			float(_hunger.get(peer_id, max_hunger)) + restore, 0.0, max_hunger
 		)
 	_commit(peer_id)
 	MireLog.info(LOG_CHANNEL, "PlayerHealth: peer %d ate %s" % [peer_id, item_id])
@@ -1110,7 +1126,7 @@ func _reset_local_cache() -> void:
 func _ensure_host_state(peer_id: int) -> void:
 	if _states.has(peer_id):
 		return
-	_states[peer_id] = DOWNED_STATE.new(max_hp)
+	_states[peer_id] = DOWNED_STATE.new(_max_hp_for(peer_id))
 	_revisions[peer_id] = 0
 	_hunger[peer_id] = max_hunger
 	_starvation_accum[peer_id] = 0.0
@@ -1140,8 +1156,17 @@ func _tick_blight(peer_id: int, downed_state: DOWNED_STATE, delta: float) -> boo
 	if corruption < BLIGHT_CORRUPTION_THRESHOLD:
 		_blight_accum[peer_id] = 0.0
 		return false
-	var accum: float = float(_blight_accum.get(peer_id, 0.0)) \
-		+ BLIGHT_HP_DRAIN_PER_SEC_AT_FULL_CORRUPTION * corruption * delta
+	# F-543: `blight_rate` scales how fast the Mire eats you (docs/POWERUPS.md §2 listed this as
+	# "pending — 4.x Mire"; the Mire shipped, so it is live now). DESIGN §4.5's Reaver pays +20%
+	# here for its damage, and `spore_sole`/`numb_skin`/`warm_marrow` all resist with negatives.
+	# Clamped at zero: a stacked resist that went negative would HEAL you inside corruption.
+	var drain_per_sec: float = BLIGHT_HP_DRAIN_PER_SEC_AT_FULL_CORRUPTION * corruption
+	var powerup_service: Node = _powerups()
+	if powerup_service != null:
+		drain_per_sec = maxf(
+			float(powerup_service.call(&"stat", peer_id, &"blight_rate", drain_per_sec)), 0.0
+		)
+	var accum: float = float(_blight_accum.get(peer_id, 0.0)) + drain_per_sec * delta
 	var whole: int = int(accum)
 	if whole <= 0:
 		_blight_accum[peer_id] = accum
@@ -1152,6 +1177,37 @@ func _tick_blight(peer_id: int, downed_state: DOWNED_STATE, delta: float) -> boo
 		MireLog.info(LOG_CHANNEL, "PlayerHealth: peer %d downed by Blight" % peer_id)
 		player_downed.emit(peer_id)
 	return true
+
+
+## F-543: PowerupService, path-resolved and cached (F-011/F-099) exactly like `_mire_grid()`. This
+## file is a HOST consumer, so it asks `stat(peer_id, ...)` — the host holds every peer's real map.
+func _powerups() -> Node:
+	if _powerup_node == null or not is_instance_valid(_powerup_node):
+		_powerup_node = get_node_or_null(^"/root/PowerupService")
+	return _powerup_node
+
+
+## F-543: this peer's live hp ceiling — the authored `max_hp` export after PowerupService's `max_hp`
+## modifier (docs/POWERUPS.md §2; DESIGN §4.5's Tinker trades -15% of it for cheaper crafting).
+func _max_hp_for(peer_id: int) -> int:
+	var powerups: Node = _powerups()
+	if powerups == null:
+		return max_hp
+	return maxi(int(roundi(float(powerups.call(&"stat", peer_id, &"max_hp", float(max_hp))))), 1)
+
+
+## F-543: re-seat one peer's ceiling after their stack map changed. A DownedState is built at spawn
+## and an Attunement is picked at run start AFTER that (D-071), so without this the pick's `max_hp`
+## line would only ever apply to a player who happened to respawn afterwards. Guarded on `_states`
+## rather than on authority alone: `host_powerups_changed` fires for peers this service has never
+## had a state for (a lobby peer with no body yet), and _ensure_host_state already asks
+## `_max_hp_for()` for those.
+func _on_host_powerups_changed(peer_id: int) -> void:
+	if not _owns_mutation() or not _states.has(peer_id):
+		return
+	var downed_state: DOWNED_STATE = _states[peer_id]
+	if downed_state.set_max_hp(_max_hp_for(peer_id)):
+		_commit(peer_id)
 
 
 func _mire_grid() -> Node:
@@ -1393,7 +1449,11 @@ func host_heal(peer_id: int, amount: int = 0) -> int:
 		return -1
 	var downed_state: DOWNED_STATE = _states[peer_id]
 	var current: int = int(downed_state.hp)
-	var restored: int = (max_hp - current) if amount <= 0 else mini(amount, max_hp - current)
+	# F-543: the peer's OWN ceiling, not the authored export — with `max_hp` modifiers live, those
+	# two differ, and reading the export here would let a full heal overshoot or undershoot the bar
+	# the player is actually looking at.
+	var peer_max_hp: int = int(downed_state.max_hp)
+	var restored: int = (peer_max_hp - current) if amount <= 0 else mini(amount, peer_max_hp - current)
 	if restored <= 0:
 		return 0
 	if not downed_state.heal(restored):

@@ -116,6 +116,12 @@ func _ready() -> void:
 	set_physics_process(false)
 	_register_commands()
 	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
+	# F-543: a Ward's radius now depends on its owner's powerups, so a grant is a second thing that
+	# can invalidate the cache — without this, an Attunement picked after a Ward was placed would
+	# not widen it until the next placement or destroy happened to drop the cache anyway.
+	var powerups: Node = get_node_or_null(^"/root/PowerupService")
+	if powerups != null and powerups.has_signal(&"host_powerups_changed"):
+		powerups.connect(&"host_powerups_changed", _on_host_powerups_changed)
 	_wire_mire_grid.call_deferred()
 
 
@@ -194,6 +200,19 @@ func _process_place(
 		_answer(peer_id, request_id, false, VALIDATOR.reason_text(VALIDATOR.Reason.UNKNOWN_PIECE))
 		return
 
+	# F-543 / D-212a: DESIGN §4.5's Reaver "can't build Wards". Enforced HERE, on the host, before
+	# anything with a side effect — the same place every other placement refusal lives, so a client
+	# that never got the memo is refused with a real reason rather than desynced.
+	#
+	# The ban is expressed as data, not as a hard-coded role name: the piece is refused if it is a
+	# Ward (`BuildableDef.is_ward()`) and the peer holds a powerup whose `ward_radius_m` modifier
+	# would zero it. That keeps the rule where every other Attunement effect already lives — in the
+	# PowerupDef — and means a future role or curse that forbids Wards needs no code at all.
+	var role_refusal: String = _attunement_refusal(def, peer_id)
+	if role_refusal != "":
+		_answer(peer_id, request_id, false, role_refusal)
+		return
+
 	# Re-resolve rather than trusting the client's transform. A client that sends an absurd one gets
 	# it corrected, not honoured. Unlike the pure grid snap this replaced, neighbour snapping reads
 	# the HOST's physics world — so this is the host's own answer about the host's own pieces, not a
@@ -221,7 +240,7 @@ func _process_place(
 				VALIDATOR.reason_text(VALIDATOR.Reason.CANNOT_AFFORD))
 			return
 
-	var piece: Node3D = _spawn_piece(piece_id, snapped)
+	var piece: Node3D = _spawn_piece(piece_id, snapped, peer_id)
 	if piece == null:
 		# Refund: the transaction above already succeeded, so failing to spawn without giving the
 		# materials back would charge the player for nothing.
@@ -394,13 +413,84 @@ func ward_radii() -> Array[Dictionary]:
 		var piece: Node3D = _container.get_node_or_null(NodePath(String(piece_name))) as Node3D
 		if piece == null:
 			continue
+		# F-543: `ward_radius_m` is defined as "ward radius of structures YOU placed"
+		# (docs/POWERUPS.md §2) — DESIGN §4.5's Warden is "better at ward radius", +2 m flat. The
+		# builder-attribution question that stat was filed with is already answered by `_placed`,
+		# which has carried an `"owner"` peer id since the piece was placed, so the radius is that
+		# owner's, not the host's and not the nearest player's.
+		#
+		# Read here rather than baked into the record at placement time: a Warden who picks their
+		# Attunement after building should see their existing Wards widen, and the cache
+		# (`_invalidate_ward_cache`) is dropped on every `_placed` change, so this stays a rebuild
+		# cost and not a per-tick one.
 		result.append({
 			"position": Vector2(piece.global_position.x, piece.global_position.z),
-			"radius": float(def.get(&"ward_radius_m")),
+			"radius": _owner_ward_radius(
+				float(def.get(&"ward_radius_m")), int(record.get("owner", 0))
+			),
 		})
 	_ward_cache = result
 	_ward_cache_valid = true
 	return _ward_cache
+
+
+## F-543 / D-212a: DESIGN §4.5's two role-gated build rules — the Reaver "can't build Wards", the
+## Tinker "can build Ward turrets" — as one host check over two authored fields on `BuildableDef`,
+## rather than two role names hard-coded here. `forbidden_attunement_ids` bans a piece for a role;
+## `required_attunement_id` reserves one for a role. Content that names neither is buildable by
+## anybody, which is every existing piece except the two Wards.
+##
+## Returns the refusal text, or "" to allow. Host-side, in the same block as every other refusal, so
+## a client that never got the memo is answered rather than desynced — and a peer who has not chosen
+## a role yet is never blocked, since the pick happens at run start and the build bar exists before
+## it (D-071).
+func _attunement_refusal(def: Resource, peer_id: int) -> String:
+	var required: StringName = StringName(def.get(&"required_attunement_id"))
+	var forbidden: Array = def.get(&"forbidden_attunement_ids")
+	if required == &"" and forbidden.is_empty():
+		return ""
+	var attunements: Node = get_node_or_null(^"/root/AttunementService")
+	if attunements == null:
+		return ""
+	var role: StringName = StringName(attunements.call(&"selection_of", peer_id))
+	if role == &"":
+		# Not attuned yet. A required-role piece is still refused (it is somebody's speciality, and
+		# "anyone before the picker opens" would be a loophole); a forbidden-role piece is allowed,
+		# because nobody has taken the role that forbids it.
+		return "" if required == &"" else "only a %s can build that" % _role_name(required)
+	if required != &"" and role != required:
+		return "only a %s can build that" % _role_name(required)
+	if forbidden.has(role):
+		return "a %s cannot build that" % _role_name(role)
+	return ""
+
+
+## The role's authored display name, falling back to its id so a refusal is never blank.
+func _role_name(role_id: StringName) -> String:
+	var registry: Node = get_node_or_null(^"/root/Registry")
+	if registry == null:
+		return String(role_id)
+	var definition: Resource = registry.call(&"get_attunement", role_id)
+	if definition == null:
+		return String(role_id)
+	var display_name: String = String(definition.get(&"display_name"))
+	return display_name if display_name != "" else String(role_id)
+
+
+func _on_host_powerups_changed(_peer_id: int) -> void:
+	_invalidate_ward_cache()
+
+
+## F-543: one placed Ward's radius for the peer who placed it. Clamped at zero — a negative radius
+## would make `MireGrid`'s circle test nonsense rather than "no ward", and a powerup that wants to
+## remove a Ward removes the Ward.
+func _owner_ward_radius(base: float, owner_peer_id: int) -> float:
+	if owner_peer_id <= 0:
+		return base
+	var powerups: Node = get_node_or_null(^"/root/PowerupService")
+	if powerups == null:
+		return base
+	return maxf(float(powerups.call(&"stat", owner_peer_id, &"ward_radius_m", base)), 0.0)
 
 
 ## Drops the ward cache. Called from every path that adds to, removes from or clears `_placed`, so
@@ -436,14 +526,44 @@ func _build_spawner() -> void:
 	_spawner.spawn_path = _spawner.get_path_to(_container)
 
 
-func _spawn_piece(piece_id: StringName, placement: Transform3D) -> Node3D:
+## F-543: `hp` is resolved HERE, on the host, and carried in the payload rather than derived inside
+## `_net_spawn_piece()`. The spawn function runs on every peer with the same data, and a client only
+## ever holds its OWN powerup map — deriving it per peer would give the builder's machine one hp and
+## everyone else's another for the same wall. Host resolves, everybody copies, which is the same
+## shape `origin` and `yaw` already use.
+## `owner_peer_id` defaults to 0 — "nobody in particular", which resolves to the authored hp — so a
+## harness that spawns a piece without a builder keeps working (F-068's stand-in scenarios do).
+func _spawn_piece(piece_id: StringName, placement: Transform3D, owner_peer_id: int = 0) -> Node3D:
 	var spawned: Node = _spawner.spawn({
 		"def": String(piece_id),
 		"index": _take_index(),
 		"origin": placement.origin,
 		"yaw": placement.basis.get_euler().y,
+		"hp": _owner_structure_hp(piece_id, owner_peer_id),
 	})
 	return spawned as Node3D
+
+
+## F-543: one placed piece's hp for the peer who placed it — DESIGN §4.5's Warden is "better at
+## structure HP". Same builder attribution `_owner_ward_radius()` uses, and the same reason it is
+## read at the moment of placement rather than cached: `_placed` already knows who owns what.
+##
+## Unlike the ward radius, this is baked in at placement and NOT re-derived on a later grant. A
+## structure's hp is a pool that has already taken damage; retuning the ceiling of every standing
+## wall mid-run because somebody picked Warden would either heal the base or destroy pieces outright.
+## The Warden builds sturdier things from the moment they attune — they do not retroactively
+## reinforce what the party built before.
+func _owner_structure_hp(piece_id: StringName, owner_peer_id: int) -> int:
+	var def: Resource = _definition(piece_id)
+	if def == null:
+		return 1
+	var base: int = int(def.get(&"max_hp"))
+	if owner_peer_id <= 0:
+		return base
+	var powerups: Node = get_node_or_null(^"/root/PowerupService")
+	if powerups == null:
+		return base
+	return maxi(int(roundi(float(powerups.call(&"stat", owner_peer_id, &"structure_hp", float(base))))), 1)
 
 
 ## Runs on every peer with the same data, so host and client build identical bodies. The name is
@@ -481,7 +601,9 @@ func _net_spawn_piece(data: Variant) -> Node:
 	# so this never clobbers a root that already knows how to take a hit.
 	if not piece.has_method(&"host_apply_damage"):
 		piece.set_script(BUILDABLE_PIECE)
-		piece.set(&"hp", int(def.get(&"max_hp")))
+		# F-543: the host-resolved hp from the payload, falling back to the authored ceiling for any
+		# path that spawns without one (a harness, or a replayed payload from an older peer).
+		piece.set(&"hp", maxi(int(payload.get("hp", int(def.get(&"max_hp")))), 1))
 	return piece
 
 

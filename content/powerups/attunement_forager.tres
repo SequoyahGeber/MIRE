@@ -12,6 +12,7 @@ description = "Better at: gather yield & speed, food, sees resources through ter
 max_stacks = 1
 modifiers = Dictionary[StringName, Vector2]({
 &"food_value": Vector2(0, 0.2),
+&"harvest_damage": Vector2(0, 0.25),
 &"harvest_yield": Vector2(0, 0.25),
 &"melee_damage": Vector2(0, -0.15)
 })

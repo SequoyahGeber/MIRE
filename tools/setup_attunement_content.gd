@@ -33,8 +33,12 @@ func _run() -> void:
 		"Better at: ward radius, structure HP, taunts. Worse at: movement speed, gather rate.",
 		{
 			&"ward_radius_m": Vector2(2.0, 0.0),
+			# F-543: "better at structure HP" had no stat at all until `structure_hp` was added.
+			&"structure_hp": Vector2(0.0, 0.25),
 			&"move_speed": Vector2(0.0, -0.10),
 			&"harvest_yield": Vector2(0.0, -0.15),
+			# F-543: "worse at gather RATE" is the damage-per-swing half, not the yield half.
+			&"harvest_damage": Vector2(0.0, -0.15),
 		}
 	)
 	_make(
@@ -42,6 +46,8 @@ func _run() -> void:
 		"Better at: gather yield & speed, food, sees resources through terrain. Worse at: melee damage.",
 		{
 			&"harvest_yield": Vector2(0.0, 0.25),
+			# F-543: "gather yield & SPEED" — the speed half is damage per swing.
+			&"harvest_damage": Vector2(0.0, 0.25),
 			&"food_value": Vector2(0.0, 0.20),
 			&"melee_damage": Vector2(0.0, -0.15),
 		}
@@ -69,6 +75,10 @@ func _run() -> void:
 	quit(0 if failures == 0 else 1)
 
 
+## F-543 note: the Reaver's "can't build Wards" and the Tinker's "can build Ward turrets" are NOT
+## generated here. They are authored on the BUILDABLE side (`BuildableDef.forbidden_attunement_ids` /
+## `required_attunement_id`, D-212), because the rule belongs to the piece, not to the role — so
+## re-running this generator does not touch them and cannot silently revert them.
 func _make(role_id: StringName, display_name: String, description: String, modifiers: Dictionary) -> void:
 	var powerup_id := StringName("attunement_%s" % role_id)
 

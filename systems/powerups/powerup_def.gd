@@ -48,6 +48,7 @@ const KNOWN_STATS: Array[StringName] = [
 	&"coin_gain", &"chest_price", &"loot_luck",
 	# harvest / craft / build
 	&"harvest_yield", &"harvest_damage", &"craft_seconds", &"haul_speed", &"ward_radius_m",
+	&"structure_hp",
 	# condition-suffixed (closed set — POWERUPS.md §2; the consumer owning the condition chains
 	# these onto the unconditional pass, the service stays condition-blind, D-179)
 	&"melee_damage_low_hp", &"move_speed_low_hp", &"melee_damage_at_night", &"move_speed_in_mire",

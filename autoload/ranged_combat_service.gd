@@ -326,10 +326,15 @@ func _resolve_flight(peer_id: int, shot: Dictionary, hit_node: Node, hit_positio
 		and not damageable.is_in_group(&"players")
 		and damageable.has_method(&"host_apply_damage")
 	)
-	var connected: bool = valid_target and bool(damageable.call("host_apply_damage", weapon.damage, peer_id))
+	# F-543: `bow_damage` scales ranged damage for the peer who fired (docs/POWERUPS.md §2; DESIGN
+	# §4.5's Reaver is "better at melee/ranged damage", +15%). Host-side resolution, so `stat()` with
+	# the shooter's real peer id. The SAME value is applied and reported, so the damage number the
+	# HUD shows is the damage the target took.
+	var applied: int = maxi(_modified_damage(peer_id, &"bow_damage", weapon.damage), 1)
+	var connected: bool = valid_target and bool(damageable.call("host_apply_damage", applied, peer_id))
 	if connected:
 		_broadcast_resolved(
-			peer_id, request_id, true, hit_position, weapon.damage, StringName(String(damageable.name))
+			peer_id, request_id, true, hit_position, applied, StringName(String(damageable.name))
 		)
 	else:
 		_broadcast_resolved(peer_id, request_id, false, hit_position, 0, &"")
@@ -591,3 +596,13 @@ func _owns_resolution() -> bool:
 		NetTransport.is_host()
 		or (not NetTransport.is_active() and not NetTransport.is_connecting())
 	)
+
+
+## F-543: this peer's version of the authored ranged damage. Same shape as CombatService's melee
+## twin — a separate copy rather than a shared helper because these two services already keep their
+## own resolution paths deliberately independent (one is a swing timeline, one is a raycast).
+func _modified_damage(peer_id: int, stat_name: StringName, base: int) -> int:
+	var powerups: Node = get_node_or_null(^"/root/PowerupService")
+	if powerups == null:
+		return base
+	return int(roundi(float(powerups.call(&"stat", peer_id, stat_name, float(base)))))

@@ -9995,3 +9995,51 @@ D-215 written into docs/DECISIONS.md and pushed (8c5a5bdc); scratchpad draft del
 Files: `docs/DECISIONS.md`
 
 Commit at time of writing: `8c5a5bdc`
+
+---
+
+### HANDOFF · F-292 · cinder9818da · 2026-08-22T06:51:49+00:00
+
+**tools/nav_bake_check.gd has had 4 failures at HEAD since the 4.13/4.14 terrain retune — the island has no gentle chunk-boundary strip at its 30-degree gate**
+
+NO MEASUREMENT WAS TAKEN — do not build on anything I said about terrain slope. I wrote two scratch probes (tools/_f292_census.gd, tools/_f292_bench.gd) to census the island's slope distribution and time surface_from_set, and both were broken at the entry point: 'extends SceneTree' with only 'func _run()', no '_initialize() -> _run.call_deferred()'. Godot never calls _run(), so the body never executed and the quit(0) inside it never fired — each process sat in an idle main loop holding the shared Godot import lock (20m43s and ~18m). Deleted; nothing of mine is running. Confirmed by mire-1b: 0:38 CPU over 18 minutes at 2.5% CPU, zero output lines. Every working check in tools/ has the two-line _initialize form (see nav_bake_check.gd:57). Whoever picks this up: the finding's own analysis still stands and is the place to start (4046 probes above water, 256 also gentle, not one chunk boundary getting all four at the 30-degree gate); the open question is still whether the gate should track NavBaker.AGENT_MAX_SLOPE=45 rather than sit at 30, and whether four probes spanning 12m is the right shape for a 26m island. Run any census through 'agent baseline', which gets its own throwaway .godot/ and never touches the shared lock (D-211 measured a clean import at 11.7s).
+
+Files: `tools/nav_bake_check.gd`
+
+Commit at time of writing: `40ba1beb`
+
+---
+
+### DONE · F-543 · larch543bba · 2026-08-22T06:53:24+00:00
+
+**Every Attunement's stat effects are dead — nothing in the game consumes the PowerupService modifiers they grant**
+
+Wired every Attunement stat effect into its consumer (10 stats across 8 files), added structure_hp + harvest_damage for two DESIGN promises that had no stat at all, built the Forager's through-terrain resource sense as a new autoload, and made the Reaver Ward ban authored content. D-212. Two new checks: attunement_effects_check (behaviour + a catalogue guard against dead stats) and forager_sense_check, both failures=0.
+
+Files: `entities/player/player_controller.gd`, `systems/health/player_health.gd`, `autoload/harvest_world.gd`, `autoload/combat_service.gd`, `autoload/ranged_combat_service.gd`, `autoload/crafting_service.gd`, `autoload/build_service.gd`, `tools/attunement_effects_check.gd`, `autoload/powerup_service.gd`, `systems/health/downed_state.gd`, `systems/harvesting/harvestable.gd`, `content/powerups/attunement_forager.tres`, `content/powerups/attunement_warden.tres`, `content/powerups/attunement_tinker.tres`, `content/powerups/attunement_reaver.tres`, `autoload/reward_service.gd`, `systems/powerups/powerup_def.gd`, `docs/POWERUPS.md`, `systems/building/buildable_def.gd`, `content/buildables/ward.tres`, `content/buildables/ward_post.tres`, `ui/hud/forager_sense_hud.gd`, `tools/forager_sense_check.gd`, `docs/DELEGATION.md`, `tools/setup_attunement_content.gd`
+
+Commit at time of writing: `35fb1eea`
+
+---
+
+### DONE · F-272 · coil8be837 · 2026-08-22T06:53:29+00:00
+
+**The seed re-broadcast has no two-process proof — `run_reseed_check` calls the client's own receive path by hand**
+
+Two-process ENet proof that the reseed record crosses the wire and lands before run_restarted; new tools/run_reseed_net_check.gd, failures=0
+
+Files: `tools/run_reseed_net_check.gd`
+
+Commit at time of writing: `35fb1eea`
+
+---
+
+### DONE · F-302 · coil8be837 · 2026-08-22T06:53:29+00:00
+
+**The two shipped layout JSONs write the spawn record in two different shapes, so every generic reader needs both**
+
+Unified the layout spawn record on {pos,yaw}; migrated hollowmere + its generator, dropped the dual-shape branch from _layout_spawn(). Pre-existing HEAD failures filed as F-549
+
+Files: `world/gen/layouts/hollowmere.json`, `tools/mapgen/hollowmere_layout.py`, `tools/hollowmere_check.gd`, `tools/world_contract_check.gd`
+
+Commit at time of writing: `35fb1eea`

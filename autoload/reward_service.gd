@@ -125,7 +125,11 @@ func _on_enemy_killed(
 	_next_reward_event_id += 1
 	var rng := RandomNumberGenerator.new()
 	rng.seed = _seed_for_run(_run_seed(), "kill:%s:%d:%d" % [enemy_id, event_id, instigator_peer_id])
-	var amount: int = rng.randi_range(maxi(coin_min, 0), coin_max)
+	# F-543: `coin_gain` scales the bounty for the killer (docs/POWERUPS.md §2; DESIGN §4.5's Reaver
+	# is "better at coin drops", +15%). Applied AFTER the roll, not to the min/max fed into it, so
+	# the RNG stream stays a pure function of the run seed and the event ordinal — scaling the
+	# bounds would make a peer's powerups change what every LATER roll draws.
+	var amount: int = _modified_coins(instigator_peer_id, rng.randi_range(maxi(coin_min, 0), coin_max))
 	if amount <= 0:
 		return
 	var inventory: Node = get_node_or_null(^"/root/InventoryService")
@@ -167,7 +171,9 @@ func _grant_roll(peer_id: int, tier: StringName, roll: Dictionary) -> void:
 	var powerup_service: Node = get_node_or_null(^"/root/PowerupService")
 	var granted: Dictionary = {}
 
-	var coin_amount: int = int(roll.get("coins", 0))
+	# F-543: `coin_gain` applies to chest/cap coin grants too, for the same reason and after the
+	# roll for the same reason.
+	var coin_amount: int = _modified_coins(peer_id, int(roll.get("coins", 0)))
 	if coin_amount > 0 and inventory != null and bool(inventory.call("host_add", peer_id, COIN_ITEM_ID, coin_amount)):
 		granted[COIN_ITEM_ID] = coin_amount
 
@@ -273,3 +279,15 @@ func _transport_is_active() -> bool:
 func _transport_is_host() -> bool:
 	var transport: Node = _transport()
 	return transport != null and bool(transport.call("is_host"))
+
+
+## F-543: this peer's version of a rolled coin amount. `maxi(..., 0)` because a coin grant of a
+## negative number is not a penalty here — `InventoryService.host_add()` would reject it — so a
+## stacked negative simply pays nothing.
+func _modified_coins(peer_id: int, base: int) -> int:
+	if base <= 0 or peer_id <= 0:
+		return base
+	var powerups: Node = get_node_or_null(^"/root/PowerupService")
+	if powerups == null:
+		return base
+	return maxi(int(roundi(float(powerups.call(&"stat", peer_id, &"coin_gain", float(base))))), 0)

@@ -11,7 +11,9 @@ display_name = "Warden Attunement"
 description = "Better at: ward radius, structure HP, taunts. Worse at: movement speed, gather rate."
 max_stacks = 1
 modifiers = Dictionary[StringName, Vector2]({
+&"harvest_damage": Vector2(0, -0.15),
 &"harvest_yield": Vector2(0, -0.15),
 &"move_speed": Vector2(0, -0.1),
+&"structure_hp": Vector2(0, 0.25),
 &"ward_radius_m": Vector2(2, 0)
 })

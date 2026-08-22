@@ -259,12 +259,20 @@ func _resolve_hit(peer_id: int, weapon: WeaponDef) -> void:
 	var applied: int = weapon.damage
 	var connected: bool
 	if target.has_method("host_apply_tool_damage"):
-		applied = int(target.call("harvest_damage_for", weapon.tool_class, weapon.harvest_power))
+		applied = int(target.call(
+			"harvest_damage_for", weapon.tool_class, weapon.harvest_power, peer_id
+		))
 		connected = bool(
 			target.call("host_apply_tool_damage", weapon.tool_class, weapon.harvest_power, peer_id)
 		)
 	else:
-		connected = bool(target.call("host_apply_damage", weapon.damage, peer_id))
+		# F-543: `melee_damage` scales the weapon's combat damage for the peer who swung
+		# (docs/POWERUPS.md §2; DESIGN §4.5 is Reaver +15% / Forager -15%). Host-side, so `stat()`
+		# with the real peer id, not `local_stat()` — CombatService resolves every peer's swing.
+		# `applied` is reassigned as well as passed, so the damage number the HUD shows is the
+		# damage the enemy took. `maxi(..., 1)` keeps a connected swing from reading as a whiff.
+		applied = maxi(_modified_damage(peer_id, &"melee_damage", weapon.damage), 1)
+		connected = bool(target.call("host_apply_damage", applied, peer_id))
 	if not connected:
 		_broadcast(peer_id, false, Vector3.ZERO, 0, &"")
 		return
@@ -545,3 +553,13 @@ func _build_placeholder_impact() -> AudioStream:
 	stream.stereo = false
 	stream.data = data
 	return stream
+
+
+## F-543: one place for "this peer's version of an authored damage number". Both damage stats
+## (`melee_damage` here, `bow_damage` in RangedCombatService) are authored as multipliers on a base
+## that comes from the weapon def, so the base is never zero on a path that reaches this.
+func _modified_damage(peer_id: int, stat_name: StringName, base: int) -> int:
+	var powerups: Node = get_node_or_null(^"/root/PowerupService")
+	if powerups == null:
+		return base
+	return int(roundi(float(powerups.call(&"stat", peer_id, stat_name, float(base)))))

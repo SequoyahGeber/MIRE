@@ -75,6 +75,43 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-22 — F-543: Attunement effects are real now, and `PowerupService.stat()` has readers (larch543bba)
+
+**Before this, picking a role changed a label and nothing else.** `PowerupService.stat()` had three
+readers in the entire repo (`chest_price`, `loot_luck`, `dodge_iframe_seconds`) and none of them was
+a stat any Attunement names. Anything you build on top of powerups should assume the same about the
+REST of the pool: most authored stats are still unread (docs/POWERUPS.md §2 now says which).
+
+**The APIs the next task builds on:**
+
+- **`PowerupService.host_powerups_changed(peer_id)`** — new signal, host-side, fires after `_commit()`
+  for any peer whose stacks changed. Connect this ONLY if you hold a derived value a grant cannot
+  otherwise reach (`PlayerHealth`'s per-peer hp ceiling, `BuildService`'s ward cache). A consumer
+  that reads its stat at the moment of the event it modifies needs nothing.
+- **`DownedState.set_max_hp(new_max)`** — retunes a live ceiling; raising hands over the difference
+  as usable hp, lowering clamps but never below 1 while ALIVE.
+- **`Harvestable.anchor_offset()`** — the measured "where the geometry actually is" lift, public now
+  so presentation can anchor to a prop without measuring meshes again.
+- **`BuildableDef.forbidden_attunement_ids` / `required_attunement_id`** — role gates as content
+  (D-212). The Tinker's Ward turret needs no code when it exists: set `required_attunement_id`.
+- **`BuildService._spawn_piece(id, placement, owner_peer_id)`** — third argument is new; the spawn
+  payload now carries a host-resolved `"hp"` so every peer builds the same wall.
+- **`ForagerSenseHud`** (new autoload, `ui/hud/forager_sense_hud.gd`) — the Forager's
+  through-terrain resource sense. `sense_active()`, `tracked_markers()`, `refresh_now()`. It
+  disables its own `_process` for every other role, so it costs nothing on 5 of 6 runs.
+
+**Wired consumers** (each reads its own base through `stat()`): `move_speed`/`sprint_speed`
+(player_controller, cached), `max_hp`/`food_value`/`blight_rate` (player_health),
+`harvest_yield`/`harvest_damage` (harvestable), `melee_damage` (combat_service), `bow_damage`
+(ranged_combat_service), `craft_seconds` (crafting_service), `coin_gain` (reward_service),
+`ward_radius_m`/`structure_hp` (build_service).
+
+**Checks:** `tools/attunement_effects_check.gd` (both the behaviour AND a catalogue guard that fails
+if any Attunement ever names a stat nothing reads) and `tools/forager_sense_check.gd`.
+
+**Still missing, filed as F-544:** the Tinker's Ward turrets and station tiers, and the Warden's
+taunts. All three name systems that do not exist yet.
+
 ### 2026-08-22 — F-535: harvest yields land on the ground (flint04a51d)
 
 Nothing gives a player an item by calling `InventoryService.host_add()` from a world event any more.

@@ -26,3 +26,4 @@ cost = Dictionary[StringName, int]({
 refund_fraction = 0.5
 max_hp = 120
 ward_radius_m = 18.0
+forbidden_attunement_ids = Array[StringName]([&"reaver"])

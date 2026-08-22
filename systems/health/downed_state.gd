@@ -33,6 +33,26 @@ func _init(starting_max_hp: int) -> void:
 	hp = max_hp
 
 
+## F-543: retune the ceiling mid-run, which is what a `max_hp` powerup (or DESIGN §4.5's Tinker, at
+## -15%) actually is. Raising it hands over the difference as usable hp, so a +hp grant is felt
+## immediately rather than being a bar you have to heal into; lowering it clamps, but never below 1
+## while ALIVE — a negative modifier is a smaller health pool, never an instant knockdown, and a
+## grant that could down you would make the pick itself a trap. Returns true if anything moved.
+func set_max_hp(new_max_hp: int) -> bool:
+	var clamped: int = maxi(new_max_hp, 1)
+	if clamped == max_hp:
+		return false
+	var delta: int = clamped - max_hp
+	max_hp = clamped
+	if delta > 0:
+		hp = mini(hp + delta, max_hp)
+	elif state == State.ALIVE:
+		hp = clampi(hp, 1, max_hp)
+	else:
+		hp = clampi(hp, 0, max_hp)
+	return true
+
+
 func is_alive() -> bool:
 	return state == State.ALIVE
 

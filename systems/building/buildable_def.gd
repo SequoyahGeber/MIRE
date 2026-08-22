@@ -99,6 +99,20 @@ static func category_label(name: StringName) -> String:
 @export_range(0.0, 64.0, 0.5) var ward_radius_m: float = 0.0
 
 
+@export_group("Attunement")
+## F-543 / D-212a: DESIGN §4.5 gates two pieces on a role — the Reaver "can't build Wards", the
+## Tinker "can build Ward turrets". Both are authored here rather than named in code, so a new role
+## rule is a `.tres` edit. Empty on every piece but the two Wards.
+##
+## Only one peer's own role is ever consulted, on the host, at request time
+## (`BuildService._attunement_refusal()`). Nothing here is replicated: definitions are already
+## identical on every peer, and the answer is the host's.
+@export var forbidden_attunement_ids: Array[StringName] = []
+## Non-empty reserves this piece for exactly one role. A peer who has not attuned yet is refused
+## too — it is somebody's speciality, not a free-for-all before the picker opens.
+@export var required_attunement_id: StringName = &""
+
+
 func is_ward() -> bool:
 	return ward_radius_m > 0.0
 

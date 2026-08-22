@@ -157,7 +157,9 @@ func request_craft(recipe_id: StringName) -> int:
 	var recipe: RecipeDef = Registry.get_recipe(recipe_id)
 	if recipe != null and recipe.craft_time_sec > 0.0:
 		_local_pending_crafts[request_id] = {
-			"duration_sec": recipe.craft_time_sec,
+			# F-543: the same `craft_seconds` scaling the host will apply, so the local progress
+			# estimate tracks the real craft instead of finishing early or hanging at 99%.
+			"duration_sec": _modified_craft_seconds(_local_peer_id(), recipe.craft_time_sec),
 			"started_msec": Time.get_ticks_msec(),
 		}
 	if _owns_mutation():
@@ -216,7 +218,16 @@ func _process_craft(peer_id: int, recipe_id: StringName, request_id: int) -> voi
 		_confirm_peer(peer_id, request_id, false, "craft rejected: station out of range")
 		return
 
-	var craft_time_sec: float = float(data.get("craft_time_sec", 0.0))
+	# F-543: `craft_seconds` scales a timed craft's duration for the peer who asked
+	# (docs/POWERUPS.md §2; DESIGN §4.5's Tinker is "better at craft cost", -20%, and `forge_blood`
+	# stacks on top). Applied on the HOST, which is the only clock that decides when the craft
+	# finishes — the client's own `_local_pending_crafts` estimate is scaled the same way in
+	# `request_craft()` so the progress bar and the confirmation agree. An instant recipe
+	# (`craft_time_sec == 0`) stays instant: there is no duration to shorten, and a positive
+	# modifier must not invent a wait on a recipe authored to have none.
+	var craft_time_sec: float = _modified_craft_seconds(
+		peer_id, float(data.get("craft_time_sec", 0.0))
+	)
 	if craft_time_sec <= 0.0:
 		_finish_craft(peer_id, request_id, data)
 		return
@@ -495,3 +506,16 @@ func _cmd_recipes(_ctx: Dictionary, args: Dictionary) -> Dictionary:
 		ids.append(String(id))
 		lines.append("  %s" % id)
 	return {"ok": true, "message": "\n".join(lines), "data": {"recipes": ids}}
+
+
+## F-543: one peer's version of an authored craft duration. Returns `base` untouched for a
+## non-timed recipe, and clamps at zero rather than letting a stacked negative multiplier produce a
+## negative duration (which `_start_timed_craft` would treat as "already done" on the next tick, and
+## which docs/POWERUPS.md §2 rules out at author time anyway via the zero-crossing check).
+func _modified_craft_seconds(peer_id: int, base: float) -> float:
+	if base <= 0.0:
+		return base
+	var powerups: Node = get_node_or_null(^"/root/PowerupService")
+	if powerups == null:
+		return base
+	return maxf(float(powerups.call(&"stat", peer_id, &"craft_seconds", base)), 0.0)

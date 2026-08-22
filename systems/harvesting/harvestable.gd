@@ -223,16 +223,25 @@ func set_presentation(node: Node3D) -> void:
 ## is the feedback that tells you to switch tools, and reporting it as a miss would delete that.
 ## What one swing of this tool WOULD take off, without taking it. Combat reports this number to
 ## every peer as the damage that landed, so a pickaxe bouncing off a pine reads as the 0 it is.
-func harvest_damage_for(tool_class: int, harvest_power: int) -> int:
+## F-543: `instigator_peer_id` defaults to 0 so the "what would this weapon do" preview keeps its old
+## two-argument shape for anything that only wants the unmodified number; passing a real peer routes
+## it through the same `harvest_damage` modifier `host_apply_tool_damage()` applies, so the number
+## CombatService reports to the damage-number HUD is the number that actually landed.
+func harvest_damage_for(tool_class: int, harvest_power: int, instigator_peer_id: int = 0) -> int:
 	if definition == null:
 		return 0
-	return definition.damage_from_tool(tool_class, harvest_power)
+	var base: int = definition.damage_from_tool(tool_class, harvest_power)
+	if instigator_peer_id <= 0:
+		return base
+	return _harvest_damage_for_peer(base, instigator_peer_id)
 
 
 func host_apply_tool_damage(tool_class: int, harvest_power: int, instigator_peer_id: int) -> bool:
 	if not _owns_world_mutation() or not _configuration_valid or not active:
 		return false
-	var amount: int = definition.damage_from_tool(tool_class, harvest_power)
+	var amount: int = _harvest_damage_for_peer(
+		definition.damage_from_tool(tool_class, harvest_power), instigator_peer_id
+	)
 	if amount <= 0:
 		hit_accepted.emit(instigator_peer_id, 0, health)
 		return true
@@ -373,6 +382,16 @@ func _impact_anchor() -> Vector3:
 	return global_position + Vector3.UP * _impact_anchor_offset
 
 
+## F-543: the same measured offset `_impact_anchor()` uses, exposed so presentation can anchor to a
+## prop's real geometry instead of guessing. `ui/hud/forager_sense_hud.gd` floats the Forager's
+## through-terrain marker here, which is why it lands on a tree's trunk rather than at its roots.
+## Public and const-shaped: it measures once, caches, and never mutates anything else.
+func anchor_offset() -> float:
+	if _impact_anchor_offset < 0.0:
+		_impact_anchor_offset = _measure_anchor_offset()
+	return _impact_anchor_offset
+
+
 func _measure_anchor_offset() -> float:
 	var holder := get_parent() as Node3D
 	var root: Node = holder if holder != null else self
@@ -440,7 +459,7 @@ func _deplete(instigator_peer_id: int) -> void:
 	active = false
 	visual_state = definition.active_state_scenes.size()
 	_respawn_remaining = definition.respawn_seconds
-	var amount: int = _yield_amount()
+	var amount: int = _yield_amount(instigator_peer_id)
 	depleted.emit(instigator_peer_id, definition.yield_item_id, amount)
 	EVENT_BUS.emit_harvest_yielded(
 		definition.id,
@@ -454,11 +473,38 @@ func _deplete(instigator_peer_id: int) -> void:
 ## Cycle Modifier `drought` (F-245, content/cycle_modifiers/drought.tres): halves the yield while its
 ## effect window is open — `CycleModifierService.drought_active()` is the one place that tracks when
 ## that window closes (the next Wellspring cap), not just whether `drought` was ever drawn.
-func _yield_amount() -> int:
+func _yield_amount(instigator_peer_id: int) -> int:
+	var amount: int = definition.yield_amount
 	var modifiers: Node = get_node_or_null(^"/root/CycleModifierService")
 	if modifiers != null and bool(modifiers.call(&"drought_active")):
-		return definition.yield_amount / 2
-	return definition.yield_amount
+		amount = amount / 2
+	# F-543: `harvest_yield` scales what the depleting hit pays out, per the peer who landed it
+	# (docs/POWERUPS.md §2; DESIGN §4.5 is Forager +25% / Warden -15%). Applied AFTER `drought` so
+	# the Cycle Modifier's halving is the world's, and the powerup's is the player's — chaining them
+	# the other way would let a Forager round the drought away entirely on a 1-yield node.
+	# `maxi(..., 1)` so a stacked negative never turns a depleted node into nothing at all: a
+	# harvest that consumed the prop and paid zero reads as a bug to the player, not as a penalty.
+	var powerups: Node = get_node_or_null(^"/root/PowerupService")
+	if powerups != null:
+		amount = int(roundi(float(powerups.call(&"stat", instigator_peer_id, &"harvest_yield", float(amount)))))
+	return maxi(amount, 1)
+
+
+## F-543: `harvest_damage` — how big a bite one swing takes, i.e. DESIGN §4.5's gather SPEED half
+## (Forager is better at it, Warden worse). Kept separate from `_yield_amount()` because it runs on
+## every hit rather than only the depleting one, and because a zero here is legal and meaningful:
+## `damage_from_tool()` already returns 0 for the wrong tool class, and that thunk is deliberate
+## feedback (see `host_apply_tool_damage`'s note). So this only ever scales a bite that already
+## exists — `base <= 0` returns unchanged rather than letting a positive modifier mint damage a bare
+## hand should never do.
+func _harvest_damage_for_peer(base: int, instigator_peer_id: int) -> int:
+	if base <= 0:
+		return base
+	var powerups: Node = get_node_or_null(^"/root/PowerupService")
+	if powerups == null:
+		return base
+	var scaled: float = float(powerups.call(&"stat", instigator_peer_id, &"harvest_damage", float(base)))
+	return maxi(int(roundi(scaled)), 1)
 
 
 ## Starts the hit reaction. Client-local and free of authority for the same reason

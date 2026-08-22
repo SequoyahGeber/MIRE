@@ -60,6 +60,23 @@ const BUILD_BAR := preload("res://ui/building/build_bar.gd")
 ## Ground speed while the sprint action is held.
 @export_range(1.0, 25.0, 0.1) var sprint_speed: float = 6.0
 
+## F-543: the live speeds movement actually uses — `walk_speed`/`sprint_speed` after
+## PowerupService's `move_speed`/`sprint_speed` modifiers (docs/POWERUPS.md §2). Own movement is
+## client-authoritative (ARCHITECTURE §2.2 row 1) and a client is only sent its OWN powerup map, so
+## `local_stat()` is the honest seam here, exactly as `dodge_iframe_seconds` already uses.
+##
+## Cached rather than asked per tick: `stat()` walks every held powerup's modifier dictionary, and
+## this is the one consumer that would run it twice a physics frame forever. `local_powerups_changed`
+## is the only thing that can change the answer, so recomputing there is exact, not an approximation.
+## `maxf(..., MIN_EFFECTIVE_SPEED_MPS)` keeps a stacked negative multiplier from producing a zero or
+## reversed walk — a powerup that wants you immobile is a status effect, not a speed number.
+var _effective_walk_speed: float = 0.0
+var _effective_sprint_speed: float = 0.0
+
+## Floor for any modified speed. Slow enough to be a real penalty, fast enough that the player is
+## never stuck in place with no way to know why.
+const MIN_EFFECTIVE_SPEED_MPS: float = 0.5
+
 @export_group("God Mode Flight")
 ## Playtesting flight speed while GodModeService has approved this peer. Flight stays in the own-
 ## player-movement authority row: this controller is the only process that moves its body.
@@ -310,6 +327,14 @@ func _ready() -> void:
 		_build_viewmodel()
 		_build_building_presentation()
 
+	# F-543. Seeded unconditionally (a remote body never reads them, but a harness that flips
+	# is_local_authority later must not find zeroes) and kept live for the owner only.
+	_refresh_effective_speeds()
+	if is_local_authority:
+		var powerups: Node = _powerup_service()
+		if powerups != null and powerups.has_signal(&"local_powerups_changed"):
+			powerups.connect(&"local_powerups_changed", _on_local_powerups_changed)
+
 	camera.set_active(is_local_authority)
 	set_physics_process(is_local_authority)
 	set_process_unhandled_input(is_local_authority)
@@ -483,6 +508,34 @@ func _health_node() -> Node:
 	if not is_instance_valid(_health):
 		_health = get_node_or_null(^"/root/PlayerHealth")
 	return _health
+
+
+## F-543: recompute the two live speeds from the authored exports. Called at _ready and on every
+## change to this peer's own powerup stacks — an Attunement pick (DESIGN §4.5's Warden is `-10%`
+## move_speed) arrives through exactly that signal, since `AttunementService` grants its backing
+## PowerupDef through `PowerupService.host_grant()`.
+##
+## `sprint_speed` is routed through BOTH stats, in that order: docs/POWERUPS.md §2 defines
+## `sprint_speed` as "sprint speed, applied after move_speed", so a generic movement modifier moves
+## the sprint too and a sprint-only powerup stacks on top of it.
+func _refresh_effective_speeds() -> void:
+	var powerups: Node = _powerup_service()
+	if powerups == null:
+		_effective_walk_speed = walk_speed
+		_effective_sprint_speed = sprint_speed
+		return
+	_effective_walk_speed = maxf(
+		float(powerups.call(&"local_stat", &"move_speed", walk_speed)), MIN_EFFECTIVE_SPEED_MPS
+	)
+	var sprint_after_move: float = float(powerups.call(&"local_stat", &"move_speed", sprint_speed))
+	_effective_sprint_speed = maxf(
+		float(powerups.call(&"local_stat", &"sprint_speed", sprint_after_move)),
+		_effective_walk_speed
+	)
+
+
+func _on_local_powerups_changed(_stacks: Dictionary) -> void:
+	_refresh_effective_speeds()
 
 
 ## Same F-011-guarded, F-105-cached shape as _health_node(). PowerupService is an autoload, so the
@@ -802,13 +855,13 @@ func _apply_horizontal_movement(
 	var sprinting: bool = wants_sprint and has_stamina
 	if health != null:
 		health.call(&"local_tick_stamina", delta, sprinting)
-	var move_speed: float = crawl_speed if downed else walk_speed
+	var move_speed: float = crawl_speed if downed else _effective_walk_speed
 	# F-375: wading multiplies the TARGET speed, not the acceleration, so water changes how fast you
 	# can go and not how sharply you can steer — a player who walks into the sea decelerates to the
 	# wade speed through the ordinary `ground_friction`/`ground_acceleration` ramp rather than
 	# snapping to it. A downed crawl is scaled too: crawling through water is the slowest thing in
 	# the game, which is correct and is DESIGN.md §4.5's point about downed being a predicament.
-	var target: Vector3 = wish_dir * (sprint_speed if sprinting else move_speed) * wade
+	var target: Vector3 = wish_dir * (_effective_sprint_speed if sprinting else move_speed) * wade
 
 	var horizontal: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
 
@@ -846,7 +899,7 @@ func _apply_horizontal_movement(
 		# steer still redirects freely and still keeps its momentum, it just cannot be stacked into
 		# something faster than sprinting. Measured: one hard perpendicular steer takes 6.00 m/s to
 		# 6.95, comfortably under this.
-		var airborne_ceiling: float = sprint_speed * AIR_SPEED_CEILING_FACTOR * wade
+		var airborne_ceiling: float = _effective_sprint_speed * AIR_SPEED_CEILING_FACTOR * wade
 		if horizontal.length() > airborne_ceiling:
 			horizontal = horizontal.normalized() * airborne_ceiling
 	# ...and with no input in the air, nothing is applied at all. Momentum carries, which is what

@@ -72,6 +72,14 @@ signal local_powerups_changed(stacks: Dictionary)
 ## family crosses or falls back through a threshold. `tier` is a Resonance enum value.
 signal resonance_changed(peer_id: int, family: StringName, tier: int)
 
+## F-543: fires on the HOST whenever any peer's stack map changed, right after `_commit()` settled
+## the derived state. `local_powerups_changed` already covers the client-authoritative consumers
+## (own movement), but a host-owned DERIVED value — `PlayerHealth`'s per-peer `max_hp`, which is
+## stored in a `DownedState` at spawn and would otherwise never hear about a later grant — needs to
+## know when to recompute for SOMEBODY ELSE. Consumers that read a stat at the moment of the event
+## they modify (harvest yield, craft duration, damage) need nothing here and should not connect.
+signal host_powerups_changed(peer_id: int)
+
 
 func _ready() -> void:
 	var transport: Node = _transport()
@@ -283,6 +291,7 @@ func _commit(peer_id: int) -> void:
 		_local_stacks = (_stacks.get(peer_id, {} as Dictionary) as Dictionary).duplicate()
 		local_powerups_changed.emit(_local_stacks.duplicate())
 
+	host_powerups_changed.emit(peer_id)
 	_publish(peer_id)
 
 
