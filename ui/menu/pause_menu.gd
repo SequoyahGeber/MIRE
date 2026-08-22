@@ -90,6 +90,22 @@ func request_invite() -> void:
 		stack.call("toast", "No lobby to invite anyone to — you're playing solo.", true)
 
 
+## F-608. Flushes the log and opens the folder in the platform's file browser, then toasts the path
+## so a player on voice chat can read it out if the shell open silently fails (a sandbox, a stripped
+## desktop). Absent SessionLog is not an error — it is a build without the autoload, and saying so
+## plainly beats a dead button.
+func request_open_session_log() -> void:
+	var stack: Node = _stack()
+	var session_log: Node = get_node_or_null(^"/root/SessionLog")
+	if session_log == null:
+		if stack != null:
+			stack.call("toast", "Performance logging isn't running in this build.", true)
+		return
+	session_log.call("open_log_folder")
+	if stack != null:
+		stack.call("toast", "Performance log saved to %s" % session_log.call("log_directory"))
+
+
 func request_settings() -> void:
 	var stack: Node = _stack()
 	if stack == null:
@@ -294,6 +310,17 @@ class PauseScreen extends Control:
 		var settings: Button = Kit.button("SETTINGS", func() -> void: _menu.call("request_settings"))
 		column.add_child(settings)
 
+		# F-608. The half of "make the log easily accessible" that gets skipped: a non-technical
+		# player will never find `~/Library/Application Support/Godot/app_userdata/MIRE/session_logs/`
+		# over voice chat, and a log nobody can retrieve is the same as no log. One click opens the
+		# folder in Finder with the file already flushed, so it can be dragged straight into a
+		# message. In the pause menu rather than settings because it is something you do AFTER
+		# playing, at the moment you stop.
+		var session_log: Button = Kit.button(
+			"OPEN PERFORMANCE LOG", func() -> void: _menu.call("request_open_session_log")
+		)
+		column.add_child(session_log)
+
 		column.add_child(Kit.separator())
 
 		var abandon: Button = Kit.button(
@@ -311,7 +338,9 @@ class PauseScreen extends Control:
 		)
 		column.add_child(quit_desktop)
 
-		Kit.wire_chain([_resume_button, invite, settings, abandon, quit_title, quit_desktop])
+		Kit.wire_chain([
+			_resume_button, invite, settings, session_log, abandon, quit_title, quit_desktop
+		])
 
 	func menu_default_focus() -> Control:
 		return _resume_button

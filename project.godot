@@ -101,6 +101,7 @@ ResonanceService="*res://autoload/resonance_service.gd"
 AmmoHud="*res://ui/hud/ammo_hud.gd"
 FaunaService="*res://autoload/fauna_service.gd"
 ObjectiveHud="*res://ui/hud/objective_hud.gd"
+SessionLog="*res://autoload/session_log.gd"
 
 [display]
 
