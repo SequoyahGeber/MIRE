@@ -156,6 +156,11 @@ var _recorruption_active: bool = false
 ## bandwidth for a number nothing renders. Reset by every path that starts, ends or abandons an
 ## attempt, so a grace can never carry across two of them.
 var _absence_sec: float = 0.0
+## Host-only encounter latch (F-531). Cancelling forfeits ritual progress, but it does not despawn
+## the defenders already on the field. Without a latch, every cancel/restart added another full
+## wave and the live population grew without bound. One uncapped Wellspring lifecycle deploys one
+## defense wave; a genuine re-corruption or new run re-arms it.
+var _defense_wave_deployed: bool = false
 
 var _visual: Node3D
 var _sync: MultiplayerSynchronizer
@@ -230,7 +235,9 @@ func _start_channel() -> void:
 	required_players = (1 if solo else 2) + (1 if (_has_modifier(&"tithe") and not solo) else 0)
 	duration_sec = SOLO_DURATION_SEC if solo else COOP_DURATION_SEC
 	set_process(true)
-	_spawn_defense_wave()
+	if not _defense_wave_deployed:
+		_defense_wave_deployed = true
+		_spawn_defense_wave()
 
 
 ## D-092: cancelling forfeits progress rather than merely pausing it — a deliberate, simple rule
@@ -256,6 +263,7 @@ func host_reset_for_new_run() -> void:
 	channeling = false
 	progress_sec = 0.0
 	_absence_sec = 0.0
+	_defense_wave_deployed = false
 	_recorruption_active = false
 	recorruption_sec = 0.0
 	has_recorrupted = false
@@ -351,6 +359,7 @@ func _is_warded() -> bool:
 
 func _finish_recorruption() -> void:
 	_recorruption_active = false
+	_defense_wave_deployed = false
 	has_recorrupted = true
 	capped = false
 	recorruption_sec = 0.0

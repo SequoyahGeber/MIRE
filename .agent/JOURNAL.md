@@ -9637,3 +9637,18 @@ Notes along the way:
 Files: `ui/attunement/attunement_ui.gd`, `tools/attunement_ui_check.gd`
 
 Commit at time of writing: `74470d7d`
+
+---
+
+### DONE · F-531 · ivyf16b98 · 2026-08-22T05:09:53+00:00
+
+**Wellspring capture eventually triggers an overwhelming unbounded enemy flood**
+
+One defense deployment per uncapped Wellspring lifecycle prevents cancel/restart enemy floods. wellspring_check failures=0.
+
+Notes along the way:
+- Confirmed unbounded accumulation: _start_channel() calls _spawn_defense_wave() every time, while _cancel_channel() leaves enemies alive and clears no encounter latch. Repeated E cancel/start stacks another 4+ enemies indefinitely.
+
+Files: `systems/wellspring/wellspring.gd`, `tools/wellspring_check.gd`
+
+Commit at time of writing: `93a00990`

@@ -234,12 +234,6 @@
       "task": "F-533",
       "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
     },
-    "systems/wellspring/wellspring.gd": {
-      "agent": "ivyf16b98",
-      "at": "2026-08-22T05:06:44+00:00",
-      "task": "F-531",
-      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
-    },
     "tools/blender/build_deep_materials.py": {
       "agent": "birche6b40e",
       "at": "2026-08-21T23:53:11+00:00",
@@ -304,12 +298,6 @@
       "agent": "ivyf16b98",
       "at": "2026-08-22T05:07:39+00:00",
       "task": "F-528",
-      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
-    },
-    "tools/wellspring_check.gd": {
-      "agent": "ivyf16b98",
-      "at": "2026-08-22T05:06:44+00:00",
-      "task": "F-531",
       "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     },
     "world/gen/poi_map.gd": {
@@ -420,22 +408,6 @@
         }
       ],
       "started": "2026-08-22T05:08:44+00:00",
-      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
-    },
-    "F-531": {
-      "agent": "ivyf16b98",
-      "files": [
-        "systems/wellspring/wellspring.gd",
-        "tools/wellspring_check.gd"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-22T05:06:44+00:00",
-          "by": "ivyf16b98",
-          "text": "Confirmed unbounded accumulation: _start_channel() calls _spawn_defense_wave() every time, while _cancel_channel() leaves enemies alive and clears no encounter latch. Repeated E cancel/start stacks another 4+ enemies indefinitely."
-        }
-      ],
-      "started": "2026-08-22T05:06:44+00:00",
       "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     },
     "F-533": {
@@ -4140,11 +4112,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
     },
     "systems/wellspring/wellspring.gd": {
-      "agent": "quill3c83cf",
-      "at": "2026-08-22T02:44:43+00:00",
-      "hash": "f1ee45a097b898499ad1c8373579e64c8ab3bc5b492b599feb71a274ddd1d0bd",
-      "task": "F-312",
-      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:09:53+00:00",
+      "hash": "3fde45ae51e43d65f323b885abe3c03e43879decdd4a843b7682c40c54695372",
+      "task": "F-531",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     },
     "tools/_f421_frontend_stage.gd": {
       "agent": "mossb81aeb",
@@ -5049,6 +5021,13 @@
       "task": "5.11",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
     },
+    "tools/wellspring_check.gd": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:09:53+00:00",
+      "hash": "bb2c21b9122f860e49bdc2de13cfc9629d97d99376be082d64a98fa0797f08ee",
+      "task": "F-531",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
     "tools/world_contract_check.gd": {
       "agent": "kilnf96279",
       "at": "2026-08-21T19:17:13+00:00",
@@ -5435,7 +5414,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1426,
+  "rev": 1428,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -11458,9 +11437,11 @@
       "title": "Class selection can open while the mouse is captured and become impossible to dismiss"
     },
     "F-531": {
+      "done_at": "2026-08-22T05:09:53+00:00",
+      "done_by": "ivyf16b98",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Wellspring capture eventually triggers an overwhelming unbounded enemy flood"
     },

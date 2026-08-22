@@ -126,6 +126,7 @@ func _check_ritual_fsm() -> void:
 	check(not bool(wellspring.get("channeling")), "a second press cancels the channel")
 	check(is_equal_approx(float(wellspring.get("progress_sec")), 0.0),
 		"cancelling forfeits progress rather than pausing it")
+	var defenders_after_cancel: int = int(world.call("live_count"))
 
 	print("-- out-of-range requester is rejected --")
 	player_one.global_position = wellspring.global_position + Vector3(500.0, 0.0, 0.0)
@@ -139,7 +140,15 @@ func _check_ritual_fsm() -> void:
 	wellspring.call(&"request_toggle_channel")
 	check(bool(wellspring.get("channeling")), "back in range, the channel starts")
 	var wave_spawned: int = int(world.call("live_count")) - live_before
-	check(wave_spawned == 4, "solo defense wave matches base(3) + per_player(1) x 1 (%d)" % wave_spawned)
+	check(defenders_after_cancel == 4,
+		"the first solo start deploys base(3) + per_player(1) x 1 defenders (%d)" % defenders_after_cancel)
+	check(wave_spawned == 0,
+		"restarting a cancelled ritual does not stack another defense wave (%d added)" % wave_spawned)
+	for _restart: int in 5:
+		wellspring.call(&"request_toggle_channel")
+		wellspring.call(&"request_toggle_channel")
+	check(int(world.call("live_count")) == defenders_after_cancel,
+		"five more cancel/restart cycles keep the encounter bounded at %d enemies" % defenders_after_cancel)
 	wellspring.call(&"host_tick", 200.0)
 	check(bool(wellspring.get("capped")), "a full-duration tick with the player present caps it")
 	check(not bool(wellspring.get("channeling")), "capping ends the channel")
