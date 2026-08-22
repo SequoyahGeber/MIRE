@@ -8895,3 +8895,27 @@ Station families/tiers in data; tier-1 costs are gathered-only; flint knappable,
 Files: `content/recipes/charcoal.tres`, `content/recipes/flint.tres`, `content/recipes/arrow.tres`, `tools/recipe_station_check.gd`, `docs/DECISIONS.md`, `content/buildables/furnace.tres`, `content/buildables/woodcutting_block.tres`, `content/buildables/anvil.tres`, `content/buildables/repair_bench.tres`, `content/buildables/cooking_spit.tres`, `systems/crafting/station_def.gd`, `content/stations/anvil.tres`, `content/stations/campfire.tres`, `content/stations/cooking_spit.tres`, `content/stations/furnace.tres`, `content/stations/repair_bench.tres`, `content/stations/woodcutting_block.tres`, `content/stations/workbench.tres`, `content/stations/workbench_upgraded.tres`, `tools/resource_reachability_check.gd`
 
 Commit at time of writing: `9335ee8`
+
+---
+
+### DONE · F-488 · tine0bda72 · 2026-08-22T00:59:33+00:00
+
+**Food gatherables never spawn: apple tree, berry bush and mushroom patch have definitions and art but no HarvestLibrary rule and no scatter entry**
+
+Apple trees, berry bushes and mushroom patches now classify as harvestables and scatter across grassland, heath, forest, birchwood and marsh
+
+Files: `systems/harvesting/harvest_library.gd`, `content/scatter/forest_floor.tres`, `content/scatter/forest_undergrowth.tres`, `content/scatter/grassland_shrubs.tres`, `content/scatter/birchwood_floor.tres`, `content/scatter/marsh_floor.tres`, `content/scatter/heath_scrub.tres`, `content/scatter/grassland_trees.tres`, `content/scatter/heath_trees.tres`, `content/scatter/forest_canopy.tres`, `content/scatter/birchwood_canopy.tres`, `autoload/harvest_world.gd`
+
+Commit at time of writing: `73e23c2`
+
+---
+
+### DONE · F-489 · pike15ce96 · 2026-08-22T01:02:55+00:00
+
+**Initial Mire cluster can seed in the ocean**
+
+Mire seed centre is land-tested; 400-seed check added
+
+Files: `world/mire/mire_grid_sim.gd`
+
+Commit at time of writing: `3fe8ef4`

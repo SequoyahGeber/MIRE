@@ -45,6 +45,27 @@ const SEED_CLUSTER_RADIUS_M: float = 32.0
 ## Clusters land within this fraction of the island radius — keeps every seed off the outer taper
 ## the terrain falloff already thins to nothing (`IslandHeightmap.FALLOFF_START_FRACTION`).
 const SEED_CLUSTER_SPAN_FRACTION: float = 0.6
+## F-489. The span above is a SQUARE; the island inside it is a lobed, noisy shape, so a uniform
+## draw puts the one seed cluster in open water on a fair share of seeds — unreachable, and with
+## no ground under the `mire_growth` scatter that lives inside it. Every candidate centre is now
+## terrain-tested: the centre itself must stand at least `SEED_LAND_MIN_CENTRE_M` above sea level,
+## and eight points on a ring at `SEED_LAND_RING_FRACTION` of the cluster radius must all be above
+## `SEED_LAND_MIN_RING_M`, so the patch sits on land rather than merely touching it. A river
+## crossing the ring is the case the ring margin is deliberately small for: a channel through the
+## Mire is fine, a Mire in the sea is not.
+const SEED_LAND_ATTEMPTS: int = 48
+const SEED_LAND_MIN_CENTRE_M: float = 1.0
+const SEED_LAND_MIN_RING_M: float = 0.25
+const SEED_LAND_RING_FRACTION: float = 0.7
+const SEED_LAND_RING_SAMPLES: int = 8
+
+
+## One seed's centres, memoised. `seed_cluster_centres()` is called once per generated chunk by
+## `world/gen/resource_scatter.gd`, and F-489's land test made it build a `NoiseSet` and sample the
+## heightmap up to a few hundred times — cheap once, absurd per chunk. Keyed by seed so a run
+## restart on a new island recomputes rather than serving the old island's answer.
+static var _centres_cache: PackedVector2Array = PackedVector2Array()
+static var _centres_cache_seed: int = 0
 
 
 static func cell_index(cell_x: int, cell_z: int) -> int:
@@ -87,17 +108,48 @@ static func seed_initial(world_seed: int) -> PackedFloat32Array:
 ## give the same answer. `seed_initial()` still walks the same list in the same order, so the two
 ## cannot drift.
 static func seed_cluster_centres(world_seed: int) -> PackedVector2Array:
+	if _centres_cache_seed == world_seed and _centres_cache.size() == SEED_CLUSTER_COUNT:
+		return _centres_cache
 	var centres := PackedVector2Array()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = world_seed ^ SEED_CLUSTER_SALT
 	var span: float = ISLAND_HALF_M * SEED_CLUSTER_SPAN_FRACTION
+	var noise_set: Heightmap.NoiseSet = Heightmap.make_noise_set(world_seed)
 	for _cluster_index: int in SEED_CLUSTER_COUNT:
-		# Two draws per cluster, in this order — `seed_initial()` consumed the stream exactly this
-		# way before this function existed, so an existing world's Mire lands where it always did.
-		var center_x: float = rng.randf_range(-span, span)
-		var center_z: float = rng.randf_range(-span, span)
-		centres.append(Vector2(center_x, center_z))
+		# Two draws per candidate, in this order — the stream shape `seed_initial()` always
+		# consumed. F-489 draws it repeatedly instead of once, so a world's Mire can move
+		# relative to older builds; nothing persists a centre, so that costs only reproducibility
+		# against pre-F-489 screenshots.
+		var best := Vector2.ZERO
+		var best_score: float = -INF
+		for _attempt: int in SEED_LAND_ATTEMPTS:
+			var candidate := Vector2(rng.randf_range(-span, span), rng.randf_range(-span, span))
+			var score: float = _land_score(candidate, noise_set, world_seed)
+			if score > best_score:
+				best_score = score
+				best = candidate
+			if score >= 0.0:
+				break
+		centres.append(best)
+	_centres_cache_seed = world_seed
+	_centres_cache = centres
 	return centres
+
+
+## How well a candidate centre stands on dry land: >= 0.0 means "accept", and the value itself is
+## the worst margin found, so the best-of fallback picks the driest candidate when no draw clears
+## the bar outright (a seed whose island is small enough that nothing does). Never returns early on
+## a failure — the ranking needs the full picture, and this runs at most a few hundred times a run.
+static func _land_score(centre: Vector2, noise_set: Heightmap.NoiseSet, world_seed: int) -> float:
+	var centre_height: float = Heightmap.height_from_set(centre.x, centre.y, noise_set, world_seed)
+	var worst: float = centre_height - SEED_LAND_MIN_CENTRE_M
+	var ring_radius: float = SEED_CLUSTER_RADIUS_M * SEED_LAND_RING_FRACTION
+	for sample_index: int in SEED_LAND_RING_SAMPLES:
+		var angle: float = TAU * float(sample_index) / float(SEED_LAND_RING_SAMPLES)
+		var point: Vector2 = centre + Vector2(cos(angle), sin(angle)) * ring_radius
+		var ring_height: float = Heightmap.height_from_set(point.x, point.y, noise_set, world_seed)
+		worst = minf(worst, ring_height - SEED_LAND_MIN_RING_M)
+	return worst
 
 
 ## The corruption this seed STARTS with at a world point, without building a grid — the same

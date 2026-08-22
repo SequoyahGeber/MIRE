@@ -3654,7 +3654,52 @@ resolution, and placement counts over 144 chunks on two seeds); `resource_scatte
 
 ---
 
+### F-490 · Eleven nature assets are exported and catalogued but never placed by map generation
+
+**Area:** world · **Severity:** high · **Found:** 2026-08-22 by tine0bda72
+
+Audit of every nature kit (`environment`, `environment_additions`, `flora`, `gatherables`,
+`harvestables`, `terrain_accents`, `wetland`, `wetland_nature`) against every `content/scatter/*.tres`
+table, `world/gen/**` and the layout JSONs. Everything is placed except:
+
+- `gatherables`: `medicinal_herb`, `wild_onion`, `honeycomb`, `resin_node`, `clay_deposit`,
+  `peat_deposit`, `poison_berry_bush` — modelled, catalogued, no harvestable definition, no item,
+  no scatter entry.
+- `terrain_accents`: `cliff_face`, `cliff_corner`, `stone_steps` — referenced by nothing at all.
+- `wetland`: `fish_shoal` — referenced by nothing at all.
+
+Sequoyah's instruction: "we shouldnt have any nature assets not being used during map generation".
+
+---
+
 ## Resolved
+
+### F-489 · Initial Mire cluster can seed in the ocean — **fixed**
+
+**Area:** world · **Severity:** high · **Found:** 2026-08-22 by pike15ce96
+
+`MireGridSim.seed_cluster_centres()` draws the single seed cluster's centre uniformly from a
+square (+-0.6 * ISLAND_HALF_M in x and z) with no terrain test. The island is a lobed, noisy
+shape inside that square, so on some seeds the centre — or most of its 32 m radius — lands on
+open water, and the run starts with its one corruption area floating in the ocean where the
+player cannot reach it and `mire_growth` scatter has no ground to sit on.
+
+Sequoyah, 2026-08-21: the initial Mire area should only ever spawn on land.
+
+Fix: reject candidate centres whose terrain is at or below sea level, sampling the centre plus a
+ring inside the cluster radius, and keep drawing until one lands on dry ground (best-of fallback
+so the draw always terminates deterministically).
+
+**Resolved 2026-08-22 by pike15ce96.** `MireGridSim.seed_cluster_centres()` now terrain-tests each candidate centre and redraws until one
+stands on land: the centre at least 1.0 m above sea level and eight ring points at 0.7 of the
+cluster radius above 0.25 m. Up to 48 draws, then the best-scoring candidate, so the result is
+always deterministic and always terminates. The centres are memoised per seed because
+`world/gen/resource_scatter.gd` asks once per chunk and the land test builds a NoiseSet.
+
+Measured: under the old single uniform draw, 139 of 400 seeds (35%) put the Mire's centre below
+sea level. `tools/mire_land_seed_check.gd` now walks 400 seeds and asserts dry ground under the
+whole cluster — 0 failures, worst land margin 0.27 m. `mire_grid_check` and `mire_scatter_check`
+still pass.
 
 ### F-485 · The anvil costs a wellglass shard, so smithing is gated behind a POI drop — **fixed**
 

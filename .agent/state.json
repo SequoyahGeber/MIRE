@@ -48,11 +48,53 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "content/harvestables/clay_deposit.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:02:58+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/harvestables/honeycomb.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:02:58+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/harvestables/medicinal_herb.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:02:58+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
     "content/harvestables/mushroom_patch.tres": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:45:13+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "content/harvestables/peat_deposit.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:02:58+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/harvestables/poison_berry_bush.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:02:58+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/harvestables/resin_node.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:02:58+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/harvestables/wild_onion.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:02:58+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/items/apple.tres": {
       "agent": "gale43d16e",
@@ -78,11 +120,29 @@
       "task": "F-482",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "content/items/clay.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:02:58+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
     "content/items/crossbow.tres": {
       "agent": "birche6b40e",
       "at": "2026-08-22T00:29:56+00:00",
       "task": "F-482",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/herb.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:02:58+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/items/honey.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:02:58+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/items/iron_axe.tres": {
       "agent": "birche6b40e",
@@ -95,6 +155,24 @@
       "at": "2026-08-22T00:29:56+00:00",
       "task": "F-482",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/peat.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:02:58+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/items/poison_berry.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:02:58+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/items/resin.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:02:58+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/items/sling.tres": {
       "agent": "birche6b40e",
@@ -114,6 +192,12 @@
       "task": "F-482",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "content/items/wild_onion.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:02:58+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
     "content/scatter/highland_rocks.tres": {
       "agent": "birche6b40e",
       "at": "2026-08-22T00:06:31+00:00",
@@ -126,6 +210,12 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "systems/harvesting/harvest_library.gd": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:02:58+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
     "tools/blender/build_deep_materials.py": {
       "agent": "birche6b40e",
       "at": "2026-08-21T23:53:11+00:00",
@@ -137,6 +227,12 @@
       "at": "2026-08-22T00:47:57+00:00",
       "task": "F-486",
       "token": "CLAUDE_CODE_SESSION_ID:7a55bc0f-4fc2-48cf-9c62-318569fb449e"
+    },
+    "tools/blender/build_forage_pickups.py": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:02:58+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "tools/blender/build_gatherable_plants.py": {
       "agent": "gale43d16e",
@@ -173,6 +269,12 @@
       "at": "2026-08-21T23:42:44+00:00",
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "tools/blender/render_item_icons.py": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T01:02:58+00:00",
+      "task": "F-490",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "tools/item_icons_check.gd": {
       "agent": "gale43d16e",
@@ -258,6 +360,31 @@
       "notes": [],
       "started": "2026-08-22T00:47:57+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:7a55bc0f-4fc2-48cf-9c62-318569fb449e"
+    },
+    "F-490": {
+      "agent": "tine0bda72",
+      "files": [
+        "tools/blender/build_forage_pickups.py",
+        "tools/blender/render_item_icons.py",
+        "content/items/herb.tres",
+        "content/items/wild_onion.tres",
+        "content/items/honey.tres",
+        "content/items/resin.tres",
+        "content/items/clay.tres",
+        "content/items/peat.tres",
+        "content/items/poison_berry.tres",
+        "content/harvestables/medicinal_herb.tres",
+        "content/harvestables/wild_onion.tres",
+        "content/harvestables/honeycomb.tres",
+        "content/harvestables/resin_node.tres",
+        "content/harvestables/clay_deposit.tres",
+        "content/harvestables/peat_deposit.tres",
+        "content/harvestables/poison_berry_bush.tres",
+        "systems/harvesting/harvest_library.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-22T01:02:58+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     }
   },
   "recent": {
@@ -3754,13 +3881,6 @@
       "task": "F-349",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
-    "tools/blight_timeline_check.gd": {
-      "agent": "ivycc0920",
-      "at": "2026-08-21T01:01:06+00:00",
-      "hash": "dfd1b3e196717021d11df568d9cd5ee9feeed2785b6c25b6c44e652a3a89c654",
-      "task": "F-349",
-      "token": "CLAUDE_CODE_SESSION_ID:34f19dd1-60f4-4279-b7ba-e40ce133b27f"
-    },
     "tools/build_check.gd": {
       "agent": "coil26502f",
       "at": "2026-08-21T23:28:27+00:00",
@@ -4665,14 +4785,14 @@
       "token": "CLAUDE_CODE_SESSION_ID:0e245ac7-67ca-4077-a49b-e1b4d92abe80"
     },
     "world/mire/mire_grid_sim.gd": {
-      "agent": "kilnf96279",
-      "at": "2026-08-21T19:17:13+00:00",
-      "hash": "9ef1c7a2bffe92d629b357d8e4c8b78890a7a22b83a83cb7b8a92040183698d8",
-      "task": "F-445",
-      "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
+      "agent": "pike15ce96",
+      "at": "2026-08-22T01:02:55+00:00",
+      "hash": "968ce49cc0085ae5cf4c2d0040338d26204426255baceb82e1f130229a02dad1",
+      "task": "F-489",
+      "token": "CLAUDE_CODE_SESSION_ID:120f1976-6c96-46a1-8784-38dd75780df4"
     }
   },
-  "rev": 1022,
+  "rev": 1028,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -10290,7 +10410,7 @@
     "F-485": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "The anvil costs a wellglass shard, so smithing is gated behind a POI drop"
     },
@@ -10318,6 +10438,22 @@
       "status": "done",
       "tier": "F",
       "title": "Food gatherables never spawn: apple tree, berry bush and mushroom patch have definitions and art but no HarvestLibrary rule and no scatter entry"
+    },
+    "F-489": {
+      "done_at": "2026-08-22T01:02:55+00:00",
+      "done_by": "pike15ce96",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Initial Mire cluster can seed in the ocean"
+    },
+    "F-490": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Eleven nature assets are exported and catalogued but never placed by map generation"
     }
   },
   "version": 1
