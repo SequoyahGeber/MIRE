@@ -44,13 +44,6 @@
       "task": "F-575",
       "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
     },
-    "autoload/loose_loot_service.gd": {
-      "agent": "birch1db63e",
-      "at": "2026-08-22T17:54:10+00:00",
-      "dirty_at_claim": false,
-      "task": "F-536",
-      "token": "CLAUDE_CODE_SESSION_ID:f4f7b0ab-0b40-4c88-a2d0-b7de993492f1"
-    },
     "content/harvestables/apple_tree.tres": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:45:13+00:00",
@@ -224,13 +217,6 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "tools/loose_loot_world_check.gd": {
-      "agent": "birch1db63e",
-      "at": "2026-08-22T17:54:10+00:00",
-      "dirty_at_claim": true,
-      "task": "F-536",
-      "token": "CLAUDE_CODE_SESSION_ID:f4f7b0ab-0b40-4c88-a2d0-b7de993492f1"
-    },
     "tools/recipe_station_check.gd": {
       "agent": "wick410d34",
       "at": "2026-08-22T17:15:43+00:00",
@@ -314,16 +300,6 @@
       "notes": [],
       "started": "2026-08-22T17:53:00+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
-    },
-    "F-536": {
-      "agent": "birch1db63e",
-      "files": [
-        "tools/loose_loot_world_check.gd",
-        "autoload/loose_loot_service.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-22T17:54:10+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:f4f7b0ab-0b40-4c88-a2d0-b7de993492f1"
     },
     "F-574": {
       "agent": "wick410d34",
@@ -2031,13 +2007,13 @@
       "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
     },
     "autoload/loose_loot_service.gd": {
-      "agent": "ivy5b8298",
-      "at": "2026-08-22T16:55:30+00:00",
-      "claimed_at": "2026-08-22T16:52:10+00:00",
+      "agent": "birch1db63e",
+      "at": "2026-08-22T17:56:28+00:00",
+      "claimed_at": "2026-08-22T17:54:10+00:00",
       "dirty_at_claim": false,
-      "hash": "b4aaa82882ceb68fb0e1fef62558276f485a6274eccee645ee249bb6a819c23c",
-      "task": "F-570",
-      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
+      "hash": "520f16b4d428faa3fe46855f12fd3ab2fd2cf196bb03643d94c74a4d118fd09d",
+      "task": "F-536",
+      "token": "CLAUDE_CODE_SESSION_ID:f4f7b0ab-0b40-4c88-a2d0-b7de993492f1"
     },
     "autoload/material_warmer.gd": {
       "agent": "wick3d4184",
@@ -4953,6 +4929,15 @@
       "task": "F-570",
       "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
     },
+    "tools/loose_loot_world_check.gd": {
+      "agent": "birch1db63e",
+      "at": "2026-08-22T17:56:28+00:00",
+      "claimed_at": "2026-08-22T17:54:10+00:00",
+      "dirty_at_claim": true,
+      "hash": "b06337644ff41a72067858e1832df193a45e82dd1ba26f8274d3c8c7f4bd0f49",
+      "task": "F-536",
+      "token": "CLAUDE_CODE_SESSION_ID:f4f7b0ab-0b40-4c88-a2d0-b7de993492f1"
+    },
     "tools/loot_content_check.gd": {
       "agent": "nettled7199c",
       "at": "2026-08-22T05:57:17+00:00",
@@ -5944,7 +5929,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1777,
+  "rev": 1778,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -12050,9 +12035,11 @@
       "title": "Harvested items should drop on the ground and be picked up, not credited instantly \u2014 **fixed**"
     },
     "F-536": {
+      "done_at": "2026-08-22T17:56:28+00:00",
+      "done_by": "birch1db63e",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Scattered pickup models are decorative and cannot be collected as loose world loot"
     },
