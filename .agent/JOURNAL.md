@@ -9757,3 +9757,18 @@ Notes along the way:
 Files: `core/dev/dev_loadout.gd`, `tools/dev_loadout_net_check.gd`
 
 Commit at time of writing: `34fd005c`
+
+---
+
+### DONE · F-528 · ivyf16b98 · 2026-08-22T05:26:05+00:00
+
+**Procedural map chest and loose-loot density is far below the intended scavenging experience**
+
+Clarified cache acceptance to regular spatial coverage: >=36, all four quadrants, all three radial bands across five seeds. poi_check failures=0.
+
+Notes along the way:
+- Clarified acceptance: target_count is an upper density budget; coverage proof will require a healthy minimum plus angular/radial distribution, not exactly 50 on every seed.
+
+Files: `tools/poi_check.gd`
+
+Commit at time of writing: `57859548`

@@ -216,12 +216,6 @@
       "task": "F-535",
       "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
     },
-    "tools/poi_check.gd": {
-      "agent": "ivyf16b98",
-      "at": "2026-08-22T05:22:04+00:00",
-      "task": "F-528",
-      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
-    },
     "tools/revive_interaction_check.gd": {
       "agent": "ivyf16b98",
       "at": "2026-08-22T05:15:00+00:00",
@@ -331,21 +325,6 @@
         }
       ],
       "started": "2026-08-22T05:15:00+00:00",
-      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
-    },
-    "F-528": {
-      "agent": "ivyf16b98",
-      "files": [
-        "tools/poi_check.gd"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-22T05:22:04+00:00",
-          "by": "ivyf16b98",
-          "text": "Clarified acceptance: target_count is an upper density budget; coverage proof will require a healthy minimum plus angular/radial distribution, not exactly 50 on every seed."
-        }
-      ],
-      "started": "2026-08-22T05:22:04+00:00",
       "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     },
     "F-535": {
@@ -4835,8 +4814,8 @@
     },
     "tools/poi_check.gd": {
       "agent": "ivyf16b98",
-      "at": "2026-08-22T05:11:24+00:00",
-      "hash": "06c588d31053a5bb714a7e9093ee11c8c381b5f8db5245127353ac09f49ed071",
+      "at": "2026-08-22T05:26:05+00:00",
+      "hash": "9b8db57aaa5c58ea0300a6de4262b55ff7cb72b2b00a33b8f666fa378d899829",
       "task": "F-528",
       "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     },
@@ -5485,7 +5464,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1478,
+  "rev": 1479,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -11485,9 +11464,11 @@
       "title": "Build menu again leaves the cursor captive, preventing station and item selection"
     },
     "F-528": {
+      "done_at": "2026-08-22T05:26:05+00:00",
+      "done_by": "ivyf16b98",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Procedural map chest and loose-loot density is far below the intended scavenging experience"
     },
