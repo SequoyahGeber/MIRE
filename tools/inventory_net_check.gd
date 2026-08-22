@@ -78,7 +78,19 @@ func _run_driver() -> void:
 	check(int(inventory.call("host_count", NetConfig.HOST_PEER_ID, &"log")) == 0,
 		"host inventory is isolated from client inventory")
 
+	# F-535: a harvest yield lands on the GROUND now, and the client is nowhere near this one, so it
+	# grants nobody — assert that, clear it, and then drive the rest of this check through the same
+	# `host_add()` seam a real pickup uses. The drop's own request/validate/grant story is proved
+	# headlessly in tools/item_drop_check.gd.
+	var drops: Node = root.get_node_or_null(^"ItemDropService")
 	EVENT_BUS.emit_harvest_yielded(&"net_tree", client_peer_id, &"log", 3, Vector3.ZERO)
+	check(int(inventory.call("host_count", client_peer_id, &"log")) == 0,
+		"a harvest yield credits no pack directly across the network either")
+	if drops != null:
+		check(int(drops.call("live_count")) == 1, "the host spawns the yield as a ground drop")
+		drops.call("host_clear_all")
+	check(bool(inventory.call("host_add", client_peer_id, &"log", 3)),
+		"the host grants the collected yield to the client's store")
 	var granted: bool = await _until(
 		func() -> bool: return bool(_read_result().get("granted", false)), TIMEOUT_SEC
 	)

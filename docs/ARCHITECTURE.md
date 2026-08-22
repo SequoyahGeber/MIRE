@@ -51,6 +51,7 @@ Decide this once. Every new system must declare which row it's in.
 | Enemies (spawn, AI, damage) | **Host** | `MultiplayerSpawner` + synchronizer | One brain, no desync |
 | World mutation (chopped tree, mined ore) | **Host** | RPC request → host validates → replicated delta | Prevents duplicate harvests |
 | Carryable objects (heavy hauling, task 3.10) | **Host** | RPC request → host validates carriers → host positions the object each tick from the carriers' own replicated transforms, bounded speed | Carriers' own movement stays client-authoritative (row 1); the OBJECT must never be able to teleport, so the host is the only one that ever writes its transform |
+| World item drops (harvest yields lying on the ground, F-535) | **Host** | Host spawns through `ItemDropService`'s `MultiplayerSpawner`, simulates the rigid body, scans proximity, and is the only peer that calls `InventoryService.host_add()`; [E] is an RPC request the host revalidates for range | The grant, not the pickup animation, is the thing worth cheating at — a client that lies about its position can only ask for a drop it is nowhere near |
 | Inventory / crafting | **Host** | Client requests, host validates & confirms | Prevents item dupes on lag |
 | Mire grid | **Host** | Tick delta broadcast (see §5) | — |
 | Day/night, wave director, Cycle state, active modifiers | **Host** | Replicated properties | — |

@@ -9802,3 +9802,27 @@ Notes along the way:
 Files: `entities/player/player_controller.gd`, `ui/building/build_bar.gd`, `tools/build_picker_check.gd`
 
 Commit at time of writing: `694b72e3`
+
+---
+
+### DONE · F-020 · cinder9818da · 2026-08-22T05:33:45+00:00
+
+**Steam sessions cannot use NetSession's direct-address auto-rejoin loop**
+
+Steam rejoin routes through SteamLobby re-entry; tools/steam_rejoin_check.gd proves the routing
+
+Files: `core/net/net_session.gd`, `tools/steam_rejoin_check.gd`
+
+Commit at time of writing: `a6daa25e`
+
+---
+
+### DONE · F-535 · flint04a51d · 2026-08-22T05:34:38+00:00
+
+**Harvested items should drop on the ground and be picked up, not credited instantly**
+
+Harvest yields drop on the ground as floating item icons; auto-pickup within 1.7 m, [E] within 3.2 m
+
+Files: `systems/loot/item_drop.gd`, `autoload/item_drop_service.gd`, `autoload/inventory_service.gd`, `ui/hud/focus_prompt.gd`, `tools/item_drop_check.gd`, `docs/FINDINGS.md`, `tools/inventory_check.gd`, `tools/mire_interaction_check.gd`, `tools/harvest_world_check.gd`, `tools/inventory_net_check.gd`, `tools/item_drop_shot.gd`, `docs/ARCHITECTURE.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `3ff465bd`

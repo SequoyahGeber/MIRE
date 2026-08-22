@@ -33,6 +33,8 @@ var _transport_node: Node
 ## Cached MireGrid ref (F-099), same reason. MireGrid registers after this autoload, so it is
 ## resolved lazily rather than in _ready() (F-011).
 var _mire_grid_node: Node
+## Cached ItemDropService ref, resolved by path so harnesses that install their own at /root work (F-011).
+var _item_drops_node: Node
 
 
 func _ready() -> void:
@@ -282,18 +284,36 @@ func _on_harvest_yielded(
 	if not _owns_mutation():
 		return
 	var granted: int = _rot_adjusted_amount(amount, world_position)
+	if granted <= 0:
+		return
+	if granted < amount:
+		MireLog.info(&"inventory", "%d/%d %s survived the swing — the Mire rotted the rest" % [
+			granted, amount, item_id
+		])
+	# F-535: the yield becomes a physical drop at the prop, not a silent credit. The pack is filled
+	# by ItemDropService's drop when the player walks into it or presses [E], through this file's
+	# own `host_add()` — so the grant seam, the rot adjustment above and the network authority are
+	# all exactly where they were; only the moment of the grant moved.
+	var drops: Node = _item_drops()
+	if drops != null and drops.call(&"host_spawn_drop", item_id, granted, world_position) != null:
+		return
+	# No drop service (a bare --script harness registers no autoloads) — credit directly rather than
+	# void the yield. This is the legacy path, and it is what keeps a harness without a world honest.
 	if host_add(peer_id, item_id, granted):
-		if granted < amount:
-			MireLog.info(&"inventory", "peer %d collected %d/%d %s — the Mire rotted the rest" % [
-				peer_id, granted, amount, item_id
-			])
-		else:
-			MireLog.info(&"inventory", "peer %d collected %d %s" % [peer_id, granted, item_id])
+		MireLog.info(&"inventory", "peer %d collected %d %s (no drop service)" % [
+			peer_id, granted, item_id
+		])
 	else:
 		MireLog.warn(
 			&"inventory",
 			"peer %d could not collect %d %s (invalid or full)" % [peer_id, granted, item_id]
 		)
+
+
+func _item_drops() -> Node:
+	if _item_drops_node == null or not is_instance_valid(_item_drops_node):
+		_item_drops_node = get_node_or_null(^"/root/ItemDropService")
+	return _item_drops_node
 
 
 ## Never returns less than 1 for a positive `amount` — corruption spoils PART of a harvest, it does

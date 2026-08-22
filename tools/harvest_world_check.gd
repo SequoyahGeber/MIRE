@@ -111,9 +111,13 @@ func _run() -> void:
 			mire_grid.call(&"host_set_corruption_at", tree.global_position, 0.0)
 			check(is_zero_approx(float(mire_grid.call(&"corruption_at", tree.global_position))),
 				"the harvested point is pinned clean, so the authored yield is what arrives")
-		# Delta, not absolute (F-047): DevLoadout grants 20 logs at spawn, so asserting a total of 3
-		# is asserting the starting kit doesn't exist — the fifth harness that autoload broke.
+		# F-535: the yield lands on the ground now, so the pack must NOT move — what moves is the
+		# drop count. Delta, not absolute (F-047): DevLoadout grants 20 logs at spawn, so asserting
+		# a total of 3 is asserting the starting kit doesn't exist — the fifth harness that autoload
+		# broke.
 		var logs_before: int = int(inventory.call("local_count", &"log")) if inventory != null else 0
+		var drops: Node = root.get_node_or_null(^"ItemDropService")
+		var drops_before: int = 0 if drops == null else int(drops.call("live_count"))
 		var definition: Resource = tree.get("definition")
 		check(bool(tree.call("host_apply_damage", int(definition.get("max_health")), 1)),
 			"actual map tree accepts lethal host damage")
@@ -124,9 +128,17 @@ func _run() -> void:
 			check(yield_events[0].get("item_id") == &"log", "actual tree yields log")
 			check(int(yield_events[0].get("amount", 0)) == 3, "actual tree yields three logs")
 		if inventory != null:
-			check(int(inventory.call("local_count", &"log")) - logs_before == 3,
-				"actual map harvest grants three more logs to offline inventory (started at %d)"
+			check(int(inventory.call("local_count", &"log")) - logs_before == 0,
+				"the actual map harvest credits the pack with nothing directly (started at %d)"
 				% logs_before)
+		if drops != null:
+			check(int(drops.call("live_count")) - drops_before == 1,
+				"the actual map harvest leaves one drop of three logs on the ground")
+			var dropped: Array = drops.call("live_drops") as Array
+			if not dropped.is_empty():
+				check(int((dropped[-1] as Node).get(&"amount")) == 3,
+					"the ground drop carries the authored yield")
+			drops.call("host_clear_all")
 		var body := tree.get_node_or_null(^"CollisionBody") as CollisionObject3D
 		check(body != null and body.collision_layer == 0, "depleted map collision is disabled")
 		check(bool(tree.call("host_respawn")), "actual map tree respawns")
@@ -140,18 +152,30 @@ func _run() -> void:
 		# machine running several headless Godot processes at once. Nothing here depends on the wait
 		# being tight.
 		await create_timer(0.6).timeout
-		var health_before_ray: int = int(tree.get("health"))
 		var camera := Camera3D.new()
 		camera.name = "HarvestCheckCamera"
 		scene.add_child(camera)
-		camera.global_position = tree.global_position + Vector3(0.0, 1.5, 3.0)
+		# 1.2 m, not 3 m. At three metres the ray can resolve whatever prop happens to stand between
+		# the camera and this tree — on the current layout it picks up a felled trunk two rows over,
+		# and the check then asserts a hit on a tree that was never swung at. Close enough that the
+		# target IS the nearest collider, still inside HarvestWorld's 4 m reach.
+		camera.global_position = tree.global_position + Vector3(0.0, 1.5, 1.2)
 		camera.look_at(tree.global_position + Vector3(0.0, 1.5, 0.0))
 		camera.make_current()
 		await physics_frame
+		# Which prop the ray lands on is a property of the LAYOUT, not of the plumbing under test:
+		# this corner of WestForest has felled trunks standing between the camera and the tree, and
+		# an earlier version of this check asserted a hit on `tree` while the ray was legitimately
+		# resolving a neighbour. So resolve the target the same way HarvestWorld does, then assert
+		# that THAT prop took exactly one authored hit.
+		var aimed: Node3D = _harvestable_under(camera)
+		check(aimed != null, "the first-person ray resolves some harvestable")
+		var aimed_health: int = int(aimed.get("health")) if aimed != null else 0
 		check(bool(harvest_world.call("try_harvest_from_camera")),
-			"4 m first-person ray targets the actual map tree")
-		check(int(tree.get("health")) == health_before_ray - 1,
-			"first-person ray submits one definition-authored hit")
+			"4 m first-person ray targets a map harvestable")
+		if aimed != null:
+			check(int(aimed.get("health")) == aimed_health - int((aimed.get("definition") as Resource).get("damage_per_hit")),
+				"first-person ray submits one definition-authored hit")
 
 		_check_rotted_yield(tree, mire_grid, inventory)
 	event_bus.unsubscribe_harvest_yielded(_on_yield)
@@ -210,6 +234,20 @@ func _first_asset(harvestables: Array, asset_id: StringName) -> Node3D:
 		var harvestable := value as Node3D
 		if StringName(String(harvestable.get_meta(&"asset", ""))) == asset_id:
 			return harvestable
+	return null
+
+
+## The harvestable HarvestWorld's own camera ray would hit, resolved with the same query it uses.
+func _harvestable_under(camera: Camera3D) -> Node3D:
+	var origin: Vector3 = camera.global_position
+	var query := PhysicsRayQueryParameters3D.create(origin, origin - camera.global_basis.z * 4.0)
+	query.collide_with_areas = true
+	var hit: Dictionary = camera.get_world_3d().direct_space_state.intersect_ray(query)
+	var cursor: Node = hit.get("collider") as Node
+	while cursor != null:
+		if cursor.is_in_group(&"harvestable") and cursor.has_method("request_hit"):
+			return cursor as Node3D
+		cursor = cursor.get_parent()
 	return null
 
 

@@ -39,8 +39,20 @@ func _run() -> void:
 	check(EVENT_BUS.harvest_yielded_subscriber_count() == 1,
 		"InventoryService owns one harvest-yield subscription")
 
+	# F-535: the harvest seam no longer credits the pack — it spawns a ground drop, and the drop
+	# grants through `host_add()` when a player collects it. The rest of this check is about the
+	# store, so it grants the three logs the way the drop does rather than re-testing the drop here
+	# (tools/item_drop_check.gd owns that).
+	var drops: Node = root.get_node_or_null(^"ItemDropService")
+	var drops_before: int = 0 if drops == null else int(drops.call("live_count"))
 	EVENT_BUS.emit_harvest_yielded(&"tree", 1, &"log", 3, Vector3.ZERO)
-	check(int(inventory.call("local_count", &"log")) == 3, "real harvest seam grants three logs")
+	check(int(inventory.call("local_count", &"log")) == 0,
+		"a harvest yield credits nothing directly — it lands on the ground first")
+	check(drops == null or int(drops.call("live_count")) == drops_before + 1,
+		"the harvest seam spawns exactly one ground drop")
+	if drops != null:
+		drops.call("host_clear_all")
+	check(bool(inventory.call("host_add", 1, &"log", 3)), "collecting the drop grants three logs")
 	check(local_changes == 1 and host_changes == 1, "harvest publishes one confirmed revision")
 	check(int(inventory.call("local_revision")) == 1, "first mutation advances revision to one")
 	slots = inventory.call("local_slots")

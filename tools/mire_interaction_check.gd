@@ -78,17 +78,30 @@ func _check_rotted_yield() -> void:
 	mire_grid.call("host_set_corruption_at", clean_position, 0.0)
 	mire_grid.call("host_set_corruption_at", corrupted_position, 1.0)
 
+	# F-535: a yield now lands on the ground first, so the rot is measured on the DROP's stack
+	# rather than on the pack — the rot itself still happens in InventoryService, unchanged.
 	var peer_id: int = NetConfig.HOST_PEER_ID
-	var before_clean: int = int(inventory.call("host_count", peer_id, &"log"))
 	EVENT_BUS.emit_harvest_yielded(&"test_tree", peer_id, &"log", 10, clean_position)
-	var clean_granted: int = int(inventory.call("host_count", peer_id, &"log")) - before_clean
+	var clean_granted: int = _dropped_amount()
 	check(clean_granted == 10, "clean ground yields the full amount (%d/10)" % clean_granted)
 
-	var before_corrupted: int = int(inventory.call("host_count", peer_id, &"log"))
 	EVENT_BUS.emit_harvest_yielded(&"test_tree", peer_id, &"log", 10, corrupted_position)
-	var corrupted_granted: int = int(inventory.call("host_count", peer_id, &"log")) - before_corrupted
+	var corrupted_granted: int = _dropped_amount()
 	check(corrupted_granted >= 1 and corrupted_granted < 10,
 		"fully corrupted ground rots part of the yield away, never all of it (%d/10)" % corrupted_granted)
+
+
+## The stack on the single drop the last yield produced, then clears the ground again so the next
+## yield is measured on its own. Zero when no drop service is registered at all.
+func _dropped_amount() -> int:
+	var drops: Node = root.get_node_or_null(^"ItemDropService")
+	if drops == null:
+		return 0
+	var amount: int = 0
+	for drop: Node in (drops.call("live_drops") as Array):
+		amount += int(drop.get(&"amount"))
+	drops.call("host_clear_all")
+	return amount
 
 
 # ── Blight debuff ─────────────────────────────────────────────────────────────────────────────────

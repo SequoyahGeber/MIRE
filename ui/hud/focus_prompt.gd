@@ -42,17 +42,19 @@ extends CanvasLayer
 
 const MIRE_THEME := preload("res://ui/theme/mire_theme.gd")
 const HARVEST_LIBRARY := preload("res://systems/harvesting/harvest_library.gd")
+const ITEM_DROP := preload("res://systems/loot/item_drop.gd")
 
 const HARVESTABLE_GROUP: StringName = &"harvestable"
 const HAULABLE_GROUP: StringName = &"haulable"
 const CHEST_GROUP: StringName = &"chest"
 const DOOR_GROUP: StringName = &"door"
+const ITEM_DROP_GROUP: StringName = &"item_drop"
 const PLAYER_GROUP: StringName = &"players"
 const BLOCKING_UI_GROUP: StringName = &"blocks_gameplay_input"
 
 ## Which kind of thing the crosshair is on. Ordered by how specific the prompt is, and used by
 ## `tools/focus_prompt_check.gd` to assert a target without matching on English.
-enum Kind { NONE, HARVESTABLE, HAULABLE, CHEST, DOOR }
+enum Kind { NONE, HARVESTABLE, HAULABLE, CHEST, DOOR, ITEM_DROP }
 
 ## Matches `HarvestWorld.MAX_RAY_DISTANCE_M` plus a little, so the prompt appears a step before the
 ## swing would connect rather than a step after — a prompt that lights up only once you are already
@@ -197,7 +199,7 @@ func try_carry_focus() -> bool:
 		refresh_now()
 		return true
 	refresh_now()
-	if _focus_kind != Kind.HAULABLE or _focus == null:
+	if _focus == null or (_focus_kind != Kind.HAULABLE and _focus_kind != Kind.ITEM_DROP):
 		return false
 	_focus.call(&"request_pickup")
 	refresh_now()
@@ -282,6 +284,8 @@ func describe(node: Node3D, kind: int = -1) -> Dictionary:
 			return _describe_chest(node)
 		Kind.DOOR:
 			return _describe_door(node)
+		Kind.ITEM_DROP:
+			return _describe_item_drop(node)
 		_:
 			return {}
 
@@ -353,6 +357,26 @@ func _describe_haulable(node: Node3D) -> Dictionary:
 		"hint": hint,
 		"ratio": -1.0,
 		"blocked": carriers >= 2 and not mine,
+		"key": "E",
+	}
+
+
+## Deliberately terse. A drop names itself and its count and nothing else — most of them are
+## collected by walking over them, and the press is only the fallback for the one that rolled under
+## a root. [param node] is `systems/loot/item_drop.gd`.
+func _describe_item_drop(node: Node3D) -> Dictionary:
+	if not bool(node.call(&"is_collectable")):
+		return {}
+	var amount: int = int(node.get(&"amount"))
+	var title: String = String(node.call(&"display_name"))
+	if amount > 1:
+		title = "%s ×%d" % [title, amount]
+	return {
+		"title": title,
+		"action": "Pick up",
+		"hint": "",
+		"ratio": -1.0,
+		"blocked": false,
 		"key": "E",
 	}
 
@@ -452,7 +476,7 @@ func _acquire_focus() -> void:
 func _acquire_fallback(origin: Vector3, forward: Vector3) -> void:
 	var cone: float = cos(deg_to_rad(FALLBACK_CONE_DEGREES))
 	var best_dot: float = cone
-	for group: StringName in [DOOR_GROUP, CHEST_GROUP, HAULABLE_GROUP, HARVESTABLE_GROUP]:
+	for group: StringName in [ITEM_DROP_GROUP, DOOR_GROUP, CHEST_GROUP, HAULABLE_GROUP, HARVESTABLE_GROUP]:
 		for node: Node in get_tree().get_nodes_in_group(group):
 			var candidate := node as Node3D
 			if candidate == null or not candidate.is_inside_tree():
@@ -473,6 +497,12 @@ func _acquire_fallback(origin: Vector3, forward: Vector3) -> void:
 ## would refuse — the rule `ui/building/door_prompt.gd` already followed for doors.
 func _reach_of(node: Node3D, group: StringName) -> float:
 	match group:
+		ITEM_DROP_GROUP:
+			# The drop's own manual reach, and only once it has armed — an item still popping out of
+			# the stump would refuse the press, so prompting for it teaches the wrong thing.
+			if not bool(node.call(&"is_collectable")):
+				return 0.0
+			return ITEM_DROP.MANUAL_PICKUP_RANGE_M
 		DOOR_GROUP:
 			return float(node.get(&"interact_range_m"))
 		CHEST_GROUP:
@@ -505,6 +535,8 @@ func _kind_of(node: Node) -> Kind:
 		return Kind.NONE
 	# Doors before harvestables: a wooden door is in neither group twice today, but a future
 	# breakable one would be, and "open it" beats "chop it" when both are true.
+	if node.is_in_group(ITEM_DROP_GROUP):
+		return Kind.ITEM_DROP
 	if node.is_in_group(DOOR_GROUP):
 		return Kind.DOOR
 	if node.is_in_group(CHEST_GROUP):

@@ -75,6 +75,26 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-22 — F-535: harvest yields land on the ground (flint04a51d)
+
+Nothing gives a player an item by calling `InventoryService.host_add()` from a world event any more.
+`EVENT_BUS.harvest_yielded` still fires, `InventoryService` still applies the Mire's rot reduction —
+and then hands the amount to **`ItemDropService.host_spawn_drop(item_id, amount, world_position)`**,
+which is the new seam every future "the world gives you a thing" feature should call (corpse loot, a
+dropped hotbar slot, a destroyed container).
+
+`systems/loot/item_drop.gd` is the entity: host-simulated `RigidBody3D`, spawned through a code-built
+`MultiplayerSpawner`, drawing the item's **inventory icon as an unshaded billboard floating ~0.38 m
+above the ground** (Sequoyah's call, Minecraft's read). It arms after 0.5 s, is auto-collected inside
+1.7 m, and answers `request_pickup()` ([E], wired in `ui/hud/focus_prompt.gd` as `Kind.ITEM_DROP`)
+inside 3.2 m. A refused grant — a full pack — leaves the drop lying there rather than voiding it.
+Two yields of the same item within 1.2 m merge into one pile. Drops are cleared on `run_restarted`.
+
+Because of this, a check that used to assert "emitting `harvest_yielded` credits the pack" must now
+assert a DROP and grant through `host_add()` itself; `inventory_check`, `inventory_net_check`,
+`harvest_world_check` and `mire_interaction_check` were updated that way. `tools/item_drop_check.gd`
+owns the drop's own behaviour, and `tools/item_drop_shot.gd` photographs it.
+
 ### 2026-08-22 — F-514: advanced client-local settings (hollowe6edef)
 
 `SettingsService` schema 4 adds UI scale, camera-shake intensity, foliage/shadow/fog overrides,
