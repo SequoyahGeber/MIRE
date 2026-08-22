@@ -206,13 +206,6 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "docs/DECISIONS.md": {
-      "agent": "larch543bba",
-      "at": "2026-08-22T05:52:40+00:00",
-      "dirty_at_claim": false,
-      "task": "F-543",
-      "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
-    },
     "docs/DELEGATION.md": {
       "agent": "larch543bba",
       "at": "2026-08-22T05:55:35+00:00",
@@ -519,7 +512,6 @@
         "content/buildables/ward_post.tres",
         "ui/hud/forager_sense_hud.gd",
         "tools/forager_sense_check.gd",
-        "docs/DECISIONS.md",
         "docs/DELEGATION.md",
         "tools/setup_attunement_content.gd"
       ],
@@ -3219,11 +3211,13 @@
       "token": "CLAUDE_CODE_SESSION_ID:079ec6c8-3025-4d18-9503-6b15fbd8d6f2"
     },
     "docs/DECISIONS.md": {
-      "agent": "larch28fcaa",
-      "at": "2026-08-22T05:14:33+00:00",
-      "hash": "b01cf3a20184f9c0213df423de55b1dcc4371e8ffeea80657585ec0996256b4e",
-      "task": "F-539",
-      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+      "agent": "nettled7199c",
+      "at": "2026-08-22T06:49:05+00:00",
+      "claimed_at": "2026-08-22T06:48:16+00:00",
+      "dirty_at_claim": true,
+      "hash": "2442a42c74acf45e7e1f691d725013f0865b170b2e14d2d3e8b835d268b0b85b",
+      "task": "F-541",
+      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
     },
     "docs/DELEGATION.md": {
       "agent": "flint04a51d",
@@ -3240,11 +3234,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "docs/FINDINGS.md": {
-      "agent": "cinder9818da",
-      "at": "2026-08-22T06:30:37+00:00",
+      "agent": "larch543bba",
+      "at": "2026-08-22T06:44:24+00:00",
       "hash": null,
-      "task": "F-292",
-      "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
+      "task": "F-543",
+      "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
     },
     "docs/ITEMS.md": {
       "agent": "nettled7199c",
@@ -4894,7 +4888,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1575,
+  "rev": 1582,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -11029,7 +11023,7 @@
       "title": "First multiplayer join can miss the promised 50 starting coins"
     },
     "F-541": {
-      "done_at": "2026-08-22T05:57:17+00:00",
+      "done_at": "2026-08-22T06:49:05+00:00",
       "done_by": "nettled7199c",
       "est": "\u2014",
       "milestone": "Findings",
