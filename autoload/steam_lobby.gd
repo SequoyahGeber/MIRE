@@ -204,6 +204,30 @@ func leave() -> void:
 	_leave_lobby()
 
 
+## Take Steam down, once, at exit. F-537.
+##
+## `steamInitEx` starts threads inside the Steam API and installs the overlay hook; without the
+## matching `steamShutdown` those are still live when the SceneTree finalises, which on macOS is how
+## a closed window leaves a process running in the background. AppExit calls this — nothing else
+## should, because there is no supported way to bring Steam back up inside the same process.
+##
+## Leaves the lobby first: dropping out politely while the API is still initialised is what stops
+## friends seeing a ghost member until Steam times the lobby out on its own.
+func shutdown() -> void:
+	if not _initialised:
+		return
+	_initialised = false
+	set_physics_process(false)
+	if _lobby_id != 0:
+		_leave_lobby()
+	# One last pump so the leave actually goes out over the wire — run_callbacks() is what flushes
+	# it, and the physics tick that normally does that has just been turned off.
+	_steam.run_callbacks()
+	_steam.steamShutdown()
+	_state = _State.IDLE
+	MireLog.info(NetConfig.LOG_CHANNEL, "Steam shut down")
+
+
 ## Open Steam's own invite dialog for the current lobby — the overlay path, and the only invite UI we
 ## ever have to build. Needs the Steam overlay to be enabled and the game launched through Steam.
 func open_invite_overlay() -> bool:

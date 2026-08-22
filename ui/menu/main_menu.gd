@@ -173,7 +173,9 @@ func request_open_unlocks() -> void:
 
 
 func request_quit() -> void:
-	get_tree().quit()
+	# AppExit, never get_tree().quit(): the tree quitting is the LAST step of a shutdown, not the
+	# whole of it. See autoload/app_exit.gd (F-537).
+	AppExit.quit()
 
 
 func seed_field_text() -> String:

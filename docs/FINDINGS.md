@@ -3528,7 +3528,7 @@ Split from F-528 after its 50-chest density target was implemented. The map and 
 
 ---
 
-### F-537 · macOS: the game process can outlive its window because Steam is never shut down and nothing guarantees exit
+### F-537 · macOS: the game process can outlive its window because Steam is never shut down and nothing guarantees exit — **fixed**
 
 **Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by duska7668b
 
@@ -3546,6 +3546,40 @@ A frontend-only exit does terminate cleanly (verified: launched the release app,
 event, process gone), and SIGTERM from a `--host` run also exits in under a second, so this is not a
 deterministic hang at HEAD — it is a missing guarantee. The fix is an ownership of the close path
 plus a hard watchdog, not a repro-chase.
+
+---
+
+
+**Resolved 2026-08-21 by duska7668b.** `AppExit` (`autoload/app_exit.gd`) is now the only supported
+way to end the game. It takes the close request itself with `set_auto_accept_quit(false)`, tears down
+in dependency order — NetTransport first so the peer's Steam-side close lands while the API is still
+initialised, then `SteamLobby.shutdown()`, which leaves the lobby, pumps `run_callbacks()` once so
+the leave goes out, and finally calls the `steamShutdown()` that had no caller anywhere in the repo.
+All four bare `get_tree().quit()` call sites now route through it, and
+`tools/app_exit_check.gd` fails the build if a new one appears.
+
+The guarantee is a detached watchdog armed *before* any teardown runs: `/bin/sh -c 'sleep 8; ...
+kill -9 <pid>'`. A separate process rather than a Thread, because a thread lives inside the process
+that is trying to die and is subject to the same finalisation that would be wedging it. It is never
+disarmed, because the window it covers — servers, audio device, Steam's threads — opens *after*
+`_exit_tree`, so cancelling it there would cancel it a moment before it was needed. It re-checks
+`ps -p <pid> -o comm=` against our own executable name before firing, so a recycled PID is not shot;
+both directions of that guard were verified directly (matching name killed, mismatched name spared).
+
+Verified on macOS 27 / Apple M5 Pro: a real windowed `--host` run driven by an Apple quit event
+logged `[info] ui: quitting` and exited in 3 seconds, with the watchdog observed armed and carrying
+the correct executable name (`/bin/sh -c sleep 8.0; [ "$(ps -p 57647 -o comm= …)" = "Godot" ] &&
+kill -9 57647`) and then expiring harmlessly. `tools/app_exit_check.gd` passes 6/6.
+
+Note the trade this makes: with `auto_accept_quit` off, AppExit is load-bearing — if it ever fails to
+load, nothing accepts the close request and the window will not close. That is why the check asserts
+the autoload's presence and `PROCESS_MODE_ALWAYS` rather than only its behaviour.
+
+### F-540 · First multiplayer join can miss the promised 50 starting coins
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivyf16b98
+
+Multiplayer playtest report from Sequoyah on 2026-08-21: the player does not believe they received the 50 coins promised by F-518 when spawning into the game for the first time. Reproduce the real first host/client landfall and authoritative inventory snapshot, not the offline DevLoadout seam. Prove each joining peer receives exactly 50 coins once, the first client-visible inventory snapshot contains them, and reconnect/rebind does not duplicate them.
 
 ---
 

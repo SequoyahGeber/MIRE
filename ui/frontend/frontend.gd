@@ -140,7 +140,7 @@ func request_credits() -> void:
 func request_quit() -> void:
 	var stack: Node = _stack()
 	if stack == null:
-		get_tree().quit()
+		AppExit.quit()
 		return
 	stack.call(
 		"confirm",
@@ -148,7 +148,7 @@ func request_quit() -> void:
 		"The bog will keep.",
 		"QUIT",
 		"STAY",
-		func() -> void: get_tree().quit(),
+		func() -> void: AppExit.quit(),
 		true,
 	)
 

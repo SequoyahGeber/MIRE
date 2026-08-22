@@ -366,5 +366,7 @@ func _cmd_overlay(_ctx: Dictionary, _args: Dictionary) -> Dictionary:
 
 
 func _cmd_quit(_ctx: Dictionary, _args: Dictionary) -> Dictionary:
-	get_tree().quit()
+	# AppExit, not get_tree().quit(): the console's quit has to shut Steam down and arm the exit
+	# watchdog like every other exit does, or a dev session leaves a process running (F-537).
+	AppExit.quit()
 	return {"ok": true, "message": "", "data": {}}

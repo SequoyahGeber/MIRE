@@ -89,6 +89,7 @@ DamageNumbers="*res://ui/hud/damage_numbers.gd"
 ProgressionService="*res://autoload/progression_service.gd"
 GuideService="*res://autoload/guide_service.gd"
 GuideHud="*res://ui/hud/guide_hud.gd"
+AppExit="*res://autoload/app_exit.gd"
 
 [display]
 
