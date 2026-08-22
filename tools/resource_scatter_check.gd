@@ -58,6 +58,7 @@ func _run() -> void:
 	_check_determinism()
 	_check_biome_gate()
 	_check_bounds()
+	_check_slope_grounding()
 	await _check_field_lifecycle()
 
 	print("\nRESOURCE_SCATTER_CHECK failures=%d" % failures)
@@ -162,6 +163,37 @@ func _check_bounds() -> void:
 					in_bounds = false
 	check(found_any, "at least one placement was produced to bounds-check")
 	check(in_bounds, "every placement's X/Z stays inside its own chunk's %dm footprint" % chunk_size)
+
+
+func _check_slope_grounding() -> void:
+	print("\n== slope placements embed instead of floating from a centre-point origin ==")
+	var scatter_defs: Array = registry.get(&"scatter_tables").values()
+	var biome_defs: Array = registry.get(&"biomes").values()
+	var table: BiomeMap.TerrainTable = BiomeMap.make_terrain_table(biome_defs)
+	var noise_set: BiomeMap.NoiseSet = BiomeMap.make_noise_set(SEED_A)
+	var found_embedded := false
+	var never_above_surface := true
+	var bounded_embed := true
+	for cx in range(-6, 6):
+		for cz in range(-6, 6):
+			var placements: Array[Dictionary] = ResourceScatterLib.placements_for_chunk(
+				cx, cz, SEED_A, scatter_defs, biome_defs
+			)
+			for placement: Dictionary in placements:
+				var pos: Vector3 = placement["position"]
+				var centre_surface: float = BiomeMap.surface_from_set(
+					pos.x, pos.z, noise_set, SEED_A, table
+				)
+				var embed: float = centre_surface - pos.y
+				if embed > 0.001:
+					found_embedded = true
+				if embed < -0.001:
+					never_above_surface = false
+				if embed > ResourceScatterLib.MAX_GROUNDING_EMBED_M + 0.001:
+					bounded_embed = false
+	check(found_embedded, "sampled sloped ground produces at least one embedded placement")
+	check(never_above_surface, "no accepted placement is lifted above its centre surface")
+	check(bounded_embed, "grounding embed never exceeds %.2fm" % ResourceScatterLib.MAX_GROUNDING_EMBED_M)
 
 
 func _check_field_lifecycle() -> void:

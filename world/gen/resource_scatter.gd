@@ -48,6 +48,13 @@ const ISLAND_HEIGHTMAP := preload("res://world/gen/island_heightmap.gd")
 ## rather than the ground a trunk sits on, and a metre of chatter would flicker trees in and out of
 ## a whole hillside between one seed and the next.
 const SLOPE_PROBE_M: float = 1.5
+## Props stay upright (trees growing normal to every terrain facet looks worse than a buried root),
+## so accepted slope placements need a small vertical embed to cover the downhill-side gap left by
+## a centre-point origin. This is the approximate half-footprint of a trunk/root flare, expressed as
+## a fraction of the slope probe we already sample. The cap keeps grass and small rocks visible on
+## rough ground and makes this a grounding correction rather than arbitrary terrain burial.
+const GROUNDING_HALF_FOOTPRINT_M: float = 0.65
+const MAX_GROUNDING_EMBED_M: float = 0.45
 const BIOME_MAP := preload("res://world/gen/biome_map.gd")
 const SCATTER_DEF := preload("res://world/gen/scatter_def.gd")
 ## F-445: `MireGridSim` is a `class_name`, preloaded for the same F-016 reason as the others above.
@@ -239,6 +246,7 @@ static func _placement_at(
 	# biome-blind heightmap: a prop stands on the mesh, and the two differ by the biome's own detail
 	# and ridge amplitudes — which is exactly the roughness that decides whether a given square metre
 	# is a bank or a face.
+	var grounding_embed: float = 0.0
 	if plan.reads_slope:
 		var east: float = BIOME_MAP.surface_from_set(
 			world_x + SLOPE_PROBE_M, world_z, noise_set, world_seed, table)
@@ -251,6 +259,15 @@ static func _placement_at(
 		var slope_deg: float = rad_to_deg(atan2(rise, SLOPE_PROBE_M))
 		if slope_deg < plan.min_slope_deg or slope_deg > plan.max_slope_deg:
 			return {}
+		# The origin is sampled at the prop centre. On a slope that leaves the downhill half of a
+		# broad base in the air. Keep the prop vertical and sink it by the fall across an approximate
+		# half-footprint; the root flare/uphill half hides the corresponding terrain intersection.
+		# Reusing `rise` is deliberate: this placement pass is traversal-hot, and extra heightmap
+		# samples solely for presentation would double the slope gate's terrain work.
+		grounding_embed = minf(
+			rise * GROUNDING_HALF_FOOTPRINT_M / SLOPE_PROBE_M,
+			MAX_GROUNDING_EMBED_M
+		)
 
 	var entry: Resource = plan.def.call(&"pick_entry", rng.randf() * plan.total_weight)
 	if entry == null:
@@ -261,7 +278,7 @@ static func _placement_at(
 		"def_id": def_id,
 		"asset": entry.get(&"asset"),
 		"kit": entry.get(&"kit"),
-		"position": Vector3(world_x, height, world_z),
+		"position": Vector3(world_x, height - grounding_embed, world_z),
 		"rotation_y": rng.randf_range(0.0, TAU),
 		"scale": rng.randf_range(float(entry.get(&"min_scale")), float(entry.get(&"max_scale"))),
 	}

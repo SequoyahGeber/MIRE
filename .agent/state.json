@@ -234,6 +234,12 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "tools/blender/build_mire_map_kit.py": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:04:23+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
     "tools/blender/build_pickup_kit.py": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:31:01+00:00",
@@ -282,23 +288,17 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "tools/resource_scatter_check.gd": {
-      "agent": "emberf4d564",
-      "at": "2026-08-22T03:03:56+00:00",
-      "task": "F-509",
-      "token": "CODEX_SESSION_ID:01a0276b-4bee-7931-9a83-6fd6ab5c5c86"
+    "tools/mapgen/hollow_layout.py": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:04:23+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
     "tools/wave_director_check.gd": {
       "agent": "ember5da2c4",
       "at": "2026-08-22T01:25:45+00:00",
       "task": "5.11",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
-    },
-    "world/gen/resource_scatter.gd": {
-      "agent": "emberf4d564",
-      "at": "2026-08-22T03:03:56+00:00",
-      "task": "F-509",
-      "token": "CODEX_SESSION_ID:01a0276b-4bee-7931-9a83-6fd6ab5c5c86"
     },
     "world/mire/mire_grid.gd": {
       "agent": "ember5da2c4",
@@ -411,21 +411,15 @@
       "started": "2026-08-22T00:29:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "F-509": {
-      "agent": "emberf4d564",
+    "F-508": {
+      "agent": "birchf37d06",
       "files": [
-        "world/gen/resource_scatter.gd",
-        "tools/resource_scatter_check.gd"
+        "tools/blender/build_mire_map_kit.py",
+        "tools/mapgen/hollow_layout.py"
       ],
-      "notes": [
-        {
-          "at": "2026-08-22T03:03:56+00:00",
-          "by": "emberf4d564",
-          "text": "Keep scatter props upright. Ground accepted placements with a bounded slope-dependent embed derived from the slope probes already paid for, avoiding extra terrain samples in the traversal-hot placement pass."
-        }
-      ],
-      "started": "2026-08-22T03:03:56+00:00",
-      "token": "CODEX_SESSION_ID:01a0276b-4bee-7931-9a83-6fd6ab5c5c86"
+      "notes": [],
+      "started": "2026-08-22T03:04:23+00:00",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     }
   },
   "recent": {
@@ -4483,11 +4477,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
     "tools/resource_scatter_check.gd": {
-      "agent": "kilnf96279",
-      "at": "2026-08-21T19:17:13+00:00",
-      "hash": "eaf3dda2a6653d1b98fb9356f71039d8485474b37c12917a3064f98b357ca9b7",
-      "task": "F-445",
-      "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
+      "agent": "emberf4d564",
+      "at": "2026-08-22T03:04:54+00:00",
+      "hash": "c96c8805b3090337a1999d2eaeeb7e21a901e86ccdcd62f2a074dfe0ff15bd8c",
+      "task": "F-509",
+      "token": "CODEX_SESSION_ID:01a0276b-4bee-7931-9a83-6fd6ab5c5c86"
     },
     "tools/revisit_probe.gd": {
       "agent": "vane99f1bb",
@@ -4980,11 +4974,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
     "world/gen/resource_scatter.gd": {
-      "agent": "onyx059945",
-      "at": "2026-08-21T23:21:06+00:00",
-      "hash": "261770c4a8aa5862bc36bcdf57622a71d9715e81d1ae3c32da442207ecee1bd4",
-      "task": "F-471",
-      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
+      "agent": "emberf4d564",
+      "at": "2026-08-22T03:04:54+00:00",
+      "hash": "1eeb9ea8a4a8eda75dcf756de7066ef05f4fa8f5094a343b772e567cf4f2defe",
+      "task": "F-509",
+      "token": "CODEX_SESSION_ID:01a0276b-4bee-7931-9a83-6fd6ab5c5c86"
     },
     "world/gen/resource_scatter_field.gd": {
       "agent": "vane99f1bb",
@@ -5036,7 +5030,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:120f1976-6c96-46a1-8784-38dd75780df4"
     }
   },
-  "rev": 1188,
+  "rev": 1191,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -10868,14 +10862,16 @@
     "F-508": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Playtest Hollow presentation is visually noisy and obscures traversal"
     },
     "F-509": {
+      "done_at": "2026-08-22T03:04:54+00:00",
+      "done_by": "emberf4d564",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Slope-spawned scatter props float above terrain"
     }

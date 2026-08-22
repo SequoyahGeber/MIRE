@@ -9281,3 +9281,18 @@ Notes along the way:
 Files: `world/gen/procedural_world.gd`, `tools/procedural_world_check.gd`, `tools/ocean_glint_shot.gd`, `assets/audit/terrain/ocean_edge_follow.png`
 
 Commit at time of writing: `2474e811`
+
+---
+
+### DONE · F-509 · emberf4d564 · 2026-08-22T03:04:54+00:00
+
+**Slope-spawned scatter props float above terrain**
+
+Slope scatter now embeds upright props by up to 0.45 m using the existing local slope measurement; resource_scatter_check passes all assertions.
+
+Notes along the way:
+- Keep scatter props upright. Ground accepted placements with a bounded slope-dependent embed derived from the slope probes already paid for, avoiding extra terrain samples in the traversal-hot placement pass.
+
+Files: `world/gen/resource_scatter.gd`, `tools/resource_scatter_check.gd`
+
+Commit at time of writing: `edcfa882`
