@@ -9622,3 +9622,18 @@ Notes along the way:
 Files: `world/gen/procedural_world.gd`, `tools/procedural_world_check.gd`
 
 Commit at time of writing: `82696120`
+
+---
+
+### DONE · F-530 · ivyf16b98 · 2026-08-22T05:09:40+00:00
+
+**Class selection can open while the mouse is captured and become impossible to dismiss**
+
+Mandatory class picker continuously owns visible cursor and an operable focused choice. attunement_ui_check failures=0.
+
+Notes along the way:
+- Root cause: AttunementUI sets mouse visible once, but later PlayerController/HUD handlers can recapture it; the mandatory panel has no continuous ownership enforcement. Fixing in the UI without touching claimed player_controller.gd.
+
+Files: `ui/attunement/attunement_ui.gd`, `tools/attunement_ui_check.gd`
+
+Commit at time of writing: `74470d7d`

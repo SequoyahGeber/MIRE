@@ -54,6 +54,16 @@ func _run() -> void:
 	check(int(ui.call(&"role_button_count")) == 4, "all four DESIGN §4.5 roles are shown (%d)" %
 		int(ui.call(&"role_button_count")))
 
+	print("\n== an open mandatory picker keeps cursor and focus ownership ==")
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	root.gui_release_focus()
+	ui.call(&"enforce_input_ownership_now")
+	check(Input.mouse_mode == Input.MOUSE_MODE_VISIBLE,
+		"a later gameplay capture cannot strand the open picker without a cursor")
+	var focus_owner: Control = root.gui_get_focus_owner()
+	check(focus_owner != null and ui.is_ancestor_of(focus_owner),
+		"a later focus clear cannot leave the mandatory picker without an operable control")
+
 	print("\n== choosing a role closes the picker on acceptance ==")
 	powerups.call(&"host_clear", NetConfig.HOST_PEER_ID)
 	ui.call(&"choose", &"tinker")

@@ -97,6 +97,21 @@ func _exit_tree() -> void:
 	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
 
 
+## A blocking cursor panel owns the mouse for its entire showing, not only on the frame it opens.
+## Player bodies and run-boundary HUDs can become ready after this autoload and legitimately try to
+## restore captured gameplay input. Without this guard their later write wins and strands a
+## mouse-driven mandatory picker behind a captured cursor (F-530). Reasserting VISIBLE is
+## client-local presentation only; the blocking group continues to suppress gameplay input.
+func _process(_delta: float) -> void:
+	if not _open:
+		return
+	if Input.mouse_mode != Input.MOUSE_MODE_VISIBLE:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	var focused: Control = get_viewport().gui_get_focus_owner()
+	if focused == null or not is_ancestor_of(focused):
+		_grab_initial_focus()
+
+
 # ── Public API (the check drives these) ─────────────────────────────────────────────────────────
 
 
@@ -154,6 +169,11 @@ func poll_now() -> void:
 ## of sleeping REQUEST_TIMEOUT_SEC, so a check can prove the panel recovers without stalling for it.
 func expire_pending_request_now() -> void:
 	_on_request_timeout()
+
+
+## Test seam for the same per-frame ownership guard `_process()` drives in play.
+func enforce_input_ownership_now() -> void:
+	_process(0.0)
 
 
 # ── Trigger ──────────────────────────────────────────────────────────────────────────────────────

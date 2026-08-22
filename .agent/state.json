@@ -30,6 +30,72 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "autoload/reward_service.gd": {
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:08:16+00:00",
+      "task": "F-533",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    },
+    "content/enemies/bloatcap.tres": {
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:08:16+00:00",
+      "task": "F-533",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    },
+    "content/enemies/bog_bulwark.tres": {
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:08:16+00:00",
+      "task": "F-533",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    },
+    "content/enemies/bog_crawler.tres": {
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:08:16+00:00",
+      "task": "F-533",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    },
+    "content/enemies/broodcaller.tres": {
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:08:16+00:00",
+      "task": "F-533",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    },
+    "content/enemies/crawler.tres": {
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:08:16+00:00",
+      "task": "F-533",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    },
+    "content/enemies/fen_stalker.tres": {
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:08:16+00:00",
+      "task": "F-533",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    },
+    "content/enemies/mire_herald.tres": {
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:08:16+00:00",
+      "task": "F-533",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    },
+    "content/enemies/peatling.tres": {
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:08:16+00:00",
+      "task": "F-533",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    },
+    "content/enemies/strider.tres": {
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:08:16+00:00",
+      "task": "F-533",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    },
+    "content/enemies/tusker.tres": {
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:08:16+00:00",
+      "task": "F-533",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    },
     "content/harvestables/apple_tree.tres": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:45:13+00:00",
@@ -114,11 +180,23 @@
       "task": "F-482",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "content/poi/loot_cache.tres": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:07:39+00:00",
+      "task": "F-528",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
     "content/scatter/highland_rocks.tres": {
       "agent": "birche6b40e",
       "at": "2026-08-22T00:06:31+00:00",
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "core/events/event_bus.gd": {
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:08:16+00:00",
+      "task": "F-533",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
     },
     "docs/ASSET_TRACKER.md": {
       "agent": "gale43d16e",
@@ -126,16 +204,40 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "docs/ENEMIES.md": {
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:08:16+00:00",
+      "task": "F-533",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    },
+    "docs/ITEMS.md": {
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:08:16+00:00",
+      "task": "F-533",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    },
+    "entities/player/player.tscn": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:08:44+00:00",
+      "task": "F-529",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
+    "systems/enemies/enemy.gd": {
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:08:16+00:00",
+      "task": "F-533",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    },
+    "systems/enemies/enemy_def.gd": {
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:08:16+00:00",
+      "task": "F-533",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    },
     "systems/wellspring/wellspring.gd": {
       "agent": "ivyf16b98",
       "at": "2026-08-22T05:06:44+00:00",
       "task": "F-531",
-      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
-    },
-    "tools/attunement_ui_check.gd": {
-      "agent": "ivyf16b98",
-      "at": "2026-08-22T05:05:35+00:00",
-      "task": "F-530",
       "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     },
     "tools/blender/build_deep_materials.py": {
@@ -174,11 +276,35 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "tools/chest_placement_check.gd": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:07:39+00:00",
+      "task": "F-528",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
     "tools/item_icons_check.gd": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:52:45+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "tools/player_camera_ownership_check.gd": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:08:57+00:00",
+      "task": "F-529",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
+    "tools/player_net_check.gd": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:08:44+00:00",
+      "task": "F-529",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
+    "tools/poi_check.gd": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:07:39+00:00",
+      "task": "F-528",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     },
     "tools/wellspring_check.gd": {
       "agent": "ivyf16b98",
@@ -186,10 +312,10 @@
       "task": "F-531",
       "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     },
-    "ui/attunement/attunement_ui.gd": {
+    "world/gen/poi_map.gd": {
       "agent": "ivyf16b98",
-      "at": "2026-08-22T05:05:35+00:00",
-      "task": "F-530",
+      "at": "2026-08-22T05:08:01+00:00",
+      "task": "F-528",
       "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     }
   },
@@ -261,20 +387,39 @@
       "started": "2026-08-22T00:29:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "F-530": {
+    "F-528": {
       "agent": "ivyf16b98",
       "files": [
-        "ui/attunement/attunement_ui.gd",
-        "tools/attunement_ui_check.gd"
+        "content/poi/loot_cache.tres",
+        "tools/poi_check.gd",
+        "tools/chest_placement_check.gd",
+        "world/gen/poi_map.gd"
       ],
       "notes": [
         {
-          "at": "2026-08-22T05:05:35+00:00",
+          "at": "2026-08-22T05:08:01+00:00",
           "by": "ivyf16b98",
-          "text": "Root cause: AttunementUI sets mouse visible once, but later PlayerController/HUD handlers can recapture it; the mandatory panel has no continuous ownership enforcement. Fixing in the UI without touching claimed player_controller.gd."
+          "text": "The authored target 50 initially capped at exactly 24 on every seed because PoiMap MAX_ROUNDS_PER_SITE=24 and each round can accept at most one site. Raising the bounded attempt budget to the PoiDef schema maximum 64."
         }
       ],
-      "started": "2026-08-22T05:05:35+00:00",
+      "started": "2026-08-22T05:07:39+00:00",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
+    "F-529": {
+      "agent": "ivyf16b98",
+      "files": [
+        "entities/player/player.tscn",
+        "tools/player_net_check.gd",
+        "tools/player_camera_ownership_check.gd"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-22T05:08:44+00:00",
+          "by": "ivyf16b98",
+          "text": "Root cause: player.tscn authors Camera3D current=true for every instance. A remote/rejoin spawn steals the client's viewport on tree entry before PlayerController._ready disables it; local camera activation must be opt-in by the owning controller."
+        }
+      ],
+      "started": "2026-08-22T05:08:44+00:00",
       "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     },
     "F-531": {
@@ -292,6 +437,30 @@
       ],
       "started": "2026-08-22T05:06:44+00:00",
       "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
+    "F-533": {
+      "agent": "larch28fcaa",
+      "files": [
+        "systems/enemies/enemy_def.gd",
+        "systems/enemies/enemy.gd",
+        "core/events/event_bus.gd",
+        "autoload/reward_service.gd",
+        "content/enemies/peatling.tres",
+        "content/enemies/fen_stalker.tres",
+        "content/enemies/bog_bulwark.tres",
+        "content/enemies/bloatcap.tres",
+        "content/enemies/mire_herald.tres",
+        "content/enemies/crawler.tres",
+        "content/enemies/bog_crawler.tres",
+        "content/enemies/broodcaller.tres",
+        "content/enemies/strider.tres",
+        "content/enemies/tusker.tres",
+        "docs/ENEMIES.md",
+        "docs/ITEMS.md"
+      ],
+      "notes": [],
+      "started": "2026-08-22T05:08:16+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
     }
   },
   "recent": {
@@ -4026,6 +4195,13 @@
       "task": "F-415",
       "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
     },
+    "tools/attunement_ui_check.gd": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:09:40+00:00",
+      "hash": "8bafe14cac508df66bb726e2c5758dad16a1017cfcc8ccf718bd8419d67395d5",
+      "task": "F-530",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
     "tools/audio/audio_check.py": {
       "agent": "ash843af8",
       "at": "2026-08-21T08:53:46+00:00",
@@ -4887,6 +5063,13 @@
       "task": "F-294",
       "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
     },
+    "ui/attunement/attunement_ui.gd": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:09:40+00:00",
+      "hash": "3b4849de25b6b3238a04db90eb1606f295dafcdc73700782bbcae0e83b7a6ea2",
+      "task": "F-530",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
     "ui/building/build_bar.gd": {
       "agent": "galee581ee",
       "at": "2026-08-22T00:53:18+00:00",
@@ -5252,7 +5435,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1414,
+  "rev": 1426,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -11254,21 +11437,23 @@
     "F-528": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Procedural map chest and loose-loot density is far below the intended scavenging experience"
     },
     "F-529": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "A rejoining player can inherit the host camera viewport and visor overlay"
     },
     "F-530": {
+      "done_at": "2026-08-22T05:09:40+00:00",
+      "done_by": "ivyf16b98",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Class selection can open while the mouse is captured and become impossible to dismiss"
     },
@@ -11287,6 +11472,13 @@
       "status": "done",
       "tier": "F",
       "title": "Water animation accelerates while sprinting"
+    },
+    "F-533": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Harvest yields teleport into the pack instead of dropping on the ground"
     }
   },
   "version": 1
