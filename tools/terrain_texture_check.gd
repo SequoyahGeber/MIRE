@@ -147,10 +147,11 @@ func _initialize() -> void:
 func _run() -> void:
 	if DisplayServer.get_name() == "headless":
 		push_error("terrain_texture_check renders — run it with --windowed")
-		# The bail needs the verdict as much as the end does. This check requires a framebuffer and
-		# `agent verify` launches everything headless (F-556), so in the suite it only ever reaches
-		# here — and without the line the row reads as "reported nothing" rather than as the honest
-		# "could not run in this environment" that it is (F-555).
+		# The bail needs the verdict as much as the end does (F-555). Note this path is now
+		# UNREACHABLE under `agent verify`: F-556 gave this file the `@verify windowed` marker, so
+		# the suite launches it with a framebuffer and it never lands here. The only reader left is
+		# a person who ran it headless by hand, and for them `failures=1` beside "run it with
+		# --windowed" is exactly right — it says "you ran this wrong" and exits non-zero.
 		print("TERRAIN_TEXTURE_CHECK failures=1")
 		quit(1)
 		return

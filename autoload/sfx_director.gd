@@ -147,10 +147,18 @@ func _local_peer_id() -> int:
 	# No id yet, and WHY matters (F-560). `CombatService._local_peer_id()` answers HOST_PEER_ID here
 	# and is right to, because it is deciding offline AUTHORITY — with no session, being the host is
 	# the correct answer. This file asks a different question with the same value: "is this cue
-	# mine?". `_local_id` is 0 from boot until a client connects, and again after `_teardown()`, so
-	# answering 1 in that window makes a client treat the HOST's cues as its own — it would play
-	# `hit_flesh` for a hit the host took. Answer 0 while a session is live or forming: it matches
-	# nothing, so an ownership test fails closed rather than failing as somebody else.
+	# mine?". On a CLIENT, `_local_id` is 0 from boot until `connected_to_host` lands, and answering
+	# 1 across that window makes the client treat the HOST's cues as its own — it would play
+	# `hit_flesh` for a hit the host took. `is_connecting()` is exactly that window, so answer 0
+	# there: it matches nothing, and an ownership test fails closed rather than failing as somebody
+	# else.
+	#
+	# This deliberately does NOT cover the frames after `_teardown()`, and the distinction is real
+	# rather than an oversight: `_teardown()` sets `_status = OFFLINE` (net_transport.gd:761) BEFORE
+	# clearing `_local_id` (764), so both guards below are already false by then and the fallback
+	# applies. That is correct — the session is genuinely over, and offline is offline. The window
+	# F-553 was originally about needs no guard at all, because ENet drops the connection while
+	# `_local_id` still holds the cached real id, so it is returned above and no fallback is reached.
 	if bool(transport.call(&"is_active")) or bool(transport.call(&"is_connecting")):
 		return 0
 	return NetConfig.HOST_PEER_ID
