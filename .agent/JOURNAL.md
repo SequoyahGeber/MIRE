@@ -9568,3 +9568,15 @@ unarmed reach 1.8->2.3 m and vertical 2.0->2.4 so bare hands reach every plant t
 Files: `autoload/combat_service.gd`
 
 Commit at time of writing: `30c88c4f`
+
+---
+
+### DONE · F-520 · reed8d5690 · 2026-08-22T04:20:23+00:00
+
+**Steam invite is a silent no-op and opening a lobby captures the mouse behind the menu**
+
+Fixed the front-end mouse capture (PlayerNet defers spawns to landfall) and the silent overlay invite (isOverlayEnabled gate + join-code fallback). Filed F-523 for the App ID 480 ceiling.
+
+Files: `autoload/steam_lobby.gd`, `ui/frontend/expedition_screen.gd`, `autoload/player_net.gd`, `entities/player/player_controller.gd`, `ui/lobby/lobby_menu.gd`
+
+Commit at time of writing: `5f32ffb5`
