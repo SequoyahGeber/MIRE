@@ -3632,51 +3632,6 @@ recommendation rather than changing it.
 
 ---
 
-### F-608 · A playtest on someone else's machine produces no performance data we can read
-
-**Area:** perf · **Severity:** high · **Found:** 2026-08-22 by birch1db63e
-
-Sequoyah, before a co-op playtest with a friend: *"We can gather some good info from his game session
-as well, so maybe make the game log stuff that could be useful performance info, make the log easily
-accessible for him to send to me after the session"*.
-
-The friend's machine is an **M1 Air — fanless, integrated GPU**, and it is the machine that matters:
-Sequoyah's standing rule is that MIRE targets the worst computer, not the dev machine, and no dev
-machine here can stand in for one (F-174 says exactly that). We cannot profile it from here. The
-session can profile itself.
-
-Nothing in the project writes a session record today. `tools/perf_probe.gd` and the render census run
-headless on a developer's machine on demand; `DebugOverlay` shows live numbers to whoever is looking
-at the screen and keeps none of them. So an evening of real play on the exact hardware we most need
-data from currently produces **nothing at all** afterwards.
-
-**It has to be a TIME SERIES, not a summary, and that is the whole design.** A fanless laptop
-thermally throttles after five to ten minutes of sustained load. A session average smears that into a
-single meaningless figure — "avg 52 fps" — while a row per minute makes the degradation visible as a
-shape: *"held 60 for eight minutes, settled to 41 after twelve"* is the finding, and it is invisible
-in any aggregate.
-
-**Rows must be attributable or the numbers cannot be acted on.** A bad minute nobody can explain is
-not a finding; "the 1% low halved when the night wave spawned" is. Each row therefore needs stamping
-with what happened during it — Cycle advanced, night wave started, Wellspring capped, a player went
-down, extraction began — all of which already exist as `EventBus` signals.
-
-**"Easily accessible" is half the task and it is the half that gets skipped.** The log must land
-somewhere a non-technical person can actually retrieve it: written as Markdown so it can be pasted
-straight into a message, and reachable by a button in the game rather than by a path. Nobody's friend
-is going to find `~/Library/Application Support/Godot/app_userdata/MIRE/session_logs/` over voice
-chat.
-
-**It must cost nothing measurable.** A telemetry system that slows the machine it measures is worse
-than no telemetry, and on this target specifically. Sample structurally, never allocate per frame,
-and assert the per-sample cost rather than assuming it.
-
-Reporting goes through `tools/perf_format.gd` (F-592): FPS and percentages, never milliseconds as the
-primary figure — Sequoyah is the one deciding what to act on, and a number he has to convert in his
-head is a number he cannot judge.
-
----
-
 ### F-609 · A fresh install boots on HIGH with dynamic resolution off, so an M1 Air runs the heaviest preset the game has
 
 **Area:** performance · **Severity:** high · **Found:** 2026-08-22 by wick410d34
@@ -3750,6 +3705,101 @@ Two changes worth considering, neither taken here because both are tuning calls:
 ---
 
 ## Resolved
+
+### F-608 · A playtest on someone else's machine produces no performance data we can read — **fixed**
+
+**Area:** perf · **Severity:** high · **Found:** 2026-08-22 by birch1db63e
+
+Sequoyah, before a co-op playtest with a friend: *"We can gather some good info from his game session
+as well, so maybe make the game log stuff that could be useful performance info, make the log easily
+accessible for him to send to me after the session"*.
+
+The friend's machine is an **M1 Air — fanless, integrated GPU**, and it is the machine that matters:
+Sequoyah's standing rule is that MIRE targets the worst computer, not the dev machine, and no dev
+machine here can stand in for one (F-174 says exactly that). We cannot profile it from here. The
+session can profile itself.
+
+Nothing in the project writes a session record today. `tools/perf_probe.gd` and the render census run
+headless on a developer's machine on demand; `DebugOverlay` shows live numbers to whoever is looking
+at the screen and keeps none of them. So an evening of real play on the exact hardware we most need
+data from currently produces **nothing at all** afterwards.
+
+**It has to be a TIME SERIES, not a summary, and that is the whole design.** A fanless laptop
+thermally throttles after five to ten minutes of sustained load. A session average smears that into a
+single meaningless figure — "avg 52 fps" — while a row per minute makes the degradation visible as a
+shape: *"held 60 for eight minutes, settled to 41 after twelve"* is the finding, and it is invisible
+in any aggregate.
+
+**Rows must be attributable or the numbers cannot be acted on.** A bad minute nobody can explain is
+not a finding; "the 1% low halved when the night wave spawned" is. Each row therefore needs stamping
+with what happened during it — Cycle advanced, night wave started, Wellspring capped, a player went
+down, extraction began — all of which already exist as `EventBus` signals.
+
+**"Easily accessible" is half the task and it is the half that gets skipped.** The log must land
+somewhere a non-technical person can actually retrieve it: written as Markdown so it can be pasted
+straight into a message, and reachable by a button in the game rather than by a path. Nobody's friend
+is going to find `~/Library/Application Support/Godot/app_userdata/MIRE/session_logs/` over voice
+chat.
+
+**It must cost nothing measurable.** A telemetry system that slows the machine it measures is worse
+than no telemetry, and on this target specifically. Sample structurally, never allocate per frame,
+and assert the per-sample cost rather than assuming it.
+
+Reporting goes through `tools/perf_format.gd` (F-592): FPS and percentages, never milliseconds as the
+primary figure — Sequoyah is the one deciding what to act on, and a number he has to convert in his
+head is a number he cannot judge.
+
+---
+
+**Resolved 2026-08-22 by birch1db63e (fixed).** **Fixed in 49fd9e1d: `autoload/session_log.gd`, an OPEN PERFORMANCE LOG button in the pause menu, and
+`tools/session_log_check.gd`.**
+
+A row a minute, from a sample a second:
+
+    | min | 1% low | median | draws | VRAM | nodes | bodies | enemies | chunks | what happened |
+    | 0 | 26 fps (38.00 ms) | 62 fps (16.00 ms) | ... | night fell |
+
+**The 1% low LEADS the median**, per Sequoyah's *"thats what you feel"*. A steady median with a
+collapsing 1% low is a stutter, not a slowdown, and the two want different fixes — putting the median
+first would bury the number he acts on. At 60 samples the 1% low is the single worst second, which is
+the honest reading at that count rather than a percentile implying precision it does not have.
+
+**Header block first**, because without the machine and the graphics preset the table is
+uninterpretable: the same 41 fps is a catastrophe on `high` and expected on a fanless laptop at
+`low`. Exposed as a Dictionary so a tool reads it as data rather than parsing Markdown — one
+definition, so two reports of the same machine cannot disagree.
+
+**Rows carry what happened during them**, off the `EventBus` signals that already exist.
+
+**Accessible, which was half the task.** Markdown so it pastes into a message, `user://session_logs/`,
+flushed every 30 s and on exit, and a pause-menu button that opens the folder with the file already
+written.
+
+**Costs nothing, measured rather than assumed: 0.0010% of a 60 fps frame per sample, once a second.**
+Samples go into a preallocated ring, so a three-hour session allocates what a one-minute one does.
+
+**Two defects the real output caught that a parse-only check would not have.** `RenderingServer`
+returns `""` for the adapter headless, and an empty field reads as "we forgot to record this" rather
+than "there was nothing to record" — different facts, only one a bug. And the cost measurement drove
+20,000 samples through the real path, leaving 338 rows of "—" on disk: an honest measurement and a
+dishonest artefact, since the file a player sends has to be readable. Both fixed; the check now
+leaves a real example row.
+
+**Row derivation is asserted on KNOWN frame times, not live ones** — headless runs far under
+`PerfFormat.MIN_MEASURABLE_MS` so every cell reads "—" and the ordering could not be read at all. 59
+frames at 16 ms and one at 50 ms must yield a 20 fps 1% low against a 62 fps median. That fails if
+the two are ever swapped, which is the mistake that would produce a plausible, wrong and permanently
+misleading report.
+
+**Known limits, so nobody mistakes this for more than it is.** It records the frame the process sees
+(`TIME_PROCESS`) and not a GPU-side breakdown, so it will tell you a minute got worse and not which
+subsystem caused it — the events column is what narrows that. Every peer logs its own machine and
+nothing crosses the wire, so a two-player session produces two logs and neither knows about the
+other. And it cannot survive a hard kill in its final 30 seconds, which is the deliberate trade for
+not touching the disk more often than that.
+
+Verified: `session_log_check` failures=0, `pause_menu_check` 0, `menu_focus_check` 0,
+`perf_format_check` 0.
 
 ### F-606 · Nobody has measured what today's pressure work costs, and the target is an M1 Air — **fixed**
 
