@@ -3493,6 +3493,126 @@ destroyed", which is the same defect class as F-590's "the pack did not shrink" 
 
 ---
 
+### F-599 · No pressure in a real session: 4 ambient enemies on a 1.09 km2 island, and a Mire front that moves 25 m per Cycle
+
+**Area:** balance · **Severity:** high · **Found:** 2026-08-22 by wick410d34
+
+Sequoyah, after playing (2026-08-22): *"the actual enemie and mire situation seems have assed, there
+doesnt seem to be any pressure and in terms of the mire spreading and players have to keep it back
+its super unclear, id like the base objective to be pretty simple and make sure the whole thing
+actually does something."*
+
+Measured from shipped constants — full working in `docs/PRESSURE.md`. **Nothing here is broken. The
+machinery is correct and set to a speed nobody in a two-hour session can perceive.**
+
+**The Mire.** `MireGrid.BASE_SPREAD_RATE` normalises to 0.0120 per 2 s tick at the shipped
+`ISLAND_RADIUS` of 590 m and a 4.61 m cell, so a cell fills in 167 s and the front advances
+**1.66 m/min — 25 m per 15-minute Cycle.** Compounding at `SPREAD_ESCALATION_PER_CYCLE` (+15%), the
+front has moved 54 m by Cycle 2, 124 m by Cycle 4, 342 m by Cycle 8, and crosses the island around
+Cycle 12 — which is three hours, and is exactly the curve `DESIGN.md` §4.1 draws. A playtest is
+Cycles 1-8. With `SEED_CLUSTER_COUNT = 1` and `SEED_CLUSTER_SPAN_FRACTION = 0.6`, the single seed can
+land ~350 m from island centre, so **players can finish a whole session without encountering the Mire
+at all.**
+
+**The enemies, which is the larger cause.** `ambient_enemy_population` defaults to **4** over
+pi * 590^2 = 1.09 km2 — **one enemy per 273,000 m2**. A player crosses hundreds of metres between
+encounters. `wave_base_count` 4 + `wave_per_player` 2 gives **8 enemies a night for two players**.
+
+**Nothing states the objective.** 19 guide steps exist including `cap_wellspring`, and `WellspringHud`
+exists, but there is no persistent indication of where the nearest uncapped Wellspring is, how much
+of the island is corrupted, or that either is changing. §4.1's "you never read a UI to know how you're
+doing" only works if the horizon carries the information; at 25 m/Cycle it does not.
+
+**Fix, in value order** (the first three are numbers, not code): raise ambient population and weight
+its placement toward corrupted ground so pressure rises as the Mire grows — `WaveSpawner:469` already
+substitutes corrupted variants by local corruption, so the vocabulary exists; bound the seed's
+distance from spawn so one seed cannot decide whether the run has a middle (keep exactly one seed —
+that is settled); expose the spread rate as a gamerule so it is tunable mid-session without a
+rebuild; and give the objective one always-visible marker.
+
+---
+
+### F-600 · hollowmere.json stacks 16 variant-state props on the campfire, walling off the crafting camp
+
+**Area:** world · **Severity:** high · **Found:** 2026-08-22 by wick1c650c
+
+`world/gen/layouts/hollowmere.json` places sixteen props at essentially one point, (-6.0, ~2.0,
+10.0), which is also where the `station_campfire` marker stands. They are all mutually exclusive
+VARIANT STATES of other assets:
+
+  iron_node_chipped, iron_node_shattered, stone_node_chipped, stone_node_shattered,
+  ship_debris_cluster, ship_rudder, ship_mast, ship_mast_broken, ship_boarding_ramp,
+  ship_hull_wrecked, ship_hull_repair_1, ship_hull_repair_2, ship_hull_repaired,
+  gate_double_frame, enemy_mire_herald
+
+A node is chipped OR shattered, a hull is wrecked OR repairing OR repaired, a mast is whole OR
+broken. Every state of each is instantiated simultaneously, at the same coordinate, and each one
+gets a collider — `enemy_mire_herald` is an ENEMY model standing there as static world geometry.
+
+Several are enormous: `ship_mast` is a 10.37 x 7.69 x 3.09 m box, `ship_rudder` a 5.98 m radius
+cylinder, and the three `ship_hull_*` are 10.68 x 3.63 x 4.14 m boxes. Stacked, they form an
+invisible obstacle roughly 5 m in radius and 3 m tall in the middle of the crafting camp.
+
+MEASURED consequence, not inferred: teleporting the player to each of eight compass points 1.6 m
+around the campfire and letting physics settle ejects it radially outward every time, to between
+5.4 m and 6.2 m away — never closer. `CraftingService.MAX_STATION_DISTANCE_M` is 3.25 m, so **the
+campfire cannot be used at all**, and the cooking spit at (-4.6, 1.99, 7.4) is inside the same
+volume. On this map the cooking half of the loop is unreachable.
+
+This is what makes `tools/loop_audit_check.gd` report "CraftingService sees the player at a station
+()" (F-598). Neither `tp` nor `CraftingService` is at fault — both were verified working. The player
+is teleported correctly and then depenetrated out of the pile before the range query runs.
+
+Hollowmere is a dev fixture rather than the shipped procedural world, so this is not necessarily a
+blocker for a procedural playtest — but it is a blocker for anyone testing ON this map, and it is
+what the loop audit boots. The generator is `tools/mapgen/hollowmere_layout.py`; the fix belongs
+there, not in the JSON, or the next regeneration restores it.
+
+---
+
+### F-601 · The Sling exists as a full item and ranged weapon but nothing in the game produces it
+
+**Area:** content · **Severity:** medium · **Found:** 2026-08-22 by birch1db63e
+
+Found by the new `tools/progression_reachability_check.gd`, which computes what a party can actually
+obtain from bare hands on a real generated island and reports everything outside that closure. On all
+five seeds, on a complete pass over items, recipes, buildables and stations, **`sling` is the only
+thing the game offers that a player can never get.**
+
+    sling — produced by nothing on this island: no recipe outputs it, no placed harvestable yields
+            it, no reachable loot table drops it
+
+It is not a stub. `content/items/sling.tres` is fully authored — icon, description ("A cord and a
+pouch. Throws the stones you were going to trip over anyway"), world model, viewmodel, grip offset
+and rotation. `content/ranged_weapons/sling.tres` gives it real ranged-weapon stats. Art shipped:
+`sling_world.glb` and `sling_viewmodel.glb` are in `assets/tools_weapons/exports`, with an icon in
+`assets/icons/exports`. `docs/ITEMS.md` names it three times, including line 240's T1 tier row
+("**eats plain stones**, R4") and line 57's design note that "the sling eats plain stones".
+
+What is missing is one line of content, and there are two plausible homes for it:
+
+  · **`content/recipes/sling.tres`.** ITEMS.md puts it at T1 beside the wooden/stone axe and the
+    short bow, all of which are workbench recipes. Line 177 lists "grips, slings, bucklers" among
+    the uses of Cured Leather, which suggests the intended cost.
+  · **A loot-table entry.** Its two nearest siblings are already loot-only: `crossbow` drops from
+    `content/loot/epic.tres` and `longbow` from `rare.tres`, and neither has a recipe either. A
+    `sling` line in `common.tres` would match the T1 tier and make it the early-game find that
+    ITEMS.md describes.
+
+The recipe is the likelier intent, because a T1 item gated behind a rare chest is not a T1 item.
+Either way this is a content decision rather than a code one.
+
+**Not a hard lock**, and worth saying so plainly: nothing depends on the sling, so no run strands
+because of it. It is a promise the game makes — a modelled, described, documented weapon — that it
+cannot keep, which is the same family as F-589's unrenderable pickup models.
+
+**One sibling worth checking at the same time:** `raw_meat` is reachable only through loot tables and
+has no harvestable or recipe source. That is consistent with there being no huntable animals yet, so
+it is probably correct today, but it is the other item in the catalog with no production path of its
+own.
+
+---
+
 ## Resolved
 
 ### F-593 · Chests read as too small against the player, and the ladder's two most common rungs are below knee height — **fixed**
