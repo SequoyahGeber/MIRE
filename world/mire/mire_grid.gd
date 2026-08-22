@@ -114,6 +114,19 @@ var _ward_circles_provider: Callable = Callable()
 ## BASE_SPREAD_RATE alongside the existing per-Wellspring-cap reduction; 1.0 (never set) is 4.9's
 ## own shipped behaviour, unchanged until `CycleService` calls `set_cycle_spread_multiplier()`.
 var _cycle_spread_multiplier: float = 1.0
+## F-599. Gamerule `mire_spread_multiplier`, multiplied on top of the Cycle escalation and the
+## per-cap reduction.
+##
+## Sequoyah, after playing: *"in terms of the mire spreading and players have to keep it back its
+## super unclear."* The rate is not wrong — `docs/PRESSURE.md` measures the front at 1.66 m/min,
+## which crosses the island around Cycle 12 exactly as `DESIGN.md` §4.1 draws it. It is right for a
+## three-hour run and invisible in the two hours anyone actually plays in one sitting.
+##
+## A gamerule rather than a retune, because which of those two the game should be balanced around is
+## his call and not one a check can settle: this makes the Mire tunable **mid-session from the
+## console**, so he can find the number by feel in the run he is already playing instead of asking
+## for a rebuild. Defaults to 1.0, so the shipped curve is unchanged until somebody moves it.
+var _rule_spread_multiplier: float = 1.0
 
 ## D-208/F-363. The tick in flight, or null when none is. At most one at a time: the simulation
 ## advances 2 s of world per tick and a tick costs ~15 ms, so a second concurrent one could only
@@ -182,6 +195,27 @@ func _ready() -> void:
 	EVENT_BUS.subscribe_wellspring_capped(_on_wellspring_capped)
 	EVENT_BUS.subscribe_wellspring_recorrupted(_on_wellspring_recorrupted)
 	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
+	_bind_spread_rule()
+
+
+## F-599. Same export-fallback shape every other rule consumer uses (COMMANDS.md §4.3): read the
+## current value once at boot if the rule is registered, then follow it live, so `gamerule
+## mire_spread_multiplier 6` takes effect in the run it is typed into rather than at the next boot.
+func _bind_spread_rule() -> void:
+	var rules: Node = get_node_or_null(^"/root/RuleService")
+	if rules == null:
+		return
+	rules.connect(&"rule_changed", _on_spread_rule_changed)
+	if bool(rules.call("has_rule", &"mire_spread_multiplier")):
+		_rule_spread_multiplier = maxf(
+			float(rules.call("value", &"mire_spread_multiplier", _rule_spread_multiplier)), 0.0
+		)
+
+
+func _on_spread_rule_changed(id: StringName, new_value: float) -> void:
+	if id != &"mire_spread_multiplier":
+		return
+	_rule_spread_multiplier = maxf(new_value, 0.0)
 
 
 func _exit_tree() -> void:
@@ -473,7 +507,7 @@ func consumed_fraction(threshold: float) -> float:
 func _tick_inputs() -> Array:
 	var wards: Array = [] if _has_modifier(&"rooted") \
 		else (_ward_circles_provider.call() if _ward_circles_provider.is_valid() else [])
-	var rate: float = BASE_SPREAD_RATE * _cycle_spread_multiplier
+	var rate: float = BASE_SPREAD_RATE * _cycle_spread_multiplier * _rule_spread_multiplier
 	for _cap_index: int in _capped_wellsprings:
 		rate *= SPREAD_REDUCTION_PER_CAP
 	return [wards, rate]

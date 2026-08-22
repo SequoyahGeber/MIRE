@@ -397,12 +397,68 @@ func _roll_ambient_kind() -> StringName:
 ## always produce a body, just never an ambush.
 func _pick_ambient_position(points: Array[Vector3], players: Array[Vector3]) -> Vector3:
 	var minimum_sq: float = ambient_min_player_distance_m * ambient_min_player_distance_m
+	var weights: PackedFloat32Array = _corruption_weights(points)
 	for _attempt: int in AMBIENT_PLACEMENT_ATTEMPTS:
-		var candidate: Vector3 = points[_ambient_rng.randi_range(0, points.size() - 1)] \
+		var candidate: Vector3 = points[_weighted_nest_index(points, weights)] \
 			+ _ambient_scatter_offset()
 		if _nearest_player_distance_sq(candidate, players) >= minimum_sq:
 			return candidate
 	return _furthest_ambient_point(points, players)
+
+
+## F-599: how much more likely a nest is to be used, per unit of corruption standing on it.
+##
+## Sequoyah, after playing: *"there doesnt seem to be any pressure and in terms of the mire spreading
+## and players have to keep it back its super unclear."* This constant is half the answer to both
+## halves of that sentence at once, which is why it is worth the code rather than being another
+## number somewhere.
+##
+## The Mire is currently only legible by walking onto it: the front advances 1.66 m/min across an
+## 1180 m island (docs/PRESSURE.md), so in a two-hour session a player may never see it. But enemies
+## are legible from a long way off. Biasing the ambient field toward corrupted nests means the
+## corruption announces itself through the thing the player already reads — "this side of the island
+## is getting dangerous" — before it is visible as ground. It also gives the ambient field a reason to
+## exist beyond ambience, and it makes capping a Wellspring feel like it did something, because the
+## pressure near it drops with the corruption.
+##
+## 4.0 means a fully corrupted nest is 5x as likely as clean ground, which is a strong pull without
+## being an exclusion: clean nests keep weight 1.0 and keep spawning, so the field never abandons the
+## uncorrupted half of the island and leave the player with an empty world to walk through.
+const CORRUPTION_SPAWN_BIAS: float = 4.0
+
+
+## Per-nest selection weight, `1 + corruption * CORRUPTION_SPAWN_BIAS`.
+##
+## Computed once per top-up rather than per attempt: `AMBIENT_PLACEMENT_ATTEMPTS` re-rolls against
+## the same nests and the corruption cannot change between two rolls in the same frame.
+func _corruption_weights(points: Array[Vector3]) -> PackedFloat32Array:
+	var weights := PackedFloat32Array()
+	weights.resize(points.size())
+	var mire_grid: Node = get_node_or_null(^"/root/MireGrid")
+	for index: int in points.size():
+		var corruption: float = 0.0
+		if mire_grid != null:
+			corruption = clampf(float(mire_grid.call(&"corruption_at", points[index])), 0.0, 1.0)
+		weights[index] = 1.0 + corruption * CORRUPTION_SPAWN_BIAS
+	return weights
+
+
+## Weighted pick over the nests, from the same seeded stream the uniform pick used.
+##
+## Falls back to a uniform index if the weights are degenerate (no MireGrid, or every nest clean),
+## which is both the common early-run case and the case where weighting would be meaningless anyway.
+func _weighted_nest_index(points: Array[Vector3], weights: PackedFloat32Array) -> int:
+	var total: float = 0.0
+	for weight: float in weights:
+		total += weight
+	if total <= 0.0 or weights.size() != points.size():
+		return _ambient_rng.randi_range(0, points.size() - 1)
+	var roll: float = _ambient_rng.randf() * total
+	for index: int in weights.size():
+		roll -= weights[index]
+		if roll <= 0.0:
+			return index
+	return weights.size() - 1
 
 
 ## F-392's fallback. Sweeps every nest deterministically (not another random roll — this branch only

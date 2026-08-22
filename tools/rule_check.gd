@@ -25,9 +25,20 @@ const HOST_PEER: int = 1  # NetConfig.HOST_PEER_ID
 ## The numbers the owning systems shipped with, before 3.14 existed. Hard-coded on purpose: this is
 ## the whole content of the "first-wave migration, defaults unchanged" promise, and reading them back
 ## off the same exports the rules now write into would assert nothing at all.
+## F-599: `ambient_enemy_population` was deliberately retuned from 4.0 to 18.0, so its migration-era
+## number is recorded here instead of in `SHIPPED_DEFAULTS`. The §4.3 promise is about the 3.14
+## MIGRATION not silently moving a number — it was never a promise that balance can never change
+## again. Keeping the old value in the pinned map would have made every future balance change look
+## like a migration regression, which is how a check stops meaning what its name says.
+##
+## Entries here are still asserted: each must have actually MOVED off its migration value, so a
+## retune that gets reverted by accident still fails.
+const DELIBERATELY_RETUNED: Dictionary = {
+	&"ambient_enemy_population": 4.0,   # F-599 -> 18.0; 4 bodies over 1.09 km2 read as an empty world
+}
+
 const SHIPPED_DEFAULTS: Dictionary = {
 	&"day_length_seconds": 900.0,
-	&"ambient_enemy_population": 4.0,
 	&"wave_base_count": 4.0,
 	&"wave_per_player": 2.0,
 	&"revive_seconds": 3.0,
@@ -81,7 +92,9 @@ func _ctx(peer_id: int, source: StringName = &"console") -> Dictionary:
 func _check_defs_loaded() -> void:
 	print("\n== content/rules/ loads as a content family ==")
 	var ids: Array = rules.call("rule_ids")
-	check(ids.size() == SHIPPED_DEFAULTS.size(),
+	# `>=` for the same reason as the Registry count below: rules are content and the family grows.
+	# Every first-wave id must still be there, which is the part that would actually be a regression.
+	check(ids.size() >= SHIPPED_DEFAULTS.size(),
 		"all %d first-wave rules loaded (got %d: %s)" % [
 			SHIPPED_DEFAULTS.size(), ids.size(), ", ".join(ids)])
 	for id: StringName in SHIPPED_DEFAULTS:
@@ -95,12 +108,30 @@ func _check_defs_loaded() -> void:
 	check(registry != null and registry.has_method(&"rule_defs"),
 		"Registry exposes the rules family (rule_defs)")
 	if registry != null and registry.has_method(&"rule_defs"):
-		check((registry.call("rule_defs") as Dictionary).size() == SHIPPED_DEFAULTS.size(),
-			"Registry itself indexed every rule, so the disk fallback is not what loaded them")
+		# `>=`, not `==`: `content/rules/` is a content family and grows. Pinning the COUNT made
+		# every new rule fail an assertion about the loader, which says nothing about the loader.
+		# What this is actually for is "Registry indexed them, the disk fallback did not" — so
+		# assert every known rule is present and let the total float (F-599).
+		var indexed: Dictionary = registry.call("rule_defs")
+		check(indexed.size() >= SHIPPED_DEFAULTS.size(),
+			"Registry itself indexed every rule, so the disk fallback is not what loaded them (%d)"
+				% indexed.size())
+		for id: StringName in SHIPPED_DEFAULTS:
+			check(indexed.has(id), "Registry indexed '%s'" % id)
 
 
 func _check_defaults_unchanged() -> void:
 	print("\n== COMMANDS.md §4.3: first-wave migration changes no default ==")
+	for id: StringName in DELIBERATELY_RETUNED:
+		var retuned: Resource = rules.call("def", id)
+		if retuned == null:
+			check(false, "retuned rule '%s' still has a def" % id)
+			continue
+		check(not is_equal_approx(float(retuned.get(&"default_value")),
+				float(DELIBERATELY_RETUNED[id])),
+			"'%s' is still deliberately retuned away from its migration value %s (now %s)"
+				% [id, DELIBERATELY_RETUNED[id], retuned.get(&"default_value")])
+
 	for id: StringName in SHIPPED_DEFAULTS:
 		var rule: Resource = rules.call("def", id)
 		if rule == null:
@@ -166,7 +197,7 @@ func _check_read_and_list() -> void:
 	var listing: Dictionary = await command_service.execute("rules", _ctx(HOST_PEER))
 	check(bool(listing.get("ok", false)), "`rules` succeeds")
 	var listed: Array = (listing.get("data", {}) as Dictionary).get("rules", [])
-	check(listed.size() == SHIPPED_DEFAULTS.size(),
+	check(listed.size() >= SHIPPED_DEFAULTS.size() and listed.size() == (rules.call("rule_ids") as Array).size(),
 		"`rules` lists every rule as structured data, not just text (%d)" % listed.size())
 	var text: String = String(listing.get("message", ""))
 	check(text.contains("hunger_drain_per_sec") and text.contains("Hunger points lost per second"),
@@ -267,12 +298,20 @@ func _check_owner_adoption() -> void:
 	var enemy_world: Node = root.get_node_or_null(^"EnemyWorld")
 	check(enemy_world != null, "EnemyWorld autoload exists")
 	if enemy_world != null:
-		check(int(enemy_world.get(&"ambient_population")) == 4, "it boots on the authored default")
+		# Read the authored default off the RuleDef rather than restating it. The number is balance
+		# and will move again; what this subtest is for is that the OWNER follows the rule, which is
+		# true whatever the number happens to be (F-599).
+		var ambient_def: Resource = rules.call("def", &"ambient_enemy_population")
+		var ambient_default: int = roundi(float(ambient_def.get(&"default_value"))) \
+			if ambient_def != null else 0
+		check(int(enemy_world.get(&"ambient_population")) == ambient_default,
+			"it boots on the authored default (%d)" % ambient_default)
 		await command_service.execute("rule ambient_enemy_population 11", _ctx(HOST_PEER))
 		check(int(enemy_world.get(&"ambient_population")) == 11,
 			"and follows the rule the moment it changes")
 		await command_service.execute("rule ambient_enemy_population reset", _ctx(HOST_PEER))
-		check(int(enemy_world.get(&"ambient_population")) == 4, "reset puts it back")
+		check(int(enemy_world.get(&"ambient_population")) == ambient_default,
+			"reset puts it back")
 
 	var health: Node = root.get_node_or_null(^"PlayerHealth")
 	check(health != null, "PlayerHealth autoload exists")
