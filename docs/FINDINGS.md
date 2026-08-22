@@ -2369,6 +2369,41 @@ performance was drawn from a stationary probe, including the graphics preset tab
 protect low-end machines. The presets are well built and they solve the median. Nothing has ever
 been aimed at the number a player actually feels, because until now nothing measured it.
 
+### Measured 2026-08-22 by onyxbe8065 — it is NOT the streamer
+
+`tools/traversal_profile.gd` run windowed on the shipped world, 7,886 frames over a 45 s walk at
+sprint speed. This narrows the finding rather than resolving it, and it eliminates the first
+suspect the finding itself named:
+
+    median 4.96 ms | mean 5.71 ms | worst 213.30 ms
+    frames >= 25 ms: 53 (0.7% of frames, but 5.2% of the wall clock)
+    nodes added over the walk: 44,049 (6 per frame average)
+
+    attribution over the 53 hitch frames
+      ChunkStreamer's own reported cost: 2.9% of hitch time (68.44 of 2330.12 ms)
+      nodes added: 99 per hitch frame vs 5 per quiet frame
+
+**`ChunkStreamer` is inside its 4 ms budget and is not the problem.** Its eval/drain/emit/cook
+columns are 0.00 ms on nineteen of the twenty worst frames. The hitch frames are precisely the
+frames that ADD NODES, and the cost is downstream of streaming — whatever instantiates and enters
+the tree per newly-resident chunk. The worst frames cluster in the first two seconds with the
+scatter field's group queue standing at 1,100-1,800 entries, so the queue drain is where to look
+next, not the streamer's issuing loop.
+
+**A concrete contributor found on the way.** `EnvironmentVfx` connects `SceneTree.node_added` and
+defers `_apply_node` for every `GeometryInstance3D`, so all 44,049 nodes of that walk each got a
+deferred call. 1,821 of them reached
+`push_warning("EnvironmentVfx: %s has an emitter but no 'placements' meta; skipping")` — a warning
+that captures and formats a GDScript backtrace every time. That is two separate faults in one
+place: a per-node cost on the exact path this finding is about, and a real contract violation
+(scatter `MultiMeshInstance3D` batches are not publishing `placements`, so their VFX are silently
+skipped). Filed separately rather than folded in here.
+
+Still open: the per-chunk instantiate/enter-tree cost itself. `tools/traversal_profile.gd` is the
+instrument and can be re-run with `agent godot --windowed --script tools/traversal_profile.gd` —
+contrary to this finding's original assumption, an agent CAN run it: the `--windowed` flag
+(F-077) drops the wrapper's injected `--headless`.
+
 ---
 
 ### F-455 · Benchmark machine probe reads power and thermal state on macOS only
@@ -3236,6 +3271,40 @@ should tell which, and whoever wrote the citing paragraphs is named in that log.
 **Why this went unnoticed:** `decision_ref_check` already detects it and already counts it in
 `failures`, so this is another entry in F-293's pile — a check that has been red at HEAD long enough
 that its output reads as background. It is not a detection gap; it is an unread detector.
+
+---
+
+### F-547 · EnvironmentVfx does per-node work for all 44,000 nodes a traversal adds, and 1,821 of them raise a backtraced warning
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by onyxbe8065
+
+Found while measuring F-454 with `tools/traversal_profile.gd` (windowed, 45 s walk, shipped world).
+
+`EnvironmentVfx._ready()` connects `SceneTree.node_added` and calls
+`call_deferred("_apply_node_deferred", node)` for EVERY `GeometryInstance3D`
+(autoload/environment_vfx.gd:396). A 45-second traversal adds 44,049 nodes, so that is 44,049
+deferred calls, each resolving an asset id by walking ancestors — on the exact per-chunk path
+F-454 measures as the source of the hitches (99 nodes added per hitch frame vs 5 per quiet frame).
+
+Worse, 1,821 of those reached:
+
+    push_warning("EnvironmentVfx: %s has an emitter but no `placements` meta; skipping")
+
+`push_warning` captures and formats a GDScript backtrace on each call. 1,821 of them in one walk.
+
+Two distinct faults:
+
+  1. Cost. Per-node deferred work plus 1,821 backtraced warnings during traversal, which is the
+     path that already collapses the 1% low from 81 fps to 13 fps.
+  2. Correctness. The warning's own comment says "a batch with no published placements is a
+     generator that has not honoured the contract" — so scatter `MultiMeshInstance3D` batches are
+     not publishing `placements` meta, and every one of those props is silently getting NO vfx.
+     The warning is telling the truth and nothing is acting on it. Asset ids seen include
+     tree_birch_b/c/d and tree_crooked_a, i.e. ordinary scatter trees, not an edge case.
+
+Fix (1) by making the emitter path skip non-emitter nodes before the deferred hop, and by not
+raising a per-node warning for a condition that is per-GENERATOR. Fix (2) in whatever builds those
+batches, so `placements` is published and the vfx actually attach.
 
 ---
 
