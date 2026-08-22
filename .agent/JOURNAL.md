@@ -9265,3 +9265,19 @@ Notes along the way:
 Files: `tools/perf_probe.gd`
 
 Commit at time of writing: `f3e2a6e7`
+
+---
+
+### DONE · F-507 · nettlee11674 · 2026-08-22T03:04:15+00:00
+
+**Procedural ocean plane ends inside the playable view, leaving half the ocean missing**
+
+Ocean presentation mesh follows the local player in XZ, preserving sea level and facet density. Composition regression check passes; rendered x=725 m edge frame shows uninterrupted ocean.
+
+Notes along the way:
+- Use the local player as the client-local ocean anchor. A 1400 m plane centered on a player anywhere on the ~200 m island covers the whole island plus at least 500 m beyond it, past the 150 m fog end, while preserving the existing 7.8 m facet density and shader look. No network authority changes.
+- Rendered assets/audit/terrain/ocean_edge_follow.png from x=725 m, beyond the old plane's +X edge. The frame contains uninterrupted water across the full viewport; the straight missing-ocean boundary is gone.
+
+Files: `world/gen/procedural_world.gd`, `tools/procedural_world_check.gd`, `tools/ocean_glint_shot.gd`, `assets/audit/terrain/ocean_edge_follow.png`
+
+Commit at time of writing: `2474e811`

@@ -675,11 +675,23 @@ func _physics_process(delta: float) -> void:
 	if streamer == null:
 		return
 	streamer.call(&"set_anchors", _stream_anchors())
+	var local_player: Node3D = _local_player_body()
+	if local_player != null:
+		_center_ocean_on(local_player.global_position)
 
 	_void_accum += delta
 	if _void_accum >= VOID_CHECK_INTERVAL_SEC:
 		_void_accum = 0.0
 		_recover_from_void()
+
+
+## Keeps the finite presentation mesh under the viewer without moving the gameplay water datum.
+## Public only so the composition check can pin the regression without needing a live player.
+func _center_ocean_on(anchor: Vector3) -> void:
+	var ocean := get_node_or_null(^"Ocean") as MeshInstance3D
+	if ocean == null:
+		return
+	ocean.global_position = Vector3(anchor.x, SEA_LEVEL, anchor.z)
 
 
 # ── F-324: the net ────────────────────────────────────────────────────────────────────────────────

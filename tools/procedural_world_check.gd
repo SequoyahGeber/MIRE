@@ -47,6 +47,14 @@ func _run() -> void:
 	check(world_a.get(&"scatter_field") != null, "the composer built a ResourceScatterField")
 	check(int(world_a.call(&"height_at", 0.0, 0.0) != null) == 1,
 		"height_at() answers — the authored-world call shape carries over")
+	# The harness builds the composer script directly rather than instantiating the shipped scene,
+	# so supply the same named presentation child the scene owns.
+	var ocean := MeshInstance3D.new()
+	ocean.name = &"Ocean"
+	world_a.add_child(ocean)
+	world_a.call(&"_center_ocean_on", Vector3(725.0, 80.0, -640.0))
+	check(ocean.global_position.is_equal_approx(Vector3(725.0, 0.0, -640.0)),
+		"the finite ocean follows a high-vantage player in XZ and stays at sea level")
 
 	var sites: Array = world_a.get(&"poi_sites")
 	check(sites.size() > 0, "PoiMap produced sites (%d)" % sites.size())

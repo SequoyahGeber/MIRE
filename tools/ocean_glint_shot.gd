@@ -23,6 +23,9 @@ var _shots: Array = [
 	{"name": "ocean_glint_shore", "pos": Vector3(0.0, 3.2, 330.0), "look": Vector3(0.0, 1.6, 520.0), "warm": 30},
 	{"name": "ocean_glint_grazing", "pos": Vector3(0.0, 1.1, 360.0), "look": Vector3(60.0, 1.0, 620.0), "warm": 140},
 	{"name": "ocean_glint_high", "pos": Vector3(0.0, 34.0, 300.0), "look": Vector3(30.0, 0.0, 560.0), "warm": 260},
+	# F-507: outside the old plane's +X edge. Without client-local centering this frame exposes the
+	# same missing half-ocean as the reported high-vantage playtest screenshot.
+	{"name": "ocean_edge_follow", "pos": Vector3(725.0, 80.0, -180.0), "look": Vector3(420.0, 0.0, 0.0), "warm": 30},
 ]
 
 func _initialize() -> void:
@@ -59,6 +62,9 @@ func _run() -> void:
 	for shot: Dictionary in _shots:
 		cam.global_position = shot["pos"]
 		cam.look_at(shot["look"], Vector3.UP)
+		# This harness deliberately has no player; mirror the shipped local-player anchor with the
+		# camera position so the visual proof exercises the same finite-mesh fix.
+		scene.call(&"_center_ocean_on", cam.global_position)
 		# TIME advances with real frames, so "a different point in the wave cycle" means letting
 		# frames run — there is no way to scrub a shader's TIME from script.
 		for i in int(shot["warm"]) + SETTLE_FRAMES:
