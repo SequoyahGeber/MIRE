@@ -3870,6 +3870,14 @@ Live playtest 2026-08-22 (Sequoyah): the object identified by FocusPrompt as `Bo
 
 ---
 
+### F-637 · Closing the game window leaves the MIRE process running in the background
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by flintce4dfd
+
+Live playtest 2026-08-22 (Sequoyah, macOS): after closing the visible game window, MIRE continues running as a background process instead of terminating. This is distinct from resolved F-421, where the in-game menu quit path crashed: here the window disappears but the application lifecycle does not finish, potentially leaving networking, audio, Steam callbacks and future launches alive invisibly. Reproduce separately from the title screen and during an active procedural run using the macOS window close control, then inspect the close-request handling and any autoload or worker that prevents SceneTree termination. The regression proof must launch a real windowed build, close it through the same UI path, and assert the OS process exits within a bounded timeout with no surviving child process; checking only that the window vanished is insufficient. Also verify QUIT and QUIT TO TITLE remain correct.
+
+---
+
 ## Resolved
 
 ### F-611 · Release build excludes tools/perf_format.gd, so SessionLog fails to parse and instantiate on launch — **fixed**
