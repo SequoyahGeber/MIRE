@@ -1,0 +1,56 @@
+[
+  {
+    "name": "pinecone_open",
+    "family": "conifer",
+    "file": "exports/pinecone_open.glb",
+    "width_m": 0.075,
+    "depth_m": 0.0469,
+    "height_m": 0.047,
+    "target_m": 0.075,
+    "mesh_parts": 1,
+    "polygons": 339,
+    "triangles": 684,
+    "materials": [
+      "MIRE_LeafDry",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkDark",
+      "MIRE_WoodBarkLight"
+    ]
+  },
+  {
+    "name": "pinecone_closed",
+    "family": "conifer",
+    "file": "exports/pinecone_closed.glb",
+    "width_m": 0.062,
+    "depth_m": 0.0213,
+    "height_m": 0.0214,
+    "target_m": 0.062,
+    "mesh_parts": 1,
+    "polygons": 303,
+    "triangles": 612,
+    "materials": [
+      "MIRE_LeafDry",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkDark",
+      "MIRE_WoodBarkLight"
+    ]
+  },
+  {
+    "name": "pinecone_small",
+    "family": "conifer",
+    "file": "exports/pinecone_small.glb",
+    "width_m": 0.044,
+    "depth_m": 0.0279,
+    "height_m": 0.0281,
+    "target_m": 0.044,
+    "mesh_parts": 1,
+    "polygons": 195,
+    "triangles": 396,
+    "materials": [
+      "MIRE_LeafDry",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkDark",
+      "MIRE_WoodBarkLight"
+    ]
+  }
+]
