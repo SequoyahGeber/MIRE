@@ -46,7 +46,7 @@ func _run() -> void:
 
 	settings.set(&"save_path", TEST_PATH)
 
-	_check_graphics(settings, gfx)
+	await _check_graphics(settings, gfx)
 	_check_audio_buses(settings)
 	_check_look_and_accessibility(settings)
 	_check_keybinds(settings)
@@ -139,11 +139,16 @@ func _check_graphics(settings: Node, gfx: Node) -> void:
 	settings.call("set_graphics_preset", 2)
 	check(int(gfx.get(&"preset")) == 2, "restoring HIGH re-applies through the same seam")
 	settings.call("set_window_mode", 0)
-	settings.call("set_resolution_index", 3)
+	settings.call("set_resolution_index", 0)
+	await process_frame
+	await process_frame
 	settings.call("set_vsync_enabled", false)
 	settings.call("set_fps_cap", 120)
 	check(int(settings.call("window_mode")) == 0, "window mode is read back")
-	check(int(settings.call("resolution_index")) == 3, "resolution index is read back")
+	check(int(settings.call("resolution_index")) == 0, "resolution index is read back")
+	if DisplayServer.get_name() != "headless":
+		check(DisplayServer.window_get_size() == Vector2i(1152, 648),
+			"windowed resolution reaches the live window (got: %s)" % DisplayServer.window_get_size())
 	check(not bool(settings.call("vsync_enabled")), "VSync is read back")
 	check(int(settings.call("fps_cap")) == 120 and Engine.max_fps == 120,
 		"FPS cap reaches Engine.max_fps")

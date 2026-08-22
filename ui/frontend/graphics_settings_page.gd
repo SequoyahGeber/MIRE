@@ -20,6 +20,7 @@ const READOUT_WIDTH: float = 96.0
 
 var _settings: Node
 var _controls: Array[Dictionary] = []
+var _resolution_dropdown: OptionButton
 ## False in-run: the benchmark generates its own world and cannot run over a live session (D-192),
 ## so the row is absent rather than present-and-refusing. A button that explains why it will not
 ## work is a worse answer than no button.
@@ -54,6 +55,10 @@ func refresh() -> void:
 		control.set_block_signals(false)
 		if control is FocusRingSlider:
 			(control as FocusRingSlider).refresh_readout()
+	# Borderless and exclusive fullscreen are always the monitor's native pixel size. Leaving this
+	# control enabled there accepted and saved a choice the runtime deliberately ignored (F-503).
+	if _resolution_dropdown != null:
+		_resolution_dropdown.disabled = int(_settings.call("window_mode")) != 0
 
 
 func _build() -> void:
@@ -65,8 +70,11 @@ func _build() -> void:
 	var resolutions: Array[String] = []
 	for size: Vector2i in _settings.get("RESOLUTIONS"):
 		resolutions.append("%d × %d" % [size.x, size.y])
-	add_child(_dropdown_row("Resolution", resolutions, "resolution_index", "set_resolution_index",
-		"Applied in windowed mode; fullscreen uses the display's native resolution."))
+	var resolution_row: Control = _dropdown_row(
+		"Resolution", resolutions, "resolution_index", "set_resolution_index",
+		"Applied in windowed mode; fullscreen uses the display's native resolution.")
+	_resolution_dropdown = (_controls.back()[&"control"] as OptionButton)
+	add_child(resolution_row)
 	add_child(_toggle_row("VSync", "vsync_enabled", "set_vsync_enabled",
 		"Prevents tearing. Disable only for the lowest possible input latency."))
 	var cap_labels: Array[String] = []

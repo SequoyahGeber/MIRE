@@ -154,6 +154,18 @@ func _run() -> void:
 	print("\n== numeric readouts (F-385) ==")
 	screen.call("show_tab", 0)
 	await process_frame
+	var display_page: Control = (screen.get(&"_pages") as Array)[0] as Control
+	var resolution_dropdown: OptionButton = display_page.get(&"_resolution_dropdown") as OptionButton
+	check(resolution_dropdown != null, "the live DISPLAY page exposes the resolution control")
+	if resolution_dropdown != null:
+		settings.call("set_window_mode", 1)
+		check(resolution_dropdown.disabled,
+			"resolution is disabled in borderless mode, where the monitor's native size wins")
+		settings.call("set_window_mode", 2)
+		check(resolution_dropdown.disabled,
+			"resolution is disabled in fullscreen mode, where the monitor's native size wins")
+		settings.call("set_window_mode", 0)
+		check(not resolution_dropdown.disabled, "resolution is enabled again in windowed mode")
 	for entry: Array in [
 		[0, 90.0, "90°", "field of view"],
 		[1, 1.25, "125%", "brightness"],

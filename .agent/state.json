@@ -42,12 +42,6 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "autoload/settings_service.gd": {
-      "agent": "galedc2f76",
-      "at": "2026-08-22T02:36:19+00:00",
-      "task": "F-503",
-      "token": "CODEX_SESSION_ID:01a02752-64f4-7b03-88cb-24234c204f6e"
-    },
     "content/enemies/bloatcap.tres": {
       "agent": "ember5da2c4",
       "at": "2026-08-22T02:13:56+00:00",
@@ -288,29 +282,11 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "tools/settings_check.gd": {
-      "agent": "galedc2f76",
-      "at": "2026-08-22T02:36:19+00:00",
-      "task": "F-503",
-      "token": "CODEX_SESSION_ID:01a02752-64f4-7b03-88cb-24234c204f6e"
-    },
-    "tools/settings_screen_check.gd": {
-      "agent": "galedc2f76",
-      "at": "2026-08-22T02:36:19+00:00",
-      "task": "F-503",
-      "token": "CODEX_SESSION_ID:01a02752-64f4-7b03-88cb-24234c204f6e"
-    },
     "tools/wave_director_check.gd": {
       "agent": "ember5da2c4",
       "at": "2026-08-22T01:25:45+00:00",
       "task": "5.11",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
-    },
-    "ui/frontend/graphics_settings_page.gd": {
-      "agent": "galedc2f76",
-      "at": "2026-08-22T02:36:19+00:00",
-      "task": "F-503",
-      "token": "CODEX_SESSION_ID:01a02752-64f4-7b03-88cb-24234c204f6e"
     },
     "world/mire/mire_grid.gd": {
       "agent": "ember5da2c4",
@@ -422,24 +398,6 @@
       "notes": [],
       "started": "2026-08-22T00:29:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
-    },
-    "F-503": {
-      "agent": "galedc2f76",
-      "files": [
-        "autoload/settings_service.gd",
-        "ui/frontend/graphics_settings_page.gd",
-        "tools/settings_check.gd",
-        "tools/settings_screen_check.gd"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-22T02:36:19+00:00",
-          "by": "galedc2f76",
-          "text": "Resolution is a window-size choice. Borderless and exclusive fullscreen use the display's native pixel size, so the UI must disable resolution there instead of accepting a no-op; windowed mode gets live DisplayServer.window_get_size coverage."
-        }
-      ],
-      "started": "2026-08-22T02:36:19+00:00",
-      "token": "CODEX_SESSION_ID:01a02752-64f4-7b03-88cb-24234c204f6e"
     }
   },
   "recent": {
@@ -1543,11 +1501,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
     "autoload/settings_service.gd": {
-      "agent": "birche6b40e",
-      "at": "2026-08-21T23:26:09+00:00",
+      "agent": "galedc2f76",
+      "at": "2026-08-22T02:37:35+00:00",
       "hash": "85bfc5a72af52a7f64dd2dd0d5932a1ce11698b02af337315524546adb05500b",
-      "task": "3.19",
-      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+      "task": "F-503",
+      "token": "CODEX_SESSION_ID:01a02752-64f4-7b03-88cb-24234c204f6e"
     },
     "autoload/sfx_catalogue.gd": {
       "agent": "ash843af8",
@@ -4455,11 +4413,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:80d76563-dcca-426a-ad54-2909c9fa380a"
     },
     "tools/settings_check.gd": {
-      "agent": "birche6b40e",
-      "at": "2026-08-21T23:26:09+00:00",
-      "hash": "55408067725231320870ae2c000837854cd1b3a878038b7af9809a568d953ea1",
-      "task": "3.19",
-      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+      "agent": "galedc2f76",
+      "at": "2026-08-22T02:37:35+00:00",
+      "hash": "3dab624752442fa457b051dc232ab58cef089f17f0cd93ba60e4773abc43d696",
+      "task": "F-503",
+      "token": "CODEX_SESSION_ID:01a02752-64f4-7b03-88cb-24234c204f6e"
     },
     "tools/settings_render_check.gd": {
       "agent": "coil995fd7",
@@ -4469,11 +4427,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:44f62a84-7862-455b-a776-2e1c5eb11d39"
     },
     "tools/settings_screen_check.gd": {
-      "agent": "coil995fd7",
-      "at": "2026-08-21T06:57:54+00:00",
-      "hash": "df2a9e4b1c9f885a4d46d55eba3ad1c0cb74c9063e41932223a06c5009108d83",
-      "task": "F-416",
-      "token": "CLAUDE_CODE_SESSION_ID:44f62a84-7862-455b-a776-2e1c5eb11d39"
+      "agent": "galedc2f76",
+      "at": "2026-08-22T02:37:35+00:00",
+      "hash": "ab52ea66243ba04ee3bddb7a0508ab64785deb670c5453e9afb47cda2e223dcd",
+      "task": "F-503",
+      "token": "CODEX_SESSION_ID:01a02752-64f4-7b03-88cb-24234c204f6e"
     },
     "tools/sfx_check.gd": {
       "agent": "ash843af8",
@@ -4616,11 +4574,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "ui/frontend/graphics_settings_page.gd": {
-      "agent": "quill895277",
-      "at": "2026-08-21T21:36:55+00:00",
-      "hash": "7b57e1f6dba8fe5ef39f5e28d34e158824b6cb7efb16617234eb981fec86ad1d",
-      "task": "F-453",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
+      "agent": "galedc2f76",
+      "at": "2026-08-22T02:37:35+00:00",
+      "hash": "715e4aa75689d873cb8a66354d0172e5637f9744f1107fa5db420036caaee7f9",
+      "task": "F-503",
+      "token": "CODEX_SESSION_ID:01a02752-64f4-7b03-88cb-24234c204f6e"
     },
     "ui/frontend/graphics_settings_page.gd.uid": {
       "agent": "flinta92725",
@@ -4952,7 +4910,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:120f1976-6c96-46a1-8784-38dd75780df4"
     }
   },
-  "rev": 1117,
+  "rev": 1118,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -10729,9 +10687,11 @@
       "title": "Benchmark seed leaks into later gameplay"
     },
     "F-503": {
+      "done_at": "2026-08-22T02:37:35+00:00",
+      "done_by": "galedc2f76",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Resolution selector silently does nothing outside windowed mode"
     }

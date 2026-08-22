@@ -9091,3 +9091,18 @@ Notes along the way:
 Files: `world/gen/island_heightmap.gd`, `tools/worldgen_noise_reuse_check.gd`
 
 Commit at time of writing: `e15f4a33`
+
+---
+
+### DONE · F-503 · galedc2f76 · 2026-08-22T02:37:35+00:00
+
+**Resolution selector silently does nothing outside windowed mode**
+
+Resolution now works truthfully: selectable and runtime-verified in windowed mode, disabled in native-size borderless/fullscreen. Both focused checks pass.
+
+Notes along the way:
+- Resolution is a window-size choice. Borderless and exclusive fullscreen use the display's native pixel size, so the UI must disable resolution there instead of accepting a no-op; windowed mode gets live DisplayServer.window_get_size coverage.
+
+Files: `autoload/settings_service.gd`, `ui/frontend/graphics_settings_page.gd`, `tools/settings_check.gd`, `tools/settings_screen_check.gd`
+
+Commit at time of writing: `d457e8e0`
