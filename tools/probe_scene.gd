@@ -65,33 +65,95 @@ static func _has_seed_arg() -> bool:
 	return false
 
 
-## The scene an instrument should measure: `-- --scene res://...` if given, else the project's
-## shipped main scene.
+## The front end, which `run/main_scene` points at since MENU-3's cutover. A path rather than a
+## `preload`, because a `--script` harness compiles before the autoloads exist and this file names
+## an autoload (F-558).
+const FRONTEND_SCRIPT_PATH: String = "res://ui/frontend/frontend.gd"
+
+
+## What `run/main_scene` literally says.
+static func main_scene_path() -> String:
+	return str(ProjectSettings.get_setting("application/run/main_scene", ""))
+
+
+## The scene an instrument should measure: `-- --scene res://...` if given, else the shipped map.
 static func resolve() -> String:
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	for i: int in args.size():
 		if args[i] == "--scene" and i + 1 < args.size():
 			return args[i + 1]
-	var main_scene: String = str(ProjectSettings.get_setting("application/run/main_scene", ""))
+	return shipped_map_path()
+
+
+## The MAP the project boots into — which is not `run/main_scene` any more (F-561).
+##
+## MENU-3's cutover pointed `run/main_scene` at `res://levels/frontend.tscn`. The front end is not a
+## world: measuring it produced `draw_calls_median=2206 primitives_median=538344 vram_mb=470.9
+## frame_ms_median=35.71` published under the banner "the shipped main scene". 35.71 ms is 28 fps,
+## and it described a menu.
+##
+## That is the SAME failure F-342 exists for, arriving from the other direction. F-342's fix was
+## "read `main_scene` at runtime instead of copying it," and that fix is what broke here, because
+## `main_scene` stopped naming a map. So the question an instrument has to ask is not "what does the
+## project boot?" but "what world does a player end up in?" — and only the front end can answer it.
+##
+## It is also not merely mislabelled. `_begin_run()` uses `change_scene_to_file()`, which is
+## DEFERRED, so an instrument that instantiates `frontend.tscn` and starts sampling is racing the
+## bypass: it may measure the front end, the world, or both in the tree at once. F-549 caught that
+## third case for real — every group count in `world_contract_check` doubled.
+static func shipped_map_path() -> String:
+	var main_scene: String = main_scene_path()
 	if main_scene.is_empty():
 		push_warning("probe_scene: application/run/main_scene is unset, falling back to %s"
 			% FALLBACK_SCENE)
 		return FALLBACK_SCENE
-	return main_scene
+	var behind: String = _map_behind_front_end(main_scene)
+	return behind if not behind.is_empty() else main_scene
 
 
-## True when the resolved scene is the one the project boots. Instruments print this, because
-## "measured the shipped world" and "measured a fixture" are different claims and a reader of the
-## log should never have to work out which one they are holding.
+## The world `scene_path` bypasses into, or "" when it is not the front end.
+##
+## Instantiating to ask is safe, and deliberately chosen over parsing the scene: `_ready()` runs when
+## a node ENTERS THE TREE, not when it is instantiated, so the bypass this whole finding is about
+## cannot fire here. The instance is freed immediately and never added to anything.
+##
+## The answer comes from `Frontend._world_scene_path()` — static for exactly this reason (F-549) —
+## rather than from a path spelled out here, so this file cannot silently disagree with the game the
+## first time `WORLD_SCENE_FALLBACK` matters.
+static func _map_behind_front_end(scene_path: String) -> String:
+	var packed: PackedScene = load(scene_path) as PackedScene
+	if packed == null:
+		return ""
+	var frontend_script: Variant = load(FRONTEND_SCRIPT_PATH)
+	if frontend_script == null:
+		return ""
+	var probe: Node = packed.instantiate()
+	var is_front_end: bool = probe.get_script() == frontend_script
+	probe.free()
+	if not is_front_end:
+		return ""
+	return String(frontend_script._world_scene_path())
+
+
+## True when the resolved scene is the world the project actually boots into. Instruments print this,
+## because "measured the shipped world" and "measured a fixture" are different claims and a reader of
+## the log should never have to work out which one they are holding.
 static func is_shipped_default(scene_path: String) -> bool:
-	return scene_path == str(ProjectSettings.get_setting("application/run/main_scene", ""))
+	return scene_path == shipped_map_path()
 
 
 ## A one-line provenance banner for an instrument's header.
+##
+## When the front end was followed through, the banner says so rather than calling the map "the
+## shipped main scene" — that phrase is now false about any map, and a provenance line that is
+## subtly wrong is worse than a vague one.
 static func describe(scene_path: String) -> String:
-	if is_shipped_default(scene_path):
+	if not is_shipped_default(scene_path):
+		return "%s (EXPLICIT FIXTURE — not what the project boots)" % scene_path
+	var main_scene: String = main_scene_path()
+	if scene_path == main_scene:
 		return "%s (the shipped main scene)" % scene_path
-	return "%s (EXPLICIT FIXTURE — not what the project boots)" % scene_path
+	return "%s (the world the shipped front end %s boots into)" % [scene_path, main_scene]
 
 
 ## Frames to wait, at most, for a streaming world to finish arriving. At 8 chunks of load radius the

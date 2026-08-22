@@ -3052,7 +3052,9 @@ stops paying 92 seconds a run in the meantime.
 
 ---
 
-### F-561 · Every renderer instrument measures the FRONT END and labels it 'the shipped main scene', because ProbeScene.resolve() still trusts run/main_scene
+## Resolved
+
+### F-561 · Every renderer instrument measures the FRONT END and labels it 'the shipped main scene', because ProbeScene.resolve() still trusts run/main_scene — **fixed**
 
 **Area:** performance · **Severity:** high · **Found:** 2026-08-22 by hollowbfcf67
 
@@ -3105,9 +3107,57 @@ precisely so a harness can ask without instantiating a front end that would bypa
 should follow the front end through to its world scene the same way, and `describe()` should stop
 calling whatever it found "the shipped main scene" unless it really is a map.
 
----
+**Resolved 2026-08-22 by bram937a51.** **Fixed** by bram937a51, 2026-08-22, in `tools/probe_scene.gd`.
 
-## Resolved
+**The measurement was worse than mislabelled — it was measuring two things at once.** The published
+`frontend.tscn` numbers were `draw_calls_median=2206 primitives_median=538344 vram_mb=470.9
+frame_ms_median=35.71`. That VRAM figure is the giveaway: 470.9 MB is essentially the whole
+procedural island (the real map measures 473.3 MB). A menu does not cost 470 MB. The instrument had
+instantiated the front end, the front end's deferred `change_scene_to_file()` had landed the world
+in the tree beside it, and the sampler measured **both together** — a menu drawn on top of a fully
+streamed island. 35.71 ms was not the cost of the shipped game and was not the cost of the front end
+either. It was the cost of a state no player is ever in.
+
+**The fix.** `resolve()` now returns `shipped_map_path()`, which asks the front end what world it
+boots into instead of trusting `run/main_scene`:
+
+- `main_scene_path()` — what the setting literally says, kept separate because the banner needs it.
+- `shipped_map_path()` — follows the front end through to the map.
+- `_map_behind_front_end()` — loads the main scene, instantiates it, compares its root script to
+  `frontend.gd`, frees it, and returns `Frontend._world_scene_path()` if it matched. Instantiating
+  to ask is deliberate and safe: `_ready()` runs when a node ENTERS THE TREE, not when it is
+  instantiated, so the bypass this finding is about cannot fire. The answer comes from the front
+  end's own static resolver (made static under F-549) rather than a path spelled out here, so this
+  file cannot silently disagree with the game the first time `WORLD_SCENE_FALLBACK` matters.
+- `is_shipped_default()` now compares against the map, not the setting, so an explicit `--scene` at
+  the real map is correctly recognised as the shipped world rather than flagged a fixture.
+- `describe()` no longer calls anything "the shipped main scene" unless it IS the main scene. When
+  the front end was followed it says so explicitly. A provenance line that is subtly wrong is worse
+  than one that is vague, which is the whole lesson of F-342.
+
+Every instrument keyed to this — `frame_cost_check`, `graphics_quality_check`, `hardware_census`,
+`perf_probe`, `render_census` — is fixed by the resolver alone; none needed a change.
+
+**How it was verified.** `agent godot --windowed --script tools/frame_cost_check.gd`:
+
+    === MIRE frame cost — res://levels/procedural_island.tscn (the world the shipped front end
+        res://levels/frontend.tscn boots into) ===
+    FRAME_COST draw_calls_median=2432 primitives_median=584442 vram_mb=473.3 frame_ms_median=15.87
+    FRAME_COST_CHECK failures=0
+
+The banner names the map and explains how it got there; the frame time falls from 35.71 ms (28 fps)
+to 15.87 ms (63 fps), and draw calls rise slightly — consistent with dropping a menu that was being
+drawn over the island rather than with measuring a different world.
+
+**Which published numbers are suspect — narrower than it first looks.** The cutover that pointed
+`run/main_scene` at the front end is `2b13db16`, dated **2026-08-21**. So:
+
+- **F-174 (2026-08-18) is NOT affected.** It predates the cutover; its numbers measured a real map.
+- **F-454 and F-457 (both 2026-08-21) must be re-confirmed** before either is quoted as evidence.
+  They are same-day as the cutover and this resolver cannot tell you which side of it they fell on.
+
+Re-taking those measurements is deliberately NOT part of this fix. It needs Sequoyah's real hardware
+and the fullscreen A/B method in `docs/PERFORMANCE.md`, not a parked offscreen window.
 
 ### F-560 · SfxDirector's local-peer fallback answers HOST_PEER_ID while a client is still connecting, so host-owned cues briefly test as the local player's own — **fixed**
 
