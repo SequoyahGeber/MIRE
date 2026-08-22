@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="1_itemdef"]
+[ext_resource type="PackedScene" path="res://assets/forage/exports/pickup_honeycomb.glb" id="2_model"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_honey.png" id="3_icon"]
+
+[resource]
+script = ExtResource("1_itemdef")
+id = &"honey"
+display_name = "Honeycomb"
+description = "Torn from a wild nest. Wax, brood comb and all the honey it still holds."
+icon = ExtResource("3_icon")
+category = 3
+stack_size = 10
+hunger_restore = 14.0
+hp_restore = 4
+world_model = ExtResource("2_model")
+view_model = ExtResource("2_model")
+grip_offset = Vector3(0.22, -0.16, -0.44)
+grip_rotation_degrees = Vector3(-10.0, 20.0, 0.0)
+grip_scale = 1.3
+attack_style = 0

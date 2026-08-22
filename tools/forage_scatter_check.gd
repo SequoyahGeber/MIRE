@@ -16,7 +16,22 @@ const FOOD: Dictionary = {
 	&"apple_tree_full": &"apple_tree",
 	&"berry_bush_full": &"berry_bush",
 	&"mushroom_patch_full": &"mushroom_patch",
+	## F-490: the rest of the `gatherables` kit, held to the same two bars — it classifies as its
+	## own harvestable, and a procedural world actually places some.
+	&"medicinal_herb": &"medicinal_herb",
+	&"wild_onion": &"wild_onion",
+	&"honeycomb": &"honeycomb",
+	&"resin_node": &"resin_node",
+	&"clay_deposit": &"clay_deposit",
+	&"peat_deposit": &"peat_deposit",
+	&"poison_berry_bush": &"poison_berry_bush",
 }
+
+## Which of them are drawn as their own node. The small dense ones stay in the chunk's batch.
+const NODE_DRAWN: Array[StringName] = [
+	&"apple_tree_full", &"berry_bush_full", &"mushroom_patch_full",
+	&"honeycomb", &"resin_node", &"clay_deposit", &"peat_deposit", &"poison_berry_bush",
+]
 
 var failures: int = 0
 
@@ -38,8 +53,10 @@ func _run() -> void:
 		var want: String = "res://content/harvestables/%s.tres" % FOOD[asset]
 		check(HarvestLib.definition_path_for(asset) == want,
 			"%s harvests as %s" % [asset, FOOD[asset]])
-		check(HarvestLib.representation_for(asset) == HarvestLib.Represent.NODE,
-			"%s is placed as its own node (it has picked art)" % asset)
+		var want_node: bool = NODE_DRAWN.has(asset)
+		var is_node: bool = HarvestLib.representation_for(asset) == HarvestLib.Represent.NODE
+		check(is_node == want_node,
+			"%s is placed as %s" % [asset, "its own node" if want_node else "part of the chunk batch"])
 	for asset: StringName in [&"apple_tree_picked", &"berry_bush_harvested", &"mushroom_patch_harvested"]:
 		check(HarvestLib.definition_path_for(asset).is_empty(),
 			"%s stays inert scenery" % asset)
@@ -49,7 +66,10 @@ func _run() -> void:
 	check(harvest != null, "HarvestWorld autoload is present")
 	var yields: Dictionary = {
 		&"apple_tree_full": &"apple", &"berry_bush_full": &"berry",
-		&"mushroom_patch_full": &"mushroom",
+		&"mushroom_patch_full": &"mushroom", &"medicinal_herb": &"herb",
+		&"wild_onion": &"wild_onion", &"honeycomb": &"honey", &"resin_node": &"resin",
+		&"clay_deposit": &"clay", &"peat_deposit": &"peat",
+		&"poison_berry_bush": &"poison_berry",
 	}
 	if harvest != null:
 		for asset: StringName in yields:

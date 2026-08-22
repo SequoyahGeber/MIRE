@@ -115,6 +115,18 @@ SOURCES: list[tuple[str, str]] = [
     ("build_anvil", "crafting_stations/exports/station_anvil.glb"),
     ("build_repair_bench", "crafting_stations/exports/station_repair_bench.glb"),
     ("build_woodcutting_block", "crafting_stations/exports/station_woodcutting_block.glb"),
+    # --- forage resources (F-490) ---------------------------------------------
+    #
+    # Seven gathered resources whose harvestables were modelled and then could not
+    # be placed, because a harvestable yields an item and an item needs its own
+    # art. Same camera as everything else, pointed at their own kit.
+    ("herb", "forage/exports/pickup_herb.glb"),
+    ("wild_onion", "forage/exports/pickup_wild_onion.glb"),
+    ("honey", "forage/exports/pickup_honeycomb.glb"),
+    ("resin", "forage/exports/pickup_resin.glb"),
+    ("clay", "forage/exports/pickup_clay.glb"),
+    ("peat", "forage/exports/pickup_peat.glb"),
+    ("poison_berry", "forage/exports/pickup_poison_berry.glb"),
 ]
 
 #: Yaw applied before framing, for assets whose default face is not their best one.

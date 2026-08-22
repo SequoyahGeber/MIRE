@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="HarvestableDef" format=3]
+
+[ext_resource type="Script" path="res://systems/harvesting/harvestable_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"peat_deposit"
+display_name = "Peat Cutting"
+max_health = 3
+required_tool = 2
+yield_item_id = &"peat"
+yield_amount = 2
+respawn_seconds = 300.0
+request_range_m = 3.0

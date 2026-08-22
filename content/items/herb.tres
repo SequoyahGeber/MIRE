@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="1_itemdef"]
+[ext_resource type="PackedScene" path="res://assets/forage/exports/pickup_herb.glb" id="2_model"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_herb.png" id="3_icon"]
+
+[resource]
+script = ExtResource("1_itemdef")
+id = &"herb"
+display_name = "Medicinal Herb"
+description = "Bitter leaves and a white flower head. Chewed for what it mends, not for the taste."
+icon = ExtResource("3_icon")
+category = 3
+stack_size = 20
+hunger_restore = 1.0
+hp_restore = 8
+world_model = ExtResource("2_model")
+view_model = ExtResource("2_model")
+grip_offset = Vector3(0.2, -0.14, -0.42)
+grip_rotation_degrees = Vector3(-10.0, 20.0, 0.0)
+grip_scale = 1.4
+attack_style = 0

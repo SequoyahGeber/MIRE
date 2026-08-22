@@ -99,6 +99,14 @@ weight = 1.2
 min_scale = 0.9
 max_scale = 1.2
 
+[sub_resource type="Resource" id="Resource_95_poison_berry_bush"]
+script = ExtResource("1_entry")
+asset = &"poison_berry_bush"
+kit = "gatherables"
+weight = 0.45
+min_scale = 0.9
+max_scale = 1.15
+
 [resource]
 script = ExtResource("2_def")
 id = &"forest_undergrowth"
@@ -108,4 +116,4 @@ jitter_fraction = 0.65
 coverage = 0.27
 min_height = 0.7
 max_height = 1000
-entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_bush_round_a"), SubResource("Resource_01_bush_round_b"), SubResource("Resource_02_bush_round_c"), SubResource("Resource_03_bush_round_d"), SubResource("Resource_04_bush_broadleaf_a"), SubResource("Resource_05_bush_broadleaf_b"), SubResource("Resource_06_bush_broadleaf_c"), SubResource("Resource_07_sapling_a"), SubResource("Resource_08_sapling_b"), SubResource("Resource_09_sapling_c"), SubResource("Resource_10_sapling_d"), SubResource("Resource_11_berry_bush_full")])
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_bush_round_a"), SubResource("Resource_01_bush_round_b"), SubResource("Resource_02_bush_round_c"), SubResource("Resource_03_bush_round_d"), SubResource("Resource_04_bush_broadleaf_a"), SubResource("Resource_05_bush_broadleaf_b"), SubResource("Resource_06_bush_broadleaf_c"), SubResource("Resource_07_sapling_a"), SubResource("Resource_08_sapling_b"), SubResource("Resource_09_sapling_c"), SubResource("Resource_10_sapling_d"), SubResource("Resource_11_berry_bush_full"), SubResource("Resource_95_poison_berry_bush")])

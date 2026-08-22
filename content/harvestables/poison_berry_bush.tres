@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="HarvestableDef" format=3]
+
+[ext_resource type="Script" path="res://systems/harvesting/harvestable_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"poison_berry_bush"
+display_name = "Poison Berry Bush"
+max_health = 2
+required_tool = 0
+yield_item_id = &"poison_berry"
+yield_amount = 2
+respawn_seconds = 150.0
+request_range_m = 3.0

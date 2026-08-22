@@ -618,5 +618,75 @@
     "roll_deg": 0.0,
     "ortho_scale_m": 1.8744,
     "source_polygons": 168
+  },
+  {
+    "id": "herb",
+    "source": "assets/forage/exports/pickup_herb.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.2744,
+    "source_polygons": 980
+  },
+  {
+    "id": "wild_onion",
+    "source": "assets/forage/exports/pickup_wild_onion.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.2367,
+    "source_polygons": 228
+  },
+  {
+    "id": "honey",
+    "source": "assets/forage/exports/pickup_honeycomb.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 0.2151,
+    "source_polygons": 832
+  },
+  {
+    "id": "resin",
+    "source": "assets/forage/exports/pickup_resin.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.1441,
+    "source_polygons": 336
+  },
+  {
+    "id": "clay",
+    "source": "assets/forage/exports/pickup_clay.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.1748,
+    "source_polygons": 188
+  },
+  {
+    "id": "peat",
+    "source": "assets/forage/exports/pickup_peat.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.3114,
+    "source_polygons": 376
+  },
+  {
+    "id": "poison_berry",
+    "source": "assets/forage/exports/pickup_poison_berry.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.1445,
+    "source_polygons": 408
   }
 ]

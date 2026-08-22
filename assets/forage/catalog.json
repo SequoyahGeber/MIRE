@@ -1,0 +1,126 @@
+[
+  {
+    "name": "pickup_herb",
+    "family": "organic",
+    "file": "exports/pickup_herb.glb",
+    "width_m": 0.3,
+    "depth_m": 0.105,
+    "height_m": 0.0538,
+    "target_m": 0.3,
+    "mesh_parts": 56,
+    "polygons": 833,
+    "materials": [
+      "MIRE_Fibre",
+      "MIRE_FlowerCream",
+      "MIRE_FlowerWhite",
+      "MIRE_GrassDark",
+      "MIRE_Leaf",
+      "MIRE_LeafPale"
+    ]
+  },
+  {
+    "name": "pickup_wild_onion",
+    "family": "food",
+    "file": "exports/pickup_wild_onion.glb",
+    "width_m": 0.24,
+    "depth_m": 0.1071,
+    "height_m": 0.1258,
+    "target_m": 0.24,
+    "mesh_parts": 15,
+    "polygons": 138,
+    "materials": [
+      "MIRE_Clay",
+      "MIRE_FlowerCream",
+      "MIRE_FlowerWhite",
+      "MIRE_Leaf",
+      "MIRE_LeafLight"
+    ]
+  },
+  {
+    "name": "pickup_honeycomb",
+    "family": "food",
+    "file": "exports/pickup_honeycomb.glb",
+    "width_m": 0.1826,
+    "depth_m": 0.0623,
+    "height_m": 0.2,
+    "target_m": 0.2,
+    "mesh_parts": 42,
+    "polygons": 526,
+    "materials": [
+      "MIRE_Honey",
+      "MIRE_Wax",
+      "MIRE_WoodDead"
+    ]
+  },
+  {
+    "name": "pickup_resin",
+    "family": "organic",
+    "file": "exports/pickup_resin.glb",
+    "width_m": 0.13,
+    "depth_m": 0.097,
+    "height_m": 0.0974,
+    "target_m": 0.13,
+    "mesh_parts": 12,
+    "polygons": 234,
+    "materials": [
+      "MIRE_Pine",
+      "MIRE_PineDark",
+      "MIRE_Resin",
+      "MIRE_WoodBarkDark",
+      "MIRE_WoodCut"
+    ]
+  },
+  {
+    "name": "pickup_clay",
+    "family": "mineral",
+    "file": "exports/pickup_clay.glb",
+    "width_m": 0.17,
+    "depth_m": 0.1346,
+    "height_m": 0.1015,
+    "target_m": 0.17,
+    "mesh_parts": 11,
+    "polygons": 164,
+    "materials": [
+      "MIRE_Clay",
+      "MIRE_StoneDark",
+      "MIRE_TerrainPath"
+    ]
+  },
+  {
+    "name": "pickup_peat",
+    "family": "mineral",
+    "file": "exports/pickup_peat.glb",
+    "width_m": 0.3,
+    "depth_m": 0.1237,
+    "height_m": 0.1173,
+    "target_m": 0.3,
+    "mesh_parts": 26,
+    "polygons": 268,
+    "materials": [
+      "MIRE_GrassDark",
+      "MIRE_GrassDry",
+      "MIRE_LeafLitter",
+      "MIRE_Moss",
+      "MIRE_MossLight",
+      "MIRE_Peat"
+    ]
+  },
+  {
+    "name": "pickup_poison_berry",
+    "family": "food",
+    "file": "exports/pickup_poison_berry.glb",
+    "width_m": 0.15,
+    "depth_m": 0.0932,
+    "height_m": 0.0869,
+    "target_m": 0.15,
+    "mesh_parts": 24,
+    "polygons": 342,
+    "materials": [
+      "MIRE_BerryBloom",
+      "MIRE_FlowerRust",
+      "MIRE_Leaf",
+      "MIRE_LeafDeep",
+      "MIRE_MireBlack"
+    ]
+  }
+]

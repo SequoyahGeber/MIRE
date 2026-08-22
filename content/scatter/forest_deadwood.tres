@@ -139,6 +139,14 @@ weight = 0.4
 min_scale = 0.9
 max_scale = 1.25
 
+[sub_resource type="Resource" id="Resource_92_honeycomb"]
+script = ExtResource("1_entry")
+asset = &"honeycomb"
+kit = "gatherables"
+weight = 0.5
+min_scale = 0.9
+max_scale = 1.15
+
 [resource]
 script = ExtResource("2_def")
 id = &"forest_deadwood"
@@ -148,4 +156,4 @@ jitter_fraction = 0.75
 coverage = 0.34
 min_height = 0.8
 max_height = 1000
-entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_fallen_log_a"), SubResource("Resource_01_fallen_log_b"), SubResource("Resource_02_fallen_log_c"), SubResource("Resource_03_fallen_log_d"), SubResource("Resource_04_stump_a"), SubResource("Resource_05_stump_b"), SubResource("Resource_06_stump_c"), SubResource("Resource_07_stump_d"), SubResource("Resource_08_root_cluster_a"), SubResource("Resource_09_root_cluster_b"), SubResource("Resource_10_root_cluster_c"), SubResource("Resource_11_root_cluster_d"), SubResource("Resource_18_harvest_tree_intact"), SubResource("Resource_19_harvest_tree_felled_trunk"), SubResource("Resource_20_harvest_tree_fresh_stump"), SubResource("Resource_21_harvest_tree_depleted_stump"), SubResource("Resource_22_hanging_moss")])
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_fallen_log_a"), SubResource("Resource_01_fallen_log_b"), SubResource("Resource_02_fallen_log_c"), SubResource("Resource_03_fallen_log_d"), SubResource("Resource_04_stump_a"), SubResource("Resource_05_stump_b"), SubResource("Resource_06_stump_c"), SubResource("Resource_07_stump_d"), SubResource("Resource_08_root_cluster_a"), SubResource("Resource_09_root_cluster_b"), SubResource("Resource_10_root_cluster_c"), SubResource("Resource_11_root_cluster_d"), SubResource("Resource_18_harvest_tree_intact"), SubResource("Resource_19_harvest_tree_felled_trunk"), SubResource("Resource_20_harvest_tree_fresh_stump"), SubResource("Resource_21_harvest_tree_depleted_stump"), SubResource("Resource_22_hanging_moss"), SubResource("Resource_92_honeycomb")])

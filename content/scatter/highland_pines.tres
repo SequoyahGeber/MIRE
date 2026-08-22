@@ -75,6 +75,14 @@ weight = 0.25
 min_scale = 0.85
 max_scale = 1.15
 
+[sub_resource type="Resource" id="Resource_98_resin_node"]
+script = ExtResource("1_entry")
+asset = &"resin_node"
+kit = "gatherables"
+weight = 0.7
+min_scale = 0.9
+max_scale = 1.2
+
 [resource]
 script = ExtResource("2_def")
 id = &"highland_pines"
@@ -84,4 +92,4 @@ jitter_fraction = 0.72
 coverage = 0.42
 min_height = 1
 max_height = 1000
-entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_tree_pine_a"), SubResource("Resource_01_tree_pine_b"), SubResource("Resource_02_tree_pine_c"), SubResource("Resource_03_tree_pine_d"), SubResource("Resource_04_tree_pine_e"), SubResource("Resource_05_tree_pine_f"), SubResource("Resource_06_tree_bare_a"), SubResource("Resource_07_tree_bare_c"), SubResource("Resource_08_tree_snag_b")])
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_tree_pine_a"), SubResource("Resource_01_tree_pine_b"), SubResource("Resource_02_tree_pine_c"), SubResource("Resource_03_tree_pine_d"), SubResource("Resource_04_tree_pine_e"), SubResource("Resource_05_tree_pine_f"), SubResource("Resource_06_tree_bare_a"), SubResource("Resource_07_tree_bare_c"), SubResource("Resource_08_tree_snag_b"), SubResource("Resource_98_resin_node")])

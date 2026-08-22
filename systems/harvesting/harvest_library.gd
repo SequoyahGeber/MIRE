@@ -134,6 +134,24 @@ const HARVEST_RULES: Array = [
 	["berry_bush_", "", Represent.NODE],
 	["mushroom_patch_full", "mushroom_patch", Represent.NODE],
 	["mushroom_patch_", "", Represent.NODE],
+
+	## The rest of the `gatherables` kit (F-490). Seven exports that were modelled, catalogued and
+	## then reachable by nothing: no rule here, no scatter entry, and — because a harvestable yields
+	## an item and F-482 gives every item its own art — no item either. All seven now have a
+	## definition in `content/harvestables/`, an item in `content/items/`, and a home in
+	## `content/scatter/`.
+	##
+	## BATCH for the small soft ones and NODE for the two that are dug: none of them ship damage-state
+	## art, so `HarvestableDef.uses_authored_visual()` is true for all seven and depletion just hides
+	## the prop. That makes BATCH free wherever the asset is dense ground cover, and the split below
+	## is purely about how many of each a chunk holds.
+	["medicinal_herb", "medicinal_herb", Represent.BATCH],
+	["wild_onion", "wild_onion", Represent.BATCH],
+	["honeycomb", "honeycomb", Represent.NODE],
+	["resin_node", "resin_node", Represent.NODE],
+	["clay_deposit", "clay_deposit", Represent.NODE],
+	["peat_deposit", "peat_deposit", Represent.NODE],
+	["poison_berry_bush", "poison_berry_bush", Represent.NODE],
 ]
 
 
