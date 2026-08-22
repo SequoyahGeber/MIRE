@@ -11,6 +11,7 @@
 | **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | gale43d16e | 2026-08-21 17:13 | `docs/ASSET_TRACKER.md`, `tools/blender/build_gatherable_plants.py`, `assets/gatherables/catalog.json`, `tools/blender/build_pickup_kit.py`, `assets/pickups/catalog.json`, `content/items/apple.tres`, `content/harvestables/berry_bush.tres`, `content/harvestables/apple_tree.tres`, `content/harvestables/mushroom_patch.tres`, `tools/item_icons_check.gd` |
 | **F-473** PROTOCOL_VERSION has two independent hard-coded expectations, and only the loud one gets maintained | birche6b40e | 2026-08-21 23:42 | `tools/blender/mire_art.py`, `tools/blender/build_tool_weapon_set.py`, `assets/tools_weapons/catalog.json`, `tools/blender/build_deep_materials.py`, `assets/deep_materials/catalog.json`, `tools/blender/build_harvestable_resources.py`, `assets/harvestables/catalog.json`, `content/scatter/highland_rocks.tres`, `content/harvestables/bogsilver_node.tres` |
 | **F-482** The sling, longbow and crossbow all shipped as the short bow, and the bolt as an arrow | birche6b40e | 2026-08-22 00:29 | `content/items/sling.tres`, `content/items/longbow.tres`, `content/items/crossbow.tres`, `content/items/bolt.tres`, `content/items/iron_axe.tres`, `content/items/bogsilver_axe.tres`, `content/items/bogsilver_pickaxe.tres`, `content/items/wellglass_axe.tres`, `content/items/wellglass_pickaxe.tres` |
+| **F-551** Two checks fail at clean HEAD with nobody owning them — ranged_combat_check (1) and attunement_restart_check (3) | hollowbfcf67 | 2026-08-22 07:01 | `tools/ranged_combat_check.gd`, `tools/attunement_restart_check.gd` |
 
 ## Milestones
 
@@ -130,7 +131,7 @@
 | ⬜ | **F-547** EnvironmentVfx does per-node work for all 44,000 nodes a traversal adds, and 1,821 of them raise a backtraced warning | todo |
 | ⬜ | **F-548** A long Godot-lock hold is indistinguishable from a wedged lock, and 'agent verify' is the worst possible shape to hold it in | todo |
 | ⬜ | **F-549** world_contract_check has 3 failures at a clean HEAD — the [shipped] map publishes no ground and no Undergrowth, and the procedural map builds two extraction ships | todo |
-| ⬜ | **F-551** Two checks fail at clean HEAD with nobody owning them — ranged_combat_check (1) and attunement_restart_check (3) | todo |
+| 🔵 | **F-551** Two checks fail at clean HEAD with nobody owning them — ranged_combat_check (1) and attunement_restart_check (3) | in_flight |
 
 ## Done
 

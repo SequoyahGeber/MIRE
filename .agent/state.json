@@ -126,6 +126,13 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "tools/attunement_restart_check.gd": {
+      "agent": "hollowbfcf67",
+      "at": "2026-08-22T07:01:07+00:00",
+      "dirty_at_claim": false,
+      "task": "F-551",
+      "token": "CLAUDE_CODE_SESSION_ID:cfe6388b-b9bd-49ce-be58-b822595f97fb"
+    },
     "tools/blender/build_deep_materials.py": {
       "agent": "birche6b40e",
       "at": "2026-08-21T23:53:11+00:00",
@@ -167,6 +174,13 @@
       "at": "2026-08-21T17:52:45+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "tools/ranged_combat_check.gd": {
+      "agent": "hollowbfcf67",
+      "at": "2026-08-22T07:01:07+00:00",
+      "dirty_at_claim": false,
+      "task": "F-551",
+      "token": "CLAUDE_CODE_SESSION_ID:cfe6388b-b9bd-49ce-be58-b822595f97fb"
     }
   },
   "in_flight": {
@@ -221,6 +235,16 @@
       "notes": [],
       "started": "2026-08-22T00:29:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "F-551": {
+      "agent": "hollowbfcf67",
+      "files": [
+        "tools/ranged_combat_check.gd",
+        "tools/attunement_restart_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-22T07:01:07+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:cfe6388b-b9bd-49ce-be58-b822595f97fb"
     }
   },
   "recent": {
@@ -6124,7 +6148,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1603,
+  "rev": 1604,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -12347,7 +12371,7 @@
     "F-551": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Two checks fail at clean HEAD with nobody owning them \u2014 ranged_combat_check (1) and attunement_restart_check (3)"
     },
