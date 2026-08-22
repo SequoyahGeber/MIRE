@@ -216,12 +216,6 @@
       "task": "F-535",
       "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
     },
-    "tools/revive_interaction_check.gd": {
-      "agent": "ivyf16b98",
-      "at": "2026-08-22T05:15:00+00:00",
-      "task": "F-526",
-      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
-    },
     "ui/attunement/attunement_ui.gd": {
       "agent": "onyxbe8065",
       "at": "2026-08-22T05:25:47+00:00",
@@ -311,21 +305,6 @@
       "notes": [],
       "started": "2026-08-22T00:29:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
-    },
-    "F-526": {
-      "agent": "ivyf16b98",
-      "files": [
-        "tools/revive_interaction_check.gd"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-22T05:15:01+00:00",
-          "by": "ivyf16b98",
-          "text": "Direct two-process request_revive passes; the missing coverage is PlayerController's real hold-to-revive input path. Building that reproducer without touching the currently claimed controller."
-        }
-      ],
-      "started": "2026-08-22T05:15:00+00:00",
-      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     },
     "F-535": {
       "agent": "flint04a51d",
@@ -4896,6 +4875,13 @@
       "task": "F-459",
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     },
+    "tools/revive_interaction_check.gd": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:26:28+00:00",
+      "hash": "9924f87bc6a4341f7b5c23e674aa7171d0a42d297d9f28759ea67e5c4adecac2",
+      "task": "F-526",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
     "tools/river_water_check.gd": {
       "agent": "vaneabd52b",
       "at": "2026-08-22T00:14:23+00:00",
@@ -5464,7 +5450,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1479,
+  "rev": 1480,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -11450,9 +11436,11 @@
       "title": "macOS release shader cache crashes on launch"
     },
     "F-526": {
+      "done_at": "2026-08-22T05:26:28+00:00",
+      "done_by": "ivyf16b98",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Teammate revive interaction does not revive a downed player"
     },

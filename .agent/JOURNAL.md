@@ -9772,3 +9772,18 @@ Notes along the way:
 Files: `tools/poi_check.gd`
 
 Commit at time of writing: `57859548`
+
+---
+
+### DONE · F-526 · ivyf16b98 · 2026-08-22T05:26:28+00:00
+
+**Teammate revive interaction does not revive a downed player**
+
+Controller hold interaction and host-authoritative revive are now covered end-to-end. revive_interaction_check failures=0; player_health_net_check real two-process revive passed.
+
+Notes along the way:
+- Direct two-process request_revive passes; the missing coverage is PlayerController's real hold-to-revive input path. Building that reproducer without touching the currently claimed controller.
+
+Files: `tools/revive_interaction_check.gd`
+
+Commit at time of writing: `69a0a5cf`
