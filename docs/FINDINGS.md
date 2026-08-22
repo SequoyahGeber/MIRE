@@ -2808,97 +2808,6 @@ F-300..F-303, and the nav bake, which `tools/nav_bake_check.gd` has been failing
 
 ---
 
-### F-459 · First visit to a location hitches; the second visit to the same place does not
-
-**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
-
-Measured by the in-game benchmark's 18-scene suite (F-453/F-458), which visits nine locations by
-day and then the same nine by night. Every location's FIRST visit hitches and its second does not,
-by a wide margin:
-
-    Deep forest — day     1% low 22 fps   median 114 fps
-    Deep forest — night   1% low 74 fps   median 120 fps
-    Marshland  — day      1% low 39 fps   median  85 fps
-    Marshland  — night    1% low 73 fps   median 120 fps
-
-Same trees, same water, same place, minutes apart in one process. Shoreline, which is where the
-world is generated and therefore already warm, showed no such gap (82 day / 79 night). The gap is
-first-visit, not day-versus-night.
-
-Critically, **the chunk streamer has already reported itself idle** before these samples start —
-`BenchmarkRunner.settle_world()` waits for `pending_job_count() == 0` across 30 consecutive quiet
-frames, and it was satisfied. So whatever this cost is, it is not chunk streaming, or not only
-chunk streaming.
-
-Shader and render-pipeline compilation on first sight of an unseen material is the obvious suspect
-and would fit the shape exactly — a one-time per-material cost, paid the first time something is
-drawn, invisible to any "is the streamer busy" test. It is not the only candidate: first-time
-`ResourceLoader` work for a scattered asset, prop collider construction, and `EnvironmentVfx`
-emitter registration (which is already noisy in these logs) would all produce the same signature.
-**This finding is the measurement, not the diagnosis.**
-
-Why it matters beyond the benchmark: this is what a player feels the first time they walk into a
-new kind of terrain in a run, and MIRE generates a fresh island every run, so it is paid again on
-every single run rather than once per install. On a machine slower than the one this was measured
-on — an M5 Pro (F-174) — a 22 fps trough is a visible stutter.
-
-The benchmark now runs a warm-up pass over every destination before sampling
-(`BenchmarkRunner._prewarm()`) so that scene ordering does not decide the numbers. That makes the
-benchmark honest; it does not make the stutter go away for players, and it deliberately hides the
-one measurement that would have shown it. If this is fixed — precompiled pipelines, a warm-up on
-load, whatever it turns out to need — the way to prove it is to disable `_prewarm()` and check that
-the first visit and the second agree.
-
-Reproduce: comment out the `_prewarm()` call in `BenchmarkRunner.run()` and run
-`.agent/bin/agent godot --windowed --script tools/benchmark_check.gd -- --full`.
-
----
-
-**AMENDED 2026-08-22 by vane99f1bb — reproduced under a probe, and one of this finding's own
-premises is wrong.**
-
-`tools/revisit_probe.gd` (new, shipped with this amendment) teleports to a fixed point 350 m from
-spawn, lets the world settle, samples; teleports far away so the destination is evicted; and returns.
-It reports each visit in two halves — ARRIVING (from the teleport until streaming goes quiet) and
-SETTLED (180 frames afterwards). Two runs, M5 Pro, fullscreen, seed 20260821:
-
-    visit                    phase      frames   1% low    hitches   nodes added
-    run 1  FIRST             arriving      213   48.10 ms        6          1382
-           FIRST             settled       180   14.23 ms        0            16
-           SECOND            arriving      144   37.97 ms        2           460
-           SECOND            settled       180   27.42 ms        1            16
-    run 2  FIRST             arriving      201   51.54 ms        6           852
-           SECOND            arriving      150   37.91 ms        3           460
-
-**The first-visit penalty is real and reproduces**: ~1.35x the frames to settle, 2-3x the hitches,
-~1.3x the arrival 1% low, both runs.
-
-**But it is entirely in the arrival, and the settled window is clean.** This finding argues that
-because `BenchmarkRunner.settle_world()` was satisfied before its samples, "whatever this cost is, it
-is not chunk streaming". The probe shows the opposite ordering: once settled, first and second visits
-are indistinguishable (14.23 / 27.42 ms one run, 18.72 / 9.07 ms the other — noise, and in both
-directions). Everything that separates them happens WHILE the world arrives. Whatever the cause, it
-is bounded to the streaming window, which puts chunk streaming and everything it triggers back on the
-list rather than off it.
-
-**What did NOT separate the two hypotheses, and why that matters.** The plan was to discriminate by
-node count: once-only CPU work (first-time `ResourceLoader`, prop colliders, `EnvironmentVfx`
-registration) creates nodes, while GPU pipeline compilation creates none, so a first visit that
-hitches while building the same scene graph would be the driver. The counter is not stable enough to
-carry that: the same first visit measured 1382 nodes one run and 852 the next, against a second visit
-that was 460 both times. A 3.0x ratio and a 1.85x ratio either side of the threshold, from the same
-scenario. The probe now says so rather than naming a cause on one run.
-
-Both suspects are still live. Some once-only CPU work is certainly happening — the first visit always
-creates more nodes — and pipeline compilation would be invisible to this counter no matter how large
-it was.
-
-**The experiment that would settle it**, for whoever picks this up: run the same probe with the
-scatter tables reduced to ONE asset. Identical geometry per chunk, one material. Node creation and
-material variety then move independently, and the first-visit penalty either survives (pipelines) or
-does not (once-only CPU work). That is a content-side change to a `.tres` table plus a re-run, not new
-instrumentation — the harness is now in the repo.
-
 ### F-463 · agent ship silently drops force-added ignored files, so a music .import never lands
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-21 by slate977821
@@ -3392,7 +3301,198 @@ F-217 is marked fixed on the strength of these exact assertions, so this is a re
 
 ---
 
+### F-516 · Nothing pre-warms shipped materials, so every player pays shader/pipeline compilation as hitches during their first minutes of play
+
+**Area:** performance · **Severity:** high · **Found:** 2026-08-22 by vane99f1bb
+
+Found 2026-08-22 by vane99f1bb. F-459's diagnosis, filed as its own fix because it is a new system
+rather than a change to an existing one.
+
+`tools/revisit_probe.gd` measures two arrivals at ground the player has never been, with three
+unrelated locations visited in between. Neither leg has cached geometry (F-501's mesh cache is keyed
+by `(coord, lod)`, and both sets of coords are new to it); scatter assets are already warmed at
+startup by F-407's threaded `ResourceLoader` pass, so loading is not what differs. The only thing the
+second leg has is materials the intervening visits left warm.
+
+    run 1   A cold       17035 nodes, 321 frames, 1% low 149.64 ms, 34 hitches
+            B warmed     31247 nodes, 424 frames, 1% low  56.12 ms,  9 hitches
+    run 2   A cold       16476 nodes, 292 frames, 1% low 226.88 ms, 32 hitches
+            B warmed     31247 nodes, 416 frames, 1% low  60.54 ms,  6 hitches
+
+B creates roughly twice the nodes and costs three to four times less. The same probe's four-location
+sweep is non-monotonic in the same direction — 14,440 nodes cost 51.13 ms while 508 nodes cost
+202.29 ms in the same run — so node creation is not what the arrival pays for. What is left is a
+one-time cost per distinct material, paid the first time something is drawn.
+
+**Why this matters more than the numbers suggest.** It is paid during a player's FIRST minutes, once
+per material, on every machine, and no graphics preset touches it (D-194 already excludes travelling
+scenes from choosing a preset for exactly this reason). It is worst on the low-end target this
+project ships to (F-174), where compilation is slowest. And it is the one performance problem that a
+player cannot mitigate and we cannot tune — only pre-pay.
+
+`rendering/shader_compiler/shader_cache/enabled` is already true (the engine default), which caches
+compiled shaders across runs but does nothing for the first run on a given machine, and nothing for
+pipeline state objects created on first draw.
+
+**Fix shape.** Draw every shipped material once behind the loading screen, where a hitch costs
+nothing. The inventory is enumerable: every asset `ResourceScatterField` can place (it already
+enumerates exactly this list for F-407's warm pass), the terrain material, water, ground fog, the
+sky, and the enemy and prop kits. A small off-screen viewport with a camera and one quad per
+material for one frame is the usual shape; the assets are already being loaded at startup, so this
+extends a pass that exists rather than adding a new startup phase.
+
+Verify with `tools/revisit_probe.gd`'s cold/warm A-B: with pre-warming in place, leg A should cost
+what leg B costs, because there would be nothing left for the intervening visits to warm. That is a
+clean, falsifiable acceptance test rather than an eyeball judgement.
+
+Related: F-364 (Godot's macOS shader baker leaves ten MSL 3.1 variants for runtime compilation) is
+the export-time half of the same problem and should be read alongside this.
+
+---
+
 ## Resolved
+
+### F-459 · First visit to a location hitches; the second visit to the same place does not — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
+
+Measured by the in-game benchmark's 18-scene suite (F-453/F-458), which visits nine locations by
+day and then the same nine by night. Every location's FIRST visit hitches and its second does not,
+by a wide margin:
+
+    Deep forest — day     1% low 22 fps   median 114 fps
+    Deep forest — night   1% low 74 fps   median 120 fps
+    Marshland  — day      1% low 39 fps   median  85 fps
+    Marshland  — night    1% low 73 fps   median 120 fps
+
+Same trees, same water, same place, minutes apart in one process. Shoreline, which is where the
+world is generated and therefore already warm, showed no such gap (82 day / 79 night). The gap is
+first-visit, not day-versus-night.
+
+Critically, **the chunk streamer has already reported itself idle** before these samples start —
+`BenchmarkRunner.settle_world()` waits for `pending_job_count() == 0` across 30 consecutive quiet
+frames, and it was satisfied. So whatever this cost is, it is not chunk streaming, or not only
+chunk streaming.
+
+Shader and render-pipeline compilation on first sight of an unseen material is the obvious suspect
+and would fit the shape exactly — a one-time per-material cost, paid the first time something is
+drawn, invisible to any "is the streamer busy" test. It is not the only candidate: first-time
+`ResourceLoader` work for a scattered asset, prop collider construction, and `EnvironmentVfx`
+emitter registration (which is already noisy in these logs) would all produce the same signature.
+**This finding is the measurement, not the diagnosis.**
+
+Why it matters beyond the benchmark: this is what a player feels the first time they walk into a
+new kind of terrain in a run, and MIRE generates a fresh island every run, so it is paid again on
+every single run rather than once per install. On a machine slower than the one this was measured
+on — an M5 Pro (F-174) — a 22 fps trough is a visible stutter.
+
+The benchmark now runs a warm-up pass over every destination before sampling
+(`BenchmarkRunner._prewarm()`) so that scene ordering does not decide the numbers. That makes the
+benchmark honest; it does not make the stutter go away for players, and it deliberately hides the
+one measurement that would have shown it. If this is fixed — precompiled pipelines, a warm-up on
+load, whatever it turns out to need — the way to prove it is to disable `_prewarm()` and check that
+the first visit and the second agree.
+
+Reproduce: comment out the `_prewarm()` call in `BenchmarkRunner.run()` and run
+`.agent/bin/agent godot --windowed --script tools/benchmark_check.gd -- --full`.
+
+---
+
+**AMENDED 2026-08-22 by vane99f1bb — reproduced under a probe, and one of this finding's own
+premises is wrong.**
+
+`tools/revisit_probe.gd` (new, shipped with this amendment) teleports to a fixed point 350 m from
+spawn, lets the world settle, samples; teleports far away so the destination is evicted; and returns.
+It reports each visit in two halves — ARRIVING (from the teleport until streaming goes quiet) and
+SETTLED (180 frames afterwards). Two runs, M5 Pro, fullscreen, seed 20260821:
+
+    visit                    phase      frames   1% low    hitches   nodes added
+    run 1  FIRST             arriving      213   48.10 ms        6          1382
+           FIRST             settled       180   14.23 ms        0            16
+           SECOND            arriving      144   37.97 ms        2           460
+           SECOND            settled       180   27.42 ms        1            16
+    run 2  FIRST             arriving      201   51.54 ms        6           852
+           SECOND            arriving      150   37.91 ms        3           460
+
+**The first-visit penalty is real and reproduces**: ~1.35x the frames to settle, 2-3x the hitches,
+~1.3x the arrival 1% low, both runs.
+
+**But it is entirely in the arrival, and the settled window is clean.** This finding argues that
+because `BenchmarkRunner.settle_world()` was satisfied before its samples, "whatever this cost is, it
+is not chunk streaming". The probe shows the opposite ordering: once settled, first and second visits
+are indistinguishable (14.23 / 27.42 ms one run, 18.72 / 9.07 ms the other — noise, and in both
+directions). Everything that separates them happens WHILE the world arrives. Whatever the cause, it
+is bounded to the streaming window, which puts chunk streaming and everything it triggers back on the
+list rather than off it.
+
+**What did NOT separate the two hypotheses, and why that matters.** The plan was to discriminate by
+node count: once-only CPU work (first-time `ResourceLoader`, prop colliders, `EnvironmentVfx`
+registration) creates nodes, while GPU pipeline compilation creates none, so a first visit that
+hitches while building the same scene graph would be the driver. The counter is not stable enough to
+carry that: the same first visit measured 1382 nodes one run and 852 the next, against a second visit
+that was 460 both times. A 3.0x ratio and a 1.85x ratio either side of the threshold, from the same
+scenario. The probe now says so rather than naming a cause on one run.
+
+Both suspects are still live. Some once-only CPU work is certainly happening — the first visit always
+creates more nodes — and pipeline compilation would be invisible to this counter no matter how large
+it was.
+
+**The experiment that would settle it**, for whoever picks this up: run the same probe with the
+scatter tables reduced to ONE asset. Identical geometry per chunk, one material. Node creation and
+material variety then move independently, and the first-visit penalty either survives (pipelines) or
+does not (once-only CPU work). That is a content-side change to a `.tres` table plus a re-run, not new
+instrumentation — the harness is now in the repo.
+
+**Resolved 2026-08-22 by vane99f1bb.** **Resolved 2026-08-22 by vane99f1bb — diagnosed. It is per-MATERIAL, one-time GPU work, not
+per-node CPU work. The fix is pre-warming; the finding this hands off to is F-516.**
+
+This finding filed itself as "the measurement, not the diagnosis". `tools/revisit_probe.gd` now
+carries the diagnosis, and it took three attempts to ask the question in a way that could answer it.
+
+**Attempt 1 — the settled window — measured nothing.** Sampling only after the world went quiet found
+the first visit no worse than the second, because everything that distinguishes them happens while
+the world is still arriving. Fixed by measuring the arrival.
+
+**Attempt 2 — the node-count ratio — was not stable enough to decide.** The idea was that once-only
+CPU work creates nodes and pipeline compilation creates none, so the ratio would name the cause. The
+same first visit measured 1382 nodes one run and 852 the next. That instability was itself a bug in
+the instrument: the probe settled on `ChunkStreamer.pending_job_count()` alone, and
+`ResourceScatterField` and `NavBaker` keep creating nodes well after the streamer reports itself
+idle, so the arrival window closed at an arbitrary point in their work. Settling on all three made
+the settled windows genuinely clean (0-8 nodes, from 16-580) and the second visit reproducible to
+within 1% (77-78 frames, 472-476 nodes, 41-42 ms, 2 hitches, three runs).
+
+**Attempt 3 — cold versus equally-new-but-warmed — is decisive.** Two legs, both to ground the player
+has NEVER been, so neither has cached geometry (F-501's mesh cache is keyed by `(coord, lod)` and
+both sets of coords are new). Between them, three unrelated locations are visited. The only thing leg
+B has that leg A did not is whatever those intervening visits left warm — and scatter assets are
+already warmed at startup by F-407's threaded `ResourceLoader` pass, so loading is not what changes
+hands. Materials, shaders and pipelines are.
+
+    run 1   A cold       17035 nodes, 321 frames, 1% low 149.64 ms, 34 hitches
+            B warmed     31247 nodes, 424 frames, 1% low  56.12 ms,  9 hitches
+    run 2   A cold       16476 nodes, 292 frames, 1% low 226.88 ms, 32 hitches
+            B warmed     31247 nodes, 416 frames, 1% low  60.54 ms,  6 hitches
+
+**B creates roughly TWICE the nodes of A and costs three to four times LESS.** Node creation cannot
+be what the arrival is paying for.
+
+The independent first-visit sweep across four never-seen locations says the same thing and is
+non-monotonic in a way that rules node count out on its own: 14,440 nodes cost 51.13 ms while 508
+nodes cost 202.29 ms, at the same LOD, in the same run. Cost does not track node creation anywhere in
+the range.
+
+**So the shape is: a one-time cost per distinct MATERIAL, paid the first time something is drawn,
+invisible to any "is the streamer busy" test and invisible to a node counter.** That is pipeline /
+shader compilation, exactly the suspect this finding named first and could not confirm.
+
+**What follows, and where it went.** The fix is to draw every shipped material once behind the
+loading screen, where a hitch costs nothing, so the player never meets the compile. That is a new
+system rather than a change to an existing one, so it is filed as **F-516** rather than done here.
+
+The instrument stays: `tools/revisit_probe.gd` runs the cold/warm A-B, the four-location sweep, and
+the original first-versus-second revisit, and prints a verdict for each. It needs a real renderer —
+the whole question is GPU-side and the dummy driver compiles nothing.
 
 ### F-514 · Settings lacks the approved advanced graphics, accessibility and privacy controls — **fixed**
 

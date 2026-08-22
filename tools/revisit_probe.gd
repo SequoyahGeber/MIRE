@@ -32,6 +32,24 @@ const ProbeScene := preload("res://tools/probe_scene.gd")
 ## still resident for the other.
 const DESTINATION := Vector3(260.0, 0.0, -240.0)
 const ELSEWHERE := Vector3(-280.0, 0.0, 260.0)
+## Four places nobody has been, spread far enough apart that none of them streams another in, and
+## picked to cross different ground (inland, toward shore, across the island) so they carry
+## genuinely different scatter densities. Offsets from spawn, in metres.
+## The cold/warm A-B legs. All five are distinct from each other and from DESTINATION, so no leg
+## streams another in and none has cached geometry when it is measured.
+const COLD_LEG := Vector3(-210.0, 0.0, 140.0)
+const WARMING_LEGS: Array[Vector3] = [
+	Vector3(180.0, 0.0, -210.0),
+	Vector3(-120.0, 0.0, -330.0),
+	Vector3(310.0, 0.0, 180.0),
+]
+const WARMED_LEG := Vector3(-350.0, 0.0, -110.0)
+const SWEEP_OFFSETS: Array[Vector3] = [
+	Vector3(-190.0, 0.0, -170.0),
+	Vector3(150.0, 0.0, 320.0),
+	Vector3(-330.0, 0.0, 90.0),
+	Vector3(240.0, 0.0, -300.0),
+]
 ## Frames sampled at a destination once its world has settled.
 const SAMPLE_FRAMES: int = 180
 ## How long to wait for streaming to go quiet after a teleport.
@@ -46,6 +64,13 @@ const WORLD_WAIT_FRAMES: int = 600
 var _level: Node3D
 var _player: Node3D
 var _streamer: Node
+## F-459. The two consumers that keep creating nodes AFTER the streamer reports itself idle —
+## `ResourceScatterField`'s dressing queue and `NavBaker`'s bake queue. Settling on the streamer
+## alone cut the arrival window at an arbitrary point in their work, which is why the same first
+## visit measured 1382 nodes one run and 852 the next: the difference was not the visit, it was
+## where the ruler stopped.
+var _scatter: Node
+var _nav_baker: Node
 var _nodes_added: int = 0
 ## Set false unless the run has grounds to trust the node-count discriminator. See `_verdict()`:
 ## across two runs of this probe the first visit's node count came out 1382 then 852 against a
@@ -94,6 +119,8 @@ func _run() -> void:
 			break
 		await process_frame
 	_streamer = _find(root, &"pending_job_count")
+	_scatter = _find(root, &"pending_group_count")
+	_nav_baker = _find(root, &"pending_bake_count")
 	_player = _player_node()
 	if _player == null or _streamer == null:
 		push_error("no player (%s) or streamer (%s) — nothing to probe"
@@ -105,6 +132,8 @@ func _run() -> void:
 	print("spawn %s | destination %s\n" % [spawn, spawn + DESTINATION])
 
 	node_added.connect(_on_node_added)
+	await _cold_versus_warmed_elsewhere(spawn)
+	await _sweep_first_visits(spawn)
 	var first: Dictionary = await _visit(spawn + DESTINATION, "FIRST visit")
 	await _visit(spawn + ELSEWHERE, "elsewhere (evicting the destination)")
 	var second: Dictionary = await _visit(spawn + DESTINATION, "SECOND visit — same place")
@@ -113,6 +142,99 @@ func _run() -> void:
 	_verdict(first, second)
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED)
 	quit(0)
+
+
+## F-459's decisive test, and the one that actually separates the two hypotheses.
+##
+## Both legs are places the player has NEVER been, so neither has any cached geometry — the F-501
+## mesh cache is keyed by `(coord, lod)` and these coords are new to both. The ONLY thing the second
+## leg has that the first did not is whatever visiting three unrelated locations in between left
+## warm. Scatter assets are already warmed at startup by F-407's threaded `ResourceLoader` pass, so
+## loading is not what changes hands here. Materials, shaders and render pipelines are.
+##
+##   · If the two legs cost the SAME, the arrival is paying per-node CPU work that every new place
+##     owes afresh. Fix by creating less, or creating it off the frame.
+##   · If the second leg is much CHEAPER, the cost was per-MATERIAL and one-time, and the fix is to
+##     pre-warm every shipped material behind the loading screen where nobody feels it.
+func _cold_versus_warmed_elsewhere(spawn: Vector3) -> void:
+	print("=== cold first visit vs an equally-new place after warming elsewhere ===")
+	print("(neither has cached geometry — only materials can have changed hands)\n")
+	var cold: Dictionary = (await _visit(spawn + COLD_LEG, "A · cold, nothing warm"))["arrival"]
+	for offset: Vector3 in WARMING_LEGS:
+		await _visit(spawn + offset, "   warming %s" % offset)
+	var warmed: Dictionary = (await _visit(
+		spawn + WARMED_LEG, "B · equally new, materials warm"))["arrival"]
+
+	var cold_cost: float = float(cold["low1"])
+	var warm_cost: float = float(warmed["low1"])
+	print("\n  A cold        %6d node(s), %3d frame(s), 1%% low %7.2f ms, %d hitch(es)"
+		% [cold["nodes"], cold["frames"], cold_cost, cold["hitches"]])
+	print("  B warm-ish    %6d node(s), %3d frame(s), 1%% low %7.2f ms, %d hitch(es)"
+		% [warmed["nodes"], warmed["frames"], warm_cost, warmed["hitches"]])
+	if warm_cost < cold_cost * 0.6:
+		print("  -> MATERIALS. B is %.2fx cheaper than A on ground just as new, so the cost A paid"
+			% (cold_cost / maxf(warm_cost, 0.001)))
+		print("     was per-material and one-time. Pre-warm every shipped material behind the")
+		print("     loading screen and the player never meets it.")
+	elif warm_cost > cold_cost * 0.9:
+		print("  -> PER-NODE CPU WORK. Warming elsewhere bought B nothing, so every new place owes")
+		print("     this cost afresh. Pre-warming is the wrong fix; create less, or off the frame.")
+	else:
+		print("  -> PARTIAL. B is cheaper but not decisively so — some of the cost is shared and")
+		print("     some is per-place. Widen WARMING_LEGS before drawing a conclusion.")
+	print("")
+
+
+## F-459's discriminator, second attempt. The first one asked whether the first visit creates more
+## nodes than the second — a RATIO, which landed either side of its threshold run to run and proved
+## nothing. This asks a better-posed question: across several places nobody has been before, does the
+## arrival cost TRACK the number of nodes created?
+##
+## Every location here is a first visit, so whatever once-only cost exists is paid at all of them.
+## What differs between them is how much scatter the ground carries, and therefore how many nodes
+## enter the tree. If node creation is what the arrival is paying for, cost rises with node count. If
+## cost is flat while node count swings, the cost is something the node counter cannot see — which is
+## what pipeline compilation on first sight of a material would look like.
+##
+## Reported, never asserted. Four points is enough to see a slope or its absence and not enough to
+## put a number on; anyone acting on this should widen `SWEEP_OFFSETS` first.
+func _sweep_first_visits(spawn: Vector3) -> void:
+	print("=== first-visit sweep: does arrival cost track nodes created? ===")
+	var rows: Array[Dictionary] = []
+	for offset: Vector3 in SWEEP_OFFSETS:
+		var row: Dictionary = await _visit(spawn + offset, "sweep %s" % offset)
+		rows.append(row["arrival"] as Dictionary)
+	print("
+  %-10s %-8s %-10s %-8s" % ["nodes", "frames", "1% low", "hitches"])
+	var min_nodes: int = 1 << 30
+	var max_nodes: int = 0
+	var cost_at_min: float = 0.0
+	var cost_at_max: float = 0.0
+	for row: Dictionary in rows:
+		print("  %-10d %-8d %-10.2f %-8d"
+			% [row["nodes"], row["frames"], row["low1"], row["hitches"]])
+		if int(row["nodes"]) < min_nodes:
+			min_nodes = int(row["nodes"])
+			cost_at_min = float(row["low1"])
+		if int(row["nodes"]) > max_nodes:
+			max_nodes = int(row["nodes"])
+			cost_at_max = float(row["low1"])
+	var node_ratio: float = float(max_nodes) / maxf(float(min_nodes), 1.0)
+	var cost_ratio: float = cost_at_max / maxf(cost_at_min, 0.001)
+	print("
+  %.2fx the nodes (%d -> %d) bought %.2fx the arrival cost (%.2f -> %.2f ms)"
+		% [node_ratio, min_nodes, max_nodes, cost_ratio, cost_at_min, cost_at_max])
+	if node_ratio >= 1.5 and cost_ratio < node_ratio * 0.5:
+		print("  -> cost does NOT track node creation. Whatever the arrival is paying for is mostly")
+		print("     invisible to the node counter — consistent with per-material pipeline")
+		print("     compilation, and NOT with once-only per-node CPU work.")
+	elif node_ratio >= 1.5:
+		print("  -> cost DOES track node creation. The arrival is paying for what enters the tree,")
+		print("     so the fix is to create less or create it off the frame — not to pre-warm.")
+	else:
+		print("  -> inconclusive: these locations carry too similar a node count (%.2fx) to tell."
+			% node_ratio)
+	print("")
 
 
 ## Teleport, let the world settle, then sample. The settle is what makes this a fair comparison:
@@ -137,7 +259,7 @@ func _visit(destination: Vector3, label: String) -> Dictionary:
 		settle_last = settle_now
 		settle_nodes += _nodes_added
 		settle_frames += 1
-		if int(_streamer.call(&"pending_job_count")) == 0:
+		if _world_is_quiet():
 			quiet += 1
 			if quiet >= SETTLE_QUIET_FRAMES:
 				break
@@ -145,6 +267,7 @@ func _visit(destination: Vector3, label: String) -> Dictionary:
 			quiet = 0
 	var arrival: Dictionary = _summarize(settle_samples)
 	arrival["nodes"] = settle_nodes
+	arrival["frames"] = settle_frames
 	print("%-38s ARRIVING  %4d frame(s) | median %6.2f ms | 1%% low %7.2f ms | worst %7.2f ms | hitches %3d | nodes added %6d"
 		% [label, settle_frames, arrival["median"], arrival["low1"], arrival["worst"],
 			arrival["hitches"], settle_nodes])
@@ -251,6 +374,19 @@ func _verdict(first: Dictionary, second: Dictionary) -> void:
 		print("     reduced to ONE asset — identical geometry, one material — so that node creation")
 		print("     and material variety move independently.")
 	print("\nREVISIT_PROBE done")
+
+
+## Every producer of per-chunk work is idle, not just the streamer. F-459 argued that a satisfied
+## `settle_world()` ruled chunk streaming out as the cause; it only ever ruled out the streamer's own
+## mesh jobs, and left the two systems that do the actual node creation still running.
+func _world_is_quiet() -> bool:
+	if int(_streamer.call(&"pending_job_count")) != 0:
+		return false
+	if _scatter != null and int(_scatter.call(&"pending_group_count")) != 0:
+		return false
+	if _nav_baker != null and int(_nav_baker.call(&"pending_bake_count")) != 0:
+		return false
+	return true
 
 
 func _on_node_added(_node: Node) -> void:
