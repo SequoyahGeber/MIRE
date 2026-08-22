@@ -140,6 +140,21 @@ don't accrete beside the typed system.
 coverage check asserts "every service seam has a verb", and how any future UI (or agent) learns
 the surface without reading source.
 
+### 2.6 Completion (F-534)
+
+`CommandService.complete(line, caret_column) -> {start, candidates}` answers "what could the token
+under the caret be?" — command names for the first token, and for every later one the candidate set
+of the argument type it lands on, walked through the spec so a `vec3`'s three tokens do not skew the
+count. It is LOCAL and read-only: a client completes `op <TAB>` from the peer registry its own
+NetTransport already holds, so completion adds no RPC and no authority of its own.
+
+Adding a type to §2.2 means adding its candidate source to `_type_candidates()` — a type with none
+simply offers nothing, which is the honest answer for `string`, `int`, `float` and `vec3`.
+
+The console binds this to TAB: one candidate completes and adds the separating space, several
+advance to their longest shared prefix and print the set. `tools/command_complete_check.gd` guards
+both halves.
+
 ---
 
 ## 3. Selectors and the EntityDirectory

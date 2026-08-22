@@ -3487,7 +3487,157 @@ come first.
 
 ---
 
+### F-526 · Teammate revive interaction does not revive a downed player
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivyf16b98
+
+Multiplayer playtest report from Sequoyah on 2026-08-21: when a teammate was downed, the other player could not revive them. Reproduce with two real peers, verify the revive prompt/interact path reaches the host, and verify authoritative health/downed state plus both peers' UI after completion. Treat as a multiplayer gameplay failure, not only missing presentation.
+
+---
+
+### F-527 · Build menu again leaves the cursor captive, preventing station and item selection
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivyf16b98
+
+Multiplayer playtest report from Sequoyah on 2026-08-21: with the build menu open, the cursor remains captured and there is no usable way to choose a station or item to build. This is a live regression or incomplete UX relative to resolved F-483. Reproduce from the actual player flow with mouse and keyboard, including selecting a station recipe/buildable rather than merely cycling a generic piece in an automated harness. Verify the player can discover and operate selection while placement aiming remains usable.
+
+---
+
+### F-535 · Harvested items should drop on the ground and be picked up, not credited instantly
+
+**Area:** systems · **Severity:** medium · **Found:** 2026-08-22 by flint04a51d
+
+Supersedes the duplicate body filed under F-533, whose number collided with another live session's
+in-flight claim.
+
+Harvesting credits the swinger's inventory directly: `Harvestable._depleted()` emits
+`harvest_yielded`, and `InventoryService._on_harvest_yielded()` calls `host_add()` on the spot. The
+item never exists in the world, so a full pack silently voids the yield, a teammate standing at the
+tree gets nothing, and there is no physical read that the swing paid out at all.
+
+Sequoyah's call (2026-08-21): the item should fall on the ground first, Minecraft-style, then auto
+pick up when a player is close, with [E] as the manual fallback.
+
+---
+
+### F-536 · Scattered pickup models are decorative and cannot be collected as loose world loot
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivyf16b98
+
+Split from F-528 after its 50-chest density target was implemented. The map and asset kits already scatter pickup_* meshes, but MIRE has no host-authoritative ordinary-item world-pickup component/service: only Haulable.request_pickup exists, for two-person carried objects. Build a stable seed-derived loose-loot placement path, host-validate pickup range and inventory capacity, replicate consumed state/rejoin state, and wire FocusPrompt interaction. Preserve the active 2.1d pickup asset lane; do not edit its claimed generator/catalog files until released.
+
+---
+
+### F-537 · macOS: the game process can outlive its window because Steam is never shut down and nothing guarantees exit
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by duska7668b
+
+Every quit path in the game is a bare `get_tree().quit()` — ui/frontend/frontend.gd:143,151,
+ui/menu/main_menu.gd:176, autoload/debug_console.gd:324 — and nothing anywhere handles
+NOTIFICATION_WM_CLOSE_REQUEST. More importantly `Steam.steamShutdown()` is never called: SteamLobby
+calls `steamInitEx` (autoload/steam_lobby.gd:139) on demand and has no shutdown counterpart, so the
+Steam API's own threads and the macOS overlay hook are still live when the SceneTree finalises. That
+is the classic shape of a macOS build whose window disappears while the process stays in the
+background holding the GPU and the audio device. There is also no backstop: if any exit-time step
+blocks (a Steam thread, an in-flight WorkerThreadPool mesh job, a Jolt teardown), no GDScript is
+running any more and nothing can force the process down.
+
+A frontend-only exit does terminate cleanly (verified: launched the release app, sent the Apple quit
+event, process gone), and SIGTERM from a `--host` run also exits in under a second, so this is not a
+deterministic hang at HEAD — it is a missing guarantee. The fix is an ownership of the close path
+plus a hard watchdog, not a repro-chase.
+
+---
+
+### F-538 · Ambient daytime spawns are hardcoded to one kind, so three authored enemies never appear
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by onyxbe8065
+
+`EnemyWorld.ambient_enemy` is a single `StringName` fixed at `&"crawler"`
+(autoload/enemy_world.gd:65), and the ambient loop is the only thing that spawns during the day.
+
+docs/ENEMIES.md §intro states the task-5.2 stat variants — `crawler`, `bog_crawler`, `strider`,
+`tusker`, `broodcaller` — "stay as the ambient daytime field". They do not. `WaveSpawner` only ever
+rolls `enemy_id` (`peatling`) plus `roster_order`
+(`fen_stalker`, `bog_bulwark`, `bloatcap`, `mire_herald`, `bog_crawler`), so `strider`, `tusker` and
+`broodcaller` are reachable from no spawn path at all. Verified headlessly against the live
+registry: EnemyWorld loads all ten defs, and those three are named by nothing outside `tools/`.
+
+Player-visible symptom, reported by Sequoyah: "the new enemies might not be getting used in the
+game? i still see old default crawlers." Daytime is 100% `crawler` by construction.
+
+Fix: give the ambient field a weighted spread across the crawler-variant family instead of one
+hardcoded id, keeping `crawler` the common case (docs — variety means a spread, not a uniform swap).
+
+---
+
 ## Resolved
+
+### F-534 · Dev console has no TAB completion for commands or arguments — **fixed**
+
+**Area:** commands · **Severity:** low · **Found:** 2026-08-22 by wickec4384
+
+The dev console has history recall but no TAB completion, so every command name, item id, rule id and peer must be typed in full and remembered exactly. Sequoyah asked for completion: typing `op ` + TAB should fill in a connected player's name or peer id, and the same should hold for every argument type CommandService already knows how to validate (item_id, enemy_id, rule_id, function_id, recipe/powerup/buildable/station/loot ids, enum, bool) plus the command name itself.
+
+---
+
+**Resolved 2026-08-22 by wickec4384.** TAB completion added. `CommandService.complete(line, caret)` returns the candidate set for the token under the caret — command names for the first token, and the argument's own type for later ones (peer, item_id, enemy_id, rule_id, function_id, recipe/powerup/buildable/station/loot ids, enum, bool), walked through the spec so a vec3's three tokens do not skew which argument the caret is on. It is LOCAL and read-only, so a client completes `op <TAB>` from the peer registry NetTransport already holds — no new RPC or authority. `DebugConsole` binds TAB in `_input` (not the LineEdit's gui_input: TAB is ui_focus_next, so GUI input sees it only after focus has already moved); one candidate completes and adds a separating space, several advance to their longest shared prefix and print the set. Peer completion offers both the display name and the peer id, matches case-insensitively like `_parse_peer` does, and offers only the id for a name containing a space, which could not survive the console's token split. Verified headless: tools/command_complete_check.gd (24 checks, incl. a real pushed TAB InputEvent leaving focus in the entry), plus command_console_check and command_check still green.
+
+### F-539 · Killing an enemy grants no coins, so the only pre-boss coin source is scattered caches — **fixed**
+
+**Area:** systems/enemies · **Severity:** medium · **Found:** 2026-08-22 by larch28fcaa
+
+docs/ITEMS.md §4 lists Old Coins' sources as "kills, caches", but nothing in the game granted a coin for a kill: Enemy._enter_death() emitted died() and only SfxDirector listened. RewardService covered the wellspring cap and the boss-defeat tiers, so the whole coin economy below a boss came out of scattered Reed Caches — a fixed supply with no relationship to how much of the night the party actually fought.
+
+Sequoyah's call (2026-08-22): kills should pay coins, and pay by tier — a Mire Herald is worth far more than a Peatling.
+
+(This body was first filed as F-533, whose number collided with another live session's in-flight claim; that number belongs to the harvest-drop finding.)
+
+**Resolved 2026-08-22 by larch28fcaa.** Fixed. `EnemyDef` gained a Bounty group (`coin_drop_min`/`coin_drop_max`, both defaulting to 0 so an unpriced def behaves exactly as before), `Enemy._enter_death()` emits the new host-only `EventBus.enemy_killed`, and `RewardService._on_enemy_killed()` rolls that range — seeded off the same per-run ordinal F-219 established — and grants it to the killer alone through `InventoryService.host_add()`. All ten kinds are priced, 1-3 for a Marsh Strider up to 55-90 for a Mire Herald, with every ladder tier's floor above the tier below's ceiling.
+
+Verified headless by tools/kill_bounty_check.gd: a real kill through host_apply_damage pays the killer inside the authored range, a bystander in the players group gets nothing, an uncredited death (peer 0) pays nobody, and the same seed at the same ordinal pays the same coins. It caught a real overlap in the first pass at the numbers (Bloatcap 26-42 sitting under the Bulwark's 30 ceiling). reward_service, reward_service_seed, enemy_peatling, loot_content, chest, enemy_net and powerup checks all still pass.
+
+D-210 records why the bounty is priced as data on the def rather than a per-kind loot table, and why it pays the killer rather than the party.
+
+### F-528 · Procedural map chest and loose-loot density is far below the intended scavenging experience — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivyf16b98
+
+Multiplayer playtest report from Sequoyah on 2026-08-21: only one chest could be found across the map. Direction is roughly 50 times more discoverable chests than this observed run, plus loot items distributed around the map. This is a content-density/discoverability regression or insufficient resolution relative to F-511, which proved 13 live chests and added locators but did not meet the play experience. Establish an explicit map-scaled chest target and loose-loot placement contract, then verify counts and spatial distribution over multiple deterministic seeds and visually in a real gameplay run; preserve host authority for opening/pickup state.
+
+---
+
+**Resolved 2026-08-22 by ivyf16b98.** The procedural island now requests and actually places 50 live supply-cache chests instead of 8. PoiMap's hidden 24-round ceiling was raised to the PoiDef schema maximum so targets above 24 are reachable. `.agent/bin/agent godot --script tools/poi_check.gd` proves exactly 50/50 legal, deterministically-spaced caches on each of five seeds and retains the 64-seed objective/exit sweep, failures=0. Ordinary scattered pickup models remain decorative and were split to F-536 because they require a new host-authoritative pickup system and the pickup asset files are actively claimed by task 2.1d.
+
+### F-529 · A rejoining player can inherit the host camera viewport and visor overlay — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivyf16b98
+
+Multiplayer playtest report from Sequoyah on 2026-08-21: after the other player rejoined the host's game, that player's view appeared to be through the host's viewport, with the host's black visor blocking most of the screen. Reproduce a disconnect/rejoin with two real rendered peers and verify local camera ownership, current-camera selection, viewmodel/visor ownership, and late-spawn cleanup/rebind. The reconnect state tests are insufficient unless each process renders from its own player camera with only its own presentation nodes visible.
+
+---
+
+**Resolved 2026-08-22 by ivyf16b98.** The shared player scene no longer authors every Camera3D as current. Cameras now enter inactive and PlayerController activates only the locally-owned camera, so a remote/rejoining body cannot steal the viewport and place its face/visor presentation in front of another player. Verified `.agent/bin/agent godot --script tools/player_camera_ownership_check.gd`: both initial and second/rejoin scene instances are inactive by default, failures=0.
+
+### F-531 · Wellspring capture eventually triggers an overwhelming unbounded enemy flood — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivyf16b98
+
+Multiplayer playtest report from Sequoyah on 2026-08-21: while capping a Wellspring, far too many enemies begin spawning after the capture has run for a while. Reproduce a sustained capture with the real host-authoritative Wellspring and wave/spawn services, measure concurrent live enemies and spawn rate over time, and enforce an explicit encounter budget with recovery after capture stops/completes. Verification must cover the late portion where accumulation occurs, not only initial spawns, and must prove clients never spawn enemies themselves.
+
+---
+
+**Resolved 2026-08-22 by ivyf16b98.** Wellspring now deploys one defense wave per uncapped lifecycle. Cancelling still forfeits ritual progress but restarting cannot stack more defenders; the latch re-arms only on genuine re-corruption or a new run. Verified `.agent/bin/agent godot --script tools/wellspring_check.gd`: first start spawned 4, restart added 0, five further cancel/restart cycles stayed at 4, all ritual assertions passed, failures=0.
+
+### F-530 · Class selection can open while the mouse is captured and become impossible to dismiss — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivyf16b98
+
+Multiplayer playtest report from Sequoyah on 2026-08-21: sometimes the cursor is forcibly captured while the class-selection menu is open, and the menu cannot be bypassed. Reproduce through the real lobby/landfall/rejoin flows, not only direct UI construction. A cursor-owning blocking menu must keep the mouse visible and operable, and the mandatory class choice must always expose a working selection/confirmation path. Verify focus, mouse mode, and dismissal on both host and client, including timing races during player spawn and reconnect.
+
+---
+
+**Resolved 2026-08-22 by ivyf16b98.** AttunementUI now enforces visible mouse mode and restores focus for the entire time the mandatory picker is open, so later player/HUD lifecycle handlers cannot strand it behind captured input. Verified with `.agent/bin/agent godot --script tools/attunement_ui_check.gd`: the check forcibly recaptures the mouse and clears focus, the picker restores both, all role selection assertions pass, failures=0.
 
 ### F-532 · Water animation accelerates while sprinting — **fixed**
 
@@ -3496,6 +3646,14 @@ come first.
 `world/gen/procedural_world.gd::_physics_process()` calls `_center_ocean_on()` every physics frame, translating the Ocean mesh by the player's full XZ movement. `world/environment/water_low_poly.gdshader` derives every wave phase from MODEL_MATRIX world position, so sprint velocity is added directly to the apparent phase velocity and the water goes frantic. Keep the finite ocean under the viewer without continuously translating the shader's spatial phase; add a focused regression check that ordinary movement does not recenter it every frame.
 
 **Resolved 2026-08-22 by cinder7f5a42.** Fixed `world/gen/procedural_world.gd` so its 1,400 m Ocean mesh recenters only after the local viewer has moved 256 m from the mesh centre, rather than inheriting every frame of player/sprint movement. This removes player velocity from the world-position shader phase while retaining 444 m of water beyond the viewer at the deadband edge. Extended `tools/procedural_world_check.gd` to prove ordinary movement leaves the ocean fixed and long traversal still recenters it. Verified with `.agent/bin/agent godot --script tools/procedural_world_check.gd`: all checks pass, `PROCEDURAL_WORLD_CHECK failures=0` (the check retains existing shutdown RID diagnostics).
+
+### F-525 · macOS release shader cache crashes on launch — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by slatef9bff1
+
+The macOS release preset bakes shader containers that Godot 4.7.1 fails to parse at runtime on macOS 27 / Apple M5 Pro and macOS 26 / Apple M1. A real windowed exported-app launch reproduces `Not enough bytes for uniform in shader container`, `Failed to parse shader container from binary`, then fatal `Index p_index = 19 is out of bounds`; headless smoke missed the renderer path. Disable shader baking for the macOS release so shaders compile on first launch, and gate the export with a real windowed Metal smoke run.
+
+**Resolved 2026-08-22 by slatef9bff1.** Disabled `shader_baker/enabled` for the macOS release preset. Re-exported the app with no baked shader containers, then ran the exported app through a real Metal 4.0 Forward+ window on macOS 27 / Apple M5 Pro with a fresh runtime cache: it stayed up and exited 0 after 30 seconds; the prior baked build deterministically exited 133 with the reported parse errors and fatal. The clean staged bundle and the bundle extracted from its ZIP both passed `codesign --verify --deep --strict`; archive SHA-256 is `65865aadbd402f3823a163dca735ba981a5aa546f1bb6943631f58d037b198ba`.
 
 ### F-520 · Steam invite is a silent no-op and opening a lobby captures the mouse behind the menu — **fixed**
 
