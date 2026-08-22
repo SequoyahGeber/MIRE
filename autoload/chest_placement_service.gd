@@ -100,6 +100,8 @@ const _LOCATOR_TINT_FOR_TIER: Dictionary[StringName, Color] = {
 
 
 var _refresh_scheduled: bool = false
+## Tiers already reported by `_gate_is_satisfiable()` — see its header for why this warns once.
+var _unsatisfiable_tiers_warned: Dictionary[StringName, bool] = {}
 
 
 func _ready() -> void:
@@ -138,6 +140,18 @@ func _maybe_build(marker: Node3D) -> void:
 	var tier: StringName = _tier_for_marker_name(marker.name)
 	if tier == &"":
 		return
+	if not _gate_is_satisfiable(tier):
+		# F-574: refuse to build a container the game has no way to let anyone open. `gilded` is
+		# key-only by D-122 and its key does not exist yet (`gilded_key` is A-047 art, still
+		# QUEUED), so `content/poi/treasure_gilded.tres`'s two sites an island were shipping two
+		# fully-built, locator-tinted, permanently unopenable chests. A visible promise the game
+		# cannot keep is strictly worse than an empty site, so the site stays empty.
+		#
+		# Deliberately a runtime gate on the ITEM rather than a deletion of the tier: nothing here
+		# changes when the key ships. The moment `content/items/gilded_key.tres` exists and
+		# registers, this test passes and the gilded chests light up with no edit to this file.
+		marker.set_meta(BUILT_META, true)
+		return
 	marker.set_meta(BUILT_META, true)
 	var chest: Node3D = CHEST_SCRIPT.new() as Node3D
 	chest.name = "Chest_%s" % marker.name
@@ -160,6 +174,33 @@ func _maybe_build(marker: Node3D) -> void:
 	chest.set("open_scene", visuals[1])
 	chest.set("locator_tint", _LOCATOR_TINT_FOR_TIER.get(tier, Color(1.0, 0.64, 0.12)))
 	marker.add_child(chest)
+
+
+## Can anybody actually open a chest of this tier — is its key an item that exists?
+##
+## F-574: `_ECONOMY_FOR_TIER` can name a `locked_by` item, and nothing checked that the id resolves.
+## `gilded` named `gilded_key`, which appeared in exactly one file in the entire repository: the
+## table entry itself. No item def, no loot entry, no recipe, no drop. `Chest._accept_open_request()`
+## charges `cost_coins` AND `locked_by` in one transaction, so the requirement could never be met.
+##
+## Warns ONCE per tier rather than per placed chest — six sites an island times every reseed is a log
+## nobody reads, and the point of the warning is that an authored gate is unreachable, which is a
+## fact about content and not about this instance.
+func _gate_is_satisfiable(tier: StringName) -> bool:
+	var economy: Dictionary = _ECONOMY_FOR_TIER.get(tier, {})
+	var key := StringName(economy.get("locked_by", &""))
+	if key == &"":
+		return true
+	if Registry.has_item(key):
+		return true
+	if not _unsatisfiable_tiers_warned.has(tier):
+		_unsatisfiable_tiers_warned[tier] = true
+		push_warning(
+			"ChestPlacementService: tier '%s' is locked by item '%s', which is not registered — "
+			% [tier, key]
+			+ "placing no chests of that tier rather than unopenable ones (F-574)"
+		)
+	return false
 
 
 ## One silhouette per ladder rung, in price order, plus the Mire's own container for the tiers that

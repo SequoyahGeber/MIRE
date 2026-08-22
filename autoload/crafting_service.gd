@@ -361,6 +361,13 @@ func _definition_data(recipe_id: StringName) -> Dictionary:
 ## StationDef means no world_scene to match against, so it is always out of range.
 func _station_in_range(player: Node3D, required: StringName) -> bool:
 	if Registry.get_station(required) == null:
+		# Review catch (hollowbfcf67, 2026-08-22): silent here would mean a recipe naming an
+		# unregistered station just never works, with nothing in the log to say why.
+		# `tools/recipe_station_check.gd` catches it at author time, so this is defence in depth —
+		# but the one time it fires in play it must be readable. `_definition_data()` already
+		# rejects such a recipe before this is reached, so this cannot spam per frame.
+		push_warning("CraftingService: recipe requires station '%s', which is not registered"
+			% required)
 		return false
 	# F-575: any registered station that satisfies the requirement counts, not just the one whose id
 	# the recipe names. Both the client preview (`local_station_in_range`) and the host's own
@@ -405,14 +412,22 @@ func station_count(required: StringName) -> int:
 	# F-575, same rule as `_station_in_range()`: a guide step that says "place a workbench" must
 	# clear when the party places the Reinforced Workbench instead, or the tutorial deadlocks behind
 	# a bench the player has already outgrown.
+	# Counted per distinct world_scene, not per station id. Review catch (hollowbfcf67, 2026-08-22):
+	# summing `_station_positions_for(asset)` across every satisfying station double-counts the
+	# moment two of them share a scene. Today all eight `content/stations/*.tres` have distinct
+	# scenes, so the naive sum happens to be right — but it would be right by DATA rather than by
+	# construction, and a future station that reuses a mesh would silently inflate the count and
+	# clear a guide step nobody completed.
+	var counted: Dictionary[StringName, bool] = {}
 	var total: int = 0
 	for station_id: StringName in Registry.stations:
 		if not station_satisfies(station_id, required):
 			continue
 		var station_def: Resource = Registry.get_station(station_id)
 		var asset := StringName(String(station_def.get("world_scene")))
-		if asset == &"":
+		if asset == &"" or counted.has(asset):
 			continue
+		counted[asset] = true
 		total += _station_positions_for(asset).size()
 	return total
 
