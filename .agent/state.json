@@ -180,29 +180,11 @@
       "task": "5.11",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
     },
-    "systems/extraction/extraction_ship.gd": {
-      "agent": "quill3c83cf",
-      "at": "2026-08-22T02:42:36+00:00",
-      "task": "F-312",
-      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
-    },
-    "systems/loot/chest.gd": {
-      "agent": "quill3c83cf",
-      "at": "2026-08-22T02:42:36+00:00",
-      "task": "F-312",
-      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
-    },
     "systems/waves/wave_spawner.gd": {
       "agent": "ember5da2c4",
       "at": "2026-08-22T01:24:04+00:00",
       "task": "5.11",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
-    },
-    "systems/wellspring/wellspring.gd": {
-      "agent": "quill3c83cf",
-      "at": "2026-08-22T02:42:36+00:00",
-      "task": "F-312",
-      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
     },
     "tools/blender/build_deep_materials.py": {
       "agent": "birche6b40e",
@@ -294,12 +276,6 @@
       "task": "5.11",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
     },
-    "tools/environment_vfx_reseed_check.gd": {
-      "agent": "quill3c83cf",
-      "at": "2026-08-22T02:42:36+00:00",
-      "task": "F-312",
-      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
-    },
     "tools/item_icons_check.gd": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:52:45+00:00",
@@ -373,24 +349,6 @@
       "notes": [],
       "started": "2026-08-22T01:08:05+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
-    },
-    "F-312": {
-      "agent": "quill3c83cf",
-      "files": [
-        "systems/wellspring/wellspring.gd",
-        "systems/extraction/extraction_ship.gd",
-        "systems/loot/chest.gd",
-        "tools/environment_vfx_reseed_check.gd"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-22T02:42:37+00:00",
-          "by": "quill3c83cf",
-          "text": "The absolute-path errors are detached procedural nodes receiving later run_restarted callbacks from EventBus's duplicate subscriber list. Guard their root lookups with is_inside_tree(); declare only the dummy-renderer RID family in the verdict."
-        }
-      ],
-      "started": "2026-08-22T02:42:36+00:00",
-      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
     },
     "F-469": {
       "agent": "coil26502f",
@@ -3761,6 +3719,13 @@
       "task": "F-487",
       "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
+    "systems/extraction/extraction_ship.gd": {
+      "agent": "quill3c83cf",
+      "at": "2026-08-22T02:44:43+00:00",
+      "hash": "c14e3036dc0b868c4aef6efad1b235329618aac09092be9869ae17ec42bfe995",
+      "task": "F-312",
+      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
+    },
     "systems/guide/guide_step_def.gd": {
       "agent": "birche6b40e",
       "at": "2026-08-21T23:26:09+00:00",
@@ -3817,12 +3782,26 @@
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "systems/loot/chest.gd": {
+      "agent": "quill3c83cf",
+      "at": "2026-08-22T02:44:43+00:00",
+      "hash": "dbaf020c582e0cc7ff7665e67b1efd118a5e2c46a0e45e461524ffd620baa37e",
+      "task": "F-312",
+      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
+    },
     "systems/loot/loot_table_def.gd": {
       "agent": "birche6b40e",
       "at": "2026-08-21T23:26:09+00:00",
       "hash": "c0a571111b9711bc35c61a196109aae54848163bbbe71b2382ccafe2540593f0",
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "systems/wellspring/wellspring.gd": {
+      "agent": "quill3c83cf",
+      "at": "2026-08-22T02:44:43+00:00",
+      "hash": "f1ee45a097b898499ad1c8373579e64c8ab3bc5b492b599feb71a274ddd1d0bd",
+      "task": "F-312",
+      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
     },
     "tools/_f421_frontend_stage.gd": {
       "agent": "mossb81aeb",
@@ -4141,9 +4120,9 @@
     },
     "tools/environment_vfx_reseed_check.gd": {
       "agent": "quill3c83cf",
-      "at": "2026-08-22T02:40:27+00:00",
-      "hash": "4afa2253695354cce1addcf17b83b81a8684d21bd978a296dd9721dcccef6e7e",
-      "task": "F-311",
+      "at": "2026-08-22T02:44:43+00:00",
+      "hash": "3712471eba662bca297a37c0a28ceab3636a2107e89ffa983f9be8b5660c18e4",
+      "task": "F-312",
       "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
     },
     "tools/f356_night_probe.gd": {
@@ -4973,7 +4952,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:120f1976-6c96-46a1-8784-38dd75780df4"
     }
   },
-  "rev": 1142,
+  "rev": 1143,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9262,9 +9241,11 @@
       "title": "EnvironmentVfx can now subscribe to the new EventBus.world_rebuilt instead of covering a direct rebuild_for_seed() with a quarter-second sweep"
     },
     "F-312": {
+      "done_at": "2026-08-22T02:44:43+00:00",
+      "done_by": "quill3c83cf",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "tools/environment_vfx_reseed_check.gd prints 15 undeclared ERROR: lines at a clean HEAD while reporting failures=0"
     },

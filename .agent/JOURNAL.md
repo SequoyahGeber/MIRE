@@ -9148,3 +9148,18 @@ Notes along the way:
 Files: `autoload/chest_placement_service.gd`, `tools/chest_placement_check.gd`
 
 Commit at time of writing: `ce9100bf`
+
+---
+
+### DONE · F-312 · quill3c83cf · 2026-08-22T02:44:43+00:00
+
+**tools/environment_vfx_reseed_check.gd prints 15 undeclared ERROR: lines at a clean HEAD while reporting failures=0**
+
+Detached run-restart subscribers no longer perform invalid absolute root lookups; reseed harness declares dummy-renderer errors and tears down its scene. Target plus Wellspring/Chest/Extraction checks all failures=0.
+
+Notes along the way:
+- The absolute-path errors are detached procedural nodes receiving later run_restarted callbacks from EventBus's duplicate subscriber list. Guard their root lookups with is_inside_tree(); declare only the dummy-renderer RID family in the verdict.
+
+Files: `systems/wellspring/wellspring.gd`, `systems/extraction/extraction_ship.gd`, `systems/loot/chest.gd`, `tools/environment_vfx_reseed_check.gd`
+
+Commit at time of writing: `fd1e4496`

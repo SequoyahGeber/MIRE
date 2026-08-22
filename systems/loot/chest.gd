@@ -402,6 +402,9 @@ func _owns_world_mutation() -> bool:
 ## (offline/host-of-one boot order), matching game_state.gd's own documented contract, and is a no-op
 ## once a seed already exists — the common case, since MireGrid/NetTransport draw one earlier.
 func _run_seed() -> int:
+	# A procedural rebuild may detach this chest before its turn in the current EventBus dispatch.
+	if not is_inside_tree():
+		return 0
 	var game_state: Node = get_node_or_null(^"/root/GameState")
 	if game_state == null:
 		return 0
@@ -427,6 +430,8 @@ func _seed_for_run(run_seed: int, chest_id: String) -> int:
 
 
 func _transport() -> Node:
+	if not is_inside_tree():
+		return null
 	return get_node_or_null(^"/root/NetTransport")
 
 

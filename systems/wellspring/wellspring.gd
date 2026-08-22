@@ -504,6 +504,10 @@ func _owns_mutation() -> bool:
 
 
 func _transport() -> Node:
+	# A procedural rebuild detaches this node synchronously while EventBus is still walking the
+	# run_restarted subscriber snapshot. Absolute root paths are invalid from a detached node.
+	if not is_inside_tree():
+		return null
 	return get_node_or_null(^"/root/NetTransport")
 
 

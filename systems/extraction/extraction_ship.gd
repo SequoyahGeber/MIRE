@@ -443,6 +443,9 @@ func _owns_mutation() -> bool:
 
 
 func _transport() -> Node:
+	# A procedural rebuild may detach this node before its turn in the current EventBus dispatch.
+	if not is_inside_tree():
+		return null
 	return get_node_or_null(^"/root/NetTransport")
 
 
