@@ -9706,3 +9706,54 @@ TAB completion in the dev console: CommandService.complete() + DebugConsole TAB 
 Files: `autoload/command_service.gd`, `autoload/debug_console.gd`, `tools/command_complete_check.gd`
 
 Commit at time of writing: `f475414a`
+
+---
+
+### DONE · F-538 · onyxbe8065 · 2026-08-22T05:18:57+00:00
+
+**Ambient daytime spawns are hardcoded to one kind, so three authored enemies never appear**
+
+Completed.
+
+Files: `autoload/enemy_world.gd`, `tools/ambient_spawn_check.gd`, `tools/cycle_check.gd`, `docs/ENEMIES.md`
+
+Commit at time of writing: `fd4af35e`
+
+---
+
+### REOPEN · F-528 · ivyf16b98 · 2026-08-22T05:21:59+00:00
+
+**Procedural map chest and loose-loot density is far below the intended scavenging experience**
+
+Reopened (was marked done 2026-08-22 by ivyf16b98).
+
+Acceptance clarified: cache quantity is a density budget, not an exact 50 quota; verify regular island-wide spatial coverage instead of pinning every seed to exactly 50.
+
+Commit at time of writing: `b9f53477`
+
+---
+
+### DONE · F-537 · duska7668b · 2026-08-22T05:22:43+00:00
+
+**macOS: the game process can outlive its window because Steam is never shut down and nothing guarantees exit**
+
+Completed.
+
+Files: `autoload/app_exit.gd`, `autoload/steam_lobby.gd`, `ui/frontend/frontend.gd`, `ui/menu/main_menu.gd`, `autoload/debug_console.gd`
+
+Commit at time of writing: `b9f53477`
+
+---
+
+### DONE · F-540 · ivyf16b98 · 2026-08-22T05:25:50+00:00
+
+**First multiplayer join can miss the promised 50 starting coins**
+
+Fixed first-join loadout race: wait for authoritative peer inventory readiness, mark granted only after all stacks succeed. Real two-process check: client/host both 50 coins, duplicate refused, failures=0; full-world dev_loadout_check failures=0.
+
+Notes along the way:
+- Root cause: PlayerNet.player_spawned may precede InventoryService peer store creation; grant marked _granted before host_add calls, so all failed adds became a permanent missed loadout. Wait for host inventory readiness and mark only after successful grant.
+
+Files: `core/dev/dev_loadout.gd`, `tools/dev_loadout_net_check.gd`
+
+Commit at time of writing: `34fd005c`

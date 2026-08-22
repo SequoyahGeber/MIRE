@@ -67,6 +67,9 @@ const HOTBAR_START_INDEX: int = 24
 
 ## Peers already granted this session, so a rebind or a late signal cannot hand out a second set.
 var _granted: Dictionary[int, bool] = {}
+## A player body can enter the tree before InventoryService handles the transport's peer_joined
+## signal. Keep that spawn pending until the host publishes the peer's first inventory snapshot.
+var _pending_grants: Dictionary[int, bool] = {}
 
 
 func _ready() -> void:
@@ -76,7 +79,14 @@ func _ready() -> void:
 
 	var transport: Node = get_node_or_null(^"/root/NetTransport")
 	if transport != null:
-		transport.get("disconnected").connect(func() -> void: _granted.clear())
+		transport.get("disconnected").connect(func() -> void:
+			_granted.clear()
+			_pending_grants.clear()
+		)
+
+	var inventory: Node = get_node_or_null(^"/root/InventoryService")
+	if inventory != null and inventory.has_signal(&"host_inventory_changed"):
+		inventory.connect(&"host_inventory_changed", _on_host_inventory_changed)
 
 	_register_commands()
 	_bind_rules()
@@ -107,9 +117,14 @@ func grant(peer_id: int) -> bool:
 	var inventory: Node = get_node_or_null(^"/root/InventoryService")
 	if inventory == null:
 		return false
-	_granted[peer_id] = true
+	# An empty array means the authoritative peer store does not exist yet. Do not turn that
+	# transient signal-order race into a permanently missed loadout.
+	if (inventory.call("host_slots", peer_id) as Array).is_empty():
+		_pending_grants[peer_id] = true
+		return false
 
 	var given: int = 0
+	var expected: int = 0
 	for entry: Dictionary in loadout:
 		var item_id := StringName(entry.get("item", &""))
 		var count: int = int(entry.get("count", 0))
@@ -118,12 +133,23 @@ func grant(peer_id: int) -> bool:
 		if not _item_exists(item_id):
 			MireLog.warn(&"content", "DevLoadout: no item '%s' — skipped" % item_id)
 			continue
+		expected += 1
 		if bool(inventory.call("host_add", peer_id, item_id, count)):
 			given += 1
 			if bool(entry.get("hotbar", false)):
 				_move_to_hotbar(inventory, peer_id, item_id)
-	MireLog.info(&"content", "DevLoadout: granted %d stack(s) to peer %d" % [given, peer_id])
-	return given > 0
+	var complete: bool = expected > 0 and given == expected
+	if complete:
+		_granted[peer_id] = true
+		_pending_grants.erase(peer_id)
+		MireLog.info(&"content", "DevLoadout: granted %d stack(s) to peer %d" % [given, peer_id])
+	else:
+		# Do not retry a partial grant: that could duplicate earlier entries. This is a content or
+		# capacity error, not the harmless store-readiness race handled above.
+		_pending_grants.erase(peer_id)
+		MireLog.warn(&"content", "DevLoadout: incomplete grant for peer %d (%d/%d stacks)"
+			% [peer_id, given, expected])
+	return complete
 
 
 ## Moves the stack of [param item_id] out of the backpack and onto the first free hotbar slot, using
@@ -162,9 +188,13 @@ func _harness_without_optin() -> bool:
 
 
 func _on_player_spawned(peer_id: int, _body: Node3D) -> void:
-	# Deferred: this fires during add_child, and InventoryService creates the peer's store from its
-	# own peer_joined handler. Granting into a store that does not exist yet silently drops it.
+	_pending_grants[peer_id] = true
 	grant.call_deferred(peer_id)
+
+
+func _on_host_inventory_changed(peer_id: int, _slots: Array[Dictionary], _revision: int) -> void:
+	if _pending_grants.has(peer_id):
+		grant.call_deferred(peer_id)
 
 
 ## Grants offline, once, and ONLY once a real level is running.

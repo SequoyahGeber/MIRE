@@ -30,18 +30,6 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "autoload/app_exit.gd": {
-      "agent": "duska7668b",
-      "at": "2026-08-22T05:11:53+00:00",
-      "task": "F-537",
-      "token": "CLAUDE_CODE_SESSION_ID:e53e22ff-f266-497e-84fe-9d2939e5d427"
-    },
-    "autoload/enemy_world.gd": {
-      "agent": "onyxbe8065",
-      "at": "2026-08-22T05:12:44+00:00",
-      "task": "F-538",
-      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
-    },
     "autoload/inventory_service.gd": {
       "agent": "flint04a51d",
       "at": "2026-08-22T05:10:38+00:00",
@@ -53,12 +41,6 @@
       "at": "2026-08-22T05:10:38+00:00",
       "task": "F-535",
       "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
-    },
-    "autoload/steam_lobby.gd": {
-      "agent": "duska7668b",
-      "at": "2026-08-22T05:11:53+00:00",
-      "task": "F-537",
-      "token": "CLAUDE_CODE_SESSION_ID:e53e22ff-f266-497e-84fe-9d2939e5d427"
     },
     "content/harvestables/apple_tree.tres": {
       "agent": "gale43d16e",
@@ -168,12 +150,6 @@
       "task": "F-535",
       "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
     },
-    "tools/ambient_spawn_check.gd": {
-      "agent": "onyxbe8065",
-      "at": "2026-08-22T05:13:25+00:00",
-      "task": "F-538",
-      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
-    },
     "tools/blender/build_deep_materials.py": {
       "agent": "birche6b40e",
       "at": "2026-08-21T23:53:11+00:00",
@@ -210,6 +186,18 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "tools/harvest_world_check.gd": {
+      "agent": "flint04a51d",
+      "at": "2026-08-22T05:21:21+00:00",
+      "task": "F-535",
+      "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
+    },
+    "tools/inventory_check.gd": {
+      "agent": "flint04a51d",
+      "at": "2026-08-22T05:20:10+00:00",
+      "task": "F-535",
+      "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
+    },
     "tools/item_drop_check.gd": {
       "agent": "flint04a51d",
       "at": "2026-08-22T05:10:38+00:00",
@@ -222,23 +210,35 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "ui/frontend/frontend.gd": {
-      "agent": "duska7668b",
-      "at": "2026-08-22T05:11:53+00:00",
-      "task": "F-537",
-      "token": "CLAUDE_CODE_SESSION_ID:e53e22ff-f266-497e-84fe-9d2939e5d427"
+    "tools/mire_interaction_check.gd": {
+      "agent": "flint04a51d",
+      "at": "2026-08-22T05:21:21+00:00",
+      "task": "F-535",
+      "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
+    },
+    "tools/poi_check.gd": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:22:04+00:00",
+      "task": "F-528",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
+    "tools/revive_interaction_check.gd": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:15:00+00:00",
+      "task": "F-526",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
+    "ui/attunement/attunement_ui.gd": {
+      "agent": "onyxbe8065",
+      "at": "2026-08-22T05:25:47+00:00",
+      "task": "F-321",
+      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "ui/hud/focus_prompt.gd": {
       "agent": "flint04a51d",
       "at": "2026-08-22T05:10:38+00:00",
       "task": "F-535",
       "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
-    },
-    "ui/menu/main_menu.gd": {
-      "agent": "duska7668b",
-      "at": "2026-08-22T05:11:53+00:00",
-      "task": "F-537",
-      "token": "CLAUDE_CODE_SESSION_ID:e53e22ff-f266-497e-84fe-9d2939e5d427"
     }
   },
   "in_flight": {
@@ -259,6 +259,15 @@
       "notes": [],
       "started": "2026-08-21T17:13:34+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "F-321": {
+      "agent": "onyxbe8065",
+      "files": [
+        "ui/attunement/attunement_ui.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-22T05:25:47+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "F-469": {
       "agent": "coil26502f",
@@ -309,6 +318,36 @@
       "started": "2026-08-22T00:29:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "F-526": {
+      "agent": "ivyf16b98",
+      "files": [
+        "tools/revive_interaction_check.gd"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-22T05:15:01+00:00",
+          "by": "ivyf16b98",
+          "text": "Direct two-process request_revive passes; the missing coverage is PlayerController's real hold-to-revive input path. Building that reproducer without touching the currently claimed controller."
+        }
+      ],
+      "started": "2026-08-22T05:15:00+00:00",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
+    "F-528": {
+      "agent": "ivyf16b98",
+      "files": [
+        "tools/poi_check.gd"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-22T05:22:04+00:00",
+          "by": "ivyf16b98",
+          "text": "Clarified acceptance: target_count is an upper density budget; coverage proof will require a healthy minimum plus angular/radial distribution, not exactly 50 on every seed."
+        }
+      ],
+      "started": "2026-08-22T05:22:04+00:00",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
     "F-535": {
       "agent": "flint04a51d",
       "files": [
@@ -317,33 +356,14 @@
         "autoload/inventory_service.gd",
         "ui/hud/focus_prompt.gd",
         "tools/item_drop_check.gd",
-        "docs/FINDINGS.md"
+        "docs/FINDINGS.md",
+        "tools/inventory_check.gd",
+        "tools/mire_interaction_check.gd",
+        "tools/harvest_world_check.gd"
       ],
       "notes": [],
       "started": "2026-08-22T05:10:38+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
-    },
-    "F-537": {
-      "agent": "duska7668b",
-      "files": [
-        "autoload/app_exit.gd",
-        "autoload/steam_lobby.gd",
-        "ui/frontend/frontend.gd",
-        "ui/menu/main_menu.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-22T05:11:53+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:e53e22ff-f266-497e-84fe-9d2939e5d427"
-    },
-    "F-538": {
-      "agent": "onyxbe8065",
-      "files": [
-        "autoload/enemy_world.gd",
-        "tools/ambient_spawn_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-22T05:12:44+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     }
   },
   "recent": {
@@ -779,13 +799,6 @@
       "at": "2026-08-21T06:07:24+00:00",
       "hash": "53bf6718b5ce8d53e893c7e8caac6b3a215c42060d4bf52581d4cbb0cf0278e2",
       "task": "F-356",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/audit/lighting/f408_neutral_probe.json": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:20:00+00:00",
-      "hash": "89e78984f31c2f6ac12f5c1db940a77a19e8b6b256364da59334f669b48c3a05",
-      "task": "F-408",
       "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
     },
     "assets/audit/lighting/f410_00_warmup.png": {
@@ -1558,6 +1571,13 @@
       "task": "F-497",
       "token": "CLAUDE_CODE_SESSION_ID:1fa80f33-5837-4090-96af-2212ae64d909"
     },
+    "autoload/app_exit.gd": {
+      "agent": "duska7668b",
+      "at": "2026-08-22T05:22:43+00:00",
+      "hash": "f12eb1a4e98a4c20415a8110dcf346b352493d50ca09535aea8be83406b16ace",
+      "task": "F-537",
+      "token": "CLAUDE_CODE_SESSION_ID:e53e22ff-f266-497e-84fe-9d2939e5d427"
+    },
     "autoload/boss_music_director.gd": {
       "agent": "dusk544993",
       "at": "2026-08-22T01:48:20+00:00",
@@ -1601,18 +1621,18 @@
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
     "autoload/debug_console.gd": {
-      "agent": "wickec4384",
-      "at": "2026-08-22T05:14:48+00:00",
-      "hash": "011aea3b8b6d27f47c6576ae81b8badfac28dbf1961dc457080a2764c57030d9",
-      "task": "F-534",
-      "token": "CLAUDE_CODE_SESSION_ID:c6081344-5cdb-423d-8314-804698ccf35c"
+      "agent": "duska7668b",
+      "at": "2026-08-22T05:22:43+00:00",
+      "hash": "979a595e339386fcafca785c30e58969806fc256de2dedc958d92624c6dbdf00",
+      "task": "F-537",
+      "token": "CLAUDE_CODE_SESSION_ID:e53e22ff-f266-497e-84fe-9d2939e5d427"
     },
     "autoload/enemy_world.gd": {
-      "agent": "dusk544993",
-      "at": "2026-08-22T01:39:40+00:00",
-      "hash": "de9c8da2817774cf7b466f84e4d92fddc48fe1fccd9006b68f120f163c761ebd",
-      "task": "F-494",
-      "token": "CLAUDE_CODE_SESSION_ID:1fa80f33-5837-4090-96af-2212ae64d909"
+      "agent": "onyxbe8065",
+      "at": "2026-08-22T05:18:57+00:00",
+      "hash": "d0cf5204422a16928aac30998d357b50938523f16eef468526882292d6192a3b",
+      "task": "F-538",
+      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "autoload/environment_vfx.gd": {
       "agent": "quill3c83cf",
@@ -1706,11 +1726,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:4cd6e8b1-20ed-494f-89b5-5bbf9904d4e2"
     },
     "autoload/steam_lobby.gd": {
-      "agent": "reed8d5690",
-      "at": "2026-08-22T04:20:23+00:00",
-      "hash": "d052c73fd460872b480720740b9d2cca0de41183f29097dc2db8daf0d493b7dd",
-      "task": "F-520",
-      "token": "CLAUDE_CODE_SESSION_ID:d83b3646-0972-4048-bb3e-180c6c8ce54e"
+      "agent": "duska7668b",
+      "at": "2026-08-22T05:22:43+00:00",
+      "hash": "317826758a350e8b6f8350329d14b0f53c5dac7461fbaaef17c5a27d17f5fe3a",
+      "task": "F-537",
+      "token": "CLAUDE_CODE_SESSION_ID:e53e22ff-f266-497e-84fe-9d2939e5d427"
     },
     "autoload/theme_music_director.gd": {
       "agent": "dusk544993",
@@ -3694,11 +3714,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "core/dev/dev_loadout.gd": {
-      "agent": "tine7d9d62",
-      "at": "2026-08-22T04:14:10+00:00",
-      "hash": "99a3df1136dc8c10c2056a3e1e077cba9542be4d9cf5c1ba20a52716cda007b1",
-      "task": "F-518",
-      "token": "CODEX_SESSION_ID:01a027aa-467b-74f2-a125-1d485a4b40e9"
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:25:50+00:00",
+      "hash": "644286d368af36d35b35d724c3f4d2828d145a1a1b4a5b730ab3518292b2188f",
+      "task": "F-540",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     },
     "core/events/event_bus.gd": {
       "agent": "larch28fcaa",
@@ -3771,11 +3791,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
     },
     "docs/ENEMIES.md": {
-      "agent": "larch28fcaa",
-      "at": "2026-08-22T05:14:33+00:00",
-      "hash": "f8d2393380b3b60d315d14729249f31a3d22b52c2bf1297ffec031a5ac856845",
-      "task": "F-539",
-      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+      "agent": "onyxbe8065",
+      "at": "2026-08-22T05:18:57+00:00",
+      "hash": "d29ab968009d560a2645065090541374670673b79209415983c0a736257cf9ae",
+      "task": "F-538",
+      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "docs/FINDINGS.md": {
       "agent": "hollow25eed7",
@@ -4127,6 +4147,13 @@
       "task": "F-430",
       "token": "CLAUDE_CODE_SESSION_ID:e3fa9e81-ffe0-4be7-8109-2a06ac469891"
     },
+    "tools/ambient_spawn_check.gd": {
+      "agent": "onyxbe8065",
+      "at": "2026-08-22T05:18:57+00:00",
+      "hash": "e369310f2cac00d5c59b752aecdb620085d77bd96d1a6a61f4ca41fd3576219d",
+      "task": "F-538",
+      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
+    },
     "tools/art_coverage_check.gd": {
       "agent": "gale43d16e",
       "at": "2026-08-21T08:34:48+00:00",
@@ -4470,12 +4497,26 @@
       "task": "F-484",
       "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
+    "tools/cycle_check.gd": {
+      "agent": "onyxbe8065",
+      "at": "2026-08-22T05:18:57+00:00",
+      "hash": "95431b86c45eb0c67d1749225ef3549eeb50e7b3639662e541241793e0212506",
+      "task": "F-538",
+      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
+    },
     "tools/dev_loadout_check.gd": {
       "agent": "tine7d9d62",
       "at": "2026-08-22T04:14:10+00:00",
       "hash": "05eb743476bc01f16874dc7c5f22cff1308eae3d08f905a888caa01d1a794656",
       "task": "F-518",
       "token": "CODEX_SESSION_ID:01a027aa-467b-74f2-a125-1d485a4b40e9"
+    },
+    "tools/dev_loadout_net_check.gd": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:25:50+00:00",
+      "hash": "c580450dfe107d5490301e0b4b6049f62ad429c4cf773fe3f5f516d5cff98090",
+      "task": "F-540",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     },
     "tools/enemy_bloatcap_check.gd": {
       "agent": "ember5da2c4",
@@ -5101,11 +5142,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:d83b3646-0972-4048-bb3e-180c6c8ce54e"
     },
     "ui/frontend/frontend.gd": {
-      "agent": "quill895277",
-      "at": "2026-08-21T22:10:50+00:00",
-      "hash": "3725b25a9cbbde0bb9be2a1fd9ad9a606d1943e3ebdc193e59c0b6f91912497a",
-      "task": "F-460",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
+      "agent": "duska7668b",
+      "at": "2026-08-22T05:22:43+00:00",
+      "hash": "d731b2f14ed95ccf7fb3e3b10219e58608ab95c7f6947aeb810e39c8ce4b4fa0",
+      "task": "F-537",
+      "token": "CLAUDE_CODE_SESSION_ID:e53e22ff-f266-497e-84fe-9d2939e5d427"
     },
     "ui/frontend/graphics_settings_page.gd": {
       "agent": "hollowe6edef",
@@ -5206,11 +5247,11 @@
       "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
     "ui/menu/main_menu.gd": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T06:17:58+00:00",
-      "hash": "273c9da54c862c6c43b384da7fb904d257ec9c5e0710ab7a0ac08f06846572c5",
-      "task": "F-413",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
+      "agent": "duska7668b",
+      "at": "2026-08-22T05:22:43+00:00",
+      "hash": "0c67cec16b9893a8721fd0c25ff6fff1e3c0581e771ea779772615a120a37816",
+      "task": "F-537",
+      "token": "CLAUDE_CODE_SESSION_ID:e53e22ff-f266-497e-84fe-9d2939e5d427"
     },
     "ui/menu/settings_menu.gd": {
       "agent": "flinta92725",
@@ -5444,7 +5485,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1450,
+  "rev": 1478,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9814,7 +9855,7 @@
     "F-321": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "`AttunementUI` is the third mandatory panel and it still has F-307's soft-lock \u2014 it closes only on an accepted pick, so an orphaned client can never leave it"
     },
@@ -11432,7 +11473,7 @@
     "F-526": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Teammate revive interaction does not revive a downed player"
     },
@@ -11444,11 +11485,9 @@
       "title": "Build menu again leaves the cursor captive, preventing station and item selection"
     },
     "F-528": {
-      "done_at": "2026-08-22T05:11:24+00:00",
-      "done_by": "ivyf16b98",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "done",
+      "status": "in_flight",
       "tier": "F",
       "title": "Procedural map chest and loose-loot density is far below the intended scavenging experience"
     },
@@ -11519,16 +11558,20 @@
       "title": "Scattered pickup models are decorative and cannot be collected as loose world loot"
     },
     "F-537": {
+      "done_at": "2026-08-22T05:22:43+00:00",
+      "done_by": "duska7668b",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
-      "title": "macOS: the game process can outlive its window because Steam is never shut down and nothing guarantees exit"
+      "title": "macOS: the game process can outlive its window because Steam is never shut down and nothing guarantees exit \u2014 **fixed**"
     },
     "F-538": {
+      "done_at": "2026-08-22T05:18:57+00:00",
+      "done_by": "onyxbe8065",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Ambient daytime spawns are hardcoded to one kind, so three authored enemies never appear"
     },
@@ -11540,6 +11583,15 @@
       "status": "done",
       "tier": "F",
       "title": "Killing an enemy grants no coins, so the only pre-boss coin source is scattered caches"
+    },
+    "F-540": {
+      "done_at": "2026-08-22T05:25:50+00:00",
+      "done_by": "ivyf16b98",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "First multiplayer join can miss the promised 50 starting coins"
     }
   },
   "version": 1
