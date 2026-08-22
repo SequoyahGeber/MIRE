@@ -396,16 +396,56 @@ func _refresh_visual() -> void:
 	_refresh_locator()
 
 
-## The smallest chest is only 0.75 m wide on an island hundreds of metres across. This warm mote
-## keeps an unopened chest legible through grass without changing placement, collision, interaction,
-## or network authority. It disappears from every peer when the replicated `opened` state changes.
+## The smallest chest is 0.78 m wide on an island hundreds of metres across. This warm mote keeps an
+## unopened chest legible through grass without changing placement, collision, interaction, or
+## network authority. It disappears from every peer when the replicated `opened` state changes.
+##
+## F-593: the height is DERIVED from this chest's own mesh, not the flat 1.35 m it used to be. That
+## constant was authored when the tallest chest was 1.01 m; the rescale put the gilded chest at
+## 1.27 m, which would have left the mote's lower half (radius 0.13, so its underside at 1.18 m)
+## buried inside the lid — a discoverability aid hidden inside the thing it exists to advertise.
+## Deriving it means a future rescale, or a sixth chest of any size, cannot reintroduce that.
+##
+## `MOTE_CLEARANCE_M` is measured from the top of the closed mesh to the BOTTOM of the sphere, so the
+## gap a player sees between chest and mote is the same on every rung — which is what makes the mote
+## read as belonging to the chest rather than floating at an arbitrary height above it. The floor
+## keeps the old behaviour for anything short: `tools/chest_placement_check.gd` requires a mote at
+## 1.0 m or above to clear grass, and a small chest must not sink below that just because it is small.
+const MOTE_RADIUS_M: float = 0.13
+const MOTE_CLEARANCE_M: float = 0.22
+const MOTE_MIN_HEIGHT_M: float = 1.35
+
+
+## The mote's centre height: clear of this chest's own closed mesh, never below the authored floor.
+##
+## Measured off the VISUAL's axis-aligned bounds rather than a per-tier table, so it stays correct
+## for a chest whose mesh someone rescales, and for the dynamically placed chests
+## `ChestPlacementService` builds. A visual that is missing or has no measurable geometry falls back
+## to the floor, which is the pre-F-593 behaviour and never zero.
+func _locator_height() -> float:
+	var top: float = 0.0
+	if _visual != null:
+		for node: Node in _visual.find_children("*", "VisualInstance3D", true, false):
+			var instance := node as VisualInstance3D
+			if instance == null:
+				continue
+			var box: AABB = instance.get_aabb()
+			# The child's own transform relative to the chest, so a mesh parented deep inside the
+			# imported scene is measured where it actually sits.
+			var local: Transform3D = _visual.transform * instance.transform
+			top = maxf(top, (local * box).end.y)
+	if top <= 0.0:
+		return MOTE_MIN_HEIGHT_M
+	return maxf(top + MOTE_CLEARANCE_M + MOTE_RADIUS_M, MOTE_MIN_HEIGHT_M)
+
+
 func _build_locator() -> void:
 	_locator = MeshInstance3D.new()
 	_locator.name = LOCATOR_NODE_NAME
-	_locator.position = Vector3(0.0, 1.35, 0.0)
+	_locator.position = Vector3(0.0, _locator_height(), 0.0)
 	var mote := SphereMesh.new()
-	mote.radius = 0.13
-	mote.height = 0.34
+	mote.radius = MOTE_RADIUS_M
+	mote.height = MOTE_RADIUS_M * 2.0
 	_locator.mesh = mote
 	var material := StandardMaterial3D.new()
 	material.albedo_color = Color(locator_tint, 1.0)
@@ -433,6 +473,11 @@ func _build_locator() -> void:
 
 func _refresh_locator() -> void:
 	if _locator != null:
+		# F-593: re-seat the height here, not only at build time. `_build_locator()` runs BEFORE
+		# `_refresh_visual()` (see _ready), so at build time there is no mesh to measure and the
+		# floor is all `_locator_height()` can return. This is also the path a tier or state swap
+		# comes through, so a chest whose visual changes gets a mote that follows it.
+		_locator.position.y = _locator_height()
 		_locator.visible = not opened
 	if _locator_light != null:
 		_locator_light.visible = not opened

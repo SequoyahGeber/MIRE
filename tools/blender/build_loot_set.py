@@ -89,6 +89,72 @@ EXPECTED_NAMES = [
     "loot_player_backpack",
 ]
 
+## F-593 — how big the chests stand against the player.
+##
+## Sequoyah, from a playtest: "chests need to be bigger, there too small." He is
+## right, and the measurement says WHERE. The shipped player is exactly 1.8 m —
+## `entities/player/player.tscn` is a 1.8 m CapsuleShape3D with its origin at the
+## feet, camera at 1.6 m — and the ladder ran 0.464 m to 1.013 m, so the two
+## commonest rungs came up to the knee. F-570 puts 100 of an island's 150 chests
+## on exactly those two rungs, so two thirds of every chest a player walks up to
+## was an ankle-to-knee box. That is the report.
+##
+##     rung          was     ->  now    lands at (1.8 m player)
+##     basic         0.464       0.580  knee to low thigh   (32%)
+##     common        0.566       0.707  mid thigh           (39%)
+##     Wellspring    0.658       0.823  upper thigh         (46%, off-ladder)
+##     rare          0.708       0.885  hip                 (49%)
+##     epic          0.748       0.935  hip                 (52%)
+##     legendary     1.013       1.266  above the waist     (70%)
+##
+## ONE factor for the whole family, and that is a correction to my own first
+## attempt, which is worth recording because the reasoning that produced it was
+## seductive and wrong. I first derived a per-chest factor, placing each rung on
+## a chosen part of the body to even out the ladder's uneven height gaps. The
+## heights came out exactly as designed and the SILHOUETTE LADDER INVERTED: the
+## epic warded chest is a wide low slab (W/H 1.39) and the legendary gilded one
+## is a tall box (W/H 1.11), so scaling them to different heights made the epic
+## 1.335 m wide against the legendary's 1.220 m. The epic would have read as the
+## bigger chest, which is exactly the tier cue `chest_placement_service.gd` says
+## silhouette size carries before any UI resolves.
+##
+## The general rule, and the reason this is a single number: width and height are
+## BOTH already monotonic across the ladder, and a uniform scale is the only
+## transform that preserves both. Any per-rung factor can invert one of them, and
+## it will do so silently, because nothing about the height table shows you what
+## happened to the widths. Measure both.
+##
+## 1.25 rather than the ~1.29 the crate alone wants: it is the smallest factor
+## that lifts the two common rungs clear of the knee without pushing the
+## legendary chest past chest height on the player. At 1.30 the gilded chest is
+## 1.32 m and 1.46 m wide, which reads as furniture.
+##
+## The ladder's GAPS are still uneven — the rare and epic rungs sit 0.05 m apart,
+## which no player can tell across a clearing. That is a PROPORTIONS defect, not
+## a scale one: fixing it means re-authoring those two bodies, not scaling them,
+## and doing it inside a "make them bigger" change would be a silent redesign of
+## the rarity ladder. Recorded in F-593 for Sequoyah instead.
+##
+## Applied in `create_asset()`, on the whole built set, about the world origin —
+## which is the ground contact point, so ground contact and every proportion
+## survive it. It is a CONSTANT, so a chest's closed and open builders get the
+## identical value: this is the A-005 state-set rule that A-011 and A-051 each
+## had to relearn, since a scale derived from each state's own bounds would size
+## the two states differently and silently rescale the frame they share.
+## `check_state_pairs()` asserts 0.0000 mm drift on that shared frame.
+##
+## Never a `scale` on the placed node instead: that would break `PropCollider`'s
+## fit and the kit's ground-contact and anchor rules, which is why this lives in
+## the build and the assets get rebuilt.
+CHEST_SCALE = 1.25
+
+
+def chest_scale(name: str) -> float:
+    """The F-593 factor for an asset. Chests only — the pouch, orb, bag and
+    backpack are carried or hand-held items whose size was never the complaint."""
+    return CHEST_SCALE if name.startswith("loot_chest_") else 1.0
+
+
 ## Lid swing for an open chest, in degrees about the rear hinge. One constant so
 ## all three pairs read as the same object class rather than three unrelated
 ## hinges.
@@ -514,6 +580,38 @@ def create_asset(
     build_fn()
     made = [obj for obj in bpy.data.objects if obj not in before]
 
+    # F-593, BEFORE the normalization below so the bounds it measures are the
+    # final ones. Uniform, about the world origin, and applied to the whole set:
+    # every builder authors its geometry with z=0 as the ground, so scaling about
+    # the origin keeps the chest on the ground and leaves every proportion,
+    # bevel-free face and lid hinge exactly where it was.
+    #
+    # `box()` bakes its size into mesh data and leaves `obj.scale` at 1, while the
+    # cones and icos from `mire_art` do not necessarily — so multiply the existing
+    # scale rather than assigning, and let the glTF export's `export_apply` bake
+    # the result. Locations scale with it, which is what makes this a scaling of
+    # the ASSEMBLY and not of each part in place.
+    factor = chest_scale(name)
+    if factor != 1.0:
+        for obj in made:
+            obj.location = obj.location * factor
+            obj.scale = Vector(obj.scale) * factor
+        # BAKE it into the mesh data, exactly as `box()` does with its own size.
+        # Leaving the factor on `obj.scale` exports a GLB whose every node carries
+        # scale=(1.25, 1.25, 1.25) — `audit_all_sides.py` reports that as an
+        # unapplied transform, and it is a real defect and not a cosmetic one: a
+        # node-level scale is a thing a consumer can lose, override or double up
+        # on, and `PropCollider` fits colliders to geometry that is supposed to
+        # already be at its final size. The audit caught this; the numbers in the
+        # catalog were correct either way, which is precisely why it needed an
+        # instrument that looks at the mesh rather than at the measurements.
+        bpy.ops.object.select_all(action="DESELECT")
+        for obj in made:
+            obj.select_set(True)
+        bpy.context.view_layer.objects.active = made[0]
+        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+        bpy.ops.object.select_all(action="DESELECT")
+
     # Horizontal centre, origin at ground level — the same normalization every
     # other portable family uses, so these drop into a scene identically.
     #
@@ -542,6 +640,11 @@ def create_asset(
         obj.parent = root
     minimum, maximum = world_bounds(made)
     dimensions = maximum - minimum
+    # F-593: the bounds of the geometry the closed and open states SHARE, measured
+    # after normalization, so `_check_state_pairs()` can assert the two states did
+    # not size their common frame differently. The full bounds cannot answer that
+    # — an open chest is legitimately deeper and taller because its lid is up.
+    shared_min, shared_max = world_bounds(anchors)
     polygons = sum(len(obj.data.polygons) for obj in made if obj.type == "MESH")
     materials = sorted({mat.name for obj in made if obj.type == "MESH" for mat in obj.data.materials if mat})
 
@@ -564,6 +667,8 @@ def create_asset(
         "width": dimensions.x,
         "depth": dimensions.y,
         "height": dimensions.z,
+        "shared_min": Vector(shared_min),
+        "shared_max": Vector(shared_max),
         "parts": sum(1 for obj in made if obj.type == "MESH"),
         "polygons": polygons,
         "materials": materials,
@@ -610,6 +715,42 @@ def setup_render(mats: dict[str, bpy.types.Material]) -> tuple[bpy.types.Scene, 
     scene.world.color = (0.012, 0.016, 0.026)
     scene.view_settings.look = "AgX - Medium High Contrast"
     return scene, camera, preview_collection
+
+
+def check_state_pairs(records: list[dict]) -> None:
+    """A-005's state-set rule, asserted rather than trusted (F-593).
+
+    Every chest ships a closed and an open mesh, and the host swaps one for the
+    other on open. If the two states size the geometry they SHARE even slightly
+    differently, the chest visibly jumps and desyncs from a collider authored
+    against the closed mesh. A-011 and A-051 both hit this by deriving a scale
+    from each state's own bounds; F-593 introduced a per-chest scale factor and
+    would have been the third, so the invariant stops being a convention here.
+
+    Compares the shared body-and-feet frame, not the full bounds — an open chest
+    is legitimately deeper and taller, because its lid is up. Tolerance is one
+    micrometre: this is a shared constant applied to identical geometry, so the
+    only honest expectation is exact, and 1e-6 m allows nothing but float noise.
+    """
+    by_name = {record["name"]: record for record in records}
+    tolerance = 1e-6
+    for name in EXPECTED_NAMES:
+        if not name.endswith("_closed"):
+            continue
+        open_name = name[: -len("_closed")] + "_open"
+        closed, opened = by_name.get(name), by_name.get(open_name)
+        if closed is None or opened is None:
+            raise RuntimeError(f"{name}: state pair is incomplete")
+        for axis, label in enumerate("xyz"):
+            low = abs(closed["shared_min"][axis] - opened["shared_min"][axis])
+            high = abs(closed["shared_max"][axis] - opened["shared_max"][axis])
+            if low > tolerance or high > tolerance:
+                raise RuntimeError(
+                    f"{name}/{open_name}: shared frame drifts on {label} by "
+                    f"{max(low, high) * 1000.0:.4f} mm — the two states are not "
+                    "the same object"
+                )
+    print(f"State pairs: shared frame identical across {len(EXPECTED_NAMES) // 2} pair(s), 0.0000 mm drift")
 
 
 def main() -> None:
@@ -713,6 +854,8 @@ def main() -> None:
         row = index // 4
         location = ((column - 1.5) * 1.76, (2.15 - row * 2.05), 0.0)
         records.append(create_asset(name, family, builder, location, anchor))
+
+    check_state_pairs(records)
 
     catalog = [
         {
