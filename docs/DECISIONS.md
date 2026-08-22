@@ -6892,3 +6892,30 @@ That mechanic deliberately needed **no new system** — no hazard volume, no VFX
 already replicates through `WorldDeltaLog`, already stains the ground through `terrain_flat.gdshader`,
 already thickens the fog and already ticks Blight. The tier-1 enemy is the game's own signature
 mechanic handed to the player as a weapon pointed the wrong way.
+
+### D-205 · 2026-08-21 · A thrown item is its own ranged weapon and its own ammo — no throwing system
+
+Sequoyah asked for pinecones: *"picked up off the ground around pine trees and used as a projectile
+to attack enemies, they should be thrown by the player"*. That reads like a new verb, and the
+tempting shape is a `ThrowableDef` with its own state machine beside `RangedCombatService`.
+
+**It is not a new verb. A throw is a ranged weapon whose ammo happens to be itself.** F-492 ships the
+pinecone as `content/ranged_weapons/pinecone.tres` with `item_id == ammo_item_id == &"pinecone"` and
+adds no code at all: `CombatService.request_attack()` already routes any slot holding a
+`RangedWeaponDef` to `RangedCombatService`, which already reads the weapon out of the host's own
+inventory slot, already re-checks and removes one unit of `ammo_item_id` at the moment of release,
+and already simulates a gravity-scaled flight against its own world. Every network-authority
+guarantee in that file (`docs/ARCHITECTURE.md` §2.2, "Ranged weapons") applies to a throw unchanged,
+which is the real argument: a second system would have to re-earn all of it.
+
+**The one case worth pinning is the last one.** Because the weapon and the ammo are the same stack,
+throwing the final pinecone empties the very slot the host reads the weapon out of. That already
+resolves correctly — `_host_weapon_for()` returns null for an empty slot and `request_shot()` refuses
+before predicting anything — and `tools/f492_pinecone_check.gd` asserts it so a future refactor of
+either half cannot quietly break the other.
+
+**So the rule for any future throwable** — a rock, a throwing axe, a jar of something unpleasant —
+is: author a `RangedWeaponDef` keyed to the item itself, set `ammo_item_id` to that same id, give it
+a real `gravity_scale` so it arcs, and stop. Reach for a new system only when a throwable needs
+something a flight genuinely cannot express (an area effect on impact, a projectile that persists as
+a pickup where it lands). Neither of those is the pinecone.
