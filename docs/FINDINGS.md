@@ -3562,42 +3562,6 @@ four stale-or-vacuous assertions today on paths everyone assumed were covered.
 
 ---
 
-### F-606 · Nobody has measured what today's pressure work costs, and the target is an M1 Air
-
-**Area:** perf · **Severity:** high · **Found:** 2026-08-22 by wick1c650c
-
-Sequoyah is about to play a co-op session with a friend on an **M1 MacBook Air**, and between several
-agents today the world got substantially busier with no measurement taken:
-
-  ambient enemies      4 -> 18, x1.6 at full corruption (up to ~29 bodies)
-  enemy_nest markers   5 -> 12
-  scatter colliders    +307 collision shapes across 210 groups (F-586, mine)
-  mire_spread_multiplier 1.0 -> 2.0
-  hazard fields, status effects, fauna assets
-
-Three properties of that machine matter and two are invisible to the benchmark this project runs:
-
-  · **Fanless.** It thermally throttles after roughly 5-10 minutes of sustained load. `perf_probe`
-    samples for ~40 seconds, so it can never see it — a short green benchmark is not evidence about
-    this target, and any claim needs to state whether it came from a long run or a short one.
-  · **Integrated GPU, 7-8 cores** — roughly a third of the M-series Pro this project is developed on.
-    Everything measured here understates the cost by a large factor.
-  · **Unified memory, commonly 8 GB.** VRAM is system RAM competing with everything else he has open,
-    so mesh and texture residency is a real budget rather than a footnote.
-
-The structural half of this is answerable headlessly and today: node counts, physics bodies,
-collision shapes, draw calls and VRAM all survive without a renderer, and they are exactly what a
-population change moves. Draw calls are the figure to lead with — an integrated GPU is where
-submission cost shows first, and F-090 already treated a 5.1k -> 6.0k drift as a real regression.
-
-Frame times are NOT answerable here. They need his display, his machine, the foreground, and a run
-long enough to thermally throttle. That is a hand-off to be asked for, not attempted — a windowed
-run on this machine measures a backgrounded window and is worthless (F-457).
-
-Reported in FPS and percentages, never milliseconds (F-592).
-
----
-
 ### F-607 · A first co-op session cannot reach the cheapest unlock: measured 20-50 Salvage against a 75 floor
 
 **Area:** progression · **Severity:** high · **Found:** 2026-08-22 by larchcc2572
@@ -3668,7 +3632,178 @@ recommendation rather than changing it.
 
 ---
 
+### F-608 · A playtest on someone else's machine produces no performance data we can read
+
+**Area:** perf · **Severity:** high · **Found:** 2026-08-22 by birch1db63e
+
+Sequoyah, before a co-op playtest with a friend: *"We can gather some good info from his game session
+as well, so maybe make the game log stuff that could be useful performance info, make the log easily
+accessible for him to send to me after the session"*.
+
+The friend's machine is an **M1 Air — fanless, integrated GPU**, and it is the machine that matters:
+Sequoyah's standing rule is that MIRE targets the worst computer, not the dev machine, and no dev
+machine here can stand in for one (F-174 says exactly that). We cannot profile it from here. The
+session can profile itself.
+
+Nothing in the project writes a session record today. `tools/perf_probe.gd` and the render census run
+headless on a developer's machine on demand; `DebugOverlay` shows live numbers to whoever is looking
+at the screen and keeps none of them. So an evening of real play on the exact hardware we most need
+data from currently produces **nothing at all** afterwards.
+
+**It has to be a TIME SERIES, not a summary, and that is the whole design.** A fanless laptop
+thermally throttles after five to ten minutes of sustained load. A session average smears that into a
+single meaningless figure — "avg 52 fps" — while a row per minute makes the degradation visible as a
+shape: *"held 60 for eight minutes, settled to 41 after twelve"* is the finding, and it is invisible
+in any aggregate.
+
+**Rows must be attributable or the numbers cannot be acted on.** A bad minute nobody can explain is
+not a finding; "the 1% low halved when the night wave spawned" is. Each row therefore needs stamping
+with what happened during it — Cycle advanced, night wave started, Wellspring capped, a player went
+down, extraction began — all of which already exist as `EventBus` signals.
+
+**"Easily accessible" is half the task and it is the half that gets skipped.** The log must land
+somewhere a non-technical person can actually retrieve it: written as Markdown so it can be pasted
+straight into a message, and reachable by a button in the game rather than by a path. Nobody's friend
+is going to find `~/Library/Application Support/Godot/app_userdata/MIRE/session_logs/` over voice
+chat.
+
+**It must cost nothing measurable.** A telemetry system that slows the machine it measures is worse
+than no telemetry, and on this target specifically. Sample structurally, never allocate per frame,
+and assert the per-sample cost rather than assuming it.
+
+Reporting goes through `tools/perf_format.gd` (F-592): FPS and percentages, never milliseconds as the
+primary figure — Sequoyah is the one deciding what to act on, and a number he has to convert in his
+head is a number he cannot judge.
+
+---
+
+### F-609 · A fresh install boots on HIGH with dynamic resolution off, so an M1 Air runs the heaviest preset the game has
+
+**Area:** performance · **Severity:** high · **Found:** 2026-08-22 by wick410d34
+
+Sequoyah, 2026-08-22, reporting from a session on his friend's machine: *"He was getting like 40-50
+fps at 1080p I think don't take that super seriously tho."* The machine is an **M1 MacBook Air** —
+fanless, integrated GPU, unified memory.
+
+That number is unsurprising, because **nothing in the game ever asks what hardware it is running on.**
+
+- `autoload/settings_service.gd:89` defaults `graphics_preset` to **2 = HIGH**, and `:142` mirrors it.
+  A fresh install with no save file therefore boots on HIGH.
+- `autoload/graphics_quality.gd:129` is `var preset: Preset = Preset.HIGH`.
+- `:170` is `var dynamic_scale_enabled: bool = false`.
+
+So the shipped default is **the heaviest preset the game has, with dynamic resolution off**: render
+scale 1.0, four shadow cascades at a 4096 atlas, glow, volumetric fog and SSAO all on. `PRESETS`
+already defines MEDIUM (render scale 0.77, undergrowth 0.8, draw distance 0.8) and LOW (0.59, two
+cascades at 2048, no glow/volumetric/SSAO) — **the scalability work is done and nothing selects it.**
+Same shape as F-580's unread stats and F-585's unwired resonances: built machinery with no caller.
+
+**Two things are missing, and they fix different halves of the problem:**
+
+1. **No hardware-aware first-boot default.** A player who never opens the settings menu — which is
+   most players, and certainly a friend handed a build for the evening — gets HIGH forever. The
+   preset should be chosen from the detected adapter on first boot only, never overriding a choice
+   the player has made.
+2. **Dynamic resolution is off.** This matters more on this target than any static preset, because
+   the M1 Air is **fanless**: it holds its clocks for five to ten minutes and then throttles. No
+   static preset can be right both before and after that, and a session is two hours of sustained
+   load. `set_dynamic_scale()` and the `gfx auto <fps>` verb already exist and default off.
+
+**Note the reported figure predates today's work** — ambient enemies went 4 -> 18, nests 5 -> 12,
+plus 307 new collision shapes, hazard fields and status effects. So 40-50 fps is a ceiling on what
+that build did, not a measurement of HEAD, and HEAD is likely worse.
+
+---
+
 ## Resolved
+
+### F-606 · Nobody has measured what today's pressure work costs, and the target is an M1 Air — **fixed**
+
+**Area:** perf · **Severity:** high · **Found:** 2026-08-22 by wick1c650c
+
+Sequoyah is about to play a co-op session with a friend on an **M1 MacBook Air**, and between several
+agents today the world got substantially busier with no measurement taken:
+
+  ambient enemies      4 -> 18, x1.6 at full corruption (up to ~29 bodies)
+  enemy_nest markers   5 -> 12
+  scatter colliders    +307 collision shapes across 210 groups (F-586, mine)
+  mire_spread_multiplier 1.0 -> 2.0
+  hazard fields, status effects, fauna assets
+
+Three properties of that machine matter and two are invisible to the benchmark this project runs:
+
+  · **Fanless.** It thermally throttles after roughly 5-10 minutes of sustained load. `perf_probe`
+    samples for ~40 seconds, so it can never see it — a short green benchmark is not evidence about
+    this target, and any claim needs to state whether it came from a long run or a short one.
+  · **Integrated GPU, 7-8 cores** — roughly a third of the M-series Pro this project is developed on.
+    Everything measured here understates the cost by a large factor.
+  · **Unified memory, commonly 8 GB.** VRAM is system RAM competing with everything else he has open,
+    so mesh and texture residency is a real budget rather than a footnote.
+
+The structural half of this is answerable headlessly and today: node counts, physics bodies,
+collision shapes, draw calls and VRAM all survive without a renderer, and they are exactly what a
+population change moves. Draw calls are the figure to lead with — an integrated GPU is where
+submission cost shows first, and F-090 already treated a 5.1k -> 6.0k drift as a real regression.
+
+Frame times are NOT answerable here. They need his display, his machine, the foreground, and a run
+long enough to thermally throttle. That is a hand-off to be asked for, not attempted — a windowed
+run on this machine measures a backgrounded window and is worthless (F-457).
+
+Reported in FPS and percentages, never milliseconds (F-592).
+
+---
+
+**Resolved 2026-08-22 by wick1c650c (fixed).** Measured by wick1c650c. Two seeds, HEAD against `9651ec81` (before today's pressure work).
+
+## The answer: the GPU side did not move. The physics side roughly doubled.
+
+    metric                      seed 20260822        seed 991177
+    submissions (draw proxy)    7766 ->  7369  -5%   10489 -> 10551   +1%
+    collision shapes             222 ->   338  +52%    252 ->   640  +154%
+    physics bodies               194 ->   288  +49%    224 ->   531  +137%
+    scene nodes                10963 -> 10698   -2%  14576 -> 15361   +5%
+    resident vertices         581758 ->577868   -1%  622931 ->627351   +1%
+
+**Draw submissions are flat** — -5% on one seed, +1% on the other, and the -5% is a seed artifact
+rather than a saving: MultiMesh instances fell 21% on that seed and 0% on the other. The likely cause
+is F-602 moving the Mire nearer spawn on that particular seed, so corruption-gated scatter tables
+replaced ordinary ones near the measured region. Two seeds disagreeing by that much on one axis is
+exactly why this was not reported from a single run.
+
+**The real change is collision.** Shapes and bodies rose 50-150% consistently across both seeds, and
+that is F-586 — mine — giving batched scatter the colliders it never had. On seed 991177 it is 252
+to 640 shapes. That is the one number today's work actually moved.
+
+Worth stating plainly rather than defending: those are STATIC bodies that never move, so the cost is
+broadphase insertion and memory rather than per-frame resolution, and Jolt handles static geometry
+well. It is still the largest structural change of the day and it is on the CPU side, which is where
+a fanless laptop has the least headroom under sustained load.
+
+## What this measurement does NOT cover, and it is a real gap
+
+**The ambient enemy change is invisible here.** These runs report `enemies=0`: the world is built
+without a player, and ambient spawning is driven by player proximity, so 4 -> 18 (x1.6 at full
+corruption, up to ~29 bodies) contributes nothing to these numbers. Each of those is an animated
+skeletal body with AI and navigation — almost certainly a larger per-frame cost than 400 static
+shapes — and it is precisely what a structural count of an empty world cannot see. Anyone reading
+this as "today cost us 400 colliders and nothing else" would be wrong.
+
+**And nothing here is a frame rate.** Headless runs the dummy renderer; `RenderingServer` draw-call
+and VRAM counters read zero, and the check says ABSENT rather than printing 0, because a zero meaning
+"not measured" looks identical to a zero meaning "free".
+
+## What still needs Sequoyah's machine
+
+The target is an **M1 MacBook Air**: fanless, integrated GPU around a third of this development
+machine's, unified memory where VRAM competes with everything else open. Two of its three limits are
+invisible to any measurement takeable here:
+
+  · thermal throttling after 5-10 minutes of sustained load. `perf_probe` samples ~40 s, so a green
+    benchmark is not evidence about this machine — it measures the best minute it will ever have.
+  · the GPU gap, which makes every timing measured on this Mac understate the real cost.
+
+A frame-rate answer needs his display, the foreground, and a LONG run. That is a request to be made,
+not a number to be inferred, and this finding deliberately does not infer one.
 
 ### F-604 · Cooking Tier 1 is unbuilt: the cooking spit opens an empty list and five shipped food models are unreachable — **fixed**
 

@@ -34,9 +34,11 @@ extends SceneTree
 ## that competes for his 8 GB is the resident geometry, which this counts directly.
 
 const ProceduralWorldScript := preload("res://world/gen/procedural_world.gd")
-const PerfFormat := preload("res://tools/perf_format.gd")
 
-const WORLD_SEED: int = 20260822
+## Overridable with `-- seed <n>`: one seed is an anecdote. The island's composition varies with the
+## seed, and a structural delta measured on a single one cannot tell a real change from a different
+## island.
+const DEFAULT_SEED: int = 20260822
 ## Frames given to streaming, placement jobs and the deferred service passes before counting. A
 ## count taken mid-stream measures how far the world got, not how heavy it is.
 const SETTLE_FRAMES: int = 90
@@ -49,8 +51,13 @@ func _initialize() -> void:
 func _run() -> void:
 	await process_frame
 	var game_state: Node = root.get_node_or_null(^"GameState")
+	var world_seed: int = DEFAULT_SEED
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	for index: int in args.size():
+		if args[index] == "seed" and index + 1 < args.size():
+			world_seed = int(args[index + 1])
 	if game_state != null:
-		game_state.call(&"set_replicated_seed", WORLD_SEED)
+		game_state.call(&"set_replicated_seed", world_seed)
 
 	var world: Node3D = ProceduralWorldScript.new()
 	world.name = "ProceduralWorld"
@@ -61,12 +68,12 @@ func _run() -> void:
 		await physics_frame
 
 	var tally: Dictionary = _weigh(world)
-	_report(tally)
+	_report(tally, world_seed)
 	# One machine-readable line, keys stable, for a baseline diff to parse. Deliberately NOT
 	# converted to FPS/percentages (F-592): this line is for tooling, and the human-facing report
 	# above it is where the units rule applies.
 	print("\nWORLD_WEIGHT seed=%d nodes=%d meshes=%d multimeshes=%d mm_instances=%d shapes=%d bodies=%d vertices=%d surfaces=%d submissions=%d enemies=%d drops=%d" % [
-		WORLD_SEED, tally["nodes"], tally["meshes"], tally["multimeshes"], tally["mm_instances"],
+		world_seed, tally["nodes"], tally["meshes"], tally["multimeshes"], tally["mm_instances"],
 		tally["shapes"], tally["bodies"], tally["vertices"], tally["surfaces"],
 		tally["submissions"], tally["enemies"], tally["drops"]])
 	print("WORLD_WEIGHT_CHECK failures=0")
@@ -146,8 +153,8 @@ func _account(mesh: Mesh, seen: Dictionary) -> void:
 	seen[key] = {"surfaces": surface_count, "vertices": vertex_count}
 
 
-func _report(tally: Dictionary) -> void:
-	print("\n== what a settled procedural island weighs (seed %d) ==" % WORLD_SEED)
+func _report(tally: Dictionary, world_seed: int) -> void:
+	print("\n== what a settled procedural island weighs (seed %d) ==" % world_seed)
 	print("  submissions (draw-call proxy)  %8d   %d mesh instances + %d MultiMeshes"
 		% [tally["submissions"], tally["meshes"], tally["multimeshes"]])
 	print("  MultiMesh instances            %8d   drawn by those %d batches, not one call each"
