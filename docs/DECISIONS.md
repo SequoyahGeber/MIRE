@@ -7027,6 +7027,24 @@ Consequences, each deliberate:
   function returning a new `PackedFloat32Array`, which is why this is a small change rather than a
   rewrite.
 
+**AMENDED on implementation (2026-08-22): that copy must be an eager `duplicate()`, and the reason
+this paragraph originally gave for why it need not be was wrong.** The argument was that
+`PackedFloat32Array` assignment is copy-on-write and `tick()` never mutates its argument, so no
+split could ever be triggered. The MAIN thread triggers it. A `host_set_corruption_at()` or a death
+stain writing to `_grid` while the worker is mid-tick reallocates the buffer the two were still
+sharing, out from under a thread that is reading it. `tools/mire_async_tick_check.gd` caught it on
+its first run:
+
+    SCRIPT ERROR: Out of bounds get index '2' (on base: 'PackedFloat32Array')
+        at: tick (res://world/mire/mire_grid_sim.gd:233)
+
+Intermittent by construction — it needs a synchronous mutation to land inside the ~15 ms the worker
+is running — so it would have shipped and then been reported as a rare, unreproducible crash.
+`duplicate()` forces the copy up front on the main thread; the worker then owns its own 256 KB and
+no CoW split can race it. The cost is a 256 KB memcpy once every two seconds against a 12-16 ms
+tick. **The general form, worth carrying past this decision: copy-on-write is not a substitute for
+a copy when the other end of the share is another thread.**
+
 **The alternative was rejected.** F-363 offered time-slicing the tick across its own 2-second
 interval as the cheaper-to-reason-about option. It is not: a half-applied grid means
 `corruption_at()` answers from a field where some cells have advanced and some have not, and every

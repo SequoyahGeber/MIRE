@@ -888,75 +888,6 @@ makes every seam assertion below it meaningless.
 
 ---
 
-### F-293 · Nothing enumerates and runs the tools/ check suite, so a red check sits at HEAD indefinitely — two were red for days and a third was asserting nothing
-
-**Area:** tooling · **Severity:** high · **Found:** 2026-08-20 by lm
-
-There are ~90 check scripts under `tools/`, each of which prints its own `failures=N` and exits
-non-zero. Nothing runs them as a set. A task runs the checks it believes it touched, which means a
-check goes red the moment an unrelated task moves the ground under it and stays red until somebody
-happens to run it for their own reasons.
-
-Three concrete instances, all found in one afternoon by F-274 running its neighbours:
-
-1. `tools/nav_bake_check.gd` has had 4 failures at HEAD since the 4.13/4.14 terrain retune (F-292).
-2. `tools/terrain_look_check.gd`'s `_check_chunk_mesher_surface()` — added by the 4.13 review at
-   361b692 — asserted that the production chunk mesh uses the biome-scaled surface. It did not, for
-   the whole of F-274's lifetime as a finding; the check was red from the commit that introduced it
-   until F-274 fixed the code it was watching. The tripwire existed and nobody was looking at it.
-3. `tools/noise_reuse_check.gd`'s integration section compared chunks (3,-7) and (-2,5) — 243 m and
-   172 m from origin, both outside `ISLAND_RADIUS` since it shrank 512 -> 118 m — so every vertex in
-   them was exactly 0.0 and it was comparing two zeroes. It passed continuously while asserting
-   nothing. (Fixed under F-274, which added a relief assertion so it cannot go vacuous again; the
-   same trap F-251 found in `chunk_stream_check.gd`, which is now three files.)
-
-Instance 3 is the reason this is filed as *tooling* rather than just "run them more often": a runner
-alone would not have caught it. What is missing is a runner **and** a convention that a check
-asserts its own inputs are non-degenerate.
-
-**What fixing it takes.** A `agent verify [--fast]` that discovers `tools/*_check.gd`, runs each
-under the existing Godot lock in turn, and reports the set — most take seconds, a handful
-(`chunk_stream_check`, the two-process net checks) need a framebuffer or two processes and want
-their own tier. The per-script contract already exists (`failures=N` plus a non-zero exit), and
-`nav_bake_check` already shows the shape for declaring expected noise
-(`EXPECTED_ERROR_PATTERNS="..."`), so the runner mostly needs to enumerate, sequence and summarize
-rather than to invent a protocol.
-
----
-
-### F-294 · Every surface sample allocates two or three Arrays inside island_heightmap.gd — lobes(), islet_centres() and river_polyline() are rebuilt per point, and F-274 doubled the river walk
-
-**Area:** world · **Severity:** medium · **Found:** 2026-08-20 by lm
-
-F-241, F-252 and F-261 hunted per-sample `FastNoiseLite` reconstruction and finished the job.
-Underneath it, a second per-sample rebuild was never touched: `_island_mask_bent()` calls
-`lobes(world_seed)` (allocates an `Array[Vector3]`) and `islet_centres(world_seed)` (an
-`Array[Vector2]`), and `_apply_river()` -> `_river_channel()` calls `river_polyline(world_seed)`
-(a `PackedVector2Array`, which itself calls `lobes()` again). All four derive from integer mixing on
-`world_seed` alone — they are IDENTICAL for every point in a chunk, in an island, for the whole run.
-
-So one surface sample allocates three or four Arrays and walks the river polyline twice over
-(`_river_channel` sums the total length, then walks the segments again). A LOD0 chunk is 1,225
-apron points; the POI dart loop asks for tens of thousands per island.
-
-F-274 made it slightly worse and is saying so: `BiomeMap.surface_from_set()` calls `_apply_river()`
-twice per sample, once to carve the continent the biome is classified from and once to carve the
-final surface, so the polyline is now built and walked four times per point rather than two.
-
-**What fixing it takes.** The same shape `NoiseSet` already established, extended to the
-seed-derived geometry: fold `lobes`, `islet_centres` and `river_polyline` (plus the polyline's
-precomputed segment lengths and total, which is the other half of the waste) into the set built once
-per task, and take them from there in `_island_mask_bent()`/`_river_channel()`. `NoiseSet` is
-already threaded to every caller that matters, so this is additive rather than a new parameter
-everywhere. The equivalence half of `tools/worldgen_noise_reuse_check.gd` is the existing witness —
-this must be bit-identical, and `GOLDEN_*`/`terrain_hash` must not move.
-
-Not fixed under F-274 because that task was already moving every seed's terrain, and a
-performance refactor landing in the same commit as a deliberate output change leaves nothing able
-to tell the two apart.
-
----
-
 ### F-295 · Every batched Hollowmere harvestable had a per-process node name, so none of the map's 794 batch-drawn props ever replicated
 
 **Area:** netcode · **Severity:** high · **Found:** 2026-08-20 by lp
@@ -1072,44 +1003,6 @@ Fix: pick one shape, migrate the other layout and its generator, and drop the se
 `_layout_spawn()`. `{"pos": [...]}` is the better target — it is the only one with room for the
 yaw a spawn eventually needs, and PlayerNet already reads a full `Transform3D` off the spawn point.
 Small, and worth doing before a third map picks a third shape.
-
----
-
-### F-303 · EnvironmentVfx.foliage_mesh_count is a cumulative dressing tally, so it climbs by a whole island on every procedural reseed
-
-**Area:** worldgen/VFX · **Severity:** low · **Found:** 2026-08-20 by lp
-
-`autoload/environment_vfx.gd` publishes four scene-derived counters. F-287 made three of them a
-census of what actually exists — `emitter_site_count` and `fire_source_count` are recomputed by
-`_prune_dead_sites()` from the surviving site arrays, and `sway_asset_count` by
-`_prune_dressed_meshes()` from the surviving mesh-cache entries. `foliage_mesh_count` was left
-alone, and it is the odd one out: `_apply_sway()`/`_apply_baked_sway()` increment it once per
-dressed NODE, cache hits included, and nothing anywhere records which nodes those were.
-
-So it cannot be pruned the way the other three are, and it still accumulates across an in-place
-reseed exactly as F-287 described. Measured by `tools/environment_vfx_reseed_check.gd`, which
-prints it rather than asserting it: `foliage=36` on the booted island, `foliage=62` after one
-restart, with `sway_assets` correctly holding at 2 across the same boundary. On the shipped map the
-starting number is large (`ENVIRONMENT_VFX_CHECK foliage=8103` on Playtest Hollow), so a few
-restarts put it well past any plausible reading of "meshes wearing the wind shader".
-
-Nothing gameplay-facing reads it — `tools/environment_vfx_check.gd` prints it as `foliage=` and
-asserts only on its own scene walk (`wind_meshes`), and the Hollowmere check does the same. The
-cost is that anyone diagnosing foliage from a running session after a restart gets a number that
-describes several worlds at once.
-
-Two exits, and the choice is a design call rather than an oversight to patch:
-
-  * **Make it a census like the others.** Needs a per-node record — a `PackedInt64Array` of dressed
-    node ids alongside `_dressed_meshes`, pruned on the same tick. That is up to ~8,100 entries on
-    Playtest Hollow, held for a diagnostic, which is a real cost for a number nothing asserts on.
-  * **Rename it to what it is** — `foliage_dressings` or similar, a cumulative "how much dressing
-    work has this process done" tally, documented as not a world census. Cheap, honest, and it
-    stops the next reader assuming it pairs with `sway_asset_count`.
-
-The second is probably right, but it renames a published field that two checks print, so it wants
-its own task rather than a drive-by. Whoever takes it should also decide whether `_reset()`'s
-existing zeroing of it on a scene change is consistent with whichever meaning wins.
 
 ---
 
@@ -1359,83 +1252,6 @@ can trip F-291. Read both before converting anything.
 first be run against a deliberately-reordered or -broken producer to confirm it now *fails*, the way
 F-282's phase was proven against `git show HEAD:systems/waves/wave_spawner.gd`. A converted check
 that has never been seen to fail has not been shown to test the fan-out either.
-
----
-
-### F-311 · EnvironmentVfx can now subscribe to the new EventBus.world_rebuilt instead of covering a direct rebuild_for_seed() with a quarter-second sweep
-
-**Area:** vfx · **Severity:** low · **Found:** 2026-08-20 by lp
-
-Found by F-286's sweep. Not a defect in F-287's fix — a seam that did not exist when D-170 was
-taken and now does.
-
-D-170 records the constraint honestly: `_on_run_restarted()` defers `_rediscover_world()`, and the
-existing quarter-second budget-tick prune exists **because** `ProceduralWorld.rebuild_for_seed()` is
-public and "announces nothing", so a console reroll or a `--script` check driving it directly is
-invisible to any subscriber. `tools/environment_vfx_reseed_check.gd` phase 4 is built around exactly
-that hole, and reports `REROLL prune_frames=30` — thirty frames of the new island lit by the ended
-island's fires, at coordinates with no prop under them.
-
-F-286 added `EventBus.world_rebuilt`, emitted at the END of `rebuild_for_seed()` once every contract
-node is published. That is the announcement D-170 said did not exist, and its timing is the half
-that matters: F-287 had to `call_deferred` its `run_restarted` handler because an autoload's handler
-runs *before* `ProceduralWorld`'s, while the ended island is still standing and a synchronous prune
-would find every source alive and drop nothing. A `world_rebuilt` handler has the opposite problem
-to solve, which is to say none: the island is already gone when it lands, so the prune can be
-synchronous and immediate.
-
-**What would close this:** `EnvironmentVfx` subscribes `world_rebuilt -> _rediscover_world()`
-(synchronously, no deferral) in addition to what it has, and `environment_vfx_reseed_check` phase 4
-asserts the reroll ghost is retired within one frame rather than within its 4,000-frame budget.
-
-**Do NOT remove the periodic prune while doing it.** D-170 is explicit that the tick is what makes
-the invariant true rather than merely usually true, and it is cheaper than the nearest-first sort
-that tick already pays. This narrows what the tick has to catch; it does not replace it. Same for
-`_dressed_meshes`, which prunes on the tick for a reason that is about Godot's deletion timing and
-is unaffected by any of this.
-
-Severity low deliberately: the current behaviour is correct, just up to a quarter-second late, and
-only on a path (`rebuild_for_seed()` with no restart) that no shipped input reaches today.
-
----
-
-### F-312 · tools/environment_vfx_reseed_check.gd prints 15 undeclared ERROR: lines at a clean HEAD while reporting failures=0
-
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-20 by lp
-
-Found by F-286's sibling re-runs, and confirmed pre-existing with
-`.agent/bin/agent baseline --script tools/environment_vfx_reseed_check.gd` — the error set is
-identical at HEAD and on the working tree, so this is not a regression of anything.
-
-SPECS.md standing rule 4: "grep every check run for engine errors and treat any UNDECLARED error
-line as failure even when the exit code is 0 (F-021)". This check declares no `EXPECTED_ERROR_PATTERNS`
-and gets zero allowance, so by that rule it is red at HEAD while printing `failures=0` and exiting 0.
-
-The exact list, from the baseline run:
-
-    8 x  Can't use get_node() with absolute paths from outside the active scene tree.
-    3 x  Parameter "m" is null.
-    1 x  Attempting to initialize the wrong RID
-    1 x  Parameter "mem" is null.
-    1 x  unimplemented base type encountered in renderer scene cull
-    1 x  1 RID allocations of type 'N13RendererDummy9DummyMeshE' were leaked at exit.
-
-Two different causes, and they want different answers.
-
-The **eight `get_node()` absolute-path** lines are the check's own doing and are fixable, not
-declarable: the check builds and frees nodes outside the active scene tree, and something in the
-teardown path resolves an absolute `^"/root/..."` while detached. That is the shape F-011's standing
-rule exists for, arriving at teardown rather than at compile time.
-
-The **dummy-renderer RID noise** (`Parameter "m" is null`, `wrong RID`, `renderer scene cull`, the
-leak line) is the headless renderer's, provoked by real mesh work the check does. That is exactly
-what `EXPECTED_ERROR_PATTERNS` is for, and F-305 already tracks the same family for
-`tools/wave_spawner_check.gd`. Whoever takes F-305 should take this with it — the declaration
-belongs in both verdict lines and the pattern is the same.
-
-Related but distinct: F-292/F-285 (`nav_bake_check` red at HEAD) and F-293 (nothing enumerates and
-runs the tools/ suite, so a red check sits at HEAD unnoticed). This is another instance of what
-F-293 predicts, and a third data point that the suite has drifted.
 
 ---
 
@@ -1806,41 +1622,6 @@ scatter finding is the one worth keeping.
 
 ---
 
-### F-354 · enemy_check's 'it starts idle' races the engine's own physics tick
-
-**Area:** tools · **Severity:** low · **Found:** 2026-08-21 by ivycc0920
-
-`tools/enemy_check.gd` drives the state machine by calling `enemy.call("_physics_process", delta)`
-by hand (`_step()`, `_step_until_state()`), but the enemy it spawns is a REAL node living in the
-tree, so Godot's own physics tick calls `_physics_process` as well. The check is not the only thing
-stepping the enemy it is measuring.
-
-That is latent for most assertions, which step until a state is reached. It is not latent for line
-66:
-
-    await process_frame
-    ...
-    check(int(enemy.get("state")) == 0, "it starts idle")
-
-`await process_frame` yields one IDLE frame, which says nothing about whether a 60 Hz physics frame
-landed in the same window. If one did, `_tick_pursuit()` has already acquired the player standing
-8 m away and moved the enemy to CHASE, and "it starts idle" fails.
-
-Observed while verifying F-351: 2 failures in 14 runs on a working tree, 0 in 9 on a clean baseline
-at HEAD, and both failures were the FIRST run after a real content change to `systems/enemies/`.
-That is the tell — a first run with freshly compiled bytecode has a slower startup frame, which is
-exactly when the extra physics tick fits. `touch`ing the files does not reproduce it, because
-Godot's script cache keys on content rather than mtime, so a touch-only run never recompiles.
-
-Nothing about enemy behaviour is wrong here and no production code needs a change; the check is
-measuring through a seam it does not control. Fix direction: assert the initial state BEFORE the
-node can be ticked — read it on the frame it spawns, with no `await` between — or take the enemy out
-of `_physics_process`'s way for the duration (`enemy.set_physics_process(false)`) so the hand-driven
-stepping the rest of the file relies on is genuinely the only stepping happening. The second is the
-more complete fix, since it also removes the double-stepping every other assertion silently absorbs.
-
----
-
 ### F-358 · Retiring a navigation region costs 25-35 ms on the main thread, however it is done
 
 **Area:** navigation · **Severity:** high · **Found:** 2026-08-21 by ivy1bcae0
@@ -1980,74 +1761,6 @@ a session, and worth one.
 Suggested shape: take the target from `ProjectSettings` the way `tools/probe_scene.gd` now does,
 keep `-- --scene res://levels/hollowmere.tscn` as an explicit fixture override so the authored
 comparison stays available, and settle the streamer before phase one.
-
----
-
-### F-363 · The Mire tick still costs most of a frame at saturation, on the host main thread
-
-**Area:** performance · **Severity:** high · **Found:** 2026-08-21 by ivy1bcae0
-
-Found 2026-08-20 by ivy1bcae0, as the residue of F-338.
-
-F-338 added `tools/bench_mire.gd` and optimised `MireGridSim.tick()` — a per-tick ward mask instead
-of a linear circle scan per neighbour, and flat index arithmetic instead of `Vector2i` offsets. That
-was worth 4x to 41x:
-
-    case                        before      after
-    seeded start,  0 wards    14.317 ms   3.387 ms
-    seeded start, 16 wards   119.471 ms   4.632 ms
-    saturated,     4 wards   248.033 ms  15.045 ms
-    saturated,    16 wards   687.424 ms  16.578 ms
-
-The ward term is gone: 16 wards now cost ~28% more than none, where they used to cost 11x. What is
-left is the full 65,536-cell pass, and at saturation it is **~16 ms — a whole frame, every 2 seconds,
-synchronously on the host main thread**, measured on an M5 Pro. The low-end target this project ships
-to (F-174, docs/PERFORMANCE.md) will be several times that.
-
-It also is not only the terminal state: "late run" at 80% fill measures 12-14 ms, which is most of a
-frame during ordinary deep-Cycle play.
-
-**Why it was not pushed further here.** The remaining cost is the pass itself. The two ways to reduce
-it are both out of scope for a benchmark task:
-
-1. **Off the main thread.** `MireGrid` runs `tick()` synchronously in `_physics_process`. The result
-   feeds replication (`WorldDeltaLog`) and ward/Wellspring reads, so moving it to `WorkerThreadPool`
-   is an authority and ordering change, not a code move — it needs an ARCHITECTURE.md §2.2 decision.
-2. **Time-slice it.** Spread one tick across the 2-second interval. Cheaper to reason about, but it
-   changes when corruption becomes visible to other systems mid-tick, so it needs a decision about
-   what a half-applied grid means to `MireGrid.corruption_at()` and its consumers.
-
-An active frontier — the other half of F-338's suggestion — was considered and does NOT help here:
-at saturation every cell is the frontier, so it improves the early and mid cases (already 3-8 ms)
-and does nothing for the case that misses.
-
-**RAISED to high, and UNBLOCKED, 2026-08-21 by vane99f1bb.**
-
-Severity raised because this is now the largest measured main-thread pass in the project by a wide
-margin, and the two other performance findings looked at this session came back smaller than they
-claimed: F-456's streamer overrun does not reproduce (the streamer is at 0.9-3.3% of hitch time), and
-F-496's proposed scatter fix measured 2.5x SLOWER than what it replaced. Against those, a 12-16 ms
-pass every 2 seconds — on the HOST, on top of everything else the host alone does for 3-6 players,
-several times worse on the low-end target — is the biggest thing left. `tools/hardware_census.gd`
-(new) frames why it is worth the thread: this game uses **1.1% of system memory and 2 of 15 logical
-processors**, so there is nothing to trade away by moving a pure function off the frame.
-
-The design decision this finding says it needs is now written: **D-208**. In short — moving
-`MireGridSim.tick()` to a `WorkerThreadPool` task is NOT an authority change, the §2.2 "Mire grid"
-row is unchanged (host, tick delta broadcast, no new RPC, no `PROTOCOL_VERSION` bump), and the one
-real rule is that `_grid` is always a COMPLETED tick, never a partial one. D-208 also settles what
-happens to the synchronous mutators (`host_add_corruption`, `clear_radius`, `host_set_corruption_at`
-apply immediately and supersede an in-flight job, whose result is discarded on landing — the same
-pattern `ChunkStreamer._retire()` already uses) and records why time-slicing was rejected instead.
-
-**So nothing about this is open except the file claim.** `world/mire/mire_grid.gd` and
-`world/mire/mire_grid_sim.gd` have been held for task 5.11 for this whole session. Whoever gets them
-next should take this straight away — the spec is D-208 and the gate is `tools/bench_mire.gd`.
-
-**What must not happen:** `bench_mire.gd` prints an AMBER line naming this gap on every run, and
-gates regressions at a 22 ms ceiling. Raising `TICK_BUDGET_MS` to silence the amber would convert a
-measured, known problem back into an unmeasured one — which is the exact history F-338 was filed to
-end.
 
 ---
 
@@ -3186,67 +2899,6 @@ material variety then move independently, and the first-visit penalty either sur
 does not (once-only CPU work). That is a content-side change to a `.tres` table plus a re-run, not new
 instrumentation — the harness is now in the repo.
 
-### F-461 · Chunk LOD transitions rebuild every prop in already-dressed chunks, and each holder re-sweeps HarvestWorld
-
-**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quillcfd8d7
-
-Reported from play: "when loading new chunks the game still stutters and lags like crazy and then
-when a new chunk does get loaded the assets in currently generated and loaded chunks get reloaded".
-
-Two independent causes, both found by reading, not guessed:
-
-1. `world/gen/resource_scatter_field.gd` fully tears down and rebuilds a chunk's scatter on EVERY
-   proxy-boundary transition. A chunk crossing ring 3 -> 2 (`_drain_lod0_pending`) calls
-   `_teardown_chunk()` then `_build_chunk(coord, true)`; walking back out, ring 3 -> 4 hits
-   `_on_chunk_mesh_ready(coord, 1)`, which tears down again and re-queues a visual-only build.
-   So each chunk is built THREE times on one pass (visual in, full, visual out) and two of those
-   rebuilds produce byte-identical MultiMeshes. Because the rebuild drains through
-   `_group_queue` at SCATTER_BUILD_BUDGET_MS = 2 ms/frame, the chunk 64 m in front of the player
-   goes visibly BARE for many frames and refills. That is the "assets get reloaded" the report
-   describes, and it is the only thing in the pipeline that can produce it.
-
-2. `autoload/harvest_world.gd` `_on_node_added()` fires `_schedule_refresh()` for every holder
-   node that enters the tree, and `refresh_current_scene()` is an O(all holders in the world)
-   sweep: `get_nodes_in_group()` over HOLDER_GROUPS plus a second full sweep in
-   `wired_harvestables()`, each entry filtered by `scene.is_ancestor_of()`. During traversal the
-   scatter field adds holders on nearly every frame, so this whole-world rewire runs nearly every
-   frame. `tools/chunk_stream_check.gd --windowed` prints "harvest: wired N live harvestable
-   prop(s)" hundreds of times in one run, climbing 337 -> 773, which is the sweep being re-run.
-   `wired_harvestables()` is computed there ONLY to produce that log line.
-
-**Two more causes, found by instrumenting rather than reading.** Fixing the two above cut the hitch
-share from 18.7% of the wall clock to 14.5%, and left `ChunkStreamer` reporting **31-56 ms frames
-against its own 4 ms budget while uploading as little as ONE chunk**. Splitting
-`ChunkStreamer._process()` three ways (`last_phase_costs_ms()`, added by this finding) put all of it
-in the upload drain, and probing inside that showed `add_child()` was 0.03 ms and
-`chunk_mesh_ready.emit()` was the other 40. The emit is synchronous, so both of its listeners were
-charging their work to the streamer's budget:
-
-3. `world/gen/resource_scatter.gd` `placements_for_chunk()` cost **8-10 ms of MAIN-THREAD time per
-   chunk**, called from `ResourceScatterField._build_chunk()` inside that emit. It does not shrink
-   with the answer — 10.29 ms to place *four* bushes — because the cost is the ~3,750 candidates a
-   chunk offers (31 scatter tables x 121 cells) and the biome/surface noise each surviving one
-   samples. So no downstream budget could help: `SCATTER_BUILD_BUDGET_MS` was metering the cheap
-   half of the work, after the expensive half had already been paid in full.
-
-4. `world/chunk/nav_baker.gd` `_source_geometry()` called `ChunkMesher.build_mesh()` — rebuilding
-   from scratch, on the main thread, the very mesh `ChunkStreamer` had just built on a WORKER thread
-   and was holding in the node it emitted the signal about. `_start_bake()` measured **19-81 ms per
-   chunk**, on frames whose only tree churn was that one terrain node. D-016 moved the *bake* async
-   and left the geometry pass synchronous; nothing made it reuse the mesh sitting next to it.
-
-**Result** (`tools/traversal_profile.gd`, seed 20260821, 45 s walk at 7 m/s, M5 Pro):
-
-| | hitch frames (>=25 ms) | share of wall clock | streamer share of hitch time | nodes added |
-|---|---|---|---|---|
-| before | 172 | 18.7% | 23.0% | 43,801 |
-| after | **27** | **2.6%** | **1.3%** | 33,776 |
-
-Median 5.95 -> 6.89 ms. Almost every surviving hitch is in the first 1.7 seconds — the initial
-settle behind the loading screen, where `grpQ` is 850-1,600 — not during traversal.
-
----
-
 ### F-463 · agent ship silently drops force-added ignored files, so a music .import never lands
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-21 by slate977821
@@ -3544,102 +3196,6 @@ this failure's list too and are now registered, so `apple` is the only name left
 
 ---
 
-### F-483 · Build mode's piece picker is unreachable: cursor stays captured and the wrapped bar hides the ghost
-
-**Area:** ui · **Severity:** high · **Found:** 2026-08-22 by galee581ee
-
-Playtest report (Sequoyah, 2026-08-21): *"the cursor stays captive even when opening the build menu
-so there's no way to select building pieces or view the placement of them."*
-
-Two separate faults, one symptom.
-
-**1. Selection is mouse-only, and build mode never frees the mouse.** `ui/building/build_bar.gd`'s
-`PieceSlot` selects on a left click or on `ui_accept` while focused. But build mode is *aiming*
-mode: `player_controller.gd` keeps `Input.mouse_mode == MOUSE_MODE_CAPTURED` throughout, because
-the ghost follows the camera and LMB confirms placement. A captured cursor can never reach a slot,
-and `ui_accept` (Space / gamepad A) is `jump`. So the only reachable selection path is the focus
-chain's `ui_left`/`ui_right` — which on a keyboard are the arrow keys, undiscoverable and
-unmentioned in the bar's own hint line. In practice the player is stuck with whatever
-`toggle_build_mode()` auto-picked: the first piece in Registry iteration order.
-
-Releasing the cursor is *not* the fix. Build mode has to keep aiming; a picker that steals the
-cursor would make the mode unusable. The picker must be driveable from the keys the hand is already
-on.
-
-**2. The bar covers the placement it is previewing.** F-477 took the set from 15 buildables to 22
-and the fixed-width `HFlowContainer` wraps them into four rows ~340 px tall, sitting directly above
-the hotbar. That band is where a first-person builder looks: the ghost sits on the ground a few
-metres ahead, low in frame. The picker occludes the thing it exists to help you place.
-
-**Resolution (Sequoyah's direction):** the bar is a *single row* above the hotbar, with categorized
-tabs — one tab per kind of building — so the row never wraps regardless of how many buildables the
-set grows to. Cycle pieces within the tab and tabs within the bar from bound actions, not the
-cursor.
-
-**Resolved 2026-08-21.** Both halves, plus one thing the first cut got wrong.
-
-*Tabs.* `BuildableDef.category` is a new authored `StringName`; `CATEGORY_ORDER` fixes the tab
-order and an unlisted category sorts last alphabetically rather than being dropped. All 22 pieces
-are authored onto STRUCTURE (8), DEFENCE (6) or STATION (8), so the widest tab is one row. The
-`HFlowContainer` is an `HBoxContainer` again and the per-slot cost line moved to a single line
-under the row for the *armed* piece — eight slots each sized to their own cost string ran the panel
-1 268 px wide of a 1 280 px window.
-
-*Selection without a cursor.* Four new actions, read in `BuildBar._input` and consumed:
-`build_piece_prev`/`build_piece_next` (wheel up/down, R3/BACK on a pad) and
-`build_category_prev`/`build_category_next` (Z/C, keyboard only). `step_piece()` walks the whole set
-in tab order rather than the open tab, so two pad buttons reach all 22 pieces and
-`set_selected_piece()` opens the tab the selection landed on. Slots are `FOCUS_NONE` now: F-217's
-focus ring outranked the selected ring, so the armed piece rendered in "focused" blue instead of
-amber, and a focused Control during first-person play leaves `ui_accept` and the arrow keys doing UI
-things while the player is aiming.
-
-*What the first cut got wrong, recorded because the next feature will want these buttons too.*
-Piece stepping was on the shoulder buttons, shared with `hotbar_prev`/`hotbar_next`, on the theory
-that BuildBar — built by the player, deeper in the tree than the `InventoryUI` autoload — would win
-`_input`'s reverse-tree-order propagation and consume them while build mode was on. It does not.
-`InventoryUI` sees them first, steps the hotbar and returns *without* consuming, so the press then
-also reached the bar: one button, two effects, silently swapping the held item out from under a
-player who was only changing walls. **An autoload that reads an action in `_input` and does not
-consume it cannot be pre-empted by a deeper node.** Distinct bindings instead.
-
-Verified headless — `tools/build_picker_check.gd` (new, 0 failures, and it guards the shoulder-button
-regression by asserting the hotbar moves and the piece does not), plus `build_check`,
-`buildable_content_check`, `station_buildable_check` and `build_snap_check` all still 0. Layout
-evidence per tab in `assets/audit/ui/build_bar_*.png` from `tools/build_bar_shot.gd`, with the
-hotbar's own band drawn in. Full write-up in `docs/DELEGATION.md`.
-
----
-
-### Pine (`build_pine`, tools/blender/build_mire_map_kit.py)
-
-Reads as a toy Christmas tree, not a forest conifer:
-
-* The whorls are a uniformly-shrinking stack of clean flat discs on evenly-spaced tiers
-  (`t = tier / (tiers - 1)`, `spread = (1-t)**0.80`). Real whorls are annual and irregular —
-  6 to 24 inches apart on the same species — and on a mature pine the LOWER branches droop
-  steeply while the top ones stay level. Nothing here droops at all.
-* `needles[min(2, (tier * 3) // tiers)]` puts the eight tiers into three contiguous blocks,
-  so the crown is three hard horizontal colour bands rather than a mixed mass.
-* The leader is one smooth pale cone 13% of the tree's height — a party hat, in a tone that
-  appears nowhere else in the silhouette.
-* All six variants read identically; only `height` varies, and the shape is a pure function
-  of `tier / tiers`.
-
-### Willow (`build_tree_willow`, tools/blender/build_flora_set.py)
-
-F-424/F-434 fixed the bole and got the curtain to exist, but the curtain itself is wrong:
-
-* The whips are dead-straight vertical bars with blunt ends — a bead curtain. A weeping
-  willow's shoots **arch upward from the limb, then turn steeply downward in long flowing
-  arcs**; the `hull` primitive cannot curve, so every strand is a vertical box.
-* The crown is not rounded. A willow's defining outline is a **broad, rounded crown**; the
-  top-down view here is a bare spider of limbs with nothing over it, and the side views have
-  a flat open top with the dark limbs showing straight through.
-* The pale tone lands as near-white full-length columns, so the curtain reads as a barcode.
-
----
-
 ### F-488 · Food gatherables never spawn: apple tree, berry bush and mushroom patch have definitions and art but no HarvestLibrary rule and no scatter entry
 
 **Area:** world · **Severity:** high · **Found:** 2026-08-22 by tine0bda72
@@ -3669,123 +3225,6 @@ Net effect reported from play: no food gatherables anywhere on the map.
 Verified headless with `tools/f488_food_scatter_check.gd` (classification, definition/yield
 resolution, and placement counts over 144 chunks on two seeds); `resource_scatter_check`,
 `harvest_batch_check`, `harvest_state_chain_check` and `harvest_restart_check` all still pass.
-
----
-
-### F-490 · Eleven nature assets are exported and catalogued but never placed by map generation
-
-**Area:** world · **Severity:** high · **Found:** 2026-08-22 by tine0bda72
-
-Audit of every nature kit (`environment`, `environment_additions`, `flora`, `gatherables`,
-`harvestables`, `terrain_accents`, `wetland`, `wetland_nature`) against every `content/scatter/*.tres`
-table, `world/gen/**` and the layout JSONs. Everything is placed except:
-
-- `gatherables`: `medicinal_herb`, `wild_onion`, `honeycomb`, `resin_node`, `clay_deposit`,
-  `peat_deposit`, `poison_berry_bush` — modelled, catalogued, no harvestable definition, no item,
-  no scatter entry.
-- `terrain_accents`: `cliff_face`, `cliff_corner`, `stone_steps` — referenced by nothing at all.
-- `wetland`: `fish_shoal` — referenced by nothing at all.
-
-Sequoyah's instruction: "we shouldnt have any nature assets not being used during map generation".
-
-**Resolved 2026-08-22 by tine0bda72.**
-
-*The seven gatherables.* Each needed three things it did not have. `assets/forage/` is a new pickup
-kit (`tools/blender/build_forage_pickups.py` — its own generator, because `build_pickup_kit.py`
-deletes and rewrites `assets/pickups/catalog.json` from its own builder list, so a second author's
-asset would silently fall out of it). `tools/blender/render_item_icons.py` renders their icons from
-those same GLBs. `content/items/` gained herb, wild_onion, honey, resin, clay, peat and
-poison_berry; `content/harvestables/` gained the seven definitions; `harvest_library.gd` gained the
-rules. Placement follows the real plant: herb in meadow, heath turf and forest floor; wild onion in
-meadow and birchwood; honeycomb in forest and birchwood deadwood (rare — it is a find); resin only
-on the pines (`highland_pines`, `forest_canopy`); clay on the shore and the marsh floor; peat in
-the bog and the heath above it; poison berries in deep forest and the reed beds, and deliberately
-NOT in the meadow, where they would sit next to the edible ones.
-
-*The terrain accents.* `cliff_face` and `cliff_corner` joined `cliff_rubble`, the ANY_BIOME table
-already gated to 30-90 degrees of slope where `cliff_overhang` and `rocky_slope` live. `stone_steps`
-got a table of its own, `highland_steps`: a rare cut stair on a highland hillside, 14-32 degrees, so
-it reads as something someone built into the hill rather than a prop dropped on flat ground.
-
-*The fish.* `shore_shallows` places `fish_shoal` on the seabed between -3.2 m and -0.1 m, where it
-is visible through shallow water.
-
-*Three entries that were listed but never landed.* Found by the new check, not by eye:
-`hollow_tree` and `uprooted_tree` (0.5/0.4 weight in the sparse 11 m `marsh_canopy` table) and
-`harvest_tree_depleted_stump` (0.2 in `forest_deadwood`) placed ZERO times across 392 chunks.
-Weights raised to 1.6/1.3/0.7 — being in a `.tres` is not the same as being in a world.
-
-*The check that keeps this true:* `tools/nature_asset_coverage_check.gd` reads every nature kit's
-`catalog.json` and asserts each export is scattered, is a damage state a harvestable definition
-swaps in, or is placed by an authored layout (reported separately, since a procedural run never
-shows those). It then generates 392 chunks and fails any scatter entry that never lands while its
-own table placed 40+ props — which is what "gated out" looks like as opposed to "small biome".
-
----
-
-### Audit of every other caller (done)
-
-`grep -n '\.rotation_euler\s*=' tools/blender/*.py` over the whole kit set. Safe callers
-are the ones whose object came from a `bpy.ops.*_add(location=...)` primitive — `cone`,
-`ico`, `cylinder_between`, `tapered_between`, cameras, lights, and preview roots — because
-those get their origin AT `location`. Two real instances of the defect existed besides the
-pine:
-
-* **`build_mire_map_kit.build_bare`, the bracket fungi** — `shelf.rotation_euler = (0, 0, angle)`
-  on a `hull` anchored in the bark of a leaning trunk. **Fixed here**, by resolving the
-  bracket's shallow (radial) and wide (across-the-trunk) axes onto X and Y.
-* **`build_gatherable_plants.py:371-375`, `frame_leaf_*`** — `spray.rotation_euler = (0, 0, angle)`
-  on a `hull` at a point out on a cane. **NOT fixed: that file is claimed by `gale43d16e`
-  for task 2.1d.** The fix there is simply to **delete the line** — the hull's radii are
-  `(0.098, 0.086, 0.052)`, near-circular in plan, so the rotation was never doing anything
-  the geometry needed; it was only flinging each leaf spray around the world origin.
-
-
----
-
-### F-493 · Procedural islands have no ruins: the environment kit's ruin walls, columns and arches are only ever placed by the two authored layouts
-
-**Area:** world · **Severity:** medium · **Found:** 2026-08-22 by tine0bda72
-
-`assets/environment` ships ten ruin pieces (`ruin_wall_a-d`, `ruin_column_a-d`, `ruin_arch_a-b`)
-and they appear only in `world/gen/layouts/hollowmere.json` and `playtest_hollow.json`. A procedural
-run — which is what ships — contains no ruin anywhere.
-
-Sequoyah, told that 34 architecture pieces were authored-map-only: "we could have some ruins but we
-dont really need fences, and it would probably be better for me to design structures that can be
-used during map generation."
-
-So: ruins get a procedural home now, built from the pieces that already exist. Fences stay out.
-Purpose-designed structures are his to author later, and this should leave a hook they can use
-rather than hard-coding one ruin.
-
-**Resolved 2026-08-22 by tine0bda72.**
-
-`world/gen/ruin_site.gd` lays out a ruined hall on a 13.4 x 9 m rectangle — the footprint the pieces
-themselves measure — as a pure function of the site seed: three wall bays a side, two per end, an
-arch as the doorway on one end, corner and spine columns, roughly a third of the segments gone, a
-couple of walls lying flat OUTSIDE the line they stood on, one column toppled pointing away from
-the middle. Standing pieces sink 8-30 cm into the turf; a piece on its side is lifted by half its
-own thickness so it rests on the ground rather than through it.
-
-`world/gen/poi_structures.gd` turns that list into nodes with meshes, draw distance and — unlike
-scatter's flora — collision on every piece, because a ruin wall you can walk through is not a wall.
-`PoiDef.structure_id` names the builder, so **a new structure is a script with one static function,
-a line in `BUILDERS`, and a `.tres`** — nobody has to touch `procedural_world.gd` to try one. That
-hook is deliberate: Sequoyah intends to design structures for map generation, and this is what they
-plug into.
-
-`content/poi/ruins.tres` asks for 4 sites an island in grassland, heath and forest, 150 m apart, on
-ground flat enough for a building. Measured: 49-56 structure pieces per island across three seeds.
-
-Fences are deliberately still unplaced, per his call. `tools/nature_asset_coverage_check.gd` now
-counts structure-built assets, so the "authored-layout only" list is down to the wood/stone building
-sets and the fences — which is the list of things worth designing FOR map generation rather than
-scattering.
-
-Verified with `tools/ruin_site_check.gd` (layout, determinism, 40 seeds produce 40 distinct ruins,
-all ten kit pieces reachable, every built piece carries mesh + collision and sits on its surface)
-and looked at in-game with `tools/ruin_look_probe.gd` — `assets/audit/terrain/ruin_site_*.png`.
 
 ---
 
@@ -3935,7 +3374,778 @@ the vertex stage.
 
 ---
 
+### F-513 · graphics_quality_check fails at clean HEAD because frontend has no shadow-casting sun
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivy2314d8
+
+tools/graphics_quality_check.gd loads res://levels/frontend.tscn and immediately requires a shadow-casting DirectionalLight3D, but the current frontend tree supplies none. `.agent/bin/agent godot --script tools/graphics_quality_check.gd` fails 1 at the assertion, and `.agent/bin/agent baseline --script tools/graphics_quality_check.gd` reproduces the identical failure at clean HEAD f515c98a. Update the harness setup or its level target so the standing quality check proves the system it claims to cover again.
+
+---
+
+### F-514 · Settings lacks the approved advanced graphics, accessibility and privacy controls
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by hollowe6edef
+
+`autoload/settings_service.gd` and `ui/frontend/graphics_settings_page.gd` currently expose presets and a small set of overrides, but the approved follow-up batch is absent: UI scale; camera-shake intensity while preserving Reduce Motion as a zero-motion shortcut; foliage density; shadow quality and distance; volumetric fog; controller deadzones and vibration; crosshair size/opacity/colour/high-contrast options; and Streamer Mode hiding lobby codes, player identifiers and seed values.
+
+Implement these as client-local presentation settings persisted through the existing SettingsSave migration. Keep Low/Medium/High as coherent defaults; changing a per-knob graphics control must show CUSTOM. Controls should preview live where judgeable, restore on cancel, commit on SAVE, and reset through RESTORE DEFAULTS. Add focused persistence, runtime-application, and menu checks. Coordinate with in-flight F-512's fullscreen render-resolution work rather than duplicating or overwriting it.
+
+---
+
+### F-515 · BuildBar controller focus regression reopened after F-217
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by brambe4999
+
+At clean HEAD ba39e524, `.agent/bin/agent baseline --script tools/gamepad_check.gd` reports four failures in the BuildBar section: selecting `wall_wood` through the real API does not grab its slot's controller focus; D-pad right/left cannot traverse the slot focus-neighbor chain; and `ui_accept` cannot select a focused piece. The same four failures reproduce in the live worktree. Core movement/look/action bindings pass, and `.agent/bin/agent godot --script tools/menu_focus_check.gd` reports zero failures.
+
+F-217 is marked fixed on the strength of these exact assertions, so this is a regression in the clean revision rather than an unimplemented controller feature. Repair belongs in `ui/building/build_bar.gd` and/or its check seam, but that file is currently claimed by F-469; do not cross that claim. Route the repair after F-469 closes or explicitly fold it into that owner.
+
+---
+
 ## Resolved
+
+### F-363 · The Mire tick still costs most of a frame at saturation, on the host main thread — **fixed**
+
+**Area:** performance · **Severity:** high · **Found:** 2026-08-21 by ivy1bcae0
+
+Found 2026-08-20 by ivy1bcae0, as the residue of F-338.
+
+F-338 added `tools/bench_mire.gd` and optimised `MireGridSim.tick()` — a per-tick ward mask instead
+of a linear circle scan per neighbour, and flat index arithmetic instead of `Vector2i` offsets. That
+was worth 4x to 41x:
+
+    case                        before      after
+    seeded start,  0 wards    14.317 ms   3.387 ms
+    seeded start, 16 wards   119.471 ms   4.632 ms
+    saturated,     4 wards   248.033 ms  15.045 ms
+    saturated,    16 wards   687.424 ms  16.578 ms
+
+The ward term is gone: 16 wards now cost ~28% more than none, where they used to cost 11x. What is
+left is the full 65,536-cell pass, and at saturation it is **~16 ms — a whole frame, every 2 seconds,
+synchronously on the host main thread**, measured on an M5 Pro. The low-end target this project ships
+to (F-174, docs/PERFORMANCE.md) will be several times that.
+
+It also is not only the terminal state: "late run" at 80% fill measures 12-14 ms, which is most of a
+frame during ordinary deep-Cycle play.
+
+**Why it was not pushed further here.** The remaining cost is the pass itself. The two ways to reduce
+it are both out of scope for a benchmark task:
+
+1. **Off the main thread.** `MireGrid` runs `tick()` synchronously in `_physics_process`. The result
+   feeds replication (`WorldDeltaLog`) and ward/Wellspring reads, so moving it to `WorkerThreadPool`
+   is an authority and ordering change, not a code move — it needs an ARCHITECTURE.md §2.2 decision.
+2. **Time-slice it.** Spread one tick across the 2-second interval. Cheaper to reason about, but it
+   changes when corruption becomes visible to other systems mid-tick, so it needs a decision about
+   what a half-applied grid means to `MireGrid.corruption_at()` and its consumers.
+
+An active frontier — the other half of F-338's suggestion — was considered and does NOT help here:
+at saturation every cell is the frontier, so it improves the early and mid cases (already 3-8 ms)
+and does nothing for the case that misses.
+
+**RAISED to high, and UNBLOCKED, 2026-08-21 by vane99f1bb.**
+
+Severity raised because this is now the largest measured main-thread pass in the project by a wide
+margin, and the two other performance findings looked at this session came back smaller than they
+claimed: F-456's streamer overrun does not reproduce (the streamer is at 0.9-3.3% of hitch time), and
+F-496's proposed scatter fix measured 2.5x SLOWER than what it replaced. Against those, a 12-16 ms
+pass every 2 seconds — on the HOST, on top of everything else the host alone does for 3-6 players,
+several times worse on the low-end target — is the biggest thing left. `tools/hardware_census.gd`
+(new) frames why it is worth the thread: this game uses **1.1% of system memory and 2 of 15 logical
+processors**, so there is nothing to trade away by moving a pure function off the frame.
+
+The design decision this finding says it needs is now written: **D-208**. In short — moving
+`MireGridSim.tick()` to a `WorkerThreadPool` task is NOT an authority change, the §2.2 "Mire grid"
+row is unchanged (host, tick delta broadcast, no new RPC, no `PROTOCOL_VERSION` bump), and the one
+real rule is that `_grid` is always a COMPLETED tick, never a partial one. D-208 also settles what
+happens to the synchronous mutators (`host_add_corruption`, `clear_radius`, `host_set_corruption_at`
+apply immediately and supersede an in-flight job, whose result is discarded on landing — the same
+pattern `ChunkStreamer._retire()` already uses) and records why time-slicing was rejected instead.
+
+**So nothing about this is open except the file claim.** `world/mire/mire_grid.gd` and
+`world/mire/mire_grid_sim.gd` have been held for task 5.11 for this whole session. Whoever gets them
+next should take this straight away — the spec is D-208 and the gate is `tools/bench_mire.gd`.
+
+**What must not happen:** `bench_mire.gd` prints an AMBER line naming this gap on every run, and
+gates regressions at a 22 ms ceiling. Raising `TICK_BUDGET_MS` to silence the amber would convert a
+measured, known problem back into an unmeasured one — which is the exact history F-338 was filed to
+end.
+
+---
+
+**Resolved 2026-08-22 by vane99f1bb.** **Resolved 2026-08-22 by vane99f1bb — the tick is off the frame. D-208 is the design; the
+implementation found a thread-safety bug in D-208's own reasoning and corrected it.**
+
+`MireGrid._physics_process()` no longer runs `MireGridSim.tick()`. It lands a finished tick, then
+dispatches the next one to `WorkerThreadPool` if the interval is due. The 12-16 ms pass this finding
+measured still costs 12-16 ms — it is simply not on the host's frame any more.
+
+Per D-208, and unchanged from it: the §2.2 "Mire grid" row is untouched (host, tick delta broadcast,
+no new RPC, no `PROTOCOL_VERSION` bump), `_grid` is only ever replaced by a COMPLETED tick, and the
+synchronous mutators (`host_add_corruption`, `clear_radius` via `_on_wellspring_capped`,
+`host_set_corruption_at`) apply immediately and mark any in-flight job superseded — its result is
+then discarded on landing rather than applied over the top of them.
+
+**The bug worth recording.** D-208 argued the worker could take the grid by plain assignment, because
+`PackedFloat32Array` is copy-on-write and `tick()` never mutates its argument, so nothing would
+trigger the split. The MAIN thread triggers it: a stain written to `_grid` while the worker is
+mid-tick reallocates the buffer they were still sharing, underneath a thread that is reading it.
+`tools/mire_async_tick_check.gd` caught it on its first run —
+
+    SCRIPT ERROR: Out of bounds get index '2' (on base: 'PackedFloat32Array')
+        at: tick (res://world/mire/mire_grid_sim.gd:233)
+
+— and it is intermittent by construction, needing a synchronous mutation to land inside the ~15 ms
+the worker runs. It would have shipped and been reported as a rare unreproducible crash. Fixed with
+an eager `duplicate()` at dispatch: a 256 KB memcpy once every two seconds, against a 12-16 ms tick.
+D-208 is amended with the general form — **copy-on-write is not a substitute for a copy when the
+other end of the share is another thread.**
+
+**Verification.**
+
+- `tools/mire_async_tick_check.gd` (new, and the reason the bug was found rather than shipped)
+  asserts the three properties no other Mire check can see: a due tick dispatches and does NOT land
+  on the same frame; a stain applied while a tick is in flight is immediately visible, the tick's
+  result is DISCARDED, and the stain survives the landing; and `host_force_tick()` is still
+  synchronous for the checks that depend on it. 0 failures across six consecutive runs — run
+  repeatedly on purpose, because the bug it caught was intermittent.
+- `tools/mire_grid_check.gd` 0 failures, including the determinism assertion and the two-process
+  proof that a client never simulates.
+- `tools/bench_mire.gd` 0 failures, worst saturated median 14.856 ms against the unchanged 22 ms
+  ceiling. Its AMBER line is NOT silenced and the goal is NOT raised — only its instruction changed,
+  because "move it off the main thread" is now done. What it still says, correctly, is that the pass
+  is this much WORK, which matters on the 4-core low-end target and bounds how far the interval
+  could shorten.
+- `tools/mire_scatter_check.gd`, `tools/blight_ground_check.gd`, `tools/defeat_check.gd` all 0
+  failures.
+- `tools/mire_interaction_check.gd` (1) and `tools/wellspring_recorruption_check.gd` (2) fail — and
+  fail IDENTICALLY at HEAD with this change reverted, verified by checking the file out and
+  re-running both. Pre-existing, not from this work, and not silently adopted here.
+
+**A new test seam.** `host_force_tick()` runs a tick to completion on the calling thread, ignoring
+the interval and any job in flight. Real gameplay never calls it — the whole point of D-208 is that a
+tick does not happen on the frame — but a check that needs "advance one step and assert" without
+pumping frames now has a supported way to do it, the same role `host_set_corruption_at()` fills.
+`tick_stats()` returns `[dispatched, landed, discarded]` for anyone asking whether the async path is
+actually being taken.
+
+### F-508 · Playtest Hollow presentation is visually noisy and obscures traversal — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by birchf37d06
+
+In the current playable Hollow view, `tools/mapgen/hollow_layout.py` scatters tall `reeds_*` and `grass_seedhead_*` close to traversal space at near-full scale. At eye level they dominate the foreground with repeated vertical stems and dark rectangular heads. `stump_*` and `fallen_log_*` debris also reads nearly black against the green terrain, losing silhouette and material detail. The combined density flattens the scene hierarchy: terrain, resource target, held tool, tutorial prompt, hotbar, and performance overlay all compete at once. Rework the source asset proportions/material values and layout density/clearance, regenerate the derived GLBs/catalog/layout through the established builders, then verify with an actual Forward+ gameplay capture from spawn/traversal height rather than catalog previews alone.
+
+---
+
+**Resolved 2026-08-22 by birchf37d06.** Rebalanced the shipped procedural island's forest and marsh presentation at the content source: willows are now accents rather than roughly forty percent of forest canopy picks, marsh reeds use a wider/sparser grid and smaller instances, and grassland seedheads are less dense and capped below full scale. Compacted the guide objective and focus prompt; a blocked harvest target now shows the missing tool without a redundant yield line. Updated procedural_look_probe.gd to follow the frontend's declared PLAY scene and captured all three Forward+ views. Verified `focus_prompt_check.gd` failures=0, `guide_check.gd` failures=0, `resource_scatter_check.gd` failures=0, and `procedural_look_probe.gd` completed with three OK PNG writes. Visual inspection of the final spawn/orbit/shore captures shows open foreground traversal and mixed tree silhouettes instead of the original willow/reed wall.
+
+### F-512 · Fullscreen resolution should control internal 3D render resolution for performance instead of being disabled — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivy2314d8
+
+ui/frontend/graphics_settings_page.gd disables Resolution in borderless/fullscreen and autoload/settings_service.gd only applies it as a window size. On macOS Godot fullscreen must remain at the monitor's native mode, but a player selecting 1920x1080 expects lower GPU cost. Make the selected resolution set the 3D viewport render scale in fullscreen/borderless while retaining native-resolution UI, preserve windowed sizing, and add runtime/check coverage proving the internal pixel target or computed scale changes.
+
+---
+
+**Resolved 2026-08-22 by ivy2314d8.** Kept the macOS fullscreen window and 2D UI at native resolution while making the existing Resolution selector cap the 3D viewport's uniform render scale. Graphics presets and dynamic resolution now respect that cap and may render lower but never above the player's selected performance target. Resolution remains enabled in both fullscreen modes; windowed mode retains real window sizing.
+
+Verified `.agent/bin/agent godot --script tools/settings_screen_check.gd` -> SETTINGS_SCREEN_CHECK failures=0. Verified `.agent/bin/agent godot --windowed --script tools/settings_check.gd` -> SETTINGS_CHECK failures=0, with live Metal fullscreen 1920x1080 selecting scale 0.5499 exactly matching the display-derived expected scale. `git diff --check` passed. The broader graphics_quality_check has one clean-HEAD missing-sun failure, reproduced with `agent baseline` and filed separately as F-513.
+
+### F-511 · Playtest still shows no visible chests around the map after F-367/F-504 — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by kilne5d049
+
+Sequoyah reports no chests visible in the playable map despite world_contract_check counting Chest nodes and F-504 assigning models. Inspect autoload/chest_placement_service.gd against the real runtime marker transforms and rendered geometry; add a verifier that proves visible world-space bounds rather than only node presence.
+
+---
+
+**Resolved 2026-08-22 by kilne5d049.** The procedural island already created 13 live chests, but the 0.75-0.96 m props had no locator across a roughly 295 m island and the check asserted only that a ChestVisual node existed. Chest now builds a presentation-only warm emissive mote 1.35 m above each unopened container plus a 5 m local light, both hidden from every peer when replicated opened state changes. Placement and host-authoritative opening are unchanged. Verified with `agent godot --script tools/chest_placement_check.gd` (all live cache/gilded/synthetic locator, height, light, open-hide, placement and open checks PASS; failures=0), `agent godot --script tools/chest_check.gd` (CHEST_CHECK failures=0), and `git diff --check` clean.
+
+### F-510 · Repair hammer viewmodel fills the right third of an ultrawide frame — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivy9f49c8
+
+Playtest screenshot from Sequoyah on 2026-08-21: the equipped repair hammer occupies nearly the full screen height and a large part of the right third, competing with the world and making the first-person composition feel cramped. Its ItemDef authors grip_offset=(0.1597,-0.3941,-0.5003) and grip_scale=0.31. Reframe it against an actual gameplay capture at 16:9 and 32:9, keep the head and hand readable without covering traversal space, and extend viewmodel evidence so ultrawide framing cannot regress.
+
+---
+
+**Resolved 2026-08-22 by ivy9f49c8.** The screenshot was the repair hammer (the playtest loadout had it in slot 1; the current dev loadout places it in slot 4). Reframed it from scale 0.31 at (0.1597,-0.3941,-0.5003) to scale 0.235 at (0.205,-0.425,-0.59), preserving its solved rotation and SMASH arc while moving the smaller silhouette lower/right and clearing the centre view. Kept setup_tool_content.gd aligned. viewmodel_check now follows the frontend's declared gameplay world, dismisses the mandatory attunement picker, selects repair_hammer by verified identity, renders 1280x720 and 2560x720 idle evidence, and guards scale <=0.25. Forward+ before/after captures were visually inspected; the new frame leaves the horizon and traversal target clear. Headless and windowed runs pass player/viewmodel wiring, item identity, framing bound, swing dispatch, orientation, near-plane clearance and all phase captures. The check still exits with its one pre-existing F-481 failure (`apple` silently inherits CHOP), unrelated and already tracked.
+
+### F-509 · Slope-spawned scatter props float above terrain — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by emberf4d564
+
+`world/gen/resource_scatter.gd::_placement_at()` assigns every prop origin to the terrain height at one centre sample. On sloped generated terrain, broad tree/root bases then visibly float on the downhill side, as shown in the 2026-08-21 playtest screenshot. Ground the placement against its footprint/local slope while keeping the deterministic derived-placement contract, and extend `tools/resource_scatter_check.gd` with sloped-ground assertions.
+
+**Resolved 2026-08-22 by emberf4d564.** `ResourceScatter._placement_at()` now keeps props upright but sinks accepted slope placements by the measured fall across a 0.65 m half-footprint, capped at 0.45 m. It reuses the existing slope samples, so grounding adds no terrain-query cost to the traversal-hot scatter pass. `tools/resource_scatter_check.gd` now proves sampled slopes embed at least one placement, never lift a placement above its centre surface, and never exceed the cap. `.agent/bin/agent godot --script tools/resource_scatter_check.gd` passed with `RESOURCE_SCATTER_CHECK failures=0` (the existing F-495 dummy-renderer warm-load diagnostics still print during lifecycle cleanup).
+
+### F-507 · Procedural ocean plane ends inside the playable view, leaving half the ocean missing — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by nettlee11674
+
+Screenshot evidence from Sequoyah shows a hard diagonal/rectangular water boundary with fog/sky filling the other half of the expected sea. `levels/procedural_island.tscn` defines the Ocean as a single `PlaneMesh` sized only `Vector2(1400, 1400)`. The visible straight edge is consistent with the camera seeing past that finite mesh. Fix should extend the ocean beyond every reachable/high-vantage camera view (or recenter it around the viewer without changing gameplay water authority), then render-check from the reported high vantage and the existing shore/glint views. The Godot editor was open at discovery, so the `.tscn` was not edited.
+
+---
+
+**Resolved 2026-08-22 by nettlee11674.** The finite 1400 m ocean presentation mesh now follows each peer's own local player in XZ while remaining fixed at gameplay sea level. This preserves the existing mesh density and world-space wave shading instead of making a much larger, coarser plane; it changes no network authority or gameplay water queries. Extended the composition check and ocean render harness with the reported high-vantage edge case.
+
+Verified `git diff --check`; `.agent/bin/agent godot --script tools/procedural_world_check.gd` reported `PASS: the finite ocean follows a high-vantage player in XZ and stays at sea level` and `failures=0`; `.agent/bin/agent godot --windowed --script tools/ocean_glint_shot.gd` wrote `assets/audit/terrain/ocean_edge_follow.png`, visually inspected as uninterrupted ocean across the full frame from x=725 m beyond the old plane edge.
+
+### F-506 · perf_probe opens class picker during automated traversal — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by asheb20c0
+
+`tools/perf_probe.gd` deliberately opens the full-screen Attunement/class-selection overlay for its T3 traversal row and does not satisfy the mandatory class choice before sampling. The player continues along the automated curved traversal path behind the overlay, making performance runs irritating to watch and allowing the picker to obscure measurements. Remove the menu-open scenario and temporarily choose an attunement before measurement so the picker stays dismissed for the whole probe; restore probe-owned state on exit. User requested this directly on 2026-08-21.
+
+**Resolved 2026-08-22 by asheb20c0.** Removed `tools/perf_probe.gd`'s deliberate `T3 traversal + menu open` scenario. Before any sampling, the probe now selects the fixed `warden` attunement through `AttunementService`, closes and hides `AttunementUI`, and clears only the selection it supplied at close-out, so the picker's mandatory-selection poll cannot reopen it over the curved traversal.
+
+Verified `git diff --check -- tools/perf_probe.gd`; `.agent/bin/agent godot --script tools/perf_probe.gd` loaded and parsed the changed script before reaching its expected display-required guard; `.agent/bin/agent godot --script tools/attunement_check.gd` reported `ATTUNEMENT_CHECK failures=0`; `.agent/bin/agent godot --script tools/benchmark_check.gd` reported 214 assertions and 0 failures.
+
+### F-293 · Nothing enumerates and runs the tools/ check suite, so a red check sits at HEAD indefinitely — two were red for days and a third was asserting nothing — **fixed**
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-20 by lm
+
+There are ~90 check scripts under `tools/`, each of which prints its own `failures=N` and exits
+non-zero. Nothing runs them as a set. A task runs the checks it believes it touched, which means a
+check goes red the moment an unrelated task moves the ground under it and stays red until somebody
+happens to run it for their own reasons.
+
+Three concrete instances, all found in one afternoon by F-274 running its neighbours:
+
+1. `tools/nav_bake_check.gd` has had 4 failures at HEAD since the 4.13/4.14 terrain retune (F-292).
+2. `tools/terrain_look_check.gd`'s `_check_chunk_mesher_surface()` — added by the 4.13 review at
+   361b692 — asserted that the production chunk mesh uses the biome-scaled surface. It did not, for
+   the whole of F-274's lifetime as a finding; the check was red from the commit that introduced it
+   until F-274 fixed the code it was watching. The tripwire existed and nobody was looking at it.
+3. `tools/noise_reuse_check.gd`'s integration section compared chunks (3,-7) and (-2,5) — 243 m and
+   172 m from origin, both outside `ISLAND_RADIUS` since it shrank 512 -> 118 m — so every vertex in
+   them was exactly 0.0 and it was comparing two zeroes. It passed continuously while asserting
+   nothing. (Fixed under F-274, which added a relief assertion so it cannot go vacuous again; the
+   same trap F-251 found in `chunk_stream_check.gd`, which is now three files.)
+
+Instance 3 is the reason this is filed as *tooling* rather than just "run them more often": a runner
+alone would not have caught it. What is missing is a runner **and** a convention that a check
+asserts its own inputs are non-degenerate.
+
+**What fixing it takes.** A `agent verify [--fast]` that discovers `tools/*_check.gd`, runs each
+under the existing Godot lock in turn, and reports the set — most take seconds, a handful
+(`chunk_stream_check`, the two-process net checks) need a framebuffer or two processes and want
+their own tier. The per-script contract already exists (`failures=N` plus a non-zero exit), and
+`nav_bake_check` already shows the shape for declaring expected noise
+(`EXPECTED_ERROR_PATTERNS="..."`), so the runner mostly needs to enumerate, sequence and summarize
+rather than to invent a protocol.
+
+---
+
+**Resolved 2026-08-22 by quill3c83cf.** Added `agent verify [--fast]` with deterministic `tools/*_check.gd` discovery, sequential execution under one Godot lock, strict `failures=N` plus expected-error validation, a per-check fsync'd JSONL ledger, torn-tail recovery, and automatic resume. `--fast --list` discovers 202 headless checks and the full tier discovers 243. Added harness coverage for verdict enforcement and interrupted-ledger recovery; `python3 tools/harness_check.py` passes 39/39, `python3 -m py_compile .agent/bin/agent tools/harness_check.py` passes, and `git diff --check` is clean.
+
+### F-354 · enemy_check's 'it starts idle' races the engine's own physics tick — **fixed**
+
+**Area:** tools · **Severity:** low · **Found:** 2026-08-21 by ivycc0920
+
+`tools/enemy_check.gd` drives the state machine by calling `enemy.call("_physics_process", delta)`
+by hand (`_step()`, `_step_until_state()`), but the enemy it spawns is a REAL node living in the
+tree, so Godot's own physics tick calls `_physics_process` as well. The check is not the only thing
+stepping the enemy it is measuring.
+
+That is latent for most assertions, which step until a state is reached. It is not latent for line
+66:
+
+    await process_frame
+    ...
+    check(int(enemy.get("state")) == 0, "it starts idle")
+
+`await process_frame` yields one IDLE frame, which says nothing about whether a 60 Hz physics frame
+landed in the same window. If one did, `_tick_pursuit()` has already acquired the player standing
+8 m away and moved the enemy to CHASE, and "it starts idle" fails.
+
+Observed while verifying F-351: 2 failures in 14 runs on a working tree, 0 in 9 on a clean baseline
+at HEAD, and both failures were the FIRST run after a real content change to `systems/enemies/`.
+That is the tell — a first run with freshly compiled bytecode has a slower startup frame, which is
+exactly when the extra physics tick fits. `touch`ing the files does not reproduce it, because
+Godot's script cache keys on content rather than mtime, so a touch-only run never recompiles.
+
+Nothing about enemy behaviour is wrong here and no production code needs a change; the check is
+measuring through a seam it does not control. Fix direction: assert the initial state BEFORE the
+node can be ticked — read it on the frame it spawns, with no `await` between — or take the enemy out
+of `_physics_process`'s way for the duration (`enemy.set_physics_process(false)`) so the hand-driven
+stepping the rest of the file relies on is genuinely the only stepping happening. The second is the
+more complete fix, since it also removes the double-stepping every other assertion silently absorbs.
+
+---
+
+**Resolved 2026-08-22 by dusk7d25d3.** Disabled engine-driven physics on the live spawned enemy before the check's first await, so `tools/enemy_check.gd`'s explicit `_step()` calls are the sole state-machine clock. Verified with 15 consecutive `.agent/bin/agent godot --script tools/enemy_check.gd` runs: all 15 exited 0 with `ENEMY_CHECK attacks=0 failures=0`.
+
+### F-505 · verify_setup rejects the shipped frontend main scene — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by galedc2f76
+
+project.godot now intentionally boots res://levels/frontend.tscn, but tools/verify_setup.gd still requires application/run/main_scene itself to contain WorldEnvironment, DirectionalLight3D, and CharacterBody3D or be procedural_world.gd. The smoke check therefore reports three failures even though the frontend is the correct title/menu entry point and launches the gameplay scene through its own contract. Update the verifier to recognize and prove the frontend-to-gameplay seam while preserving the direct playable-scene assertions for any non-frontend main scene.
+
+**Resolved 2026-08-22 by galedc2f76.** Updated verify_setup's main-scene contract to recognize the intentional Frontend boot scene, follow the same _world_scene_path() seam used by PLAY, and apply the existing environment, directional-light, and player assertions to that routed gameplay scene. Direct gameplay main scenes retain the same structural checks.
+
+Verified:
+- `.agent/bin/agent godot --script tools/verify_setup.gd` -> all checks passed; frontend route, routed PackedScene, WorldEnvironment, DirectionalLight3D, and player all reported ok.
+- `.agent/bin/agent godot --script tools/title_check.gd` -> TITLE_CHECK failures=0.
+
+### F-303 · EnvironmentVfx.foliage_mesh_count is a cumulative dressing tally, so it climbs by a whole island on every procedural reseed — **fixed**
+
+**Area:** worldgen/VFX · **Severity:** low · **Found:** 2026-08-20 by lp
+
+`autoload/environment_vfx.gd` publishes four scene-derived counters. F-287 made three of them a
+census of what actually exists — `emitter_site_count` and `fire_source_count` are recomputed by
+`_prune_dead_sites()` from the surviving site arrays, and `sway_asset_count` by
+`_prune_dressed_meshes()` from the surviving mesh-cache entries. `foliage_mesh_count` was left
+alone, and it is the odd one out: `_apply_sway()`/`_apply_baked_sway()` increment it once per
+dressed NODE, cache hits included, and nothing anywhere records which nodes those were.
+
+So it cannot be pruned the way the other three are, and it still accumulates across an in-place
+reseed exactly as F-287 described. Measured by `tools/environment_vfx_reseed_check.gd`, which
+prints it rather than asserting it: `foliage=36` on the booted island, `foliage=62` after one
+restart, with `sway_assets` correctly holding at 2 across the same boundary. On the shipped map the
+starting number is large (`ENVIRONMENT_VFX_CHECK foliage=8103` on Playtest Hollow), so a few
+restarts put it well past any plausible reading of "meshes wearing the wind shader".
+
+Nothing gameplay-facing reads it — `tools/environment_vfx_check.gd` prints it as `foliage=` and
+asserts only on its own scene walk (`wind_meshes`), and the Hollowmere check does the same. The
+cost is that anyone diagnosing foliage from a running session after a restart gets a number that
+describes several worlds at once.
+
+Two exits, and the choice is a design call rather than an oversight to patch:
+
+  * **Make it a census like the others.** Needs a per-node record — a `PackedInt64Array` of dressed
+    node ids alongside `_dressed_meshes`, pruned on the same tick. That is up to ~8,100 entries on
+    Playtest Hollow, held for a diagnostic, which is a real cost for a number nothing asserts on.
+  * **Rename it to what it is** — `foliage_dressings` or similar, a cumulative "how much dressing
+    work has this process done" tally, documented as not a world census. Cheap, honest, and it
+    stops the next reader assuming it pairs with `sway_asset_count`.
+
+The second is probably right, but it renames a published field that two checks print, so it wants
+its own task rather than a drive-by. Whoever takes it should also decide whether `_reset()`'s
+existing zeroing of it on a scene change is consistent with whichever meaning wins.
+
+---
+
+**Resolved 2026-08-22 by quill3c83cf.** Renamed the misleading foliage_mesh_count to foliage_dressing_count and documented its actual contract: successful per-node sway dressing visits, including cache hits, cumulative across in-place rebuilds and reset only on a real scene change. sway_asset_count remains the live unique-mesh census. The reseed check now names and asserts that distinction. Verification: environment_vfx_check failures=0 with 8,103 live wind meshes; environment_vfx_reseed_check failures=0 with dressing work 762 -> 1,548 while sway assets remained a bounded census 238 -> 178; repository search finds no old foliage_mesh_count references; git diff --check clean.
+
+### F-312 · tools/environment_vfx_reseed_check.gd prints 15 undeclared ERROR: lines at a clean HEAD while reporting failures=0 — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-20 by lp
+
+Found by F-286's sibling re-runs, and confirmed pre-existing with
+`.agent/bin/agent baseline --script tools/environment_vfx_reseed_check.gd` — the error set is
+identical at HEAD and on the working tree, so this is not a regression of anything.
+
+SPECS.md standing rule 4: "grep every check run for engine errors and treat any UNDECLARED error
+line as failure even when the exit code is 0 (F-021)". This check declares no `EXPECTED_ERROR_PATTERNS`
+and gets zero allowance, so by that rule it is red at HEAD while printing `failures=0` and exiting 0.
+
+The exact list, from the baseline run:
+
+    8 x  Can't use get_node() with absolute paths from outside the active scene tree.
+    3 x  Parameter "m" is null.
+    1 x  Attempting to initialize the wrong RID
+    1 x  Parameter "mem" is null.
+    1 x  unimplemented base type encountered in renderer scene cull
+    1 x  1 RID allocations of type 'N13RendererDummy9DummyMeshE' were leaked at exit.
+
+Two different causes, and they want different answers.
+
+The **eight `get_node()` absolute-path** lines are the check's own doing and are fixable, not
+declarable: the check builds and frees nodes outside the active scene tree, and something in the
+teardown path resolves an absolute `^"/root/..."` while detached. That is the shape F-011's standing
+rule exists for, arriving at teardown rather than at compile time.
+
+The **dummy-renderer RID noise** (`Parameter "m" is null`, `wrong RID`, `renderer scene cull`, the
+leak line) is the headless renderer's, provoked by real mesh work the check does. That is exactly
+what `EXPECTED_ERROR_PATTERNS` is for, and F-305 already tracks the same family for
+`tools/wave_spawner_check.gd`. Whoever takes F-305 should take this with it — the declaration
+belongs in both verdict lines and the pattern is the same.
+
+Related but distinct: F-292/F-285 (`nav_bake_check` red at HEAD) and F-293 (nothing enumerates and
+runs the tools/ suite, so a red check sits at HEAD unnoticed). This is another instance of what
+F-293 predicts, and a third data point that the suite has drifted.
+
+---
+
+**Resolved 2026-08-22 by quill3c83cf.** Detached procedural Wellspring, ExtractionShip and Chest nodes now guard absolute /root lookups while EventBus finishes the current run_restarted subscriber snapshot, eliminating the fixable get_node() errors. The reseed harness now tears down its scene before quitting and declares only the headless dummy-renderer RID/resource family in EXPECTED_ERROR_PATTERNS. Verification: environment_vfx_reseed_check exits 0 with failures=0, no get_node absolute-path errors, REROLL prune_frames=0, and every remaining ERROR line matches the declared pattern; wellspring_check, chest_check and extraction_check each report failures=0; git diff --check clean.
+
+**Follow-up after reopen, 2026-08-22.** A later run exercised two intermittent consequences of the same dummy-renderer failure that the first verification did not: `Initializing already initialized RID` and `collision_faces()` receiving a typed Nil array. Both are now included in the narrow declaration. Two consecutive runs reported failures=0 and `REROLL prune_frames=0`; one exercised the expanded variants and one did not, and every ERROR/SCRIPT ERROR line in both matched `EXPECTED_ERROR_PATTERNS`. The production absolute-root errors remain eliminated rather than declared.
+
+### F-504 · Runtime chest count is a false positive while all chests are invisible — **fixed**
+
+**Area:** gameplay · **Severity:** high · **Found:** 2026-08-22 by ember4ba1b4
+
+ChestPlacementService constructs each Chest without assigning closed_scene or open_scene, and Chest._refresh_visual() immediately returns when that scene is null. world_contract_check only counts Chest nodes, so it reports chests while the player sees none and has no discoverable chest-to-powerup route. Assign the shipped chest assets by tier/state and assert a real ChestVisual in the live contract.
+
+**Resolved 2026-08-22 by ember4ba1b4.** ChestPlacementService now assigns the shipped small, reinforced, or Wellspring chest scenes to every placed Chest before it enters the tree, including matching open-state art. tools/chest_placement_check.gd now requires ChestVisual on every live cache/gilded chest and on a synthetic runtime placement. Verified with `agent godot --script tools/chest_placement_check.gd` (failures=0), `tools/chest_check.gd` (failures=0), `tools/loot_content_check.gd` (failures=0; a real paid/keyed chest granted seven_league_waders through PowerupService), and `tools/powerup_check.gd` (failures=0).
+
+### F-493 · Procedural islands have no ruins: the environment kit's ruin walls, columns and arches are only ever placed by the two authored layouts — **fixed**
+
+**Area:** world · **Severity:** medium · **Found:** 2026-08-22 by tine0bda72
+
+`assets/environment` ships ten ruin pieces (`ruin_wall_a-d`, `ruin_column_a-d`, `ruin_arch_a-b`)
+and they appear only in `world/gen/layouts/hollowmere.json` and `playtest_hollow.json`. A procedural
+run — which is what ships — contains no ruin anywhere.
+
+Sequoyah, told that 34 architecture pieces were authored-map-only: "we could have some ruins but we
+dont really need fences, and it would probably be better for me to design structures that can be
+used during map generation."
+
+So: ruins get a procedural home now, built from the pieces that already exist. Fences stay out.
+Purpose-designed structures are his to author later, and this should leave a hook they can use
+rather than hard-coding one ruin.
+
+**Resolved 2026-08-22 by tine0bda72.**
+
+`world/gen/ruin_site.gd` lays out a ruined hall on a 13.4 x 9 m rectangle — the footprint the pieces
+themselves measure — as a pure function of the site seed: three wall bays a side, two per end, an
+arch as the doorway on one end, corner and spine columns, roughly a third of the segments gone, a
+couple of walls lying flat OUTSIDE the line they stood on, one column toppled pointing away from
+the middle. Standing pieces sink 8-30 cm into the turf; a piece on its side is lifted by half its
+own thickness so it rests on the ground rather than through it.
+
+`world/gen/poi_structures.gd` turns that list into nodes with meshes, draw distance and — unlike
+scatter's flora — collision on every piece, because a ruin wall you can walk through is not a wall.
+`PoiDef.structure_id` names the builder, so **a new structure is a script with one static function,
+a line in `BUILDERS`, and a `.tres`** — nobody has to touch `procedural_world.gd` to try one. That
+hook is deliberate: Sequoyah intends to design structures for map generation, and this is what they
+plug into.
+
+`content/poi/ruins.tres` asks for 4 sites an island in grassland, heath and forest, 150 m apart, on
+ground flat enough for a building. Measured: 49-56 structure pieces per island across three seeds.
+
+Fences are deliberately still unplaced, per his call. `tools/nature_asset_coverage_check.gd` now
+counts structure-built assets, so the "authored-layout only" list is down to the wood/stone building
+sets and the fences — which is the list of things worth designing FOR map generation rather than
+scattering.
+
+Verified with `tools/ruin_site_check.gd` (layout, determinism, 40 seeds produce 40 distinct ruins,
+all ten kit pieces reachable, every built piece carries mesh + collision and sits on its surface)
+and looked at in-game with `tools/ruin_look_probe.gd` — `assets/audit/terrain/ruin_site_*.png`.
+
+---
+
+**Resolved 2026-08-22 by dusk7d25d3.** Fixed in commit 54fc325: procedural POIs can build deterministic ruined halls from all ten ruin-kit pieces through the reusable `PoiDef.structure_id` hook. Verified again on 2026-08-21 with `.agent/bin/agent godot --script tools/ruin_site_check.gd`: 40/40 seeds distinct, every kit piece reachable, 13/13 sampled pieces had mesh and collision, content registered for four sites per island, failures=0.
+
+### F-490 · Eleven nature assets are exported and catalogued but never placed by map generation — **fixed**
+
+**Area:** world · **Severity:** high · **Found:** 2026-08-22 by tine0bda72
+
+Audit of every nature kit (`environment`, `environment_additions`, `flora`, `gatherables`,
+`harvestables`, `terrain_accents`, `wetland`, `wetland_nature`) against every `content/scatter/*.tres`
+table, `world/gen/**` and the layout JSONs. Everything is placed except:
+
+- `gatherables`: `medicinal_herb`, `wild_onion`, `honeycomb`, `resin_node`, `clay_deposit`,
+  `peat_deposit`, `poison_berry_bush` — modelled, catalogued, no harvestable definition, no item,
+  no scatter entry.
+- `terrain_accents`: `cliff_face`, `cliff_corner`, `stone_steps` — referenced by nothing at all.
+- `wetland`: `fish_shoal` — referenced by nothing at all.
+
+Sequoyah's instruction: "we shouldnt have any nature assets not being used during map generation".
+
+**Resolved 2026-08-22 by tine0bda72.**
+
+*The seven gatherables.* Each needed three things it did not have. `assets/forage/` is a new pickup
+kit (`tools/blender/build_forage_pickups.py` — its own generator, because `build_pickup_kit.py`
+deletes and rewrites `assets/pickups/catalog.json` from its own builder list, so a second author's
+asset would silently fall out of it). `tools/blender/render_item_icons.py` renders their icons from
+those same GLBs. `content/items/` gained herb, wild_onion, honey, resin, clay, peat and
+poison_berry; `content/harvestables/` gained the seven definitions; `harvest_library.gd` gained the
+rules. Placement follows the real plant: herb in meadow, heath turf and forest floor; wild onion in
+meadow and birchwood; honeycomb in forest and birchwood deadwood (rare — it is a find); resin only
+on the pines (`highland_pines`, `forest_canopy`); clay on the shore and the marsh floor; peat in
+the bog and the heath above it; poison berries in deep forest and the reed beds, and deliberately
+NOT in the meadow, where they would sit next to the edible ones.
+
+*The terrain accents.* `cliff_face` and `cliff_corner` joined `cliff_rubble`, the ANY_BIOME table
+already gated to 30-90 degrees of slope where `cliff_overhang` and `rocky_slope` live. `stone_steps`
+got a table of its own, `highland_steps`: a rare cut stair on a highland hillside, 14-32 degrees, so
+it reads as something someone built into the hill rather than a prop dropped on flat ground.
+
+*The fish.* `shore_shallows` places `fish_shoal` on the seabed between -3.2 m and -0.1 m, where it
+is visible through shallow water.
+
+*Three entries that were listed but never landed.* Found by the new check, not by eye:
+`hollow_tree` and `uprooted_tree` (0.5/0.4 weight in the sparse 11 m `marsh_canopy` table) and
+`harvest_tree_depleted_stump` (0.2 in `forest_deadwood`) placed ZERO times across 392 chunks.
+Weights raised to 1.6/1.3/0.7 — being in a `.tres` is not the same as being in a world.
+
+*The check that keeps this true:* `tools/nature_asset_coverage_check.gd` reads every nature kit's
+`catalog.json` and asserts each export is scattered, is a damage state a harvestable definition
+swaps in, or is placed by an authored layout (reported separately, since a procedural run never
+shows those). It then generates 392 chunks and fails any scatter entry that never lands while its
+own table placed 40+ props — which is what "gated out" looks like as opposed to "small biome".
+
+---
+
+### Audit of every other caller (done)
+
+`grep -n '\.rotation_euler\s*=' tools/blender/*.py` over the whole kit set. Safe callers
+are the ones whose object came from a `bpy.ops.*_add(location=...)` primitive — `cone`,
+`ico`, `cylinder_between`, `tapered_between`, cameras, lights, and preview roots — because
+those get their origin AT `location`. Two real instances of the defect existed besides the
+pine:
+
+* **`build_mire_map_kit.build_bare`, the bracket fungi** — `shelf.rotation_euler = (0, 0, angle)`
+  on a `hull` anchored in the bark of a leaning trunk. **Fixed here**, by resolving the
+  bracket's shallow (radial) and wide (across-the-trunk) axes onto X and Y.
+* **`build_gatherable_plants.py:371-375`, `frame_leaf_*`** — `spray.rotation_euler = (0, 0, angle)`
+  on a `hull` at a point out on a cane. **NOT fixed: that file is claimed by `gale43d16e`
+  for task 2.1d.** The fix there is simply to **delete the line** — the hull's radii are
+  `(0.098, 0.086, 0.052)`, near-circular in plan, so the rotation was never doing anything
+  the geometry needed; it was only flinging each leaf spray around the world origin.
+
+
+---
+
+**Resolved 2026-08-22 by dusk7d25d3.** Fixed in commit 3662f83: the previously unused gatherables, terrain accents, and fish shoal now reach generated worlds, with authored items/harvestables/scatter rules and a standing coverage check. Verified again on 2026-08-21 with `.agent/bin/agent godot --script tools/nature_asset_coverage_check.gd`: all exports across eight nature kits reach a world, 25,602 props placed over 196 chunks x 2 seeds, failures=0.
+
+### F-483 · Build mode's piece picker is unreachable: cursor stays captured and the wrapped bar hides the ghost — **fixed**
+
+**Area:** ui · **Severity:** high · **Found:** 2026-08-22 by galee581ee
+
+Playtest report (Sequoyah, 2026-08-21): *"the cursor stays captive even when opening the build menu
+so there's no way to select building pieces or view the placement of them."*
+
+Two separate faults, one symptom.
+
+**1. Selection is mouse-only, and build mode never frees the mouse.** `ui/building/build_bar.gd`'s
+`PieceSlot` selects on a left click or on `ui_accept` while focused. But build mode is *aiming*
+mode: `player_controller.gd` keeps `Input.mouse_mode == MOUSE_MODE_CAPTURED` throughout, because
+the ghost follows the camera and LMB confirms placement. A captured cursor can never reach a slot,
+and `ui_accept` (Space / gamepad A) is `jump`. So the only reachable selection path is the focus
+chain's `ui_left`/`ui_right` — which on a keyboard are the arrow keys, undiscoverable and
+unmentioned in the bar's own hint line. In practice the player is stuck with whatever
+`toggle_build_mode()` auto-picked: the first piece in Registry iteration order.
+
+Releasing the cursor is *not* the fix. Build mode has to keep aiming; a picker that steals the
+cursor would make the mode unusable. The picker must be driveable from the keys the hand is already
+on.
+
+**2. The bar covers the placement it is previewing.** F-477 took the set from 15 buildables to 22
+and the fixed-width `HFlowContainer` wraps them into four rows ~340 px tall, sitting directly above
+the hotbar. That band is where a first-person builder looks: the ghost sits on the ground a few
+metres ahead, low in frame. The picker occludes the thing it exists to help you place.
+
+**Resolution (Sequoyah's direction):** the bar is a *single row* above the hotbar, with categorized
+tabs — one tab per kind of building — so the row never wraps regardless of how many buildables the
+set grows to. Cycle pieces within the tab and tabs within the bar from bound actions, not the
+cursor.
+
+**Resolved 2026-08-21.** Both halves, plus one thing the first cut got wrong.
+
+*Tabs.* `BuildableDef.category` is a new authored `StringName`; `CATEGORY_ORDER` fixes the tab
+order and an unlisted category sorts last alphabetically rather than being dropped. All 22 pieces
+are authored onto STRUCTURE (8), DEFENCE (6) or STATION (8), so the widest tab is one row. The
+`HFlowContainer` is an `HBoxContainer` again and the per-slot cost line moved to a single line
+under the row for the *armed* piece — eight slots each sized to their own cost string ran the panel
+1 268 px wide of a 1 280 px window.
+
+*Selection without a cursor.* Four new actions, read in `BuildBar._input` and consumed:
+`build_piece_prev`/`build_piece_next` (wheel up/down, R3/BACK on a pad) and
+`build_category_prev`/`build_category_next` (Z/C, keyboard only). `step_piece()` walks the whole set
+in tab order rather than the open tab, so two pad buttons reach all 22 pieces and
+`set_selected_piece()` opens the tab the selection landed on. Slots are `FOCUS_NONE` now: F-217's
+focus ring outranked the selected ring, so the armed piece rendered in "focused" blue instead of
+amber, and a focused Control during first-person play leaves `ui_accept` and the arrow keys doing UI
+things while the player is aiming.
+
+*What the first cut got wrong, recorded because the next feature will want these buttons too.*
+Piece stepping was on the shoulder buttons, shared with `hotbar_prev`/`hotbar_next`, on the theory
+that BuildBar — built by the player, deeper in the tree than the `InventoryUI` autoload — would win
+`_input`'s reverse-tree-order propagation and consume them while build mode was on. It does not.
+`InventoryUI` sees them first, steps the hotbar and returns *without* consuming, so the press then
+also reached the bar: one button, two effects, silently swapping the held item out from under a
+player who was only changing walls. **An autoload that reads an action in `_input` and does not
+consume it cannot be pre-empted by a deeper node.** Distinct bindings instead.
+
+Verified headless — `tools/build_picker_check.gd` (new, 0 failures, and it guards the shoulder-button
+regression by asserting the hotbar moves and the piece does not), plus `build_check`,
+`buildable_content_check`, `station_buildable_check` and `build_snap_check` all still 0. Layout
+evidence per tab in `assets/audit/ui/build_bar_*.png` from `tools/build_bar_shot.gd`, with the
+hotbar's own band drawn in. Full write-up in `docs/DELEGATION.md`.
+
+---
+
+### Pine (`build_pine`, tools/blender/build_mire_map_kit.py)
+
+Reads as a toy Christmas tree, not a forest conifer:
+
+* The whorls are a uniformly-shrinking stack of clean flat discs on evenly-spaced tiers
+  (`t = tier / (tiers - 1)`, `spread = (1-t)**0.80`). Real whorls are annual and irregular —
+  6 to 24 inches apart on the same species — and on a mature pine the LOWER branches droop
+  steeply while the top ones stay level. Nothing here droops at all.
+* `needles[min(2, (tier * 3) // tiers)]` puts the eight tiers into three contiguous blocks,
+  so the crown is three hard horizontal colour bands rather than a mixed mass.
+* The leader is one smooth pale cone 13% of the tree's height — a party hat, in a tone that
+  appears nowhere else in the silhouette.
+* All six variants read identically; only `height` varies, and the shape is a pure function
+  of `tier / tiers`.
+
+### Willow (`build_tree_willow`, tools/blender/build_flora_set.py)
+
+F-424/F-434 fixed the bole and got the curtain to exist, but the curtain itself is wrong:
+
+* The whips are dead-straight vertical bars with blunt ends — a bead curtain. A weeping
+  willow's shoots **arch upward from the limb, then turn steeply downward in long flowing
+  arcs**; the `hull` primitive cannot curve, so every strand is a vertical box.
+* The crown is not rounded. A willow's defining outline is a **broad, rounded crown**; the
+  top-down view here is a bare spider of limbs with nothing over it, and the side views have
+  a flat open top with the dark limbs showing straight through.
+* The pale tone lands as near-white full-length columns, so the curtain reads as a barcode.
+
+---
+
+**Resolved 2026-08-22 by dusk7d25d3.** Fixed in commit da66a8a: the build picker is a single categorized row and can be driven while the cursor remains captured using dedicated piece/category actions, with all 22 buildables categorized. Verified again on 2026-08-21 with `.agent/bin/agent godot --script tools/build_picker_check.gd`: BUILD_PICKER_CHECK failures=0, including cursor-captured wheel/keyboard/gamepad selection, all-tab traversal, one-row limits, and shoulder-button isolation from the hotbar.
+
+### F-311 · EnvironmentVfx can now subscribe to the new EventBus.world_rebuilt instead of covering a direct rebuild_for_seed() with a quarter-second sweep — **fixed**
+
+**Area:** vfx · **Severity:** low · **Found:** 2026-08-20 by lp
+
+Found by F-286's sweep. Not a defect in F-287's fix — a seam that did not exist when D-170 was
+taken and now does.
+
+D-170 records the constraint honestly: `_on_run_restarted()` defers `_rediscover_world()`, and the
+existing quarter-second budget-tick prune exists **because** `ProceduralWorld.rebuild_for_seed()` is
+public and "announces nothing", so a console reroll or a `--script` check driving it directly is
+invisible to any subscriber. `tools/environment_vfx_reseed_check.gd` phase 4 is built around exactly
+that hole, and reports `REROLL prune_frames=30` — thirty frames of the new island lit by the ended
+island's fires, at coordinates with no prop under them.
+
+F-286 added `EventBus.world_rebuilt`, emitted at the END of `rebuild_for_seed()` once every contract
+node is published. That is the announcement D-170 said did not exist, and its timing is the half
+that matters: F-287 had to `call_deferred` its `run_restarted` handler because an autoload's handler
+runs *before* `ProceduralWorld`'s, while the ended island is still standing and a synchronous prune
+would find every source alive and drop nothing. A `world_rebuilt` handler has the opposite problem
+to solve, which is to say none: the island is already gone when it lands, so the prune can be
+synchronous and immediate.
+
+**What would close this:** `EnvironmentVfx` subscribes `world_rebuilt -> _rediscover_world()`
+(synchronously, no deferral) in addition to what it has, and `environment_vfx_reseed_check` phase 4
+asserts the reroll ghost is retired within one frame rather than within its 4,000-frame budget.
+
+**Do NOT remove the periodic prune while doing it.** D-170 is explicit that the tick is what makes
+the invariant true rather than merely usually true, and it is cheaper than the nearest-first sort
+that tick already pays. This narrows what the tick has to catch; it does not replace it. Same for
+`_dressed_meshes`, which prunes on the tick for a reason that is about Godot's deletion timing and
+is unaffected by any of this.
+
+Severity low deliberately: the current behaviour is correct, just up to a quarter-second late, and
+only on a path (`rebuild_for_seed()` with no restart) that no shipped input reaches today.
+
+---
+
+**Resolved 2026-08-22 by quill3c83cf.** EnvironmentVfx now subscribes to EventBus.world_rebuilt and synchronously runs _rediscover_world() after ProceduralWorld publishes the replacement island; it unsubscribes on exit and retains the periodic prune for streamed-out/harvested props. The reseed harness now asserts a direct reroll ghost survives at most one frame. Verification: environment_vfx_reseed_check failures=0 with REROLL prune_frames=0 (2 before the edit), environment_vfx_check failures=0, and git diff --check clean. The pre-existing undeclared engine errors remain tracked separately as F-312.
+
+### F-461 · Chunk LOD transitions rebuild every prop in already-dressed chunks, and each holder re-sweeps HarvestWorld — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quillcfd8d7
+
+Reported from play: "when loading new chunks the game still stutters and lags like crazy and then
+when a new chunk does get loaded the assets in currently generated and loaded chunks get reloaded".
+
+Two independent causes, both found by reading, not guessed:
+
+1. `world/gen/resource_scatter_field.gd` fully tears down and rebuilds a chunk's scatter on EVERY
+   proxy-boundary transition. A chunk crossing ring 3 -> 2 (`_drain_lod0_pending`) calls
+   `_teardown_chunk()` then `_build_chunk(coord, true)`; walking back out, ring 3 -> 4 hits
+   `_on_chunk_mesh_ready(coord, 1)`, which tears down again and re-queues a visual-only build.
+   So each chunk is built THREE times on one pass (visual in, full, visual out) and two of those
+   rebuilds produce byte-identical MultiMeshes. Because the rebuild drains through
+   `_group_queue` at SCATTER_BUILD_BUDGET_MS = 2 ms/frame, the chunk 64 m in front of the player
+   goes visibly BARE for many frames and refills. That is the "assets get reloaded" the report
+   describes, and it is the only thing in the pipeline that can produce it.
+
+2. `autoload/harvest_world.gd` `_on_node_added()` fires `_schedule_refresh()` for every holder
+   node that enters the tree, and `refresh_current_scene()` is an O(all holders in the world)
+   sweep: `get_nodes_in_group()` over HOLDER_GROUPS plus a second full sweep in
+   `wired_harvestables()`, each entry filtered by `scene.is_ancestor_of()`. During traversal the
+   scatter field adds holders on nearly every frame, so this whole-world rewire runs nearly every
+   frame. `tools/chunk_stream_check.gd --windowed` prints "harvest: wired N live harvestable
+   prop(s)" hundreds of times in one run, climbing 337 -> 773, which is the sweep being re-run.
+   `wired_harvestables()` is computed there ONLY to produce that log line.
+
+**Two more causes, found by instrumenting rather than reading.** Fixing the two above cut the hitch
+share from 18.7% of the wall clock to 14.5%, and left `ChunkStreamer` reporting **31-56 ms frames
+against its own 4 ms budget while uploading as little as ONE chunk**. Splitting
+`ChunkStreamer._process()` three ways (`last_phase_costs_ms()`, added by this finding) put all of it
+in the upload drain, and probing inside that showed `add_child()` was 0.03 ms and
+`chunk_mesh_ready.emit()` was the other 40. The emit is synchronous, so both of its listeners were
+charging their work to the streamer's budget:
+
+3. `world/gen/resource_scatter.gd` `placements_for_chunk()` cost **8-10 ms of MAIN-THREAD time per
+   chunk**, called from `ResourceScatterField._build_chunk()` inside that emit. It does not shrink
+   with the answer — 10.29 ms to place *four* bushes — because the cost is the ~3,750 candidates a
+   chunk offers (31 scatter tables x 121 cells) and the biome/surface noise each surviving one
+   samples. So no downstream budget could help: `SCATTER_BUILD_BUDGET_MS` was metering the cheap
+   half of the work, after the expensive half had already been paid in full.
+
+4. `world/chunk/nav_baker.gd` `_source_geometry()` called `ChunkMesher.build_mesh()` — rebuilding
+   from scratch, on the main thread, the very mesh `ChunkStreamer` had just built on a WORKER thread
+   and was holding in the node it emitted the signal about. `_start_bake()` measured **19-81 ms per
+   chunk**, on frames whose only tree churn was that one terrain node. D-016 moved the *bake* async
+   and left the geometry pass synchronous; nothing made it reuse the mesh sitting next to it.
+
+**Result** (`tools/traversal_profile.gd`, seed 20260821, 45 s walk at 7 m/s, M5 Pro):
+
+| | hitch frames (>=25 ms) | share of wall clock | streamer share of hitch time | nodes added |
+|---|---|---|---|---|
+| before | 172 | 18.7% | 23.0% | 43,801 |
+| after | **27** | **2.6%** | **1.3%** | 33,776 |
+
+Median 5.95 -> 6.89 ms. Almost every surviving hitch is in the first 1.7 seconds — the initial
+settle behind the loading screen, where `grpQ` is 850-1,600 — not during traversal.
+
+---
+
+**Resolved 2026-08-22 by dusk7d25d3.** Fixed in commit 337bdda: preserves byte-identical scatter across LOD transitions, incrementally wires HarvestWorld holders, moves scatter placement work behind a budget, and reuses streamed terrain geometry for navigation. Verified again on 2026-08-21 with `.agent/bin/agent godot --windowed --script tools/chunk_stream_check.gd`: 0 functional failures; 500 m sprint, streamer own mean 0.0821 ms, worst 10.6520 ms, and 0 own-cost hitches over 16.667 ms.
+
+### F-503 · Resolution selector silently does nothing outside windowed mode — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by galedc2f76
+
+The live DISPLAY page exposes an enabled Resolution dropdown in WINDOWED, BORDERLESS, and FULLSCREEN. SettingsService persists set_resolution_index(), but _apply_display() calls DisplayServer.window_set_size() only for mode 0, so the other two modes silently ignore the player's selection while the UI and save claim it succeeded. Existing settings_check.gd asserts only the stored index, never DisplayServer.window_get_size(), so it cannot catch this. Make the resolution control truthful for the selected mode and add a windowed runtime-size assertion.
+
+**Resolved 2026-08-22 by galedc2f76.** Made the Resolution dropdown truthful: it remains enabled in WINDOWED, where SettingsService applies the selected size, and disables immediately in BORDERLESS/FULLSCREEN, where the display's native resolution wins. Added UI mode-state coverage and upgraded the service check from a stored-index assertion to a real DisplayServer.window_get_size() assertion.
+
+Verified:
+- `.agent/bin/agent godot --script tools/settings_screen_check.gd` -> SETTINGS_SCREEN_CHECK failures=0; resolution disables in borderless/fullscreen and re-enables in windowed.
+- `.agent/bin/agent godot --windowed --script tools/settings_check.gd` -> SETTINGS_CHECK failures=0; Metal window measured exactly (1152, 648).
+
+### F-294 · Every surface sample allocates two or three Arrays inside island_heightmap.gd — lobes(), islet_centres() and river_polyline() are rebuilt per point, and F-274 doubled the river walk — **fixed**
+
+**Area:** world · **Severity:** medium · **Found:** 2026-08-20 by lm
+
+F-241, F-252 and F-261 hunted per-sample `FastNoiseLite` reconstruction and finished the job.
+Underneath it, a second per-sample rebuild was never touched: `_island_mask_bent()` calls
+`lobes(world_seed)` (allocates an `Array[Vector3]`) and `islet_centres(world_seed)` (an
+`Array[Vector2]`), and `_apply_river()` -> `_river_channel()` calls `river_polyline(world_seed)`
+(a `PackedVector2Array`, which itself calls `lobes()` again). All four derive from integer mixing on
+`world_seed` alone — they are IDENTICAL for every point in a chunk, in an island, for the whole run.
+
+So one surface sample allocates three or four Arrays and walks the river polyline twice over
+(`_river_channel` sums the total length, then walks the segments again). A LOD0 chunk is 1,225
+apron points; the POI dart loop asks for tens of thousands per island.
+
+F-274 made it slightly worse and is saying so: `BiomeMap.surface_from_set()` calls `_apply_river()`
+twice per sample, once to carve the continent the biome is classified from and once to carve the
+final surface, so the polyline is now built and walked four times per point rather than two.
+
+**What fixing it takes.** The same shape `NoiseSet` already established, extended to the
+seed-derived geometry: fold `lobes`, `islet_centres` and `river_polyline` (plus the polyline's
+precomputed segment lengths and total, which is the other half of the waste) into the set built once
+per task, and take them from there in `_island_mask_bent()`/`_river_channel()`. `NoiseSet` is
+already threaded to every caller that matters, so this is additive rather than a new parameter
+everywhere. The equivalence half of `tools/worldgen_noise_reuse_check.gd` is the existing witness —
+this must be bit-identical, and `GOLDEN_*`/`terrain_hash` must not move.
+
+Not fixed under F-274 because that task was already moving every seed's terrain, and a
+performance refactor landing in the same commit as a deliberate output change leaves nothing able
+to tell the two apart.
+
+---
+
+**Resolved 2026-08-22 by quill3c83cf.** Hoisted the seed-derived river polyline, segment vectors, segment lengths, and total length onto IslandHeightmap.NoiseSet. shape_into() now projects against that cached geometry, so surface sampling no longer rebuilds lobes/polyline arrays or performs a separate length pass. Extended tools/worldgen_noise_reuse_check.gd with cached-geometry assertions and refreshed goldens that were already stale before the first edit; pre/post captures were identical. Verification: worldgen_noise_reuse_check failures=0 with shared-set speedup 3.17x (up from 2.40x pre-edit), terrain_check 0 failures, and git diff --check clean.
 
 ### F-502 · Benchmark seed leaks into later gameplay — **fixed**
 

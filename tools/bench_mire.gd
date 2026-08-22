@@ -31,9 +31,14 @@ const TICK_BUDGET_MS: float = 8.0
 ##
 ## After F-338's optimisation a saturated, 16-ward grid ticks at 16.6 ms — 41x faster than the
 ## 687 ms it cost before, with the ward term gone entirely, and still over the 8 ms goal. The
-## remainder is the full 65,536-cell pass itself, which cannot come down further without either
-## moving the tick off the main thread or reordering its float accumulation, and reordering would
-## change results the determinism assertion pins and the gameplay depends on.
+## remainder is the full 65,536-cell pass itself, which cannot come down further without reordering
+## its float accumulation — and that would change results the determinism assertion pins and the
+## gameplay depends on.
+##
+## F-363/D-208 took the other half of the old answer: the tick no longer runs on the frame at all,
+## `MireGrid` dispatches it to `WorkerThreadPool`. This file still measures the pass itself, on the
+## calling thread, on purpose — moving work to a worker changes who waits for it, not how much of it
+## there is, and on the 4-core low-end target (F-174) that difference still costs something.
 ##
 ## So the check gates REGRESSION at a ceiling with headroom over the measured worst, and says
 ## loudly, every run, that the goal is not met and why. A permanently-red gate gets ignored (F-347
@@ -94,10 +99,20 @@ func _run() -> void:
 		"a saturated, fully warded grid ticks under the %.1f ms regression ceiling (worst median "
 		% REGRESSION_CEILING_MS + "%.3f ms)" % _worst_saturated_ms)
 	if _worst_saturated_ms > TICK_BUDGET_MS:
+		# F-363/D-208 resolved the half of this the AMBER line used to ask for: `MireGrid` now
+		# dispatches the tick to `WorkerThreadPool` and lands the result on a later frame, so this
+		# cost is no longer ON the frame. What this bench measures is `MireGridSim.tick()` itself,
+		# which did NOT get faster and is still the number to beat — a worker thread is not free on
+		# a 4-core machine, and a tick that outgrows its own 2 s interval would starve the pool
+		# whatever thread it runs on. So the line stays, and stays un-silenced; only its
+		# instruction changed, because "move it off the main thread" is done.
 		print("\nAMBER: %.3f ms is still over the %.1f ms goal. What remains is the full %d-cell"
 			% [_worst_saturated_ms, TICK_BUDGET_MS, Sim.CELL_COUNT]
-			+ " pass; closing the gap needs the tick off the main thread or time-sliced, which is"
-			+ " architectural. Filed separately — do not silence this line by raising the goal.")
+			+ " pass. It no longer runs on the frame — F-363/D-208 moved it to WorkerThreadPool —"
+			+ " but it is still this much WORK, which matters on a low-core machine and bounds how"
+			+ " far the interval can shorten. Closing it needs a cheaper pass (an active frontier"
+			+ " helps the early and mid cases only; F-338 measured that). Do not silence this line"
+			+ " by raising the goal.")
 	print("\nBENCH_MIRE failures=%d worst_saturated_ms=%.3f" % [failures, _worst_saturated_ms])
 	quit(0 if failures == 0 else 1)
 
