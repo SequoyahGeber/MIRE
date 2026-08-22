@@ -3937,6 +3937,19 @@ the vertex stage.
 
 ## Resolved
 
+### F-502 · Benchmark seed leaks into later gameplay — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by kilne8b941
+
+`ui/frontend/benchmark_screen.gd::_pin_seed()` overwrites the shared `GameState` with
+`BenchmarkRunner.BENCH_SEED`, while `_teardown_world()` only frees benchmark nodes. Because
+`GameState.is_seed_ready()` remains true, the procedural gameplay world later calls
+`ensure_seed()` and reuses the benchmark seed rather than drawing entropy. Keep the benchmark
+seed static for comparable performance results, but reset the shared seed when leaving the
+benchmark before an expedition can start.
+
+**Resolved 2026-08-22 by kilne8b941.** Kept `BenchmarkRunner.BENCH_SEED` static for comparable measurements, but made `BenchmarkScreen._teardown_world()` reset the shared `GameState` after the temporary benchmark world is removed. The next gameplay world's `ensure_seed()` therefore takes the normal entropy path instead of reusing the benchmark fixture. Added regression assertions for both sides of the boundary. Verified with `.agent/bin/agent godot --script tools/benchmark_check.gd`: 214 assertions, 0 failures (live framebuffer section skipped headlessly); `git diff --check` passed.
+
 ### F-500 · tools/wave_director_check.gd's Cycle 6 live-count assertion is intermittently red — **fixed**
 
 **Area:** waves · **Severity:** low · **Found:** 2026-08-22 by ember5da2c4
