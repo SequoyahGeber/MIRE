@@ -3489,6 +3489,14 @@ come first.
 
 ## Resolved
 
+### F-532 · Water animation accelerates while sprinting — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by cinder7f5a42
+
+`world/gen/procedural_world.gd::_physics_process()` calls `_center_ocean_on()` every physics frame, translating the Ocean mesh by the player's full XZ movement. `world/environment/water_low_poly.gdshader` derives every wave phase from MODEL_MATRIX world position, so sprint velocity is added directly to the apparent phase velocity and the water goes frantic. Keep the finite ocean under the viewer without continuously translating the shader's spatial phase; add a focused regression check that ordinary movement does not recenter it every frame.
+
+**Resolved 2026-08-22 by cinder7f5a42.** Fixed `world/gen/procedural_world.gd` so its 1,400 m Ocean mesh recenters only after the local viewer has moved 256 m from the mesh centre, rather than inheriting every frame of player/sprint movement. This removes player velocity from the world-position shader phase while retaining 444 m of water beyond the viewer at the deadband edge. Extended `tools/procedural_world_check.gd` to prove ordinary movement leaves the ocean fixed and long traversal still recenters it. Verified with `.agent/bin/agent godot --script tools/procedural_world_check.gd`: all checks pass, `PROCEDURAL_WORLD_CHECK failures=0` (the check retains existing shutdown RID diagnostics).
+
 ### F-520 · Steam invite is a silent no-op and opening a lobby captures the mouse behind the menu — **fixed**
 
 **Area:** net · **Severity:** high · **Found:** 2026-08-22 by reed8d5690
