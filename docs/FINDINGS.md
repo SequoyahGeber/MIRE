@@ -1874,33 +1874,6 @@ silhouette and leave forest at 3.5%.
 
 ---
 
-### F-448 · chunk_stream_check's union-of-interest assertions fail at HEAD: neither anchor gets a LOD0 collider or a live Harvestable
-
-**Area:** streaming · **Severity:** high · **Found:** 2026-08-21 by birchcf39ce
-
-The union-of-interest block of tools/chunk_stream_check.gd fails at HEAD as well as after F-447:
-
-  FAIL  the 'host local' anchor's chunk loaded at LOD0 with a collider
-  FAIL  the 'remote peer' anchor's chunk ALSO loaded at LOD0 with a collider
-  FAIL  a live, host-authoritative Harvestable exists at the 'host local' anchor's point
-  FAIL  a live, host-authoritative Harvestable ALSO exists at the 'remote peer' anchor's point
-
-Measured on a throwaway worktree at dfe38e6 (the commit before F-447 landed) with
-`agent godot --windowed --script tools/chunk_stream_check.gd`: SIX functional failures there,
-including all four above. So this is NOT F-447 fallout — F-447 only re-recorded the LOD seam
-divergence tripwire, which is a separate assertion in the same file and now passes.
-
-The contract these four assert is F-132's: a host must build LOD0 chunks with colliders, and live
-host-authoritative Harvestables, at EVERY anchor in the union of interest — not only at its own
-local player's. A remote peer standing on a chunk the host never cooked cannot be reached by an
-`rpc_id(HOST_PEER_ID)` harvest call, so this is a multiplayer correctness failure, not a test
-nicety. Whether the streamer regressed or the check's settle window is now too short for a world
-this size is the first thing to establish: one nearby assertion ("both far-apart chunks are among
-the ones that materialized scatter") passes on some runs and fails on others, which points at
-timing, but the four above failed on every run of both revisions.
-
----
-
 ### F-454 · The felt performance problem is chunk streaming, not rendering: traversal drops the 1% low from 81 fps to 13 fps, and no graphics preset touches it
 
 **Area:** performance · **Severity:** high · **Found:** 2026-08-21 by wick5e2d04
@@ -2967,7 +2940,165 @@ stops paying 92 seconds a run in the meantime.
 
 ---
 
+### F-562 · Six more checks still have no verdict agent verify can read — two render near-miss wording, four print none at all
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by bram937a51
+
+F-555 gave 25 checks the `failures=N` verdict `agent verify` requires. Six were missed. Found by
+bram937a51 on 2026-08-22 while closing F-448, and confirmed by running `_verify_verdict()`'s actual
+regexes rather than by reading output — which is the point, because the survivors are precisely the
+ones that *look* like they have a verdict.
+
+`_verify_verdict()` in `.agent/bin/agent` accepts either `failures\s*=\s*(\d+)` or
+`\b(\d+)\s+failures?\b`. Anything else is recorded as **"missing failures verdict"** and the row
+fails however green the check ran.
+
+## Two render text the parser cannot read
+
+    tools/steam_check.gd:116        print("%d check(s) failed" % _failures)
+    tools/steam_lobby_check.gd:175  print("%d check(s) failed" % _failures)
+
+`"0 check(s) failed"` matches neither pattern: the second needs the number adjacent to the word
+"failure", and `check(s)` sits between them. This is the same shape as `chunk_stream_check`'s
+`"0 functional failure(s)"`, fixed under F-448 — a number, an intervening word, then a
+failure-ish word. A sweep that eyeballs output ticks all three off as "says how many failed".
+
+Worth stating what is NOT broken, since a careless reading of this finding would go and "fix" them:
+`"0 failure(s)"`, `"PASS — 0 failures"`, `"3 assertion(s), 0 failure(s)"` and `"PASS (0 failure(s))"`
+all match correctly. `app_exit_check`, `asset_scope_check`, `asset_usage_check`, `benchmark_check`,
+`mire_scatter_check`, `noise_reuse_check`, `steam_rejoin_check` and `connect_retry_check` are fine.
+The parenthesised `(s)` is harmless — `\b` holds against `(`.
+
+**Fix for these two:** print `STEAM_CHECK failures=%d` / `STEAM_LOBBY_CHECK failures=%d`. Keep the
+human line if it reads better; the verdict is additive.
+
+## Four have no verdict string at all
+
+    tools/crafting_ui_render_check.gd
+    tools/hollowmere_render_check.gd
+    tools/inventory_ui_render_check.gd
+    tools/playtest_hollow_render_check.gd
+
+**These should NOT simply be given a verdict.** All four are `*_render_check.gd`, and at least
+`hollowmere_render_check.gd` describes itself as capturing "viewport images so the map can be
+*looked at* without anybody opening the editor" alongside a timing sample. That is F-559's class: a
+diagnostic named `_check`, which `_verify_checks()` collects because it globs `tools/*_check.gd`,
+and which then gets marked red for failing to assert something it was never written to assert.
+
+The judgement each one needs is which half it is:
+
+- If it exists so a human can look at an image, it is a **probe**. Rename it `_probe.gd` with its
+  `.gd.uid`, the way F-559 did `enemy_facing_probe.gd` and F-555 did `f410_asset_material_probe.gd`.
+- If it makes a real assertion — a frame-rate floor is a real assertion — it is a check, and it
+  should print a verdict AND carry F-556's `@verify windowed` marker, because a render check without
+  a framebuffer cannot run.
+
+Deciding that per file is the work. Bolting `failures=0` onto all four would turn four honest red
+rows into four dishonest green ones, which is worse than the current state.
+
+## Why the verdict contract keeps being missed
+
+Both halves come from the same place: `_verify_checks()` collects by **filename glob**, and the
+verdict is enforced by **output parsing**. Nothing declares anything. A file becomes part of the
+suite by being named `*_check.gd`, and satisfies the suite by happening to print matching text. That
+is why F-555 could sweep 25 files and leave six, and why the leftovers are the near-misses rather
+than the obvious gaps. F-556 has already moved one property (needs-a-window) from inference to a
+declared `@verify windowed` marker; the verdict is the same kind of candidate, and a check that
+declared `@verify none` would also solve the probe half honestly.
+
+---
+
 ## Resolved
+
+### F-448 · chunk_stream_check's union-of-interest assertions fail at HEAD: neither anchor gets a LOD0 collider or a live Harvestable — **fixed**
+
+**Area:** streaming · **Severity:** high · **Found:** 2026-08-21 by birchcf39ce
+
+The union-of-interest block of tools/chunk_stream_check.gd fails at HEAD as well as after F-447:
+
+  FAIL  the 'host local' anchor's chunk loaded at LOD0 with a collider
+  FAIL  the 'remote peer' anchor's chunk ALSO loaded at LOD0 with a collider
+  FAIL  a live, host-authoritative Harvestable exists at the 'host local' anchor's point
+  FAIL  a live, host-authoritative Harvestable ALSO exists at the 'remote peer' anchor's point
+
+Measured on a throwaway worktree at dfe38e6 (the commit before F-447 landed) with
+`agent godot --windowed --script tools/chunk_stream_check.gd`: SIX functional failures there,
+including all four above. So this is NOT F-447 fallout — F-447 only re-recorded the LOD seam
+divergence tripwire, which is a separate assertion in the same file and now passes.
+
+The contract these four assert is F-132's: a host must build LOD0 chunks with colliders, and live
+host-authoritative Harvestables, at EVERY anchor in the union of interest — not only at its own
+local player's. A remote peer standing on a chunk the host never cooked cannot be reached by an
+`rpc_id(HOST_PEER_ID)` harvest call, so this is a multiplayer correctness failure, not a test
+nicety. Whether the streamer regressed or the check's settle window is now too short for a world
+this size is the first thing to establish: one nearby assertion ("both far-apart chunks are among
+the ones that materialized scatter") passes on some runs and fails on others, which points at
+timing, but the four above failed on every run of both revisions.
+
+---
+
+**Resolved 2026-08-22 by bram937a51.** **Already fixed at HEAD** — the four assertions this finding is about all pass. Verified by
+bram937a51, 2026-08-22. A separate, real defect was found in the same file while confirming it, and
+that one IS fixed here.
+
+## The four failures are gone
+
+`agent baseline --windowed --script tools/chunk_stream_check.gd` at `7c7c610a`:
+
+    ok  found a chunk with a harvestable placement for the 'host local player' anchor ((0, 0))
+    ok  found a second chunk ... >= 4 chunks from the first, for the 'remote peer' anchor ((-4, -4))
+    ok  the 'host local' anchor's chunk loaded at LOD0 with a collider
+    ok  the 'remote peer' anchor's chunk ALSO loaded at LOD0 with a collider — not just the nearest
+    ok  both far-apart chunks are among the ones that materialized scatter (193 chunks total)
+    ok  a live, host-authoritative Harvestable exists at the 'host local' anchor's point
+    ok  a live, host-authoritative Harvestable ALSO exists at the 'remote peer' anchor's point
+
+`0 functional failure(s)`, exit 0.
+
+**Checked as a mechanism, not just as a green run**, because this finding's whole point is a
+multiplayer-correctness contract and a green row proves nothing if the contract is satisfied by
+accident. `ChunkStreamer._ring_distance()` takes the **minimum over every anchor**, and
+`_evaluate_rings()` unions each anchor's full scan box into one candidate set before deciding tiers.
+That is F-132's union of interest implemented directly — not a near-anchor heuristic that happens to
+cover both today. The intermittent assertion this finding flagged as timing-sensitive ("both
+far-apart chunks materialized scatter") also passed.
+
+Not bisected to a fixing commit; the streamer has churned since 2026-08-21 and pinning it buys
+nothing now the contract holds.
+
+## What was actually broken, and is fixed here: the check had no readable verdict
+
+`chunk_stream_check` printed `0 functional failure(s)` and nothing else. `_verify_verdict()` in
+`.agent/bin/agent` reads a verdict with `failures\s*=\s*(\d+)` or `\b(\d+)\s+failures?\b`, and
+**"0 functional failure(s)" matches neither** — the word *functional* between the number and
+"failure" defeats the second pattern. Confirmed against the real regexes rather than by eye:
+
+    failures\s*=\s*(\d+)   -> []
+    \b(\d+)\s+failures?\b  -> []
+
+So in the suite this check reported `missing failures verdict` and went red on every run however
+green it ran — the exact state F-555 swept 25 other checks out of. It was missed there, I think,
+because its wording *looks* like a verdict without being one, which is invisible to a sweep that
+reads output rather than running the regex.
+
+It now prints `CHUNK_STREAM_CHECK failures=%d`, keeping the human-readable line as well because that
+is what a person reading a 15,000-line log wants. The headless bail got a verdict too, for the same
+F-555 reason — that path is reachable only by hand-run since F-556's `@verify windowed` marker gets
+this check a framebuffer in the suite.
+
+**Verified both paths.** `agent godot --script` (headless) → `CHUNK_STREAM_CHECK failures=1` after
+the "needs a real renderer" refusal. `agent godot --windowed --script` → `0 functional failure(s)`
+then `CHUNK_STREAM_CHECK failures=0`, exit 0.
+
+**Invocation note for the next person:** `agent baseline --script` alone proves nothing about this
+check — it refuses headless. It needs `agent baseline --windowed --script`, and the full run is
+~15,000 lines and several minutes because of the 500 m sprint-walk phase.
+
+**Swept the rest of `tools/` for the same near-miss wording** rather than leaving it to chance. Two
+more checks render text the parser cannot read — `steam_check.gd` and `steam_lobby_check.gd`, both
+printing `"%d check(s) failed"` — and four `*_render_check.gd` files carry no verdict string at all.
+Those are recorded as F-562 rather than fixed here; the render ones in particular look like F-559's
+class (diagnostics named `_check`) and want that judgement, not a bolted-on verdict.
 
 ### F-285 · `tools/nav_bake_check.gd` has 4 pre-existing failures at a clean HEAD — chunk-streamed terrain reports NaN heights to the check's seam search — **fixed**
 

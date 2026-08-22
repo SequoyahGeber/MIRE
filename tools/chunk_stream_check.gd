@@ -145,6 +145,11 @@ func _initialize() -> void:
 func _run() -> void:
 	if DisplayServer.get_name() == "headless":
 		push_error("chunk_stream_check needs a real renderer — run with --windowed (F-005/D-074)")
+		# The bail needs the verdict as much as the end does (F-555): without it the row reads as
+		# "reported nothing" rather than as the honest "could not run in this environment". Reachable
+		# only by a hand-run now — `agent verify` reads this file's `@verify windowed` marker and
+		# gives it a framebuffer (F-556).
+		print("CHUNK_STREAM_CHECK failures=1")
 		quit(1)
 		return
 
@@ -205,7 +210,17 @@ func _run() -> void:
 	print("\n-- host union-of-interest: two independent anchors each get a reachable proxy (F-132) --")
 	await _check_union_of_interest()
 
-	print("\n%d functional failure(s)\n" % _failures)
+	# `failures=N`, not "%d functional failure(s)" — F-555's contract, which this check was missing.
+	# `_verify_verdict()` in `.agent/bin/agent` reads a verdict with `failures\s*=\s*(\d+)` or
+	# `\b(\d+)\s+failures?\b`, and "0 functional failure(s)" matches NEITHER: the word between the
+	# number and "failure" defeats the second pattern. So this check reported "missing failures
+	# verdict" and went red on every suite run no matter how green it actually ran — which is exactly
+	# the state F-555 swept 25 other checks out of, and this one was missed because its wording looked
+	# like a verdict without being one.
+	#
+	# The human-readable line is kept as well, because it is what a person reading the log wants.
+	print("\n%d functional failure(s)" % _failures)
+	print("CHUNK_STREAM_CHECK failures=%d\n" % _failures)
 	quit(1 if _failures > 0 else 0)
 
 
