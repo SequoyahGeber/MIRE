@@ -9592,3 +9592,18 @@ workbench costs branch 10 + fibre 4 so bare hands can pay for it; guide ladder r
 Files: `content/buildables/workbench.tres`, `content/buildables/workbench_upgraded.tres`, `content/guide/place_workbench.tres`, `content/guide/craft_first_axe.tres`, `content/guide/gather_fibre.tres`, `content/guide/tip_tool_blocked.tres`, `tools/bootstrap_reachability_check.gd`, `content/guide/chop_a_tree.tres`, `tools/guide_check.gd`, `docs/PROGRESSION.md`, `docs/DECISIONS.md`
 
 Commit at time of writing: `d970f512`
+
+---
+
+### DONE · F-525 · slatef9bff1 · 2026-08-22T04:40:06+00:00
+
+**macOS release shader cache crashes on launch**
+
+Disabled macOS release shader baking; real windowed Metal launch now exits 0 instead of 133. Fresh runtime compilation is intentional.
+
+Notes along the way:
+- macOS release shader baker disabled; the fatal containers were embedded export data, not the per-user cache. Windowed exported-app launch is now the required gate.
+
+Files: `export_presets.cfg`
+
+Commit at time of writing: `7ddded7b`

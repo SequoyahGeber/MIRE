@@ -3676,6 +3676,13 @@
       "task": "F-401",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
+    "export_presets.cfg": {
+      "agent": "slatef9bff1",
+      "at": "2026-08-22T04:40:06+00:00",
+      "hash": "38b8009a0a9e1a7c7c0ed16b1626302129106f9401eede6d529a2de94116d588",
+      "task": "F-525",
+      "token": "CODEX_SESSION_ID:01a027ac-e769-7d60-ab50-f9daf95c3f75"
+    },
     "levels/greybox_test.tscn": {
       "agent": "kilnd3a089",
       "at": "2026-08-21T05:34:42+00:00",
@@ -5189,7 +5196,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1394,
+  "rev": 1399,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -11150,6 +11157,29 @@
       "status": "done",
       "tier": "F",
       "title": "The workbench costs logs, so a run cannot craft its first axe"
+    },
+    "F-523": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Multiplayer is capped at the join code until MIRE has a real Steam App ID"
+    },
+    "F-524": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Handcrafting is described everywhere and implemented nowhere"
+    },
+    "F-525": {
+      "done_at": "2026-08-22T04:40:06+00:00",
+      "done_by": "slatef9bff1",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "macOS release shader cache crashes on launch"
     }
   },
   "version": 1
