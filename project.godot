@@ -96,6 +96,8 @@ MaterialWarmer="*res://autoload/material_warmer.gd"
 ForagerSenseHud="*res://ui/hud/forager_sense_hud.gd"
 PickupFeedService="*res://autoload/pickup_feed_service.gd"
 PickupHud="*res://ui/hud/pickup_hud.gd"
+StatusService="*res://autoload/status_service.gd"
+ResonanceService="*res://autoload/resonance_service.gd"
 
 [display]
 
