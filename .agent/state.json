@@ -6,6 +6,41 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "assets/fauna/catalog.json": {
+      "agent": "wick1c650c",
+      "at": "2026-08-22T18:18:30+00:00",
+      "dirty_at_claim": false,
+      "task": "F-596",
+      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
+    },
+    "assets/fauna/exports/chicken.glb": {
+      "agent": "wick1c650c",
+      "at": "2026-08-22T18:25:11+00:00",
+      "dirty_at_claim": true,
+      "task": "F-596",
+      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
+    },
+    "assets/fauna/exports/chicken.glb.import": {
+      "agent": "wick1c650c",
+      "at": "2026-08-22T18:25:11+00:00",
+      "dirty_at_claim": true,
+      "task": "F-596",
+      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
+    },
+    "assets/fauna/exports/deer.glb": {
+      "agent": "wick1c650c",
+      "at": "2026-08-22T18:28:05+00:00",
+      "dirty_at_claim": true,
+      "task": "F-596",
+      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
+    },
+    "assets/fauna/exports/deer.glb.import": {
+      "agent": "wick1c650c",
+      "at": "2026-08-22T18:28:05+00:00",
+      "dirty_at_claim": false,
+      "task": "F-596",
+      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
+    },
     "assets/gatherables/catalog.json": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:16:22+00:00",
@@ -18,11 +53,32 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "assets/loot/catalog.json": {
+      "agent": "wick3d4184",
+      "at": "2026-08-22T18:18:06+00:00",
+      "dirty_at_claim": false,
+      "task": "F-574",
+      "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
+    },
     "assets/pickups/catalog.json": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:31:01+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "assets/source/fauna_chicken.blend": {
+      "agent": "wick1c650c",
+      "at": "2026-08-22T18:25:11+00:00",
+      "dirty_at_claim": true,
+      "task": "F-596",
+      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
+    },
+    "assets/source/fauna_deer.blend": {
+      "agent": "wick1c650c",
+      "at": "2026-08-22T18:28:05+00:00",
+      "dirty_at_claim": true,
+      "task": "F-596",
+      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
     },
     "assets/tools_weapons/catalog.json": {
       "agent": "birche6b40e",
@@ -37,12 +93,40 @@
       "task": "F-575",
       "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
     },
+    "autoload/enemy_world.gd": {
+      "agent": "wick410d34",
+      "at": "2026-08-22T18:35:22+00:00",
+      "dirty_at_claim": false,
+      "task": "F-599",
+      "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
+    },
+    "autoload/fauna_service.gd": {
+      "agent": "larchcc2572",
+      "at": "2026-08-22T18:28:01+00:00",
+      "dirty_at_claim": false,
+      "task": "F-597",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
+    },
     "autoload/ranged_combat_service.gd": {
       "agent": "wick410d34",
       "at": "2026-08-22T18:06:57+00:00",
       "dirty_at_claim": false,
       "task": "F-594",
       "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
+    },
+    "autoload/registry.gd": {
+      "agent": "larchcc2572",
+      "at": "2026-08-22T18:28:01+00:00",
+      "dirty_at_claim": false,
+      "task": "F-597",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
+    },
+    "content/animals/hare.tres": {
+      "agent": "larchcc2572",
+      "at": "2026-08-22T18:28:01+00:00",
+      "dirty_at_claim": false,
+      "task": "F-597",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
     },
     "content/harvestables/apple_tree.tres": {
       "agent": "gale43d16e",
@@ -142,6 +226,27 @@
       "task": "F-574",
       "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
     },
+    "content/rules/ambient_enemy_population.tres": {
+      "agent": "wick410d34",
+      "at": "2026-08-22T18:35:22+00:00",
+      "dirty_at_claim": false,
+      "task": "F-599",
+      "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
+    },
+    "content/rules/ambient_fauna_population.tres": {
+      "agent": "larchcc2572",
+      "at": "2026-08-22T18:28:01+00:00",
+      "dirty_at_claim": false,
+      "task": "F-597",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
+    },
+    "content/rules/mire_spread_multiplier.tres": {
+      "agent": "wick410d34",
+      "at": "2026-08-22T18:35:22+00:00",
+      "dirty_at_claim": false,
+      "task": "F-599",
+      "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
+    },
     "content/scatter/highland_rocks.tres": {
       "agent": "birche6b40e",
       "at": "2026-08-22T00:06:31+00:00",
@@ -161,12 +266,33 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "docs/DELEGATION.md": {
+      "agent": "larchcc2572",
+      "at": "2026-08-22T18:28:02+00:00",
+      "dirty_at_claim": true,
+      "task": "F-597",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
+    },
+    "docs/FAUNA.md": {
+      "agent": "larchcc2572",
+      "at": "2026-08-22T18:28:01+00:00",
+      "dirty_at_claim": false,
+      "task": "F-597",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
+    },
     "entities/player/viewmodel.gd": {
       "agent": "wick410d34",
       "at": "2026-08-22T18:06:57+00:00",
       "dirty_at_claim": false,
       "task": "F-594",
       "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
+    },
+    "systems/combat/weapon_def.gd": {
+      "agent": "wick3d4184",
+      "at": "2026-08-22T18:45:06+00:00",
+      "dirty_at_claim": false,
+      "task": "F-521",
+      "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
     },
     "systems/crafting/station_def.gd": {
       "agent": "wick410d34",
@@ -175,11 +301,46 @@
       "task": "F-575",
       "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
     },
+    "systems/enemies/enemy.gd": {
+      "agent": "wick3d4184",
+      "at": "2026-08-22T18:45:06+00:00",
+      "dirty_at_claim": false,
+      "task": "F-521",
+      "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
+    },
+    "systems/fauna/animal.gd": {
+      "agent": "larchcc2572",
+      "at": "2026-08-22T18:28:01+00:00",
+      "dirty_at_claim": false,
+      "task": "F-597",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
+    },
+    "systems/fauna/animal_def.gd": {
+      "agent": "larchcc2572",
+      "at": "2026-08-22T18:28:01+00:00",
+      "dirty_at_claim": true,
+      "task": "F-597",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
+    },
     "tools/blender/build_deep_materials.py": {
       "agent": "birche6b40e",
       "at": "2026-08-21T23:53:11+00:00",
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "tools/blender/build_fauna_chicken.py": {
+      "agent": "wick1c650c",
+      "at": "2026-08-22T18:18:30+00:00",
+      "dirty_at_claim": false,
+      "task": "F-596",
+      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
+    },
+    "tools/blender/build_fauna_deer.py": {
+      "agent": "wick1c650c",
+      "at": "2026-08-22T18:28:05+00:00",
+      "dirty_at_claim": true,
+      "task": "F-596",
+      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
     },
     "tools/blender/build_gatherable_plants.py": {
       "agent": "gale43d16e",
@@ -193,6 +354,13 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "tools/blender/build_loot_set.py": {
+      "agent": "wick3d4184",
+      "at": "2026-08-22T18:18:06+00:00",
+      "dirty_at_claim": false,
+      "task": "F-574",
+      "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
+    },
     "tools/blender/build_pickup_kit.py": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:31:01+00:00",
@@ -204,6 +372,13 @@
       "at": "2026-08-21T23:42:44+00:00",
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "tools/blender/fauna_common.py": {
+      "agent": "wick1c650c",
+      "at": "2026-08-22T18:18:30+00:00",
+      "dirty_at_claim": false,
+      "task": "F-596",
+      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
     },
     "tools/blender/mire_art.py": {
       "agent": "birche6b40e",
@@ -225,17 +400,73 @@
       "task": "F-594",
       "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
     },
+    "tools/combat_net_check.gd": {
+      "agent": "wick3d4184",
+      "at": "2026-08-22T18:28:51+00:00",
+      "dirty_at_claim": false,
+      "task": "F-521",
+      "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
+    },
+    "tools/extraction_net_check.gd": {
+      "agent": "larchcc2572",
+      "at": "2026-08-22T18:37:12+00:00",
+      "dirty_at_claim": false,
+      "task": "F-597",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
+    },
+    "tools/fauna_art_check.gd": {
+      "agent": "wick1c650c",
+      "at": "2026-08-22T18:18:30+00:00",
+      "dirty_at_claim": false,
+      "task": "F-596",
+      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
+    },
+    "tools/fauna_check.gd": {
+      "agent": "larchcc2572",
+      "at": "2026-08-22T18:28:01+00:00",
+      "dirty_at_claim": false,
+      "task": "F-597",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
+    },
+    "tools/inventory_net_check.gd": {
+      "agent": "wick3d4184",
+      "at": "2026-08-22T18:28:51+00:00",
+      "dirty_at_claim": false,
+      "task": "F-521",
+      "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
+    },
+    "tools/item_drop_net_check.gd": {
+      "agent": "larchcc2572",
+      "at": "2026-08-22T18:40:47+00:00",
+      "dirty_at_claim": false,
+      "task": "F-597",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
+    },
     "tools/item_icons_check.gd": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:52:45+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "tools/mire_encounter_check.gd": {
+      "agent": "wick1c650c",
+      "at": "2026-08-22T18:43:55+00:00",
+      "dirty_at_claim": false,
+      "task": "F-602",
+      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
+    },
     "tools/recipe_station_check.gd": {
       "agent": "wick410d34",
       "at": "2026-08-22T17:15:43+00:00",
       "dirty_at_claim": false,
       "task": "F-575",
+      "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
+    },
+    "tools/rule_check.gd": {
+      "agent": "wick410d34",
+      "at": "2026-08-22T18:38:52+00:00",
+      "dirty_at_claim": false,
+      "task": "F-599",
       "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
     },
     "tools/station_tier_check.gd": {
@@ -251,6 +482,34 @@
       "dirty_at_claim": false,
       "task": "F-594",
       "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
+    },
+    "ui/hud/objective_hud.gd": {
+      "agent": "wick410d34",
+      "at": "2026-08-22T18:43:48+00:00",
+      "dirty_at_claim": false,
+      "task": "F-599",
+      "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
+    },
+    "world/gen/procedural_world.gd": {
+      "agent": "wick1c650c",
+      "at": "2026-08-22T18:43:55+00:00",
+      "dirty_at_claim": false,
+      "task": "F-602",
+      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
+    },
+    "world/mire/mire_grid.gd": {
+      "agent": "wick410d34",
+      "at": "2026-08-22T18:35:22+00:00",
+      "dirty_at_claim": false,
+      "task": "F-599",
+      "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
+    },
+    "world/mire/mire_grid_sim.gd": {
+      "agent": "wick1c650c",
+      "at": "2026-08-22T18:43:55+00:00",
+      "dirty_at_claim": false,
+      "task": "F-602",
+      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
     }
   },
   "in_flight": {
@@ -306,12 +565,26 @@
       "started": "2026-08-22T00:29:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "F-521": {
+      "agent": "wick3d4184",
+      "files": [
+        "tools/combat_net_check.gd",
+        "tools/inventory_net_check.gd",
+        "systems/combat/weapon_def.gd",
+        "systems/enemies/enemy.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-22T18:28:51+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
+    },
     "F-574": {
       "agent": "wick3d4184",
       "files": [
         "content/items/gilded_key.tres",
         "content/loot/boss.tres",
-        "tools/blender/render_item_icons.py"
+        "tools/blender/render_item_icons.py",
+        "tools/blender/build_loot_set.py",
+        "assets/loot/catalog.json"
       ],
       "notes": [],
       "started": "2026-08-22T18:16:15+00:00",
@@ -341,6 +614,69 @@
       "notes": [],
       "started": "2026-08-22T18:06:57+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
+    },
+    "F-596": {
+      "agent": "wick1c650c",
+      "files": [
+        "tools/blender/fauna_common.py",
+        "tools/blender/build_fauna_chicken.py",
+        "assets/fauna/catalog.json",
+        "tools/fauna_art_check.gd",
+        "assets/fauna/exports/chicken.glb",
+        "assets/fauna/exports/chicken.glb.import",
+        "assets/source/fauna_chicken.blend",
+        "assets/fauna/exports/deer.glb",
+        "assets/fauna/exports/deer.glb.import",
+        "assets/source/fauna_deer.blend",
+        "tools/blender/build_fauna_deer.py"
+      ],
+      "notes": [],
+      "started": "2026-08-22T18:18:30+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
+    },
+    "F-597": {
+      "agent": "larchcc2572",
+      "files": [
+        "systems/fauna/animal_def.gd",
+        "systems/fauna/animal.gd",
+        "autoload/fauna_service.gd",
+        "content/animals/hare.tres",
+        "content/rules/ambient_fauna_population.tres",
+        "tools/fauna_check.gd",
+        "autoload/registry.gd",
+        "docs/FAUNA.md",
+        "docs/DELEGATION.md",
+        "tools/extraction_net_check.gd",
+        "tools/item_drop_net_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-22T18:28:01+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
+    },
+    "F-599": {
+      "agent": "wick410d34",
+      "files": [
+        "autoload/enemy_world.gd",
+        "content/rules/ambient_enemy_population.tres",
+        "content/rules/mire_spread_multiplier.tres",
+        "world/mire/mire_grid.gd",
+        "tools/rule_check.gd",
+        "ui/hud/objective_hud.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-22T18:35:22+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
+    },
+    "F-602": {
+      "agent": "wick1c650c",
+      "files": [
+        "world/mire/mire_grid_sim.gd",
+        "world/gen/procedural_world.gd",
+        "tools/mire_encounter_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-22T18:43:55+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
     }
   },
   "recent": {
@@ -421,13 +757,6 @@
       "hash": "ffdce7c76d21b1baeed767e538615c2515494cab51f8c50c2e67c349385f08a9",
       "task": "F-552",
       "token": "CODEX_SESSION_ID:01a02843-9dd7-7d02-8070-e22390284df7"
-    },
-    "assets/audit/harvest": {
-      "agent": "kiln384569",
-      "at": "2026-08-21T18:28:32+00:00",
-      "hash": null,
-      "task": "F-432",
-      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
     "assets/audit/terrain/after_20260819.png": {
       "agent": "coil9c136f",
@@ -2299,13 +2628,6 @@
       "task": "F-497",
       "token": "CLAUDE_CODE_SESSION_ID:1fa80f33-5837-4090-96af-2212ae64d909"
     },
-    "autoload/world_delta_log.gd": {
-      "agent": "hollow80855f",
-      "at": "2026-08-21T18:29:30+00:00",
-      "hash": "ecac55fd5dbdadb7519684997b99fbb200f0b2d1652bedf49ccc63c51615c5a9",
-      "task": "F-435",
-      "token": "CLAUDE_CODE_SESSION_ID:0e245ac7-67ca-4077-a49b-e1b4d92abe80"
-    },
     "content/biomes/birchwood.tres": {
       "agent": "birchcf39ce",
       "at": "2026-08-21T20:14:02+00:00",
@@ -3782,11 +4104,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "docs/FINDINGS.md": {
-      "agent": "birch1db63e",
-      "at": "2026-08-22T18:17:15+00:00",
+      "agent": "wick1c650c",
+      "at": "2026-08-22T18:43:50+00:00",
       "hash": null,
-      "task": "F-593",
-      "token": "CLAUDE_CODE_SESSION_ID:f4f7b0ab-0b40-4c88-a2d0-b7de993492f1"
+      "task": "F-596",
+      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
     },
     "docs/ITEMS.md": {
       "agent": "larchcc2572",
@@ -4056,13 +4378,6 @@
       "hash": "3f2153977d6dc24adcaf3f3902e0598db03142389b5ffa378823a51e8d72f0ab",
       "task": "F-576",
       "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
-    },
-    "systems/harvesting/stump_builder.gd": {
-      "agent": "kiln384569",
-      "at": "2026-08-21T18:28:32+00:00",
-      "hash": "3063db8be7e4bee879bb22238f0fcfb455de44ae46ff93ce29b0f4344a6cc665",
-      "task": "F-432",
-      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
     },
     "systems/hauling/haul_math.gd": {
       "agent": "larchcc2572",
@@ -4970,20 +5285,6 @@
       "task": "F-579",
       "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
     },
-    "tools/harvest_tree_states_check.gd": {
-      "agent": "kiln384569",
-      "at": "2026-08-21T18:28:32+00:00",
-      "hash": "d20c9f1bd136f81a1bfd92f9eb9112cd342694d86e9fb0a2e605bde2f8a94935",
-      "task": "F-432",
-      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
-    },
-    "tools/harvest_tree_states_shot.gd": {
-      "agent": "kiln384569",
-      "at": "2026-08-21T18:28:32+00:00",
-      "hash": "067e47d40c36d6bacaefe0504983f7baa03add308ce9afae4846712bdf5a107c",
-      "task": "F-432",
-      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
-    },
     "tools/harvest_world_check.gd": {
       "agent": "flint04a51d",
       "at": "2026-08-22T05:34:38+00:00",
@@ -5088,13 +5389,13 @@
       "token": "CODEX_SESSION_ID:01a02843-9dd7-7d02-8070-e22390284df7"
     },
     "tools/loop_audit_check.gd": {
-      "agent": "bram937a51",
-      "at": "2026-08-22T17:47:47+00:00",
-      "claimed_at": "2026-08-22T08:19:09+00:00",
+      "agent": "wick1c650c",
+      "at": "2026-08-22T18:41:24+00:00",
+      "claimed_at": "2026-08-22T18:30:55+00:00",
       "dirty_at_claim": false,
-      "hash": "554d9f8faf59e95a1dd2d98aa2da278fd35c3a0296332a649c49592f7b134f4e",
-      "task": "F-564",
-      "token": "CLAUDE_CODE_SESSION_ID:280d7fb3-3816-4517-a003-ea21b2ca6f66"
+      "hash": "1f1db1c3fe1bc929ccf59b3fc01e9f753885fce727e6dfc8e46b9de57a176265",
+      "task": "F-598",
+      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
     },
     "tools/loose_loot_check.gd": {
       "agent": "ivy5b8298",
@@ -5350,6 +5651,15 @@
       "hash": "04612be141eb1de77256eadf6ec9b0c309f1893ac745c0d6c3202fba88455f9c",
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "tools/progression_reachability_check.gd": {
+      "agent": "birch1db63e",
+      "at": "2026-08-22T18:46:10+00:00",
+      "claimed_at": "2026-08-22T18:41:56+00:00",
+      "dirty_at_claim": false,
+      "hash": "a3f18f460774d8a7c552c0104f8ec4388bd3e6bf9d2f6a22b040d9b58937b23e",
+      "task": "F-601",
+      "token": "CLAUDE_CODE_SESSION_ID:f4f7b0ab-0b40-4c88-a2d0-b7de993492f1"
     },
     "tools/prop_chunk_merge_check.gd": {
       "agent": "hollowbfcf67",
@@ -5939,20 +6249,6 @@
       "task": "F-464",
       "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
     },
-    "world/environment/ground_fog.gd": {
-      "agent": "hollow80855f",
-      "at": "2026-08-21T18:29:30+00:00",
-      "hash": "0aff2c0547eeab9dad93ab4ed9cc5a59417165cd87a52e78b56352c45732e394",
-      "task": "F-435",
-      "token": "CLAUDE_CODE_SESSION_ID:0e245ac7-67ca-4077-a49b-e1b4d92abe80"
-    },
-    "world/environment/ground_fog.gdshader": {
-      "agent": "hollow80855f",
-      "at": "2026-08-21T18:29:30+00:00",
-      "hash": "2634e593f2f45ddd5fb14ece5a9d4c7fdfe44be30c3e52cc9d339279bd27f53e",
-      "task": "F-435",
-      "token": "CLAUDE_CODE_SESSION_ID:0e245ac7-67ca-4077-a49b-e1b4d92abe80"
-    },
     "world/environment/material_prewarm.gd": {
       "agent": "vane99f1bb",
       "at": "2026-08-22T03:47:58+00:00",
@@ -6131,7 +6427,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1849,
+  "rev": 1883,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -12114,7 +12410,7 @@
     "F-521": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Core multiplayer readiness checks are red at HEAD"
     },
@@ -12700,6 +12996,59 @@
       "status": "todo",
       "tier": "F",
       "title": "Every enemy in the game can only ever drop coins \u2014 there is no per-enemy loot table"
+    },
+    "F-596": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Fauna Phase 2 \u2014 the ordinary six have no models, rigs or clips"
+    },
+    "F-597": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Fauna Phase 1: the world has no animals \u2014 AnimalDef, FaunaService and herd placement do not exist"
+    },
+    "F-598": {
+      "done_at": "2026-08-22T18:41:24+00:00",
+      "done_by": "wick1c650c",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "loop_audit_check is red at HEAD in three places \u2014 the check that walks the whole game loop"
+    },
+    "F-599": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "No pressure in a real session: 4 ambient enemies on a 1.09 km2 island, and a Mire front that moves 25 m per Cycle"
+    },
+    "F-600": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "hollowmere.json stacks 16 variant-state props on the campfire, walling off the crafting camp"
+    },
+    "F-601": {
+      "done_at": "2026-08-22T18:46:10+00:00",
+      "done_by": "birch1db63e",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "The Sling exists as a full item and ranged weapon but nothing in the game produces it"
+    },
+    "F-602": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Whether a run ever meets the Mire is decided by a dice roll"
     }
   },
   "version": 1
