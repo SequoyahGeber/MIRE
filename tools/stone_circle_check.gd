@@ -165,13 +165,24 @@ func _check_spread() -> void:
 
 	# The point of this subtest is the memory of every generated feature that applied its new trick
 	# to 100% of instances. A centre feature on every circle is not variety, it is a new default.
-	check(with_centre > 0 and with_centre < sites / 2,
-		"centre feature on %d/%d sites — a minority, so a plain ring is still the ordinary case"
-			% [with_centre, sites])
-	check(with_outlier > 0 and with_outlier < sites,
-		"outlier monolith on %d/%d sites — present but not universal" % [with_outlier, sites])
-	check(with_fallen > 0 and with_fallen < sites,
-		"at least one fallen stone on %d/%d sites" % [with_fallen, sites])
+	# Real bands, not `> 0 and < sites`. A bound that passes at 199/200 would not catch the
+	# regression this subtest exists for — a feature quietly becoming the default — which is the
+	# whole reason it is here. Each band is the authored chance with generous slack for 200 draws:
+	# CENTRE_CHANCE 0.30 -> 20-50%, OUTLIER_CHANCE 0.45 -> 30-65%. The fallen band is wider because
+	# it is a per-STONE 0.16 asked once per stone, so a circle of a dozen almost always has one —
+	# what would be wrong is every circle having one, or none.
+	var centre_pct: float = 100.0 * float(with_centre) / float(sites)
+	var outlier_pct: float = 100.0 * float(with_outlier) / float(sites)
+	var fallen_pct: float = 100.0 * float(with_fallen) / float(sites)
+	check(centre_pct >= 20.0 and centre_pct <= 50.0,
+		"centre feature on %d/%d sites (%.0f%%, band 20-50) — a minority, so a plain ring is still "
+			% [with_centre, sites, centre_pct] + "the ordinary case")
+	check(outlier_pct >= 30.0 and outlier_pct <= 65.0,
+		"outlier monolith on %d/%d sites (%.0f%%, band 30-65) — present but not universal"
+			% [with_outlier, sites, outlier_pct])
+	check(fallen_pct >= 55.0 and fallen_pct <= 95.0,
+		"at least one fallen stone on %d/%d sites (%.0f%%, band 55-95) — most circles have one, "
+			% [with_fallen, sites, fallen_pct] + "not all of them")
 
 
 # ── 5 · a real island actually builds them ────────────────────────────────────────────────────────
