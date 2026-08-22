@@ -3300,6 +3300,94 @@ feel this week.
 
 ---
 
+### F-550 · The locked D-number allocator exists and nobody uses it, because it is in no help text and no check catches a hand-appended entry
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-22 by nettled7199c
+
+`agent decision` allocates a D-number under the `decisions` file lock, appends atomically, and
+refuses to write into another agent's exact claim. It was added for F-260, after three collisions in
+one day (D-146 twice, D-153 taken mid-write, D-151/150 renumbered by hand). The mechanism is correct
+and it works.
+
+**It is invoked by nobody.** On 2026-08-22 two agents recorded decisions within an hour of each
+other and BOTH hand-appended with a heredoc: larch543bba minted a second `## D-197` on top of the
+existing one ("a signal handler is inside the emitter's frame budget", line 6636) by reading headings
+near their insertion point in an unsorted file; nettled7199c hand-appended D-215. The duplicate was
+caught only because the two happened to compare numbers in a peer message before writing. Nothing in
+the repo would have caught it.
+
+Two defects behind that, both independent of the allocator being correct:
+
+1. **`agent decision` appears in no help text.** `agent help` lists `finding`, `resolve`, `claim`,
+   `note`, `done`, `ship`, `handoff` — not `decision`. It is dispatched at `.agent/bin/agent:4555`
+   and documented only in its own docstring, so the only way to learn it exists is to read the
+   source of a 4,600-line tool. Every agent that instead reads `docs/DECISIONS.md`, sees a heredoc-
+   shaped entry, and copies the shape is behaving reasonably.
+
+2. **No check guards D-numbers.** `tools/findings_numbering_check.gd` is exactly this tripwire for
+   F-numbers, built for F-087 after the identical F-058/F-059 collisions, and its header explains the
+   reasoning in full. It has never covered `docs/DECISIONS.md`. So the same class of bug is guarded
+   in one file and unguarded in the file next to it — and the unguarded one is the one whose entries
+   get cited by number in commit messages, code comments and other docs, where a duplicate is
+   expensive to unpick later.
+
+The general shape worth keeping: **a correct mechanism that is undiscoverable is not a fix, it is a
+fix nobody applies.** F-260 was closed on the allocator existing, which is why nothing noticed for
+two months that its adoption was zero. A guard that fails the build is what makes an allocator load-
+bearing; the allocator alone only helps the agents who already knew to look for it.
+
+FIXED in this task: `agent decision` added to `agent help`, and `findings_numbering_check.gd`
+widened to fail on a duplicate `### D-<n>` heading in docs/DECISIONS.md.
+
+---
+
+### F-551 · Two checks fail at clean HEAD with nobody owning them — ranged_combat_check (1) and attunement_restart_check (3)
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-22 by larch543bba
+
+Filed 2026-08-22 by larch543bba while closing F-543. Both were found as collateral, both are proven
+pre-existing rather than assumed to be, and neither has an open finding.
+
+**`tools/ranged_combat_check.gd` — `failures=1`.**
+
+    FAIL: bow moves into hotbar slot one
+    RANGED_COMBAT_CHECK landed=1 missed=2 rejected=1 failures=1
+
+Identical in the shared tree and under `agent baseline` at clean HEAD, so it is not caused by any
+uncommitted work. `moss8598bb` first reported it as failing "at HEAD" and then retracted the
+provenance honestly — they had run it in the shared working tree, not a clean checkout — so this
+entry is the `baseline` run that actually establishes it. The failing assertion is about the bow
+reaching hotbar slot one, i.e. an inventory/hotbar path, NOT the ranged damage path: F-543 added a
+`bow_damage` read to `autoload/ranged_combat_service.gd` and the failure is byte-identical with and
+without it. `landed=1 missed=2 rejected=1` — the flight and rejection assertions still pass.
+
+**`tools/attunement_restart_check.gd` — `failures=3`.**
+
+Also identical under `agent baseline` at clean HEAD. This one is a REGRESSION rather than a check
+that never passed: F-277's own close-out records `ATTUNEMENT_RESTART_CHECK failures=0`, 49 PASS,
+exit 0 (docs/FINDINGS.md, and again in the D-167 material). Something between then and now moved
+three of those assertions and nobody noticed, which is the interesting part — a check that went from
+0 to 3 silently is worse than one that was always red, because every agent since has been reading a
+red suite as normal.
+
+**Why they are filed together.** They share a shape worth naming: *a check that fails at HEAD with no
+owner is indistinguishable from a check that is supposed to fail.* Three separate agents ran into
+these today and each independently decided they were "pre-existing, not mine" and moved on — which is
+individually correct and collectively how a red check becomes permanent furniture. `agent verify`
+reports failures but nothing records which failures are KNOWN, so there is no way to tell a new
+regression from accepted background noise without a `baseline` run per check, every time.
+
+Adjacent, and cheap: `python3 tools/findings_hygiene_check.py` currently reports `failures=8` — three
+findings whose bodies say resolved while sitting under `## Open` (F-291, F-295, F-440) and five marked
+done in `state.json` but still open (F-472, F-488, F-519, F-522, F-537). That check needs no Godot
+lock at all, so it costs nothing to run and nobody is running it. Not fixed here: each row is one
+`agent resolve` or `agent reopen` by whoever owns that finding, and none of them are mine.
+
+**Not fixed here** — neither check is in F-543's claim set, and guessing at someone else's assertions
+is how a red check becomes two red checks.
+
+---
+
 ## Resolved
 
 ### F-291 · A `--script` check that fires a real `EventBus` event as a state-setup shortcut can be broken by an unrelated later feature that subscribes to the same event — **fixed in `tools/unlock_check.gd`, same class not yet swept project-wide** — **fixed**
