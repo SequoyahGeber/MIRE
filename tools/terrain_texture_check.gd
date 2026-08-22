@@ -53,6 +53,10 @@ extends SceneTree
 
 const WorldScene := preload("res://levels/procedural_island.tscn")
 const Heightmap := preload("res://world/gen/island_heightmap.gd")
+## Read from the mesher rather than restated, so a chunk-size change cannot leave this check
+## computing coordinates in a grid the streamer does not use.
+const ChunkMesher := preload("res://world/chunk/chunk_mesher.gd")
+const CHUNK_SIZE_M: int = ChunkMesher.CHUNK_SIZE
 
 const WIDTH: int = 1280
 const HEIGHT: int = 720
@@ -374,18 +378,43 @@ func _stream_around(streamer: Node, anchors: Array) -> void:
 	# evaluation only runs every RING_EVAL_INTERVAL_SEC, so "no jobs pending" alone is true in the
 	# gap between two rings being requested, and a shot taken there is a shot of the next ring's
 	# hole. 45 frames comfortably spans that interval at any frame rate this renders at.
+	# PROGRESS, not just quiescence. "Nothing in flight and the count stopped growing" is satisfied
+	# instantly by a total no-op — if nothing is ever requested, `pending_job_count` is 0 and the
+	# resident count is unchanged from the second frame on, so this loop used to return happily with
+	# the ground never having arrived. That is how F-563 produced three confident photographs of open
+	# sea. The anchoring above is fixed, but a settle condition a no-op can pass is the kind of thing
+	# that launders the NEXT regression into output nobody questions, so require the chunk under the
+	# thing we are about to photograph to actually be resident before calling it settled.
+	var wanted: Array[Vector2i] = []
+	for anchor: Vector3 in typed:
+		var coord := Vector2i(
+			int(floor(anchor.x / float(CHUNK_SIZE_M))), int(floor(anchor.z / float(CHUNK_SIZE_M))))
+		if not wanted.has(coord):
+			wanted.append(coord)
 	var settled: int = 0
 	var resident: int = -1
 	for _frame_index: int in 900:
 		await process_frame
+		var arrived: bool = true
+		for coord: Vector2i in wanted:
+			if int(streamer.call(&"chunk_lod", coord)) < 0:
+				arrived = false
+				break
 		var loaded: int = int(streamer.call(&"loaded_chunk_count"))
-		if int(streamer.call(&"pending_job_count")) == 0 and loaded == resident:
+		if arrived and int(streamer.call(&"pending_job_count")) == 0 and loaded == resident:
 			settled += 1
 			if settled >= 45:
 				return
 		else:
 			settled = 0
 		resident = loaded
+	var missing: Array[Vector2i] = []
+	for coord: Vector2i in wanted:
+		if int(streamer.call(&"chunk_lod", coord)) < 0:
+			missing.append(coord)
+	check(missing.is_empty(),
+		"the ground under the camera and its target streamed in before the shot (missing %s)"
+			% str(missing))
 	print("  note: streamer still had %d job(s) in flight after 900 frames"
 		% int(streamer.call(&"pending_job_count")))
 
