@@ -149,13 +149,6 @@
       "task": "F-482",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "content/poi/standing_stones.tres": {
-      "agent": "wick3d4184",
-      "at": "2026-08-22T17:12:03+00:00",
-      "dirty_at_claim": false,
-      "task": "F-573",
-      "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
-    },
     "content/scatter/highland_rocks.tres": {
       "agent": "birche6b40e",
       "at": "2026-08-22T00:06:31+00:00",
@@ -203,6 +196,20 @@
       "task": "F-585",
       "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
     },
+    "systems/hauling/haul_math.gd": {
+      "agent": "larchcc2572",
+      "at": "2026-08-22T17:48:51+00:00",
+      "dirty_at_claim": false,
+      "task": "F-585",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
+    },
+    "systems/hauling/haulable.gd": {
+      "agent": "larchcc2572",
+      "at": "2026-08-22T17:48:51+00:00",
+      "dirty_at_claim": false,
+      "task": "F-585",
+      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
+    },
     "tools/blender/build_deep_materials.py": {
       "agent": "birche6b40e",
       "at": "2026-08-21T23:53:11+00:00",
@@ -246,13 +253,6 @@
       "task": "F-574",
       "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
     },
-    "tools/dodge_check.gd": {
-      "agent": "hollowbfcf67",
-      "at": "2026-08-22T17:46:58+00:00",
-      "dirty_at_claim": false,
-      "task": "F-584",
-      "token": "CLAUDE_CODE_SESSION_ID:cfe6388b-b9bd-49ce-be58-b822595f97fb"
-    },
     "tools/item_icons_check.gd": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:52:45+00:00",
@@ -294,20 +294,6 @@
       "task": "F-585",
       "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
     },
-    "tools/stone_circle_check.gd": {
-      "agent": "wick3d4184",
-      "at": "2026-08-22T17:12:03+00:00",
-      "dirty_at_claim": false,
-      "task": "F-573",
-      "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
-    },
-    "world/gen/poi_structures.gd": {
-      "agent": "wick3d4184",
-      "at": "2026-08-22T17:12:03+00:00",
-      "dirty_at_claim": false,
-      "task": "F-573",
-      "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
-    },
     "world/gen/prop_collider.gd": {
       "agent": "wick1c650c",
       "at": "2026-08-22T17:44:47+00:00",
@@ -321,13 +307,6 @@
       "dirty_at_claim": false,
       "task": "F-586",
       "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
-    },
-    "world/gen/stone_circle_site.gd": {
-      "agent": "wick3d4184",
-      "at": "2026-08-22T17:12:03+00:00",
-      "dirty_at_claim": false,
-      "task": "F-573",
-      "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
     }
   },
   "in_flight": {
@@ -383,18 +362,6 @@
       "started": "2026-08-22T00:29:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "F-573": {
-      "agent": "wick3d4184",
-      "files": [
-        "content/poi/standing_stones.tres",
-        "world/gen/stone_circle_site.gd",
-        "world/gen/poi_structures.gd",
-        "tools/stone_circle_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-22T17:10:31+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
-    },
     "F-574": {
       "agent": "wick410d34",
       "files": [
@@ -418,15 +385,6 @@
       "started": "2026-08-22T17:10:26+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
     },
-    "F-584": {
-      "agent": "hollowbfcf67",
-      "files": [
-        "tools/dodge_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-22T17:46:58+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:cfe6388b-b9bd-49ce-be58-b822595f97fb"
-    },
     "F-585": {
       "agent": "larchcc2572",
       "files": [
@@ -437,7 +395,9 @@
         "tools/resonance_check.gd",
         "systems/enemies/enemy.gd",
         "autoload/haul_service.gd",
-        "entities/player/player_controller.gd"
+        "entities/player/player_controller.gd",
+        "systems/hauling/haulable.gd",
+        "systems/hauling/haul_math.gd"
       ],
       "notes": [],
       "started": "2026-08-22T17:40:54+00:00",
@@ -3072,6 +3032,15 @@
       "task": "F-493",
       "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
+    "content/poi/standing_stones.tres": {
+      "agent": "wick3d4184",
+      "at": "2026-08-22T17:48:54+00:00",
+      "claimed_at": "2026-08-22T17:12:03+00:00",
+      "dirty_at_claim": false,
+      "hash": "77f883c1ebc91756b833149eb862de14848112aa1b1e4574a4b497e4c87a76cf",
+      "task": "F-573",
+      "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
+    },
     "content/poi/treasure_strongbox.tres": {
       "agent": "nettled7199c",
       "at": "2026-08-22T05:57:17+00:00",
@@ -3721,11 +3690,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "docs/FINDINGS.md": {
-      "agent": "wick410d34",
-      "at": "2026-08-22T17:47:37+00:00",
+      "agent": "hollowbfcf67",
+      "at": "2026-08-22T17:48:39+00:00",
       "hash": null,
-      "task": "F-574",
-      "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
+      "task": "F-584",
+      "token": "CLAUDE_CODE_SESSION_ID:cfe6388b-b9bd-49ce-be58-b822595f97fb"
     },
     "docs/ITEMS.md": {
       "agent": "larchcc2572",
@@ -4565,6 +4534,15 @@
       "dirty_at_claim": true,
       "hash": "cc3e13b8100b85cd1429323a5842a0b3ef466cd1396816be35df288c40ddcb43",
       "task": "F-555",
+      "token": "CLAUDE_CODE_SESSION_ID:cfe6388b-b9bd-49ce-be58-b822595f97fb"
+    },
+    "tools/dodge_check.gd": {
+      "agent": "hollowbfcf67",
+      "at": "2026-08-22T17:48:41+00:00",
+      "claimed_at": "2026-08-22T17:46:58+00:00",
+      "dirty_at_claim": false,
+      "hash": "b6821ca6c48aeb357427dfdbb0175c6eba3a7da394a6475c994e3b3a315691ce",
+      "task": "F-584",
       "token": "CLAUDE_CODE_SESSION_ID:cfe6388b-b9bd-49ce-be58-b822595f97fb"
     },
     "tools/enemy_bloatcap_check.gd": {
@@ -5459,6 +5437,15 @@
       "task": "F-020",
       "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
     },
+    "tools/stone_circle_check.gd": {
+      "agent": "wick3d4184",
+      "at": "2026-08-22T17:48:54+00:00",
+      "claimed_at": "2026-08-22T17:12:03+00:00",
+      "dirty_at_claim": false,
+      "hash": "5e198041287a3dc68efba537f723a9f8d1465810a2f4fc1f045e13d19505a491",
+      "task": "F-573",
+      "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
+    },
     "tools/stringname_sort_check.gd": {
       "agent": "larchcc2572",
       "at": "2026-08-22T17:35:08+00:00",
@@ -5870,11 +5857,13 @@
       "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     },
     "world/gen/poi_structures.gd": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:38:49+00:00",
-      "hash": "34a60837e8297e97cdd597d687a23ecf2b36f53df381c0983f6ff15641458482",
-      "task": "F-493",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+      "agent": "wick3d4184",
+      "at": "2026-08-22T17:48:54+00:00",
+      "claimed_at": "2026-08-22T17:12:03+00:00",
+      "dirty_at_claim": false,
+      "hash": "2b69d6fdef06293d7c5a267eec38c11843c104d6a209c08116ab5377380280ee",
+      "task": "F-573",
+      "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
     },
     "world/gen/procedural_world.gd": {
       "agent": "cinder7f5a42",
@@ -5927,6 +5916,15 @@
       "task": "F-471",
       "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
     },
+    "world/gen/stone_circle_site.gd": {
+      "agent": "wick3d4184",
+      "at": "2026-08-22T17:48:54+00:00",
+      "claimed_at": "2026-08-22T17:12:03+00:00",
+      "dirty_at_claim": false,
+      "hash": "c34db73542a5f35289df58d4804112ec3b63ab35330a962659fde4ab009486d0",
+      "task": "F-573",
+      "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
+    },
     "world/gen/undergrowth.gd": {
       "agent": "bram937a51",
       "at": "2026-08-22T17:44:47+00:00",
@@ -5951,7 +5949,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1759,
+  "rev": 1764,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -12150,7 +12148,7 @@
     "F-547": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "EnvironmentVfx does per-node work for all 44,000 nodes a traversal adds, and 1,821 of them raise a backtraced warning"
     },
@@ -12343,9 +12341,11 @@
       "title": "asset_usage_check counts gitignored local scratch renders, so the dead-asset guard is permanently red and its signal is buried"
     },
     "F-573": {
+      "done_at": "2026-08-22T17:48:54+00:00",
+      "done_by": "wick3d4184",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "The `standing_stones` POI places six sites per island that build nothing at all"
     },
@@ -12414,9 +12414,11 @@
       "title": "agent godot --check-only without --script boots the game instead of checking anything, and holds the shared lock forever"
     },
     "F-584": {
+      "done_at": "2026-08-22T17:48:41+00:00",
+      "done_by": "hollowbfcf67",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "tools/dodge_check.gd fails its last assertion on a clean checkout"
     },
@@ -12433,6 +12435,13 @@
       "status": "in_flight",
       "tier": "F",
       "title": "Scattered rocks and boulders have no collider at all \u2014 you walk through them"
+    },
+    "F-587": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The Reinforced Workbench is now exactly equal to the bench it replaces, not better"
     }
   },
   "version": 1

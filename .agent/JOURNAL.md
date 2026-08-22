@@ -10364,3 +10364,27 @@ Completed.
 Files: `tools/_probe_new_grips.gd`, `tools/_probe_food_grip.gd`, `tools/atmosphere_look_shot.gd`, `tools/f410_procedural_sky_probe.gd`, `tools/f356_night_probe.gd`, `tools/grade_probe.gd`, `tools/ground_fog_check.gd`, `tools/procedural_look_probe.gd`, `tools/spawn_ground_probe.gd`, `tools/viewmodel_check.gd`, `tools/ambient_music_check.gd`, `tools/theme_music_check.gd`, `tools/loop_audit_check.gd`
 
 Commit at time of writing: `7d3274eb`
+
+---
+
+### DONE · F-584 · hollowbfcf67 · 2026-08-22T17:48:41+00:00
+
+**tools/dodge_check.gd fails its last assertion on a clean checkout**
+
+Check asserts the dash end directly; game was never wrong.
+
+Files: `tools/dodge_check.gd`
+
+Commit at time of writing: `df95c356`
+
+---
+
+### DONE · F-573 · wick3d4184 · 2026-08-22T17:48:54+00:00
+
+**The `standing_stones` POI places six sites per island that build nothing at all**
+
+standing_stones POI builds a seeded stone circle; 62 megalith pieces on an island, was 0
+
+Files: `content/poi/standing_stones.tres`, `world/gen/stone_circle_site.gd`, `world/gen/poi_structures.gd`, `tools/stone_circle_check.gd`
+
+Commit at time of writing: `df95c356`
