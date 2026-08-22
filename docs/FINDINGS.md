@@ -3316,6 +3316,43 @@ belongs to birch1db63e — reaping another session's process is theirs or Sequoy
 
 ---
 
+### F-584 · tools/dodge_check.gd fails its last assertion on a clean checkout
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-22 by birch1db63e
+
+`.agent/bin/agent godot --script tools/dodge_check.gd` ends with
+
+    FAIL: ...and the dash MOVEMENT has ended — horizontal speed 10.00 m/s is below dodge_impulse
+    (10.00). If this fails the stat is lengthening the dash, not the i-frames (F-125)
+    1 failure(s)
+
+and it is NOT a regression from F-580's player_controller changes. Verified by `git checkout
+entities/player/player_controller.gd` back to HEAD and re-running: identical failure, same value.
+
+The assertion is `speed < impulse - 0.01` measured immediately after the dash window closes, and the
+check's own comment (tools/dodge_check.gd:236-239) already concedes the margin is thin: "ground
+friction has had only a frame or two to bite, so a still-running dash reads 10.00 and a just-ended
+one reads ~9.5". The reading is exactly 10.00, i.e. no deceleration has been applied at all — which
+points at the harness rather than at the controller, because the assertion immediately above it
+(`_dodge_time_remaining == 0`) passes, so the dash timer HAS closed and `_apply_horizontal_movement`
+is no longer taking the dash branch.
+
+The likely cause is that the probe drives `_apply_horizontal_movement()` directly on a bare
+CharacterBody3D that never runs `move_and_slide()`, so `is_on_floor()` is false and the post-dash
+tick takes the AIRBORNE branch — where the file's own contract is that with no input "nothing is
+applied at all. Momentum carries". Ground friction is the only thing that would pull 10.00 down to
+~9.5, and an airborne body never reaches it. If so the check has been asserting ground behaviour
+against an airborne body since it was written, and the two readings it takes are not the
+"same fact twice" its comment claims — the timer one is real and the velocity one is unreachable.
+
+Worth resolving deliberately rather than by relaxing the tolerance: either the probe should put the
+body on a floor (or fake `is_on_floor()`) before stepping past the dash, or the velocity assertion
+should be dropped and its comment corrected to say the timer is the only readable proof. Silently
+loosening `- 0.01` would keep a green count over an assertion that cannot fail for the reason it
+names, which is the shape F-046/F-047 exist to prevent.
+
+---
+
 ## Resolved
 
 ### F-581 · Loot has no moment: chests resolve into a modal list, and picking anything up is silent and invisible — **fixed**
