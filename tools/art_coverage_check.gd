@@ -104,4 +104,9 @@ func _initialize() -> void:
 
 	print("\nART_COVERAGE_CHECK slots=%d missing=%d broken=%d exempt=%d"
 		% [_slots, _missing.size(), _broken.size(), _exempt])
+	# `agent verify` reads this line and fails the check outright when it is absent — an explicit,
+	# greppable verdict is what stops a half-finished or crashed run passing by saying nothing
+	# (F-293). This check reported in prose but never in that shape, so it was red however green
+	# it ran (F-555).
+	print("ART_COVERAGE_CHECK failures=%d" % (_missing.size() + _broken.size()))
 	quit(1 if (_missing.size() + _broken.size()) > 0 else 0)

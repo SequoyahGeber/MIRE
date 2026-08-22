@@ -37,6 +37,9 @@ func _run() -> void:
 	var net: Node = root.get_node_or_null("PlayerNet")
 	if net == null:
 		print("  FAIL  PlayerNet autoload is not registered")
+		# The bail path needs the verdict as much as the end does, or an environment this check
+		# cannot run in reads as "no verdict" rather than as the failure it is (F-555).
+		print("SPAWN_SLOT_CHECK failures=1")
 		quit(1)
 		return
 
@@ -68,6 +71,11 @@ func _run() -> void:
 		"expected the released slot %d back, got %d" % [s_a, s_a2])
 
 	print("")
+	# `agent verify` reads this line and fails the check outright when it is absent — an explicit,
+	# greppable verdict is what stops a half-finished or crashed run passing by saying nothing
+	# (F-293). This check reported in prose but never in that shape, so it was red however green
+	# it ran (F-555).
+	print("SPAWN_SLOT_CHECK failures=%d" % _failures)
 	if _failures > 0:
 		print("%d check(s) failed" % _failures)
 		quit(1)

@@ -72,4 +72,9 @@ func _after_ready() -> void:
 		print("PASS — synced group populated at every construction site")
 	else:
 		print("FAIL — %d check(s) failed" % _failures)
+	# `agent verify` reads this line and fails the check outright when it is absent — an explicit,
+	# greppable verdict is what stops a half-finished or crashed run passing by saying nothing
+	# (F-293). This check reported in prose but never in that shape, so it was red however green
+	# it ran (F-555).
+	print("SYNCED_GROUP_CHECK failures=%d" % _failures)
 	quit(0 if _failures == 0 else 1)

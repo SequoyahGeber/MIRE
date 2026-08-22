@@ -40,4 +40,9 @@ func _init() -> void:
 			failures += 1
 	print("seeds: %d   worst land margin: %.2f m   failures: %d"
 		% [SEED_COUNT, worst_margin, failures])
+	# `agent verify` reads this line and fails the check outright when it is absent — an explicit,
+	# greppable verdict is what stops a half-finished or crashed run passing by saying nothing
+	# (F-293). This check reported in prose but never in that shape, so it was red however green
+	# it ran (F-555).
+	print("MIRE_LAND_SEED_CHECK failures=%d" % failures)
 	quit(1 if failures > 0 else 0)

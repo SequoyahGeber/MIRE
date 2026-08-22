@@ -166,4 +166,9 @@ func check(condition: bool, description: String) -> void:
 
 
 func _finish() -> void:
+	# `agent verify` reads this line and fails the check outright when it is absent — an explicit,
+	# greppable verdict is what stops a half-finished or crashed run passing by saying nothing
+	# (F-293). This check reported in prose but never in that shape, so it was red however green
+	# it ran (F-555).
+	print("GROUND_FOG_CHECK failures=%d" % failures)
 	quit(1 if failures > 0 else 0)

@@ -7,7 +7,7 @@ extends SceneTree
 ## one asset per invocation so the reported evidence is unambiguous:
 ##
 ##   F410_ASSET=res://assets/environment/exports/tree_pine_a.glb \
-##     .agent/bin/agent godot --script tools/f410_asset_material_check.gd
+##     .agent/bin/agent godot --script tools/f410_asset_material_probe.gd
 ##
 ## Authority: none (docs/ARCHITECTURE.md section 2.2). Read-only inspection.
 

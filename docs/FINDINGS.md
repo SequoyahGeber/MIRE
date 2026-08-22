@@ -1330,43 +1330,6 @@ somebody will act on it anyway.
 
 ---
 
-### F-406 · agent claim with more than one file stores the whole list as a single dictionary key, so the pre-commit hook never sees any of them as claimed
-
-**Area:** tooling · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
-
-`.agent/bin/agent claim <task> <file-a> <file-b> ...` joins every path into ONE `claims` key instead
-of writing one entry per file. Observed directly in `.agent/state.json` after claiming 43 files:
-
-    "claims": {
-      "content/biomes/birchwood.tres content/biomes/forest.tres content/biomes/grassla…": {…},
-      "assets/audit/f398/after/canopy_leaves.png assets/audit/f398/after/canopy_leaves…": {…}
-    }
-
-Two entries for 43 files. The pre-commit hook looks a claim up BY PATH (`.agent/bin/agent:1774`,
-`if (c and _is_mine(c, me, me_token)) or in_grace(f)`), so every one of those lookups returns None
-and every Godot-authored file is rejected with "requires an exact-file claim and a closed editor
-(D-031)" — while `agent board` cheerfully lists all 43 under the task, because the board renders the
-key rather than looking paths up in it.
-
-Claiming ONE file per call keys correctly. Verified both ways: a single-file claim produced
-`'content/biomes/forest.tres'`, and re-claiming the same 158 files one per call took the hook's
-blocking errors from 47 to 0.
-
-**Why this went unnoticed:** the hook's other escape hatch is `in_grace(f)`, which passes a file this
-session edited recently. An agent that claims a file and edits it immediately is inside the grace
-window, so the broken claim never matters. It only bites when the edit and the commit are far apart —
-which is exactly the case when integrating work a subagent produced half an hour earlier, and the
-one time you most need claims to work.
-
-`AGENTS.md` documents the multi-file form implicitly ("Derive your own claim set from the task and
-claim it") while every worked example passes a single path, so the broken shape is reachable from a
-plain reading of the protocol.
-
-Fix: split on the argument list when writing, and while in there, migrate any existing joined keys —
-a stale joined key is indistinguishable from a legitimately-named file and will silently never match.
-
----
-
 ### F-412 · The command system does not yet meet the Minecraft-like capability bar
 
 **Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by cinder1a9bda
@@ -3072,7 +3035,406 @@ widened to fail on a duplicate `### D-<n>` heading in docs/DECISIONS.md.
 
 ---
 
+### F-556 · agent verify runs every check headless, so the ten checks that require a window can only ever fail or skip
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-22 by hollowbfcf67
+
+Ten checks in `tools/` open with the same guard and refuse to run without a rendering device:
+
+    if DisplayServer.get_name() == "headless":
+        push_error("<name> renders — run it with --windowed")
+        quit(1)
+
+They are `benchmark_check`, `blight_ground_check`, `build_picker_check`, `chunk_stream_check`,
+`crafting_ui_check`, `frame_cost_check`, `graphics_quality_check`, `inventory_ui_check`,
+`terrain_texture_check` and `viewmodel_check`.
+
+`agent verify` launches every check with `--headless` (`_run_verify_check()` in `.agent/bin/agent`),
+and has no notion that a check might need a framebuffer — even though `agent godot --windowed`
+exists for exactly this and parks the window offscreen (F-077). So all ten hit their guard on every
+suite run. Four of them are excluded from `--fast` by `VERIFY_FULL_ONLY_HINTS`, which hides the
+problem rather than fixing it; the rest are red on every fast run and were part of the 190/218 that
+F-554 was untangling.
+
+`frame_cost_check` shows the other half of the problem: it treats headless as a SKIP and exits 0, so
+in the suite it silently measures nothing and reports success. A check that cannot run should not be
+indistinguishable from a check that ran and passed.
+
+**The fix is in the runner.** `_verify_checks()` should recognise which checks need a window — the
+cheapest honest signal is the guard itself, a `grep` of the check source for
+`DisplayServer.get_name() == "headless"`, though a declared marker line would be sturdier and is
+worth preferring — and launch those with the same `--windowed` path `agent godot --windowed` already
+uses, rather than sending every check into `--headless` and reading the refusal as a failure. A check
+that genuinely cannot run in this environment should be reported as INCOMPLETE, its own state, and
+never as a pass.
+
+Related: F-555 gave these checks their `failures=N` verdict lines, which is what makes their refusal
+legible at all; this finding is about the runner honouring it.
+
+**Added 2026-08-22 by bram937a51 — the guard is not the only symptom, and the unguarded case is
+worse.** The ten checks above at least refuse politely. Two more drive the draw loop straight into
+the dummy rendering driver with no guard at all, and the engine dies rather than the check failing:
+
+    tools/material_warm_check.gd   exit -11 (SIGSEGV)  1.8s  106 engine errors
+    tools/dev_loadout_check.gd     exit -6  (SIGABRT)  4.1s   15 engine errors
+
+Both reproduce at a clean HEAD (`agent baseline`, 62e25428), so this is live and not ledger
+staleness. The error family is identical across the two and is unambiguously the dummy driver being
+asked to do real work:
+
+    ERROR: Attempting to initialize the wrong RID      (core/templates/rid_owner.h:240)
+    ERROR: Parameter "mem" is null.                    (core/templates/rid_owner.h:284)
+    ERROR: Parameter "m" is null.                      (servers/rendering/dummy/storage/mesh_storage.h)
+    ERROR: Parameter "material" is null.
+    ERROR: unimplemented base type encountered in renderer scene cull
+
+`material_warm_check` calls `MaterialWarmer.force_complete_now()`, which instantiates and draws
+several hundred shipped GLBs through a SubViewport — its own header already states that headless
+compiles no shader, and it drives the real draw loop regardless. `dev_loadout_check` loads the REAL
+main scene, deliberately and correctly (both bugs it was written for were wiring bugs), which brings
+the world's materials up on the same driver.
+
+These two belong in the windowed set this finding proposes, and should be fixed by that runner
+change rather than by bolting a `DisplayServer.get_name() == "headless"` guard onto them — a guard
+would convert a crash into a refusal, which is a better red row but still not a run. Note the
+consequence for the detection heuristic: grepping check sources for the guard would MISS both of
+these, because not having the guard is precisely their defect. That argues for the declared marker
+line this finding already says is sturdier, and against the grep.
+
+`tools/enemy_facing_check.gd` shows the same fault from GDScript rather than from C++ — it calls
+`root.get_texture().get_image()`, the headless root viewport has no texture, and `save_png` then
+errors on null. It is handled separately (see F-559): it is a render diagnostic with no verdict by
+design, not a check.
+
+---
+
+### F-557 · A check whose `quit()` is downstream of its own failure holds the shared Godot lock until something kills it
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-22 by bram937a51
+
+Two rows on the fast-suite ledger `.agent/verify/b305c185-fast.jsonl` cost 46 seconds each and
+neither of those seconds was work:
+
+    tools/enemy_facing_check.gd   exit -9   46.4s   "ERROR: killed after script error and silence"
+    tools/title_check.gd          exit -9   46.3s   "ERROR: killed after script error and silence"
+
+`agent verify` kills a check after a script error followed by silence (`SILENT_HANG_SECONDS` in
+`.agent/bin/agent`), so the runner already contains the only thing that stops these. That backstop
+is doing real work and should stay — but it is a timeout, not a fix, and it only exists inside
+`agent verify`. An agent running the same check by hand through `agent godot` gets no backstop at
+all, and holds the shared lock indefinitely.
+
+**The shape.** A `tools/*_check.gd` harness is a `SceneTree` whose `_initialize()` defers a `_run()`
+that ends in `quit()`. The process exits only because `quit()` is reached. So any error that
+prevents `_run()` from reaching its final line does not end the process — it parks it in an idle
+main loop with no frames to draw and nothing left to do, forever. Two concrete instances:
+
+- **`quit()` downstream of the failing statement.** In `enemy_facing_check.gd` the failing
+  `save_png` sits inside the `for view` loop, and BOTH the error path's `quit(1)` and the final
+  `quit(0)` are after it. The one event the script is most likely to hit is the one event that
+  guarantees `quit()` is never called.
+- **A body that never runs at all.** A `SceneTree` script defining `func _run()` with no
+  `_initialize()` to call it never executes, and because `quit()` lives inside `_run()` the process
+  idles from the first frame. `title_check.gd` reaches the same state by a different door: it fails
+  at *load*, so `_initialize()` never runs and `quit()` is unreachable (see F-558 for why it fails).
+
+**Why this is worth its own finding.** It is not a property of these two files. It is the default
+failure mode of every harness in `tools/`, and the next check written to the existing pattern
+inherits it. The cost is not hypothetical and it is not paid by the author — `agent locks --days=1`
+today reports **85 acquisitions, p95 wait 1058s, max wait 1311s**. Seventeen to twenty-two minutes
+of waiting per turn, on a lock every agent on this repo shares, and hanging checks are a direct
+contributor.
+
+**Proposed defence — a check must not be able to error its way into an idle main loop.** In
+preference order:
+
+1. **A watchdog inside the harness, not only inside the runner.** The shared harness base (or a
+   snippet every check opens with) arms a deadline at `_initialize()` and calls `quit(1)` when it
+   expires, so a check kills itself wherever it is run from. This is the only option that also
+   protects a hand-run `agent godot`.
+2. **Make the exit unconditional rather than terminal.** Structure `_run()` so the verdict print and
+   `quit()` cannot be skipped by an early error — the pattern the existing checks already reach for
+   with a `finish()` helper, but reached from a place that runs regardless.
+3. **Fail loudly on an absent `_initialize()`.** A `SceneTree` script with a `_run()` and no
+   `_initialize()` is always a bug; `agent verify` can detect it statically and refuse to launch it.
+
+**Not fixed in this task.** This finding is filed by bram937a51 while working F-556 and F-558, and
+is deliberately left unclaimed rather than half-done — the defence above touches the harness pattern
+that all ~218 checks share, and `.agent/bin/agent` is held by hollowbfcf67. It wants its own task
+with the lock free. What IS fixed under F-558 and F-559 is the two individual hangs, so the suite
+stops paying 92 seconds a run in the meantime.
+
+---
+
 ## Resolved
+
+### F-559 · tools/enemy_facing_check.gd is a render diagnostic named as a check, so it is a permanent red row — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by bram937a51
+
+`tools/enemy_facing_check.gd` is not a check. Its own header describes it as a diagnostic for "the
+crawlers walk backwards and attack facing away" — it renders a crawler, writes PNGs to `/tmp`, and
+prints what it saw. It defines no `failures` counter and prints no `failures=N` verdict, by design,
+because there is nothing for it to assert: a human looks at the image and decides.
+
+`_verify_checks()` collects `tools/*_check.gd`, so the suite picks it up and demands a verdict it
+was never going to print. Its row on `.agent/verify/b305c185-fast.jsonl` is `exit=-9`, reason
+`missing failures verdict`, 46.4 seconds — and those 46 seconds are the F-557 hang, because headless
+has no root viewport texture, `get_image()` returns null, `save_png` errors on it, and both `quit()`
+calls sit downstream of the failure.
+
+Two prior audits reached the same conclusion independently and neither was acted on:
+`docs/AUDIT-2026-08-17.md` records it as "not swept: a render diagnostic that ran 15+ min; run
+standalone", and `docs/AUDIT-2026-08-19.md` says the same. The name is what keeps dragging it back
+into the suite.
+
+`tools/` already has the right name for this kind of file: `_probe.gd` — `sfx_runtime_probe.gd`,
+`lobby_freeze_probe.gd`, `f410_procedural_sky_probe.gd`. Renaming it takes it out of the check suite
+honestly, rather than leaving it a red row that means nothing and costs 46 seconds of shared Godot
+lock on every run. Same move hollowbfcf67 made today for `f410_asset_material_check.gd` under F-555.
+
+**Fix:** `git mv` the `.gd` and its `.gd.uid` to `tools/enemy_facing_probe.gd`, and correct the file
+header's own usage line. As a probe it still needs a window to produce its render — that is F-556's
+business, and not a reason to keep it in the check suite meanwhile.
+
+**Resolved 2026-08-22 by bram937a51.** **Fixed** by bram937a51, 2026-08-22.
+
+`git mv` on both `tools/enemy_facing_check.gd` and its `tools/enemy_facing_check.gd.uid` to
+`tools/enemy_facing_probe.gd` / `.gd.uid`. `_verify_checks()` collects `tools/*_check.gd`, so the
+rename alone takes it out of the suite — which is the fix, because the file was never a check and
+had no verdict to give.
+
+Its header now says so explicitly: that it is a probe, that it asserts nothing by design because the
+verdict is a human looking at the PNG, why it used to be red, and the standalone usage line
+`.agent/bin/agent godot --windowed --script tools/enemy_facing_probe.gd` (it needs a framebuffer,
+F-077).
+
+While in the file I also closed the F-557 hang at this one site: `root.get_texture()` and its
+`get_image()` are now both guarded, and the guard calls `quit(1)` with a real message rather than
+letting `save_png` error on null. Every `quit()` in that function sits downstream of the failing
+line, so unguarded it did not fail the run — it parked the process in an idle main loop holding the
+shared Godot lock until something killed it.
+
+**How it was verified.** `agent godot --script tools/enemy_facing_probe.gd` headless: it now exits
+**1** in seconds with `ERROR: no rendered frame to capture — this probe needs --windowed (F-077)`,
+instead of the 46.4-second silent hang and `exit=-9` on its ledger row. Loading and parsing clean
+under the new name is proved by the same run reaching that guard at all.
+
+**References updated.** Nothing in code referenced the old path. Two live docs did —
+`docs/DELEGATION.md` and `docs/SPECS.md` — and both now name the probe. The mentions in
+`docs/AUDIT-2026-08-17.md`, `docs/AUDIT-2026-08-19.md` and `.agent/JOURNAL.md` are left as they are:
+they are records of what was true when they were written, and both audits independently reached this
+same conclusion — each describes it as a render diagnostic that ran 15+ minutes and should be run
+standalone.
+
+### F-558 · A --script harness cannot preload any file that names an autoload, because autoloads instantiate after the main script compiles — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by bram937a51
+
+`tools/title_check.gd` never ran a single assertion. It failed at load, at a clean HEAD, reproduced
+with `agent baseline` at 62e25428:
+
+    SCRIPT ERROR: Compile Error: Identifier not found: AppExit
+              at: GDScript::reload (res://ui/frontend/frontend.gd:143)
+    SCRIPT ERROR: Compile Error: Failed to compile depended scripts.
+              at: GDScript::reload (res://tools/title_check.gd:0)
+    ERROR: Failed to load script "res://tools/title_check.gd" with error "Compilation failed".
+    SCRIPT ERROR: Invalid call. Nonexistent function '_launch_bypasses_frontend' in base 'GDScript'.
+              at: _run (res://tools/title_check.gd:61)
+
+**`AppExit` is correctly registered.** It is at `project.godot:93`, committed, and
+`tools/app_exit_check.gd` passes against it. The registration was never the bug.
+
+**The bug is ordering, and it is general.** `title_check.gd` did
+`const Frontend := preload("res://ui/frontend/frontend.gd")`. A `preload` is resolved while the
+harness itself is being compiled — and under `--script`, that compile happens BEFORE the autoloads
+are instantiated. The engine's own log ordering proves it: the compile error above prints first, and
+only then does `[info] net: NetTransport ready (offline)` appear. Autoload names become resolvable
+identifiers when the autoloads come up, so at the moment `frontend.gd` was compiled, `AppExit` was
+genuinely not a known identifier. `frontend.gd` uses it bare at lines 143 and 151.
+
+The cascade after that is what makes this expensive, because it points at the wrong file. A failed
+`preload` does not abort — it yields a bare, uncompiled `GDScript`, so `const Frontend` was bound to
+an object with no members, and `Frontend._launch_bypasses_frontend()` reported *"Nonexistent
+function ... in base 'GDScript'"*. A reader seeing that line goes hunting for a renamed or deleted
+method. The method is perfectly fine. The file it lives in had simply failed to compile.
+
+**Scope — this is a rule about writing checks, not a fact about title_check.** It is not a defect in
+`frontend.gd`; product code is compiled after autoloads exist and is entitled to name them. Any
+`tools/` harness that `preload`s product code which touches an autoload identifier fails this way,
+and the error it reports will name the wrong thing.
+
+**Fix:** in a `--script` harness, bind product scripts with `load()` inside `_run()` — after
+`_initialize()` has deferred and the autoloads are up — rather than with `preload()` at parse time.
+
+---
+
+**Resolved 2026-08-22 by bram937a51.** **Fixed** by bram937a51, 2026-08-22, in `tools/title_check.gd`.
+
+The five `const ... := preload(...)` bindings are now plain `var`s, bound by a new
+`_bind_product_scripts()` that `_run()` calls as its first statement — after `_initialize()` has
+deferred, so the autoloads are up and every autoload identifier inside those product scripts
+resolves normally. They are `var`s rather than `const`s deliberately, so they resolve dynamically at
+call time. Nothing in product code changed; `frontend.gd` naming `AppExit` was never the defect.
+
+The file header now carries the whole explanation, because the next person to write a harness will
+reach for `preload` by reflex and the resulting error will name the wrong file.
+
+**How it was verified.** `agent godot --script tools/title_check.gd` — the shared lock rather than
+`agent baseline`, because baseline runs a clean worktree at HEAD and cannot see an uncommitted fix.
+Result: **46 PASS, `TITLE_CHECK failures=0`, exit 0**, with no `SCRIPT ERROR` and no `Compile Error`
+anywhere in the output. Before the fix, `agent baseline --script tools/title_check.gd` at 62e25428
+gave `Compile Error: Identifier not found: AppExit`, `Failed to compile depended scripts`, `Failed
+to load script`, and then the 46-second silent hang that `agent verify` kills with `exit=-9`.
+
+Worth recording: this check has never run a single assertion in its life. It was not failing and now
+passing — it never loaded. All 46 assertions are new information about the front end.
+
+**Left open deliberately.** The general trap is not closed by this. Any `tools/` harness that
+preloads product code touching an autoload identifier fails the same way. The rule is written up in
+`docs/DELEGATION.md` *Current state* so the next agent meets it before making the mistake, and the
+harness-level defence belongs with F-557.
+
+### F-555 · 32 checks never print the failures=N verdict agent verify requires, so they are red however green they run — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-22 by hollowbfcf67
+
+`agent verify` reads a check's verdict out of its own stdout: `_verify_verdict()` looks for
+`failures=N` (or `N failures`) and, finding neither, records **"missing failures verdict"** and fails
+the row. That contract is deliberate — F-293 chose it so a check cannot pass by saying nothing — but
+32 of the 218 checks in `tools/` have never satisfied it, and are therefore red no matter what they
+assert.
+
+They are not silent. They report, just in words the parser does not read:
+
+    tools/flora_check.gd        FLORA_CHECK_GODOT PASS
+    tools/ship_check.gd         SHIP_CHECK_GODOT PASS
+    tools/spawn_slot_check.gd   all checks passed
+
+and 29 more, most of which simply `quit(0 if failures.is_empty() else 1)` with no summary line at
+all. The full list, from ledger `.agent/verify/b305c185-fast.jsonl`: art_coverage, blight_ground,
+blight_timeline, combat_self_hit (fixed under F-551), construction, dev_loadout, dimension,
+enemy_crawler, enemy_facing, f410_asset_material, flora, frame_cap, frame_cost, ground_fog,
+hardware_tier, hollowmere, interest, interp, item_icons, material_warm, mesh_merge, mire_land_seed,
+prop_chunk_merge, rich_presence, ship, spawn_ground, spawn_slot, synced_group, terrain_texture,
+title, virtual_shadow, world_contract.
+
+This is the third and last of the reasons `agent verify` was reporting 190 of 218 checks failing.
+F-553 removed a per-frame engine error from 53 rows; F-554 stopped teardown leak diagnostics from
+failing 129 rows; this is the remainder — rows that are red for a formatting reason, forever, with
+nobody able to tell them apart from rows that are red because something is broken.
+
+**The fix is in the checks, not the parser.** Broadening the regex to accept "all checks passed"
+would give up the property F-293 bought: an explicit, greppable, machine-readable verdict that a
+half-finished or crashed check cannot accidentally emit. Each check gets the canonical line printed
+immediately before its final `quit()`, off the counter it already keeps.
+
+**Four of the 32 are a different problem and are NOT fixed by a print statement** — they never reach
+their `quit()` at all: `dev_loadout_check` exits -6 (SIGABRT), `enemy_facing_check` and `title_check`
+exit -9, `material_warm_check` exits -11 (SIGSEGV). Those are crashes and want their own finding.
+
+---
+
+**Resolved 2026-08-22 by hollowbfcf67.** **Fixed 2026-08-22 by hollowbfcf67.** Every check that lacked one now prints the canonical
+`<NAME>_CHECK failures=N` line immediately before its final `quit()`, computed from the counter it
+already kept. The fix is in the checks rather than in the parser, deliberately: broadening the regex
+to accept "all checks passed" or "FLORA_CHECK_GODOT PASS" would give up the property F-293 bought,
+which is an explicit, greppable verdict that a half-finished or crashed run cannot accidentally emit.
+
+Twenty-five files, in three shapes — an `Array` counter (`failures.size()`), an `int` counter
+(`failures` / `_failures`), and ten with several `quit()` sites that needed the line placed by hand.
+
+Three cases worth recording because they are not just a missing print:
+
+- **Bail paths need the verdict too.** `spawn_slot_check`'s "PlayerNet is not registered" exit, and
+  the headless guards in `blight_ground_check` and `terrain_texture_check`, all left the suite with
+  no verdict at all. Those two render checks can only ever reach their guard under `agent verify`,
+  which launches everything headless (F-556), so they now say `failures=1` there — an honest "could
+  not run in this environment" rather than silence.
+- **`frame_cost_check` treats headless as a SKIP and exits 0**, so it was silently measuring nothing
+  and reporting success. It prints `failures=0` now, which at least makes the run legible; F-556 is
+  where the skip itself gets fixed.
+- **`blight_timeline_check` has no assertions at all** — it reports a timeline and nothing else — so
+  its verdict is a constant zero, stated explicitly rather than left implicit.
+
+**One file was not a check and has been renamed rather than patched.**
+`tools/f410_asset_material_check.gd` is a parameterised probe: it requires `F410_ASSET` in the
+environment and can never pass inside the suite. `tools/` already uses `_probe.gd` for exactly this
+(`sfx_runtime_probe`, `lobby_freeze_probe`, `f410_procedural_sky_probe`) and `_verify_checks()`
+collects `tools/*_check.gd` only, so it is now `tools/f410_asset_material_probe.gd` — `git mv` for
+both the `.gd` and its `.gd.uid`, with the usage example in its own header updated to match. That
+takes it out of the suite honestly instead of leaving it a permanent red row. bram937a51 did the
+same for `enemy_facing_check` → `enemy_facing_probe` under F-559.
+
+**Left to their owners:** `tools/item_icons_check.gd` is claimed by gale43d16e for task 2.1d and was
+reverted untouched. The four crashing checks named in this finding — `dev_loadout`, `enemy_facing`,
+`material_warm`, `title` — never reach a `quit()` at all and a print statement cannot help them;
+they went to bram937a51 and are now F-556, F-558 and F-559.
+
+**Verified** by running all 25 through `agent godot` and grepping each for its verdict line: 25 of 25
+emit one. Most report `failures=0`; three report real failures that were previously invisible behind
+"missing failures verdict" — `world_contract_check failures=3` (F-549's subject), and
+`ground_fog_check` and `interp_check` at `failures=1` each. Making those legible is the point.
+
+Suite-level effect, measured with full `agent verify --fast` runs before and after this session's
+three tooling fixes (F-553, F-554 and this one): **28 passed / 190 failed → 160 passed / 58 failed.**
+
+### F-406 · agent claim with more than one file stores the whole list as a single dictionary key, so the pre-commit hook never sees any of them as claimed — **fixed**
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-21 by kilnd3a089
+
+`.agent/bin/agent claim <task> <file-a> <file-b> ...` joins every path into ONE `claims` key instead
+of writing one entry per file. Observed directly in `.agent/state.json` after claiming 43 files:
+
+    "claims": {
+      "content/biomes/birchwood.tres content/biomes/forest.tres content/biomes/grassla…": {…},
+      "assets/audit/f398/after/canopy_leaves.png assets/audit/f398/after/canopy_leaves…": {…}
+    }
+
+Two entries for 43 files. The pre-commit hook looks a claim up BY PATH (`.agent/bin/agent:1774`,
+`if (c and _is_mine(c, me, me_token)) or in_grace(f)`), so every one of those lookups returns None
+and every Godot-authored file is rejected with "requires an exact-file claim and a closed editor
+(D-031)" — while `agent board` cheerfully lists all 43 under the task, because the board renders the
+key rather than looking paths up in it.
+
+Claiming ONE file per call keys correctly. Verified both ways: a single-file claim produced
+`'content/biomes/forest.tres'`, and re-claiming the same 158 files one per call took the hook's
+blocking errors from 47 to 0.
+
+**Why this went unnoticed:** the hook's other escape hatch is `in_grace(f)`, which passes a file this
+session edited recently. An agent that claims a file and edits it immediately is inside the grace
+window, so the broken claim never matters. It only bites when the edit and the commit are far apart —
+which is exactly the case when integrating work a subagent produced half an hour earlier, and the
+one time you most need claims to work.
+
+`AGENTS.md` documents the multi-file form implicitly ("Derive your own claim set from the task and
+claim it") while every worked example passes a single path, so the broken shape is reachable from a
+plain reading of the protocol.
+
+Fix: split on the argument list when writing, and while in there, migrate any existing joined keys —
+a stale joined key is indistinguishable from a legitimately-named file and will silently never match.
+
+---
+
+**Resolved 2026-08-22 by hollowbfcf67.** **Already fixed; closed 2026-08-22 by hollowbfcf67 after proving it at HEAD.** `cmd_claim()`
+(`.agent/bin/agent:1136`) builds `files = [_rel(f) for f in args[1:]]` and then writes one
+`st["claims"]` entry per path in a `for f in files:` loop. There is no path in it that can produce a
+joined key.
+
+Proved directly rather than by reading, because the finding's own symptom was that `agent board`
+renders a claim differently from how the hook looks one up:
+
+1. `agent claim F-555 <16 paths>` in a single call. `.agent/state.json` then held **16** separate
+   `claims` keys for F-555, each one a bare relative path.
+2. `agent check` before the claim listed all 16 as "edited without a claim"; after it, all 16 were
+   silent and the ten files I had edited but not yet claimed were the only ones still warning. That
+   is the hook resolving each path individually — the exact lookup at `.agent/bin/agent:1774` the
+   finding says never matched.
+3. The migration half is also done: a scan of the whole live `claims` dictionary found 44 keys and
+   **zero** containing a space, so no stale joined key survives to silently never match.
+
+Left alone deliberately: `AGENTS.md` still documents the claim set rather than the call shape, which
+is correct now that both shapes work.
 
 ### F-554 · agent verify fails a check on Godot's exit-time leak diagnostics, so 129 of 218 checks are red with every assertion passing — **fixed**
 
@@ -26791,3 +27153,4 @@ line: `failures=2` — the client still holding the ended run's `20` logs at `r2
 grant swallowed. Post-fix: `0`, then `3` at `r1`.
 
 **Resolved 2026-08-20 by lp.** Spec: `docs/SPECS.md` `## F-279`. Rule: **D-173**.
+

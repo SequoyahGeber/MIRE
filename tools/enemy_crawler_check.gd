@@ -134,4 +134,9 @@ func _finish() -> void:
 		print("A-006 check PASSED")
 	else:
 		printerr("A-006 check FAILED with %d problem(s)" % _failures)
+	# `agent verify` reads this line and fails the check outright when it is absent — an explicit,
+	# greppable verdict is what stops a half-finished or crashed run passing by saying nothing
+	# (F-293). This check reported in prose but never in that shape, so it was red however green
+	# it ran (F-555).
+	print("ENEMY_CRAWLER_CHECK failures=%d" % _failures)
 	quit(1 if _failures > 0 else 0)

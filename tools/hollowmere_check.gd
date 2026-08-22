@@ -467,4 +467,9 @@ func _finish() -> void:
 		print("HOLLOWMERE_CHECK FAIL (%d)" % failures.size())
 		for failure in failures:
 			print("  ", failure)
+	# `agent verify` reads this line and fails the check outright when it is absent — an explicit,
+	# greppable verdict is what stops a half-finished or crashed run passing by saying nothing
+	# (F-293). This check reported in prose but never in that shape, so it was red however green
+	# it ran (F-555).
+	print("HOLLOWMERE_CHECK failures=%d" % failures.size())
 	quit(0 if failures.is_empty() else 1)

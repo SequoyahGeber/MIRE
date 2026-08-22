@@ -48,6 +48,10 @@ func _initialize() -> void:
 		print("  spawn crossed the Blight threshold at %.0f s (%.1f min) with no ward built"
 			% [lethal_at, lethal_at / 60.0])
 	print("BLIGHT_TIMELINE_CHECK lethal_at_sec=%.0f horizon_sec=%.0f" % [lethal_at, HORIZON_SEC])
+	# This one only ever REPORTS — it has no assertions and no failure counter, so its verdict is a
+	# constant zero. `agent verify` still needs the line, or a run that reported nothing at all is
+	# indistinguishable from this one (F-555).
+	print("BLIGHT_TIMELINE_CHECK failures=0")
 	quit()
 
 

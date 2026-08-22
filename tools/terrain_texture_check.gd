@@ -143,6 +143,11 @@ func _initialize() -> void:
 func _run() -> void:
 	if DisplayServer.get_name() == "headless":
 		push_error("terrain_texture_check renders — run it with --windowed")
+		# The bail needs the verdict as much as the end does. This check requires a framebuffer and
+		# `agent verify` launches everything headless (F-556), so in the suite it only ever reaches
+		# here — and without the line the row reads as "reported nothing" rather than as the honest
+		# "could not run in this environment" that it is (F-555).
+		print("TERRAIN_TEXTURE_CHECK failures=1")
 		quit(1)
 		return
 	await process_frame
@@ -608,4 +613,9 @@ func check(condition: bool, label: String) -> void:
 
 func finish() -> void:
 	print("terrain_texture_check: failures=%d" % failures)
+	# `agent verify` reads this line and fails the check outright when it is absent — an explicit,
+	# greppable verdict is what stops a half-finished or crashed run passing by saying nothing
+	# (F-293). This check reported in prose but never in that shape, so it was red however green
+	# it ran (F-555).
+	print("TERRAIN_TEXTURE_CHECK failures=%d" % failures)
 	quit(1 if failures > 0 else 0)

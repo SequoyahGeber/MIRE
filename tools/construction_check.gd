@@ -525,6 +525,11 @@ func _check_buildable_defs() -> void:
 
 
 func _finish() -> void:
+	# `agent verify` reads this line and fails the check outright when it is absent — an explicit,
+	# greppable verdict is what stops a half-finished or crashed run passing by saying nothing
+	# (F-293). This check reported in prose but never in that shape, so it was red however green
+	# it ran (F-555).
+	print("CONSTRUCTION_CHECK failures=%d" % failures.size())
 	if failures.is_empty():
 		print("CONSTRUCTION_CHECK PASS")
 		quit(0)

@@ -25,6 +25,11 @@ func _run() -> void:
 	_check_real_machine_classifies()
 
 	print("")
+	# `agent verify` reads this line and fails the check outright when it is absent — an explicit,
+	# greppable verdict is what stops a half-finished or crashed run passing by saying nothing
+	# (F-293). This check reported in prose but never in that shape, so it was red however green
+	# it ran (F-555).
+	print("HARDWARE_TIER_CHECK failures=%d" % failures.size())
 	if failures.is_empty():
 		print("HARDWARE_TIER_OK")
 		quit(0)

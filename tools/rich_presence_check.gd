@@ -97,6 +97,11 @@ func _run() -> void:
 			"lobby invite and rich-presence join are separate signals — connect both")
 
 	print("")
+	# `agent verify` reads this line and fails the check outright when it is absent — an explicit,
+	# greppable verdict is what stops a half-finished or crashed run passing by saying nothing
+	# (F-293). This check reported in prose but never in that shape, so it was red however green
+	# it ran (F-555).
+	print("RICH_PRESENCE_CHECK failures=%d" % _failures)
 	if _failures > 0:
 		print("%d check(s) failed" % _failures)
 		quit(1)

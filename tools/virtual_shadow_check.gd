@@ -52,6 +52,12 @@ func _run() -> void:
 		print("✗ SELF-TEST FAILED: the engine no longer calls %s.%s(), so this check can no longer"
 			% [CONTROL_BASE, CONTROL_METHOD])
 		print("  detect anything. Fix the check before trusting a pass from it.")
+	# `agent verify` reads this line and fails the check outright when it is absent — an explicit,
+	# greppable verdict is what stops a half-finished or crashed run passing by saying nothing
+	# (F-293). This check reported in prose but never in that shape, so it was red however green
+	# it ran (F-555). The self-test bail below counts as a failure: a probe that can no longer
+	# detect anything has not passed.
+		print("VIRTUAL_SHADOW_CHECK failures=1")
 		quit(1)
 		return
 	print("· self-test ok — %s.%s() still fires uninvited, so the probe works\n"
@@ -68,6 +74,7 @@ func _run() -> void:
 						% [path, method, base])
 
 	print("probed %d name(s) across %d engine base class(es)\n" % [probed, candidates.size()])
+	print("VIRTUAL_SHADOW_CHECK failures=%d" % _failures.size())
 	if _failures.is_empty():
 		print("✓ no script shadows an engine virtual")
 		quit(0)

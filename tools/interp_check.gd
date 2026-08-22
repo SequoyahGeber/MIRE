@@ -89,6 +89,11 @@ func _run() -> void:
 	await _phase_live()
 
 	print("")
+	# `agent verify` reads this line and fails the check outright when it is absent — an explicit,
+	# greppable verdict is what stops a half-finished or crashed run passing by saying nothing
+	# (F-293). This check reported in prose but never in that shape, so it was red however green
+	# it ran (F-555).
+	print("INTERP_CHECK failures=%d" % _failures.size())
 	if _failures.is_empty():
 		print("PASS — all checks met")
 		quit(0)

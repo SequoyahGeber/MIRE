@@ -35,6 +35,9 @@ func _initialize() -> void:
 func _run() -> void:
 	if DisplayServer.get_name() == "headless":
 		print("FRAME_COST_SKIP no rendering device — run through `agent godot --windowed`")
+		# A skip is not a failure, but it still needs the verdict line or `agent verify` reads the
+		# run as having reported nothing at all (F-555).
+		print("FRAME_COST_CHECK failures=0")
 		quit(0)
 		return
 	# Pinned so two runs are comparable. `agent godot --windowed` parks a tiny offscreen window
@@ -92,6 +95,11 @@ func _run() -> void:
 	var first: Dictionary = rows[0]
 	print("\nFRAME_COST draw_calls_median=%d primitives_median=%d vram_mb=%.1f frame_ms_median=%.2f"
 		% [first["draws"], first["primitives"], first["vram"], first["ms"]])
+	# `agent verify` reads this line and fails the check outright when it is absent — an explicit,
+	# greppable verdict is what stops a half-finished or crashed run passing by saying nothing
+	# (F-293). This check reported in prose but never in that shape, so it was red however green
+	# it ran (F-555).
+	print("FRAME_COST_CHECK failures=0")
 	print("FRAME_COST_OK")
 	quit(0)
 
