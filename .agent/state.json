@@ -18,108 +18,6 @@
       "task": "5.11",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
     },
-    "assets/environment/catalog.json": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:06:57+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
-    },
-    "assets/environment/exports/fallen_log_a.glb": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:06:58+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
-    },
-    "assets/environment/exports/fallen_log_b.glb": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:06:58+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
-    },
-    "assets/environment/exports/fallen_log_c.glb": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:06:58+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
-    },
-    "assets/environment/exports/fallen_log_d.glb": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:06:58+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
-    },
-    "assets/environment/exports/grass_seedhead_a.glb": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:06:58+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
-    },
-    "assets/environment/exports/grass_seedhead_b.glb": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:06:58+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
-    },
-    "assets/environment/exports/grass_seedhead_c.glb": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:06:58+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
-    },
-    "assets/environment/exports/grass_seedhead_d.glb": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:06:58+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
-    },
-    "assets/environment/exports/reeds_a.glb": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:06:58+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
-    },
-    "assets/environment/exports/reeds_b.glb": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:06:58+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
-    },
-    "assets/environment/exports/reeds_c.glb": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:06:58+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
-    },
-    "assets/environment/exports/reeds_d.glb": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:06:58+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
-    },
-    "assets/environment/exports/stump_a.glb": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:06:57+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
-    },
-    "assets/environment/exports/stump_b.glb": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:06:57+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
-    },
-    "assets/environment/exports/stump_c.glb": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:06:57+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
-    },
-    "assets/environment/exports/stump_d.glb": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:06:57+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
-    },
     "assets/gatherables/catalog.json": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:16:22+00:00",
@@ -132,47 +30,17 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "assets/maps/playtest_hollow.glb": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:08:52+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
-    },
-    "assets/maps/preview/playtest_hollow_preview.png": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:08:52+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
-    },
     "assets/pickups/catalog.json": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:31:01+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "assets/source/playtest_hollow.blend": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:08:52+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
-    },
     "assets/tools_weapons/catalog.json": {
       "agent": "birche6b40e",
       "at": "2026-08-21T23:42:44+00:00",
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
-    },
-    "autoload/graphics_quality.gd": {
-      "agent": "ivy2314d8",
-      "at": "2026-08-22T03:10:15+00:00",
-      "task": "F-512",
-      "token": "CODEX_SESSION_ID:01a0276f-2e99-7a63-b23a-45d0077b62f6"
-    },
-    "autoload/settings_service.gd": {
-      "agent": "ivy2314d8",
-      "at": "2026-08-22T03:10:15+00:00",
-      "task": "F-512",
-      "token": "CODEX_SESSION_ID:01a0276f-2e99-7a63-b23a-45d0077b62f6"
     },
     "content/enemies/bloatcap.tres": {
       "agent": "ember5da2c4",
@@ -264,6 +132,12 @@
       "task": "F-482",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "content/items/repair_hammer.tres": {
+      "agent": "ivy9f49c8",
+      "at": "2026-08-22T03:12:09+00:00",
+      "task": "F-510",
+      "token": "CODEX_SESSION_ID:01a0276a-92a7-79c0-8d76-3a6319f124d1"
+    },
     "content/items/sling.tres": {
       "agent": "birche6b40e",
       "at": "2026-08-22T00:29:56+00:00",
@@ -282,11 +156,23 @@
       "task": "F-482",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "content/scatter/grassland_turf.tres": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:11:43+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
     "content/scatter/highland_rocks.tres": {
       "agent": "birche6b40e",
       "at": "2026-08-22T00:06:31+00:00",
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/scatter/marsh_reeds.tres": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:11:43+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
     "docs/ASSET_TRACKER.md": {
       "agent": "gale43d16e",
@@ -368,7 +254,7 @@
     },
     "tools/blender/build_mire_map_kit.py": {
       "agent": "birchf37d06",
-      "at": "2026-08-22T03:04:23+00:00",
+      "at": "2026-08-22T03:11:43+00:00",
       "task": "F-508",
       "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
@@ -420,23 +306,17 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "tools/mapgen/hollow_layout.py": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:04:23+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    "tools/setup_tool_content.gd": {
+      "agent": "ivy9f49c8",
+      "at": "2026-08-22T03:12:09+00:00",
+      "task": "F-510",
+      "token": "CODEX_SESSION_ID:01a0276a-92a7-79c0-8d76-3a6319f124d1"
     },
-    "tools/settings_check.gd": {
-      "agent": "ivy2314d8",
-      "at": "2026-08-22T03:10:15+00:00",
-      "task": "F-512",
-      "token": "CODEX_SESSION_ID:01a0276f-2e99-7a63-b23a-45d0077b62f6"
-    },
-    "tools/settings_screen_check.gd": {
-      "agent": "ivy2314d8",
-      "at": "2026-08-22T03:10:15+00:00",
-      "task": "F-512",
-      "token": "CODEX_SESSION_ID:01a0276f-2e99-7a63-b23a-45d0077b62f6"
+    "tools/viewmodel_check.gd": {
+      "agent": "ivy9f49c8",
+      "at": "2026-08-22T03:12:09+00:00",
+      "task": "F-510",
+      "token": "CODEX_SESSION_ID:01a0276a-92a7-79c0-8d76-3a6319f124d1"
     },
     "tools/wave_director_check.gd": {
       "agent": "ember5da2c4",
@@ -444,27 +324,15 @@
       "task": "5.11",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
     },
-    "ui/frontend/graphics_settings_page.gd": {
-      "agent": "ivy2314d8",
-      "at": "2026-08-22T03:10:15+00:00",
-      "task": "F-512",
-      "token": "CODEX_SESSION_ID:01a0276f-2e99-7a63-b23a-45d0077b62f6"
-    },
     "ui/hud/focus_prompt.gd": {
       "agent": "birchf37d06",
-      "at": "2026-08-22T03:05:04+00:00",
+      "at": "2026-08-22T03:11:43+00:00",
       "task": "F-508",
       "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
     "ui/hud/guide_hud.gd": {
       "agent": "birchf37d06",
-      "at": "2026-08-22T03:05:04+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
-    },
-    "world/gen/layouts/playtest_hollow.json": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:06:58+00:00",
+      "at": "2026-08-22T03:11:43+00:00",
       "task": "F-508",
       "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
@@ -583,53 +451,25 @@
       "agent": "birchf37d06",
       "files": [
         "tools/blender/build_mire_map_kit.py",
-        "tools/mapgen/hollow_layout.py",
         "ui/hud/guide_hud.gd",
         "ui/hud/focus_prompt.gd",
-        "assets/environment/catalog.json",
-        "assets/environment/exports/stump_a.glb",
-        "assets/environment/exports/stump_b.glb",
-        "assets/environment/exports/stump_c.glb",
-        "assets/environment/exports/stump_d.glb",
-        "assets/environment/exports/fallen_log_a.glb",
-        "assets/environment/exports/fallen_log_b.glb",
-        "assets/environment/exports/fallen_log_c.glb",
-        "assets/environment/exports/fallen_log_d.glb",
-        "assets/environment/exports/grass_seedhead_a.glb",
-        "assets/environment/exports/grass_seedhead_b.glb",
-        "assets/environment/exports/grass_seedhead_c.glb",
-        "assets/environment/exports/grass_seedhead_d.glb",
-        "assets/environment/exports/reeds_a.glb",
-        "assets/environment/exports/reeds_b.glb",
-        "assets/environment/exports/reeds_c.glb",
-        "assets/environment/exports/reeds_d.glb",
-        "world/gen/layouts/playtest_hollow.json",
-        "assets/source/playtest_hollow.blend",
-        "assets/maps/playtest_hollow.glb",
-        "assets/maps/preview/playtest_hollow_preview.png"
+        "content/scatter/marsh_reeds.tres",
+        "content/scatter/grassland_turf.tres"
       ],
       "notes": [],
-      "started": "2026-08-22T03:04:23+00:00",
+      "started": "2026-08-22T03:11:43+00:00",
       "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
-    "F-512": {
-      "agent": "ivy2314d8",
+    "F-510": {
+      "agent": "ivy9f49c8",
       "files": [
-        "autoload/graphics_quality.gd",
-        "autoload/settings_service.gd",
-        "ui/frontend/graphics_settings_page.gd",
-        "tools/settings_check.gd",
-        "tools/settings_screen_check.gd"
+        "content/items/repair_hammer.tres",
+        "tools/setup_tool_content.gd",
+        "tools/viewmodel_check.gd"
       ],
-      "notes": [
-        {
-          "at": "2026-08-22T03:10:15+00:00",
-          "by": "ivy2314d8",
-          "text": "Display resolution is client-local presentation. In fullscreen, keep the macOS native window and cap uniform 3D render scale so neither rendered dimension exceeds the selected target; UI remains native. Quality presets may render lower, never higher, and dynamic resolution steps below the same cap."
-        }
-      ],
-      "started": "2026-08-22T03:10:15+00:00",
-      "token": "CODEX_SESSION_ID:01a0276f-2e99-7a63-b23a-45d0077b62f6"
+      "notes": [],
+      "started": "2026-08-22T03:12:09+00:00",
+      "token": "CODEX_SESSION_ID:01a0276a-92a7-79c0-8d76-3a6319f124d1"
     }
   },
   "recent": {
@@ -1432,11 +1272,123 @@
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "assets/environment/catalog.json": {
-      "agent": "gale43d16e",
-      "at": "2026-08-21T08:34:48+00:00",
-      "hash": "3bf061514fcc2e382f6836bfcf8fde570d921c6b6f9edf4e224c00939cafeb30",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
+      "hash": "51fcfe9c89d6cbcf216fd0b62d290c1a9ade77c3288819c1cf79d67a4485f21c",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/fallen_log_a.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
+      "hash": "5bd415c7041e019b16dc6253d9dee2a835708c43ad320b1e37aac9f3e5091879",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/fallen_log_b.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
+      "hash": "6aa280fef7e9afb7c33d01d368e69d90ca9a09bf3e0b7acad798d9024cae4570",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/fallen_log_c.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
+      "hash": "044002d98abbf03b7e98b1f83ba83505c487731dc0289fced9c964e902e90739",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/fallen_log_d.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
+      "hash": "7cbeb24ad1b82c4d1dbb032b932abf6a21e56c1b3e21f48a8778d6cb7b94198f",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/grass_seedhead_a.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
+      "hash": "114ae047fcf85d01d4b98c57840bbedf352a2a8cce00998aa7c907680b547190",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/grass_seedhead_b.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
+      "hash": "7caabe155f44c43d69d3e590431f6b9f560eaa1a0e7aadb2d25ad740f6339dd1",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/grass_seedhead_c.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
+      "hash": "cf7f810ed00998392b0b76c788508f4dd720d13be5dc5275bea4fe13a4cad62c",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/grass_seedhead_d.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
+      "hash": "3a1fdf91af1f86874615c60c0a85f27c4efede3911494791325e2c7dfe3fade4",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/reeds_a.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
+      "hash": "fbf9978582409be1d6155ffce81ccd7c47ceb68dd7a2056237c0550567893f0b",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/reeds_b.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
+      "hash": "c0492f41c95f3744ff1e24c92698ae35954e50930bd5596d0724994fccab02de",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/reeds_c.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
+      "hash": "5e166fbbd8fa0864e7e4eb14776446ba64b2c7982924088b4f2f80bc78d4c201",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/reeds_d.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
+      "hash": "562d7a2a81af947d05186d8e56b6aea2c2162f80c492518792995252b1acb607",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/stump_a.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
+      "hash": "e4a16532e44d18dce9ac434e4db43f81bb8e785f1a62ac931c296e5bf8a4906b",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/stump_b.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
+      "hash": "a8bc5bb0b2457f980cb175108b574a935eb418c9972f7a0a06f84b21d2277176",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/stump_c.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
+      "hash": "20ae17fc0fe160ff2f18032dfd09d2e3d0667ace781dff2188c1c6a0ed099c34",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/stump_d.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
+      "hash": "7885e11debf1b2e62c8910e0d8954e09fc2ee75e551213cde6f61064d2dee165",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
     "assets/environment/exports/tree_bare_a.glb": {
       "agent": "kilnd3a089",
@@ -1662,6 +1614,27 @@
       "task": "3.7",
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
+    "assets/maps/playtest_hollow.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
+      "hash": "2b995e96bb322c7201ce4ce1a4ab91c6fd3f317c9fa9a114af847171562c8ce5",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/maps/preview/playtest_hollow_preview.png": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
+      "hash": "2153a93d3691d25cc1292467f4926ed6b7a32e48ab55252ea0f4f18cab2d3780",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/source/playtest_hollow.blend": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
+      "hash": "29a2e96d37d711a4952d429f6f789ad1c39655eefd015709d846eec7957400b4",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
     "autoload/ambient_music_director.gd": {
       "agent": "dusk544993",
       "at": "2026-08-22T01:48:20+00:00",
@@ -1719,11 +1692,11 @@
       "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
     "autoload/graphics_quality.gd": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T06:29:30+00:00",
-      "hash": "b9eb067138d8956c52f230cf8ef02831b0433cca94d792d7e2d7ce0ac2798ad2",
-      "task": "F-414",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
+      "agent": "ivy2314d8",
+      "at": "2026-08-22T03:12:20+00:00",
+      "hash": "6a3ad8b4f9ecceb26c750e07ca86df953431110838091e8476f03ea1d9a9f280",
+      "task": "F-512",
+      "token": "CODEX_SESSION_ID:01a0276f-2e99-7a63-b23a-45d0077b62f6"
     },
     "autoload/guide_service.gd": {
       "agent": "birche6b40e",
@@ -1761,11 +1734,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
     "autoload/settings_service.gd": {
-      "agent": "galedc2f76",
-      "at": "2026-08-22T02:37:35+00:00",
-      "hash": "85bfc5a72af52a7f64dd2dd0d5932a1ce11698b02af337315524546adb05500b",
-      "task": "F-503",
-      "token": "CODEX_SESSION_ID:01a02752-64f4-7b03-88cb-24234c204f6e"
+      "agent": "ivy2314d8",
+      "at": "2026-08-22T03:12:20+00:00",
+      "hash": "41dc3d35cc2bf765dc6cd4820f07b9c4927bf7c26b1df2355ec07b5b35128baa",
+      "task": "F-512",
+      "token": "CODEX_SESSION_ID:01a0276f-2e99-7a63-b23a-45d0077b62f6"
     },
     "autoload/sfx_catalogue.gd": {
       "agent": "ash843af8",
@@ -2504,7 +2477,7 @@
     },
     "content/items/repair_hammer.tres": {
       "agent": "ivy9f49c8",
-      "at": "2026-08-22T03:10:17+00:00",
+      "at": "2026-08-22T03:10:30+00:00",
       "hash": "f7425f9f187d87ac07d992422fb64b89b8f3a70915226ab2f48c6e02f6355be7",
       "task": "F-510",
       "token": "CODEX_SESSION_ID:01a0276a-92a7-79c0-8d76-3a6319f124d1"
@@ -3420,11 +3393,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/grassland_turf.tres": {
-      "agent": "galeb0891e",
-      "at": "2026-08-21T19:56:27+00:00",
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
       "hash": "9335acca66dc6845efdf23e1743b0e71068b1662c7714904b528fc623b9a5696",
-      "task": "F-451",
-      "token": "CLAUDE_CODE_SESSION_ID:496677a1-162a-4bfd-a57f-5ef81aacc0df"
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
     "content/scatter/heath_scrub.tres": {
       "agent": "tine0bda72",
@@ -3518,11 +3491,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/marsh_reeds.tres": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:16:32+00:00",
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
       "hash": "d4a12f55f75d41af75df254c8e4113dcd24110a6599c28928edbe5c949d09f3f",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
     "content/scatter/mire_growth.tres": {
       "agent": "kilnf96279",
@@ -4239,11 +4212,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
     "tools/blender/build_mire_map_kit.py": {
-      "agent": "moss7f4dd3",
-      "at": "2026-08-22T01:12:11+00:00",
-      "hash": "d642887bf1169b0a96ff2f082d44d4a9fe5d81e37c2e990092bfbdebf2452028",
-      "task": "F-486",
-      "token": "CLAUDE_CODE_SESSION_ID:7a55bc0f-4fc2-48cf-9c62-318569fb449e"
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
+      "hash": "42853daaf83aff2fd25fe588158b56e0286d629b80685eb13d8898a0c99273df",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
     "tools/blender/build_powerup_icons.py": {
       "agent": "gale43d16e",
@@ -4574,6 +4547,13 @@
       "task": "F-413",
       "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
+    "tools/mapgen/hollow_layout.py": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
+      "hash": "d838b53639f10698161e40c8ce98d391aec5a46c9370c0f8768ebd5d930c45e0",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
     "tools/menu_focus_check.gd": {
       "agent": "kilnd3a089",
       "at": "2026-08-21T07:29:17+00:00",
@@ -4729,11 +4709,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:80d76563-dcca-426a-ad54-2909c9fa380a"
     },
     "tools/settings_check.gd": {
-      "agent": "galedc2f76",
-      "at": "2026-08-22T02:37:35+00:00",
-      "hash": "3dab624752442fa457b051dc232ab58cef089f17f0cd93ba60e4773abc43d696",
-      "task": "F-503",
-      "token": "CODEX_SESSION_ID:01a02752-64f4-7b03-88cb-24234c204f6e"
+      "agent": "ivy2314d8",
+      "at": "2026-08-22T03:12:20+00:00",
+      "hash": "c935adc5e37784554bb16f78f857fccddcdedc0ce6f50d48b1af6f23e8747431",
+      "task": "F-512",
+      "token": "CODEX_SESSION_ID:01a0276f-2e99-7a63-b23a-45d0077b62f6"
     },
     "tools/settings_render_check.gd": {
       "agent": "coil995fd7",
@@ -4743,15 +4723,15 @@
       "token": "CLAUDE_CODE_SESSION_ID:44f62a84-7862-455b-a776-2e1c5eb11d39"
     },
     "tools/settings_screen_check.gd": {
-      "agent": "galedc2f76",
-      "at": "2026-08-22T02:37:35+00:00",
-      "hash": "ab52ea66243ba04ee3bddb7a0508ab64785deb670c5453e9afb47cda2e223dcd",
-      "task": "F-503",
-      "token": "CODEX_SESSION_ID:01a02752-64f4-7b03-88cb-24234c204f6e"
+      "agent": "ivy2314d8",
+      "at": "2026-08-22T03:12:20+00:00",
+      "hash": "75d8d51b3cdfc0501d846a38ac47b18e988af981d0d9cb2cd820d9e60687cf69",
+      "task": "F-512",
+      "token": "CODEX_SESSION_ID:01a0276f-2e99-7a63-b23a-45d0077b62f6"
     },
     "tools/setup_tool_content.gd": {
       "agent": "ivy9f49c8",
-      "at": "2026-08-22T03:10:17+00:00",
+      "at": "2026-08-22T03:10:30+00:00",
       "hash": "0af5b75eb66e158727e374150c95732a4a24be83c851d9bb6f4d0293b114b809",
       "task": "F-510",
       "token": "CODEX_SESSION_ID:01a0276a-92a7-79c0-8d76-3a6319f124d1"
@@ -4849,7 +4829,7 @@
     },
     "tools/viewmodel_check.gd": {
       "agent": "ivy9f49c8",
-      "at": "2026-08-22T03:10:17+00:00",
+      "at": "2026-08-22T03:10:30+00:00",
       "hash": "4846b3531b6b3db37cec4703007dae12fc22963cf4da5ae4833d191a94f218e2",
       "task": "F-510",
       "token": "CODEX_SESSION_ID:01a0276a-92a7-79c0-8d76-3a6319f124d1"
@@ -4911,11 +4891,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "ui/frontend/graphics_settings_page.gd": {
-      "agent": "galedc2f76",
-      "at": "2026-08-22T02:37:35+00:00",
-      "hash": "715e4aa75689d873cb8a66354d0172e5637f9744f1107fa5db420036caaee7f9",
-      "task": "F-503",
-      "token": "CODEX_SESSION_ID:01a02752-64f4-7b03-88cb-24234c204f6e"
+      "agent": "ivy2314d8",
+      "at": "2026-08-22T03:12:20+00:00",
+      "hash": "516b3a9a1b5ce213e7c44ab437bedd227e5b286537e213ecfde00d05db58c4a2",
+      "task": "F-512",
+      "token": "CODEX_SESSION_ID:01a0276f-2e99-7a63-b23a-45d0077b62f6"
     },
     "ui/frontend/graphics_settings_page.gd.uid": {
       "agent": "flinta92725",
@@ -4967,18 +4947,18 @@
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "ui/hud/focus_prompt.gd": {
-      "agent": "birche6b40e",
-      "at": "2026-08-21T23:26:09+00:00",
-      "hash": "06be92b0d25529415fb97d6ded5c5c8757c9725e687df097efdc6eb240d5df27",
-      "task": "3.19",
-      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
+      "hash": "77151cb9705b9c062671c27a37fa2fc9e1c291328d690f6dafe0ec9cf8889e7d",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
     "ui/hud/guide_hud.gd": {
-      "agent": "birche6b40e",
-      "at": "2026-08-21T23:26:09+00:00",
-      "hash": "a1479a0e21bbbdf0a37a2b37d71cb9aab520812eef7d6ddf2107a875e4ff0208",
-      "task": "3.19",
-      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
+      "hash": "b51a047cc418e5088a30ef37b9d1c16fa4179c78d92c01e5455cd17c38fcd648",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
     "ui/hud/target_health_hud.gd": {
       "agent": "pike3c5846",
@@ -5155,6 +5135,13 @@
       "task": "F-294",
       "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
     },
+    "world/gen/layouts/playtest_hollow.json": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:10:53+00:00",
+      "hash": "374cae1c3968f8aae3395a38684b04e1fc3559435098180083dca6f12d630776",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
     "world/gen/poi_def.gd": {
       "agent": "tine0bda72",
       "at": "2026-08-22T01:38:49+00:00",
@@ -5240,7 +5227,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:120f1976-6c96-46a1-8784-38dd75780df4"
     }
   },
-  "rev": 1239,
+  "rev": 1259,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -11086,11 +11073,9 @@
       "title": "Slope-spawned scatter props float above terrain"
     },
     "F-510": {
-      "done_at": "2026-08-22T03:10:17+00:00",
-      "done_by": "ivy9f49c8",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "done",
+      "status": "in_flight",
       "tier": "F",
       "title": "Repair hammer viewmodel fills the right third of an ultrawide frame"
     },
@@ -11104,11 +11089,20 @@
       "title": "Playtest still shows no visible chests around the map after F-367/F-504"
     },
     "F-512": {
+      "done_at": "2026-08-22T03:12:20+00:00",
+      "done_by": "ivy2314d8",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Fullscreen resolution should control internal 3D render resolution for performance instead of being disabled"
+    },
+    "F-513": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "graphics_quality_check fails at clean HEAD because frontend has no shadow-casting sun"
     }
   },
   "version": 1

@@ -159,13 +159,13 @@ func _run() -> void:
 	check(resolution_dropdown != null, "the live DISPLAY page exposes the resolution control")
 	if resolution_dropdown != null:
 		settings.call("set_window_mode", 1)
-		check(resolution_dropdown.disabled,
-			"resolution is disabled in borderless mode, where the monitor's native size wins")
+		check(not resolution_dropdown.disabled,
+			"resolution stays enabled in borderless mode as a 3D performance control")
 		settings.call("set_window_mode", 2)
-		check(resolution_dropdown.disabled,
-			"resolution is disabled in fullscreen mode, where the monitor's native size wins")
+		check(not resolution_dropdown.disabled,
+			"resolution stays enabled in fullscreen mode as a 3D performance control")
 		settings.call("set_window_mode", 0)
-		check(not resolution_dropdown.disabled, "resolution is enabled again in windowed mode")
+		check(not resolution_dropdown.disabled, "resolution remains enabled in windowed mode")
 	for entry: Array in [
 		[0, 90.0, "90°", "field of view"],
 		[1, 1.25, "125%", "brightness"],

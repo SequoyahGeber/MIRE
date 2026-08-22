@@ -149,6 +149,20 @@ func _check_graphics(settings: Node, gfx: Node) -> void:
 	if DisplayServer.get_name() != "headless":
 		check(DisplayServer.window_get_size() == Vector2i(1152, 648),
 			"windowed resolution reaches the live window (got: %s)" % DisplayServer.window_get_size())
+		check(is_equal_approx(root.scaling_3d_scale, 1.0),
+			"windowed resolution does not add a fullscreen 3D render cap")
+		settings.call("set_resolution_index", 3)
+		settings.call("set_window_mode", 1)
+		await process_frame
+		await process_frame
+		var native_size: Vector2i = DisplayServer.screen_get_size(
+			DisplayServer.window_get_current_screen())
+		var expected_scale: float = minf(minf(
+			1920.0 / float(native_size.x), 1080.0 / float(native_size.y)), 1.0)
+		check(is_equal_approx(root.scaling_3d_scale, expected_scale),
+			"fullscreen 1920x1080 selection caps live 3D render scale (got %.4f, expected %.4f)"
+			% [root.scaling_3d_scale, expected_scale])
+		settings.call("set_window_mode", 0)
 	check(not bool(settings.call("vsync_enabled")), "VSync is read back")
 	check(int(settings.call("fps_cap")) == 120 and Engine.max_fps == 120,
 		"FPS cap reaches Engine.max_fps")

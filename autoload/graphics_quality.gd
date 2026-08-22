@@ -167,6 +167,10 @@ var dynamic_scale_enabled: bool = false
 ## 0 = follow the panel's refresh rate.
 var dynamic_scale_target_fps: float = 0.0
 var _dynamic_elapsed: float = 0.0
+## Player-selected fullscreen render-resolution ceiling. The native window and 2D UI stay at the
+## display size; only the 3D viewport is scaled. A quality preset may choose a lower scale, but it
+## must never silently render above the resolution the player selected for performance.
+var _render_scale_limit: float = 1.0
 
 
 func _ready() -> void:
@@ -191,8 +195,15 @@ func set_dynamic_scale(enabled: bool, target_fps: float = 0.0) -> void:
 	dynamic_scale_target_fps = maxf(0.0, target_fps)
 	_dynamic_elapsed = 0.0
 	if not enabled:
-		get_viewport().scaling_3d_scale = _preset_render_scale()
+		get_viewport().scaling_3d_scale = _maximum_render_scale()
 	_update_processing()
+
+
+func set_render_scale_limit(limit: float) -> void:
+	_render_scale_limit = clampf(limit, 0.1, 1.0)
+	var maximum: float = _maximum_render_scale()
+	if not dynamic_scale_enabled or get_viewport().scaling_3d_scale > maximum:
+		get_viewport().scaling_3d_scale = maximum
 
 
 func set_player_overrides(new_ssao_override: int, new_brightness: float) -> void:
@@ -217,11 +228,16 @@ func _dynamic_step(delta: float) -> void:
 		scale -= DYNAMIC_STEP_DOWN
 	elif fps >= target * 0.99:
 		scale += DYNAMIC_STEP_UP
-	get_viewport().scaling_3d_scale = clampf(scale, DYNAMIC_SCALE_MIN, _preset_render_scale())
+	var maximum: float = _maximum_render_scale()
+	get_viewport().scaling_3d_scale = clampf(scale, minf(DYNAMIC_SCALE_MIN, maximum), maximum)
 
 
 func _preset_render_scale() -> float:
 	return float((PRESETS[preset] as Dictionary).get("render_scale", 1.0))
+
+
+func _maximum_render_scale() -> float:
+	return minf(_preset_render_scale(), _render_scale_limit)
 
 
 func _update_processing() -> void:
@@ -235,7 +251,8 @@ func apply(new_preset: Preset) -> void:
 	_applied_scene_id = 0 if scene == null else scene.get_instance_id()
 	_update_processing()
 
-	get_viewport().scaling_3d_scale = float(spec.get("render_scale", 1.0))
+	get_viewport().scaling_3d_scale = minf(
+		float(spec.get("render_scale", 1.0)), _render_scale_limit)
 	# Screen-space size, in pixels, below which the renderer takes the next LOD down. The engine
 	# default is 1.0 — near enough to "only switch when it cannot possibly show" — which is the
 	# right default for a machine that can afford it and the wrong one for the machine this game

@@ -678,6 +678,29 @@ func _apply_display() -> void:
 			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
 		2:
 			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN)
+	_apply_fullscreen_render_resolution()
+
+
+func _apply_fullscreen_render_resolution() -> void:
+	var gfx: Node = get_node_or_null(^"/root/GraphicsQuality")
+	if gfx == null or not gfx.has_method(&"set_render_scale_limit"):
+		return
+	if _window_mode == 0:
+		gfx.call(&"set_render_scale_limit", 1.0)
+		return
+	var screen: int = DisplayServer.window_get_current_screen()
+	var native_size: Vector2i = DisplayServer.screen_get_size(screen)
+	var target_size: Vector2i = RESOLUTIONS[_resolution_index]
+	if native_size.x <= 0 or native_size.y <= 0:
+		gfx.call(&"set_render_scale_limit", 1.0)
+		return
+	# Viewport 3D scaling is uniform. On a 16:10 Mac display, selecting 1920x1080 therefore renders
+	# at no more than either requested dimension (typically 1728x1080), rather than stretching or
+	# cropping the game to force a 16:9 buffer.
+	var scale: float = minf(
+		float(target_size.x) / float(native_size.x),
+		float(target_size.y) / float(native_size.y))
+	gfx.call(&"set_render_scale_limit", minf(scale, 1.0))
 
 
 func _apply_bus_volume(bus_name: StringName, linear: float) -> void:

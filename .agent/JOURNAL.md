@@ -9328,3 +9328,66 @@ Notes along the way:
 Files: `systems/loot/chest.gd`, `tools/chest_placement_check.gd`
 
 Commit at time of writing: `bdc02378`
+
+---
+
+### REOPEN · F-510 · ivy9f49c8 · 2026-08-22T03:10:29+00:00
+
+**Repair hammer viewmodel fills the right third of an ultrawide frame**
+
+Reopened (was marked done 2026-08-22 by ivy9f49c8).
+
+Fix and visual verification are complete, but the Godot editor opened before shipping; must close editor, confirm repair_hammer.tres retained the new grip, rerun the focused check, then ship.
+
+Commit at time of writing: `f515c98a`
+
+---
+
+### HANDOFF · F-510 · ivy9f49c8 · 2026-08-22T03:10:30+00:00
+
+**Repair hammer viewmodel fills the right third of an ultrawide frame**
+
+Fix complete in working tree: repair_hammer scale 0.235, offset (0.205,-0.425,-0.59); setup table aligned; viewmodel_check resolves frontend world, dismisses picker, captures 16:9+32:9, pins repair_hammer identity and scale <=0.25. Forward+ after frame inspected and good; all relevant checks pass, only tracked F-481 apple CHOP failure remains. BLOCKER: Godot editor pid 99018 opened before commit. Close it, confirm the .tres values remain, rerun viewmodel_check, then done/ship. Do not edit while open.
+
+Files: `content/items/repair_hammer.tres`, `tools/setup_tool_content.gd`, `tools/viewmodel_check.gd`
+
+Commit at time of writing: `f515c98a`
+
+---
+
+### HANDOFF · F-508 · birchf37d06 · 2026-08-22T03:10:53+00:00
+
+**Playtest Hollow presentation is visually noisy and obscures traversal**
+
+Shared asset and HUD source fixes are implemented: reeds/seedheads shorter and sparser per asset, deadwood brighter, guide objective and focus prompt compact. Affected GLBs rebuilt/imported and authored Hollow derivatives regenerated once, but the screenshot was correctly re-identified as the shipped procedural island. Remaining: with Godot editor CLOSED, tune live content/scatter/marsh_reeds.tres and grassland_turf.tres scale/coverage, regenerate any required evidence, run focus_prompt_check/guide_check/procedural_look_probe, inspect the three Forward+ captures, then resolve/ship. Do not edit the claimed .tres while editor is open. hollow_layout.py was restored to its original authored density; regenerate Hollow derived JSON/map once more only if retaining the shared asset update there.
+
+Files: `tools/blender/build_mire_map_kit.py`, `tools/mapgen/hollow_layout.py`, `ui/hud/guide_hud.gd`, `ui/hud/focus_prompt.gd`, `assets/environment/catalog.json`, `assets/environment/exports/stump_a.glb`, `assets/environment/exports/stump_b.glb`, `assets/environment/exports/stump_c.glb`, `assets/environment/exports/stump_d.glb`, `assets/environment/exports/fallen_log_a.glb`, `assets/environment/exports/fallen_log_b.glb`, `assets/environment/exports/fallen_log_c.glb`, `assets/environment/exports/fallen_log_d.glb`, `assets/environment/exports/grass_seedhead_a.glb`, `assets/environment/exports/grass_seedhead_b.glb`, `assets/environment/exports/grass_seedhead_c.glb`, `assets/environment/exports/grass_seedhead_d.glb`, `assets/environment/exports/reeds_a.glb`, `assets/environment/exports/reeds_b.glb`, `assets/environment/exports/reeds_c.glb`, `assets/environment/exports/reeds_d.glb`, `world/gen/layouts/playtest_hollow.json`, `assets/source/playtest_hollow.blend`, `assets/maps/playtest_hollow.glb`, `assets/maps/preview/playtest_hollow_preview.png`, `content/scatter/marsh_reeds.tres`, `content/scatter/grassland_turf.tres`
+
+Commit at time of writing: `f515c98a`
+
+---
+
+### REOPEN · F-510 · ivy9f49c8 · 2026-08-22T03:12:09+00:00
+
+**Repair hammer viewmodel fills the right third of an ultrawide frame**
+
+Reopened (was marked done ? by ?).
+
+Editor is now closed; final verification and shipment in progress.
+
+Commit at time of writing: `f515c98a`
+
+---
+
+### DONE · F-512 · ivy2314d8 · 2026-08-22T03:12:20+00:00
+
+**Fullscreen resolution should control internal 3D render resolution for performance instead of being disabled**
+
+Fullscreen Resolution now caps internal 3D render size while native macOS fullscreen and UI stay sharp. Presets/dynamic scaling respect the cap. Focused UI and live Metal settings checks pass; clean-HEAD graphics harness defect filed as F-513.
+
+Notes along the way:
+- Display resolution is client-local presentation. In fullscreen, keep the macOS native window and cap uniform 3D render scale so neither rendered dimension exceeds the selected target; UI remains native. Quality presets may render lower, never higher, and dynamic resolution steps below the same cap.
+
+Files: `autoload/graphics_quality.gd`, `autoload/settings_service.gd`, `ui/frontend/graphics_settings_page.gd`, `tools/settings_check.gd`, `tools/settings_screen_check.gd`
+
+Commit at time of writing: `f515c98a`

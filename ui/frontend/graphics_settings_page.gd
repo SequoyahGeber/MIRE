@@ -55,10 +55,6 @@ func refresh() -> void:
 		control.set_block_signals(false)
 		if control is FocusRingSlider:
 			(control as FocusRingSlider).refresh_readout()
-	# Borderless and exclusive fullscreen are always the monitor's native pixel size. Leaving this
-	# control enabled there accepted and saved a choice the runtime deliberately ignored (F-503).
-	if _resolution_dropdown != null:
-		_resolution_dropdown.disabled = int(_settings.call("window_mode")) != 0
 
 
 func _build() -> void:
@@ -72,7 +68,7 @@ func _build() -> void:
 		resolutions.append("%d × %d" % [size.x, size.y])
 	var resolution_row: Control = _dropdown_row(
 		"Resolution", resolutions, "resolution_index", "set_resolution_index",
-		"Applied in windowed mode; fullscreen uses the display's native resolution.")
+		"Window size in windowed mode. In fullscreen, sets the 3D render resolution for performance; UI stays native and sharp.")
 	_resolution_dropdown = (_controls.back()[&"control"] as OptionButton)
 	add_child(resolution_row)
 	add_child(_toggle_row("VSync", "vsync_enabled", "set_vsync_enabled",
