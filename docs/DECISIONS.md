@@ -6919,3 +6919,36 @@ is: author a `RangedWeaponDef` keyed to the item itself, set `ammo_item_id` to t
 a real `gravity_scale` so it arcs, and stop. Reach for a new system only when a throwable needs
 something a flight genuinely cannot express (an area effect on impact, a projectile that persists as
 a pickup where it lands). Neither of those is the pinecone.
+
+### D-206 · 2026-08-21 · The ocean's reflections are whitened crest facets, not a specular lobe
+
+Sequoyah: *"maybe we should add some white shading on some of the ocean/water vertices to simulate
+reflections."* The reference for this is the standard low-poly-water look — the base sheet stays one
+flat colour and individual wave-top facets are lightened toward white, so the sea reads as catching
+the sky rather than as a painted slab.
+
+**It is done in ALBEDO, never in ROUGHNESS/SPECULAR.** `world/environment/water_low_poly.gdshader`
+exists because D-184 put the sea in the same matte facet language as the ground; the very first
+water pass was glossy and semi-transparent and read as a different renderer sitting next to the
+island. A specular highlight would reintroduce exactly that. `ROUGHNESS` stays 1.0 and the glint is
+a `mix()` toward `glint_color` on the flat facet colour.
+
+**Three gates, and all three are load-bearing.** The vertex stage exports the vertex's own position
+within its wave (`crest`), a slow large-scale drifting field (`patch`), and a fixed per-position
+hash (`facet_hash`), all `flat` so a facet lights as a unit. A facet glints only if it is near the
+top of its wave, only if the drifting field is currently over it, and only if its jittered threshold
+lets it. The first implementation had only the first two gates and it was wrong in a way worth
+recording: the waves are two clean sines on a regular 180x180 grid, so every crest in a row crossed
+the threshold at the same instant and the ocean rendered as a tiled sheet of identical white
+rectangles. The hash is what turns a tablecloth into scattered glints.
+
+**The sun test is done in the ground plane, not against the facet normal.** The waves are ±0.18 m
+over ~7.8 m quads, so every facet normal is within a few degrees of straight up and `dot(normal,
+sun)` is effectively constant across the whole sea. What actually varies is which way a facet leans
+horizontally, so the shader compares `facet_world.xz` against `sun_dir.xz` — the sunward face of a
+wave catches, the back of it does not.
+
+Evidence: `tools/ocean_glint_shot.gd` renders three framed views at different points in the drift
+cycle into `assets/audit/terrain/ocean_glint_*.png`. Read them together, not one at a time: at eye
+height on the shore the effect is deliberately a sparkle band toward the horizon (the near facets
+are foreshortened almost to nothing), and only the raised shot shows the scatter across the sheet.

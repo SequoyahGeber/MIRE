@@ -34,16 +34,70 @@ uniform float wave_height = 0.18;
 uniform float wave_length = 14.0;
 uniform float wave_speed = 0.8;
 
+// Crest glint. The reference look is the standard low-poly-water trick: the base sheet stays one
+// flat colour, and the facets that happen to sit on top of a wave AND happen to be tilted toward
+// the sun get lightened toward white, so the sea reads as catching the sky instead of as a painted
+// slab. Deliberately albedo, not a specular lobe — ROUGHNESS stays 1.0 and the material language
+// stays the matte facet look the ground uses (D-184). A gloss highlight here is the exact thing the
+// first water pass got wrong.
+//
+// It is gated three ways so that MOST of the water is still plain dark blue: only the top of a
+// crest passes `crest_lo`, only facets tilted toward `sun_dir` pass the glint term, and a slow
+// large-scale patch field mutes whole stretches of sea at a time. Without the patch field every
+// crest on the grid lights up identically and the ocean turns into a striped tablecloth.
+uniform vec3 glint_color : source_color = vec3(0.86, 0.92, 0.96);
+uniform float glint_strength : hint_range(0.0, 1.0) = 0.75;
+uniform float crest_lo : hint_range(0.0, 1.0) = 0.48;
+uniform float crest_hi : hint_range(0.0, 1.0) = 0.98;
+uniform vec3 sun_dir = vec3(0.45, 0.78, 0.44);
+
+varying flat float crest;
+varying flat float patch;
+varying flat float facet_hash;
+varying vec3 world_pos;
+
 void vertex() {
 	vec3 world = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	float phase_a = (world.x * 0.9 + world.z * 0.45) * (TAU / wave_length) + TIME * wave_speed;
 	float phase_b = (world.z * 0.8 - world.x * 0.35) * (TAU / (wave_length * 1.7))
 		+ TIME * wave_speed * 1.3;
-	VERTEX.y += (sin(phase_a) * 0.6 + sin(phase_b) * 0.4) * wave_height;
+	float disp = sin(phase_a) * 0.6 + sin(phase_b) * 0.4;
+	VERTEX.y += disp * wave_height;
+
+	// -1..1 -> 0..1: how high this vertex sits within its own wave, independent of wave_height.
+	crest = disp * 0.5 + 0.5;
+	// Two very long, slowly drifting waves crossed at an angle — period ~200 m against the 14 m
+	// wave length, so it reads as weather moving over the water rather than as a second wave.
+	patch = sin(world.x * 0.031 + TIME * 0.11) * sin(world.z * 0.027 - TIME * 0.09) * 0.5 + 0.5;
+	// A fixed 0..1 value per grid position. The waves are two clean sines on a regular grid, so
+	// without this every crest in a row qualifies at the same instant and the sea renders as a
+	// tiled sheet of identical white rectangles — which is exactly what the first version did.
+	// Jittering the threshold and the patch gate per facet scatters the glints instead.
+	facet_hash = fract(sin(dot(floor(world.xz), vec2(12.9898, 78.233))) * 43758.5453);
+	world_pos = world;
 }
 
 void fragment() {
-	ALBEDO = albedo_color;
-	ROUGHNESS = 1.0;
+	// The facet normal twice: once in view space for lighting (VERTEX is view space here), once in
+	// world space so the glint can be tested against a fixed sun direction that does not swing with
+	// the camera. Same screen-space-derivative trick either way — the mesh carries no useful normals.
 	NORMAL = normalize(cross(dFdy(VERTEX), dFdx(VERTEX)));
+	vec3 facet_world = normalize(cross(dFdx(world_pos), dFdy(world_pos)));
+	facet_world *= sign(facet_world.y);
+
+	// The waves are only +/-0.18 m over ~8 m quads, so every facet normal is within a few degrees
+	// of straight up and a normal-vs-sun dot is effectively constant. What DOES vary across a wave
+	// is which way the facet leans horizontally, so the sun test is done in the ground plane: the
+	// sunward face of a wave catches, the back of it does not.
+	vec2 lean = facet_world.xz;
+	float lit = dot(normalize(lean + vec2(1e-5)), normalize(sun_dir.xz));
+	lit = smoothstep(-0.2, 0.9, lit) * smoothstep(0.002, 0.02, length(lean));
+
+	float thresh = crest_lo + facet_hash * 0.30;
+	float glint = smoothstep(thresh, min(thresh + 0.35, crest_hi), crest)
+		* smoothstep(0.38, 0.88, patch * (0.55 + 0.45 * facet_hash))
+		* mix(0.15, 1.0, lit);
+
+	ALBEDO = mix(albedo_color, glint_color, glint * glint_strength);
+	ROUGHNESS = 1.0;
 }
