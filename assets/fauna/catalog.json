@@ -26,6 +26,32 @@
         "death"
       ],
       "note": "Brown bog fowl. Horizontal ovoid body on short scaly legs, S-neck carried forward, tail up at 42 degrees, comb and wattles the only saturated colour. The walk is the real head-bob: the head holds still in space while the body advances under it."
+    },
+    {
+      "id": "deer",
+      "family": "fauna",
+      "export": "exports/deer.glb",
+      "size_m": [
+        0.429,
+        1.71,
+        1.835
+      ],
+      "height_m": 1.835,
+      "player_fraction": 1.019,
+      "polygons": 1306,
+      "materials": [
+        "MIRE_Bone",
+        "MIRE_Cloth",
+        "MIRE_Leather",
+        "MIRE_LeatherDark"
+      ],
+      "clips": [
+        "idle-loop",
+        "walk-loop",
+        "flee",
+        "death"
+      ],
+      "note": "Red deer stag. Shallow barrel slung high on long thin legs \u2014 the leggy proportion is the whole silhouette. Neck at 45 degrees with a stag's mane, wedge head, antlers sweeping back then tines forward to the player's eye line. Flee is a bound, not a gallop, with the pale rump patch flagged."
     }
   ]
 }

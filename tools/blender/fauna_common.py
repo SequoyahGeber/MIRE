@@ -30,8 +30,11 @@ Sizes come from the real animals, not from what reads nicely in isolation:
   songbird  0.14 m. Small enough that the flock, not the bird, is the silhouette.
   boar      0.90 m at the shoulder, 1.5 m long. Front-heavy: the shoulder hump is
             the tallest point and the rump falls away behind it.
-  deer      1.20 m at the shoulder, 1.9 m long. Red deer stag — shoulder just
-            below the player's chest, antlers reaching near eye level.
+  deer      1.15 m at the shoulder, 1.55 m to the top of the head, 1.78 m to the
+            ANTLER TIPS, 2.0 m long. Red deer stag. The declared height is the
+            antler tips because that is what the bounds measure — the antlers
+            reach the player's eye line, which is the whole point of the animal
+            reading as big. Shoulder sits just below the player's chest.
   cow       1.30 m at the shoulder, 2.4 m long. Highland type: long horns, heavy
             fringe, shaggy coat. Taller than the player at the horn tips.
 
@@ -90,7 +93,7 @@ SPECIES_HEIGHT_M = {
     "hare": 0.30,
     "chicken": 0.42,
     "boar": 0.90,
-    "deer": 1.55,
+    "deer": 1.78,
     "cow": 1.45,
 }
 

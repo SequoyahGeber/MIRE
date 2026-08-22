@@ -39,7 +39,7 @@ const SPECIES: Dictionary = {
 	&"hare": 0.30,
 	&"chicken": 0.42,
 	&"boar": 0.90,
-	&"deer": 1.55,
+	&"deer": 1.78,
 	&"cow": 1.45,
 }
 const HEIGHT_TOLERANCE: float = 0.12
