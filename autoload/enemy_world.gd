@@ -41,6 +41,10 @@ const NAV_AGENT_HEIGHT_M: float = 0.7
 const NAV_MAX_CLIMB_M: float = 0.6
 const NAV_MAX_SLOPE_DEG: float = 46.0
 const NAV_CELL_SIZE_M: float = 0.25
+## F-494: `cell_height` was left at the engine default 0.25, which quantised `agent_height` up to
+## 0.75 and `agent_max_climb` down to 0.5 and made the engine warn on every bake. 0.1 divides both
+## exactly, so the baked mesh is built for the agent we actually asked for.
+const NAV_CELL_HEIGHT_M: float = 0.1
 ## Grace before the first bake/spawn, so the level has entered the tree. Short enough that crawlers
 ## are there by the time you have finished looking around.
 const BOOTSTRAP_DELAY_SEC: float = 0.75
@@ -714,6 +718,7 @@ func bake_navigation() -> Node:
 	nav_mesh.agent_max_climb = NAV_MAX_CLIMB_M
 	nav_mesh.agent_max_slope = NAV_MAX_SLOPE_DEG
 	nav_mesh.cell_size = NAV_CELL_SIZE_M
+	nav_mesh.cell_height = NAV_CELL_HEIGHT_M
 	nav_mesh.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
 
 	var geometry := NavigationMeshSourceGeometryData3D.new()

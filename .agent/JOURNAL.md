@@ -8941,3 +8941,39 @@ Commit at time of writing: `cad53c1`
 Completed.
 
 Commit at time of writing: `cad53c1`
+
+---
+
+### DONE · F-490 · tine0bda72 · 2026-08-22T01:16:32+00:00
+
+**Eleven nature assets are exported and catalogued but never placed by map generation**
+
+All eleven unused nature assets now reach a generated world; new forage pickup kit, seven items and definitions, three new scatter homes, and a coverage check
+
+Files: `tools/blender/build_forage_pickups.py`, `tools/blender/render_item_icons.py`, `content/items/herb.tres`, `content/items/wild_onion.tres`, `content/items/honey.tres`, `content/items/resin.tres`, `content/items/clay.tres`, `content/items/peat.tres`, `content/items/poison_berry.tres`, `content/harvestables/medicinal_herb.tres`, `content/harvestables/wild_onion.tres`, `content/harvestables/honeycomb.tres`, `content/harvestables/resin_node.tres`, `content/harvestables/clay_deposit.tres`, `content/harvestables/peat_deposit.tres`, `content/harvestables/poison_berry_bush.tres`, `systems/harvesting/harvest_library.gd`, `content/scatter/grassland_meadow.tres`, `content/scatter/heath_turf.tres`, `content/scatter/forest_floor.tres`, `content/scatter/birchwood_floor.tres`, `content/scatter/forest_deadwood.tres`, `content/scatter/birchwood_deadwood.tres`, `content/scatter/highland_pines.tres`, `content/scatter/forest_canopy.tres`, `content/scatter/shore_beach.tres`, `content/scatter/marsh_floor.tres`, `content/scatter/marsh_reeds.tres`, `content/scatter/forest_undergrowth.tres`, `content/scatter/heath_scrub.tres`, `content/scatter/cliff_rubble.tres`, `content/scatter/highland_steps.tres`, `content/scatter/shore_shallows.tres`, `content/scatter/marsh_canopy.tres`
+
+Commit at time of writing: `3662f83`
+
+---
+
+### DONE · F-493 · tine0bda72 · 2026-08-22T01:38:49+00:00
+
+**Procedural islands have no ruins: the environment kit's ruin walls, columns and arches are only ever placed by the two authored layouts**
+
+Procedural islands build ruined halls from the ruin kit, via a PoiDef.structure_id hook new structures can reuse
+
+Files: `world/gen/ruin_site.gd`, `world/gen/poi_structures.gd`, `world/gen/poi_def.gd`, `world/gen/procedural_world.gd`, `content/poi/ruins.tres`, `tools/ruin_site_check.gd`, `tools/ruin_look_probe.gd`, `tools/nature_asset_coverage_check.gd`
+
+Commit at time of writing: `54fc325`
+
+---
+
+### DONE · F-494 · dusk544993 · 2026-08-22T01:39:40+00:00
+
+**EnemyWorld's navmesh bake segfaults Godot in a worker thread — every headless check that reaches bootstrap crashes**
+
+One missing line: nav_mesh.cell_height. Its absence quantised the agent params and segfaulted Godot on a NavigationServer worker thread a few ms after every bake, killing effectively every headless check ~5s in. A/B verified on the single line; four previously-crashing checks now exit 0.
+
+Files: `autoload/enemy_world.gd`
+
+Commit at time of writing: `9a57940`
