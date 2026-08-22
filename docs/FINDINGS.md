@@ -3352,6 +3352,16 @@ the export-time half of the same problem and should be read alongside this.
 
 ## Resolved
 
+### F-517 · The shipped deep-material asset kit omitted its Blender source file even though its generator explicitly saves it — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by pikee95746
+
+**Area:** assets/source · **Severity:** low · **Found:** 2026-08-21 by pikee95746 during commit reconciliation
+
+Commit `1388299a` shipped `tools/blender/build_deep_materials.py`, the deep-material catalog, exports, previews, icons, item resources and harvestable resources, but left `assets/source/deep_materials.blend` untracked. The committed generator explicitly saves that path at the end of a successful build, and every comparable authored kit retains its `.blend` under `assets/source/`. Without it, the source-of-truth set is incomplete even though runtime exports work.
+
+**Resolved 2026-08-22 by pikee95746.** Added `assets/source/deep_materials.blend`, the exact source path written by `tools/blender/build_deep_materials.py`. Blender 5.2.0 LTS opened it successfully in background mode and reported 66 objects across one scene.
+
 ### F-459 · First visit to a location hitches; the second visit to the same place does not — **fixed**
 
 **Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
