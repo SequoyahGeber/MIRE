@@ -7409,3 +7409,30 @@ wetland-only gather that Bog Loaf and the tonics require, while `herb` stays the
 that biome access gates the medicine tree. That is a real design idea and a reason to split them
 later. It is not a reason to ship two identical items now, and whoever splits them should do it as a
 deliberate content decision rather than by discovering the name mismatch and filling the gap.
+
+### D-220 · 2026-08-22 · Fauna are real animal designs, not stylised to the enemy roster
+`docs/FAUNA.md` §6 left this open as taste rather than engineering: *"Do the ordinary six look like
+real animals or like MIRE's stylisation? The enemy roster is stylised. A photo-real cow next to a
+Bloatcap may read wrong."*
+
+Sequoyah, 2026-08-22, asked directly: **"Real animal designs"**.
+
+So the fauna are modelled representationally, from the real species, with real proportions. They are
+not restyled toward the enemy roster.
+
+The contrast with the enemies is accepted and is arguably the point. The ordinary six exist to be a
+baseline of the expected (§2), and a real-looking cow is a stronger baseline than a stylised one —
+the Peat Hog, the Fen Stilt and the Mire-touched read as strange precisely because the animals beside
+them do not. Stylising the ordinary six would flatten the very contrast the roster is built on.
+
+**What this does not mean:** not photorealistic rendering, not high polygon counts. The palette,
+materials and render treatment stay MIRE's — low-poly, flat authored palette, existing tokens. What
+is realistic is the DESIGN: proportion, anatomy, silhouette and motion taken from the real species. A
+red deer is leggy and a highland cow has horns and a fringe because the real animals do, not because
+it suits a look.
+
+**Would change my mind:** seeing the six in-game next to the enemy roster and finding they read as
+imported from another project — this is a judgement Sequoyah made from description rather than from a
+render, and the contact sheet may change it. Also, if the Mire-touched variant (Phase 5) turns out to
+need the ordinary animals to share silhouette language with the enemies for the corruption to read on
+them, that is a mechanical argument this taste call did not consider.

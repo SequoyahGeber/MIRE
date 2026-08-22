@@ -28,6 +28,32 @@
       "note": "Brown bog fowl. Horizontal ovoid body on short scaly legs, S-neck carried forward, tail up at 42 degrees, comb and wattles the only saturated colour. The walk is the real head-bob: the head holds still in space while the body advances under it."
     },
     {
+      "id": "cow",
+      "family": "fauna",
+      "export": "exports/cow.glb",
+      "size_m": [
+        1.38,
+        2.17,
+        1.361
+      ],
+      "height_m": 1.361,
+      "player_fraction": 0.756,
+      "polygons": 1102,
+      "materials": [
+        "MIRE_Bone",
+        "MIRE_FleshFat",
+        "MIRE_Leather",
+        "MIRE_LeatherDark"
+      ],
+      "clips": [
+        "idle-loop",
+        "walk-loop",
+        "flee",
+        "death"
+      ],
+      "note": "Highland cow. A rectangle on short legs \u2014 twice as long as tall, the deliberate opposite of the deer beside it. Horns go OUT then forward then up, spanning wider than the body; the fringe hangs over the eyes; the coat skirt breaks the leg line so it reads heavy and low. Head carried low and grazing, raised only to flee."
+    },
+    {
       "id": "deer",
       "family": "fauna",
       "export": "exports/deer.glb",
