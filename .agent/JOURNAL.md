@@ -10268,3 +10268,99 @@ Slot-machine chest reveal in the world, a shared pickup feed (bottom-left messag
 Files: `ui/loot/chest_ui.gd`, `ui/loot/chest_reel.gd`, `ui/hud/pickup_hud.gd`, `autoload/pickup_feed_service.gd`, `systems/loot/item_drop.gd`, `systems/loot/chest.gd`, `tools/pickup_feed_check.gd`, `tools/stringname_sort_check.gd`, `docs/DELEGATION.md`, `docs/ITEMS.md`, `docs/AUDIO.md`
 
 Commit at time of writing: `2fdb7a9b`
+
+---
+
+### DONE · F-580 · birch1db63e · 2026-08-22T17:42:38+00:00
+
+**30 of 72 powerups are fully inert — the stat name they modify has no consumer**
+
+20 unread powerup stats wired; fall damage and player knockback built; tools/powerup_effects_check.gd added as the standing guard. 4 stats remain PENDING as missing systems, owned by F-585.
+
+Files: `entities/player/player_controller.gd`, `systems/health/player_health.gd`, `autoload/combat_service.gd`, `autoload/ranged_combat_service.gd`, `autoload/haul_service.gd`, `systems/enemies/enemy.gd`, `docs/POWERUPS.md`, `tools/powerup_effects_check.gd`
+
+Commit at time of writing: `cb3197b0`
+
+---
+
+### DONE · F-576 · wick3d4184 · 2026-08-22T17:46:26+00:00
+
+**Twenty-two signals are emitted every run with nothing in the shipped tree connected**
+
+16 dead signals deleted, 5 documented as sole-publisher unfinished features, 1 false positive corrected
+
+Files: `autoload/net_transport.gd`, `autoload/player_net.gd`, `systems/harvesting/harvestable.gd`, `ui/building/build_bar.gd`, `ui/menu_stack.gd`, `autoload/material_warmer.gd`, `world/chunk/nav_baker.gd`, `core/net/net_session.gd`, `ui/frontend/expedition_screen.gd`, `systems/hauling/haulable.gd`, `autoload/combat_service.gd`, `autoload/ranged_combat_service.gd`, `systems/health/player_health.gd`
+
+Commit at time of writing: `7d3274eb`
+
+---
+
+### DONE · F-579 · wick3d4184 · 2026-08-22T17:46:26+00:00
+
+**`agent resolve` stamps "— **fixed**" on every finding it moves, including the three outcomes that are not fixes**
+
+agent resolve --as <outcome>, one shared vocabulary between writer and detector; F-582 guard landed alongside
+
+Files: `.agent/bin/agent`, `tools/harness_check.py`
+
+Commit at time of writing: `7d3274eb`
+
+---
+
+### DONE · F-448 · bram937a51 · 2026-08-22T17:47:46+00:00
+
+**chunk_stream_check's union-of-interest assertions fail at HEAD: neither anchor gets a LOD0 collider or a live Harvestable**
+
+Completed.
+
+Files: `tools/chunk_stream_check.gd`
+
+Commit at time of writing: `7d3274eb`
+
+---
+
+### DONE · F-549 · bram937a51 · 2026-08-22T17:47:46+00:00
+
+**world_contract_check has 3 failures at a clean HEAD — the [shipped] map publishes no ground and no Undergrowth, and the procedural map builds two extraction ships**
+
+Completed.
+
+Files: `tools/world_contract_check.gd`, `ui/frontend/frontend.gd`
+
+Commit at time of writing: `7d3274eb`
+
+---
+
+### DONE · F-561 · bram937a51 · 2026-08-22T17:47:46+00:00
+
+**Every renderer instrument measures the FRONT END and labels it 'the shipped main scene', because ProbeScene.resolve() still trusts run/main_scene**
+
+Completed.
+
+Files: `tools/probe_scene.gd`
+
+Commit at time of writing: `7d3274eb`
+
+---
+
+### DONE · F-562 · bram937a51 · 2026-08-22T17:47:46+00:00
+
+**Six more checks still have no verdict agent verify can read — two render near-miss wording, four print none at all**
+
+Completed.
+
+Files: `tools/steam_check.gd`, `tools/steam_lobby_check.gd`, `tools/crafting_ui_render_check.gd`, `tools/inventory_ui_render_check.gd`, `tools/hollowmere_render_check.gd`, `tools/playtest_hollow_render_check.gd`
+
+Commit at time of writing: `7d3274eb`
+
+---
+
+### DONE · F-564 · bram937a51 · 2026-08-22T17:47:47+00:00
+
+**Ten more tools/ files load run/main_scene expecting a map, and get the front end instead**
+
+Completed.
+
+Files: `tools/_probe_new_grips.gd`, `tools/_probe_food_grip.gd`, `tools/atmosphere_look_shot.gd`, `tools/f410_procedural_sky_probe.gd`, `tools/f356_night_probe.gd`, `tools/grade_probe.gd`, `tools/ground_fog_check.gd`, `tools/procedural_look_probe.gd`, `tools/spawn_ground_probe.gd`, `tools/viewmodel_check.gd`, `tools/ambient_music_check.gd`, `tools/theme_music_check.gd`, `tools/loop_audit_check.gd`
+
+Commit at time of writing: `7d3274eb`
