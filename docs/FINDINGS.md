@@ -3352,6 +3352,47 @@ the export-time half of the same problem and should be read alongside this.
 
 ## Resolved
 
+**AMENDED 2026-08-22 by vane99f1bb — pre-warming was built, twice, and neither version moved the
+number. Do not start from the fix shape above; start from re-checking the premise.**
+
+Implemented as `MaterialPrewarm`: a node under `ProceduralWorld` that waits for
+`ResourceScatterField.assets_warm()`, then draws every cached mesh part once, sub-pixel, a couple per
+frame, in the REAL viewport (a `SubViewport` would compile pipelines for that viewport's state and
+leave the real one to compile its own). Instrumented and confirmed to actually run: **1030 mesh parts
+across 219 assets, `prewarm_complete() == true`, camera present.**
+
+    revisit_probe leg A (cold), 1% low / hitches
+      no prewarm                      226.88 ms / 32
+      prewarm via MeshInstance3D      225.86 ms / 28
+      prewarm via MultiMeshInstance3D 228.22 ms / 29
+
+The second version exists because the first suggested an obvious culprit: `ResourceScatterField` and
+`Undergrowth` draw props through `MultiMeshInstance3D`, and instanced rendering is a different
+pipeline from a single draw — different vertex input, different shader variant — so warming the
+non-instanced variant would compile something the game never uses. That reasoning is still sound; it
+just was not the reason. Both versions are reverted, nothing of them ships, and neither is worth
+re-implementing without a new premise.
+
+**Two candidate explanations, and neither is confirmed.**
+
+1. The sub-pixel draws may never have been rasterized. The pass proves it added the nodes and that a
+   camera existed; it does not prove the GPU drew them. `WARM_SCALE` was tuned to be inside the
+   frustum but under a pixel, and that is a narrow band to hit blind.
+2. The cost may not be materials at all — see below.
+
+**A flaw in the A-B this finding rests on, found while investigating.** The 1% low is the mean of the
+slowest 1% of frames, and the two legs have different window lengths: leg A settles in ~290 frames
+(so its 1% low is the mean of its worst 2) and leg B in ~423 (the mean of its worst 4). Those are not
+the same statistic and the longer window is biased low. **The conclusion survives on the hitch RATE,
+which is length-independent — A hitches on 10.0% of its frames against B's 1.7%, a 6x gap — but any
+future work here should compare hitch rate or total over-budget time, not the 1% low across windows
+of different lengths.** F-459's resolution should be read with that caveat.
+
+**What is still true and worth keeping.** Arrival cost does not track node creation, by a wide margin
+and non-monotonically (14,440 nodes cost 51.13 ms while 508 nodes cost 202.29 ms in one run). Whatever
+leg B has that leg A does not is real and large. This amendment narrows what it is NOT: it is not
+something that drawing every scatter mesh once, in the real viewport, ahead of time, can pre-pay.
+
 ### F-517 · The shipped deep-material asset kit omitted its Blender source file even though its generator explicitly saves it — **fixed**
 
 **Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by pikee95746
