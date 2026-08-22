@@ -10412,3 +10412,51 @@ Twelve Resonances implemented (StatusService + HazardField + ResonanceService), 
 Files: `autoload/status_service.gd`, `autoload/resonance_service.gd`, `systems/combat/hazard_field.gd`, `tools/status_effects_check.gd`, `tools/resonance_check.gd`, `systems/enemies/enemy.gd`, `autoload/haul_service.gd`, `entities/player/player_controller.gd`, `systems/hauling/haulable.gd`, `systems/hauling/haul_math.gd`, `autoload/combat_service.gd`, `autoload/ranged_combat_service.gd`, `systems/health/player_health.gd`
 
 Commit at time of writing: `d86b0e1c`
+
+---
+
+### DONE · F-536 · birch1db63e · 2026-08-22T17:56:28+00:00
+
+**Scattered pickup models are decorative and cannot be collected as loose world loot**
+
+Measured loose loot on the real composer: 152 markers -> 71-86 drops across three seeds, refuting the sparse-placement hypothesis. Added tools/loose_loot_world_check.gd, corrected LooseLootService's 3x-wrong comment. Resolved partly-fixed; the world_model/icon question is F-589 for Sequoyah.
+
+Files: `tools/loose_loot_world_check.gd`, `autoload/loose_loot_service.gd`
+
+Commit at time of writing: `bb20dada`
+
+---
+
+### DONE · F-589 · birch1db63e · 2026-08-22T17:58:09+00:00
+
+**45 items author a world_model and ~30 pickup GLBs exist, but the branch that renders them is unreachable**
+
+Promoted F-585's four stats into powerup_effects_check and added the UNREACHABLE state. F-589 itself stays open — it is a design question for Sequoyah.
+
+Files: `tools/powerup_effects_check.gd`
+
+Commit at time of writing: `36f5fbbb`
+
+---
+
+### DONE · F-588 · wick1c650c · 2026-08-22T17:59:06+00:00
+
+**resource_scatter_check's harvest-yield assertion fails at a clean HEAD**
+
+Not a P0: bisected to b8d8d67c (F-535 autoload registration); the check asserted pre-F-535 direct credit. Rewrote it to walk harvest -> drop -> arm -> [E] -> pack. failures=0. Filed F-590 (persistent loot evicted by the drop budget).
+
+Files: `tools/resource_scatter_check.gd`
+
+Commit at time of writing: `08fe2ddb`
+
+---
+
+### DONE · F-513 · wick3d4184 · 2026-08-22T18:00:59+00:00
+
+**graphics_quality_check fails at clean HEAD because frontend has no shadow-casting sun**
+
+already fixed out-of-band by F-561's probe_scene change; verified windowed and headless at failures=0, resolved --as fixed
+
+Files: `tools/graphics_quality_check.gd`
+
+Commit at time of writing: `08fe2ddb`

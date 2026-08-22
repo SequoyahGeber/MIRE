@@ -204,13 +204,6 @@
       "task": "F-574",
       "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
     },
-    "tools/graphics_quality_check.gd": {
-      "agent": "wick3d4184",
-      "at": "2026-08-22T17:53:00+00:00",
-      "dirty_at_claim": false,
-      "task": "F-513",
-      "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
-    },
     "tools/item_icons_check.gd": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:52:45+00:00",
@@ -223,13 +216,6 @@
       "dirty_at_claim": false,
       "task": "F-575",
       "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
-    },
-    "tools/resource_scatter_check.gd": {
-      "agent": "wick1c650c",
-      "at": "2026-08-22T17:53:48+00:00",
-      "dirty_at_claim": false,
-      "task": "F-588",
-      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
     },
     "tools/station_tier_check.gd": {
       "agent": "wick410d34",
@@ -292,15 +278,6 @@
       "started": "2026-08-22T00:29:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "F-513": {
-      "agent": "wick3d4184",
-      "files": [
-        "tools/graphics_quality_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-22T17:53:00+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
-    },
     "F-574": {
       "agent": "wick410d34",
       "files": [
@@ -324,15 +301,6 @@
       "notes": [],
       "started": "2026-08-22T17:10:26+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:86631555-6ff3-4fdc-a433-ecf3606fbf63"
-    },
-    "F-588": {
-      "agent": "wick1c650c",
-      "files": [
-        "tools/resource_scatter_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-22T17:53:48+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
     }
   },
   "recent": {
@@ -3629,7 +3597,7 @@
     },
     "docs/FINDINGS.md": {
       "agent": "wick1c650c",
-      "at": "2026-08-22T17:57:53+00:00",
+      "at": "2026-08-22T17:58:19+00:00",
       "hash": null,
       "task": "F-588",
       "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
@@ -4745,13 +4713,13 @@
       "token": "CLAUDE_CODE_SESSION_ID:280d7fb3-3816-4517-a003-ea21b2ca6f66"
     },
     "tools/graphics_quality_check.gd": {
-      "agent": "bram937a51",
-      "at": "2026-08-22T08:55:40+00:00",
-      "claimed_at": "2026-08-22T08:52:58+00:00",
+      "agent": "wick3d4184",
+      "at": "2026-08-22T18:00:59+00:00",
+      "claimed_at": "2026-08-22T17:53:00+00:00",
       "dirty_at_claim": false,
       "hash": "89a6fc145c4096f39db25cab5c3d08c6b5a059dc7909a990adfad7b2e27fd8f0",
-      "task": "F-566",
-      "token": "CLAUDE_CODE_SESSION_ID:280d7fb3-3816-4517-a003-ea21b2ca6f66"
+      "task": "F-513",
+      "token": "CLAUDE_CODE_SESSION_ID:707d3291-5871-4e7e-bf72-fba7e3cce355"
     },
     "tools/ground_fog_check.gd": {
       "agent": "bram937a51",
@@ -5211,11 +5179,13 @@
       "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
     "tools/resource_scatter_check.gd": {
-      "agent": "emberf4d564",
-      "at": "2026-08-22T03:04:54+00:00",
-      "hash": "c96c8805b3090337a1999d2eaeeb7e21a901e86ccdcd62f2a074dfe0ff15bd8c",
-      "task": "F-509",
-      "token": "CODEX_SESSION_ID:01a0276b-4bee-7931-9a83-6fd6ab5c5c86"
+      "agent": "wick1c650c",
+      "at": "2026-08-22T17:59:06+00:00",
+      "claimed_at": "2026-08-22T17:53:48+00:00",
+      "dirty_at_claim": false,
+      "hash": "9a45dc5b8d63238365a33f8d9639be7ef269358688d14539e0a640a94f885c59",
+      "task": "F-588",
+      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
     },
     "tools/revisit_probe.gd": {
       "agent": "vane99f1bb",
@@ -5929,7 +5899,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1783,
+  "rev": 1789,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -11840,9 +11810,11 @@
       "title": "Fullscreen resolution should control internal 3D render resolution for performance instead of being disabled \u2014 **fixed**"
     },
     "F-513": {
+      "done_at": "2026-08-22T18:00:59+00:00",
+      "done_by": "wick3d4184",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "graphics_quality_check fails at clean HEAD because frontend has no shadow-casting sun"
     },
@@ -12430,9 +12402,11 @@
       "title": "The Reinforced Workbench is now exactly equal to the bench it replaces, not better"
     },
     "F-588": {
+      "done_at": "2026-08-22T17:59:06+00:00",
+      "done_by": "wick1c650c",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "resource_scatter_check's harvest-yield assertion fails at a clean HEAD"
     },
@@ -12444,6 +12418,13 @@
       "status": "done",
       "tier": "F",
       "title": "45 items author a world_model and ~30 pickup GLBs exist, but the branch that renders them is unreachable"
+    },
+    "F-590": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The ground-drop budget evicts persistent island loot first, oldest-first regardless of persistence"
     }
   },
   "version": 1
