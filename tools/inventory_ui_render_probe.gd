@@ -2,6 +2,13 @@ extends SceneTree
 
 ## Rendered smoke proof for task 2.5. Populates representative stable slots, opens the inventory,
 ## and saves a frame for visual inspection without changing authored content.
+##
+## A PROBE, not a check (F-562). It photographs and asserts nothing: its only non-zero exit is a
+## failed PNG write, which is an I/O fault rather than a verdict about the subject. The verdict is a
+## human looking at the images. It was named `_check.gd`, so `_verify_checks()` — which globs
+## `tools/*_check.gd` — collected it and scored it red for never printing the `failures=N` it was
+## never written to produce. Renaming it takes it out of the suite honestly, the same move F-559
+## made for `enemy_facing_probe.gd` and F-555 for `f410_asset_material_probe.gd`.
 
 const OUTPUT_PATH: String = "/tmp/mire_inventory_ui.png"
 const NARROW_OUTPUT_PATH: String = "/tmp/mire_inventory_ui_narrow.png"

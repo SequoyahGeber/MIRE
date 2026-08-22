@@ -114,4 +114,18 @@ func _finish() -> void:
 		print("all checks passed")
 	else:
 		print("%d check(s) failed" % _failures)
+	# `failures=N`, not "%d check(s) failed" — F-562. `_verify_verdict()` in `.agent/bin/agent`
+	# reads a verdict with `failures\s*=\s*(\d+)` or `\b(\d+)\s+failures?\b`, and
+	# "0 check(s) failed" matches NEITHER: the word "check(s)" sits between the number and the
+	# failure noun, exactly as "functional" did in chunk_stream_check. So this check reported
+	# "missing failures verdict" and went red however green it ran. The human line stays because it
+	# is what a person reading the log wants.
+	#
+	# WHEN STEAM IS NOT RUNNING this verdict is deliberately non-zero rather than green. The
+	# `steamInitEx() succeeded` assertion above already counts that as a failure, and that is the
+	# honest answer: a run without a Steam client proves nothing about Steam, and "could not verify"
+	# must not be indistinguishable from "verified". Same judgement as the headless bails under
+	# F-555/F-556. The `note:` line above says which of the two happened, so a reader is never left
+	# guessing whether the extension is broken or the client is simply closed.
+	print("STEAM_CHECK failures=%d" % _failures)
 	quit(1 if _failures > 0 else 0)

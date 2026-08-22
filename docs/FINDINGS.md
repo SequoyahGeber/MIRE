@@ -2906,7 +2906,20 @@ stops paying 92 seconds a run in the meantime.
 
 ---
 
-### F-562 · Six more checks still have no verdict agent verify can read — two render near-miss wording, four print none at all
+### F-565 · graphics_quality_check asserts raw preset render scales while a user-settings-derived clamp caps them, so it fails on whatever resolution the machine happens to have saved
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-22 by hollowbfcf67
+
+Allocated first, body to follow (F-563's lesson on number collisions). Four failures in
+`tools/graphics_quality_check.gd`, all one cause: `SettingsService._apply_fullscreen_render_resolution()`
+derives a render-scale limit from the saved window mode and resolution, and every preset is clamped
+to it.
+
+---
+
+## Resolved
+
+### F-562 · Six more checks still have no verdict agent verify can read — two render near-miss wording, four print none at all — **fixed**
 
 **Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by bram937a51
 
@@ -2974,7 +2987,74 @@ declared `@verify none` would also solve the probe half honestly.
 
 ---
 
-## Resolved
+**Resolved 2026-08-22 by bram937a51.** **Fixed** by bram937a51, 2026-08-22. Two verdicts added, two files renamed, two given verdicts plus
+F-556's marker. The six are now split the way they should have been split originally.
+
+### The two near-misses — verdict added, and the Steam-absent case decided
+
+`tools/steam_check.gd` and `tools/steam_lobby_check.gd` printed `"%d check(s) failed"`, which
+matches neither verdict pattern because `check(s)` sits between the number and the failure noun —
+the same shape as `chunk_stream_check`'s `"0 functional failure(s)"`. Both now print
+`STEAM_CHECK failures=%d` / `STEAM_LOBBY_CHECK failures=%d` alongside the human line.
+
+**The judgement `steam_check` needed: what its verdict says when Steam is not running.** It is
+deliberately **non-zero**. The `steamInitEx() succeeded` assertion already counts a closed client as
+a failure, and that is the honest answer — a run without a Steam client proves nothing about Steam,
+and "could not verify" must not be indistinguishable from "verified". Same call as the headless
+bails under F-555/F-556. The existing `note: this fails when the Steam client is not running` line
+is what keeps it actionable, so a reader is never left guessing whether the extension is broken or
+the client is simply closed.
+
+Verified on a machine with Steam closed: `STEAM_CHECK failures=1` and `STEAM_LOBBY_CHECK failures=1`,
+both with the note. Both verdicts are now machine-readable, which they never were.
+
+### The four render files — split two and two, on what each one asserts
+
+The test applied per file was the one this finding proposed: **does it assert anything, or does it
+only photograph?**
+
+**Photographs only → renamed to `_probe.gd`** (with `.gd.uid`, and `docs/DELEGATION.md` updated):
+
+- `crafting_ui_render_check.gd` → `crafting_ui_render_probe.gd`
+- `inventory_ui_render_check.gd` → `inventory_ui_render_probe.gd`
+
+Neither has any assertion. Their only non-zero exit is a failed PNG write, which is an I/O fault
+rather than a verdict about the subject; the verdict is a human looking at the images. They were
+collected by `_verify_checks()` purely because of their filenames and scored red for never printing
+a `failures=N` they were never written to produce.
+
+**Asserts a real threshold → kept as a check, given a verdict AND `@verify windowed`:**
+
+- `hollowmere_render_check.gd` — `MINIMUM_FPS = 30.0`
+- `playtest_hollow_render_check.gd` — `MINIMUM_FPS = 50.0`
+
+A frame-rate floor is a genuine assertion, so these belong in the suite. They also measure a frame
+rate, which is meaningless under the dummy rendering driver `--headless` installs — so both carry
+F-556's `@verify windowed` marker (confirmed inside the 40-line window `_verify_needs_window()`
+scans) and now print `HOLLOWMERE_RENDER_CHECK failures=%d` / `PLAYTEST_HOLLOW_RENDER_CHECK
+failures=%d`.
+
+Verified windowed: `HOLLOWMERE_RENDER display=macOS fps=98.2 prop_bodies=697` →
+`HOLLOWMERE_RENDER_CHECK failures=0`; `PLAYTEST_HOLLOW_RENDER ... fps=142.4 props=751` →
+`PLAYTEST_HOLLOW_RENDER_CHECK failures=0`. All four files parse clean under `--check-only`.
+
+**A caveat written into both headers rather than left implicit.** `agent godot --windowed` parks a
+64x64 window offscreen (F-077), and a frame rate measured at 64x64 is not the frame rate a player
+gets. These are regression tripwires — "something made this catastrophically slower" — not
+performance gates, and they cannot tell anyone the game is fast enough.
+`docs/PERFORMANCE.md`'s method is fullscreen on a real display reporting 1% lows. This is the same
+distinction F-547 draws for `tools/traversal_profile.gd`, and it is written down here so the next
+person quoting `fps=98.2` knows what it is and is not.
+
+### The shape underneath all six
+
+Recorded again because the fix does not remove it: `_verify_checks()` collects by **filename glob**
+and enforces the verdict by **output parsing**, so a file joins the suite by being named
+`*_check.gd` and satisfies it by happening to print matching text. Nothing declares anything. That
+is why F-555 could sweep 25 files and leave six, and why the survivors were the near-misses rather
+than the obvious gaps. F-556 moved one property — needs-a-window — from inference to a declared
+`@verify windowed` marker. The verdict is the same kind of candidate, and a declared `@verify none`
+would have made the probe half self-describing instead of a naming convention.
 
 ### F-547 · EnvironmentVfx does per-node work for all 44,000 nodes a traversal adds, and 1,821 of them raise a backtraced warning — **fixed**
 

@@ -3,6 +3,13 @@ extends SceneTree
 ## Rendered smoke proof for task 2.7. Places a workbench beside a stand-in player, grants exactly the
 ## authored recipe cost, and saves the in-range prompt plus the open panel at three widths.
 ##
+## A PROBE, not a check (F-562). It photographs and asserts nothing: its only non-zero exit is a
+## failed PNG write, which is an I/O fault rather than a verdict about the subject. The verdict is a
+## human looking at the images. It was named `_check.gd`, so `_verify_checks()` — which globs
+## `tools/*_check.gd` — collected it and scored it red for never printing the `failures=N` it was
+## never written to produce. Renaming it takes it out of the suite honestly, the same move F-559
+## made for `enemy_facing_probe.gd` and F-555 for `f410_asset_material_probe.gd`.
+##
 ## F-380 added the Steam Deck shot and made this the render proof for the grid: the panel used to be
 ## a single 560 px column of recipes that ran off the bottom of the 1280x720 shot below, with no
 ## scrollbar and no way to reach the rows past the fold. What these PNGs have to show now is a short,

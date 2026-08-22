@@ -8177,7 +8177,7 @@ before the request id exists to compare against — hence the in-flight flag rat
 (a naive id comparison silently overwrites the answer with "Waiting…"); and **GDScript lambdas capture
 locals by value**, so an `_until()` poll must never assign to an outer variable it also wants to read.
 The focused check is `Godot --headless --path . --script tools/crafting_ui_check.gd`; the rendered
-proof at both widths is `Godot --path . --script tools/crafting_ui_render_check.gd`; the client-side
+proof at both widths is `Godot --path . --script tools/crafting_ui_render_probe.gd`; the client-side
 waiting/confirmed states are proven over real ENet by the extended `tools/crafting_net_check.gd`.
 
 **Task 2.6 ships host-authoritative workbench crafting.** `CraftingService` is an autoload ordered
@@ -8210,7 +8210,7 @@ Opening the inventory makes the cursor visible and joins `&"blocks_gameplay_inpu
 gates movement and jump while any UI owns that group. This does not pause the tree, so a network client
 continues processing. Closing removes the blocker and restores prior mouse capture. The focused check
 is `Godot --headless --path . --script tools/inventory_ui_check.gd`; the rendered desktop and narrow
-proof is `Godot --path . --script tools/inventory_ui_render_check.gd`.
+proof is `Godot --path . --script tools/inventory_ui_render_probe.gd`.
 
 **Task 2.4 ships the host-owned inventory seam that 2.5 and 2.6 build against.** `InventoryService`
 is an autoload after `Registry`, with one 32-slot `InventoryStore` per peer: backpack slots 0–23 and

@@ -173,6 +173,10 @@ func _finish() -> void:
 		print("all checks passed")
 	else:
 		print("%d check(s) failed" % _failures)
+	# `failures=N`, not "%d check(s) failed" — F-562, same near-miss as `tools/steam_check.gd`:
+	# "0 check(s) failed" matches neither verdict pattern because "check(s)" sits between the number
+	# and the failure noun, so this check has never had a verdict `agent verify` could read.
+	print("STEAM_LOBBY_CHECK failures=%d" % _failures)
 	# F-201: the SceneTree keeps draining deferred calls after this and prints one engine ERROR —
 	# see the comment on the "-- leave --" section above for why it is this check's own harness
 	# shape, not a production bug. Declared per SPECS.md standing rule 4.

@@ -2,6 +2,17 @@ extends SceneTree
 
 ## Render Hollowmere from several vantage points and measure the frame rate.
 ##
+## @verify windowed — this check measures a frame rate, which is meaningless under the dummy
+## rendering driver `--headless` installs, so `agent verify` must launch it with a framebuffer
+## (F-556/F-562).
+##
+## CAVEAT worth reading before trusting the number this asserts. `agent godot --windowed` parks a
+## 64x64 window offscreen (F-077), and a frame rate measured at 64x64 is not the frame rate a player
+## gets — it is a regression tripwire, not a performance gate. `docs/PERFORMANCE.md`'s method is
+## fullscreen on a real display reporting 1%% lows, and this check does not meet it and does not
+## claim to. It catches "something made this catastrophically slower"; it cannot tell you the game
+## is fast enough (F-547 makes the same distinction for `tools/traversal_profile.gd`).
+##
 ## Run with:  .agent/bin/agent godot --script tools/hollowmere_render_check.gd
 ##
 ## Two jobs. It captures viewport images so the map can be *looked at* without
@@ -85,7 +96,13 @@ func _run() -> void:
 	var fps := float(SAMPLE_FRAMES) / seconds
 	var props := get_nodes_in_group(&"authored_world_prop").size()
 	print("HOLLOWMERE_RENDER display=%s fps=%.1f prop_bodies=%d" % [DisplayServer.get_name(), fps, props])
-	if fps < MINIMUM_FPS:
+	# `failures=N` — F-562. This check DOES assert something (a frame-rate floor), so unlike the two
+	# render probes renamed alongside it, it belongs in the suite and owes it a readable verdict.
+	# Without this line it printed no verdict at all and `agent verify` recorded "missing failures
+	# verdict" however it ran.
+	var failures: int = 1 if fps < MINIMUM_FPS else 0
+	print("HOLLOWMERE_RENDER_CHECK failures=%d" % failures)
+	if failures > 0:
 		push_error("HOLLOWMERE_RENDER %.1f FPS is below %.1f" % [fps, MINIMUM_FPS])
 		quit(1)
 		return

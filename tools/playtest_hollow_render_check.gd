@@ -1,6 +1,18 @@
 extends SceneTree
 
 ## Short Forward+ smoke/performance run for the authored playtest hollow.
+##
+## @verify windowed — this check measures a frame rate, which is meaningless under the dummy
+## rendering driver `--headless` installs, so `agent verify` must launch it with a framebuffer
+## (F-556/F-562).
+##
+## CAVEAT worth reading before trusting the number this asserts. `agent godot --windowed` parks a
+## 64x64 window offscreen (F-077), and a frame rate measured at 64x64 is not the frame rate a player
+## gets — it is a regression tripwire, not a performance gate. `docs/PERFORMANCE.md`'s method is
+## fullscreen on a real display reporting 1%% lows, and this check does not meet it and does not
+## claim to. It catches "something made this catastrophically slower"; it cannot tell you the game
+## is fast enough (F-547 makes the same distinction for `tools/traversal_profile.gd`).
+##
 
 const SCENE_PATH: String = "res://levels/playtest_hollow.tscn"
 const WARMUP_FRAMES: int = 180
@@ -37,7 +49,11 @@ func _run() -> void:
 		"PLAYTEST_HOLLOW_RENDER display=%s frames=%d seconds=%.3f fps=%.1f props=%d"
 		% [DisplayServer.get_name(), SAMPLE_FRAMES, elapsed_seconds, fps, foliage_count]
 	)
-	if fps < MINIMUM_FPS:
+	# `failures=N` — F-562, same reason as `tools/hollowmere_render_check.gd`: this asserts a
+	# frame-rate floor, so it is a real check and owes the suite a verdict it can read.
+	var failures: int = 1 if fps < MINIMUM_FPS else 0
+	print("PLAYTEST_HOLLOW_RENDER_CHECK failures=%d" % failures)
+	if failures > 0:
 		push_error("RENDER_CHECK %.1f FPS is below %.1f FPS" % [fps, MINIMUM_FPS])
 		quit(1)
 		return
