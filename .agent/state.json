@@ -90,6 +90,26 @@
       "task": "F-543",
       "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
     },
+    "autoload/reward_service.gd": {
+      "agent": "larch543bba",
+      "at": "2026-08-22T05:42:13+00:00",
+      "task": "F-543",
+      "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
+    },
+    "content/buildables/ward.tres": {
+      "agent": "larch543bba",
+      "at": "2026-08-22T05:49:23+00:00",
+      "dirty_at_claim": false,
+      "task": "F-543",
+      "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
+    },
+    "content/buildables/ward_post.tres": {
+      "agent": "larch543bba",
+      "at": "2026-08-22T05:49:23+00:00",
+      "dirty_at_claim": false,
+      "task": "F-543",
+      "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
+    },
     "content/harvestables/apple_tree.tres": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:45:13+00:00",
@@ -288,9 +308,44 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "docs/DECISIONS.md": {
+      "agent": "larch543bba",
+      "at": "2026-08-22T05:52:40+00:00",
+      "dirty_at_claim": false,
+      "task": "F-543",
+      "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
+    },
+    "docs/FINDINGS.md": {
+      "agent": "nettled7199c",
+      "at": "2026-08-22T05:54:06+00:00",
+      "dirty_at_claim": true,
+      "task": "F-541",
+      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+    },
+    "docs/ITEMS.md": {
+      "agent": "nettled7199c",
+      "at": "2026-08-22T05:52:51+00:00",
+      "dirty_at_claim": false,
+      "task": "F-541",
+      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+    },
+    "docs/POWERUPS.md": {
+      "agent": "larch543bba",
+      "at": "2026-08-22T05:47:16+00:00",
+      "dirty_at_claim": false,
+      "task": "F-543",
+      "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
+    },
     "entities/player/player_controller.gd": {
       "agent": "larch543bba",
       "at": "2026-08-22T05:38:30+00:00",
+      "task": "F-543",
+      "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
+    },
+    "systems/building/buildable_def.gd": {
+      "agent": "larch543bba",
+      "at": "2026-08-22T05:49:23+00:00",
+      "dirty_at_claim": false,
       "task": "F-543",
       "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
     },
@@ -317,6 +372,13 @@
       "at": "2026-08-22T05:26:31+00:00",
       "task": "F-541",
       "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+    },
+    "systems/powerups/powerup_def.gd": {
+      "agent": "larch543bba",
+      "at": "2026-08-22T05:47:16+00:00",
+      "dirty_at_claim": false,
+      "task": "F-543",
+      "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
     },
     "tools/attunement_effects_check.gd": {
       "agent": "larch543bba",
@@ -378,6 +440,13 @@
       "task": "F-541",
       "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
     },
+    "tools/forager_sense_check.gd": {
+      "agent": "larch543bba",
+      "at": "2026-08-22T05:50:26+00:00",
+      "dirty_at_claim": false,
+      "task": "F-543",
+      "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
+    },
     "tools/item_icons_check.gd": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:52:45+00:00",
@@ -413,6 +482,13 @@
       "at": "2026-08-22T05:25:47+00:00",
       "task": "F-321",
       "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
+    },
+    "ui/hud/forager_sense_hud.gd": {
+      "agent": "larch543bba",
+      "at": "2026-08-22T05:50:26+00:00",
+      "dirty_at_claim": false,
+      "task": "F-543",
+      "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
     }
   },
   "in_flight": {
@@ -512,7 +588,9 @@
         "content/poi/chest_common.tres",
         "content/poi/chest_rare.tres",
         "content/poi/chest_epic.tres",
-        "content/poi/chest_legendary.tres"
+        "content/poi/chest_legendary.tres",
+        "docs/ITEMS.md",
+        "docs/FINDINGS.md"
       ],
       "notes": [],
       "started": "2026-08-22T05:26:31+00:00",
@@ -535,7 +613,16 @@
         "content/powerups/attunement_forager.tres",
         "content/powerups/attunement_warden.tres",
         "content/powerups/attunement_tinker.tres",
-        "content/powerups/attunement_reaver.tres"
+        "content/powerups/attunement_reaver.tres",
+        "autoload/reward_service.gd",
+        "systems/powerups/powerup_def.gd",
+        "docs/POWERUPS.md",
+        "systems/building/buildable_def.gd",
+        "content/buildables/ward.tres",
+        "content/buildables/ward_post.tres",
+        "ui/hud/forager_sense_hud.gd",
+        "tools/forager_sense_check.gd",
+        "docs/DECISIONS.md"
       ],
       "notes": [],
       "started": "2026-08-22T05:38:30+00:00",
@@ -545,9 +632,11 @@
   "recent": {
     ".agent/bin/agent": {
       "agent": "cinder9818da",
-      "at": "2026-08-22T05:42:03+00:00",
-      "hash": "1d778a19a90b3318552787c16785d4b905d30cf5a00102f0d00e34764c51567a",
-      "task": "F-044",
+      "at": "2026-08-22T05:54:43+00:00",
+      "claimed_at": "2026-08-22T05:42:27+00:00",
+      "dirty_at_claim": false,
+      "hash": "110c01eede7980c5202c406bd28dae88683b702849dc8cbb12a6eb056962e0a3",
+      "task": "F-289",
       "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
     },
     ".gitignore": {
@@ -646,118 +735,6 @@
       "at": "2026-08-21T06:07:24+00:00",
       "hash": "53bf6718b5ce8d53e893c7e8caac6b3a215c42060d4bf52581d4cbb0cf0278e2",
       "task": "F-356",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/audit/lighting/f410_00_warmup.png": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": null,
-      "task": "F-410",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/audit/lighting/f410_01_current.png": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": null,
-      "task": "F-410",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/audit/lighting/f410_02_sky_absurd.png": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": null,
-      "task": "F-410",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/audit/lighting/f410_03_physical_default.png": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": null,
-      "task": "F-410",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/audit/lighting/f410_04_soft_day.png": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": null,
-      "task": "F-410",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/audit/lighting/f410_05_airy_day.png": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": null,
-      "task": "F-410",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/audit/lighting/f410_10_procedural_current.png": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": null,
-      "task": "F-410",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/audit/lighting/f410_11_procedural_soft.png": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": null,
-      "task": "F-410",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/audit/lighting/f410_12_procedural_clear.png": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": null,
-      "task": "F-410",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/audit/lighting/f410_13_procedural_soft_green.png": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": null,
-      "task": "F-410",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/audit/lighting/f410_20_noon_baseline.png": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": "17ec8f7cca744cda506e4d0585aea63d3e270c91e7aebc507a96a6d2b2384e2a",
-      "task": "F-410",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/audit/lighting/f410_21_golden_hour.png": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": "4d5f9f163bd9c8511ec52639d45a1049114c6303a190bd53d137519e7de2ac02",
-      "task": "F-410",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/audit/lighting/f410_22_moonlit_night.png": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": "2cc546dd750a73e903f6dbb54c8c78dc31a03a1a201494d47f50c00d8f9f9082",
-      "task": "F-410",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/audit/lighting/f410_final_render.jsonl": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": "c3317ab757e386d43433e59491c249021bcd35775a2a5d64f9093d0b9540820f",
-      "task": "F-410",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/audit/lighting/f410_probe.json": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": null,
-      "task": "F-410",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/audit/lighting/f410_procedural_probe.jsonl": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": null,
-      "task": "F-410",
       "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
     },
     "assets/audit/lighting/f415_10_noon_control.png": {
@@ -998,62 +975,6 @@
       "task": "F-508",
       "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
-    "assets/environment/exports/tree_birch_a.glb": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": "8061874420381d1deb664560732c2886eb5875355562795209e698c39ae61896",
-      "task": "F-410",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/environment/exports/tree_birch_b.glb": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": "656f2dbb9934f9606c53e9dd2a9b02fb4318ae41612ecf553490f8435499583f",
-      "task": "F-410",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/environment/exports/tree_birch_c.glb": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": "8dcedfaaa4a72f06c72aaf52df323a22287255abb781c3b7095316bbd3f45baa",
-      "task": "F-410",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/environment/exports/tree_birch_d.glb": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": "fe5630c05a07fe455217cb44729281e40533b3d910208996ef29ab81fcb94618",
-      "task": "F-410",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/environment/exports/tree_crooked_a.glb": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": "a7af90f2de26abe2075c821eaf2d0d8a48ad10d0b75f8ea69fd25b8af7f04862",
-      "task": "F-410",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/environment/exports/tree_crooked_b.glb": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": "8ffe5866d0c9c0f9087bcbbbb48a76a500694435a729af3c39a5c0627743331c",
-      "task": "F-410",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/environment/exports/tree_crooked_c.glb": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": "f5c0056133110724f04972c1aab2eddfe5896ae2fc8aaa218ffc926aa477c835",
-      "task": "F-410",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/environment/exports/tree_crooked_d.glb": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": "5d82a74840751e958f7684c1d2dfe404383911729592dae05b9d9136c16d317c",
-      "task": "F-410",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
     "assets/flora/catalog.json": {
       "agent": "kiln384569",
       "at": "2026-08-21T17:50:16+00:00",
@@ -1221,13 +1142,6 @@
       "hash": "4d60d7a6749671945045ef60e5910e248def6631e49c2a3f81e6289217a6affc",
       "task": "F-303",
       "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
-    },
-    "autoload/god_mode_service.gd": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T05:51:07+00:00",
-      "hash": "3d91ff8dd7182f5a1d30aeb8a1a69d6f254ee0d3a80af2175c57078041b69345",
-      "task": "F-411",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
     "autoload/graphics_quality.gd": {
       "agent": "hollowe6edef",
@@ -3337,11 +3251,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "docs/FINDINGS.md": {
-      "agent": "flint04a51d",
-      "at": "2026-08-22T05:34:38+00:00",
-      "hash": "b74c5d93322de456ea64c7be3627cb5ca3a99c6793251e80f89169fc014e83dd",
-      "task": "F-535",
-      "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
+      "agent": "nettled7199c",
+      "at": "2026-08-22T05:54:06+00:00",
+      "hash": null,
+      "task": "F-541",
+      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
     },
     "docs/ITEMS.md": {
       "agent": "larch28fcaa",
@@ -3580,13 +3494,6 @@
       "hash": "3063db8be7e4bee879bb22238f0fcfb455de44ae46ff93ce29b0f4344a6cc665",
       "task": "F-432",
       "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
-    },
-    "systems/health/player_health.gd": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T05:51:07+00:00",
-      "hash": "989a57bcdcaba39155cdb18ed33814673ea193554fcb3109dda45245995ad1e5",
-      "task": "F-411",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
     "systems/inventory/item_def.gd": {
       "agent": "birche6b40e",
@@ -4092,32 +3999,11 @@
       "task": "F-415",
       "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
     },
-    "tools/f410_asset_material_check.gd": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": "3379c1c37713e6481905aa99266084d7751015e17ba2020430155b3e8b9dc93b",
-      "task": "F-410",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "tools/f410_asset_material_check.gd.uid": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": "59331e13c416a36278a88d035529a15721ef25ed91df76de2a750fb77394ff3a",
-      "task": "F-410",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
     "tools/f410_procedural_sky_probe.gd": {
       "agent": "emberd89a44",
       "at": "2026-08-21T06:07:24+00:00",
       "hash": "63f82b44d7f1380a84ae442b826546cabb5807125c179df1f2bc56b8290bc04a",
       "task": "F-356",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "tools/f410_procedural_sky_probe.gd.uid": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": "ae8a3ad4c09e7e04f8e7d048f0670e533a2228492e53e84706cc5bcd01a06dba",
-      "task": "F-410",
       "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
     },
     "tools/f492_pinecone_check.gd": {
@@ -4162,25 +4048,11 @@
       "task": "F-413",
       "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
     },
-    "tools/god_mode_net_check.gd": {
-      "agent": "flinta92725",
-      "at": "2026-08-21T05:51:07+00:00",
-      "hash": "fb47e9d342a0cd475322a6ef09e5f820dcb8dbbb88d9c6c3499c8ade8adc8010",
-      "task": "F-411",
-      "token": "CODEX_SESSION_ID:01a022d3-58fe-7891-86a0-9b9b8a9e08ff"
-    },
     "tools/grade_check.gd": {
       "agent": "emberd89a44",
       "at": "2026-08-21T06:17:41+00:00",
       "hash": "5d86a48285f76cf29dfec0850d8ffff59f246f020b59ef3ef54b0e85f94080f2",
       "task": "F-415",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "tools/graphics_quality_check.gd": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T05:48:24+00:00",
-      "hash": "82683ffc1465ebe6c24c498924fbc27ece8ac620c7aea8212a8cf5fbe798ab7d",
-      "task": "F-410",
       "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
     },
     "tools/guide_check.gd": {
@@ -5024,7 +4896,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1526,
+  "rev": 1542,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -8909,7 +8781,7 @@
     "F-265": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "A concurrent lane's `agent ship` swept F-257's docs/SPECS.md and docs/FINDINGS.md edits into its own commit while lm3 still held claims on both"
     },
@@ -8925,7 +8797,7 @@
     "F-267": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "ship sweeps a sibling's uncommitted hunks when its claimed file carries them \u2014 F-197's shape reached source files and carried a debug probe into HEAD"
     },
@@ -9155,9 +9027,11 @@
       "title": "run_reseed_check claims POI-layout parity but compares only POI counts"
     },
     "F-289": {
+      "done_at": "2026-08-22T05:54:43+00:00",
+      "done_by": "cinder9818da",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`agent ship` structurally cannot commit docs/FINDINGS.md \u2014 resolve/finding write it, but only claimed files get staged, so every resolve move is left uncommitted unless the agent notices by hand"
     },
@@ -11168,6 +11042,13 @@
       "status": "in_flight",
       "tier": "F",
       "title": "Every Attunement's stat effects are dead \u2014 nothing in the game consumes the PowerupService modifiers they grant"
+    },
+    "F-544": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Three DESIGN \u00a74.5 Attunement promises name systems that do not exist \u2014 Ward turrets, taunts, and station tiers"
     }
   },
   "version": 1

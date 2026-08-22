@@ -1161,7 +1161,12 @@ def cmd_claim(args):
     for f in files:
         if f not in entry["files"]:
             entry["files"].append(f)
-        st["claims"][f] = {"task": tid, "agent": me, "token": me_token, "at": now()}
+        # F-267: was the file already modified against HEAD at the moment we claimed it? If so,
+        # whatever it carried then belongs to somebody else, and ship must say so before committing
+        # it under this task's message. Recorded here rather than computed at ship time because by
+        # then the answer is unrecoverable — the claim moment is the only moment it is knowable.
+        st["claims"][f] = {"task": tid, "agent": me, "token": me_token, "at": now(),
+                           "dirty_at_claim": _is_dirty(f)}
     st["tasks"][tid]["status"] = "in_flight"
     save(st)
 
@@ -1178,6 +1183,28 @@ def cmd_claim(args):
 def _rel(p):
     p = os.path.abspath(p) if os.path.exists(p) else os.path.join(ROOT, p)
     return os.path.relpath(p, ROOT)
+
+
+def _is_dirty(rel):
+    """True if `rel` differs from HEAD right now — staged, unstaged or untracked (F-267)."""
+    try:
+        r = _git("status", "--porcelain", "-uall", "--", rel)
+        return bool(r.stdout.strip())
+    except Exception:
+        return False
+
+
+def _claim_dirty_at(st, tid, rel):
+    """When this task claimed `rel`, if the file was already dirty then — else None (F-267).
+
+    Reads the live claim first and falls back to the `recent` record, because `agent done` runs
+    before `agent ship` and moves the entry between the two.
+    """
+    for bucket in (st.get("claims", {}), st.get("recent", {})):
+        rec = bucket.get(rel)
+        if rec and rec.get("task") == tid and rec.get("dirty_at_claim"):
+            return rec.get("claimed_at") or rec.get("at", "")
+    return None
 
 
 def cmd_note(args):
@@ -1217,7 +1244,8 @@ def _release(st, tid):
     if entry:
         recent = st.setdefault("recent", {})
         for f in entry.get("files", []):
-            if st["claims"].get(f, {}).get("task") == tid:
+            claim = st.get("claims", {}).get(f) or {}
+            if claim.get("task") == tid:
                 del st["claims"][f]
             # F-117: docs/ files need no claim to WRITE, only to commit (F-006/F-072), so a second
             # lane can and does edit a file in the window between this task finishing with it and
@@ -1227,8 +1255,13 @@ def _release(st, tid):
             # working tree no longer matches this snapshot when ship runs, somebody else touched the
             # file in between and ship should say so instead of silently sweeping it into this
             # task's commit under this task's name.
+            # F-267: carry the claim-time dirtiness across the done -> ship gap, and the claim's own
+            # timestamp with it — ship's warning is about when the file was CLAIMED, not when it was
+            # released, and `now()` here would report the wrong moment.
             recent[f] = {"task": tid, "agent": entry["agent"], "token": entry.get("token"),
-                         "at": now(), "hash": _file_hash(f)}
+                         "at": now(), "hash": _file_hash(f),
+                         "dirty_at_claim": claim.get("dirty_at_claim", False),
+                         "claimed_at": claim.get("at", "")}
     return entry
 
 
@@ -1508,6 +1541,56 @@ def cmd_ship(args):
     changed = _generate_missing_uids(to_stage, changed)
     to_stage += [f + ".uid" for f in list(to_stage) if f + ".uid" in changed]
     to_stage = list(dict.fromkeys(to_stage))
+
+    # F-265. `git commit -- docs/SPECS.md` commits the file's ENTIRE working-tree content, not this
+    # task's hunks, so when two lanes both legitimately append to the same append-heavy doc, whichever
+    # ships second takes the other's finished work under its own message. Nothing was ever lost, but
+    # the attribution was wrong and reverting either task then took the other's docs with it.
+    #
+    # So apply at staging time the rule `agent check` already applies at commit time: a file another
+    # LIVE task holds is not ours to commit. Dropping it is the honest outcome — this task's own
+    # hunks stay uncommitted and legible, and the message below says so, which turns a silent sweep
+    # into "ship again once they close out". Only `in_flight` claims count; a `recent` entry is a
+    # task that has already finished with the file.
+    poached = {}
+    for f in list(to_stage):
+        c = st.get("claims", {}).get(f)
+        if c and c.get("task") != tid:
+            poached[f] = c
+            to_stage.remove(f)
+    if poached:
+        print("\n%s⚠ %d file(s) left out — another task holds them (F-265):%s"
+              % (C["y"], len(poached), C["x"]))
+        for f, c in sorted(poached.items()):
+            print("      %s· %s — %s for %s%s" % (C["dim"], f, c.get("agent", "?"),
+                                                  c.get("task", "?"), C["x"]))
+        print("  %sYour edits to these are still in the working tree. Ship again once they close"
+              % C["dim"])
+        print("  out, or commit them yourself by pathspec if you are certain they are only yours.%s"
+              % C["x"])
+    if not to_stage:
+        die("nothing left to ship for %s — every file it changed is held by another task" % tid)
+
+    # F-267. The other direction, and the one a claim cannot protect against: a sibling writes into a
+    # file THIS task holds. `agent check` tests the committer's claims, not whether somebody else
+    # wrote into a file they do not hold, so the holder is the one who sweeps it. Hunk-level
+    # attribution does not help — two lanes appending near the same anchor produce ONE contiguous
+    # diff hunk — so key on time instead, exactly as F-267 concluded: if a file was ALREADY dirty
+    # against HEAD when this task claimed it, whatever was in it at that moment is somebody else's.
+    inherited = []
+    for f in to_stage:
+        at = _claim_dirty_at(st, tid, f)
+        if at:
+            inherited.append((f, at))
+    if inherited:
+        print("\n%s⚠ %d file(s) were ALREADY modified when %s claimed them (F-267):%s"
+              % (C["y"], len(inherited), tid, C["x"]))
+        for f, at in inherited:
+            print("      %s· %s — dirty at claim time (%s)%s" % (C["dim"], f, at[11:19], C["x"]))
+        print("  %sThose pre-existing changes are not this task's and are about to be committed"
+              % C["dim"])
+        print("  under its message. Check with: git diff HEAD -- %s%s"
+              % (" ".join(f for f, _ in inherited), C["x"]))
 
     others = [f for f in changed if f not in to_stage]
 
@@ -3858,6 +3941,44 @@ def cmd_autoload(args):
 FINDINGS = os.path.join(ROOT, "docs", "FINDINGS.md")
 
 
+def _mark_for_ship(rel):
+    """Record `rel` against this agent's in-flight task so `agent ship` will commit it (F-289).
+
+    `cmd_ship` stages exactly `state["recent"]` entries belonging to the task — deliberately, since
+    one working tree is shared and `git add -A` would sweep siblings (F-014). But `resolve` and
+    `finding` write docs/FINDINGS.md without going near `recent`, so unless the task took an exact
+    claim on the file — which F-006 tells agents NOT to do, because it would block every other lane
+    from filing for the task's whole length — ship structurally could not commit the move. Not a
+    race: always. The board then read the finding as Open while the fix was already pushed, and the
+    next dispatch routed a lane at work that was already done.
+
+    `recent` is the answer because it is a record of what to COMMIT, not a lock. Nothing blocks, F-006
+    stays intact, and the file lands in the right commit. Deliberately does not touch `claims`: the
+    distinction between "this file belongs in my commit" and "nobody else may touch this file" is the
+    whole of the fix.
+
+    Silent when the agent has no task in flight — filing a finding outside a task is legitimate, and
+    there is simply nothing to attach it to; ship is not involved either way.
+    """
+    me, me_token = whoami(), whoami_token()
+    with state_txn("mark-for-ship"):
+        st = load()
+        mine = [tid for tid, e in st.get("in_flight", {}).items() if _is_mine(e, me, me_token)]
+        if not mine:
+            return None
+        tid = sorted(mine)[0]
+        st.setdefault("recent", {})[rel] = {
+            "task": tid, "agent": me, "token": me_token, "at": now(),
+            # No hash. The F-117 drift warning compares against the bytes as of the moment a task
+            # FINISHED with a file; this file is still being appended to, by this task and possibly
+            # by a sibling, right up to close-out. A hash taken here would mismatch on this task's
+            # own later edits and cry wolf on every ship.
+            "hash": None,
+        }
+        save(st)
+    return tid
+
+
 def cmd_finding(args):
     """Allocate the next F-number and append the entry, atomically.
 
@@ -3902,6 +4023,17 @@ def cmd_finding(args):
         os.replace(tmp, FINDINGS)
 
     ok("filed %s — %s" % (fid, title[:70]))
+    _announce_marked(_mark_for_ship(_rel(FINDINGS)))
+
+
+def _announce_marked(tid):
+    """Say where the edit will land, or that it will land nowhere (F-289)."""
+    if tid:
+        print("  %s· docs/FINDINGS.md will ship with %s — no claim taken (F-006 stands)%s"
+              % (C["dim"], tid, C["x"]))
+    else:
+        print("  %s⚠ no task in flight, so nothing will ship this — commit docs/FINDINGS.md yourself%s"
+              % (C["y"], C["x"]))
 
 
 def cmd_resolve(args):
@@ -3987,6 +4119,7 @@ def cmd_resolve(args):
         os.replace(tmp, FINDINGS)
 
     ok("%s moved to '## Resolved'" % fid)
+    _announce_marked(_mark_for_ship(_rel(FINDINGS)))
     print("  %sRun the structure check before you commit — it is what caught both times this went"
           % C["dim"])
     print("  wrong:  agent godot --script tools/findings_numbering_check.gd%s" % C["x"])

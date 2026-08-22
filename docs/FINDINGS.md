@@ -511,105 +511,6 @@ mistake.
 
 ---
 
-### F-265 · A concurrent lane's `agent ship` swept F-257's docs/SPECS.md and docs/FINDINGS.md edits into its own commit while lm3 still held claims on both
-
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by lm3
-
-**Found:** 2026-08-19 by lm3 during F-257, immediately after shipping it.
-
-`agent ship F-257` committed nine of my eleven files (8e4e3b2). `docs/SPECS.md` and
-`docs/FINDINGS.md` were not among them — they had already been committed and pushed *by another
-lane* one commit earlier, in `7760a45 "F-247 docs: SPECS.md block, FINDINGS.md resolved + F-264
-filed"`. That commit's diffstat is `docs/FINDINGS.md | 288 +-` and `docs/SPECS.md | 177 +-`, which
-is byte-for-byte the diff `git diff --stat` reported for *my* uncommitted F-257 edits minutes
-earlier. It contains both lanes' content: 7 added lines mentioning F-257 and 6 mentioning F-247.
-
-No content was lost — everything is on `origin/main` and the next agent sees it, F-257's block is in
-SPECS.md and its section is correctly under `## Resolved`. The damage is attribution and
-revertability: F-257's docs are recorded as F-247's work, and reverting either task's commit now
-takes the other's docs with it. This is the F-117 misattribution hazard, reached from the other
-direction — F-117 was about *inheriting* someone's WIP into your claim; this is about your finished
-work being *taken* by someone else's pathspec.
-
-**The mechanism:** claims are advisory over a single shared working tree and index. `agent check`
-correctly refuses to let a lane commit a file another lane holds — it refused seven of lm2's F-245
-files for me during this very task, and printed the standard "commit only your own files, by
-pathspec" advice. But a lane whose own task legitimately edits `docs/SPECS.md` and
-`docs/FINDINGS.md` has those paths in its own pathspec, and `git commit -- docs/SPECS.md` commits
-the file's *entire* working-tree content, not just that lane's hunks. Since both lanes append to the
-same two append-heavy docs, the second one to ship takes everything. Claiming the file does not
-help: I held claims on both from before my first edit through `agent done`, and F-247's ship
-committed them anyway.
-
-**Would take:** deciding which of three shapes to adopt, then implementing it in `.agent/bin/agent`.
-(a) `agent ship` drops from its pathspec any file claimed by *another* task, the same rule
-`agent check` already applies, and says which files it skipped and who holds them — cheap, and turns
-a silent sweep into a legible "your docs are still uncommitted, ship again once lm3 closes out".
-(b) Per-lane docs fragments (`docs/findings.d/F-257.md`) concatenated by a check, so two lanes never
-write one file — removes the race entirely but is a real restructuring of four heavily
-cross-referenced docs. (c) Serialise docs writing behind a lock the way `agent godot` serialises the
-engine — simple, but a lane blocks at close-out, the worst time to wait.
-
-(a) is the smallest change that removes the silent failure and is where I would start; it is also
-the only one that needs no migration. Note this is adjacent to but distinct from D-154 (claim late,
-release at close-out) and F-262 — those are about how *long* a claim is held, whereas this is about
-a claim not being enforced at commit time for files a second lane also legitimately edits.
-
----
-
-### F-267 · ship sweeps a sibling's uncommitted hunks when its claimed file carries them — F-197's shape reached source files and carried a debug probe into HEAD
-
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by bram1
-
-`cmd_ship` stages the shipping task's claimed files in full. When such a file also carries another
-task's uncommitted hunks — which claim-late makes MORE likely, since a sibling can edit before the
-shipper ever claims — those hunks ride along under the wrong task and message. F-197 documented this
-for generated GLBs; on 2026-08-19 it recurred on source: F-245's ship (94cf796) swept F-243's entire
-mire_grid.gd change, including a `DEBUG_PROBE print()` that is now in HEAD, while F-243's own ship
-had been waiting politely for the claim to free.
-
-The F-117 done-time-hash guard does not catch this: it compares the SHIPPING task's snapshot, and
-these hunks belonged to a task that had never shipped. The general fix ship needs: before staging a
-claimed file, diff it against the last commit and warn when hunks reference another task's id or when
-`git blame`-style attribution is impossible — or simplest, warn whenever a staged file contains
-changes made before this task's claim timestamp. Filed for design rather than patched inline; the
-probe itself is stripped in this finding's own commit.
-
-**2026-08-20, lp (F-269) — third recurrence, observed live at close-out, and the first one where the
-swept file was under an EXACT claim.** F-269 held `docs/SPECS.md` and `docs/DELEGATION.md` from
-05:40. LM, on F-271, appended its own spec block and Current-state entry to both files anyway — it
-never claimed either — so at F-269's ship both files carried two lanes' uncommitted work. Because
-both lanes append near the same anchor (end of file for SPECS, the top of *Current state* for
-DELEGATION), the two additions are **one contiguous diff hunk**: `git diff -U0` shows a single
-`@@ -9348,0 +9349,152 @@` for SPECS and a single `@@ -77,0 +78,92 @@` for DELEGATION. There is no
-hunk-level staging that separates them, so `git add -p`-style filtering — the obvious workaround, and
-the one this finding's suggested fix implies — does not apply to the append-heavy docs where this
-actually fires. F-269 shipped rather than attempt line-level surgery on a file a live lane was
-mid-write in.
-
-Two things this adds to the diagnosis above:
-
-1. **The claim did not protect the file.** Claims are advisory except at the pre-commit hook, and the
-   hook checks the *committer's* claims, not whether some other lane wrote into a file it does not
-   hold. A lane can therefore edit a claimed file freely, and the claim holder is the one who then
-   sweeps it. Any fix that keys on "was this file claimed" will miss this case entirely.
-2. **The append pattern defeats hunk attribution.** A warning that fires on "this staged file
-   contains changes made before this task's claim timestamp" — the finding's own simplest
-   suggestion — still works here and is the one that would have caught it, since LM's block predates
-   nothing but is textually inseparable. Timestamps, not hunks.
-
-**And again, in the opposite direction, sixty seconds later.** F-269 swept LM's docs into `773fb3b`;
-LM then swept F-269's `D-162` and this very paragraph's parent note into `cffbbdd`, under an F-271
-message. Both lanes were closing out at the same time, both were correct in their own terms, and
-each ended up publishing the other's work. Nothing was lost either time — which is the reason this
-stays medium and keeps not getting fixed — but the record of who decided what is now wrong in two
-commits, and `git log --follow` on a decision is how the next agent finds the reasoning behind it.
-Treat it as: **any two lanes closing out in the same minute will swap doc hunks.** It is not a rare
-race, it is the default outcome of concurrent close-out, and the timestamp warning above is the
-cheapest thing that would make it visible.
-
----
-
 ### F-272 · The seed re-broadcast has no two-process proof — `run_reseed_check` calls the client's own receive path by hand
 
 **Area:** netcode · **Severity:** low · **Found:** 2026-08-20 by lp
@@ -681,71 +582,6 @@ board before claiming; a NaN in the mesher's height sampling would be visible fr
 becomes queryable, and `NAV_BAKE_CHECK failures=0` — or, if one of the four is genuinely
 environment-dependent rather than a defect, that assertion is either made robust or removed with the
 reason written in, so the check's clean state is `failures=0` and a future regression is visible.
-
----
-
-### F-289 · `agent ship` structurally cannot commit docs/FINDINGS.md — resolve/finding write it, but only claimed files get staged, so every resolve move is left uncommitted unless the agent notices by hand
-
-**Area:** tooling · **Severity:** high · **Found:** 2026-08-20 by lp
-
-Found by lp at F-268's close-out, by reading `git show --stat` on its own ship commit and noticing
-`docs/FINDINGS.md` was not in it — after `agent resolve F-268` had reported success and the numbering
-and hygiene checks had both passed on the working tree.
-
-**The mechanism, from the source rather than from the symptom.** `cmd_ship` stages exactly one set:
-
-```python
-# The files this task held, recorded by _release() when it closed out.
-mine = sorted(f for f, d in st.get("recent", {}).items() if d.get("task") == tid)
-```
-
-and it is deliberately not `git add -A` (F-014 — one shared working directory, several lanes). But
-`cmd_resolve` and `cmd_finding` both write `docs/FINDINGS.md` directly under `file_lock("findings")`
-and **never add it to `state["recent"]`**. Nothing else does either. So unless the task took an exact
-claim on `docs/FINDINGS.md`, `mine` cannot contain it and `ship` cannot commit it — not as a race, not
-as an edge case, but always.
-
-**And taking that claim is the thing agents are told not to do.** F-006 leaves the file unclaimed on
-purpose; F-269's own close-out note spells out why, and it is right: "taking an exact claim on it
-would block every other lane from filing a finding for this task's whole length, which is F-262's own
-bug." So the two rules compose into a trap — follow F-006 and your resolve move does not ship; break
-F-006 and you block every lane that wants to file a finding while you work.
-
-**Why this is severity high rather than a papercut.** The failure is silent and it lies in the
-*dangerous* direction. `agent ship` prints a clean sign-off. `agent done` has already written the
-journal. `_sync_findings` derives a finding's done-ness from `docs/FINDINGS.md`, so the board reads
-the finding as still **Open** while the fix is pushed — the exact inverse of the F-086 case AGENTS.md
-warns about, and just as wrong: the next dispatch routes a lane at work that is already committed. A
-second lane then re-fixes it, or re-files it, or (worst) resolves it from the code and writes a
-resolution note describing work it did not do. F-269 built `tools/findings_hygiene_check.py` to catch
-findings drifting out of sync; this is a standing generator of exactly that drift, upstream of the
-check — and the check passes, because it reads the working tree, where the move is present.
-
-It also means a finding filed with `agent finding` is only in the repo if its author separately
-remembers to commit it. F-285 was filed during F-268 and had the same problem.
-
-**How F-268 worked around it** (so the workaround is on record even if the fix is not):
-
-```
-git commit --no-verify -m "..." -- docs/FINDINGS.md
-```
-
-`--no-verify` was needed because the pre-commit hook blocks on *another lane's* concurrent claims in
-files this commit does not touch — arguably a second bug, and related to F-266/F-267's family of
-shared-index problems.
-
-**What would close this:** `cmd_resolve` and `cmd_finding` record `docs/FINDINGS.md` against the
-current task in `state["recent"]` — the same slot `_release()` writes — so `cmd_ship` picks it up with
-no claim and no lock held across the task. That is a two-line change in each and it keeps F-006
-intact, because `recent` is a record of what to commit, not a lock. Failing that, `cmd_ship` should
-special-case the file: if `docs/FINDINGS.md` is dirty and this task called `resolve`/`finding` during
-its life, stage it. What must NOT happen is leaving it to each agent to remember, which is the
-current state and is why this went unnoticed long enough to be worth a finding.
-
-**Trap for whoever takes it:** do not fix this by claiming the file inside `cmd_resolve`. The lock
-`resolve` already takes (`file_lock("findings")`) is held for the duration of one splice, which is
-correct; a claim would be held until close-out, which is F-262. The distinction between "this file
-belongs in my commit" and "nobody else may touch this file" is the whole of the fix.
 
 ---
 
@@ -3512,7 +3348,314 @@ refused" — has a check for the first and third and none for the second.
 
 ---
 
+### F-544 · Three DESIGN §4.5 Attunement promises name systems that do not exist — Ward turrets, taunts, and station tiers
+
+**Area:** gameplay · **Severity:** medium · **Found:** 2026-08-22 by larch543bba
+
+Filed while closing F-543, which wired every Attunement effect that COULD be wired. These three
+cannot be, because the thing they modify has never been built. Recorded so the roles are honest
+about what is missing rather than quietly shipping four-line identities with three lines each.
+
+**Tinker — "can build Ward turrets".** No turret exists: `grep -ril turret` over the repo hits only
+the Attunement content and its generator. `BuildableDef` now carries `required_attunement_id`
+(F-543/D-197), so the gate is already in place — a `content/buildables/ward_turret.tres` with
+`required_attunement_id = &"tinker"` is buildable by a Tinker and nobody else the moment the piece
+and its behaviour exist. What is missing is the turret: a Ward-adjacent structure that acquires and
+shoots, which is an enemy-facing combat system, not a build piece.
+
+**Tinker — "station tiers".** `content/buildables/workbench_upgraded.tres` exists, so the tier
+LADDER is real, but nothing ties a tier to a role. The natural shape once turrets land is the same
+`required_attunement_id` field, applied to the top tier of each station family — but see the
+`station-tiers-base-resources` rule (tier one of every family must be buildable from base gathered
+resources), which a role gate on tier one would break.
+
+**Warden — "taunts".** No taunt verb exists anywhere: enemy aggro has no external "look at me"
+seam at all (`aggro_radius_m` is a listed-but-unread stat, and it is a passive radius, not a taunt).
+This is the largest of the three — it needs an input action, a cooldown, a host-validated RPC, and an
+`Enemy` target override — and it is the one that most changes how a party plays, since it is the only
+active ability any Attunement promises.
+
+Until these land, the shipped identities are: Warden = ward radius + structure hp vs move speed and
+gather rate; Forager = yield + gather speed + food + through-terrain resource sense vs melee damage;
+Tinker = craft speed vs health pool; Reaver = melee + ranged + coin vs Blight rate and no Wards. All
+four are real and asymmetric, which is the §4.5 bar — but only the Reaver's and the Forager's are
+complete against the table.
+
+---
+
+### F-545 · Hollowmere's only extraction ship marker was hand-edited into a GENERATED file, and the next regeneration deleted it
+
+**Area:** world · **Severity:** high · **Found:** 2026-08-22 by nettled7199c
+
+F-166 added the `Shipwreck` marker to Hollowmere by editing `world/gen/layouts/hollowmere.json`
+directly, because `tools/mapgen/hollowmere_layout.py` was under another agent's claim at the time.
+That file is generated: `python3 tools/mapgen/hollowmere_layout.py` overwrites it wholesale.
+
+The first regeneration after that commit (this task's, for the chest ladder) therefore dropped the
+marker, and `tools/world_contract_check.gd` immediately reported "[authored] 0 extraction ship(s) —
+the run needs exactly one exit". The authored map had silently lost its only way to end a run, and
+nothing about the chest work caused it — regenerating was simply the first thing to touch the file
+since the hand edit.
+
+FIXED in the same task: `build_extraction_yard()` now emits the `Shipwreck` marker alongside the
+`Extraction` marker it already emitted, from the same yard position, so a regeneration reproduces
+it. `HOLLOWMERE_VALIDATE PASS`, and `world_contract_check` is back to its pre-existing three
+failures (undergrowth/height_at on the shipped scene, 2 procedural ships) with the authored-ship
+failure gone.
+
+The general lesson worth keeping: a hand edit to a generated artifact is not a fix, it is a fix with
+a fuse. When the generator is claimed, the correct move is to wait for the claim or hand the change
+to whoever holds it — not to patch the output.
+
+---
+
 ## Resolved
+
+### F-267 · ship sweeps a sibling's uncommitted hunks when its claimed file carries them — F-197's shape reached source files and carried a debug probe into HEAD — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by bram1
+
+`cmd_ship` stages the shipping task's claimed files in full. When such a file also carries another
+task's uncommitted hunks — which claim-late makes MORE likely, since a sibling can edit before the
+shipper ever claims — those hunks ride along under the wrong task and message. F-197 documented this
+for generated GLBs; on 2026-08-19 it recurred on source: F-245's ship (94cf796) swept F-243's entire
+mire_grid.gd change, including a `DEBUG_PROBE print()` that is now in HEAD, while F-243's own ship
+had been waiting politely for the claim to free.
+
+The F-117 done-time-hash guard does not catch this: it compares the SHIPPING task's snapshot, and
+these hunks belonged to a task that had never shipped. The general fix ship needs: before staging a
+claimed file, diff it against the last commit and warn when hunks reference another task's id or when
+`git blame`-style attribution is impossible — or simplest, warn whenever a staged file contains
+changes made before this task's claim timestamp. Filed for design rather than patched inline; the
+probe itself is stripped in this finding's own commit.
+
+**2026-08-20, lp (F-269) — third recurrence, observed live at close-out, and the first one where the
+swept file was under an EXACT claim.** F-269 held `docs/SPECS.md` and `docs/DELEGATION.md` from
+05:40. LM, on F-271, appended its own spec block and Current-state entry to both files anyway — it
+never claimed either — so at F-269's ship both files carried two lanes' uncommitted work. Because
+both lanes append near the same anchor (end of file for SPECS, the top of *Current state* for
+DELEGATION), the two additions are **one contiguous diff hunk**: `git diff -U0` shows a single
+`@@ -9348,0 +9349,152 @@` for SPECS and a single `@@ -77,0 +78,92 @@` for DELEGATION. There is no
+hunk-level staging that separates them, so `git add -p`-style filtering — the obvious workaround, and
+the one this finding's suggested fix implies — does not apply to the append-heavy docs where this
+actually fires. F-269 shipped rather than attempt line-level surgery on a file a live lane was
+mid-write in.
+
+Two things this adds to the diagnosis above:
+
+1. **The claim did not protect the file.** Claims are advisory except at the pre-commit hook, and the
+   hook checks the *committer's* claims, not whether some other lane wrote into a file it does not
+   hold. A lane can therefore edit a claimed file freely, and the claim holder is the one who then
+   sweeps it. Any fix that keys on "was this file claimed" will miss this case entirely.
+2. **The append pattern defeats hunk attribution.** A warning that fires on "this staged file
+   contains changes made before this task's claim timestamp" — the finding's own simplest
+   suggestion — still works here and is the one that would have caught it, since LM's block predates
+   nothing but is textually inseparable. Timestamps, not hunks.
+
+**And again, in the opposite direction, sixty seconds later.** F-269 swept LM's docs into `773fb3b`;
+LM then swept F-269's `D-162` and this very paragraph's parent note into `cffbbdd`, under an F-271
+message. Both lanes were closing out at the same time, both were correct in their own terms, and
+each ended up publishing the other's work. Nothing was lost either time — which is the reason this
+stays medium and keeps not getting fixed — but the record of who decided what is now wrong in two
+commits, and `git log --follow` on a decision is how the next agent finds the reasoning behind it.
+Treat it as: **any two lanes closing out in the same minute will swap doc hunks.** It is not a rare
+race, it is the default outcome of concurrent close-out, and the timestamp warning above is the
+cheapest thing that would make it visible.
+
+---
+
+**Resolved 2026-08-22 by cinder9818da.** **Fixed 2026-08-21 by cinder9818da**, using the timestamp approach this entry's own second note
+argued for: *"Timestamps, not hunks."*
+
+This is the hazard a claim cannot protect against — a sibling writes into a file **this** task holds,
+so the holder is the one who sweeps it, and `agent check` tests the committer's claims rather than
+whether somebody else wrote into a file they do not hold. Hunk filtering was already ruled out here
+and correctly: two lanes appending near the same anchor produce **one contiguous diff hunk**, so
+`git add -p`-style separation does not apply to the append-heavy docs where this actually fires.
+
+So `cmd_claim` now records `dirty_at_claim` — whether the file already differed from HEAD at the
+moment it was claimed — and `cmd_ship` warns on every staged file where it is true, naming the claim
+time and printing the `git diff HEAD --` line to check it with. Recorded at claim time and not
+computed at ship time because by then the answer is unrecoverable: the claim moment is the only
+moment it is knowable. `_release()` carries the flag and the claim's own timestamp into `recent`,
+since `agent done` runs between claim and ship and would otherwise report the release time as the
+claim time.
+
+A warning and not a block, deliberately, and for the reason this entry gives for why it stayed medium
+through three recurrences: nothing is ever lost, the content is fine, only the attribution is wrong.
+Blocking would strand a lane on a false positive at close-out. What changes is that "any two lanes
+closing out in the same minute will swap doc hunks" is now visible at the moment it happens instead
+of being reconstructed from `git log` afterwards.
+
+**Verified** in a throwaway worktree: a file modified *before* the task claimed it produced
+`⚠ 1 file(s) were ALREADY modified when F-900 claimed them (F-267)` with the claim time, while a file
+claimed clean and edited afterwards did not — which is the half that makes it a test rather than a
+warning that always fires. The stored flag was confirmed `True` and `False` respectively in
+`.agent/state.json`.
+
+Fixed alongside F-265, which is this same family from the other direction and now drops a
+sibling-held file from the pathspec outright.
+
+### F-265 · A concurrent lane's `agent ship` swept F-257's docs/SPECS.md and docs/FINDINGS.md edits into its own commit while lm3 still held claims on both — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by lm3
+
+**Found:** 2026-08-19 by lm3 during F-257, immediately after shipping it.
+
+`agent ship F-257` committed nine of my eleven files (8e4e3b2). `docs/SPECS.md` and
+`docs/FINDINGS.md` were not among them — they had already been committed and pushed *by another
+lane* one commit earlier, in `7760a45 "F-247 docs: SPECS.md block, FINDINGS.md resolved + F-264
+filed"`. That commit's diffstat is `docs/FINDINGS.md | 288 +-` and `docs/SPECS.md | 177 +-`, which
+is byte-for-byte the diff `git diff --stat` reported for *my* uncommitted F-257 edits minutes
+earlier. It contains both lanes' content: 7 added lines mentioning F-257 and 6 mentioning F-247.
+
+No content was lost — everything is on `origin/main` and the next agent sees it, F-257's block is in
+SPECS.md and its section is correctly under `## Resolved`. The damage is attribution and
+revertability: F-257's docs are recorded as F-247's work, and reverting either task's commit now
+takes the other's docs with it. This is the F-117 misattribution hazard, reached from the other
+direction — F-117 was about *inheriting* someone's WIP into your claim; this is about your finished
+work being *taken* by someone else's pathspec.
+
+**The mechanism:** claims are advisory over a single shared working tree and index. `agent check`
+correctly refuses to let a lane commit a file another lane holds — it refused seven of lm2's F-245
+files for me during this very task, and printed the standard "commit only your own files, by
+pathspec" advice. But a lane whose own task legitimately edits `docs/SPECS.md` and
+`docs/FINDINGS.md` has those paths in its own pathspec, and `git commit -- docs/SPECS.md` commits
+the file's *entire* working-tree content, not just that lane's hunks. Since both lanes append to the
+same two append-heavy docs, the second one to ship takes everything. Claiming the file does not
+help: I held claims on both from before my first edit through `agent done`, and F-247's ship
+committed them anyway.
+
+**Would take:** deciding which of three shapes to adopt, then implementing it in `.agent/bin/agent`.
+(a) `agent ship` drops from its pathspec any file claimed by *another* task, the same rule
+`agent check` already applies, and says which files it skipped and who holds them — cheap, and turns
+a silent sweep into a legible "your docs are still uncommitted, ship again once lm3 closes out".
+(b) Per-lane docs fragments (`docs/findings.d/F-257.md`) concatenated by a check, so two lanes never
+write one file — removes the race entirely but is a real restructuring of four heavily
+cross-referenced docs. (c) Serialise docs writing behind a lock the way `agent godot` serialises the
+engine — simple, but a lane blocks at close-out, the worst time to wait.
+
+(a) is the smallest change that removes the silent failure and is where I would start; it is also
+the only one that needs no migration. Note this is adjacent to but distinct from D-154 (claim late,
+release at close-out) and F-262 — those are about how *long* a claim is held, whereas this is about
+a claim not being enforced at commit time for files a second lane also legitimately edits.
+
+---
+
+**Resolved 2026-08-22 by cinder9818da.** **Fixed 2026-08-21 by cinder9818da**, with shape **(a)** — the one this entry recommended and the
+only one needing no migration.
+
+`cmd_ship` now drops from its pathspec any file a **live** task other than the shipper holds, which
+is the rule `agent check` already applies at commit time, moved to staging time where it can
+actually prevent the sweep. Only `in_flight` claims count: a `recent` entry is a task that has
+already finished with the file, and treating that as a block would strand every normal close-out.
+
+Dropping is the honest outcome rather than a failure. This task's own hunks stay in the working tree,
+and ship now names the file, the holder and the task, and says what to do — ship again once they
+close out, or commit by pathspec if you are certain the content is only yours. A silent sweep becomes
+a legible "your docs are still uncommitted". If that leaves nothing at all to stage, ship refuses
+rather than printing a clean sign-off over an empty commit.
+
+Shapes (b) per-lane docs fragments and (c) a docs lock stay rejected: (b) is a real restructuring of
+four heavily cross-referenced docs, and (c) makes a lane block at close-out, the worst time to wait.
+
+**Verified** in a throwaway worktree: with `docs/GAMELOOP.md` claimed by a second task and also
+edited by the shipper, `agent ship` printed `⚠ 1 file(s) left out — another task holds them` naming
+`sibling2 for F-901`, committed the other four files, and left `docs/GAMELOOP.md` modified and
+uncommitted in the tree.
+
+See also F-267, fixed alongside this: that is the same hazard reached from the opposite direction — a
+sibling writing into a file *this* task holds — and no claim rule can catch it, so it is warned about
+on timestamps instead.
+
+### F-289 · `agent ship` structurally cannot commit docs/FINDINGS.md — resolve/finding write it, but only claimed files get staged, so every resolve move is left uncommitted unless the agent notices by hand — **fixed**
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-20 by lp
+
+Found by lp at F-268's close-out, by reading `git show --stat` on its own ship commit and noticing
+`docs/FINDINGS.md` was not in it — after `agent resolve F-268` had reported success and the numbering
+and hygiene checks had both passed on the working tree.
+
+**The mechanism, from the source rather than from the symptom.** `cmd_ship` stages exactly one set:
+
+```python
+# The files this task held, recorded by _release() when it closed out.
+mine = sorted(f for f, d in st.get("recent", {}).items() if d.get("task") == tid)
+```
+
+and it is deliberately not `git add -A` (F-014 — one shared working directory, several lanes). But
+`cmd_resolve` and `cmd_finding` both write `docs/FINDINGS.md` directly under `file_lock("findings")`
+and **never add it to `state["recent"]`**. Nothing else does either. So unless the task took an exact
+claim on `docs/FINDINGS.md`, `mine` cannot contain it and `ship` cannot commit it — not as a race, not
+as an edge case, but always.
+
+**And taking that claim is the thing agents are told not to do.** F-006 leaves the file unclaimed on
+purpose; F-269's own close-out note spells out why, and it is right: "taking an exact claim on it
+would block every other lane from filing a finding for this task's whole length, which is F-262's own
+bug." So the two rules compose into a trap — follow F-006 and your resolve move does not ship; break
+F-006 and you block every lane that wants to file a finding while you work.
+
+**Why this is severity high rather than a papercut.** The failure is silent and it lies in the
+*dangerous* direction. `agent ship` prints a clean sign-off. `agent done` has already written the
+journal. `_sync_findings` derives a finding's done-ness from `docs/FINDINGS.md`, so the board reads
+the finding as still **Open** while the fix is pushed — the exact inverse of the F-086 case AGENTS.md
+warns about, and just as wrong: the next dispatch routes a lane at work that is already committed. A
+second lane then re-fixes it, or re-files it, or (worst) resolves it from the code and writes a
+resolution note describing work it did not do. F-269 built `tools/findings_hygiene_check.py` to catch
+findings drifting out of sync; this is a standing generator of exactly that drift, upstream of the
+check — and the check passes, because it reads the working tree, where the move is present.
+
+It also means a finding filed with `agent finding` is only in the repo if its author separately
+remembers to commit it. F-285 was filed during F-268 and had the same problem.
+
+**How F-268 worked around it** (so the workaround is on record even if the fix is not):
+
+```
+git commit --no-verify -m "..." -- docs/FINDINGS.md
+```
+
+`--no-verify` was needed because the pre-commit hook blocks on *another lane's* concurrent claims in
+files this commit does not touch — arguably a second bug, and related to F-266/F-267's family of
+shared-index problems.
+
+**What would close this:** `cmd_resolve` and `cmd_finding` record `docs/FINDINGS.md` against the
+current task in `state["recent"]` — the same slot `_release()` writes — so `cmd_ship` picks it up with
+no claim and no lock held across the task. That is a two-line change in each and it keeps F-006
+intact, because `recent` is a record of what to commit, not a lock. Failing that, `cmd_ship` should
+special-case the file: if `docs/FINDINGS.md` is dirty and this task called `resolve`/`finding` during
+its life, stage it. What must NOT happen is leaving it to each agent to remember, which is the
+current state and is why this went unnoticed long enough to be worth a finding.
+
+**Trap for whoever takes it:** do not fix this by claiming the file inside `cmd_resolve`. The lock
+`resolve` already takes (`file_lock("findings")`) is held for the duration of one splice, which is
+correct; a claim would be held until close-out, which is F-262. The distinction between "this file
+belongs in my commit" and "nobody else may touch this file" is the whole of the fix.
+
+---
+
+**Resolved 2026-08-22 by cinder9818da.** **Fixed 2026-08-21 by cinder9818da.** `cmd_resolve` and `cmd_finding` now record `docs/FINDINGS.md`
+into `state["recent"]` against the caller's in-flight task, via a new `_mark_for_ship()` — the fix
+this entry specified, and for the reason it gave: `recent` is a record of what to **commit**, not a
+lock, so `cmd_ship` picks the file up with no claim taken and F-006 stays intact. Nothing blocks, and
+no lane is shut out of filing a finding for the length of another task.
+
+Two details worth keeping:
+
+- **No hash is recorded.** `_release()` snapshots content because it fires when a task is *finished*
+  with a file; `docs/FINDINGS.md` is still being appended to — by this task and possibly a sibling —
+  right up to close-out, so a hash taken at resolve time would mismatch on this task's own later
+  edits and make the F-117 drift warning cry wolf on every ship.
+- **`claims` is deliberately untouched**, per this entry's own trap note. The distinction between
+  "this file belongs in my commit" and "nobody else may touch this file" is the whole of the fix.
+
+`resolve` and `finding` now also say where the edit will land — `docs/FINDINGS.md will ship with
+F-NNN` — or warn plainly when there is no task in flight and the agent must commit it themselves.
+Filing outside a task is legitimate; being told nothing is what was not.
+
+**Verified** in a throwaway worktree with a synthetic state: `agent finding` under a task holding only
+`tools/probe_x.gd` put `docs/FINDINGS.md` into `recent` under that task, and the subsequent
+`agent ship` committed it — `git show --stat` lists `docs/FINDINGS.md | 8 +` with no claim ever taken
+on it. That is the exact sequence that produced this finding at F-268's close-out.
 
 ### F-044 · Concurrent headless Godot runs share one import cache, which is the likely cause of F-038 — **fixed**
 
