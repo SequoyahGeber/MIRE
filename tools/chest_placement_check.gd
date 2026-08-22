@@ -21,6 +21,13 @@ extends SceneTree
 const MARKER_GROUP: StringName = &"authored_world_marker"
 
 var failures: int = 0
+## F-574: assertions that are correct but cannot hold while a tier's gate item is unauthored.
+## Reported separately from `failures` so a legitimately-blocked expectation never turns this guard
+## permanently red — a check that is always failing is a check nobody reads, which is the exact
+## failure F-572 fixed in `asset_usage_check` this morning.
+var pending: int = 0
+## Whether `gilded`'s key exists yet. Set once in `_run()`.
+var _gilded_gate_ok: bool = false
 var _open_results: Array[Dictionary] = []
 
 
@@ -45,6 +52,12 @@ func _run() -> void:
 
 	var service: Node = root.get_node_or_null(^"ChestPlacementService")
 	check(service != null, "ChestPlacementService is registered as an autoload")
+	# F-574: does `gilded`'s key exist yet? Asked of the service itself rather than hard-coded, so
+	# the day A-047 authors `gilded_key` every deferred assertion below turns back into a real one
+	# with no edit to this file.
+	if service != null:
+		_gilded_gate_ok = bool(service.call("_gate_is_satisfiable", &"gilded"))
+		print("gilded gate satisfiable: %s" % _gilded_gate_ok)
 	if service == null:
 		finish()
 		return
@@ -83,9 +96,20 @@ func _check_live_hollowmere(service: Node) -> void:
 
 	check(cache_chests.size() == 8, "all 8 shipped Cache_ markers got a live Chest",
 		str(cache_chests.size()))
-	check(gilded_chests.size() >= 1 and gilded_chests.size() <= 2,
-		"gilded chest count is within the 1-2/island budget (ITEMS.md §6.4)",
-		str(gilded_chests.size()))
+	# F-574: `ChestPlacementService` now refuses to build a chest whose `locked_by` item is not
+	# registered, and `gilded_key` is unauthored until A-047. The 1-2/island budget is still the
+	# right assertion — ITEMS.md §6.4 owns it and nothing else does — so it is kept verbatim and
+	# merely deferred. It goes green by itself the day the key lands, with no edit here.
+	if _gilded_gate_ok:
+		check(gilded_chests.size() >= 1 and gilded_chests.size() <= 2,
+			"gilded chest count is within the 1-2/island budget (ITEMS.md §6.4)",
+			str(gilded_chests.size()))
+	else:
+		pend("gilded chest count is within the 1-2/island budget (ITEMS.md §6.4)",
+			"'gilded_key' is not a registered item, so the tier deliberately places nothing")
+		check(gilded_chests.is_empty(),
+			"an ungated gilded tier places NO chest rather than an unopenable one",
+			str(gilded_chests.size()))
 
 	for chest: Node in cache_chests:
 		check(StringName(chest.get("tier")) == &"basic", "Cache_ chest resolved to tier 'basic'")
@@ -113,6 +137,9 @@ func _check_live_hollowmere(service: Node) -> void:
 		check(opened_locator != null and not opened_locator.visible,
 			"an opened chest removes its discoverability mote")
 
+	if gilded_chests.is_empty() and not _gilded_gate_ok:
+		pend("a gilded chest refuses to open without a Gilded Key",
+			"no gilded chest is placed while the key does not exist")
 	if not gilded_chests.is_empty():
 		var result: Dictionary = await _request_and_await(gilded_chests[0])
 		check(not bool(result.get("accepted", false)),
@@ -240,8 +267,13 @@ func _check_synthetic(service: Node) -> void:
 	unrecognised.add_to_group(MARKER_GROUP)
 	holder.add_child(unrecognised)
 
+	# F-574: deliberately `legendary`, not `gilded`. These assertions are about RESCAN MECHANICS —
+	# a fresh marker gets built, a second rescan does not double-build — and a tier whose gate item
+	# does not exist now correctly builds nothing, which would make them assert the placement gate
+	# instead of the thing they exist to cover. `legendary` is the same code path with a satisfiable
+	# gate. The gate's own behaviour is asserted above, and in `tools/chest_gate_check.gd`.
 	var new_gilded := Marker3D.new()
-	new_gilded.name = "Chest_gilded_synthetic"
+	new_gilded.name = "Chest_legendary_synthetic"
 	new_gilded.set_meta(&"kind", "loot")
 	new_gilded.add_to_group(MARKER_GROUP)
 	holder.add_child(new_gilded)
@@ -253,10 +285,11 @@ func _check_synthetic(service: Node) -> void:
 		"a non-'loot' kind marker never gets a Chest, whatever its name")
 	check(unrecognised.get_node_or_null(^"Chest_Waymark_9") == null,
 		"a 'loot' marker with no recognised name prefix is left alone")
-	var synthetic_chest: Node = new_gilded.get_node_or_null(^"Chest_Chest_gilded_synthetic")
-	check(synthetic_chest != null, "a fresh 'Chest_gilded_<n>' marker gets built on the next rescan")
+	var synthetic_chest: Node = new_gilded.get_node_or_null(^"Chest_Chest_legendary_synthetic")
+	check(synthetic_chest != null,
+		"a fresh 'Chest_<tier>_<n>' marker gets built on the next rescan")
 	if synthetic_chest != null:
-		check(StringName(synthetic_chest.get("tier")) == &"gilded",
+		check(StringName(synthetic_chest.get("tier")) == &"legendary",
 			"the synthetic marker's tier parsed from its own name")
 		check(synthetic_chest.get_node_or_null(^"ChestVisual") != null,
 			"a dynamically placed chest receives a real visual model")
@@ -267,7 +300,7 @@ func _check_synthetic(service: Node) -> void:
 		await process_frame
 	var rebuilt_count: int = 0
 	for child: Node in new_gilded.get_children():
-		if child.name == "Chest_Chest_gilded_synthetic":
+		if child.name == "Chest_Chest_legendary_synthetic":
 			rebuilt_count += 1
 	check(rebuilt_count == 1, "a second rescan does not double-build an already-placed chest",
 		str(rebuilt_count))
@@ -287,6 +320,13 @@ func _check_locator(chest: Node, label: String) -> void:
 		"%s has a local warm locator light" % label)
 
 
+## An assertion that is correct and cannot hold yet — see `pending`'s header. Never counts as a
+## failure and never counts as a pass; it prints so the deferral stays visible in the log.
+func pend(description: String, reason: String) -> void:
+	pending += 1
+	print("PENDING: %s  —  %s" % [description, reason])
+
+
 func check(condition: bool, description: String, detail: String = "") -> void:
 	if condition:
 		print("PASS: %s" % description)
@@ -296,5 +336,7 @@ func check(condition: bool, description: String, detail: String = "") -> void:
 
 
 func finish() -> void:
-	print("failures=%d" % failures)
+	if pending > 0:
+		print("%d assertion(s) deferred until content they depend on exists (F-574)." % pending)
+	print("failures=%d pending=%d" % [failures, pending])
 	quit(0 if failures == 0 else 1)

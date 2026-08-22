@@ -140,7 +140,17 @@ func _maybe_build(marker: Node3D) -> void:
 	var tier: StringName = _tier_for_marker_name(marker.name)
 	if tier == &"":
 		return
-	if not _gate_is_satisfiable(tier):
+	# The economy is resolved BEFORE the gate is tested, because they must be the same economy.
+	# Review catch (wick3d4184, 2026-08-22): a `Cache_`-prefixed marker overrides the tier's row
+	# with a free, unlocked one, so testing the gate against `_ECONOMY_FOR_TIER` alone asked about a
+	# row this marker does not use. Unreachable today — `Cache_` maps to `basic`, which has no
+	# `locked_by` — but safe by DATA rather than by construction, which is the same criticism that
+	# fixed `station_count()` an hour ago.
+	var economy: Dictionary = (
+		{"cost_coins": 0, "locked_by": &""} if String(marker.name).begins_with(CACHE_PREFIX)
+		else _ECONOMY_FOR_TIER.get(tier, {})
+	)
+	if not _gate_is_satisfiable(tier, economy):
 		# F-574: refuse to build a container the game has no way to let anyone open. `gilded` is
 		# key-only by D-122 and its key does not exist yet (`gilded_key` is A-047 art, still
 		# QUEUED), so `content/poi/treasure_gilded.tres`'s two sites an island were shipping two
@@ -155,14 +165,11 @@ func _maybe_build(marker: Node3D) -> void:
 	marker.set_meta(BUILT_META, true)
 	var chest: Node3D = CHEST_SCRIPT.new() as Node3D
 	chest.name = "Chest_%s" % marker.name
-	# A Reed Cache is the `basic` TABLE handed out rather than sold, so the price comes from the
-	# marker prefix and not from the tier alone: the tier decides what is inside, the marker decides
-	# whether you pay for it. Without this split, `basic`'s own 10-coin rung would price the eight
-	# free caches a run needs before it has any coins to price them with.
-	var economy: Dictionary = (
-		{"cost_coins": 0, "locked_by": &""} if String(marker.name).begins_with(CACHE_PREFIX)
-		else _ECONOMY_FOR_TIER.get(tier, {})
-	)
+	# `economy` was resolved above, before the gate test. A Reed Cache is the `basic` TABLE handed
+	# out rather than sold, so the price comes from the marker prefix and not from the tier alone:
+	# the tier decides what is inside, the marker decides whether you pay for it. Without that
+	# split, `basic`'s own 10-coin rung would price the eight free caches a run needs before it has
+	# any coins to price them with.
 	# Property order matches tools/loot_content_check.gd's own worked example: every @export set
 	# BEFORE add_child(), since _ready() (and therefore _validate_configuration()) fires the moment
 	# the chest enters the tree.
@@ -186,9 +193,11 @@ func _maybe_build(marker: Node3D) -> void:
 ## Warns ONCE per tier rather than per placed chest — six sites an island times every reseed is a log
 ## nobody reads, and the point of the warning is that an authored gate is unreachable, which is a
 ## fact about content and not about this instance.
-func _gate_is_satisfiable(tier: StringName) -> bool:
-	var economy: Dictionary = _ECONOMY_FOR_TIER.get(tier, {})
-	var key := StringName(economy.get("locked_by", &""))
+func _gate_is_satisfiable(tier: StringName, economy: Dictionary = {}) -> bool:
+	# Defaulting to the tier's own row keeps the one-argument form callable from checks, which ask
+	# about a TIER rather than about a placed marker.
+	var row: Dictionary = economy if not economy.is_empty() else _ECONOMY_FOR_TIER.get(tier, {})
+	var key := StringName(row.get("locked_by", &""))
 	if key == &"":
 		return true
 	if Registry.has_item(key):
