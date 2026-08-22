@@ -66,7 +66,10 @@ const SPIN_DEGREES_PER_SEC: float = 55.0
 const FALLBACK_SIZE_M: float = 0.22
 
 signal pickup_confirmed(request_id: int, accepted: bool, reason: String)
-## Host-side, after the grant landed. `ItemDropService` listens to log it; UI can hang off it later.
+## Host-side, after the grant landed. LISTENERS (keep this list current — a dead-signal audit flagged
+## this signal as unconnected in F-576 when it was really an unfinished feature, F-581):
+## `ItemDropService` logs it, and `_try_collect()` below relays the same grant to the collecting peer
+## through `PickupFeedService`, which is what drives the pickup message, cue and HUD.
 signal collected(peer_id: int, item_id: StringName, amount: int)
 
 ## Spawn-replicated: what this drop is, and how much of it. Set by
@@ -214,6 +217,12 @@ func _try_collect(peer_id: int) -> bool:
 		return false
 	_collected = true
 	collected.emit(peer_id, item_id, amount)
+	# The collector is usually NOT this process: `collected` fires on the host, and a client who
+	# walked over the drop would otherwise learn nothing at all (F-581). PickupFeedService is the one
+	# seam that puts the message, the cue and the HUD flash on the machine that earned them.
+	var feed: Node = get_node_or_null(^"/root/PickupFeedService")
+	if feed != null:
+		feed.call(&"host_notify", peer_id, &"item", item_id, amount, &"ground")
 	MireLog.info(&"inventory", "peer %d picked up %d %s from the ground" % [peer_id, amount, item_id])
 	_despawn()
 	return true

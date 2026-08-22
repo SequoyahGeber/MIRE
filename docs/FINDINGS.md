@@ -3269,33 +3269,6 @@ shipped powerup's every modifier is unread, so this cannot silently regrow.
 
 ---
 
-### F-581 · Loot has no moment: chests resolve into a modal list, and picking anything up is silent and invisible
-
-**Area:** ui · **Severity:** high · **Found:** 2026-08-22 by larchcc2572
-
-Opening a chest today freezes the player behind a modal panel (`ui/loot/chest_ui.gd`) that
-lists the granted ids as text rows, and then nothing else happens: no reveal, no VFX, no
-lasting record of what the run has given you. Picking an item up off the ground
-(`systems/loot/item_drop.gd`) is worse — the host grants it and emits `collected` *on the
-host only*, so a client who walks over a drop gets no message, no sound and no feedback of
-any kind. `SfxCatalogue` has shipped an `item_pickup` cue since the audio pass and the only
-thing that plays it is an inventory *operation* confirmation, never an actual pickup.
-
-Consequences:
-
-  · The chest — the loop's headline reward moment, the thing DESIGN.md §4.4 builds the
-    powerup economy around — has less presentation than opening a door.
-  · A powerup grant is invisible. Nothing on screen ever says which powerups you hold, so
-    the Resonance economy (3+ of a family) cannot be played deliberately.
-  · Ground pickups have no confirmation at all on a client, which reads as "the drop
-    despawned" rather than "you got it".
-
-Wanted: a slot-machine reveal in the world above the chest, a client-local pickup feed
-(bottom-left messages for every item and powerup received, from any source), a held-powerup
-icon row, screen VFX on a powerup grant, and the pickup cue actually wired to pickups.
-
----
-
 ### F-582 · agent godot --check-only without --script boots the game instead of checking anything, and holds the shared lock forever
 
 **Area:** tooling · **Severity:** high · **Found:** 2026-08-22 by hollowbfcf67
@@ -3344,6 +3317,121 @@ belongs to birch1db63e — reaping another session's process is theirs or Sequoy
 ---
 
 ## Resolved
+
+### F-581 · Loot has no moment: chests resolve into a modal list, and picking anything up is silent and invisible — **fixed**
+
+**Area:** ui · **Severity:** high · **Found:** 2026-08-22 by larchcc2572
+
+Opening a chest today freezes the player behind a modal panel (`ui/loot/chest_ui.gd`) that
+lists the granted ids as text rows, and then nothing else happens: no reveal, no VFX, no
+lasting record of what the run has given you. Picking an item up off the ground
+(`systems/loot/item_drop.gd`) is worse — the host grants it and emits `collected` *on the
+host only*, so a client who walks over a drop gets no message, no sound and no feedback of
+any kind. `SfxCatalogue` has shipped an `item_pickup` cue since the audio pass and the only
+thing that plays it is an inventory *operation* confirmation, never an actual pickup.
+
+Consequences:
+
+  · The chest — the loop's headline reward moment, the thing DESIGN.md §4.4 builds the
+    powerup economy around — has less presentation than opening a door.
+  · A powerup grant is invisible. Nothing on screen ever says which powerups you hold, so
+    the Resonance economy (3+ of a family) cannot be played deliberately.
+  · Ground pickups have no confirmation at all on a client, which reads as "the drop
+    despawned" rather than "you got it".
+
+Wanted: a slot-machine reveal in the world above the chest, a client-local pickup feed
+(bottom-left messages for every item and powerup received, from any source), a held-powerup
+icon row, screen VFX on a powerup grant, and the pickup cue actually wired to pickups.
+
+---
+
+**Resolved 2026-08-22 by larchcc2572.** **Fixed.** Loot has a moment now, and every pickup says so.
+
+**One new seam, `autoload/pickup_feed_service.gd`.** Whatever grants a player anything calls
+`host_notify(peer_id, kind, id, amount, source)` (or `host_notify_granted()` for a whole haul) and
+the service delivers it to THAT player's machine — one `rpc_id` to the one peer who earned it, never
+a broadcast. `pickup_received` is the single client-local signal every surface hangs off. It is
+notification only: the grant is host-authoritative and already happened, so nothing here grants,
+validates or mutates. `Chest` and `ItemDrop` both report through it, which is what the finding was
+really about — both signals fired in the HOST process, so a client who walked over a drop learnt
+nothing at all.
+
+**The player-facing half, `ui/hud/pickup_hud.gd`** (autoload; never blocks, never takes the cursor):
+a bottom-left feed of `+3 Mushroom` lines from any source, merging a repeat of the same pickup inside
+2.5 s rather than stacking rows; a top-left row of held powerup icons with stack counts, driven by
+`PowerupService.local_powerups_changed` rather than the feed so it survives a reconnect and a
+late-join snapshot; and a family-tinted screen flash plus a named card when a powerup lands.
+
+**The chest modal is gone.** `ui/loot/chest_ui.gd` no longer joins `blocks_gameplay_input` and no
+longer draws a reward list — it kept the [E] input and a transient refusal line. The reveal is
+`ui/loot/chest_reel.gd`: a slot machine in the world above the chest, powerup icons whipping past a
+tinted window and decelerating onto the prize (the ease is on the *interval between faces*, which is
+what a real reel's friction does), then a scale pop, a light pulse and a mote burst. Presentation
+only — the host's seeded roll (F-210) decided the haul before the first face is drawn — and parented
+to the chest so it dies with it.
+
+**The `item_pickup` cue existed all along** and was wired to inventory *operation* confirmations, so
+shuffling a stack in your pack made the pickup sound and picking something up made none. It now plays
+on the peer that received the pickup, alongside `powerup_pickup`.
+
+Verified: `tools/pickup_feed_check.gd` (new) — 0 failures across the feed, the merge, the expiry, the
+ceremony, the row and the reel. `tools/stringname_sort_check.gd` — 0 failures; its third ordering
+site moved with the code from ChestUI's reward rows to `host_notify_granted()`'s dispatch order,
+which is the same lexicographic contract in the place a player now actually reads it.
+
+**Related, and deliberately not fixed here:** F-580 found that 24 of `PowerupDef.KNOWN_STATS` have no
+consumer, so 30 of 72 powerups do nothing when granted. That is the read side; this was the write
+side. They were independently true, which is part of why neither was obvious — a powerup that neither
+announces itself nor does anything is indistinguishable from a chest that rolled nothing. This change
+makes those grants visible and named, so a dead stat is now a bug someone can see.
+
+### F-583 · agent godot --check-only with no --script boots the game and holds the shared lock forever — **fixed**
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-22 by larchcc2572
+
+Godot's `--check-only` is a **modifier for `--script`**: it means "parse that script for errors and
+quit". Passed on its own it is inert — the engine boots the project normally, headless, into
+`frontend.tscn`, and sits in its main loop with no path to `quit()`.
+
+`.agent/bin/agent godot` forwards unrecognised flags straight through, so
+`agent godot --check-only` (no `--script`) produces a process that:
+
+  · never exits,
+  · never produces the syntax check the caller believed they were running, and
+  · **holds the shared godot import-cache lock the entire time**, which every other agent's check
+    is queued behind (F-044).
+
+Observed on 2026-08-22 17:15–17:32 UTC: wrapper pid 46113 / engine pid 46171, 54s of CPU across
+16m39s elapsed — ~4% of one core, sustained, which is the signature of an idle main loop ticking
+rather than a compile. Six `agent godot` runs were queued behind it (`pickup_feed_check`,
+`station_tier_check` x2, `session_lifecycle_check`, `powerup_check`). Diagnosed by hollowbfcf67, who
+sampled the engine pid twice twenty seconds apart; confirmed independently here from the same
+process table before this was filed. F-557 is the same family — an engine invocation with no exit
+path holding a shared resource.
+
+The silent half is the worse half: the agent that ran it believes its files were syntax-checked and
+they were not.
+
+**Fix:** `agent godot` should refuse the combination outright — if `--check-only` appears without
+`--script`, exit non-zero with "--check-only checks a script; pass --script <path>" and never take
+the lock. A `--quit-after` backstop on any engine launch that is not a `--script` run would catch
+the whole family rather than this one instance.
+
+**Resolved 2026-08-22 by larchcc2572.** **Folded into F-582 — not fixed, duplicate.** hollowbfcf67 filed F-582 (commit 5b20ff8a) for the
+same wrapper footgun roughly twenty minutes before this one, from the same live instance: their
+diagnosis of pid 46171 is what I was independently confirming when I filed F-583. F-582 is the
+better entry — it quotes `_godot_argv()`, keeps both CPU samples, and states the generalisable test
+("elapsed-versus-CPU is the test; `%CPU` alone cannot tell a wedged holder from a working one"),
+which F-583 only implied.
+
+Nothing here is fixed: `agent godot` still forwards `--check-only` without `--script` and still takes
+the lock before doing so. **The work lives under F-582.** Both entries proposed the same remedy —
+refuse the combination before taking the lock, plus a `--quit-after` backstop on any engine launch
+that is not a `--script` run, which catches F-557's family too.
+
+Filed twice because two sessions were diagnosing one stuck lock from opposite ends and neither had
+seen the other's commit yet; recorded here rather than deleted so the duplicate number does not look
+like a lost finding.
 
 ### F-578 · Four of the eight craftable stations do nothing: StationDef's family/tier are never read, so the Reinforced Workbench unlocks no recipes — **duplicate of F-575**
 

@@ -1,73 +1,47 @@
 extends CanvasLayer
 
-## Client-local chest-opening presentation. Chest remains the only authority: this UI finds the
-## nearest chest, turns [E] into exactly one `request_open()`, and renders whatever
-## `open_confirmed` reports — it never predicts a roll or a grant. Joins the D-032 interlock
-## (`blocks_gameplay_input`) like InventoryUI/CraftingUI, so at most one cursor-owning panel is ever
-## open at a time.
+## Client-local chest-opening flow. Chest remains the only authority: this UI finds the nearest
+## chest, turns [E] into exactly one `request_open()`, and presents whatever `open_confirmed`
+## reports — it never predicts a roll or a grant.
+##
+## ## What this used to be, and why it changed (F-581)
+##
+## It used to open a full-screen modal listing the granted ids as text rows, taking the cursor and
+## joining the D-032 blocking-input interlock. Sequoyah's call: the chest is the loop's headline
+## reward moment and deserves a *ceremony*, not a receipt — and a ceremony that stops the game is
+## worse than no ceremony at all in a six-player co-op fight. So the reveal moved into the world as
+## a slot machine above the chest (`ui/loot/chest_reel.gd`), the itemised "what did I get" moved to
+## the shared pickup feed every ground drop already uses (`ui/hud/pickup_hud.gd` through
+## `PickupFeedService`), and this file kept only the input and the refusals.
+##
+## Consequently **nothing here blocks, and nothing here takes the cursor.** It still refuses to open
+## a chest while another panel owns the screen, because [E] belongs to that panel then.
 
 const CHEST_GROUP: StringName = &"chest"
 const BLOCKING_UI_GROUP: StringName = &"blocks_gameplay_input"
+const CHEST_REEL := preload("res://ui/loot/chest_reel.gd")
+const MIRE_THEME := preload("res://ui/theme/mire_theme.gd")
+
 const RANGE_POLL_SEC: float = 0.15
-const NARROW_BREAKPOINT_PX: float = 700.0
-
-const COLOUR_SCREEN_SHADE := Color(0.018, 0.035, 0.028, 0.78)
-const COLOUR_PANEL := Color(0.055, 0.086, 0.070, 0.97)
-const COLOUR_ROW := Color(0.085, 0.125, 0.102, 0.98)
-const COLOUR_BORDER := Color(0.345, 0.475, 0.390, 1.0)
-const COLOUR_READY := Color(0.894, 0.704, 0.286, 1.0)
-const COLOUR_TEXT := Color(0.91, 0.94, 0.89, 1.0)
-const COLOUR_MUTED := Color(0.60, 0.69, 0.62, 1.0)
-const COLOUR_ERROR := Color(0.96, 0.47, 0.39, 1.0)
-
-
-## One granted item or coin amount. Built fresh per open, never mutated in place.
-class RewardRow extends PanelContainer:
-	func setup(display_name: String, amount: int) -> void:
-		var margin := MarginContainer.new()
-		margin.add_theme_constant_override("margin_left", 12)
-		margin.add_theme_constant_override("margin_top", 6)
-		margin.add_theme_constant_override("margin_right", 12)
-		margin.add_theme_constant_override("margin_bottom", 6)
-		add_child(margin)
-
-		var row := HBoxContainer.new()
-		margin.add_child(row)
-
-		var name_label := Label.new()
-		name_label.text = display_name
-		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		name_label.add_theme_font_size_override("font_size", 14)
-		name_label.add_theme_color_override("font_color", COLOUR_TEXT)
-		row.add_child(name_label)
-
-		var amount_label := Label.new()
-		amount_label.text = "×%d" % amount
-		amount_label.add_theme_font_size_override("font_size", 14)
-		amount_label.add_theme_color_override("font_color", COLOUR_READY)
-		row.add_child(amount_label)
-
-		var style := StyleBoxFlat.new()
-		style.bg_color = COLOUR_ROW
-		style.border_color = COLOUR_BORDER
-		style.set_border_width_all(1)
-		style.set_corner_radius_all(6)
-		add_theme_stylebox_override("panel", style)
+## How long a refusal ("you need 12 coins", "locked — you need a Rusted Key") sits on screen. Long
+## enough to read while walking away; short enough that it is gone before you get back with the key.
+const STATUS_HOLD_SEC: float = 3.0
+const STATUS_FADE_SEC: float = 0.4
+## Just under the crosshair, where the focus prompt already puts its own line — a refusal is an
+## answer to the button you pressed, so it belongs where you were looking when you pressed it.
+const STATUS_TOP_FRACTION: float = 0.58
 
 
 var _root: Control
-var _shade: ColorRect
-var _panel_center: CenterContainer
-var _panel: PanelContainer
-var _reward_box: VBoxContainer
+var _status_panel: PanelContainer
 var _status_label: Label
-var _open: bool = false
+var _status_remaining: float = 0.0
 var _poll_accumulator: float = 0.0
 var _nearest_chest: Node3D
 var _pending_chest: Node3D
 var _pending_request_id: int = -1
 var _request_in_flight: bool = false
-var _restore_mouse_captured: bool = false
+var _reel: Node3D
 
 
 func _ready() -> void:
@@ -78,14 +52,13 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_tick_status(delta)
 	_poll_accumulator += delta
 	if _poll_accumulator < RANGE_POLL_SEC:
 		return
 	_poll_accumulator = 0.0
-	# The chest scan is pointless while this panel or another blocking UI owns the screen — but the
-	# prompt still needs its cheap refresh so it hides the moment a panel opens (F-099).
-	if _open or _other_blocking_ui():
-		_refresh_prompt()
+	# The chest scan is pointless while another blocking UI owns the screen (F-099).
+	if _other_blocking_ui():
 		return
 	_refresh_nearest()
 
@@ -93,18 +66,12 @@ func _process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if get_viewport().is_input_handled():
 		return
-	if event.is_action_pressed(&"interact"):
-		var focus_owner: Control = get_viewport().gui_get_focus_owner()
-		if focus_owner is LineEdit or focus_owner is TextEdit:
-			return
-		if _open:
-			set_open(false)
-			get_viewport().set_input_as_handled()
-		elif try_open_nearest():
-			get_viewport().set_input_as_handled()
+	if not event.is_action_pressed(&"interact"):
 		return
-	if _open and event.is_action_pressed(&"ui_cancel"):
-		set_open(false)
+	var focus_owner: Control = get_viewport().gui_get_focus_owner()
+	if focus_owner is LineEdit or focus_owner is TextEdit:
+		return
+	if try_open_nearest():
 		get_viewport().set_input_as_handled()
 
 
@@ -121,38 +88,32 @@ func try_open_nearest() -> bool:
 	if not _pending_chest.is_connected(&"open_confirmed", _on_open_confirmed):
 		_pending_chest.connect(&"open_confirmed", _on_open_confirmed)
 	_request_in_flight = true
-	set_open(true)
-	_clear_rewards()
-	_show_status("Opening the chest…", false)
 	_pending_request_id = int(_pending_chest.call("request_open"))
 	return true
 
 
+## Kept as the compatibility seam other panels and checks use to force this UI closed (it is on the
+## same "dismiss every overlay" list as InventoryUI and CraftingUI). There is no longer a panel to
+## close, so this only clears a pending refusal message.
 func set_open(open: bool) -> void:
-	if open == _open:
-		return
-	_open = open
-	_shade.visible = open
-	_panel_center.visible = open
 	if open:
-		add_to_group(BLOCKING_UI_GROUP)
-		_restore_mouse_captured = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	else:
-		remove_from_group(BLOCKING_UI_GROUP)
-		_root.release_focus()
-		if _restore_mouse_captured:
-			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-		_request_in_flight = false
-	_refresh_prompt()
+		return
+	_status_remaining = 0.0
+	_status_panel.visible = false
 
 
 func is_open() -> bool:
-	return _open
+	return _status_panel != null and _status_panel.visible
 
 
 func nearest_chest() -> Node3D:
 	return _nearest_chest
+
+
+## Whether a reveal is playing right now. The reel is world presentation, not UI state — this exists
+## so a check can assert the ceremony happened without reaching into the scene tree.
+func is_revealing() -> bool:
+	return _reel != null and is_instance_valid(_reel)
 
 
 ## Delegates to FocusPrompt, which draws the prompt now. Still answers the question callers were
@@ -165,95 +126,49 @@ func is_prompt_visible() -> bool:
 
 
 func status_text() -> String:
-	return _status_label.text
+	return _status_label.text if _status_panel.visible else ""
 
 
-func reward_row_count() -> int:
-	return _reward_box.get_child_count()
+# ── The reveal ───────────────────────────────────────────────────────────────────────────────────
 
 
-func _build_ui() -> void:
-	_root = Control.new()
-	_root.name = "ChestUIRoot"
-	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_root)
-
-	_shade = ColorRect.new()
-	_shade.name = "ChestShade"
-	_shade.color = COLOUR_SCREEN_SHADE
-	_shade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_shade.mouse_filter = Control.MOUSE_FILTER_STOP
-	_shade.visible = false
-	_root.add_child(_shade)
-
-	_panel_center = CenterContainer.new()
-	_panel_center.name = "ChestCenter"
-	_panel_center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_panel_center.mouse_filter = Control.MOUSE_FILTER_STOP
-	_panel_center.visible = false
-	_root.add_child(_panel_center)
-
-	_panel = PanelContainer.new()
-	_panel.name = "ChestPanel"
-	_panel.custom_minimum_size = Vector2(320.0, 0.0)
-	_panel.add_theme_stylebox_override("panel", _panel_style())
-	_panel_center.add_child(_panel)
-
-	var panel_margin := MarginContainer.new()
-	panel_margin.add_theme_constant_override("margin_left", 18)
-	panel_margin.add_theme_constant_override("margin_top", 16)
-	panel_margin.add_theme_constant_override("margin_right", 18)
-	panel_margin.add_theme_constant_override("margin_bottom", 16)
-	_panel.add_child(panel_margin)
-
-	var stack := VBoxContainer.new()
-	stack.add_theme_constant_override("separation", 10)
-	panel_margin.add_child(stack)
-
-	var title := Label.new()
-	title.text = "CHEST"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 22)
-	title.add_theme_color_override("font_color", COLOUR_TEXT)
-	stack.add_child(title)
-
-	_reward_box = VBoxContainer.new()
-	_reward_box.name = "Rewards"
-	_reward_box.add_theme_constant_override("separation", 6)
-	stack.add_child(_reward_box)
-
-	_status_label = Label.new()
-	_status_label.name = "Status"
-	_status_label.text = "Open a chest to see what's inside."
-	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_status_label.add_theme_font_size_override("font_size", 12)
-	_status_label.add_theme_color_override("font_color", COLOUR_MUTED)
-	stack.add_child(_status_label)
-
-	var close_hint := Label.new()
-	close_hint.text = "E / ESC  CLOSE"
-	close_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	close_hint.add_theme_font_size_override("font_size", 10)
-	close_hint.add_theme_color_override("font_color", COLOUR_MUTED)
-	stack.add_child(close_hint)
-
-	get_viewport().size_changed.connect(_apply_responsive_layout)
-	_apply_responsive_layout()
+func _on_open_confirmed(request_id: int, accepted: bool, granted: Dictionary, detail: String) -> void:
+	if not _request_in_flight and request_id != _pending_request_id:
+		return
+	_request_in_flight = false
+	if not accepted:
+		_show_status(detail)
+		return
+	if granted.is_empty():
+		_show_status("The chest was empty.")
+		return
+	_spawn_reel(granted)
 
 
-func _panel_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = COLOUR_PANEL
-	style.border_color = COLOUR_BORDER
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(9)
-	return style
+## One reel at a time: opening a second chest while the first is still spinning replaces the show
+## rather than stacking two of them in the same square metre of air.
+func _spawn_reel(granted: Dictionary) -> void:
+	if _reel != null and is_instance_valid(_reel):
+		_reel.queue_free()
+	var chest: Node3D = _pending_chest
+	if chest == null or not is_instance_valid(chest):
+		return
+	var reel := Node3D.new()
+	reel.set_script(CHEST_REEL)
+	reel.name = "ChestReel"
+	# Parented to the chest, so the show travels with it and dies with it — a reel outliving the
+	# node it belongs to is the shape that leaves orphaned VFX in the world after a run restart.
+	chest.add_child(reel)
+	reel.global_position = chest.global_position
+	reel.call(&"configure", granted)
+	_reel = reel
+
+
+# ── Scan ─────────────────────────────────────────────────────────────────────────────────────────
 
 
 ## Nearest unopened chest within ITS OWN request_range_m, read straight off the node so the prompt
-## never disagrees with what request_open() will actually accept. No ChestWorld bridge exists (task
-## 3.5 places no props); this scan is the whole discovery mechanism.
+## never disagrees with what request_open() will actually accept.
 func _refresh_nearest() -> void:
 	var player: Node3D = _local_player()
 	var closest: Node3D = null
@@ -274,15 +189,6 @@ func _refresh_nearest() -> void:
 				closest = chest
 				closest_distance_sq = distance_sq
 	_nearest_chest = closest
-	_refresh_prompt()
-
-
-## Kept as a no-op seam. The "[E] Open" panel this used to draw is now one case of the single
-## look-at prompt in `ui/hud/focus_prompt.gd` (F-431) — two panels for one chest, at two different
-## screen offsets, was the duplication that finding was filed about. Chest keeps the *input*: it
-## already owns the request, the in-flight state and the reward rows.
-func _refresh_prompt() -> void:
-	pass
 
 
 func _other_blocking_ui() -> bool:
@@ -300,57 +206,71 @@ func _local_player() -> Node3D:
 	return null
 
 
-func _on_open_confirmed(request_id: int, accepted: bool, granted: Dictionary, detail: String) -> void:
-	if not _request_in_flight and request_id != _pending_request_id:
+# ── Refusal toast ────────────────────────────────────────────────────────────────────────────────
+
+
+func _show_status(message: String) -> void:
+	if message.strip_edges().is_empty():
 		return
-	_request_in_flight = false
-	if accepted:
-		_populate_rewards(granted)
-		_show_status("You found:" if not granted.is_empty() else "The chest was empty.", false)
-	else:
-		_clear_rewards()
-		_show_status(detail, true)
-
-
-func _populate_rewards(granted: Dictionary) -> void:
-	_clear_rewards()
-	var ids: Array[StringName] = []
-	for item_id: StringName in granted:
-		ids.append(item_id)
-	# StringName's `<` compares interned identity, not string content — F-175.
-	ids.sort_custom(func(a, b): return String(a) < String(b))
-	for item_id: StringName in ids:
-		# A reward row names either namespace: chests grant items AND powerups through the same
-		# `granted` dictionary, because from the opener's side they are both "what I got".
-		var display_name: String = String(item_id)
-		var item: ItemDef = Registry.get_item(item_id)
-		if item != null and not item.display_name.is_empty():
-			display_name = item.display_name
-		else:
-			var powerup: Resource = Registry.get_powerup(item_id)
-			if powerup != null and not String(powerup.get("display_name")).is_empty():
-				display_name = String(powerup.get("display_name"))
-		var row := RewardRow.new()
-		row.setup(display_name, int(granted[item_id]))
-		_reward_box.add_child(row)
-
-
-func _clear_rewards() -> void:
-	for child: Node in _reward_box.get_children():
-		_reward_box.remove_child(child)
-		child.queue_free()
-
-
-func _show_status(message: String, error: bool) -> void:
 	_status_label.text = message
-	_status_label.add_theme_color_override("font_color", COLOUR_ERROR if error else COLOUR_MUTED)
+	_status_panel.modulate.a = 1.0
+	_status_panel.visible = true
+	_status_remaining = STATUS_HOLD_SEC + STATUS_FADE_SEC
+	_apply_layout()
 
 
-func _apply_responsive_layout() -> void:
-	if _panel == null:
+func _tick_status(delta: float) -> void:
+	if _status_remaining <= 0.0:
 		return
-	var viewport_width: float = get_viewport().get_visible_rect().size.x
-	var narrow: bool = viewport_width < NARROW_BREAKPOINT_PX
-	_panel.custom_minimum_size = Vector2(
-		clampf(viewport_width - 32.0, 260.0, 420.0 if not narrow else 320.0), 0.0
+	_status_remaining -= delta
+	if _status_remaining <= 0.0:
+		_status_panel.visible = false
+		return
+	if _status_remaining < STATUS_FADE_SEC:
+		_status_panel.modulate.a = _status_remaining / STATUS_FADE_SEC
+
+
+func _build_ui() -> void:
+	_root = Control.new()
+	_root.name = "ChestUIRoot"
+	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_root)
+
+	_status_panel = PanelContainer.new()
+	_status_panel.name = "ChestStatus"
+	_status_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_status_panel.visible = false
+	_status_panel.add_theme_stylebox_override("panel",
+		MIRE_THEME.panel_style(Color(0.03, 0.055, 0.045, 0.90), MIRE_THEME.ERROR))
+	_root.add_child(_status_panel)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_status_panel.add_child(margin)
+
+	_status_label = Label.new()
+	_status_label.name = "Status"
+	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_status_label.add_theme_font_size_override("font_size", 14)
+	_status_label.add_theme_color_override("font_color", MIRE_THEME.TEXT)
+	_status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margin.add_child(_status_label)
+
+	get_viewport().size_changed.connect(_apply_layout)
+	_apply_layout()
+
+
+func _apply_layout() -> void:
+	if _status_panel == null:
+		return
+	var screen: Vector2 = get_viewport().get_visible_rect().size
+	var size: Vector2 = _status_panel.get_combined_minimum_size()
+	_status_panel.size = size
+	_status_panel.position = Vector2(
+		(screen.x - size.x) * 0.5, screen.y * STATUS_TOP_FRACTION
 	)

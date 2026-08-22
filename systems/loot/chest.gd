@@ -219,6 +219,13 @@ func _accept_open_request(peer_id: int, request_id: int) -> void:
 	# that silently stays closed and re-rollable is worse than an empty-handed open. The requester's
 	# detail reflects exactly what they walked away with, empty Dictionary included.
 	opened = true
+	# Same feed every ground pickup goes through (F-581), so "what did I just get" reads identically
+	# whether it came out of a chest or off the floor. The chest's own `open_confirmed` still carries
+	# the whole haul to the opener — that is what drives the reveal reel — but the per-line messages,
+	# the pickup cue and the powerup flash are the feed's job for every source there is.
+	var feed: Node = get_node_or_null(^"/root/PickupFeedService")
+	if feed != null:
+		feed.call(&"host_notify_granted", peer_id, granted, &"chest")
 	_confirm_peer(peer_id, request_id, true, granted, "chest opened")
 
 

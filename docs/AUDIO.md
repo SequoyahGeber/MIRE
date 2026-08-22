@@ -346,6 +346,15 @@ one dispatch at a time on `run_restarted`, which is why the bed defers its snap 
 than reading the duck inside the handler. `tools/theme_music_check.gd`'s "a hard boundary is a snap"
 section replays the restart boundary and asserts both halves.
 
+**One cue is not `SfxDirector`'s** (F-581). `item_pickup` and `powerup_pickup` are played by
+`ui/hud/pickup_hud.gd` off `PickupFeedService.pickup_received`, because the grant happens on the HOST
+and the sound belongs to whoever *received* it — a signal `SfxDirector` cannot hear from the machine
+it is running on. `SfxDirector` had an `item_pickup` line all along, hung off inventory *operation*
+confirmations, so moving a stack around your pack made the pickup sound and actually picking
+something up made none. The director still owns `chest_open` and `loot_rare` at the chest itself,
+which are world sounds everyone nearby hears; the reel adds its own per-face `ui_hover` tick and a
+`ui_confirm` clunk when it lands, through `play_at()`.
+
 ## Network authority (ARCHITECTURE.md §2.2)
 
 Audio is **client-local presentation**. Nothing here replicates: playback is triggered by gameplay

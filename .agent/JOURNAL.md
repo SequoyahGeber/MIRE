@@ -10256,3 +10256,15 @@ Notes along the way:
 Files: `content/poi/loot_cache.tres`, `content/poi/chest_common.tres`, `content/poi/chest_rare.tres`, `content/poi/chest_epic.tres`, `content/poi/chest_legendary.tres`, `ui/hud/focus_prompt.gd`, `tools/focus_prompt_check.gd`, `autoload/item_drop_service.gd`, `systems/loot/item_drop.gd`, `autoload/loose_loot_service.gd`, `project.godot`, `tools/loose_loot_check.gd`, `tools/poi_check.gd`
 
 Commit at time of writing: `0330a08c`
+
+---
+
+### DONE · F-581 · larchcc2572 · 2026-08-22T17:35:08+00:00
+
+**Loot has no moment: chests resolve into a modal list, and picking anything up is silent and invisible**
+
+Slot-machine chest reveal in the world, a shared pickup feed (bottom-left messages, top-left held-powerup row, family-tinted flash and card), and the item_pickup cue finally wired to actual pickups. New PickupFeedService autoload is the one host->receiver notification seam; chest modal deleted. tools/pickup_feed_check.gd and tools/stringname_sort_check.gd both 0 failures.
+
+Files: `ui/loot/chest_ui.gd`, `ui/loot/chest_reel.gd`, `ui/hud/pickup_hud.gd`, `autoload/pickup_feed_service.gd`, `systems/loot/item_drop.gd`, `systems/loot/chest.gd`, `tools/pickup_feed_check.gd`, `tools/stringname_sort_check.gd`, `docs/DELEGATION.md`, `docs/ITEMS.md`, `docs/AUDIO.md`
+
+Commit at time of writing: `2fdb7a9b`

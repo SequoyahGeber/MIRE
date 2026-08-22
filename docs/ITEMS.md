@@ -323,6 +323,24 @@ contract. Muck's proven loop stays: free caches seed coins, priced chests spend 
 > `locked_by` on the `Chest` node), not on the table — which is how a `Cache_<n>` marker hands the
 > `basic` table out for free while `Chest_basic_<n>` sells it for 10.
 
+> **The opening itself is a ceremony, since F-581 (2026-08-22).** Sequoyah's call: the chest is the
+> loop's headline reward moment and had less presentation than a door. Opening one no longer puts a
+> modal list of granted ids on the screen — nothing about a chest blocks or takes the cursor any
+> more. Instead `ui/loot/chest_reel.gd` builds a **slot machine in the world, above the chest**:
+> powerup icons whip past a family-tinted window, decelerate onto what the host actually rolled, and
+> land with a flash, a light pulse and a burst of motes. Everyone standing at the chest sees it.
+>
+> The itemised "what did I get" is not the reel's job — it goes to the shared pickup feed
+> (`PickupFeedService` -> `ui/hud/pickup_hud.gd`), the same bottom-left message list a ground drop
+> uses, so a haul reads identically whatever it came out of. A powerup additionally flashes the
+> screen its family colour, names itself on a card, and takes a permanent tile in the top-left
+> held-powerup row — which is what finally makes the Resonance economy (§4.4's 3-of-a-family
+> threshold) something a player can play on purpose rather than discover.
+>
+> The reel is pure presentation and rolls nothing: the host's seeded `Chest` stream (F-210) has
+> already decided the haul before the first face is drawn. Verified by
+> `.agent/bin/agent godot --script tools/pickup_feed_check.gd`.
+
 ### 5.1 The ladder
 
 Each rung costs roughly twice the one below it, and what the extra coins buy is **odds, not bigger

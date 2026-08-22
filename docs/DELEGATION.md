@@ -75,6 +75,71 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-22 — F-581: loot has a moment, and every pickup says so (larchcc2572)
+
+**The API the next task builds on is one signal.** Anything that gives a player anything — a chest,
+a ground drop, a kill bounty, a future quest reward — announces it through the new
+`PickupFeedService` autoload, and every presentation surface hangs off that one signal:
+
+```gdscript
+# From the HOST, right after the grant landed. `peer_id` is whoever earned it.
+PickupFeedService.host_notify(peer_id, &"item", &"mushroom", 3, &"ground")
+PickupFeedService.host_notify_granted(peer_id, granted, &"chest")   # a whole {id -> amount} haul
+
+# On the RECEIVING peer, client-local. This is the only thing UI/audio/VFX should connect to.
+signal pickup_received(kind: StringName, id: StringName, amount: int, source: StringName)
+```
+
+`kind` is `&"item"` or `&"powerup"` — the two namespaces a grant can name, exactly as `Chest`'s
+`granted` dictionary already mixed them. `kind_of()`, `display_name_of()` and `icon_of()` resolve
+either namespace against the Registry, so a consumer never has to know which one an id came from.
+**Notification only:** the grant is host-authoritative and already happened; this service never
+grants, validates or mutates. It sends one `rpc_id` to the one peer who earned it, never a
+broadcast — a six-player run does not put everyone's loot history on the wire.
+
+Why it had to exist: the grant happens on the HOST and the message belongs on the RECEIVER.
+`ItemDrop.collected` and `Chest.open_confirmed` both fire in the host process, so a client who
+walked over a drop learnt nothing at all — no message, no sound, no feedback. `SfxDirector` had an
+`item_pickup` line hung off inventory *operation* confirmations, which meant shuffling a stack in
+your pack made the pickup sound and actually picking something up made none.
+
+**What the player now gets**, all in `ui/hud/pickup_hud.gd` (autoload, client-local, never blocks and
+never takes the cursor):
+
+  · **bottom-left** — a running feed of `+3 Mushroom` lines, one per received item or powerup, from
+    any source. A repeat of the same pickup inside 2.5 s merges into the existing line rather than
+    stacking a row, which is what keeps a ten-log tree from filling the corner.
+  · **top-left** — the row of held powerup icons with stack counts, driven by
+    `PowerupService.local_powerups_changed` (held state, not the feed, so it survives a reconnect and
+    a late-join snapshot). This is what finally makes §4.4's Resonance thresholds playable on
+    purpose.
+  · **centre** — the powerup ceremony: a family-tinted screen flash and a named card.
+  · the `item_pickup` / `powerup_pickup` cues, on the peer that earned them.
+
+**The chest modal is gone.** `ui/loot/chest_ui.gd` no longer joins `blocks_gameplay_input`, no longer
+takes the cursor, and no longer draws a reward list; it kept only the [E] input and a transient
+refusal line ("you need 12 coins"). The reveal is `ui/loot/chest_reel.gd`, a **slot machine in the
+world above the chest**: powerup icons whip past a tinted window, decelerate onto the prize (the
+ease is applied to the *interval between faces*, which is what a real reel's friction does), then a
+scale pop, a light pulse and a one-shot mote burst. A powerup always wins the headline over coins.
+It is pure presentation — the host's seeded roll (F-210) decided everything before the first face is
+drawn — and it parents itself to the chest so it dies with it rather than orphaning VFX in the world.
+
+**One palette for the whole powerup layer.** `PickupHud.FAMILY_COLOURS` maps §4.4's six families to
+a colour, and the flash, the icon row and the reel all read it, so a Fire pickup is the same orange
+everywhere it appears. A seventh family falls back to the theme amber rather than going colourless.
+
+**Traps this paid for.** `Object.get()` does not see script *constants*, so a check reading
+`FEED_HOLD_SEC` off the HUD silently gets `null` and its fast-forward loop becomes a no-op — use
+literals in the harness. And `ChestReel.configure()` necessarily runs *after* `add_child()` (it needs
+the tree to reach Registry), so it has to re-dress the nodes `_ready()` already built rather than
+assuming it ran first.
+
+Verified by `.agent/bin/agent godot --script tools/pickup_feed_check.gd`.
+`tools/stringname_sort_check.gd`'s third site moved with the code: it used to assert ChestUI's
+reward-row order and now asserts `PickupFeedService.host_notify_granted()`'s dispatch order, which is
+the same lexicographic contract in the place a player actually reads it.
+
 ### 2026-08-22 — F-558: never `preload` product code in a `tools/` harness (bram937a51)
 
 **This is a rule about writing checks, not a fact about one check.** A `--script` harness must bind

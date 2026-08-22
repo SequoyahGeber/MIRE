@@ -8,7 +8,9 @@ extends SceneTree
 ##
 ##   .agent/bin/agent godot --script tools/stringname_sort_check.gd
 ##
-## Covers: RuleService.rule_ids(), InventoryStore._sorted_ids(), ChestUI's reward-row order, and
+## Covers: RuleService.rule_ids(), InventoryStore._sorted_ids(), PickupFeedService's dispatch order
+## for a whole granted haul (which inherited this site from ChestUI's reward rows when F-581 replaced
+## the modal reward list with the in-world reel and the shared pickup feed), and
 ## CommandService.spec_names()/function_names() (F-179 — the fourth/fifth site F-175 named but could
 ## not fix itself, since autoload/command_service.gd was held by another lane's claim all session).
 const InventoryStoreScript := preload("res://systems/inventory/inventory_store.gd")
@@ -25,7 +27,7 @@ func _run() -> void:
 
 	_check_rule_service()
 	await _check_inventory_store()
-	await _check_chest_ui()
+	await _check_pickup_feed()
 	_check_command_service()
 
 	print("\nSTRINGNAME_SORT_CHECK failures=%d" % failures)
@@ -56,26 +58,28 @@ func _check_inventory_store() -> void:
 		"InventoryStore._sorted_ids() is lexicographic: %s" % [sorted_ids])
 
 
-func _check_chest_ui() -> void:
-	var chest_ui: Node = root.get_node_or_null(^"ChestUI")
-	check(chest_ui != null, "ChestUI autoload exists")
-	if chest_ui == null:
+func _check_pickup_feed() -> void:
+	var feed: Node = root.get_node_or_null(^"PickupFeedService")
+	check(feed != null, "PickupFeedService autoload exists")
+	if feed == null:
 		return
 
-	chest_ui.call("_populate_rewards", {&"wooden_axe": 1, &"arrow": 2, &"mushroom": 3})
-	check(int(chest_ui.call("reward_row_count")) == 3, "chest UI rendered all three reward rows")
+	# `host_notify_granted()` is the seam that took over from ChestUI's reward rows: it walks a whole
+	# `granted` dictionary and announces each entry to the peer that earned it. The order it walks in
+	# is what a player reads down the bottom-left feed, so it is the ordering under test.
+	var announced: Array[String] = []
+	var listener: Callable = func(_kind: StringName, id: StringName, _amount: int,
+			_source: StringName) -> void:
+		announced.append(String(id))
+	feed.connect(&"pickup_received", listener)
+	feed.call(&"host_notify_granted", NetConfig.HOST_PEER_ID,
+		{&"wooden_axe": 1, &"arrow": 2, &"mushroom": 3}, &"chest")
+	await process_frame
+	feed.disconnect(&"pickup_received", listener)
 
-	var reward_box: Node = chest_ui.find_child("Rewards", true, false)
-	check(reward_box != null, "chest UI built its Rewards container")
-	if reward_box != null:
-		var names: Array[String] = []
-		for row: Node in reward_box.get_children():
-			var label: Label = row.find_children("*", "Label", true, false)[0] as Label
-			names.append(label.text)
-		check(names == ["Arrow", "Mushroom", "Wooden Axe"],
-			"chest UI reward rows are lexicographic by item id: %s" % [names])
-
-	chest_ui.call("_clear_rewards")
+	check(announced.size() == 3, "every granted entry reached the feed: %s" % [announced])
+	check(announced == ["arrow", "mushroom", "wooden_axe"],
+		"pickup feed announces a haul lexicographically by id: %s" % [announced])
 
 
 func _check_command_service() -> void:
