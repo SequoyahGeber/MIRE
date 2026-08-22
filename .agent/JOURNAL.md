@@ -10240,3 +10240,19 @@ Notes along the way:
 Files: `entities/player/player_controller.gd`, `ui/building/build_bar.gd`, `tools/build_picker_check.gd`
 
 Commit at time of writing: `ef5484ad`
+
+---
+
+### DONE · F-570 · ivy5b8298 · 2026-08-22T16:55:30+00:00
+
+**Playtest: procedural map shows only basic chests and ChestUI does not display the coin cost before opening**
+
+150-chest five-tier procedural distribution, explicit cost/free prompts, and persistent seeded loose world loot. All focused checks pass.
+
+Notes along the way:
+- Root cause: procedural placement technically has all tiers, but 50 free basic caches swamp only 10 priced chests; FocusPrompt suppresses zero-cost hint entirely. F-536 is partly stale because F-535 has since shipped host-authoritative ItemDropService; reuse it for persistent seeded loose loot.
+- Sequoyah raised the density target after implementation: procedural distribution is now 150 chests per island (60 basic, 40 common, 25 rare, 15 epic, 10 legendary), all exact across five deterministic seeds. Muck inspiration is ubiquitous color/price tiers and frequent chest-led powerups; MIRE keeps its five-rung economy but matches that scavenging cadence.
+
+Files: `content/poi/loot_cache.tres`, `content/poi/chest_common.tres`, `content/poi/chest_rare.tres`, `content/poi/chest_epic.tres`, `content/poi/chest_legendary.tres`, `ui/hud/focus_prompt.gd`, `tools/focus_prompt_check.gd`, `autoload/item_drop_service.gd`, `systems/loot/item_drop.gd`, `autoload/loose_loot_service.gd`, `project.godot`, `tools/loose_loot_check.gd`, `tools/poi_check.gd`
+
+Commit at time of writing: `0330a08c`

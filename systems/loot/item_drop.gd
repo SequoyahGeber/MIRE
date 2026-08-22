@@ -73,6 +73,8 @@ signal collected(peer_id: int, item_id: StringName, amount: int)
 ## `ItemDropService._net_spawn_drop()` before `add_child()`, identically on every peer.
 @export var item_id: StringName = &""
 @export var amount: int = 0
+## Placed scavenging loot lasts for the run; transient harvest yields retain the five-minute cap.
+@export var persistent: bool = false
 
 var _visual: Node3D
 var _visual_rest_y: float = 0.0
@@ -119,7 +121,7 @@ func _physics_process(delta: float) -> void:
 	_age += delta
 	if _collected:
 		return
-	if _age >= LIFETIME_SEC:
+	if not persistent and _age >= LIFETIME_SEC:
 		_despawn()
 		return
 	if _age < ARM_SEC:

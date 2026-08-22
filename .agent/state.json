@@ -37,20 +37,6 @@
       "task": "F-547",
       "token": "CLAUDE_CODE_SESSION_ID:280d7fb3-3816-4517-a003-ea21b2ca6f66"
     },
-    "autoload/item_drop_service.gd": {
-      "agent": "ivy5b8298",
-      "at": "2026-08-22T16:52:10+00:00",
-      "dirty_at_claim": false,
-      "task": "F-570",
-      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
-    },
-    "autoload/loose_loot_service.gd": {
-      "agent": "ivy5b8298",
-      "at": "2026-08-22T16:52:10+00:00",
-      "dirty_at_claim": false,
-      "task": "F-570",
-      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
-    },
     "content/harvestables/apple_tree.tres": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:45:13+00:00",
@@ -135,41 +121,6 @@
       "task": "F-482",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "content/poi/chest_common.tres": {
-      "agent": "ivy5b8298",
-      "at": "2026-08-22T16:52:10+00:00",
-      "dirty_at_claim": false,
-      "task": "F-570",
-      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
-    },
-    "content/poi/chest_epic.tres": {
-      "agent": "ivy5b8298",
-      "at": "2026-08-22T16:52:10+00:00",
-      "dirty_at_claim": false,
-      "task": "F-570",
-      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
-    },
-    "content/poi/chest_legendary.tres": {
-      "agent": "ivy5b8298",
-      "at": "2026-08-22T16:52:10+00:00",
-      "dirty_at_claim": false,
-      "task": "F-570",
-      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
-    },
-    "content/poi/chest_rare.tres": {
-      "agent": "ivy5b8298",
-      "at": "2026-08-22T16:52:10+00:00",
-      "dirty_at_claim": false,
-      "task": "F-570",
-      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
-    },
-    "content/poi/loot_cache.tres": {
-      "agent": "ivy5b8298",
-      "at": "2026-08-22T16:52:10+00:00",
-      "dirty_at_claim": false,
-      "task": "F-570",
-      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
-    },
     "content/scatter/highland_rocks.tres": {
       "agent": "birche6b40e",
       "at": "2026-08-22T00:06:31+00:00",
@@ -181,20 +132,6 @@
       "at": "2026-08-21T17:13:34+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
-    },
-    "project.godot": {
-      "agent": "ivy5b8298",
-      "at": "2026-08-22T16:52:10+00:00",
-      "dirty_at_claim": false,
-      "task": "F-570",
-      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
-    },
-    "systems/loot/item_drop.gd": {
-      "agent": "ivy5b8298",
-      "at": "2026-08-22T16:52:10+00:00",
-      "dirty_at_claim": false,
-      "task": "F-570",
-      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
     },
     "tools/_probe_food_grip.gd": {
       "agent": "bram937a51",
@@ -288,13 +225,6 @@
       "task": "F-564",
       "token": "CLAUDE_CODE_SESSION_ID:280d7fb3-3816-4517-a003-ea21b2ca6f66"
     },
-    "tools/focus_prompt_check.gd": {
-      "agent": "ivy5b8298",
-      "at": "2026-08-22T16:52:10+00:00",
-      "dirty_at_claim": false,
-      "task": "F-570",
-      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
-    },
     "tools/grade_probe.gd": {
       "agent": "bram937a51",
       "at": "2026-08-22T08:17:48+00:00",
@@ -336,26 +266,12 @@
       "task": "F-564",
       "token": "CLAUDE_CODE_SESSION_ID:280d7fb3-3816-4517-a003-ea21b2ca6f66"
     },
-    "tools/loose_loot_check.gd": {
-      "agent": "ivy5b8298",
-      "at": "2026-08-22T16:52:10+00:00",
-      "dirty_at_claim": false,
-      "task": "F-570",
-      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
-    },
     "tools/playtest_hollow_render_check.gd": {
       "agent": "bram937a51",
       "at": "2026-08-22T08:44:08+00:00",
       "dirty_at_claim": false,
       "task": "F-562",
       "token": "CLAUDE_CODE_SESSION_ID:280d7fb3-3816-4517-a003-ea21b2ca6f66"
-    },
-    "tools/poi_check.gd": {
-      "agent": "ivy5b8298",
-      "at": "2026-08-22T16:52:10+00:00",
-      "dirty_at_claim": false,
-      "task": "F-570",
-      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
     },
     "tools/probe_scene.gd": {
       "agent": "bram937a51",
@@ -419,13 +335,6 @@
       "dirty_at_claim": false,
       "task": "F-549",
       "token": "CLAUDE_CODE_SESSION_ID:280d7fb3-3816-4517-a003-ea21b2ca6f66"
-    },
-    "ui/hud/focus_prompt.gd": {
-      "agent": "ivy5b8298",
-      "at": "2026-08-22T16:52:10+00:00",
-      "dirty_at_claim": false,
-      "task": "F-570",
-      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
     },
     "world/gen/resource_scatter_field.gd": {
       "agent": "bram937a51",
@@ -568,33 +477,6 @@
       "notes": [],
       "started": "2026-08-22T08:17:48+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:280d7fb3-3816-4517-a003-ea21b2ca6f66"
-    },
-    "F-570": {
-      "agent": "ivy5b8298",
-      "files": [
-        "content/poi/loot_cache.tres",
-        "content/poi/chest_common.tres",
-        "content/poi/chest_rare.tres",
-        "content/poi/chest_epic.tres",
-        "content/poi/chest_legendary.tres",
-        "ui/hud/focus_prompt.gd",
-        "tools/focus_prompt_check.gd",
-        "autoload/item_drop_service.gd",
-        "systems/loot/item_drop.gd",
-        "autoload/loose_loot_service.gd",
-        "project.godot",
-        "tools/loose_loot_check.gd",
-        "tools/poi_check.gd"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-22T16:52:11+00:00",
-          "by": "ivy5b8298",
-          "text": "Root cause: procedural placement technically has all tiers, but 50 free basic caches swamp only 10 priced chests; FocusPrompt suppresses zero-cost hint entirely. F-536 is partly stale because F-535 has since shipped host-authoritative ItemDropService; reuse it for persistent seeded loose loot."
-        }
-      ],
-      "started": "2026-08-22T16:52:10+00:00",
-      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
     }
   },
   "recent": {
@@ -2249,11 +2131,22 @@
       "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
     },
     "autoload/item_drop_service.gd": {
-      "agent": "flint04a51d",
-      "at": "2026-08-22T05:34:38+00:00",
-      "hash": "2407bf3ee333262887b42c86d767d188ccc7187e9f8bba7edf463a9f67634f4e",
-      "task": "F-535",
-      "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:55:30+00:00",
+      "claimed_at": "2026-08-22T16:52:10+00:00",
+      "dirty_at_claim": false,
+      "hash": "9230b13191f279ec043cce1f6eca91e8ad79880308c45a2b14a4981aa6be5a29",
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
+    },
+    "autoload/loose_loot_service.gd": {
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:55:30+00:00",
+      "claimed_at": "2026-08-22T16:52:10+00:00",
+      "dirty_at_claim": false,
+      "hash": "b4aaa82882ceb68fb0e1fef62558276f485a6274eccee645ee249bb6a819c23c",
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
     },
     "autoload/material_warmer.gd": {
       "agent": "onyxbe8065",
@@ -3205,47 +3098,49 @@
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
     "content/poi/chest_common.tres": {
-      "agent": "nettled7199c",
-      "at": "2026-08-22T05:57:17+00:00",
-      "claimed_at": "2026-08-22T05:38:20+00:00",
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:55:30+00:00",
+      "claimed_at": "2026-08-22T16:52:10+00:00",
       "dirty_at_claim": false,
-      "hash": "182f524fbf5ccb58258de467adaf9f8818c8a019b60a9a6568cf595c38ccfc25",
-      "task": "F-541",
-      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+      "hash": "9d89160d6b1eae8cbf1de83633d74bc218dc536c3b63140641321ee16c97fad5",
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
     },
     "content/poi/chest_epic.tres": {
-      "agent": "nettled7199c",
-      "at": "2026-08-22T05:57:17+00:00",
-      "claimed_at": "2026-08-22T05:38:20+00:00",
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:55:30+00:00",
+      "claimed_at": "2026-08-22T16:52:10+00:00",
       "dirty_at_claim": false,
-      "hash": "76e60db8b29b70e0fee4cfb6aa1326b3a2698bbbbad47c8eca72a7f9b8fa94e5",
-      "task": "F-541",
-      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+      "hash": "a394a5d1ea4fc30e018324aa7fd15f646e55673cb7b78e1d3b9cf8e0755ab735",
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
     },
     "content/poi/chest_legendary.tres": {
-      "agent": "nettled7199c",
-      "at": "2026-08-22T05:57:17+00:00",
-      "claimed_at": "2026-08-22T05:38:20+00:00",
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:55:30+00:00",
+      "claimed_at": "2026-08-22T16:52:10+00:00",
       "dirty_at_claim": false,
-      "hash": "3a899d324e60798639a7453e9364b343231b3c7ab567f1a4b692c5b310f0c40a",
-      "task": "F-541",
-      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+      "hash": "3b8f487cb13112f5aac3c24163f3b5a2d456bb3cca967e2aa9bb5ce7eecc12f6",
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
     },
     "content/poi/chest_rare.tres": {
-      "agent": "nettled7199c",
-      "at": "2026-08-22T05:57:17+00:00",
-      "claimed_at": "2026-08-22T05:38:20+00:00",
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:55:30+00:00",
+      "claimed_at": "2026-08-22T16:52:10+00:00",
       "dirty_at_claim": false,
-      "hash": "283c336e6ccf9e864bfb7830f76c166d794cc6a6395fbaa9fd8ee8912327bf27",
-      "task": "F-541",
-      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+      "hash": "79bea00ba5e0a6d1bdee37bf04614a2bfbf342c955c1a8db0b4bffbb8f5e5aba",
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
     },
     "content/poi/loot_cache.tres": {
-      "agent": "ivyf16b98",
-      "at": "2026-08-22T05:11:24+00:00",
-      "hash": "b64610c618aa3a2ff027f1b6b3fbd31f0fa6f5697d2133d7057ba8a3844d6472",
-      "task": "F-528",
-      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:55:30+00:00",
+      "claimed_at": "2026-08-22T16:52:10+00:00",
+      "dirty_at_claim": false,
+      "hash": "7cc4e4f20925d75c686e13c82aa93dd8bf7f2c9b4f12f3074819ab816effb6a0",
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
     },
     "content/poi/ruins.tres": {
       "agent": "tine0bda72",
@@ -3899,11 +3794,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "docs/FINDINGS.md": {
-      "agent": "galeb3efe6",
-      "at": "2026-08-22T16:54:34+00:00",
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:55:30+00:00",
       "hash": null,
-      "task": "F-571",
-      "token": "CODEX_SESSION_ID:01a02a61-6f7b-79c2-9ff9-cf61021f3a96"
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
     },
     "docs/ITEMS.md": {
       "agent": "nettled7199c",
@@ -3998,13 +3893,13 @@
       "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
     },
     "project.godot": {
-      "agent": "coil9c136f",
-      "at": "2026-08-22T07:00:19+00:00",
-      "claimed_at": "2026-08-22T07:00:00+00:00",
-      "dirty_at_claim": true,
-      "hash": "2ca8f14f8005738e19848ffc6a82115c9e2031d9f95692ef310ebe7d72ed5910",
-      "task": "F-552",
-      "token": "CODEX_SESSION_ID:01a02843-9dd7-7d02-8070-e22390284df7"
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:55:30+00:00",
+      "claimed_at": "2026-08-22T16:52:10+00:00",
+      "dirty_at_claim": false,
+      "hash": "35bdbc5556a59598f992cd86c3747ff8df77998fb6b348eda8a0fef7f9a33292",
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
     },
     "scenes/buildables/anvil.tscn": {
       "agent": "birche6b40e",
@@ -4212,11 +4107,13 @@
       "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
     },
     "systems/loot/item_drop.gd": {
-      "agent": "flint04a51d",
-      "at": "2026-08-22T05:34:38+00:00",
-      "hash": "d8f6afbc666cdd9fde0808923dfec3ef0b39536b91b07a6558727a6b4466627d",
-      "task": "F-535",
-      "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:55:30+00:00",
+      "claimed_at": "2026-08-22T16:52:10+00:00",
+      "dirty_at_claim": false,
+      "hash": "71c09023840b956c463e716be581097b1315ccbbde2ff0b4b319417b1ea0c859",
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
     },
     "systems/loot/loot_table_def.gd": {
       "agent": "birche6b40e",
@@ -4882,11 +4779,13 @@
       "token": "CLAUDE_CODE_SESSION_ID:cfe6388b-b9bd-49ce-be58-b822595f97fb"
     },
     "tools/focus_prompt_check.gd": {
-      "agent": "hollowe6edef",
-      "at": "2026-08-22T03:35:54+00:00",
-      "hash": "0bc58ed39e7e4b7c7a69cf00024b846618167d2b1b4ba4e138132a8fe1233b49",
-      "task": "F-514",
-      "token": "CODEX_SESSION_ID:01a02772-862e-7242-889a-a20257660bfa"
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:55:30+00:00",
+      "claimed_at": "2026-08-22T16:52:10+00:00",
+      "dirty_at_claim": false,
+      "hash": "3ed665b0c9efdaa8e44f3746e18dc183bc926ef814ac50080f134d9436fd638e",
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
     },
     "tools/focus_prompt_shot.gd": {
       "agent": "wickc3d79c",
@@ -5076,6 +4975,15 @@
       "task": "F-552",
       "token": "CODEX_SESSION_ID:01a02843-9dd7-7d02-8070-e22390284df7"
     },
+    "tools/loose_loot_check.gd": {
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:55:30+00:00",
+      "claimed_at": "2026-08-22T16:52:10+00:00",
+      "dirty_at_claim": false,
+      "hash": "712e9f78f42a9b77300ca335fab1b6cbff9abf85f53d7e7577674a0b536f536c",
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
+    },
     "tools/loot_content_check.gd": {
       "agent": "nettled7199c",
       "at": "2026-08-22T05:57:17+00:00",
@@ -5226,11 +5134,13 @@
       "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     },
     "tools/poi_check.gd": {
-      "agent": "ivyf16b98",
-      "at": "2026-08-22T05:26:05+00:00",
-      "hash": "9b8db57aaa5c58ea0300a6de4262b55ff7cb72b2b00a33b8f666fa378d899829",
-      "task": "F-528",
-      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:55:30+00:00",
+      "claimed_at": "2026-08-22T16:52:10+00:00",
+      "dirty_at_claim": false,
+      "hash": "b5baa722f451d35ea6da1b0e98f0d04a68284d3c60d032cabf68658d6850db27",
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
     },
     "tools/probe_scene.gd": {
       "agent": "wick5e2d04",
@@ -5700,13 +5610,13 @@
       "token": "CLAUDE_CODE_SESSION_ID:b95e039a-4098-45fa-89d9-110729466e4a"
     },
     "ui/hud/focus_prompt.gd": {
-      "agent": "hollowbfcf67",
-      "at": "2026-08-22T07:14:38+00:00",
-      "claimed_at": "2026-08-22T07:11:23+00:00",
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:55:30+00:00",
+      "claimed_at": "2026-08-22T16:52:10+00:00",
       "dirty_at_claim": false,
-      "hash": "591a2283475f014ca1aab72ca45efa9272c8f3b3d09744ebfd693561a4ebc75a",
-      "task": "F-553",
-      "token": "CLAUDE_CODE_SESSION_ID:cfe6388b-b9bd-49ce-be58-b822595f97fb"
+      "hash": "1f7cec10be8e4fe813682d9ae17985c2593630d332b94bf6d4306866b5b440bf",
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
     },
     "ui/hud/forager_sense_hud.gd": {
       "agent": "larch543bba",
@@ -5976,7 +5886,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1701,
+  "rev": 1704,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -12333,9 +12243,11 @@
       "title": "terrain_texture_check's 90 m contrast gate sits inside its own run-to-run variance, so it flakes"
     },
     "F-570": {
+      "done_at": "2026-08-22T16:55:30+00:00",
+      "done_by": "ivy5b8298",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Playtest: procedural map shows only basic chests and ChestUI does not display the coin cost before opening"
     },

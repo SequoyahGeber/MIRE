@@ -23,6 +23,7 @@ const HARVESTABLE_SCRIPT := preload("res://systems/harvesting/harvestable.gd")
 const HARVESTABLE_DEF_SCRIPT := preload("res://systems/harvesting/harvestable_def.gd")
 const WEAPON_DEF_SCRIPT := preload("res://systems/combat/weapon_def.gd")
 const HARVEST_LIBRARY := preload("res://systems/harvesting/harvest_library.gd")
+const CHEST_SCRIPT := preload("res://systems/loot/chest.gd")
 
 const ITEM_DIR: String = "res://content/items/"
 const HARVESTABLE_DIR: String = "res://content/harvestables/"
@@ -66,6 +67,7 @@ func _run() -> void:
 	_check_authored_harvestable_names()
 	_check_harvestable_wording()
 	_check_depleted_is_not_a_target()
+	_check_chest_price_wording()
 	_check_item_cards()
 
 	# Freed rather than queue_freed: `quit()` on the next line means the deferred queue never runs,
@@ -101,6 +103,21 @@ func _check_authored_harvestable_names() -> void:
 
 
 # ── Wording ──────────────────────────────────────────────────────────────────────────────────────
+
+
+func _check_chest_price_wording() -> void:
+	print("\n-- chest price wording --")
+	var chest: Node3D = CHEST_SCRIPT.new() as Node3D
+	chest.set(&"tier", &"common")
+	chest.set(&"cost_coins", 30)
+	var priced: Dictionary = _focus.call(&"describe", chest, 3)
+	check(String(priced.get(&"hint", "")) == "Costs 30 coins",
+		"a priced chest shows its coin cost before opening")
+	chest.set(&"cost_coins", 0)
+	var free: Dictionary = _focus.call(&"describe", chest, 3)
+	check(String(free.get(&"hint", "")) == "Free",
+		"a free cache says Free instead of looking like a missing price")
+	chest.free()
 
 
 ## The sentence the whole finding is about: hold the wrong tool and the prompt has to say so, in the

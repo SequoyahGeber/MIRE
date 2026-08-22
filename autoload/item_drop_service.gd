@@ -126,6 +126,24 @@ func host_spawn_drop(item_id: StringName, amount: int, world_position: Vector3) 
 	}) as Node3D
 
 
+## Host-only placement seam for authored or seed-derived loot that already has a world position.
+## Unlike a harvest yield it does not pop sideways and it never expires before a player discovers
+## it. Run restart still clears it, and collection still goes through ItemDrop's normal range,
+## inventory-capacity and replication checks.
+func host_spawn_placed_drop(item_id: StringName, amount: int, world_position: Vector3) -> Node3D:
+	if not _owns_mutation() or amount <= 0 or not _item_exists(item_id):
+		return null
+	_enforce_budget()
+	return _spawner.spawn({
+		"item": String(item_id),
+		"amount": amount,
+		"index": _take_index(),
+		"origin": world_position + Vector3.UP * SPAWN_HEIGHT_M,
+		"velocity": Vector3.ZERO,
+		"persistent": true,
+	}) as Node3D
+
+
 ## Runs on every peer with the same data, so host and client build identical bodies. Mirrors
 ## HaulService._net_spawn_haulable()'s shape, including the has_method guard that lets a future
 ## authored scene root bring its own richer script without this ever clobbering it.
@@ -143,6 +161,7 @@ func _net_spawn_drop(data: Variant) -> Node:
 	body.position = payload.get("origin", Vector3.ZERO)
 	body.set(&"item_id", item_id)
 	body.set(&"amount", int(payload.get("amount", 0)))
+	body.set(&"persistent", bool(payload.get("persistent", false)))
 	# The pop is part of the spawn payload rather than an impulse applied afterwards, so a client
 	# that joins mid-flight reconstructs the same arc the host is already simulating.
 	body.linear_velocity = payload.get("velocity", Vector3.ZERO)

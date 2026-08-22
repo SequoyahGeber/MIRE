@@ -2962,15 +2962,17 @@ ground until now. A gate nobody could reach was never going to look flaky.
 
 ---
 
-### F-570 · Playtest: procedural map shows only basic chests and ChestUI does not display the coin cost before opening
+## Resolved
+
+### F-570 · Playtest: procedural map shows only basic chests and ChestUI does not display the coin cost before opening — **fixed**
 
 **Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivy5b8298
 
 Sequoyah reports a live playtest still finds only basic chests around the map, with no other loose loot, and chest interaction does not show the coin cost to open. Verify the five-tier F-541 POIs are registered and instantiated in the shipped procedural world rather than only present as content, add runtime coverage for all tiers, and make ChestUI expose the authoritative local open price before input. Loose ordinary world loot remains F-536 unless this investigation finds a separate already-built path.
 
----
+**Resolved 2026-08-22 by ivy5b8298.** Procedural islands now place 150 chests instead of 60: 60 basic, 40 common, 25 rare, 15 epic and 10 legendary, so basic caches are only 40% of the field rather than visually swallowing the ladder. FocusPrompt now always exposes the gate before opening: priced tiers say `Costs N coins`, and zero-cost caches explicitly say `Free`. Added host-authoritative loose world loot by reusing ItemDropService: a deterministic subset of loot markers spawns persistent ordinary-item piles, replicated through the existing MultiplayerSpawner and collected through the existing host range/capacity validation.
 
-## Resolved
+Verified: poi_check places the exact 150-chest distribution on all five fixed seeds with legal spacing/coverage and failures=0; loose_loot_check creates 20 persistent drops from 40 synthetic markers without duplicate rescans, failures=0; focus_prompt_check proves priced and free wording, failures=0; item_drop_check, chest_check and verify_setup all pass; git diff --check and agent check are clean.
 
 ### F-571 · Build picker never transitions back to aiming after mouse selection — **fixed**
 

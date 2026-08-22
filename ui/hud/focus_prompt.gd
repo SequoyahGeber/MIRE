@@ -393,7 +393,9 @@ func _describe_chest(node: Node3D) -> Dictionary:
 	return {
 		"title": title,
 		"action": "Open",
-		"hint": "Costs %d coins" % cost if cost > 0 else "",
+		# Zero is information too. Hiding it made the procedural map's free caches look like a UI
+		# that had forgotten chest prices, especially when they outnumbered the priced tiers.
+		"hint": "Costs %d coins" % cost if cost > 0 else "Free",
 		"ratio": -1.0,
 		"blocked": false,
 		"key": "E",

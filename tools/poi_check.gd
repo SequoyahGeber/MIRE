@@ -275,29 +275,35 @@ func _check_every_kind_appears() -> void:
 			+ ("" if objective_gaps.is_empty() else " — %s" % "; ".join(objective_gaps)))
 
 
-## F-528's target is a placement budget, not a magic quota. What the player actually feels is
-## whether caches keep appearing throughout a traverse, so require useful density plus coverage in
-## every map quadrant and across the island's inner/middle/outer playable rings.
+## F-528's target is a CHEST placement budget, not a quota of one tier. F-570 caught the old check
+## accepting 50 basic caches plus a nearly invisible handful of the actual rarity ladder. Require
+## useful total density and coverage while also preventing basic from becoming a majority again.
 func _check_loot_coverage() -> void:
-	print("\n== supply caches are distributed throughout the island ==")
+	print("\n== the full chest ladder is distributed throughout the island ==")
 	for world_seed: int in SEEDS:
-		var caches: Array[Vector3] = []
+		var chests: Array[Vector3] = []
+		var basic_count: int = 0
 		var sectors: Dictionary[int, bool] = {}
 		var radial_bands: Dictionary[int, bool] = {}
 		for site: Dictionary in PoiMapScript.sites_for_island(world_seed, poi_defs, biome_defs):
-			if StringName(String(site["def_id"])) != &"loot_cache":
+			var def_id: String = String(site["def_id"])
+			if def_id != "loot_cache" and not def_id.begins_with("chest_"):
 				continue
+			if def_id == "loot_cache":
+				basic_count += 1
 			var position: Vector3 = site["position"]
-			caches.append(position)
+			chests.append(position)
 			var angle: float = fposmod(atan2(position.z, position.x), TAU)
 			sectors[int(floor(angle / (TAU / 4.0)))] = true
 			var radius_fraction: float = Vector2(position.x, position.z).length() \
 				/ HeightmapScript.ISLAND_RADIUS
 			var band: int = 0 if radius_fraction < 0.38 else (1 if radius_fraction < 0.64 else 2)
 			radial_bands[band] = true
-		check(caches.size() >= 36,
-			"seed %d has scavenging density without requiring an exact quota (%d caches)"
-				% [world_seed, caches.size()])
+		check(chests.size() >= 140,
+			"seed %d has Muck-like chest density (at least 140; got %d)" % [world_seed, chests.size()])
+		check(basic_count * 2 <= chests.size(),
+			"seed %d does not let basic caches swamp the rarity ladder (%d/%d)"
+				% [world_seed, basic_count, chests.size()])
 		check(sectors.size() == 4,
 			"seed %d places caches in every map quadrant (%d/4)"
 				% [world_seed, sectors.size()])
