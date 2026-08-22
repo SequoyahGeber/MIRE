@@ -3390,7 +3390,73 @@ rather than as a tree, that is an art/legibility call for Sequoyah, not a code f
 
 ---
 
-### F-520 · Steam invite is a silent no-op and opening a lobby captures the mouse behind the menu
+### F-521 · Core multiplayer readiness checks are red at HEAD
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by slatef9bff1
+
+`tools/combat_net_check.gd` consistently reports `FAIL: host places the axe in the client's first hotbar slot`, although the client receives the axe and both authoritative attacks resolve. `tools/inventory_net_check.gd` consistently reports `FAIL: client receives accepted slot-move confirmation`, although host/client final counts agree. Both reproduce through `.agent/bin/agent baseline --script ...` at HEAD a26bc163, not only in the shared dirty tree. Investigate whether the stocked starting hotbar invalidated test preconditions or whether confirmations are genuinely missing; do not treat the automated multiplayer gate as green until both checks pass.
+
+---
+
+### F-522 · The workbench costs logs, so a run cannot craft its first axe
+
+**Area:** content · **Severity:** high · **Found:** 2026-08-22 by tine5ad92a
+
+Sequoyah, from play: "we need to be able to harvest the base resource to get the first tools and
+workbench without any tools."
+
+The opening of a run is a closed loop today:
+
+- `content/buildables/workbench.tres` costs `log` 8 + `fibre_bundle` 2.
+- `log` comes only from `tree`, `wild_tree`, `stump` and `fallen_log`, every one of them
+  `required_tool = 1` (CHOP).
+- The axe that satisfies CHOP is `content/recipes/wooden_axe.tres`, whose `station` is `workbench`.
+
+So you need an axe to build the workbench that makes the axe. Bare hands can gather exactly three
+things — `branch` (bushes, saplings), `fibre_bundle` (nettles, sedge, fibre plants) and the foods —
+and `stone` is no escape either, since every stone source is `required_tool = 2` and the pickaxe is
+also a workbench recipe.
+
+F-487's `tools/resource_reachability_check.gd` did not catch this because it asks only whether
+*something* in the game produces an item, which `log` plainly does. Circular locks need the
+tool gate walked, not just the source list.
+
+Fixed by paying for the tier-1 workbench in what bare hands can actually gather: `branch` 10 +
+`fibre_bundle` 4. It reads as what the description already claims it is — a top on lashed legs —
+and the log cost moves up to `workbench_upgraded`, where a crafted-intermediate cost belongs per
+the tier rule in F-477.
+
+`tools/bootstrap_reachability_check.gd` now closes the graph from an empty inventory forward
+(bare-hands harvests -> buildables affordable -> stations standing -> recipes craftable, repeat)
+and fails if the workbench, the wooden axe or the wooden pickaxe is not reached.
+
+---
+
+### F-523 · Multiplayer is capped at the join code until MIRE has a real Steam App ID
+
+**Area:** net · **Severity:** high · **Found:** 2026-08-22 by reed8d5690
+
+`core/net/net_config.gd` sets `STEAM_APP_ID = 480` and `steam_appid.txt` matches — Spacewar, the
+public Valve test app. That is the right choice for development and it is why the lobby path can
+be exercised at all without a Steamworks app, but it puts a hard ceiling on multiplayer:
+
+  · Steam considers the running app to be Spacewar, so an invite invites a friend to Spacewar.
+    They can join the lobby, but Steam will not launch MIRE for them.
+  · The in-game overlay only injects when Steam itself started the process as that App ID. Adding
+    the build as a non-Steam shortcut attaches the overlay to the shortcut, not to 480, so
+    `isOverlayEnabled()` is false and every overlay call is a silent no-op (this is what F-520
+    was reported as: "clicking invite friends does nothing").
+
+Until the real App ID is in place, the join code is the invite path and F-520 makes both invite
+buttons fall back to it honestly. Swapping the ID is one constant plus `steam_appid.txt`, but it
+needs the Steamworks app itself, which is Sequoyah`s account to create — this is a genuine
+hand-off, not caution.
+
+---
+
+## Resolved
+
+### F-520 · Steam invite is a silent no-op and opening a lobby captures the mouse behind the menu — **fixed**
 
 **Area:** net · **Severity:** high · **Found:** 2026-08-22 by reed8d5690
 
@@ -3422,7 +3488,30 @@ the join code.
 
 ---
 
-## Resolved
+**Resolved 2026-08-22 by reed8d5690.** Three fixes, all verified headlessly by tools/lobby_frontend_check.gd (new) plus the existing
+tools/steam_lobby_check.gd against the live Steam client.
+
+THE FREEZE. `PlayerNet` no longer spawns bodies while the front end is on screen. A session that
+opens there (a lobby opened from the expedition dock hosts immediately, correctly — a lobby nobody
+can connect to is not a lobby) now marks its spawns as owed and takes them at landfall, when the
+`mire_frontend` group empties and there is a current scene. `_on_peer_joined` defers with it, so a
+friend who accepts an invite while the host is still at the dock is spawned by the landfall pass
+rather than lost. As a second layer, `PlayerController._ready()` no longer captures the mouse
+unconditionally: a capture refused because a cursor-owning UI held the blocking group is taken on
+the first physics tick after that UI closes (`_capture_deferred`).
+
+THE SILENT INVITE. `SteamLobby.open_invite_overlay()` asks `isOverlayEnabled()` before calling
+`activateGameOverlayInviteDialog()`, which is a silent no-op when the overlay is not injected, and
+returns false with a logged reason instead of claiming success. New public `overlay_available()`
+for any other overlay-driven affordance. Both invite buttons now fall back to copying the join
+code and saying so; the dock also opens a lobby first when INVITE is pressed with none open, and
+invites as soon as the lobby exists.
+
+Also fixed in passing: four lines in `expedition_screen._connect_services()` had been left below
+`_streamer_mode()`s return statement as unreachable code, so the dock never heard NetSession open
+or end.
+
+STILL OPEN, and not fixable from here: the build runs as App ID 480 (Spacewar). See F-523.
 
 ### F-518 · Fresh runs should start each player with 50 coins so the chest economy is immediately usable — **fixed**
 

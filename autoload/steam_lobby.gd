@@ -210,8 +210,28 @@ func open_invite_overlay() -> bool:
 	if _lobby_id == 0:
 		MireLog.warn(NetConfig.LOG_CHANNEL, "no lobby to invite anyone to — host_session() first")
 		return false
+	# F-520: `activateGameOverlayInviteDialog` is a SILENT no-op when the overlay is not injected —
+	# no error, no return value, nothing on screen. Returning true regardless is what turned "the
+	# overlay is unavailable on this launch" into "the invite button does nothing". Asked before
+	# calling, so the caller can offer the join code instead of leaving the player with a dead
+	# button. The overlay is off whenever the process was not started by Steam as this App ID —
+	# including a non-Steam shortcut, which attaches the overlay to the shortcut rather than to us.
+	if not overlay_available():
+		MireLog.warn(NetConfig.LOG_CHANNEL,
+			"Steam's overlay is not available on this launch — the invite dialog cannot open (share the join code instead)")
+		return false
 	_steam.activateGameOverlayInviteDialog(_lobby_id)
 	return true
+
+
+## Whether Steam's in-game overlay is actually injected into this process. False in every headless
+## check, false when the game was not launched through Steam as [constant NetConfig.STEAM_APP_ID],
+## and false whenever the player has the overlay switched off. Every overlay-driven affordance has
+## to ask this first — the overlay calls fail silently rather than reporting anything (F-520).
+func overlay_available() -> bool:
+	if not _initialised or _steam == null:
+		return false
+	return bool(_steam.isOverlayEnabled())
 
 
 ## Invite one specific friend without the overlay, for a UI of our own.

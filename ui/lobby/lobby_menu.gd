@@ -163,9 +163,20 @@ func request_copy_lobby_id() -> void:
 	_show_status("Lobby ID copied — send it to a friend, they paste it under JOIN.", false)
 
 
+## F-520: `open_invite_overlay()` now fails honestly when the overlay is not injected, so the two
+## reasons it can fail are told apart — a button whose only failure message is "host one first" is
+## a lie on the launch where the overlay simply is not there.
 func request_invite_overlay() -> void:
-	if not SteamLobby.open_invite_overlay():
+	if SteamLobby.open_invite_overlay():
+		return
+	var lobby_id: int = SteamLobby.current_lobby_id()
+	if lobby_id == 0:
 		_show_status("No lobby to invite anyone to — host one first.", true)
+		return
+	DisplayServer.clipboard_set(str(lobby_id))
+	_show_status(
+		"Steam's overlay isn't available on this launch. Lobby ID copied instead — send it to a "
+		+ "friend, they paste it under JOIN.", true)
 
 
 func set_join_field_text(text: String) -> void:

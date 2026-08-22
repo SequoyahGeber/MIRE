@@ -59,6 +59,9 @@ var _slots: Dictionary[int, int] = {}
 ## Where the level says players belong. Read off the level's hand-placed Player before freeing it.
 var _spawn_point: Transform3D = Transform3D.IDENTITY
 var _session_open: bool = false
+## F-520: the session opened while the front end was still up, so the spawns are owed rather than
+## done. Watched on the physics tick until there is a world to spawn into.
+var _spawns_deferred: bool = false
 
 ## Host-only speed check state, keyed by peer id.
 var _last_sample: Dictionary[int, Vector3] = {}
@@ -295,6 +298,26 @@ func _on_session_opened() -> void:
 		await get_tree().process_frame
 
 	_session_open = true
+
+	# F-520: a session can legitimately open while the FRONT END is still on screen — opening a
+	# Steam lobby from the expedition dock hosts immediately, because a lobby nobody can connect to
+	# is not a lobby. Spawning there put a PlayerController at world origin under the menu, and its
+	# _ready() captured the mouse, so the dock stayed drawn with no cursor and every click landed
+	# nowhere: the "the lobby buttons freeze the game" report. Bodies belong to the world, so the
+	# spawns wait for landfall — `_watch_for_world()` takes them the moment the front end is gone.
+	if _frontend_is_up():
+		MireLog.info(NetConfig.LOG_CHANNEL, "PlayerNet: session open in the front end — spawns wait for landfall")
+		_spawns_deferred = true
+		set_physics_process(true)
+		return
+
+	_begin_spawns()
+
+
+## The spawns themselves, once there is a world to spawn into. Split out of `_on_session_opened()`
+## so the deferred path (F-520) and the immediate one cannot drift apart.
+func _begin_spawns() -> void:
+	_spawns_deferred = false
 	_claim_spawn_point()
 
 	if not NetTransport.is_host():
@@ -306,6 +329,13 @@ func _on_session_opened() -> void:
 
 	_sample_timer = 0.0
 	set_physics_process(true)
+
+
+## Is the front end on screen? `mire_frontend` is `ui/frontend/frontend.gd`'s own marker for exactly
+## that, and it is released when that scene is freed on the way into a run — which makes it the
+## cheapest honest answer to "is there a world yet".
+func _frontend_is_up() -> bool:
+	return get_tree().get_first_node_in_group(&"mire_frontend") != null
 
 
 ## In a session, the level's hand-placed Player is a SPAWN POINT, not a player: read its transform,
@@ -334,6 +364,11 @@ func _claim_spawn_point() -> void:
 func _on_peer_joined(peer_id: int) -> void:
 	if not NetTransport.is_host():
 		return
+	# F-520: someone accepting an invite while the host is still standing on the dock is joining the
+	# LOBBY, not a world. `_begin_spawns()` spawns every peer that is present at landfall, so this
+	# one is not lost by waiting.
+	if _spawns_deferred:
+		return
 	_spawn_for(peer_id)
 
 
@@ -345,6 +380,7 @@ func _on_peer_left(peer_id: int) -> void:
 
 func _on_disconnected() -> void:
 	_session_open = false
+	_spawns_deferred = false
 	set_physics_process(false)
 	_last_sample.clear()
 	_strikes.clear()
@@ -389,6 +425,15 @@ func _publish_observers() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	# F-520: spawns owed to a session that opened in the front end. The tick is already running for
+	# the speed check, so watching costs a group lookup per frame and only while spawns are owed.
+	if _spawns_deferred:
+		if _frontend_is_up() or get_tree().current_scene == null:
+			return
+		MireLog.info(NetConfig.LOG_CHANNEL, "PlayerNet: landfall — taking the deferred spawns")
+		_begin_spawns()
+		return
+
 	# Interest management (§2.5) reads these; it does not gather them, because a static filter called
 	# 1000 times a tick must not walk the tree. Published every tick, not on the sample timer below —
 	# visibility is re-evaluated at 60Hz, and filtering against a position up to a quarter of a second

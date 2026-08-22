@@ -69,6 +69,8 @@ var _back_button: Button
 
 var _preview_timer: SceneTreeTimer
 var _previewed_seed: int = 0
+## F-520: INVITE was pressed with no lobby open. The lobby is being created; invite as soon as it is.
+var _invite_when_open: bool = false
 
 
 func _ready() -> void:
@@ -137,10 +139,32 @@ func request_copy_code() -> void:
 	_toast("Join code copied — send it to a friend.")
 
 
+## F-520: this used to hand the press straight to Steam's overlay and assume it worked. It has three
+## honest outcomes instead, because two of them are common: there is no lobby yet (open one, and
+## invite the moment it exists — pressing INVITE plainly means "I want someone in here"), the overlay
+## is unavailable on this launch (fall back to the join code, which works everywhere), or the overlay
+## is there and opens. What it must never do again is nothing.
 func request_invite() -> void:
 	var lobby: Node = _lobby()
-	if lobby == null or not bool(lobby.call("open_invite_overlay")):
-		_show_status("No lobby to invite anyone to — open one first.", true)
+	if lobby == null:
+		_show_status("Steam isn't available in this build.", true)
+		return
+
+	if int(lobby.call("current_lobby_id")) == 0:
+		_invite_when_open = true
+		request_open_lobby()
+		return
+
+	if bool(lobby.call("open_invite_overlay")):
+		_show_status("Steam's invite window is open — pick a friend.", false)
+		return
+
+	# No overlay: the join code is the invite. Put it where they can paste it and say so.
+	DisplayServer.clipboard_set(str(int(lobby.call("current_lobby_id"))))
+	_show_status(
+		"Steam's overlay isn't available on this launch, so the invite window can't open. "
+		+ "Your join code is copied — send it to a friend and they can paste it here.", true)
+	_toast("Join code copied.")
 
 
 ## Stages the typed seed. A pure integer is used as-is; anything else is hashed, so a friend can
@@ -336,16 +360,20 @@ func _connect_services() -> void:
 		settings.connect(&"settings_changed", refresh)
 
 
-func _streamer_mode() -> bool:
-	var settings: Node = get_node_or_null(^"/root/SettingsService")
-	return settings != null and settings.has_method(&"streamer_mode") \
-		and bool(settings.call(&"streamer_mode"))
-
+	# F-520: these four lines sat under `_streamer_mode()`'s `return` as unreachable code, so the
+	# dock never heard the session open or end and kept showing pre-session state until some other
+	# signal happened to land. They belong here, at the end of the wiring they were written for.
 	var session: Node = _session()
 	if session != null:
 		for signal_name: String in ["session_opened", "session_ended"]:
 			if session.has_signal(signal_name):
 				session.connect(signal_name, _on_lobby_changed)
+
+
+func _streamer_mode() -> bool:
+	var settings: Node = get_node_or_null(^"/root/SettingsService")
+	return settings != null and settings.has_method(&"streamer_mode") \
+		and bool(settings.call(&"streamer_mode"))
 
 
 func _disconnect_services() -> void:
@@ -376,9 +404,14 @@ func _disconnect_services() -> void:
 ## a screen instead of a service).
 func _on_lobby_changed(_a: Variant = null, _b: Variant = null) -> void:
 	refresh()
+	# F-520: an invite asked for before there was a lobby, taken now that there is one.
+	if _invite_when_open and _in_lobby():
+		_invite_when_open = false
+		request_invite()
 
 
 func _on_lobby_failed(reason: String) -> void:
+	_invite_when_open = false
 	_show_status(reason, true)
 	refresh()
 

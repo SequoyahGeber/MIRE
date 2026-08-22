@@ -213,6 +213,9 @@ var _time_since_grounded: float = INF
 var _step_grace: float = 0.0
 var _time_since_jump_pressed: float = INF
 var _was_on_floor: bool = true
+## F-520: set when the mouse capture this body wanted at spawn had to be refused because a
+## cursor-owning UI was open. Taken on the first physics tick after that UI closes.
+var _capture_deferred: bool = false
 
 ## Client-local prediction of a revive hold (task 2.13). The host re-validates range and both
 ## players' states the moment the hold completes — see systems/health/player_health.gd's own note on
@@ -301,7 +304,15 @@ func _ready() -> void:
 	set_process_unhandled_input(is_local_authority)
 
 	if is_local_authority:
-		_capture_mouse(true)
+		# F-520: NOT unconditionally. A body can legitimately be built while a cursor-owning UI is up
+		# — a lobby opened from the expedition dock brings the session up in the FRONT END — and
+		# capturing there hides the cursor behind a menu the player is still clicking on, which reads
+		# as the game having frozen. Whoever holds the blocking group keeps the cursor; the capture
+		# happens on the first frame after they let go (see `_physics_process`).
+		if gameplay_input_allowed():
+			_capture_mouse(true)
+		else:
+			_capture_deferred = true
 
 
 ## The held item lives under the Camera3D, not the pivot, so it inherits pitch as well as yaw and
@@ -573,6 +584,12 @@ func _physics_process(delta: float) -> void:
 	# up to 3x, every physics frame, for an answer that cannot have changed since the first call.
 	# Resolved once here and threaded through instead.
 	var input_allowed: bool = gameplay_input_allowed()
+
+	# F-520: a capture refused at spawn time (a UI owned the cursor) is taken the moment that UI
+	# closes, so the player never lands in the world with a free cursor and a dead camera.
+	if _capture_deferred and input_allowed:
+		_capture_deferred = false
+		_capture_mouse(true)
 	var downed: bool = _is_downed()
 	var dead: bool = _is_dead()
 
