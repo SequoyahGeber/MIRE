@@ -113,7 +113,17 @@ func _run() -> void:
 	check((combat.call("weapon_for_hotbar_index", 0) as WeaponDef).item_id == &"unarmed",
 		"an empty hotbar slot swings unarmed")
 	check(bool(inventory.call("host_add", 1, &"stone_axe", 1)), "host grants the axe")
-	check(bool(inventory.call("host_move_stack", 1, 0, 24, 1)), "axe moves into hotbar slot one")
+	# A grant lands in the HOTBAR first and only spills into the backpack once the hotbar is full
+	# (`InventoryStore._addition_order()`, F-382). This used to grant the axe and then
+	# `host_move_stack(1, 0, 24, 1)` it out of backpack slot 0; since that change slot 0 has been
+	# empty, the move has returned false, and this check has been red at HEAD ever since (F-551) —
+	# invisibly, because the axe was already exactly where the move was trying to put it. Assert the
+	# placement instead of a move that now has nothing to move.
+	var hotbar_start: int = int(inventory.call("hotbar_start_index"))
+	var granted: Array[Dictionary] = inventory.call("host_slots", 1) as Array[Dictionary]
+	check(StringName(String(granted[hotbar_start].get("item_id", ""))) == &"stone_axe",
+		"the granted axe lands in hotbar slot one")
+	check(granted[0].is_empty(), "and nothing was put in the backpack while the hotbar had room")
 	check((combat.call("weapon_for_hotbar_index", 0) as WeaponDef).item_id == &"stone_axe",
 		"the selected hotbar slot decides the weapon")
 	check((combat.call("weapon_for_hotbar_index", 3) as WeaponDef).item_id == &"unarmed",

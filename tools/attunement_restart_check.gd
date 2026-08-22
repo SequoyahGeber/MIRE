@@ -294,6 +294,12 @@ func _run_networked() -> void:
 			"the expired request no longer holds the panel")
 		_check(bool(result.get("status_is_error", false)),
 			"the panel says why, instead of silently re-enabling")
+		# F-321, asserted here because this is the only two-process harness that has a client whose
+		# session ends while a mandatory panel is up.
+		_check(bool(result.get("closed_after_session_end", false)),
+			"ending the session CLOSES the picker rather than leaving it up over a dead run")
+		_check(not bool(result.get("blocking_after_session_end", true)),
+			"and releases the blocking-UI interlock, so the orphan can reach the main menu")
 
 	_check(int(_read_result().get("failures", -1)) == 0, "client self-checks report 0 failures")
 	await _teardown_level(level)
@@ -360,6 +366,8 @@ func _client_drive() -> void:
 			"operable_after_expiry": extra.get("operable_after_expiry", -1),
 			"picking_after_expiry": extra.get("picking_after_expiry", true),
 			"status_is_error": extra.get("status_is_error", false),
+			"closed_after_session_end": extra.get("closed_after_session_end", false),
+			"blocking_after_session_end": extra.get("blocking_after_session_end", true),
 		})
 		if handled == STEP_EXPIRE:
 			# The sub-phase ends with this peer deliberately disconnected; keep reporting the final
@@ -377,25 +385,47 @@ func _client_step(step: int, extra: Dictionary) -> Dictionary:
 		STEP_PICK_SECOND:
 			attunement_ui.call("choose", SECOND_ROLE)
 		STEP_EXPIRE:
-			# F-297's own scenario: the request goes out, and the host is gone before the answer can
-			# come back. Nothing here fakes the timeout — `leave()` really does strand the request.
+			# F-297: an unanswered request arms a BOUNDED wait, and the panel recovers when it runs
+			# out — on a picker with no dismiss path that is the difference between a slow host and a
+			# soft-lock.
+			#
+			# This sub-phase used to strand the request by calling `transport.leave()` and reading the
+			# seams afterwards. That stopped proving anything the moment F-321 landed: `leave()` ends
+			# the session, and `_on_session_ended()` now stops the request timer, clears `_picking`
+			# and CLOSES the picker outright (D-185's call — there is no run left to pick for). So
+			# every read came back from a shut panel — `wait_armed_sec` 0.0 because the timer was
+			# stopped, `operable_button_count` 0 because the buttons were never re-enabled on the way
+			# out — and three assertions have been red at HEAD ever since, describing a scenario the
+			# code deliberately no longer has (F-551).
+			#
+			# Both behaviours are right; they are just different scenarios. F-297's is "the host is
+			# still there and does not answer", so it is exercised in-session, with NO await between
+			# the request and the expiry — the host's real reply is a network round trip away and
+			# must not be allowed to race the seam. F-321's is asserted separately below, where the
+			# session really does end.
 			attunement_ui.call("choose", &"warden")
-			transport.call("leave")
-			await process_frame
 			extra = {
 				"wait_armed_sec": _seam_float(attunement_ui, &"pending_request_seconds_left", 0.0),
 				"operable_after_expiry": -1,
 				"picking_after_expiry": true,
 				"status_is_error": false,
+				"closed_after_session_end": false,
+				"blocking_after_session_end": true,
 			}
 			# The wait is real (asserted above); run it out now rather than stalling the check for
 			# REQUEST_TIMEOUT_SEC, through the same debug seam poll_now() uses.
 			if attunement_ui.has_method(&"expire_pending_request_now"):
 				attunement_ui.call("expire_pending_request_now")
-			await process_frame
 			extra["operable_after_expiry"] = _seam_int(attunement_ui, &"operable_button_count", -1)
 			extra["picking_after_expiry"] = _seam_bool(attunement_ui, &"is_picking", true)
 			extra["status_is_error"] = String(attunement_ui.call("status_text")).contains("No answer")
+
+			# F-321, in the same breath: ending the session closes the picker and releases D-032's
+			# blocking-UI interlock, which is what gives an orphaned client its way back to the menu.
+			transport.call("leave")
+			await process_frame
+			extra["closed_after_session_end"] = not bool(attunement_ui.call("is_open"))
+			extra["blocking_after_session_end"] = attunement_ui.is_in_group(&"blocks_gameplay_input")
 	return extra
 
 

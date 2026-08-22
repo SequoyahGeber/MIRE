@@ -3072,7 +3072,9 @@ widened to fail on a duplicate `### D-<n>` heading in docs/DECISIONS.md.
 
 ---
 
-### F-551 · Two checks fail at clean HEAD with nobody owning them — ranged_combat_check (1) and attunement_restart_check (3)
+## Resolved
+
+### F-551 · Two checks fail at clean HEAD with nobody owning them — ranged_combat_check (1) and attunement_restart_check (3) — **fixed**
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-22 by larch543bba
 
@@ -3117,9 +3119,56 @@ lock at all, so it costs nothing to run and nobody is running it. Not fixed here
 **Not fixed here** — neither check is in F-543's claim set, and guessing at someone else's assertions
 is how a red check becomes two red checks.
 
----
+**Resolved 2026-08-22 by hollowbfcf67.** **Fixed 2026-08-22 by hollowbfcf67.** Both checks were red for the same underlying reason — a
+deliberate behaviour change landed, and an assertion describing the *old* behaviour was left behind.
+Neither was a bug in shipped code, and in both cases the stale assertion sat next to assertions that
+still passed, which is why three sessions read the red and moved on.
 
-## Resolved
+**`ranged_combat_check` — and two siblings the finding did not name.** The failing line was
+`host_move_stack(1, 0, 24, 1)`, "bow moves into hotbar slot one". F-382 made
+`InventoryStore._addition_order()` walk the hotbar before the backpack, so a granted item now lands
+in hotbar slot one directly; backpack slot 0 is empty and the move correctly returns false. The
+assertions after it kept passing because the bow was already exactly where the move was trying to
+put it. `grep` found the identical line in `tools/combat_check.gd` and
+`tools/combat_self_hit_check.gd` — the same defect, also red, also unowned — so all three now assert
+the placement (`host_slots()[hotbar_start_index()]` is the granted item, and backpack slot 0 is
+empty) instead of a move that has nothing left to move.
+
+`combat_self_hit_check` had a second, independent reason to read as red: it never printed a verdict
+line, so `agent verify` reported "missing failures verdict" no matter how green it ran. It now
+prints `COMBAT_SELF_HIT_CHECK failures=%d`.
+
+**`attunement_restart_check` — F-297's scenario was deleted by F-321.** The three failures were all
+in the F-297 sub-phase, which stranded a request by calling `transport.leave()` and then read the
+panel's seams. F-321/D-185 later made `_on_session_ended()` stop the request timer, clear `_picking`
+and CLOSE the picker outright, because there is no run left to pick an Attunement for. So every seam
+was being read from a shut panel: `pending_request_seconds_left` 0.0 (timer stopped), and
+`operable_button_count` 0 (buttons never re-enabled on the way out). Both behaviours are right; they
+are simply different scenarios, and the check was asserting one while performing the other.
+
+F-297's scenario ("the host is still there and does not answer") is now exercised in-session, with no
+`await` between `choose()` and `expire_pending_request_now()` so the host's real reply — a network
+round trip away — cannot race the seam. F-321's scenario is then asserted in the same sub-phase with
+two new assertions: ending the session closes the picker, and releases the `blocks_gameplay_input`
+interlock, which is the part that actually gives an orphaned client its way back to the main menu.
+That half had no two-process coverage anywhere before this.
+
+**Verified**, each through `agent godot`:
+
+    COMBAT_CHECK landed=1 missed=2 rejected=1 failures=0
+    COMBAT_SELF_HIT_CHECK failures=0
+    RANGED_COMBAT_CHECK landed=1 missed=2 rejected=1 failures=0
+    ATTUNEMENT_RESTART_CHECK failures=0
+
+**Not fixed here, and filed separately** — the finding's closing paragraph is right that a red check
+with no owner becomes furniture, and a full `agent verify --fast` run over this tree shows the
+mechanism is worse than two checks. Of 61 failing rows, 42 fail on engine noise ALONE with
+`failures=0`: exit-time `resources still in use` leaks, and a per-frame
+`No multiplayer peer is assigned` from `autoload/sfx_director.gd:131` that appears in 53 checks.
+Those are their own findings, not this one's.
+
+The adjacent hygiene rows this finding also named are cleared: `findings_hygiene_check.py` was at 8
+failures and is now at 1 (F-550, another session's live claim) — see commit 65c41366.
 
 ### F-537 · macOS: the game process can outlive its window because Steam is never shut down and nothing guarantees exit — **fixed**
 
