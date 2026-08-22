@@ -3118,6 +3118,51 @@ Reproduce: comment out the `_prewarm()` call in `BenchmarkRunner.run()` and run
 
 ---
 
+**AMENDED 2026-08-22 by vane99f1bb — reproduced under a probe, and one of this finding's own
+premises is wrong.**
+
+`tools/revisit_probe.gd` (new, shipped with this amendment) teleports to a fixed point 350 m from
+spawn, lets the world settle, samples; teleports far away so the destination is evicted; and returns.
+It reports each visit in two halves — ARRIVING (from the teleport until streaming goes quiet) and
+SETTLED (180 frames afterwards). Two runs, M5 Pro, fullscreen, seed 20260821:
+
+    visit                    phase      frames   1% low    hitches   nodes added
+    run 1  FIRST             arriving      213   48.10 ms        6          1382
+           FIRST             settled       180   14.23 ms        0            16
+           SECOND            arriving      144   37.97 ms        2           460
+           SECOND            settled       180   27.42 ms        1            16
+    run 2  FIRST             arriving      201   51.54 ms        6           852
+           SECOND            arriving      150   37.91 ms        3           460
+
+**The first-visit penalty is real and reproduces**: ~1.35x the frames to settle, 2-3x the hitches,
+~1.3x the arrival 1% low, both runs.
+
+**But it is entirely in the arrival, and the settled window is clean.** This finding argues that
+because `BenchmarkRunner.settle_world()` was satisfied before its samples, "whatever this cost is, it
+is not chunk streaming". The probe shows the opposite ordering: once settled, first and second visits
+are indistinguishable (14.23 / 27.42 ms one run, 18.72 / 9.07 ms the other — noise, and in both
+directions). Everything that separates them happens WHILE the world arrives. Whatever the cause, it
+is bounded to the streaming window, which puts chunk streaming and everything it triggers back on the
+list rather than off it.
+
+**What did NOT separate the two hypotheses, and why that matters.** The plan was to discriminate by
+node count: once-only CPU work (first-time `ResourceLoader`, prop colliders, `EnvironmentVfx`
+registration) creates nodes, while GPU pipeline compilation creates none, so a first visit that
+hitches while building the same scene graph would be the driver. The counter is not stable enough to
+carry that: the same first visit measured 1382 nodes one run and 852 the next, against a second visit
+that was 460 both times. A 3.0x ratio and a 1.85x ratio either side of the threshold, from the same
+scenario. The probe now says so rather than naming a cause on one run.
+
+Both suspects are still live. Some once-only CPU work is certainly happening — the first visit always
+creates more nodes — and pipeline compilation would be invisible to this counter no matter how large
+it was.
+
+**The experiment that would settle it**, for whoever picks this up: run the same probe with the
+scatter tables reduced to ONE asset. Identical geometry per chunk, one material. Node creation and
+material variety then move independently, and the first-visit penalty either survives (pipelines) or
+does not (once-only CPU work). That is a content-side change to a `.tres` table plus a re-run, not new
+instrumentation — the harness is now in the repo.
+
 ### F-461 · Chunk LOD transitions rebuild every prop in already-dressed chunks, and each holder re-sweeps HarvestWorld
 
 **Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quillcfd8d7
