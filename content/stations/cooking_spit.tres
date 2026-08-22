@@ -9,3 +9,4 @@ display_name = "Cooking Spit"
 world_scene = &"station_cooking_spit"
 family = &"fire"
 tier = 2
+upgrades_from = &"campfire"

@@ -57,6 +57,15 @@ SOURCES: list[tuple[str, str]] = [
     ("mushroom", "pickups/exports/pickup_mushroom.glb"),
     ("apple", "pickups/exports/pickup_apple.glb"),
     ("raw_meat", "pickups/exports/pickup_raw_meat.glb"),
+    # F-604, Cooking Tier 1. These five GLBs shipped with A-012 and had no item, no recipe and no
+    # icon, so five of the thirteen models in `assets/food/exports` were reachable from nothing.
+    # Sourced from the food kit for the same reason `gilded_key` comes from the loot kit: the icon's
+    # source of truth is the model the player will actually see in the world.
+    ("cooked_meat", "food/exports/cooked_meat.glb"),
+    ("meat_skewer", "food/exports/meat_skewer.glb"),
+    ("hearty_stew", "food/exports/hearty_stew.glb"),
+    ("healing_stew", "food/exports/healing_stew.glb"),
+    ("honey_jar", "food/exports/honey_jar.glb"),
     ("coin", "pickups/exports/pickup_coin.glb"),
     ("coin_stack", "pickups/exports/pickup_coin_stack.glb"),
     ("coins", "loot/exports/loot_coin_pouch.glb"),

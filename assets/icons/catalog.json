@@ -170,6 +170,56 @@
     "source_polygons": 148
   },
   {
+    "id": "cooked_meat",
+    "source": "assets/food/exports/cooked_meat.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.2411,
+    "source_polygons": 152
+  },
+  {
+    "id": "meat_skewer",
+    "source": "assets/food/exports/meat_skewer.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.353,
+    "source_polygons": 260
+  },
+  {
+    "id": "hearty_stew",
+    "source": "assets/food/exports/hearty_stew.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.1977,
+    "source_polygons": 280
+  },
+  {
+    "id": "healing_stew",
+    "source": "assets/food/exports/healing_stew.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.1977,
+    "source_polygons": 280
+  },
+  {
+    "id": "honey_jar",
+    "source": "assets/food/exports/honey_jar.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 0.2226,
+    "source_polygons": 216
+  },
+  {
     "id": "coin",
     "source": "assets/pickups/exports/pickup_coin.glb",
     "size_px": 256,

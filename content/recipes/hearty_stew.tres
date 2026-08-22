@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="RecipeDef" format=3]
+
+[ext_resource type="Script" path="res://systems/crafting/recipe_ingredient.gd" id="1_ing"]
+[ext_resource type="Resource" path="res://content/items/raw_meat.tres" id="2_raw_meat"]
+[ext_resource type="Resource" path="res://content/items/wild_onion.tres" id="3_wild_onion"]
+[ext_resource type="Resource" path="res://content/items/mushroom.tres" id="4_mushroom"]
+[ext_resource type="Resource" path="res://content/items/hearty_stew.tres" id="5_out"]
+[ext_resource type="Script" path="res://systems/crafting/recipe_def.gd" id="6_recipe"]
+
+[sub_resource type="Resource" id="Resource_raw_meat"]
+script = ExtResource("1_ing")
+item = ExtResource("2_raw_meat")
+count = 2
+
+[sub_resource type="Resource" id="Resource_wild_onion"]
+script = ExtResource("1_ing")
+item = ExtResource("3_wild_onion")
+count = 1
+
+[sub_resource type="Resource" id="Resource_mushroom"]
+script = ExtResource("1_ing")
+item = ExtResource("4_mushroom")
+count = 2
+
+[resource]
+script = ExtResource("6_recipe")
+id = &"hearty_stew"
+display_name = "Hearty Stew"
+station = &"cooking_spit"
+inputs = Array[ExtResource("1_ing")]([SubResource("Resource_raw_meat"), SubResource("Resource_wild_onion"), SubResource("Resource_mushroom")])
+output_item = ExtResource("5_out")
+output_count = 1
+craft_time_sec = 14.0
