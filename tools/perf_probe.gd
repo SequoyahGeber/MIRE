@@ -17,6 +17,7 @@ extends SceneTree
 
 const ProbeScene := preload("res://tools/probe_scene.gd")
 const DrawPolicy := preload("res://world/environment/draw_policy.gd")
+const PerfFormat := preload("res://tools/perf_format.gd")
 ## Fixed rather than random so repeated runs measure the same passive/VFX load. This is the first
 ## role in AttunementUI's authored order, matching the in-game benchmark harness.
 const PROBE_ATTUNEMENT: StringName = &"warden"
@@ -392,9 +393,11 @@ func _measure(name: String, quiet: bool = false) -> Dictionary:
 		"mprims": primitives / count / 1e6,
 	}
 	if not quiet:
-		print("  %-28s %6.0f fps  1%%low %5.0f fps (%5.2f ms)  med %6.2f ms  cpu %5.2f ms  draws %5.0f  prims %5.1fM" % [
-			row["name"], row["fps"], row["low1_fps"], row["low1_ms"], row["median_ms"],
-			row["cpu_ms"], row["draws"], row["mprims"]])
+		# F-592: frame rates lead, milliseconds are the engineering parenthetical. The 1% low keeps
+		# its place as the first thing read after the average — it is what a player feels.
+		print("  %-28s %6.0f fps avg  1%%low %5.0f fps  med %5.0f fps  (med %5.2f ms, 1%%low %5.2f ms, cpu %5.2f ms)  draws %5.0f  prims %5.1fM" % [
+			row["name"], row["fps"], row["low1_fps"], PerfFormat.fps(row["median_ms"]),
+			row["median_ms"], row["low1_ms"], row["cpu_ms"], row["draws"], row["mprims"]])
 	return row
 
 
@@ -466,16 +469,19 @@ func _render_time_ms(raw: float) -> float:
 func _print_table(results: Array[Dictionary]) -> void:
 	print("\n=== summary (each row against the reference sampled right after it) ===")
 	print("  The 1% low column is the one that matters — it is what a player feels.")
-	print("  %-28s %14s %14s" % ["", "1% low vs ref", "median vs ref"])
+	print("  Each cost is a share OF THE FRAME IT SITS IN, and both frame rates are printed so the")
+	print("  percentage has a baseline you can check it against (F-592).")
 	for row: Dictionary in results:
 		var reference_ms: float = float(row.get("reference_ms", 0.0))
 		if reference_ms <= 0.0:
 			continue
-		print("  %-28s %+9.2f ms   %+9.2f ms   (1%% low %4.0f fps, ref %4.0f fps)" % [
-			row["name"],
-			(row["low1_ms"] as float) - float(row.get("reference_low1_ms", reference_ms)),
-			(row["median_ms"] as float) - reference_ms,
-			row["low1_fps"], float(row.get("reference_low1_fps", 0.0))])
+		var reference_low1_ms: float = float(row.get("reference_low1_ms", reference_ms))
+		# `with` is this row's own frame and `without` is the reference beside it, so the
+		# percentage answers "how much of the frame goes on this lever" (PerfFormat.cost_line).
+		print("  %s" % PerfFormat.cost_line(
+			"%-28s 1%% low" % row["name"], row["low1_ms"] as float, reference_low1_ms))
+		print("  %s" % PerfFormat.cost_line(
+			"%-28s median" % row["name"], row["median_ms"] as float, reference_ms))
 	_warn_if_refresh_capped(results)
 	_report_drift(results)
 	print("\nPERF_PROBE done")
@@ -501,10 +507,13 @@ func _report_drift(results: Array[Dictionary]) -> void:
 	for value: float in references:
 		lowest = minf(lowest, value)
 		highest = maxf(highest, value)
-	print("\n  reference drift across the run: %+.2f ms (%.2f -> %.2f, range %.2f..%.2f)."
-		% [drift, references[0], references[references.size() - 1], lowest, highest])
-	print("  Pairing is what makes the deltas above survive that. A single-baseline table")
-	print("  could not have resolved anything smaller than %.2f ms." % absf(highest - lowest))
+	# F-592: stated as a frame-rate wobble as well, because that is the form the numbers above are
+	# in now — and a drift gate expressed in a unit nobody is reading is a gate nobody applies.
+	print("\n  reference drift across the run: %s"
+		% PerfFormat.change_line(references[0], references[references.size() - 1]))
+	print("  Pairing is what makes the costs above survive that. A single-baseline table could not")
+	print("  have resolved anything smaller than %.0f%% of the frame (%.2f ms of %.2f)." % [
+		PerfFormat.percent_of_frame(absf(highest - lowest), highest), absf(highest - lowest), highest])
 
 
 func _warn_if_refresh_capped(results: Array[Dictionary]) -> void:

@@ -1,4 +1,5 @@
 extends SceneTree
+const PerfFormat := preload("res://tools/perf_format.gd")
 
 ## What the traversal hitch is actually made of (F-454).
 ##
@@ -211,11 +212,16 @@ func _report() -> void:
 			hitch_ms_total += float(frame["ms"])
 
 	print("=== %d frames over %.1f s ===" % [_frames.size(), total / 1000.0])
-	print("  median %.2f ms | mean %.2f ms | worst %.2f ms" % [
-		float(sorted[sorted.size() / 2]["ms"]), total / float(_frames.size()),
-		float(sorted[0]["ms"])])
-	print("  frames >= %.0f ms: %d (%.1f%% of frames, %.1f%% of the wall clock)" % [
-		HITCH_MS, hitches, 100.0 * float(hitches) / float(_frames.size()),
+	# F-592: frame rates lead. The worst frame is the one that matters and is stated last so it is
+	# the number left in the reader's eye, not buried between two healthier ones.
+	var median_ms: float = float(sorted[sorted.size() / 2]["ms"])
+	var mean_ms: float = total / float(_frames.size())
+	var worst_ms: float = float(sorted[0]["ms"])
+	print("  median %.0f fps | mean %.0f fps | worst frame %.0f fps  (%.2f / %.2f / %.2f ms)" % [
+		PerfFormat.fps(median_ms), PerfFormat.fps(mean_ms), PerfFormat.fps(worst_ms),
+		median_ms, mean_ms, worst_ms])
+	print("  frames slower than %.0f fps: %d (%.1f%% of frames, %.1f%% of the wall clock)" % [
+		PerfFormat.fps(HITCH_MS), hitches, 100.0 * float(hitches) / float(_frames.size()),
 		100.0 * hitch_ms_total / total])
 	print("  nodes added over the walk: %d (%.0f per frame average)" % [
 		nodes_total, float(nodes_total) / float(_frames.size())])
@@ -282,6 +288,7 @@ func _attribute(sorted: Array[Dictionary]) -> void:
 			100.0 * (frame_total - process_total - physics_total) / frame_total])
 	print("  (\"elsewhere\" is servers and drivers — physics body creation, navmesh commits,"
 		+ " shader compilation, buffer uploads.)")
+	# Already a percentage, and it names the total it is a share of — the shape F-592 asks for.
 	print("  ChunkStreamer's own reported cost accounts for %.1f%% of hitch time (%.2f of %.2f ms)."
 		% [100.0 * streamer_share / frame_total, streamer_share, frame_total])
 	print("  Nodes added: %.0f per hitch frame vs %.0f per quiet frame." % [

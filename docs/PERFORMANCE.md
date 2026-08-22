@@ -25,6 +25,16 @@ twice (F-342, F-452), so read this before quoting a number.
 window is throttled and scaled differently from the real game; its draw-call and primitive counters
 survive that, its frame times do not.
 
+**How numbers are reported here (F-592).** Sequoyah reads these tables and decides what to act on,
+and his instruction is that milliseconds are not a unit he can judge: *"i dont really understand ms
+as a human, fps or % makes sense to me."* So a frame time is stated as **FPS**, a cost or saving as
+a **percentage of the frame** and/or a change in FPS, and milliseconds survive only in the
+parenthetical for whoever is doing the engineering. Every percentage names the frame it is a
+percentage OF — without that it means nothing, and unlike a bare millisecond figure it cannot be
+quoted onward without its baseline. `tools/perf_format.gd` performs the conversion for every
+instrument, and `tools/perf_format_check.gd` holds it to this. The one thing that does not change is
+which number leads: the 1% low, converted rather than replaced.
+
 Five rules the instruments learned the hard way. All of them are about not fooling yourself, and
 every one was written after a table that looked like evidence turned out not to be:
 
@@ -37,7 +47,8 @@ every one was written after a table that looked like evidence turned out not to 
 2. **Pair every measurement.** Each row is sampled, undone, and the untouched build sampled again
    *immediately after*; the row's delta is against that adjacent reference. A serial table quoting
    row 19 against a baseline taken twenty rows earlier cannot resolve anything smaller than the
-   run's own drift — measured here at **+1.90 ms**, enough to swallow every lever except the
+   run's own drift — measured here at **+1.90 ms, 15% of the 1%-low frame**, enough to swallow
+   every lever except the
    resolution ones, and enough to make four rows that removed hundreds of draw calls report the
    frame getting *slower*. The probe prints its drift at the end so the claim stays checkable.
 3. **Discard the transient.** Applying a config re-renders shadow atlases, walks draw-policy state,
@@ -69,21 +80,23 @@ M5 Pro, macOS, Metal, Forward+, fullscreen 3024x1898 (5.7 Mpx), procedural islan
 ### The headline: standing still versus walking
 
 ```
-                              fps    1% low             median
-  as shipped, stationary      120    81 (12.34 ms)      7.99 ms
-  TRAVERSAL (streaming)       101    13 (74.45 ms)      9.00 ms
-  traversal @ preset low      146    10 (102.55 ms)     4.23 ms
-  traversal + menu open       102    15 (65.92 ms)      8.93 ms
+                              avg fps   1% low     median      (1% low ms)
+  as shipped, stationary          120    81 fps    125 fps     12.34 ms
+  TRAVERSAL (streaming)           101    13 fps    111 fps     74.45 ms
+  traversal @ preset low          146    10 fps    236 fps    102.55 ms
+  traversal + menu open           102    15 fps    112 fps     65.92 ms
 ```
 
 **Standing still the game holds an 81 fps 1% low. Walking into unstreamed terrain it is 13 fps.**
-The median barely moves; the tail collapses by a factor of six — 74 ms frames, on the fastest
-machine in the project. That is the whole felt performance problem, and it is F-454.
+The median barely moves — 125 fps standing, 111 fps walking — while the tail collapses by a factor
+of six, to 13 fps, on the fastest machine in the project. That is the whole felt performance
+problem, and it is F-454.
 
-**No graphics setting touches it.** Traversal at preset LOW improves the median by 53% (9.00 ms to
-4.23 ms — exactly what the preset is built to buy) and makes the 1% low *worse*. Every renderer
-lever below moves the 1% low by between -3.4 ms and +1.6 ms while stationary; the traversal hitch is
-**+60.8 ms**. Different problem, different fix, and the fix is not in the renderer.
+**No graphics setting touches it.** Traversal at preset LOW doubles the median (111 fps to 236) —
+exactly what the preset is built to buy — and makes the 1% low *worse*, 13 fps down to 10. Every
+renderer lever below moves the stationary 1% low by at most half the frame in either direction; the
+traversal hitch is **82% of the frame** (60.8 ms of 74.45), and it takes the 1% low from 81 fps to
+13. Different problem, different fix, and the fix is not in the renderer.
 
 **Not the menu.** An open Attunement/class picker costs nothing measurable (15 fps against 13 —
 inside the run's variance). That question is settled.
@@ -93,26 +106,36 @@ inside the run's variance). That question is settled.
 Each against the reference sampled right after it, ranked by 1% low. These are honest numbers for
 what a setting costs; they are not the answer to why the game hitches.
 
-| Lever | 1% low | median | Draws saved |
-|---|---:|---:|---:|
-| dynamic resolution @240 | **-6.72 ms** | -3.23 ms | 0 |
-| FSR upscale @0.59 | **-6.03 ms** | -3.77 ms | 222 |
-| bilinear @0.59 (FSR control) | **-5.15 ms** | -4.73 ms | 195 |
-| gfx preset low | **-4.50 ms** | -7.21 ms | 1,511 |
-| gfx preset medium | -3.57 ms | -3.41 ms | 599 |
-| anti-aliasing off (MSAA 2x + FXAA) | **-3.44 ms** | -1.33 ms | 346 |
-| 3D render scale 50% | -2.57 ms | -2.03 ms | 324 |
-| sun shadows off | -2.26 ms | -0.76 ms | 756 |
-| SSAO off | -1.75 ms | -0.72 ms | 345 |
-| glow off | -1.06 ms | -0.15 ms | 302 |
-| mesh LOD threshold 4.0 | -0.69 ms | -0.37 ms | 282 |
-| sky/time frozen | 0.00 ms | +0.02 ms | 70 |
-| undergrowth hidden | +0.08 ms | +0.01 ms | 99 |
-| volumetric fog off | +1.08 ms | -0.07 ms | 253 |
+Every figure is against the **stationary 1% low of 81 fps (12.34 ms)** — that is the frame the
+percentages are shares OF, and stating it is what makes them checkable (F-592). "+54% of the frame"
+means the lever gave back 54% of a 12.34 ms frame.
 
-(Rows 11–13 — shadow cascades, shadow distance, draw distance — swung between -10.8 and +7.5 ms of
-1% low across runs. They are real draw-call reductions with no measurable millisecond effect on this
-GPU; treat their 1%-low column as unresolved rather than as a result.)
+| Lever | 1% low gain | share of the frame | median gain | Draws saved |
+|---|---:|---:|---:|---:|
+| dynamic resolution @240 | **+97 fps** | **+54%** | +3.23 ms | 0 |
+| FSR upscale @0.59 | **+77 fps** | **+49%** | +3.77 ms | 222 |
+| bilinear @0.59 (FSR control) | **+58 fps** | **+42%** | +4.73 ms | 195 |
+| gfx preset low | **+47 fps** | **+36%** | +7.21 ms | 1,511 |
+| gfx preset medium | +33 fps | +29% | +3.41 ms | 599 |
+| anti-aliasing off (MSAA 2x + FXAA) | **+31 fps** | **+28%** | +1.33 ms | 346 |
+| 3D render scale 50% | +21 fps | +21% | +2.03 ms | 324 |
+| sun shadows off | +18 fps | +18% | +0.76 ms | 756 |
+| SSAO off | +13 fps | +14% | +0.72 ms | 345 |
+| glow off | +8 fps | +9% | +0.15 ms | 302 |
+| mesh LOD threshold 4.0 | +5 fps | +6% | +0.37 ms | 282 |
+| sky/time frozen | — | — | -0.02 ms | 70 |
+| undergrowth hidden | — | — | -0.01 ms | 99 |
+| volumetric fog off | -7 fps | -9% | +0.07 ms | 253 |
+
+A frame-rate gain is not linear in the frame it comes from, which is why both columns are here: the
+same 6.72 ms is +97 fps against this 81 fps tail and would be worth a fraction of that against a
+30 fps one. **The percentage is the figure that carries to the low-end target machine; the fps
+number is this Mac's.**
+
+(Rows 11–13 — shadow cascades, shadow distance, draw distance — swung across a range wider than
+their own effect between runs, roughly ±90% of the frame. They are real draw-call reductions with
+no measurable frame-rate effect on this GPU; treat their 1%-low column as unresolved rather than as
+a result.)
 
 Read it like this:
 
@@ -121,10 +144,10 @@ Read it like this:
   with five other things. The frame is fill-bound.
 - **FSR costs nothing over bilinear** at the same 0.59 scale — same price, sharper image.
   `scaling_3d_mode` is still bilinear on every preset. That is free quality, currently unclaimed.
-- **Anti-aliasing is the biggest unmanaged cost in the build.** MSAA 2x + FXAA is 3.44 ms of 1% low,
-  and **no graphics preset touches it** — it ships at `anti_aliasing: 2` to every machine, reachable
+- **Anti-aliasing is the biggest unmanaged cost in the build.** MSAA 2x + FXAA is 28% of the 1%-low
+  frame — turning it off is worth +31 fps there — and **no graphics preset touches it** — it ships at `anti_aliasing: 2` to every machine, reachable
   only through the settings menu.
-- **The draw-call knobs buy draw calls, not milliseconds.** Draw distance sheds 1,103 submissions
+- **The draw-call knobs buy draw calls, not frame rate.** Draw distance sheds 1,103 submissions
   for nothing measurable here. Keep them: submission is CPU cost, and the low-end target pays it.
 
 Structure, for comparison (`frame_cost_check`, same seed, two runs): **3,010 / 3,012 draw calls,
@@ -142,17 +165,17 @@ And from `render_census` on the settled world: **1,826 `MeshInstance3D` and 10,0
 
 **3.1 Resolution scale, static and dynamic.** The biggest lever by a wide margin, four ways over.
 Already built: `GraphicsQuality` presets set `scaling_3d_scale` (LOW 0.59, MEDIUM 0.77), and F-098's
-dynamic resolution steers it to hold a target frame rate (-3.09 ms of 1% low). The trade that makes
+dynamic resolution steers it to hold a target frame rate (25% of the 1%-low frame, +27 fps). The trade that makes
 this survivable is that MEDIUM and HIGH keep the full-quality shadow map while the resolution drops.
 
 *Not yet done:* `scaling_3d_mode` is bilinear everywhere. FSR 1.0 measured at the same cost for a
 sharper image; LOW and MEDIUM should be using it.
 
-**3.2 Anti-aliasing.** 3.10 ms of 1% low, unmanaged by any preset. LOW should not be running MSAA
+**3.2 Anti-aliasing.** 25% of the 1%-low frame (+27 fps there), unmanaged by any preset. LOW should not be running MSAA
 2x. This is the cheapest large win left in the settings layer, and it needs a look on a moving
 camera before it ships — dropping to FXAA-only is a taste call, not just a cost one.
 
-**3.3 The shadow pass.** 2.39 ms of 1% low and 753 draw calls for the whole thing; the individual
+**3.3 The shadow pass.** 19% of the 1%-low frame (+19 fps there) and 753 draw calls for the whole thing; the individual
 knobs inside it (cascade count, distance) measured at zero, which simply means the pass is not where
 this GPU's time goes. Keep the knobs — they are draw-call reductions, and draw calls are CPU cost
 that the low-end target pays and this machine does not. Read the F-377 block at the top of
@@ -223,8 +246,8 @@ This is a permanent exclusion, not a backlog item.
 The frame is GPU-bound at the player's eye, but the *host* also runs simulation that no graphics
 preset touches:
 
-- **`MireGridSim.tick()` — ~16 ms at saturation, synchronously on the host main thread, every two
-  seconds** (F-363). A whole frame, and 12–14 ms during ordinary deep-Cycle play. The two ways out
+- **`MireGridSim.tick()` — a whole 60 fps frame at saturation, synchronously on the host main
+  thread, every two seconds** (F-363, ~16 ms; 12-14 ms during ordinary deep-Cycle play). The two ways out
   are time-slicing it across the interval (cheap to reason about) or moving it to
   `WorkerThreadPool` (an authority and ordering change needing an ARCHITECTURE.md §2.2 decision).
   On the low-end target this is several times worse than the number above.
@@ -262,22 +285,23 @@ synthetic machines, so the check does not report the classification of whatever 
    `tools/traversal_profile.gd` has taken it as far as a scene-tree instrument can. Two real
    defects are found and fixed — `ResourceScatterField`'s LOD0 poll had no per-frame cap at all,
    and the visual band budgeted *chunks* when a chunk is 200-500 nodes — which removed the
-   node-burst class of hitch (worst frame 217 ms -> 150 ms, no more 500-node frames) and did **not**
-   move total hitch time. What remains is ~90 ms per hitch frame that shows up in none of the
-   counters: 9 ms of `_process`, 1 ms of `_physics_process`, 0.3 ms of streamer cost, five nodes
-   added. That is a GPU/driver or resource-upload stall and it needs a real frame profiler —
+   node-burst class of hitch (worst frame 5 fps -> 7 fps, no more 500-node frames) and did **not**
+   move total hitch time. What remains is a hitch frame of about 11 fps, 60% of which shows up in
+   none of the counters: `_process` is 10% of it, `_physics_process` 1%, streamer cost 0.3%, five
+   nodes added (~90 ms unaccounted of a ~150 ms frame). That is a GPU/driver or resource-upload stall and it needs a real frame profiler —
    Godot's visual profiler or a Metal capture — not another counter.
-2. **Find out why `ChunkStreamer` overruns its own 4 ms budget by 10x under motion** (F-456). 39 to
-   55 ms frames of its own reported cost, ~21% of all hitch time. Instrument inside the budgeted
+2. **Find out why `ChunkStreamer` overruns its own budget by 10x under motion** (F-456). It holds
+   itself to 4 ms and spends 39-55 ms — a tenth of a frame's worth of budget turning into most of
+   one, and ~21% of all hitch time. Instrument inside the budgeted
    loop before fixing: the shape of the fix depends on which work item is indivisible.
-3. **Time-slice the Mire tick** (F-363). The other known main-thread stall: ~16 ms synchronously,
-   every two seconds, and several times that on the low-end target. Time-slicing needs no
+3. **Time-slice the Mire tick** (F-363). The other known main-thread stall: a whole 60 fps frame
+   spent synchronously every two seconds (~16 ms), and several times that on the low-end target. Time-slicing needs no
    architecture decision; moving it to `WorkerThreadPool` does (ARCHITECTURE.md §2.2).
 4. **Get a low-end machine into the loop** (F-174). Every ratio here is from an M5 Pro, and the two
    most promising structural wins (§3.4, §3.6) are exactly the ones that measure as zero on fast
    hardware and matter on slow. This does not block the work; it blocks confidence.
-5. **Put anti-aliasing in the preset table** (§3.2). 3.44 ms of 1% low, unmanaged, shipped at MSAA
-   2x to every machine including the worst one. LOW should not be running it.
+5. **Put anti-aliasing in the preset table** (§3.2). 28% of the 1%-low frame — +31 fps there —
+   unmanaged, shipped at MSAA 2x to every machine including the worst one. LOW should not be running it.
 6. **Give LOW and MEDIUM FSR instead of bilinear** (§3.1). Same measured cost, sharper image. One
    line in the preset table plus a look on a moving camera.
 7. **Bound the volumetric fog to `FogVolume` shapes** (§3.5). Cheap on this GPU, not on a weak one,

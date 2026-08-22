@@ -1,5 +1,7 @@
 extends SceneTree
 
+const PerfFormat := preload("res://tools/perf_format.gd")
+
 ## @verify windowed — this check meshes real chunks, which the dummy driver cannot upload, so
 ## `agent verify` must launch it with a framebuffer instead of the `--headless` it injects by
 ## default (F-556).
@@ -639,13 +641,21 @@ func _check_sprint_walk(root_node: Node3D) -> void:
 
 	var mean_ms: float = _mean(frame_ms_samples)
 	var mean_own_cost_ms: float = _mean(own_cost_ms_samples)
-	print("TOTAL FRAME TIME  frames=%d | distance=%.1f m | mean %.3f ms | worst %.3f ms | hitches(>%.3f ms)=%d | chunks loaded=%d" % [
-		frame_ms_samples.size(), traveled, mean_ms, worst_ms, HITCH_THRESHOLD_MS, hitches,
-		streamer.loaded_chunk_count(),
+	# F-592: frame rates for the human, milliseconds kept in the parenthetical AND in the
+	# machine-readable CHUNK_STREAM_CHECK_DONE line below, which `agent verify` and the perf
+	# ledger parse by key — that line is deliberately NOT converted.
+	print("TOTAL FRAME TIME  frames=%d | distance=%.1f m | mean %.0f fps | worst frame %.0f fps | hitches(slower than %.0f fps)=%d | chunks loaded=%d  (mean %.3f ms, worst %.3f ms)" % [
+		frame_ms_samples.size(), traveled, PerfFormat.fps(mean_ms), PerfFormat.fps(worst_ms),
+		PerfFormat.fps(HITCH_THRESHOLD_MS), hitches, streamer.loaded_chunk_count(),
+		mean_ms, worst_ms,
 	])
 	print("STREAMER'S OWN COST (excludes rendering/physics/other processes on this shared machine)")
-	print("                  mean %.4f ms | worst %.4f ms | hitches(>%.3f ms)=%d" % [
-		mean_own_cost_ms, worst_own_cost_ms, HITCH_THRESHOLD_MS, own_cost_hitches,
+	# A share of the frame, not a frame rate: the streamer's own cost is a SLICE of a frame, and
+	# printing it as "268 fps" would invite reading it as a frame rate the game achieves.
+	print("                  mean %.1f%% of the mean frame | worst %.1f%% of the worst frame | hitches=%d  (mean %.4f ms of %.3f, worst %.4f ms of %.3f)" % [
+		PerfFormat.percent_of_frame(mean_own_cost_ms, mean_ms),
+		PerfFormat.percent_of_frame(worst_own_cost_ms, worst_ms),
+		own_cost_hitches, mean_own_cost_ms, mean_ms, worst_own_cost_ms, worst_ms,
 	])
 	print("CHUNK_STREAM_CHECK_DONE hitches=%d worst_ms=%.4f mean_ms=%.4f own_cost_hitches=%d own_cost_worst_ms=%.4f own_cost_mean_ms=%.4f frames=%d distance_m=%.1f" % [
 		hitches, worst_ms, mean_ms, own_cost_hitches, worst_own_cost_ms, mean_own_cost_ms,

@@ -1,5 +1,7 @@
 extends SceneTree
 
+const PerfFormat := preload("res://tools/perf_format.gd")
+
 ## F-459: does a first visit hitch because of CPU work that only happens once, or because of GPU
 ## pipeline/shader compilation on first sight of a material?
 ##
@@ -167,10 +169,12 @@ func _cold_versus_warmed_elsewhere(spawn: Vector3) -> void:
 
 	var cold_cost: float = float(cold["low1"])
 	var warm_cost: float = float(warmed["low1"])
-	print("\n  A cold        %6d node(s), %3d frame(s), 1%% low %7.2f ms, %d hitch(es)"
-		% [cold["nodes"], cold["frames"], cold_cost, cold["hitches"]])
-	print("  B warm-ish    %6d node(s), %3d frame(s), 1%% low %7.2f ms, %d hitch(es)"
-		% [warmed["nodes"], warmed["frames"], warm_cost, warmed["hitches"]])
+	# F-592: the 1% low stays the headline and is now stated as the frame rate it corresponds to.
+	print("\n  A cold        %6d node(s), %3d frame(s), 1%% low %5.0f fps (%.2f ms), %d hitch(es)"
+		% [cold["nodes"], cold["frames"], PerfFormat.fps(cold_cost), cold_cost, cold["hitches"]])
+	print("  B warm-ish    %6d node(s), %3d frame(s), 1%% low %5.0f fps (%.2f ms), %d hitch(es)"
+		% [warmed["nodes"], warmed["frames"], PerfFormat.fps(warm_cost), warm_cost, warmed["hitches"]])
+	print("  B vs A on arrival: %s" % PerfFormat.change_line(cold_cost, warm_cost))
 	if warm_cost < cold_cost * 0.6:
 		print("  -> MATERIALS. B is %.2fx cheaper than A on ground just as new, so the cost A paid"
 			% (cold_cost / maxf(warm_cost, 0.001)))
@@ -268,9 +272,10 @@ func _visit(destination: Vector3, label: String) -> Dictionary:
 	var arrival: Dictionary = _summarize(settle_samples)
 	arrival["nodes"] = settle_nodes
 	arrival["frames"] = settle_frames
-	print("%-38s ARRIVING  %4d frame(s) | median %6.2f ms | 1%% low %7.2f ms | worst %7.2f ms | hitches %3d | nodes added %6d"
-		% [label, settle_frames, arrival["median"], arrival["low1"], arrival["worst"],
-			arrival["hitches"], settle_nodes])
+	print("%-38s ARRIVING  %4d frame(s) | median %5.0f fps | 1%% low %5.0f fps | worst %5.0f fps | hitches %3d | nodes added %6d  (%.2f / %.2f / %.2f ms)"
+		% [label, settle_frames, PerfFormat.fps(arrival["median"]), PerfFormat.fps(arrival["low1"]),
+			PerfFormat.fps(arrival["worst"]), arrival["hitches"], settle_nodes,
+			arrival["median"], arrival["low1"], arrival["worst"]])
 
 	var samples: Array[float] = []
 	var nodes: int = 0
@@ -288,9 +293,10 @@ func _visit(destination: Vector3, label: String) -> Dictionary:
 	result["nodes"] = nodes
 	result["settle_frames"] = settle_frames
 	result["arrival"] = arrival
-	print("%-38s SETTLED   %4d frame(s) | median %6.2f ms | 1%% low %7.2f ms | worst %7.2f ms | hitches %3d | nodes added %6d\n"
-		% [label, SAMPLE_FRAMES, result["median"], result["low1"], result["worst"],
-			result["hitches"], nodes])
+	print("%-38s SETTLED   %4d frame(s) | median %5.0f fps | 1%% low %5.0f fps | worst %5.0f fps | hitches %3d | nodes added %6d  (%.2f / %.2f / %.2f ms)\n"
+		% [label, SAMPLE_FRAMES, PerfFormat.fps(result["median"]), PerfFormat.fps(result["low1"]),
+			PerfFormat.fps(result["worst"]), result["hitches"], nodes,
+			result["median"], result["low1"], result["worst"]])
 	return result
 
 
@@ -328,8 +334,9 @@ func _verdict(first: Dictionary, second: Dictionary) -> void:
 	var first_nodes: int = first_arrival["nodes"]
 	var second_nodes: int = second_arrival["nodes"]
 	print("\n=== verdict (on ARRIVAL — where the two visits actually differ) ===")
-	print("  1%% low   first %.2f ms  vs  second %.2f ms  (%.2fx)"
-		% [first_low, second_low, first_low / maxf(second_low, 0.001)])
+	print("  1%% low   first %.0f fps  vs  second %.0f fps  —  %s"
+		% [PerfFormat.fps(first_low), PerfFormat.fps(second_low),
+			PerfFormat.change_line(first_low, second_low)])
 	print("  frames   first %d  vs  second %d to settle"
 		% [first["settle_frames"], second["settle_frames"]])
 	print("  nodes    first %d  vs  second %d" % [first_nodes, second_nodes])

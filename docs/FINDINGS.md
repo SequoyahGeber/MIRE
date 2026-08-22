@@ -3356,7 +3356,179 @@ the F-586 A/B are mine (larchcc2572).
 
 ---
 
+### F-593 · Chests read as too small against the player, and the ladder's two most common rungs are below knee height
+
+**Area:** art · **Severity:** medium · **Found:** 2026-08-22 by birch1db63e
+
+Sequoyah, from a live playtest: *"chests need to be bigger, there too small."*
+
+He is right, and the measurement says the complaint is sharper than "all of them are small". Measured
+from `assets/loot/catalog.json` (exported bounds, not authored body+lid numbers), against the shipped
+player — `entities/player/player.tscn` is a CapsuleShape3D of height 1.8 m with its origin at the
+feet, and the camera sits at 1.6 m, so the player is exactly **1.8 m tall**:
+
+    rung          asset height   lands at (1.8 m player)
+    basic         crate  0.464   below the knee (knee ≈ 0.51 m)
+    common        small  0.566   knee
+    rare     reinforced  0.708   mid-thigh
+    epic         warded  0.748   mid-thigh
+    legendary    gilded  1.013   hip/low waist
+    (Wellspring, off-ladder)  0.658
+
+Two things fall out that a flat "make them bigger" would get wrong:
+
+**1. The top of the ladder is not the problem.** The gilded chest is already 1.013 m — hip height, and
+1.12 m wide, which is a real sea chest. Scaling the whole family up by a single factor large enough to
+fix the crate would put the gilded chest at ~1.45 m, chest-height on the player, which is a wardrobe
+rather than a chest.
+
+**2. The problem is what the player actually MEETS.** F-570 set the field at 150 chests per island:
+60 basic, 40 common, 25 rare, 15 epic, 10 legendary. So **100 of the 150 chests on an island are the
+two smallest rungs**, at 0.464 m and 0.566 m — below-knee and knee. Two thirds of every chest a player
+walks up to is an ankle-to-knee box. That is the experience behind the report, and it is why the fix
+has to raise the bottom of the ladder more than the top.
+
+**The ladder's own gaps are also uneven in a way that hurts tier reading.** `chest_placement_service.gd`
+(lines 61-63) states that silhouette size is how a player reads the price tier before any UI resolves.
+The current steps are 0.10, 0.14, **0.04**, 0.27 — rare and epic differ by four centimetres, which no
+player can see across a clearing, while epic to legendary jumps by 27. The comment at line 62 also
+claims "Sizes run 0.62 m → 1.12 m", which describes neither the current heights nor the widths.
+
+Fix is in the BUILD script, never a `scale` on the placed node: a placement-time scale would break
+`PropCollider`'s fit and the kit's ground-contact and anchor rules. `tools/blender/build_loot_set.py`
+normalizes every asset through one `create_asset()` choke point, which is the right place for a
+per-chest factor — a constant passed identically to a pair's closed and open builders, so the
+state-set rule (A-005; relearned by A-011 and A-051) cannot be violated by deriving scale from each
+state's own bounds.
+
+Perceptual, so it ends with Sequoyah's eyes and not a green check: the numbers below are a judgement
+about where each rung should land on a body, and the call is his.
+
+---
+
+### F-594 · Arrows fly sideways and never nose over, the bow has no draw animation, and nothing shows arrows remaining
+
+**Area:** combat · **Severity:** high · **Found:** 2026-08-22 by wick410d34
+
+Reported by Sequoyah from play, 2026-08-22: *"the bow shooting is wonky, the arrow doesnt fly
+straight in sometimes turns sideways while still going forwards, the bow has no shooting animation
+either and shows no arrows remaining count."* Three separate defects behind one complaint.
+
+**1. The arrow flies sideways — a model-axis mismatch, and it is exact, not intermittent.**
+`RangedCombatService._spawn_visual_projectile()` (`autoload/ranged_combat_service.gd:516`) reuses the
+ammo item's pickup mesh as the flying visual and orients it with
+`node.look_at(origin + direction, Vector3.UP)`. `look_at()` aims the node's **-Z** at the target, but
+`assets/tools_weapons/catalog.json` records `arrow_world` as `width 0.226 · depth 0.239 · height
+1.476` — the shaft runs along **+Y**, because it was authored as a pickup, not a projectile. So the
+arrow is broadside to its own flight path on every shot. It reads as intermittent only because a
+broadside arrow is invisible edge-on and obvious in profile, so it depends where you are standing.
+
+**2. The arrow never noses over, because rotation is set once and never updated.**
+`_advance_visual_projectiles()` (`:540`) writes `node.global_position` each frame and nothing else.
+The trajectory curves — the same function applies `drop = 0.5 * g * gravity_scale * elapsed²` — but
+the arrow keeps its launch attitude for the whole flight, so even once (1) is fixed it will fly
+level while descending. Orientation has to follow the current velocity, not the launch direction.
+
+**3. The bow has no draw or release animation, and this is older than it looks.**
+`entities/player/viewmodel.gd:252` reads `CombatService.local_phase()` — the MELEE service — and
+nothing else. `RangedCombatService` publishes its own `local_phase()` / `local_phase_progress()`
+(`:142`, `:146`), and the viewmodel never asks. So a bow falls through to the `NONE` row of the
+motion table at `viewmodel.gd:86`, whose own comment says it is "a bow or a carried thing. Enough
+motion that a click is not dead" — a generic nudge standing in for a draw. Worth stating clearly
+because it is adjacent to F-576: deleting `shot_phase_changed` was correct and is NOT the cause. The
+accessors that replaced it are live; the viewmodel simply never consumed either the signal or the
+accessor.
+
+**4. There is no ammo counter anywhere.** `ui/hud/` has thirteen HUD scripts and none of them reads
+an ammo count. A player firing a bow has no way to know how many arrows are left short of opening
+the inventory — and `arrow_save_chance` (F-580) now makes the count non-obvious even if you were
+counting shots yourself.
+
+**Also noticed while measuring, filed here rather than separately because it shares a cause with
+(1):** the flying arrow is **1.476 m long**. A real arrow is about 0.75 m. The pickup mesh is sized
+to read on the ground, and reusing it in flight inherits that size, so shots look like spears. This
+one is a perceptual call and belongs to Sequoyah, not to whoever fixes the axis.
+
+---
+
 ## Resolved
+
+### F-592 · Performance is reported in milliseconds, which is not a unit the person deciding can judge — **fixed**
+
+**Area:** perf · **Severity:** medium · **Found:** 2026-08-22 by wick1c650c
+
+Sequoyah, 2026-08-22: "performance has been reported to me in ms could we change that to % since i
+dont really understand ms as a human, fps or % makes sense to me."
+
+He is the one who decides what to act on, so a figure he has to convert in his head is a figure he
+cannot judge. Every instrument in `tools/` that prints a frame timing leads with milliseconds:
+`perf_probe.gd`'s per-row line and its summary table, `frame_cost_check.gd`, `traversal_profile.gd`,
+`chunk_stream_check.gd`, `revisit_probe.gd`, `benchmark_check.gd` and the headline figures in
+`docs/PERFORMANCE.md`.
+
+Frame times become FPS. Costs and savings become a percentage of the frame, and/or a change in FPS.
+Milliseconds survive only as a trailing parenthetical for whoever is doing the engineering.
+
+Two constraints on the conversion, both standing rules of his:
+
+  · the 1% low stays the headline — "thats what you feel". It converts to a 1%-low FPS rather than
+    being dropped for an average.
+  · every percentage states the frame it is a percentage OF. "18% of the frame" is meaningless
+    otherwise.
+
+This is not cosmetic. Percentages and FPS are non-linear in each other — 2 ms is a large win at
+120 fps and a small one at 30 — so converting forces every claim to name the frame it was measured
+against, which makes it checkable in a way a bare millisecond figure never was.
+
+---
+
+**Resolved 2026-08-22 by wick1c650c (fixed).** Fixed by wick1c650c.
+
+`tools/perf_format.gd` is new and is the single place the conversion happens, so every instrument
+agrees and the arithmetic can be checked on synthetic numbers instead of being re-derived slightly
+differently in a dozen tools. `fps()`, `percent_of_frame()`, `cost_line()`, `change_line()`,
+`frame_cell()`, `is_within_drift()`.
+
+The definition that mattered most: **a percentage is taken against the frame that CONTAINS the
+cost.** Sequoyah's own worked example fixes it — 2.4 ms inside a 13.51 ms frame is 18%, not the
+21.6% you get by dividing against the 11.11 ms frame without it. Both are defensible arithmetic and
+only one answers "how much of my frame is this".
+
+Converted: `perf_probe.gd` (per-row line, summary table, drift line), `frame_cost_check.gd` (which
+also gained a per-preset cost table it never had), `traversal_profile.gd`, `revisit_probe.gd`,
+`chunk_stream_check.gd`, and the headline figures, lever table and §5 action list in
+`docs/PERFORMANCE.md`. §1 now states the reporting convention itself, so the next instrument author
+finds it before inventing a format.
+
+Machine-readable verdict lines were deliberately NOT converted — `CHUNK_STREAM_CHECK_DONE
+worst_ms=... mean_ms=...` and `FRAME_COST ... frame_ms_median=...` are parsed by key by `agent
+verify` and the perf ledger. Converting those would have broken tooling to satisfy a human-reading
+requirement they are not part of.
+
+Two things the conversion is careful about:
+
+  · the 1% low is converted, never replaced by an average. It stays the first column read.
+  · a delta inside the run's own drift is still not a result. A percentage reads as MORE
+    authoritative than the millisecond it came from, so `is_within_drift()` survives the conversion
+    and the check asserts it — that is the one way this change could have made reports worse.
+
+`change_line()` also closes a sign trap: ms falls when things improve and fps rises, so a report
+mixing the two could state a regression as an improvement without any individual number being
+wrong. Faster is positive in both units, and the check asserts it.
+
+## Verification, and its limit
+
+`tools/perf_format_check.gd` — failures=0, 28 assertions on synthetic numbers, including Sequoyah's
+worked example reproduced end to end.
+
+**The converted call sites are parse-verified only, not run.** Every one of them
+(`perf_probe`, `frame_cost_check`, `traversal_profile`, `revisit_probe`, `chunk_stream_check`)
+requires `--windowed` — `chunk_stream_check` refuses outright under `--headless` with "needs a real
+renderer (F-005/D-074)". A windowed run puts a real window on Sequoyah's desktop, and he backgrounds
+any window we open, which makes the frame times worthless anyway (F-457). He has not consented to a
+perf run, so I did not take one. Each file was checked with `agent godot --check-only --script` and
+parses clean, and the formatter beneath them is proven. What has NOT been seen is a real converted
+table with real numbers in it; the first consented perf run should eyeball the column widths.
 
 ### F-588 · resource_scatter_check's harvest-yield assertion fails at a clean HEAD — **fixed**
 

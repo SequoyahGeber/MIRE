@@ -1,4 +1,5 @@
 extends SceneTree
+const PerfFormat := preload("res://tools/perf_format.gd")
 
 ## @verify windowed — this check reads the renderer's own counters, which are all zero headless,
 ## so `agent verify` must launch it with a framebuffer instead of the `--headless` it injects by
@@ -92,10 +93,21 @@ func _run() -> void:
 			rows.append(await _sample("preset %s" % ["low", "medium", "high"][preset]))
 
 	print("")
-	print("  %-16s %11s %13s %10s %10s" % ["", "draw calls", "primitives", "vram MB", "frame ms"])
+	# F-592: the human column is frame rate; the millisecond it came from trails it in the same
+	# cell so an engineer reading the table never has to go and re-derive it.
+	print("  %-16s %11s %13s %10s %20s" % ["", "draw calls", "primitives", "vram MB", "frame rate"])
 	for row: Dictionary in rows:
-		print("  %-16s %11d %13d %10.1f %10.2f" % [
-			row["name"], row["draws"], row["primitives"], row["vram"], row["ms"]])
+		print("  %-16s %11d %13d %10.1f %20s" % [
+			row["name"], row["draws"], row["primitives"], row["vram"],
+			PerfFormat.frame_cell(float(row["ms"]))])
+	if rows.size() > 1:
+		print("")
+		print("  Cost of each preset against the cheapest one measured:")
+		var cheapest: float = float(rows[0]["ms"])
+		for row: Dictionary in rows:
+			cheapest = minf(cheapest, float(row["ms"]))
+		for row: Dictionary in rows:
+			print("    %s" % PerfFormat.cost_line(String(row["name"]), float(row["ms"]), cheapest))
 	var first: Dictionary = rows[0]
 	print("\nFRAME_COST draw_calls_median=%d primitives_median=%d vram_mb=%.1f frame_ms_median=%.2f"
 		% [first["draws"], first["primitives"], first["vram"], first["ms"]])
