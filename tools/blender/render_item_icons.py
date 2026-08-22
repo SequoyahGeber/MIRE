@@ -73,7 +73,11 @@ SOURCES: list[tuple[str, str]] = [
     ("cleaver", "tools_weapons/exports/cleaver_world.glb"),
     ("skewer", "tools_weapons/exports/skewer_world.glb"),
     ("short_bow", "tools_weapons/exports/short_bow_world.glb"),
+    ("sling", "tools_weapons/exports/sling_world.glb"),
+    ("longbow", "tools_weapons/exports/longbow_world.glb"),
+    ("crossbow", "tools_weapons/exports/crossbow_world.glb"),
     ("arrow", "tools_weapons/exports/arrow_world.glb"),
+    ("bolt", "tools_weapons/exports/bolt_world.glb"),
     ("repair_hammer", "tools_weapons/exports/repair_hammer_world.glb"),
     ("iron_sword", "tools_weapons/exports/iron_sword_world.glb"),
     # --- buildables (F-427) ---------------------------------------------------

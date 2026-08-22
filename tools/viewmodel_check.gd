@@ -13,11 +13,19 @@ const BLADE_PLANE_ITEMS: Dictionary[StringName, bool] = {
 	&"wooden_axe": true, &"stone_axe": true, &"cleaver": true,
 	&"wooden_pickaxe": true, &"stone_pickaxe": true, &"iron_pickaxe": true,
 	&"repair_hammer": true,
+	# Tiers 3-5. Same head-along-local-+X construction as their wooden and stone siblings, so "which
+	# way is it turned" is just as meaningful a question about them.
+	&"iron_axe": true, &"bogsilver_axe": true, &"wellglass_axe": true,
+	&"bogsilver_pickaxe": true, &"wellglass_pickaxe": true,
 }
 ## Items whose declared style genuinely IS chop, so the "did anyone forget to set it" check does not
 ## fire on them. Everything else with a viewmodel must have chosen something deliberately.
 const CHOP_ITEMS: Dictionary[StringName, bool] = {
 	&"wooden_axe": true, &"stone_axe": true, &"cleaver": true,
+	# The three forged/knapped axes the five-tier ladder added (D-200). They swing exactly like the
+	# two above — CHOP is the deliberate answer for every axe in the game, and this list is how a
+	# deliberate CHOP is told apart from a forgotten one.
+	&"iron_axe": true, &"bogsilver_axe": true, &"wellglass_axe": true,
 }
 ## How finely the whole swing is walked when looking for near-plane clipping.
 const SWING_SAMPLES: int = 24

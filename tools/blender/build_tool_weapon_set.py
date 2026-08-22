@@ -83,7 +83,11 @@ DESIGNS = [
     "cleaver",
     "skewer",
     "short_bow",
+    "sling",
+    "longbow",
+    "crossbow",
     "arrow",
+    "bolt",
     "repair_hammer",
     "iron_sword",
 ]
@@ -1008,6 +1012,236 @@ def build_short_bow(mats: dict[str, bpy.types.Material]) -> None:
     )
 
 
+def build_sling(mats: dict[str, bpy.types.Material]) -> None:
+    """Tier 1 ranged, and it borrowed the short bow's model until now — which was wrong twice over,
+    because a sling is not a bow and does not even have a stave.
+
+    The real thing is the simplest weapon there is: two cords, a leather cradle between them, a
+    finger loop on one cord and a release knot on the other. It is held by BOTH cords, hangs slack
+    when it is not being swung, and the pouch sags under whatever is in it. So this is built hanging:
+    the cords fall from the hand, meet at the cradle, and a stone sits in the cradle — a sling with an
+    empty pouch reads as a strap, and the whole point of the weapon is that it throws the stones you
+    were tripping over anyway.
+    """
+    # The two cords, falling from a shared hand position and converging on the pouch.
+    hand_top = (0.0, 0.0, 1.520)
+    pouch = (0.0, 0.0, 0.560)
+    for side_index, side in enumerate((-1.0, 1.0)):
+        swept_shaft(
+            f"Sling_Cord_{side_index + 1}",
+            [
+                hand_top,
+                (side * 0.070, 0.0, 1.230),
+                (side * 0.105, 0.0, 0.920),
+                (side * 0.078, 0.0, 0.700),
+                (side * 0.030, 0.0, pouch[2] + 0.045),
+            ],
+            [0.011, 0.010, 0.010, 0.010, 0.011],
+            mats["string"],
+            5,
+            0.85,
+        )
+    # Finger loop on one cord and the release knot on the other — the two ends are NOT the same, and
+    # that asymmetry is how a sling is recognisable at a glance.
+    swept_shaft(
+        "Sling_Finger_Loop",
+        [(-0.030, 0.0, 1.556), (-0.062, 0.0, 1.600), (-0.030, 0.0, 1.644), (0.004, 0.0, 1.600), (-0.030, 0.0, 1.556)],
+        [0.010, 0.010, 0.010, 0.010, 0.010],
+        mats["string"],
+        5,
+        0.85,
+    )
+    ico("Sling_Release_Knot", (0.034, 0.0, 1.566), (0.028, 0.026, 0.034), mats["rope"], (0.2, 0.0, 0.3))
+
+    # The cradle: a leather rectangle sagging under the stone, seen edge-on as a shallow curve.
+    ground_profile(
+        "Sling_Cradle",
+        [
+            (-0.088, 0.612),
+            (-0.052, 0.548),
+            (0.000, 0.528),
+            (0.052, 0.548),
+            (0.088, 0.612),
+            (0.052, 0.596),
+            (0.000, 0.578),
+            (-0.052, 0.596),
+        ],
+        [0.052, 0.058, 0.060, 0.058, 0.052, 0.050, 0.052, 0.050],
+        [0.004, 0.006, 0.008, 0.006, 0.004, 0.004, 0.004, 0.004],
+        mats["leather"],
+        center=(0.0, 0.572),
+    )
+    ico("Sling_Stone", (0.0, 0.0, 0.596), (0.042, 0.040, 0.036), mats["stone"], (0.3, -0.2, 0.4))
+    # Stitching where each cord is sewn to the cradle: the join is the part that fails, so it is the
+    # part a maker reinforces, and showing it is what stops the pouch reading as a floating flap.
+    for side_index, side in enumerate((-1.0, 1.0)):
+        swept_shaft(
+            f"Sling_Cradle_Seam_{side_index + 1}",
+            [(side * 0.066, 0.0, 0.588), (side * 0.086, 0.0, 0.614)],
+            [0.016, 0.013],
+            mats["wrap"],
+            5,
+            0.70,
+        )
+
+
+def build_longbow(mats: dict[str, bpy.types.Material]) -> None:
+    """Tier 3 ranged. A self bow, and the opposite of `build_short_bow`'s recurve in every way that
+    matters — which is the whole reason the two can share a hotbar without confusing anyone.
+
+    A war bow is ONE stave of one timber, taller than the archer, bending in a single smooth arc from
+    tip to tip with no recurve at the ends. It has no riser and no arrow shelf: you draw off your
+    knuckle, and the grip is just the middle of the stave with a leather wrap on it. Its section is a
+    D — flat belly toward the archer, rounded back away — because the back is what takes the tension
+    and must be left whole. The only fittings are horn nocks at the tips.
+
+    So: no separate riser, no shelf, no recurved tips, a stave that is thickest at the middle and
+    tapers all the way out, and a full 1.9 m of it.
+    """
+    upper = [
+        (0.0, 0.0, 0.955),
+        (-0.050, 0.0, 1.230),
+        (-0.130, 0.0, 1.500),
+        (-0.235, 0.0, 1.735),
+        (-0.330, 0.0, 1.880),
+    ]
+    lower = [
+        (0.0, 0.0, 0.905),
+        (-0.050, 0.0, 0.630),
+        (-0.130, 0.0, 0.360),
+        (-0.235, 0.0, 0.125),
+        (-0.330, 0.0, -0.020),
+    ]
+    # Thickest at the grip and tapering the whole way to the nock — a self bow's limb is a wedge, and
+    # the taper is what stops it reading as a bent stick.
+    limb_radii = [0.054, 0.048, 0.039, 0.028, 0.018]
+    for prefix, points in (("Upper", upper), ("Lower", lower)):
+        # squash 0.44: the D-section, flat toward the archer. It is the one thing a photograph of a
+        # longbow shows that a cylinder cannot.
+        swept_shaft(f"Longbow_Limb_{prefix}", points, limb_radii, mats["bow_wood"], 7, 0.44)
+        swept_shaft(
+            f"Longbow_Nock_{prefix}",
+            [points[-2], points[-1]],
+            [0.024, 0.019],
+            mats["hardwood_dark"],
+            6,
+            0.62,
+        )
+    # The grip is the stave itself, wrapped. No riser: adding one would make it a modern bow.
+    grip = [(0.0, 0.0, 0.845), (0.0, 0.0, 0.930), (0.0, 0.0, 1.015)]
+    grip_radii = [0.056, 0.058, 0.056]
+    for index in range(5):
+        wrap_band(f"Longbow_Grip_Wrap_{index + 1}", grip, grip_radii, 0.10 + index * 0.20, 0.040,
+                  mats["leather"], 1.10, 0.46, 8)
+    string_top = (-0.330, 0.0, 1.880)
+    string_bottom = (-0.330, 0.0, -0.020)
+    swept_shaft("Longbow_String", [string_top, (-0.336, 0.0, 0.930), string_bottom],
+                [0.007, 0.008, 0.007], mats["string"], 5)
+    swept_shaft("Longbow_String_Serving", [(-0.336, 0.0, 0.840), (-0.336, 0.0, 1.020)],
+                [0.013, 0.013], mats["wrap"], 5)
+
+
+def build_crossbow(mats: dict[str, bpy.types.Material]) -> None:
+    """Tier 3 ranged, and the one shape in the kit that reads as a MACHINE.
+
+    A crossbow is a bow lying on its side across the front of a stock, which is why it is the only
+    weapon here that is wider than it is tall. Everything a real one has that a bow does not is a
+    mechanism: the tiller you shoulder, the nut the string is caught on, the trigger under it, and —
+    the detail that tells you at a glance what it is — the STIRRUP at the muzzle, the iron loop you
+    put a boot in to span the thing. `ITEMS.md` gives it the line "makes you span it again", so the
+    stirrup is not decoration; it is the joke made visible.
+    """
+    # The tiller, running away from the shooter, thickest at the lock and tapering to the butt.
+    stock = [
+        (0.0, 0.0, 0.230),
+        (0.0, 0.0, 0.470),
+        (0.0, 0.0, 0.760),
+        (0.0, 0.0, 1.010),
+        (0.0, 0.0, 1.180),
+    ]
+    swept_shaft("Crossbow_Tiller", stock, [0.058, 0.062, 0.056, 0.048, 0.042], mats["handle"], 6, 0.62)
+    # The bolt groove cut down the top face — a crossbow with no channel is a plank.
+    box("Crossbow_Groove", (0.0, 0.0, 0.860), (0.022, 0.030, 0.560), mats["handle_dark"])
+    # The prod, ACROSS the stock. Short, thick, and deeply curved: it stores its energy in a fraction
+    # of a longbow's length, which is exactly why it needs the stirrup.
+    prod = [
+        (-0.560, 0.0, 1.020),
+        (-0.300, 0.0, 1.098),
+        (0.000, 0.0, 1.124),
+        (0.300, 0.0, 1.098),
+        (0.560, 0.0, 1.020),
+    ]
+    swept_shaft("Crossbow_Prod", prod, [0.020, 0.030, 0.038, 0.030, 0.020], mats["iron"], 6, 0.52)
+    for side_index, side in enumerate((-1.0, 1.0)):
+        ico(f"Crossbow_Prod_Tip_{side_index + 1}", (side * 0.572, 0.0, 1.016), (0.026, 0.024, 0.020),
+            mats["iron_dark"], (0.0, 0.3, 0.0))
+    swept_shaft("Crossbow_String", [(-0.566, 0.0, 1.012), (0.0, 0.0, 0.986), (0.566, 0.0, 1.012)],
+                [0.008, 0.009, 0.008], mats["string"], 5)
+    # The lash binding prod to stock. A real one is bound, not screwed.
+    for index, z in enumerate((1.072, 1.124)):
+        swept_shaft(f"Crossbow_Lash_{index + 1}", [(-0.070, 0.0, z), (0.070, 0.0, z)],
+                    [0.030, 0.030], mats["rope"], 6, 0.70)
+    # Lock: nut above the tiller, trigger bar below it.
+    ico("Crossbow_Nut", (0.0, 0.0, 0.742), (0.044, 0.052, 0.040), mats["iron_light"], (0.0, 0.2, 0.0))
+    box("Crossbow_Lock_Plate", (0.0, 0.0, 0.720), (0.084, 0.070, 0.076), mats["iron_dark"])
+    swept_shaft("Crossbow_Trigger", [(0.0, 0.0, 0.688), (0.0, 0.0, 0.628), (-0.028, 0.0, 0.586)],
+                [0.018, 0.015, 0.012], mats["iron"], 5, 0.70)
+    # The stirrup — the boot loop at the muzzle. The single most recognisable part.
+    swept_shaft(
+        "Crossbow_Stirrup",
+        [
+            (-0.062, 0.0, 1.196),
+            (-0.078, 0.0, 1.290),
+            (0.000, 0.0, 1.338),
+            (0.078, 0.0, 1.290),
+            (0.062, 0.0, 1.196),
+        ],
+        [0.017, 0.015, 0.015, 0.015, 0.017],
+        mats["iron"],
+        5,
+        0.62,
+    )
+    ico("Crossbow_Butt", (0.0, 0.0, 0.208), (0.052, 0.048, 0.036), mats["handle_dark"], (0.0, 0.0, 0.2))
+
+
+def build_bolt(mats: dict[str, bpy.types.Material]) -> None:
+    """A quarrel, not a short arrow — and it shared the arrow's model until now.
+
+    Everything about it is different because it is launched by a much stiffer prod over a much
+    shorter stroke: half the length, a noticeably thicker shaft, a heavy square-section head (a
+    "quarrel" is named for the four-sided point), and vanes of thin leather or wood rather than
+    feather, because a bolt is dragged along a groove and a feather would be stripped off. And it has
+    NO nock slot: the string pushes a flat butt, it does not clip on.
+    """
+    shaft = [(0.0, 0.0, 0.045), (0.0, 0.0, 0.260), (0.0, 0.0, 0.470), (0.0, 0.0, 0.610)]
+    swept_shaft("Bolt_Shaft", shaft, [0.027, 0.029, 0.028, 0.026], mats["arrow_wood"], 6)
+    # Four-sided pyramid head, iron rather than knapped stone — a crossbow is already an iron-age
+    # machine, so its ammunition is not going to be flint.
+    ground_profile(
+        "Bolt_Head",
+        [(-0.052, 0.598), (0.052, 0.598), (0.040, 0.700), (0.0, 0.790), (-0.040, 0.700)],
+        [0.052, 0.052, 0.030, 0.006, 0.030],
+        [0.000, 0.000, 0.014, 0.030, 0.014],
+        mats["iron"],
+        center=(0.0, 0.665),
+    )
+    swept_shaft("Bolt_Socket", [(0.0, 0.0, 0.578), (0.0, 0.0, 0.612)], [0.034, 0.032],
+                mats["iron_dark"], 6)
+    # Three stiff vanes, short and square-ended: leather, not feather.
+    for index, rotation in enumerate((0.0, math.radians(120), math.radians(240))):
+        vane = ground_profile(
+            f"Bolt_Vane_{index + 1}",
+            [(0.022, 0.062), (0.030, 0.196), (0.086, 0.196), (0.092, 0.078)],
+            [0.005, 0.005, 0.004, 0.004],
+            0.004,
+            mats["leather"] if index % 2 == 0 else mats["hardwood_dark"],
+        )
+        vane.rotation_euler = (0.0, 0.0, rotation)
+    # Flat butt. No nock: the string pushes it.
+    swept_shaft("Bolt_Butt", [(0.0, 0.0, 0.030), (0.0, 0.0, 0.062)], [0.030, 0.028],
+                mats["handle_dark"], 6)
+
+
 def build_arrow(mats: dict[str, bpy.types.Material]) -> None:
     shaft = [(0.0, 0.0, 0.055), (0.0, 0.0, 0.500), (0.0, 0.0, 0.950), (0.0, 0.0, 1.215)]
     swept_shaft("Arrow_Shaft", shaft, [0.019, 0.021, 0.020, 0.018], mats["arrow_wood"], 6)
@@ -1439,7 +1673,11 @@ def main() -> None:
         "cleaver": lambda: build_cleaver(mats),
         "skewer": lambda: build_skewer(mats),
         "short_bow": lambda: build_short_bow(mats),
+        "sling": lambda: build_sling(mats),
+        "longbow": lambda: build_longbow(mats),
+        "crossbow": lambda: build_crossbow(mats),
         "arrow": lambda: build_arrow(mats),
+        "bolt": lambda: build_bolt(mats),
         "repair_hammer": lambda: build_repair_hammer(mats),
         "iron_sword": lambda: build_iron_sword(mats),
     }

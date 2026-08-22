@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="ItemDef" format=3]
 
-[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_short_bow.png" id="1_icon"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_sling.png" id="1_icon"]
 [ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="2_script"]
-[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/short_bow_world.glb" id="3_world"]
-[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/short_bow_viewmodel.glb" id="4_view"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/sling_world.glb" id="3_world"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/sling_viewmodel.glb" id="4_view"]
 
 [resource]
 script = ExtResource("2_script")
@@ -16,7 +16,7 @@ tool_tier = 1
 stack_size = 1
 world_model = ExtResource("3_world")
 view_model = ExtResource("4_view")
-grip_offset = Vector3(0.211, -0.3892, -0.5568)
+grip_offset = Vector3(0.235, -0.40, -0.52)
 grip_rotation_degrees = Vector3(0.5, 109.3, 16.2)
-grip_scale = 0.3
+grip_scale = 0.30
 attack_style = 0

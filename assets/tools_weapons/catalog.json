@@ -470,6 +470,112 @@
     ]
   },
   {
+    "name": "sling_world",
+    "design": "sling",
+    "presentation": "world",
+    "width_m": 0.226,
+    "depth_m": 0.12,
+    "height_m": 1.124,
+    "mesh_parts": 8,
+    "polygons": 138,
+    "materials": [
+      "MIRE_ClothRed",
+      "MIRE_Fibre",
+      "MIRE_Leather",
+      "MIRE_Rope",
+      "MIRE_Stone"
+    ]
+  },
+  {
+    "name": "sling_viewmodel",
+    "design": "sling",
+    "presentation": "viewmodel",
+    "width_m": 0.226,
+    "depth_m": 0.12,
+    "height_m": 1.124,
+    "mesh_parts": 8,
+    "polygons": 138,
+    "materials": [
+      "MIRE_ClothRed",
+      "MIRE_Fibre",
+      "MIRE_Leather",
+      "MIRE_Rope",
+      "MIRE_Stone"
+    ]
+  },
+  {
+    "name": "longbow_world",
+    "design": "longbow",
+    "presentation": "world",
+    "width_m": 0.413,
+    "depth_m": 0.103,
+    "height_m": 1.911,
+    "mesh_parts": 11,
+    "polygons": 185,
+    "materials": [
+      "MIRE_ClothRed",
+      "MIRE_Fibre",
+      "MIRE_Leather",
+      "MIRE_WoodBarkLight",
+      "MIRE_WoodTimberLight"
+    ]
+  },
+  {
+    "name": "longbow_viewmodel",
+    "design": "longbow",
+    "presentation": "viewmodel",
+    "width_m": 0.413,
+    "depth_m": 0.103,
+    "height_m": 1.911,
+    "mesh_parts": 11,
+    "polygons": 185,
+    "materials": [
+      "MIRE_ClothRed",
+      "MIRE_Fibre",
+      "MIRE_Leather",
+      "MIRE_WoodBarkLight",
+      "MIRE_WoodTimberLight"
+    ]
+  },
+  {
+    "name": "crossbow_world",
+    "design": "crossbow",
+    "presentation": "world",
+    "width_m": 1.194,
+    "depth_m": 0.088,
+    "height_m": 1.175,
+    "mesh_parts": 13,
+    "polygons": 206,
+    "materials": [
+      "MIRE_Fibre",
+      "MIRE_Iron",
+      "MIRE_IronDark",
+      "MIRE_IronLight",
+      "MIRE_Rope",
+      "MIRE_WoodBark",
+      "MIRE_WoodTimber"
+    ]
+  },
+  {
+    "name": "crossbow_viewmodel",
+    "design": "crossbow",
+    "presentation": "viewmodel",
+    "width_m": 1.194,
+    "depth_m": 0.088,
+    "height_m": 1.175,
+    "mesh_parts": 13,
+    "polygons": 206,
+    "materials": [
+      "MIRE_Fibre",
+      "MIRE_Iron",
+      "MIRE_IronDark",
+      "MIRE_IronLight",
+      "MIRE_Rope",
+      "MIRE_WoodBark",
+      "MIRE_WoodTimber"
+    ]
+  },
+  {
     "name": "arrow_world",
     "design": "arrow",
     "presentation": "world",
@@ -504,6 +610,42 @@
       "MIRE_Rope",
       "MIRE_StoneLight",
       "MIRE_WoodBark",
+      "MIRE_WoodTimber"
+    ]
+  },
+  {
+    "name": "bolt_world",
+    "design": "bolt",
+    "presentation": "world",
+    "width_m": 0.144,
+    "depth_m": 0.16,
+    "height_m": 0.76,
+    "mesh_parts": 7,
+    "polygons": 78,
+    "materials": [
+      "MIRE_Iron",
+      "MIRE_IronDark",
+      "MIRE_Leather",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkLight",
+      "MIRE_WoodTimber"
+    ]
+  },
+  {
+    "name": "bolt_viewmodel",
+    "design": "bolt",
+    "presentation": "viewmodel",
+    "width_m": 0.144,
+    "depth_m": 0.16,
+    "height_m": 0.76,
+    "mesh_parts": 7,
+    "polygons": 78,
+    "materials": [
+      "MIRE_Iron",
+      "MIRE_IronDark",
+      "MIRE_Leather",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkLight",
       "MIRE_WoodTimber"
     ]
   },

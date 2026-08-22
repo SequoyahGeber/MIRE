@@ -330,6 +330,36 @@
     "source_polygons": 502
   },
   {
+    "id": "sling",
+    "source": "assets/tools_weapons/exports/sling_world.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.9415,
+    "source_polygons": 254
+  },
+  {
+    "id": "longbow",
+    "source": "assets/tools_weapons/exports/longbow_world.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 1.5094,
+    "source_polygons": 434
+  },
+  {
+    "id": "crossbow",
+    "source": "assets/tools_weapons/exports/crossbow_world.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 1.1904,
+    "source_polygons": 354
+  },
+  {
     "id": "arrow",
     "source": "assets/tools_weapons/exports/arrow_world.glb",
     "size_px": 256,
@@ -338,6 +368,16 @@
     "roll_deg": 45.0,
     "ortho_scale_m": 1.1713,
     "source_polygons": 262
+  },
+  {
+    "id": "bolt",
+    "source": "assets/tools_weapons/exports/bolt_world.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.6185,
+    "source_polygons": 170
   },
   {
     "id": "repair_hammer",

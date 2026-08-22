@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="ItemDef" format=3]
 
-[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_arrow.png" id="1_icon"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_bolt.png" id="1_icon"]
 [ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="2_script"]
-[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/arrow_world.glb" id="3_world"]
-[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/arrow_viewmodel.glb" id="4_view"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/bolt_world.glb" id="3_world"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/bolt_viewmodel.glb" id="4_view"]
 
 [resource]
 script = ExtResource("2_script")
@@ -16,5 +16,5 @@ world_model = ExtResource("3_world")
 view_model = ExtResource("4_view")
 grip_offset = Vector3(0.283, -0.283, -0.191)
 grip_rotation_degrees = Vector3(57.4, 138.1, -55.9)
-grip_scale = 0.38
+grip_scale = 0.55
 attack_style = 0
