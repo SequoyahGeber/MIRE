@@ -25,8 +25,11 @@ Sizes come from the real animals, not from what reads nicely in isolation:
 
   chicken   0.42 m to the top of the head — a hen stands about knee-high, 23% of
             the player. Body length 0.40 m. Roughly 2 kg of bird.
-  hare      0.30 m sitting, 0.55 m long. Brown hare, not rabbit: longer legs,
-            longer black-tipped ears, and it does not burrow.
+  hare      0.40 m to the EAR TIPS sitting, 0.24 m at the back, 0.60 m long.
+            Brown hare, not rabbit: longer legs, much longer black-tipped ears
+            carried upright, and it does not burrow. The declared height is the
+            ear tips because that is what the bounds measure and what a player
+            sees above the grass.
   songbird  0.14 m. Small enough that the flock, not the bird, is the silhouette.
   boar      0.90 m at the shoulder, 1.5 m long. Front-heavy: the shoulder hump is
             the tallest point and the rump falls away behind it.
@@ -90,7 +93,7 @@ PLAYER_HEIGHT_M = 1.8
 ## module docstring), and the fraction of the player that makes it legible.
 SPECIES_HEIGHT_M = {
     "songbird": 0.14,
-    "hare": 0.30,
+    "hare": 0.40,
     "chicken": 0.42,
     "boar": 0.90,
     "deer": 1.78,

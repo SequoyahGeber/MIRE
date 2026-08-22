@@ -21,9 +21,21 @@ extends SceneTree
 
 const PORT: int = 47433
 const RESULT_PATH: String = "user://item_drop_net_client.json"
+## The host's explicit "you may walk now" handshake. Without it the client walks the instant the drop
+## replicates to it, which is BEFORE the host has had a chance to assert the drop is still lying
+## there — the negative control then fires on the harness racing itself rather than on a real
+## failure. A timing delay would have papered over it; a file the host writes makes the order a fact.
+const GO_PATH: String = "user://item_drop_net_go.json"
 const TEST_ITEM_ID: StringName = &"log"
 const TIMEOUT_SEC: float = 20.0
-const DROP_POSITION := Vector3(3.0, 0.5, 0.0)
+## Deliberately far from EVERY `PlayerNet.SPAWN_OFFSETS` entry (the furthest is 1.6 m from the
+## origin). The first version put the drop at (3.0, 0.5, 0.0), which is **1.487 m** from spawn slot
+## 1 — inside `ItemDrop.AUTO_PICKUP_RANGE_M` (1.7 m) with 0.213 m to spare. wick3d4184 caught it in
+## review: had client→host position replication been broken, the host's copy of the client would
+## have sat at its spawn slot, already in range, and collected the drop the instant it appeared —
+## every assertion green, nothing replicated. 8 m has real margin, and the not-yet assertion below
+## is what actually closes the hole.
+const DROP_POSITION := Vector3(8.0, 0.5, 0.0)
 const AWAY := Vector3(40.0, 0.0, 0.0)
 
 var failures: int = 0
@@ -72,8 +84,9 @@ func _build_floor() -> void:
 
 func _run_driver() -> void:
 	print("\n== item drop network check — can the client pick anything up? ==")
-	if FileAccess.file_exists(RESULT_PATH):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(RESULT_PATH))
+	for path: String in [RESULT_PATH, GO_PATH]:
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	var error: Error = transport.call("host", NetConfig.Mode.LOCAL, PORT)
 	check(error == OK, "host starts on port %d" % PORT)
 	if error != OK:
@@ -115,6 +128,27 @@ func _run_driver() -> void:
 	var seen_by_client: bool = await _until(func() -> bool:
 		return bool(_read_result().get("saw_drop", false)), TIMEOUT_SEC)
 	check(seen_by_client, "the drop replicates to the client — it can SEE the item on the ground")
+
+	# THE NEGATIVE CONTROL, and the assertion that makes the positive one below mean anything: with
+	# the client staged away, the drop must still be lying there. If the host's copy of the client
+	# were stuck at its spawn slot — which is what a client→host replication failure looks like —
+	# auto-pickup would already have fired and this fails loudly, instead of the check passing
+	# without the client ever having to move. Measured before this existed: disabling the walk made
+	# the check fail, so the walk WAS load-bearing at the time; the hole is that it stops being
+	# load-bearing exactly when replication breaks, which is the case worth catching.
+	await _until(func() -> bool: return false, 1.5)
+	check(int(drops.call(&"live_count")) == 1,
+		"the drop is NOT collected while the client is standing away from it (live=%d)" %
+		int(drops.call(&"live_count")))
+	check(int(inventory.call(&"host_count", client_peer, TEST_ITEM_ID)) == before,
+		"and nothing was credited to the client before it moved (%d)" %
+		int(inventory.call(&"host_count", client_peer, TEST_ITEM_ID)))
+
+	# Only now is the client allowed to walk.
+	var go := FileAccess.open(GO_PATH, FileAccess.WRITE)
+	if go != null:
+		go.store_string(JSON.stringify({"go": true}))
+		go.close()
 
 	# The client now walks onto it. Everything after this is the host's proximity scan reading a
 	# client-authoritative position, which is the fact this file exists to prove.
@@ -171,7 +205,7 @@ func _client_drive() -> void:
 				announced[0] = true)
 
 	# Stand clear of where the drop will land, so the pickup cannot happen before the walk.
-	body.global_position = Vector3(12.0, 0.0, 0.0)
+	body.global_position = Vector3(20.0, 0.0, 0.0)
 	await _until(func() -> bool: return false, 1.0)
 	_write_result({"staged": true, "saw_drop": false, "in_client_inventory": false,
 		"feed_fired": false})
@@ -180,6 +214,15 @@ func _client_drive() -> void:
 		return get_nodes_in_group(&"item_drop").size() > 0, TIMEOUT_SEC)
 	_write_result({"staged": true, "saw_drop": saw_drop, "in_client_inventory": false,
 		"feed_fired": false})
+
+	# Wait for the host's go-ahead before moving, so the host's negative control ("the drop is still
+	# lying there") is asserted against a client that is genuinely still standing away.
+	var cleared: bool = await _until(func() -> bool: return FileAccess.file_exists(GO_PATH),
+		TIMEOUT_SEC)
+	if not cleared:
+		_write_result({"final": true, "error": "host never cleared the walk"})
+		finish()
+		return
 
 	# Walk onto it — own movement, applied locally, exactly as a player does.
 	body.global_position = DROP_POSITION

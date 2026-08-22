@@ -36,7 +36,7 @@ const PLAYER_HEIGHT_M: float = 1.8
 ## raised head, does not.
 const SPECIES: Dictionary = {
 	&"songbird": 0.14,
-	&"hare": 0.30,
+	&"hare": 0.40,
 	&"chicken": 0.42,
 	&"boar": 0.90,
 	&"deer": 1.78,
@@ -50,6 +50,14 @@ const HEIGHT_TOLERANCE: float = 0.12
 ## it and sets the clip's loop mode. So the runtime vocabulary really is the four
 ## bare names D-218 promised `AnimalDef` — but only because the importer does that,
 ## and this asserts both halves so neither can change without the other noticing.
+## How far apart two species must sit in (length/height, width/height) space to count as different
+## shapes. 0.15 separates every pair the batch has built while still failing the boar/cow pair the
+## single-ratio version passed by accident.
+const SHAPE_GAP_MIN: float = 0.15
+## Two animals this different in absolute height are different animals whatever their proportions —
+## a hare and a cow owe the check no shape argument.
+const SIZE_RATIO_DISTINCT: float = 1.4
+
 const EXPECTED_CLIPS: Array[StringName] = [&"idle", &"walk", &"flee", &"death"]
 ## The two that must come back with loop mode actually set, not merely named.
 const LOOPING_CLIPS: Array[StringName] = [&"idle", &"walk"]
@@ -181,24 +189,43 @@ func _check_distinct_silhouettes() -> void:
 	if _profiles.size() < 2:
 		print("     fewer than two built — nothing to compare yet")
 		return
-	# Proportion, not size: length over height, normalised out of scale entirely.
-	# Two species with the same ratio are the same animal wearing two names, which
-	# is exactly what got the willow and the apple tree rebuilt.
-	var ratios: Dictionary = {}
+	# Compared on a PROPORTION VECTOR — (length/height, width/height) — rather than on a single
+	# length:height ratio, and with an absolute-size escape.
+	#
+	# The first version used length:height alone and it could not tell a boar from a cow: 1.61
+	# against 1.59, while the two are plainly different animals — 0.90 m against 1.36 m, half the
+	# mass, a front-heavy wedge against a rectangle. Width was what separated them (0.45 against
+	# 1.01, the cow's horns being wider than its body), so one number was throwing away the axis
+	# that carried the difference. A check that reports two distinct animals as the same asset is
+	# a check that will eventually be silenced rather than believed.
+	#
+	# The size escape exists because proportion is the wrong question for some pairs. A hare and a
+	# cow do not need different ratios to be different animals; one is knee-high and one is chest
+	# height, and demanding a shape argument on top of that would be the check inventing work.
+	var shapes: Dictionary = {}
 	for species: StringName in _profiles:
 		var size: Array = (_profiles[species] as Dictionary).get("size_m", []) as Array
 		if size.size() != 3 or float(size[2]) <= 0.0:
 			continue
-		ratios[species] = float(size[1]) / float(size[2])
-	var names: Array = ratios.keys()
+		var height: float = float(size[2])
+		shapes[species] = {
+			"vector": Vector2(float(size[1]) / height, float(size[0]) / height),
+			"height": height,
+		}
+	var names: Array = shapes.keys()
 	for first: int in names.size():
 		for second: int in range(first + 1, names.size()):
 			var a: StringName = names[first]
 			var b: StringName = names[second]
-			var difference: float = absf(float(ratios[a]) - float(ratios[b]))
-			check(difference > 0.06,
-				"%s and %s have visibly different proportions (%.2f vs %.2f length:height)"
-					% [a, b, ratios[a], ratios[b]])
+			var shape_a: Dictionary = shapes[a]
+			var shape_b: Dictionary = shapes[b]
+			var shape_gap: float = (shape_a["vector"] as Vector2).distance_to(shape_b["vector"] as Vector2)
+			var tall: float = maxf(shape_a["height"], shape_b["height"])
+			var short: float = minf(shape_a["height"], shape_b["height"])
+			var size_ratio: float = tall / short
+			check(shape_gap > SHAPE_GAP_MIN or size_ratio >= SIZE_RATIO_DISTINCT,
+				"%s and %s are visibly different animals (shape gap %.2f, size ratio %.2fx — needs %.2f or %.2fx)"
+					% [a, b, shape_gap, size_ratio, SHAPE_GAP_MIN, SIZE_RATIO_DISTINCT])
 
 
 ## Bounds of the visible mesh only. An armature's own bones are not geometry and

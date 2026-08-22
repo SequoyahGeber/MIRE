@@ -2,6 +2,32 @@
   "kit": "fauna",
   "assets": [
     {
+      "id": "boar",
+      "family": "fauna",
+      "export": "exports/boar.glb",
+      "size_m": [
+        0.404,
+        1.445,
+        0.9
+      ],
+      "height_m": 0.9,
+      "player_fraction": 0.5,
+      "polygons": 716,
+      "materials": [
+        "MIRE_Bone",
+        "MIRE_FleshFat",
+        "MIRE_Leather",
+        "MIRE_LeatherDark"
+      ],
+      "clips": [
+        "idle-loop",
+        "walk-loop",
+        "flee",
+        "death"
+      ],
+      "note": "Wild boar. A front-heavy wedge: shoulder hump is the tallest point, backline falls away to a lower rump, head huge and low with effectively no neck. Short thin legs under a heavy body, small up-and-out tusks. Its fast clip is a CHARGE, not a run \u2014 flat, driving, with the dorsal crest raised as the tell."
+    },
+    {
       "id": "chicken",
       "family": "fauna",
       "export": "exports/chicken.glb",
@@ -78,6 +104,58 @@
         "death"
       ],
       "note": "Red deer stag. Shallow barrel slung high on long thin legs \u2014 the leggy proportion is the whole silhouette. Neck at 45 degrees with a stag's mane, wedge head, antlers sweeping back then tines forward to the player's eye line. Flee is a bound, not a gallop, with the pale rump patch flagged."
+    },
+    {
+      "id": "hare",
+      "family": "fauna",
+      "export": "exports/hare.glb",
+      "size_m": [
+        0.207,
+        0.55,
+        0.375
+      ],
+      "height_m": 0.375,
+      "player_fraction": 0.208,
+      "polygons": 984,
+      "materials": [
+        "MIRE_Cloth",
+        "MIRE_Leather",
+        "MIRE_LeatherDark",
+        "MIRE_MireBlack"
+      ],
+      "clips": [
+        "idle-loop",
+        "walk-loop",
+        "flee",
+        "death"
+      ],
+      "note": "Brown hare, not a rabbit. Long black-tipped ears carried upright are the read at distance; rump sits HIGHER than the shoulders, coiled over huge hind legs. Idle is a flattened form with asymmetric ear flicks; it hops rather than walks; and flee is enormous bounds with a jink authored into the clip, ears flat back."
+    },
+    {
+      "id": "songbird",
+      "family": "fauna",
+      "export": "exports/songbird.glb",
+      "size_m": [
+        0.209,
+        0.257,
+        0.133
+      ],
+      "height_m": 0.133,
+      "player_fraction": 0.074,
+      "polygons": 453,
+      "materials": [
+        "MIRE_Bone",
+        "MIRE_Cloth",
+        "MIRE_LeatherDark",
+        "MIRE_MireBlack"
+      ],
+      "clips": [
+        "idle-loop",
+        "walk-loop",
+        "flee",
+        "death"
+      ],
+      "note": "Small passerine, built to read as a flock rather than as an individual \u2014 nothing at 0.14 m is legible past a few metres and there will be many on screen. Perched silhouette is a rounded body with no visible neck and a long flat tail. Flee is bounding flight with an asymmetric powered downstroke. Its death clip is the flock LEAVING, climbing away \u2014 they go before the Mire arrives, they are not killed by it."
     }
   ]
 }
