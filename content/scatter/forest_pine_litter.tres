@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="ScatterDef" format=3]
+
+[ext_resource type="Script" path="res://world/gen/scatter_entry.gd" id="1_entry"]
+[ext_resource type="Script" path="res://world/gen/scatter_def.gd" id="2_def"]
+
+[sub_resource type="Resource" id="Resource_00_pinecone_open"]
+script = ExtResource("1_entry")
+asset = &"pinecone_open"
+kit = "conifer_litter"
+weight = 1.0
+min_scale = 0.85
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_01_pinecone_closed"]
+script = ExtResource("1_entry")
+asset = &"pinecone_closed"
+kit = "conifer_litter"
+weight = 0.7
+min_scale = 0.85
+max_scale = 1.2
+
+[sub_resource type="Resource" id="Resource_02_pinecone_small"]
+script = ExtResource("1_entry")
+asset = &"pinecone_small"
+kit = "conifer_litter"
+weight = 0.5
+min_scale = 0.85
+max_scale = 1.25
+
+[resource]
+script = ExtResource("2_def")
+id = &"forest_pine_litter"
+biome_id = &"forest"
+cell_size_m = 4.8
+jitter_fraction = 0.85
+coverage = 0.05
+min_height = 0.8
+max_height = 1000
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_pinecone_open"), SubResource("Resource_01_pinecone_closed"), SubResource("Resource_02_pinecone_small")])

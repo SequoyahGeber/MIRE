@@ -688,5 +688,15 @@
     "roll_deg": 45.0,
     "ortho_scale_m": 0.1445,
     "source_polygons": 408
+  },
+  {
+    "id": "pinecone",
+    "source": "assets/conifer_litter/exports/pinecone_open.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.088,
+    "source_polygons": 684
   }
 ]

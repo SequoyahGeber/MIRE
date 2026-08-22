@@ -3675,24 +3675,6 @@ pine:
 
 ---
 
-### F-492 · Pinecones: a thrown starter projectile gathered under pine trees
-
-**Area:** content · **Severity:** low · **Found:** 2026-08-22 by hollow25eed7
-
-Requested by Sequoyah. Pines are everywhere in the highland and forest canopies and drop nothing;
-the player's only ranged option before a bow is the sling, which needs stone.
-
-A pinecone is picked up off the ground around pine trees and thrown at enemies. It is its own ammo:
-one item id serving as both `RangedWeaponDef.item_id` and `ammo_item_id`, which the existing
-host-authoritative ranged path already supports without a code change — the host reads the slot,
-removes one, and simulates the flight.
-
-Needs: art (a real open pine cone, ~75 mm), an ItemDef, a HarvestableDef, a HarvestLibrary rule,
-scatter entries wherever `tree_pine_*` is placed, and a RangedWeaponDef tuned as a weak, arcing,
-short-range throw — a nuisance, not a bow substitute.
-
----
-
 ### F-493 · Procedural islands have no ruins: the environment kit's ruin walls, columns and arches are only ever placed by the two authored layouts
 
 **Area:** world · **Severity:** medium · **Found:** 2026-08-22 by tine0bda72
@@ -3739,7 +3721,133 @@ and looked at in-game with `tools/ruin_look_probe.gd` — `assets/audit/terrain/
 
 ---
 
+### F-495 · ResourceScatterField's asset warm pump segfaults on load(), about one headless run in six
+
+**Area:** world · **Severity:** medium · **Found:** 2026-08-22 by hollow25eed7
+
+`tools/resource_scatter_check.gd` crashes with signal 11 roughly one run in six, always at the same
+place:
+
+    [0] _load_mesh_parts (res://world/gen/resource_scatter_field.gd:1118)
+    [1] _pump_asset_warm  (res://world/gen/resource_scatter_field.gd:577)
+    [2] _process          (res://world/gen/resource_scatter_field.gd:403)
+
+Line 1118 is the plain `load(path)`. Godot prints "Parameter \"mem\" is null" and "Attempting to use
+an uninitialized RID" alongside it, which is a resource-load fault, not geometry: the same three
+GLBs load and instantiate 90 times in a tight loop with no trouble at all.
+
+The suspect is the hand-off in `_pump_asset_warm()`. It fires `ResourceLoader.load_threaded_request()`
+for every scatter asset, and on completion calls `load_threaded_get()` and then `_load_mesh_parts()`,
+which calls the blocking `load()` on the main thread for a path that may still have another threaded
+request in flight. Reproduced at HEAD in a clean worktree (`agent baseline`), so it is not a
+regression — but it got easier to hit while adding F-492's two scatter tables, because a larger warm
+set means more concurrent requests. Anything that adds scatter assets makes it likelier.
+
+Verified pre-existing and asset-independent: pointing the two new tables at `fence_post` (an
+untouched environment export) crashes exactly the same way, and six `agent baseline` runs of the
+unmodified check crashed once.
+
+The check itself reports `failures=0` when it survives, and sometimes crashes after printing the
+verdict, so this is currently invisible unless somebody greps the log for "Program crashed".
+
+---
+
+### F-496 · ResourceScatterField fills every MultiMesh one Variant-boxed set_instance_transform() at a time, on the main thread, per chunk
+
+**Area:** performance · **Severity:** medium · **Found:** 2026-08-22 by vane99f1bb
+
+Found 2026-08-22 by vane99f1bb, from the attribution `tools/traversal_profile.gd` produces now that
+F-456 repaired it.
+
+Over a 45 s / 315 m sprint walk on an M5 Pro (shipped scene, seed 20260821), the repaired profile
+reports 58 hitch frames costing 7.8% of the wall clock, and attributes them like this:
+
+    ChunkStreamer's own reported cost accounts for 3.3% of hitch time (114.33 of 3495.57 ms).
+    Nodes added: 31 per hitch frame vs 6 per quiet frame.
+    -> The cost is downstream of streaming: whatever instantiates and enters the tree per
+       newly-resident chunk (scatter placement, prop wiring, nav bake).
+
+35,796 nodes entered the tree over that walk. The dressing pass that creates them is
+`ResourceScatterField._build_asset_group()`, and inside it every MultiMesh is filled a call at a
+time:
+
+    multimesh.instance_count = transforms.size()
+    for index: int in transforms.size():
+        multimesh.set_instance_transform(index, transforms[index] * (part["offset"] as Transform3D))
+
+`set_instance_transform()` is a scripting-API call per instance, each marshalling a `Transform3D`
+through a `Variant`. `MultiMesh.buffer` takes the whole group as one `PackedFloat32Array` (12 floats
+per instance for `TRANSFORM_3D`, the 3x4 matrix row-major) and writes it in a single call. This is
+the same class of fix `MireGrid._upload_field_texture()` already documents for `Image.set_pixel`:
+"65,536 Variant-boxed calls" replaced by "one allocation and a tight loop".
+
+The census in F-454 counts 10,087 `MultiMeshInstance3D` nodes across the settled world, so this loop
+runs on the order of a hundred thousand times per full world, all of it on the main thread inside
+`ChunkStreamer`'s `chunk_mesh_ready` emit, and all of it inside `SCATTER_BUILD_BUDGET_MS` (2.0 ms) —
+a budget that is checked between groups and cannot bound a single group that exceeds it.
+
+Fix shape: build the `PackedFloat32Array` once and assign `multimesh.buffer`. Purely mechanical, no
+behaviour change, verifiable with `tools/resource_scatter_check.gd` and
+`tools/multimesh_readback_check.gd` (which already reads transforms back out of these MultiMeshes)
+plus a before/after `tools/traversal_profile.gd`.
+
+---
+
 ## Resolved
+
+### F-492 · Pinecones: a thrown starter projectile gathered under pine trees — **fixed**
+
+**Area:** content · **Severity:** low · **Found:** 2026-08-22 by hollow25eed7
+
+Requested by Sequoyah. Pines are everywhere in the highland and forest canopies and drop nothing;
+the player's only ranged option before a bow is the sling, which needs stone.
+
+A pinecone is picked up off the ground around pine trees and thrown at enemies. It is its own ammo:
+one item id serving as both `RangedWeaponDef.item_id` and `ammo_item_id`, which the existing
+host-authoritative ranged path already supports without a code change — the host reads the slot,
+removes one, and simulates the flight.
+
+Needs: art (a real open pine cone, ~75 mm), an ItemDef, a HarvestableDef, a HarvestLibrary rule,
+scatter entries wherever `tree_pine_*` is placed, and a RangedWeaponDef tuned as a weak, arcing,
+short-range throw — a nuisance, not a bow substitute.
+
+---
+
+**Resolved 2026-08-22 by hollow25eed7.** Shipped as data plus one art kit; `RangedCombatService` needed no code change at all.
+
+**The art.** A new kit, `assets/conifer_litter/` (`tools/blender/build_conifer_litter.py`), with
+three cones — `pinecone_open` (75 mm, the item's own model and its icon), `pinecone_closed` (62 mm)
+and `pinecone_small` (44 mm). Built from Scots pine morphology rather than from the idea of a cone:
+scales placed at the golden angle up an ovoid axis, each one a broad overlapping TILE narrow at the
+axis and thickened into a paler apophysis at its exposed end. The first pass built them as radial
+spikes and rendered as a fish skeleton, which is what a one-axis primitive gets you; the fix was a
+two-axis orientation helper (`_tile_rotation`) so a plate can be aimed and rolled at once.
+
+The builder joins each asset to ONE mesh before export, and that is a correctness fix rather than an
+optimisation: `world/gen/resource_scatter_field.gd` does not merge what it scatters, it builds one
+`MultiMeshInstance3D` per mesh part in the GLB, so 105 loose boxes per cone meant ten thousand nodes
+in a chunk holding a hundred of them. 684/612/396 triangles after the join.
+
+**The content.** `content/items/pinecone.tres` (stacks to 24, its own icon),
+`content/harvestables/pinecone.tres` (bare-handed, one swing, 150 s respawn), a
+`["pinecone", "pinecone", Represent.BATCH]` rule in `HarvestLibrary` covering all three exports, and
+two new scatter tables — `highland_pine_litter` and `forest_pine_litter` — tuned down twice until
+cones sat at ~4.4% of all props rather than 10.7%.
+
+**The throw.** `content/ranged_weapons/pinecone.tres` sets `item_id == ammo_item_id`, which no other
+ranged weapon does. The host reads the weapon out of the same hotbar slot it removes the ammo from,
+so the interesting case is the LAST cone: throwing it empties the slot the weapon was read from.
+That already behaves — `_host_weapon_for()` returns null for an empty slot and `request_shot()`
+refuses — and `tools/f492_pinecone_check.gd` pins it, along with the placement density, the harvest
+classification, and a real throw resolving against a real collider. 2 damage, 17 m, gravity 0.85: an
+arcing nuisance, strictly worse than the sling's 3 damage at 26 m.
+
+Verified: `agent godot --script tools/f492_pinecone_check.gd` — OK, 0 failures. `item_icons_check`,
+`art_coverage_check` and `asset_scope_check` all clean.
+
+Filed F-495 while verifying: `resource_scatter_check.gd` segfaults in the asset-warm pump about one
+run in six. Pre-existing — reproduced at HEAD via `agent baseline`, and with the new tables pointed
+at an untouched `fence_post` — but adding scatter assets makes it likelier to hit.
 
 ### F-494 · EnemyWorld's navmesh bake segfaults Godot in a worker thread — every headless check that reaches bootstrap crashes — **fixed**
 

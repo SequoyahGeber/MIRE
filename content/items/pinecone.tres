@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_pinecone.png" id="0_icon"]
+[ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://assets/conifer_litter/exports/pinecone_open.glb" id="2_model"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"pinecone"
+display_name = "Pinecone"
+icon = ExtResource("0_icon")
+description = "Dry, woody and about the weight of an egg. It will not kill anything, but it will get its attention."
+stack_size = 24
+world_model = ExtResource("2_model")
+view_model = ExtResource("2_model")
+grip_offset = Vector3(0.22, -0.24, -0.34)
+grip_rotation_degrees = Vector3(-8.0, 154.0, 10.0)
+grip_scale = 1.6
+attack_style = 0

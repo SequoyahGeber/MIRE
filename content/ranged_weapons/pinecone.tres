@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="RangedWeaponDef" format=3]
+
+[ext_resource type="Script" path="res://systems/combat/ranged_weapon_def.gd" id="1_rng"]
+
+[resource]
+script = ExtResource("1_rng")
+item_id = &"pinecone"
+display_name = "Pinecone"
+ammo_item_id = &"pinecone"
+draw_seconds = 0.26
+recovery_seconds = 0.34
+projectile_speed_m_s = 15.0
+gravity_scale = 0.85
+max_range_m = 17.0
+damage = 2
+hitstop_seconds = 0.02
+shake_magnitude = 0.03
+shake_duration = 0.1
+impact_audible_range_m = 16.0

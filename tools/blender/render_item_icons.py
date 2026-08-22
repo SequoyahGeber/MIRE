@@ -127,6 +127,12 @@ SOURCES: list[tuple[str, str]] = [
     ("clay", "forage/exports/pickup_clay.glb"),
     ("peat", "forage/exports/pickup_peat.glb"),
     ("poison_berry", "forage/exports/pickup_poison_berry.glb"),
+    # --- conifer litter (F-492) -----------------------------------------------
+    #
+    # The thrown pinecone. The OPEN cone is the icon because it is the one the
+    # item's own `world_model` uses and the only one of the three whose flared
+    # scales survive being scaled down to a 256 px inventory square.
+    ("pinecone", "conifer_litter/exports/pinecone_open.glb"),
 ]
 
 #: Yaw applied before framing, for assets whose default face is not their best one.

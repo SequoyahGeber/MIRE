@@ -152,6 +152,16 @@ const HARVEST_RULES: Array = [
 	["clay_deposit", "clay_deposit", Represent.NODE],
 	["peat_deposit", "peat_deposit", Represent.NODE],
 	["poison_berry_bush", "poison_berry_bush", Represent.NODE],
+
+	## Pinecones (F-492). BATCH, and it is the clearest case in this table for it: a cone is 75 mm of
+	## ground litter placed by the hundred under `content/scatter/*_pine_litter.tres`, it has no
+	## collider and no picked art, so depletion is simply "that one instance is gone" — which is
+	## exactly what picking a cone up off the floor looks like.
+	##
+	## One prefix covers all three exports (`pinecone_open`, `_closed`, `_small`) because they are the
+	## same object at three ages: every one of them yields the same single `pinecone`, and a second
+	## definition with identical numbers is a second place to forget to change one of them.
+	["pinecone", "pinecone", Represent.BATCH],
 ]
 
 

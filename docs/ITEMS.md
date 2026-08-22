@@ -105,7 +105,7 @@ the Gleam pool, not a fourth ingot.
 
 ## 4. The catalog
 
-### 4.1 Gathered raw materials (21)
+### 4.1 Gathered raw materials (22)
 
 | Item | Tier | Source | Job |
 |---|---|---|---|
@@ -118,6 +118,7 @@ the Gleam pool, not a fourth ingot.
 | Clay Lump | T0 | riverbank deposit | fired flasks, building daub |
 | Peat Brick | T0 | fen deposit | **fuel** (burns longer than logs), tar |
 | Resin Lump | T0 | pine tap / resin node | torches, tar, waterproofing |
+| Pinecone | T0 | pine floor, bare-handed | **thrown as-is** — the T0 ranged option, no weapon needed (F-492) |
 | Berry | T0 | berry bush | snack food |
 | Poison Berry | T0 | poison berry bush | looks *almost* identical (D7). Tonic base, bad snack |
 | Mushroom | T0 | forest floor | food, skewers |
@@ -239,7 +240,7 @@ this catalog adds are **bolded**.
 | T1 | wooden/stone axe & pickaxe (exist), **Reed Machete** (flint + branch — fast shallow arc, doubles fibre/cattail gather speed: the Forager's weapon), spear (A-021), short bow + arrow (exist), sling (A-022 — **eats plain stones**, R4) |
 | T2 forks | cleaver ↔ skewer (exist), iron axe/pickaxe (A-021), iron sword (exists), longbow ↔ crossbow + bolt (A-021, crossbow costs a Mechanism), buckler (A-021) |
 | T3 forks | mithril axe/pickaxe (A-022), heavy cleaver ↔ barbed skewer (A-021), throwing axe/knife, wooden shield → ward shield, tinker hammer (A-022) — re-forking costs Wellglass |
-| Ammo | arrow (exists), **Iron Arrow** (T2), bolt (A-021), **Tar Arrow** (slows [status]), stones (sling) |
+| Ammo | arrow (exists), **Iron Arrow** (T2), bolt (A-021), **Tar Arrow** (slows [status]), stones (sling), **pinecone (thrown by hand — it is its own weapon and its own ammo, F-492)** |
 | Lights | **Held Torch** (branch + resin — tiny swing, real light), **Storm Lantern** (iron + flask + resin — the good light; the swamp identity item) |
 | Utility | repair hammer (exists, structures) |
 

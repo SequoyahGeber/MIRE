@@ -30,12 +30,6 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "assets/icons/catalog.json": {
-      "agent": "hollow25eed7",
-      "at": "2026-08-22T01:20:12+00:00",
-      "task": "F-492",
-      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
-    },
     "assets/pickups/catalog.json": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:31:01+00:00",
@@ -47,6 +41,18 @@
       "at": "2026-08-21T23:42:44+00:00",
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "autoload/harvest_world.gd": {
+      "agent": "vane99f1bb",
+      "at": "2026-08-22T01:43:04+00:00",
+      "task": "F-496",
+      "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
+    },
+    "content/enemies/fen_stalker.tres": {
+      "agent": "ember5da2c4",
+      "at": "2026-08-22T01:42:41+00:00",
+      "task": "5.11",
+      "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
     },
     "content/enemies/peatling.tres": {
       "agent": "ember5da2c4",
@@ -77,12 +83,6 @@
       "at": "2026-08-21T17:45:13+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
-    },
-    "content/harvestables/pinecone.tres": {
-      "agent": "hollow25eed7",
-      "at": "2026-08-22T01:12:37+00:00",
-      "task": "F-492",
-      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
     },
     "content/items/apple.tres": {
       "agent": "gale43d16e",
@@ -126,12 +126,6 @@
       "task": "F-482",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "content/items/pinecone.tres": {
-      "agent": "hollow25eed7",
-      "at": "2026-08-22T01:12:37+00:00",
-      "task": "F-492",
-      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
-    },
     "content/items/sling.tres": {
       "agent": "birche6b40e",
       "at": "2026-08-22T00:29:56+00:00",
@@ -149,24 +143,6 @@
       "at": "2026-08-22T00:29:56+00:00",
       "task": "F-482",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
-    },
-    "content/ranged_weapons/pinecone.tres": {
-      "agent": "hollow25eed7",
-      "at": "2026-08-22T01:12:37+00:00",
-      "task": "F-492",
-      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
-    },
-    "content/scatter/forest_pine_litter.tres": {
-      "agent": "hollow25eed7",
-      "at": "2026-08-22T01:12:37+00:00",
-      "task": "F-492",
-      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
-    },
-    "content/scatter/highland_pine_litter.tres": {
-      "agent": "hollow25eed7",
-      "at": "2026-08-22T01:12:37+00:00",
-      "task": "F-492",
-      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
     },
     "content/scatter/highland_rocks.tres": {
       "agent": "birche6b40e",
@@ -198,29 +174,23 @@
       "task": "5.11",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
     },
-    "systems/harvesting/harvest_library.gd": {
-      "agent": "hollow25eed7",
-      "at": "2026-08-22T01:20:03+00:00",
-      "task": "F-492",
-      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
-    },
     "systems/waves/wave_spawner.gd": {
       "agent": "ember5da2c4",
       "at": "2026-08-22T01:24:04+00:00",
       "task": "5.11",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
     },
-    "tools/blender/build_conifer_litter.py": {
-      "agent": "hollow25eed7",
-      "at": "2026-08-22T01:12:37+00:00",
-      "task": "F-492",
-      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
-    },
     "tools/blender/build_deep_materials.py": {
       "agent": "birche6b40e",
       "at": "2026-08-21T23:53:11+00:00",
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "tools/blender/build_enemy_fen_stalker.py": {
+      "agent": "ember5da2c4",
+      "at": "2026-08-22T01:42:41+00:00",
+      "task": "5.11",
+      "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
     },
     "tools/blender/build_enemy_peatling.py": {
       "agent": "ember5da2c4",
@@ -258,23 +228,11 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "tools/blender/render_item_icons.py": {
-      "agent": "hollow25eed7",
-      "at": "2026-08-22T01:20:12+00:00",
-      "task": "F-492",
-      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
-    },
     "tools/enemy_peatling_check.gd": {
       "agent": "ember5da2c4",
       "at": "2026-08-22T01:27:55+00:00",
       "task": "5.11",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
-    },
-    "tools/f492_pinecone_check.gd": {
-      "agent": "hollow25eed7",
-      "at": "2026-08-22T01:18:44+00:00",
-      "task": "F-492",
-      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
     },
     "tools/item_icons_check.gd": {
       "agent": "gale43d16e",
@@ -282,10 +240,10 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "tools/traversal_profile.gd": {
+    "tools/multimesh_buffer_check.gd": {
       "agent": "vane99f1bb",
-      "at": "2026-08-22T01:32:30+00:00",
-      "task": "F-456",
+      "at": "2026-08-22T01:43:04+00:00",
+      "task": "F-496",
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     },
     "tools/wave_director_check.gd": {
@@ -294,10 +252,22 @@
       "task": "5.11",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
     },
-    "world/chunk/chunk_streamer.gd": {
+    "world/gen/authored_world.gd": {
       "agent": "vane99f1bb",
-      "at": "2026-08-22T01:30:42+00:00",
-      "task": "F-456",
+      "at": "2026-08-22T01:43:04+00:00",
+      "task": "F-496",
+      "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
+    },
+    "world/gen/resource_scatter_field.gd": {
+      "agent": "vane99f1bb",
+      "at": "2026-08-22T01:41:35+00:00",
+      "task": "F-496",
+      "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
+    },
+    "world/gen/undergrowth.gd": {
+      "agent": "vane99f1bb",
+      "at": "2026-08-22T01:43:04+00:00",
+      "task": "F-496",
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     },
     "world/mire/mire_grid.gd": {
@@ -346,21 +316,13 @@
         "content/enemies/peatling.tres",
         "assets/enemies/README.md",
         "tools/wave_director_check.gd",
-        "tools/enemy_peatling_check.gd"
+        "tools/enemy_peatling_check.gd",
+        "tools/blender/build_enemy_fen_stalker.py",
+        "content/enemies/fen_stalker.tres"
       ],
       "notes": [],
       "started": "2026-08-22T01:08:05+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
-    },
-    "F-456": {
-      "agent": "vane99f1bb",
-      "files": [
-        "world/chunk/chunk_streamer.gd",
-        "tools/traversal_profile.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-22T01:30:42+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     },
     "F-469": {
       "agent": "coil26502f",
@@ -411,23 +373,18 @@
       "started": "2026-08-22T00:29:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "F-492": {
-      "agent": "hollow25eed7",
+    "F-496": {
+      "agent": "vane99f1bb",
       "files": [
-        "tools/blender/build_conifer_litter.py",
-        "content/items/pinecone.tres",
-        "content/harvestables/pinecone.tres",
-        "content/ranged_weapons/pinecone.tres",
-        "content/scatter/highland_pine_litter.tres",
-        "content/scatter/forest_pine_litter.tres",
-        "tools/f492_pinecone_check.gd",
-        "systems/harvesting/harvest_library.gd",
-        "tools/blender/render_item_icons.py",
-        "assets/icons/catalog.json"
+        "world/gen/resource_scatter_field.gd",
+        "world/gen/undergrowth.gd",
+        "autoload/harvest_world.gd",
+        "world/gen/authored_world.gd",
+        "tools/multimesh_buffer_check.gd"
       ],
       "notes": [],
-      "started": "2026-08-22T01:12:37+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
+      "started": "2026-08-22T01:41:35+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
   "recent": {
@@ -1426,11 +1383,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
     "assets/icons/catalog.json": {
-      "agent": "cindere7060a",
-      "at": "2026-08-22T00:03:18+00:00",
-      "hash": "639de27c3e69d0bb544fe46ab793ad1b2b3a6cda14722deb874a8e6f8a2e7372",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+      "agent": "hollow25eed7",
+      "at": "2026-08-22T01:45:21+00:00",
+      "hash": "8c08a8063ba2ec7d53d96063a738ac2b38b5acc549b1b01b538b9206ff1fc0cc",
+      "task": "F-492",
+      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
     },
     "assets/icons/exports/icon_build_floor.png": {
       "agent": "coil26502f",
@@ -2006,6 +1963,13 @@
       "task": "F-490",
       "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
+    "content/harvestables/pinecone.tres": {
+      "agent": "hollow25eed7",
+      "at": "2026-08-22T01:45:21+00:00",
+      "hash": "9b28d37977237c6c6afc05c8c1a6cdd48da795bc281683b954cb4a55c6c8fce2",
+      "task": "F-492",
+      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
+    },
     "content/harvestables/poison_berry_bush.tres": {
       "agent": "tine0bda72",
       "at": "2026-08-22T01:16:32+00:00",
@@ -2243,6 +2207,13 @@
       "hash": "a797c460413bb472003c22a058876eddb60e9b983cb1c616a0e3c6ab8b41166c",
       "task": "F-490",
       "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/items/pinecone.tres": {
+      "agent": "hollow25eed7",
+      "at": "2026-08-22T01:45:21+00:00",
+      "hash": "da09ebfc167365df1dcea95266cf761c1dc1eb70f83d3df410e71142b8f824a0",
+      "task": "F-492",
+      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
     },
     "content/items/poison_berry.tres": {
       "agent": "tine0bda72",
@@ -2916,6 +2887,13 @@
       "task": "F-449",
       "token": "CLAUDE_CODE_SESSION_ID:f97215fe-2359-4eab-a329-74522e35831e"
     },
+    "content/ranged_weapons/pinecone.tres": {
+      "agent": "hollow25eed7",
+      "at": "2026-08-22T01:45:21+00:00",
+      "hash": "9b9b5d62fc43b6ca1355878eb19734131d41d1fe530232e2f9188630823483a9",
+      "task": "F-492",
+      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
+    },
     "content/ranged_weapons/sling.tres": {
       "agent": "quill26e3d7",
       "at": "2026-08-21T19:47:17+00:00",
@@ -3112,6 +3090,13 @@
       "task": "F-490",
       "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
+    "content/scatter/forest_pine_litter.tres": {
+      "agent": "hollow25eed7",
+      "at": "2026-08-22T01:45:21+00:00",
+      "hash": "ab9a3c57bb823d727bf1e393ee29de913939506b8d589b52960150e386f96d0b",
+      "task": "F-492",
+      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
+    },
     "content/scatter/forest_rocks.tres": {
       "agent": "kilnd3a089",
       "at": "2026-08-21T05:34:42+00:00",
@@ -3195,6 +3180,13 @@
       "hash": "7dca053b232f18afdc0493a8745f379b82d0e07b89c20e1823caab3b7c98cd4a",
       "task": "F-451",
       "token": "CLAUDE_CODE_SESSION_ID:496677a1-162a-4bfd-a57f-5ef81aacc0df"
+    },
+    "content/scatter/highland_pine_litter.tres": {
+      "agent": "hollow25eed7",
+      "at": "2026-08-22T01:45:21+00:00",
+      "hash": "7724f24fe6ee441b3ff382d935528c5e0349156fc356ac1b44bef21c8c0b4d3d",
+      "task": "F-492",
+      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
     },
     "content/scatter/highland_pines.tres": {
       "agent": "tine0bda72",
@@ -3491,18 +3483,18 @@
       "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
     },
     "docs/FINDINGS.md": {
-      "agent": "coil26502f",
-      "at": "2026-08-21T23:28:27+00:00",
-      "hash": "8bdcdf832917f950009a53e295451800ed4bed0e0512dbc91fd5c7926b87f408",
-      "task": "F-472",
-      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+      "agent": "hollow25eed7",
+      "at": "2026-08-22T01:45:21+00:00",
+      "hash": "c32afb6e663997000b24dd9c345e5db5af430ef482a7ee8dfd96a8c576bde291",
+      "task": "F-492",
+      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
     },
     "docs/ITEMS.md": {
-      "agent": "birche6b40e",
-      "at": "2026-08-21T23:26:09+00:00",
-      "hash": "501b37b3b875e76fd07c8151cad5c5095805a44c512fb4bd5b746bcd50ce961d",
-      "task": "3.18",
-      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+      "agent": "hollow25eed7",
+      "at": "2026-08-22T01:45:21+00:00",
+      "hash": "0c7e164abf71aaa0a55f92814590ccdb667a762ca3b1f1c32fba206bb77b9385",
+      "task": "F-492",
+      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
     },
     "docs/PERFORMANCE.md": {
       "agent": "wick5e2d04",
@@ -3707,13 +3699,6 @@
       "task": "F-487",
       "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
-    "systems/enemies/enemy.gd": {
-      "agent": "ivycc0920",
-      "at": "2026-08-21T01:40:30+00:00",
-      "hash": "ee39f1ec7a88eb063d4f61738dc0626145f46d10cb36eb9cefb5217c9e22be14",
-      "task": "F-351",
-      "token": "CLAUDE_CODE_SESSION_ID:34f19dd1-60f4-4279-b7ba-e40ce133b27f"
-    },
     "systems/guide/guide_step_def.gd": {
       "agent": "birche6b40e",
       "at": "2026-08-21T23:26:09+00:00",
@@ -3722,11 +3707,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
     "systems/harvesting/harvest_library.gd": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:16:32+00:00",
-      "hash": "7756cce53fde2da3ba5a498600e68fe386705a694d6b47f098ee27eff2a907f7",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+      "agent": "hollow25eed7",
+      "at": "2026-08-22T01:45:21+00:00",
+      "hash": "ca186803621182f40b24b28deaa9d49f66d2906962c654a7d09b6dc2af97dfbb",
+      "task": "F-492",
+      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
     },
     "systems/harvesting/harvestable.gd": {
       "agent": "kiln384569",
@@ -3938,6 +3923,13 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "tools/blender/build_conifer_litter.py": {
+      "agent": "hollow25eed7",
+      "at": "2026-08-22T01:45:21+00:00",
+      "hash": "36c6b376cdf02871ec29a8faa26b2f48c1abd4a9ac22864c11ca2c82fe925576",
+      "task": "F-492",
+      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
+    },
     "tools/blender/build_construction_set.py": {
       "agent": "coil26502f",
       "at": "2026-08-21T23:04:24+00:00",
@@ -3988,11 +3980,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "tools/blender/render_item_icons.py": {
-      "agent": "tine0bda72",
-      "at": "2026-08-22T01:16:32+00:00",
-      "hash": "1330eaa2b6f7abcfb0e58428c464f766f0f82c244336c1a17f76a1c734d2f538",
-      "task": "F-490",
-      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+      "agent": "hollow25eed7",
+      "at": "2026-08-22T01:45:21+00:00",
+      "hash": "11f5ca245258a38ce0671ac913334decd6496570ba0166a864b881bb35908c6e",
+      "task": "F-492",
+      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
     },
     "tools/blender/trunk_inspect.py": {
       "agent": "gale43d16e",
@@ -4085,20 +4077,6 @@
       "task": "F-383",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
-    "tools/dev_loadout_check.gd": {
-      "agent": "ivycc0920",
-      "at": "2026-08-21T01:40:30+00:00",
-      "hash": "09b83a8cc882d06e497e9c994f1c32fe14afa473c5a20c18ad0984da23dd05ca",
-      "task": "F-351",
-      "token": "CLAUDE_CODE_SESSION_ID:34f19dd1-60f4-4279-b7ba-e40ce133b27f"
-    },
-    "tools/enemy_nav_map_check.gd": {
-      "agent": "ivycc0920",
-      "at": "2026-08-21T01:40:30+00:00",
-      "hash": "32c5cacbed895b6127406a328944ef7afc92d3037843906b27de2eb67662e486",
-      "task": "F-351",
-      "token": "CLAUDE_CODE_SESSION_ID:34f19dd1-60f4-4279-b7ba-e40ce133b27f"
-    },
     "tools/f356_night_probe.gd": {
       "agent": "emberd89a44",
       "at": "2026-08-21T06:17:41+00:00",
@@ -4140,6 +4118,13 @@
       "hash": "ae8a3ad4c09e7e04f8e7d048f0670e533a2228492e53e84706cc5bcd01a06dba",
       "task": "F-410",
       "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
+    },
+    "tools/f492_pinecone_check.gd": {
+      "agent": "hollow25eed7",
+      "at": "2026-08-22T01:45:21+00:00",
+      "hash": "4a2f73cd854aa322f093b586931c05e3fdeb6c44fa5796962f42b479764d62cf",
+      "task": "F-492",
+      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
     },
     "tools/focus_prompt_check.gd": {
       "agent": "wickc3d79c",
@@ -4534,11 +4519,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
     "tools/traversal_profile.gd": {
-      "agent": "quillcfd8d7",
-      "at": "2026-08-21T23:01:17+00:00",
-      "hash": "dc2e17f1f69adb3251fc011789ace71ce5c02a7a02513cf3aaee065a3e7d4013",
-      "task": "F-461",
-      "token": "CLAUDE_CODE_SESSION_ID:ef18b3c8-16fb-47c5-852c-09d362e8f2c4"
+      "agent": "vane99f1bb",
+      "at": "2026-08-22T01:40:44+00:00",
+      "hash": "63ad00acfbb0840e120bc4ffa0e2bed55607805b9d16a7f34f1770b875fe72fb",
+      "task": "F-456",
+      "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     },
     "tools/tree_collider_check.gd": {
       "agent": "kiln384569",
@@ -4765,11 +4750,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
     },
     "world/chunk/chunk_streamer.gd": {
-      "agent": "quillcfd8d7",
-      "at": "2026-08-21T23:01:17+00:00",
-      "hash": "07b7dfe6bae42ecc02936e0f1ab7a816ed43801fd7ffa22380378e35cfbefb0f",
-      "task": "F-461",
-      "token": "CLAUDE_CODE_SESSION_ID:ef18b3c8-16fb-47c5-852c-09d362e8f2c4"
+      "agent": "vane99f1bb",
+      "at": "2026-08-22T01:40:44+00:00",
+      "hash": "b5b3fad2e982e1cbf0cb039f675e43f009af23d51269ffb31144d914f7bbf630",
+      "task": "F-456",
+      "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     },
     "world/chunk/nav_baker.gd": {
       "agent": "quillcfd8d7",
@@ -4933,7 +4918,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:120f1976-6c96-46a1-8784-38dd75780df4"
     }
   },
-  "rev": 1064,
+  "rev": 1071,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -10336,9 +10321,11 @@
       "title": "Benchmark machine probe reads power and thermal state on macOS only"
     },
     "F-456": {
+      "done_at": "2026-08-22T01:40:44+00:00",
+      "done_by": "vane99f1bb",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "ChunkStreamer overruns its own 4 ms FRAME_BUDGET_MS by 10x under motion \u2014 39 to 55 ms frames observed"
     },
@@ -10617,9 +10604,11 @@
       "title": "mire_art hull() bakes world coordinates, so setting rotation_euler on one spins it around the world origin"
     },
     "F-492": {
+      "done_at": "2026-08-22T01:45:21+00:00",
+      "done_by": "hollow25eed7",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Pinecones: a thrown starter projectile gathered under pine trees"
     },
@@ -10640,6 +10629,20 @@
       "status": "done",
       "tier": "F",
       "title": "EnemyWorld's navmesh bake segfaults Godot in a worker thread \u2014 every headless check that reaches bootstrap crashes"
+    },
+    "F-495": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "ResourceScatterField's asset warm pump segfaults on load(), about one headless run in six"
+    },
+    "F-496": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "ResourceScatterField fills every MultiMesh one Variant-boxed set_instance_transform() at a time, on the main thread, per chunk"
     }
   },
   "version": 1

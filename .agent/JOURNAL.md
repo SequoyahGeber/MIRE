@@ -8977,3 +8977,27 @@ One missing line: nav_mesh.cell_height. Its absence quantised the agent params a
 Files: `autoload/enemy_world.gd`
 
 Commit at time of writing: `9a57940`
+
+---
+
+### DONE · F-456 · vane99f1bb · 2026-08-22T01:40:44+00:00
+
+**ChunkStreamer overruns its own 4 ms FRAME_BUDGET_MS by 10x under motion — 39 to 55 ms frames observed**
+
+Streamer was inside budget; the profiler was measuring an empty world. Fixed the profiler, added the s:emit phase split, made lazy collision cooking O(pending) instead of O(loaded).
+
+Files: `world/chunk/chunk_streamer.gd`, `tools/traversal_profile.gd`
+
+Commit at time of writing: `f145b3d`
+
+---
+
+### DONE · F-492 · hollow25eed7 · 2026-08-22T01:45:21+00:00
+
+**Pinecones: a thrown starter projectile gathered under pine trees**
+
+Pinecones: new conifer_litter art kit, item/harvestable/scatter/ranged-weapon data, self-ammo throw verified headless. Filed F-495 (pre-existing scatter warm-pump segfault).
+
+Files: `tools/blender/build_conifer_litter.py`, `content/items/pinecone.tres`, `content/harvestables/pinecone.tres`, `content/ranged_weapons/pinecone.tres`, `content/scatter/highland_pine_litter.tres`, `content/scatter/forest_pine_litter.tres`, `tools/f492_pinecone_check.gd`, `systems/harvesting/harvest_library.gd`, `tools/blender/render_item_icons.py`, `assets/icons/catalog.json`, `docs/ITEMS.md`, `docs/FINDINGS.md`
+
+Commit at time of writing: `f145b3d`
