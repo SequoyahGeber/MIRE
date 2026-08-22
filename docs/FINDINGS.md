@@ -3218,6 +3218,57 @@ it.
 
 ---
 
+### F-580 · 30 of 72 powerups are fully inert — the stat name they modify has no consumer
+
+**Area:** powerups · **Severity:** high · **Found:** 2026-08-22 by birch1db63e
+
+Reported by Sequoyah as "power ups from chests do nothing", and that is literally true for most of
+the roster. The grant path is fine end to end: loot tables carry POWERUP entries (`kind = 1`) in all
+nine tiers, `Chest._accept_open_request()` routes them to `PowerupService.host_grant()`,
+`_commit()` replicates them, and `powerup list` shows them held. What is missing is the READ.
+
+`PowerupDef.KNOWN_STATS` names 43 stats. Only 19 are ever asked of `PowerupService.stat()` anywhere
+in the shipped code: melee_damage, bow_damage, max_hp, move_speed, sprint_speed,
+dodge_iframe_seconds, coin_gain, craft_seconds, ward_radius_m, structure_hp, food_value,
+blight_rate, chest_price, loot_luck, harvest_yield, harvest_damage, revive_seconds,
+revive_radius_m, bleed_out_seconds. The other 24 appear exactly once in the whole repo — in the
+KNOWN_STATS whitelist itself:
+
+  air_control, extra_jumps, jump_height, fall_damage_taken, move_speed_low_hp, move_speed_in_mire,
+  damage_taken, knockback_taken, hunger_drain, max_stamina, stamina_regen, stamina_cost,
+  melee_range_m, attack_seconds, melee_damage_low_hp, melee_damage_at_night, ignite_chance,
+  slow_chance, slow_potency, on_hit_lifesteal, on_kill_heal_hp, arrow_save_chance, aggro_radius_m,
+  haul_speed
+
+Consequence, counted over content/powerups (72 files): 30 powerups modify ONLY unread stats and
+therefore do nothing at all when granted — adrenal_bloom, air_writ, ashen_temper, bellows_lung,
+bottomless_quiver, cat_fall, cauter_seal, cellar_cache, chill_edge, damp_stride, deep_frost,
+far_grasp, flashover, fletchers_debt, long_bound, moss_shroud, night_pyre, pack_frame, red_quench,
+rime_shell, root_hold, scab_feast, sealed_veins, second_wind, skip_step, slow_gut, spent_spring,
+still_breath, tinder_snap, unseen_seam. A further five (empty_vessel, open_flame, quiet_bloom,
+whetted_thirst, white_quiet) declare no modifiers at all and are presumably resonance-only, which
+needs its own confirmation. Several more are partially inert (eggshell_warlord, rime_shell and
+sealed_veins carry `damage_taken`, the single most player-visible defensive stat in the vocabulary,
+which nothing reads).
+
+`powerup_def.gd`'s own comment says a name in KNOWN_STATS "does NOT mean a system reads it yet" and
+that stats wire up one line at a time per system task. That was a reasonable staging rule while the
+systems were being built; it has now produced a shipped chest economy whose most common outcome is
+a placebo. The vocabulary is not the bug — the missing reads are.
+
+Fix is per-system, each a single line at the point the quantity is computed, in the system that
+already owns it: player_controller (jump_height, air_control, extra_jumps, fall_damage_taken, and
+the two condition-suffixed move_speed variants chained onto the unconditional pass per D-179),
+player_health (damage_taken, knockback_taken, hunger_drain, max_stamina, stamina_regen,
+stamina_cost), combat_service (melee_range_m, attack_seconds, the two condition-suffixed
+melee_damage variants, ignite_chance, slow_chance, slow_potency, on_hit_lifesteal, on_kill_heal_hp),
+ranged_combat_service (arrow_save_chance), enemy AI (aggro_radius_m) and haul_service (haul_speed).
+
+Worth a standing check: a tools/ probe that fails when a KNOWN_STATS name has no reader, or when a
+shipped powerup's every modifier is unread, so this cannot silently regrow.
+
+---
+
 ## Resolved
 
 ### F-578 · Four of the eight craftable stations do nothing: StationDef's family/tier are never read, so the Reinforced Workbench unlocks no recipes — **duplicate of F-575**
