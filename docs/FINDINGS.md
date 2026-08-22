@@ -1985,7 +1985,7 @@ comparison stays available, and settle the streamer before phase one.
 
 ### F-363 · The Mire tick still costs most of a frame at saturation, on the host main thread
 
-**Area:** performance · **Severity:** medium · **Found:** 2026-08-21 by ivy1bcae0
+**Area:** performance · **Severity:** high · **Found:** 2026-08-21 by ivy1bcae0
 
 Found 2026-08-20 by ivy1bcae0, as the residue of F-338.
 
@@ -2020,6 +2020,29 @@ it are both out of scope for a benchmark task:
 An active frontier — the other half of F-338's suggestion — was considered and does NOT help here:
 at saturation every cell is the frontier, so it improves the early and mid cases (already 3-8 ms)
 and does nothing for the case that misses.
+
+**RAISED to high, and UNBLOCKED, 2026-08-21 by vane99f1bb.**
+
+Severity raised because this is now the largest measured main-thread pass in the project by a wide
+margin, and the two other performance findings looked at this session came back smaller than they
+claimed: F-456's streamer overrun does not reproduce (the streamer is at 0.9-3.3% of hitch time), and
+F-496's proposed scatter fix measured 2.5x SLOWER than what it replaced. Against those, a 12-16 ms
+pass every 2 seconds — on the HOST, on top of everything else the host alone does for 3-6 players,
+several times worse on the low-end target — is the biggest thing left. `tools/hardware_census.gd`
+(new) frames why it is worth the thread: this game uses **1.1% of system memory and 2 of 15 logical
+processors**, so there is nothing to trade away by moving a pure function off the frame.
+
+The design decision this finding says it needs is now written: **D-207**. In short — moving
+`MireGridSim.tick()` to a `WorkerThreadPool` task is NOT an authority change, the §2.2 "Mire grid"
+row is unchanged (host, tick delta broadcast, no new RPC, no `PROTOCOL_VERSION` bump), and the one
+real rule is that `_grid` is always a COMPLETED tick, never a partial one. D-207 also settles what
+happens to the synchronous mutators (`host_add_corruption`, `clear_radius`, `host_set_corruption_at`
+apply immediately and supersede an in-flight job, whose result is discarded on landing — the same
+pattern `ChunkStreamer._retire()` already uses) and records why time-slicing was rejected instead.
+
+**So nothing about this is open except the file claim.** `world/mire/mire_grid.gd` and
+`world/mire/mire_grid_sim.gd` have been held for task 5.11 for this whole session. Whoever gets them
+next should take this straight away — the spec is D-207 and the gate is `tools/bench_mire.gd`.
 
 **What must not happen:** `bench_mire.gd` prints an AMBER line naming this gap on every run, and
 gates regressions at a 22 ms ceiling. Raising `TICK_BUDGET_MS` to silence the amber would convert a

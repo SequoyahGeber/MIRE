@@ -6952,3 +6952,63 @@ Evidence: `tools/ocean_glint_shot.gd` renders three framed views at different po
 cycle into `assets/audit/terrain/ocean_glint_*.png`. Read them together, not one at a time: at eye
 height on the shore the effect is deliberately a sparkle band toward the horizon (the near facets
 are foreshortened almost to nothing), and only the raised shot shows the scatter across the sheet.
+
+---
+
+### D-207 · 2026-08-21 · The Mire tick moves to a worker thread, and that is NOT an authority change
+
+F-363 is the largest single main-thread pass this project has measured — a full 65,536-cell sweep
+costing **~16 ms at saturation and 12-14 ms at 80% fill, every 2 seconds, on the HOST**, where it
+lands on top of everything else the host alone does for a 3-6 player session. On the low-end machine
+this project ships to (F-174, docs/PERFORMANCE.md) it will be several times that. It has sat open
+because the finding correctly noted that moving it "is an authority and ordering change, not a code
+move — it needs an ARCHITECTURE.md §2.2 decision". This is that decision, made in advance so that
+whoever picks the work up is writing code rather than relitigating a design.
+
+**The §2.2 "Mire grid" row does not change: authority stays HOST, mechanism stays tick delta
+broadcast.** Running `MireGridSim.tick()` on a `WorkerThreadPool` task changes *when within the
+host's frame* the host computes its own answer. It does not change *which peer* computes it, what
+crosses the wire, or what a client is allowed to do — a client still never simulates and still reads
+corruption back through `WorldDeltaLog`. No new RPC, no `PROTOCOL_VERSION` bump. A row whose
+authority is "Host" is a statement about peers, not about threads, and reading it as a threading
+constraint is what kept a 16 ms pass on the main thread for two sessions.
+
+**What genuinely does change is ordering inside the host, and the rule is: the grid is always a
+COMPLETED tick, never a partial one.** `MireGrid._grid` is replaced wholesale by the finished
+result, on the main thread, the frame the job lands. Never mutated in place by the worker.
+Consequences, each deliberate:
+
+- `corruption_at()`, `consumed_fraction()` and the `_field_grid` texture all read the last COMPLETED
+  tick. They may be up to one tick (2 s) stale while a job is in flight. That is already true of a
+  2-second simulation and no consumer can tell the difference — `PlayerHealth._tick_blight()` reads
+  it per physics tick against a field that only moves every 2 s regardless.
+- `_emit_changed_deltas()` runs on the main thread, on the landed result, exactly as now. The
+  worker touches no `WorldDeltaLog`, no signal, no node.
+- **The synchronous mutators stay synchronous and take precedence.** `host_add_corruption()` (a
+  Peatling's death stain), `clear_radius()` (a Wellspring cap) and `host_set_corruption_at()` are
+  gameplay reacting to an event *now*, and a player must not watch a stain fail to appear because a
+  tick was mid-flight. They apply to the live `_grid` immediately, and a job already running is
+  marked superseded and its result DISCARDED on landing rather than overwriting them. This is
+  exactly the supersede/discard pattern `ChunkStreamer._retire()` and
+  `ResourceScatterField`'s `PlacementJob` already use, for the same reason: a running
+  `WorkerThreadPool` task cannot be cancelled, so the only safe cancel is to throw the answer away.
+- The job takes a COPY of the grid and the ward circles. `MireGridSim.tick()` is already a pure
+  function returning a new `PackedFloat32Array`, which is why this is a small change rather than a
+  rewrite.
+
+**The alternative was rejected.** F-363 offered time-slicing the tick across its own 2-second
+interval as the cheaper-to-reason-about option. It is not: a half-applied grid means
+`corruption_at()` answers from a field where some cells have advanced and some have not, and every
+consumer — Blight damage, the ground shader, `consumed_fraction()`'s defeat check — then has to have
+an opinion about what that means. The worker-thread version has exactly one visible state (the last
+completed tick) and needs no consumer to change at all.
+
+**What must not happen** stands unchanged from F-363: `tools/bench_mire.gd` gates at a 22 ms ceiling
+and prints an AMBER line naming this gap. Raising `TICK_BUDGET_MS` to silence it converts a measured
+problem back into an unmeasured one. The bench measures `MireGridSim.tick()` itself, which this
+decision does not make faster — it takes it off the frame. Both numbers matter and neither replaces
+the other.
+
+Blocked only on the file claim: `world/mire/mire_grid.gd` and `world/mire/mire_grid_sim.gd` have been
+held for task 5.11 through this session. Nothing else about it is open.
+
