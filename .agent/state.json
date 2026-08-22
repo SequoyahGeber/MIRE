@@ -6676,7 +6676,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
     }
   },
-  "rev": 1921,
+  "rev": 1922,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -13260,7 +13260,7 @@
       "title": "Fauna Phase 2 \u2014 the ordinary six have no models, rigs or clips"
     },
     "F-597": {
-      "done_at": "2026-08-22T19:05:49+00:00",
+      "done_at": "2026-08-22T19:06:11+00:00",
       "done_by": "larchcc2572",
       "est": "\u2014",
       "milestone": "Findings",

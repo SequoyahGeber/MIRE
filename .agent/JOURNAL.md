@@ -10571,3 +10571,49 @@ both multiplayer checks were stale not broken; combat-impact knockback landed un
 Files: `tools/combat_net_check.gd`, `tools/inventory_net_check.gd`, `systems/combat/weapon_def.gd`, `systems/enemies/enemy.gd`, `autoload/combat_service.gd`, `tools/combat_feel_check.gd`
 
 Commit at time of writing: `2eb33b7e`
+
+---
+
+### REOPEN · F-601 · birch1db63e · 2026-08-22T18:56:58+00:00
+
+**The Sling exists as a full item and ranged weapon but nothing in the game produces it**
+
+Reopened (was marked done 2026-08-22 by birch1db63e).
+
+The finding was marked done when its CHECK landed; the sling itself is still unobtainable. Authoring the recipe now.
+
+Commit at time of writing: `1878d4d5`
+
+---
+
+### DONE · F-596 · wick1c650c · 2026-08-22T19:05:04+00:00
+
+**Fauna Phase 2 — the ordinary six have no models, rigs or clips**
+
+All six ordinary species shipped, FAUNA_ART_CHECK built=6 failures=0. Reasoning recorded in the finding after a peer commit ate the message.
+
+Files: `tools/blender/fauna_common.py`, `tools/blender/build_fauna_chicken.py`, `assets/fauna/catalog.json`, `tools/fauna_art_check.gd`, `assets/fauna/exports/chicken.glb`, `assets/fauna/exports/chicken.glb.import`, `assets/source/fauna_chicken.blend`, `assets/fauna/exports/deer.glb`, `assets/fauna/exports/deer.glb.import`, `assets/source/fauna_deer.blend`, `tools/blender/build_fauna_deer.py`, `tools/blender/build_fauna_cow.py`, `assets/fauna/exports/cow.glb`, `assets/fauna/exports/cow.glb.import`, `assets/source/fauna_cow.blend`, `tools/blender/build_fauna_boar.py`, `assets/fauna/exports/boar.glb`, `assets/fauna/exports/boar.glb.import`, `assets/source/fauna_boar.blend`, `tools/blender/build_fauna_hare.py`, `tools/blender/build_fauna_songbird.py`, `assets/fauna/exports/hare.glb`, `assets/fauna/exports/hare.glb.import`, `assets/fauna/exports/songbird.glb`, `assets/fauna/exports/songbird.glb.import`, `assets/source/fauna_hare.blend`, `assets/source/fauna_songbird.blend`
+
+Commit at time of writing: `fdd6d34d`
+
+---
+
+### DONE · F-597 · larchcc2572 · 2026-08-22T19:05:49+00:00
+
+**Fauna Phase 1: the world has no animals — AnimalDef, FaunaService and herd placement do not exist**
+
+Fauna Phase 1, three co-op parity checks (extraction, item pickup, between-run persistence), and F-607's first-session economy measurement. All committed and pushed.
+
+Files: `systems/fauna/animal_def.gd`, `systems/fauna/animal.gd`, `autoload/fauna_service.gd`, `content/animals/hare.tres`, `content/rules/ambient_fauna_population.tres`, `tools/fauna_check.gd`, `autoload/registry.gd`, `docs/FAUNA.md`, `docs/DELEGATION.md`, `tools/extraction_net_check.gd`, `tools/item_drop_net_check.gd`, `tools/progression_net_check.gd`, `docs/FINDINGS.md`
+
+Commit at time of writing: `5313594b`
+
+---
+
+### DONE · F-597 · larchcc2572 · 2026-08-22T19:06:11+00:00
+
+**Fauna Phase 1: the world has no animals — AnimalDef, FaunaService and herd placement do not exist**
+
+Fauna Phase 1, three co-op parity checks (extraction, item pickup with wick3d4184's review fix, between-run persistence), F-591's threaded-load registry, and F-607's first-session economy measurement. All committed and pushed.
+
+Commit at time of writing: `894abea8`
