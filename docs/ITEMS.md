@@ -248,7 +248,7 @@ this catalog adds are **bolded**.
 
 | Item | Source | Job |
 |---|---|---|
-| Old Coins | kills, caches (exists as `coins`) | the chest economy |
+| Old Coins | kills, caches (exists as `coins`) | the chest economy. **Kills pay since F-539/D-210:** every `EnemyDef` authors a `coin_drop_min`..`coin_drop_max` bounty, paid to whoever landed the killing blow — 3–7 for a Peatling up to 55–90 for a Mire Herald, against a ~25-coin Bog Chest and a ~60-coin Strongbox |
 | Rusted Key | camp chests, hound dens, minibosses | opens Strongboxes without paying |
 | Gilded Key | elites, the Hunt, bosses | opens the Gilded Chest (§5) |
 | Heavy Mithril Chunk | mithril vein | the 2-player haul object (3.10) — mithril is *earned in pairs* |

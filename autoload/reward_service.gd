@@ -22,6 +22,10 @@ extends Node
 ##      experiences a world chest today (whoever gets there loots it; nobody is shut out because a
 ##      teammate opened first).
 ##
+## F-539 added a THIRD trigger with a different shape: an ordinary enemy kill pays a coin bounty to
+## the killer alone, straight off `EnemyDef.coin_drop_min`/`coin_drop_max` with no loot table
+## involved. See `_on_enemy_killed()` for why it pays one player rather than the party.
+##
 ## NETWORK AUTHORITY (docs/ARCHITECTURE.md §2.2, new "Event-granted loot" row): HOST. No RPC of its
 ## own — every grant flows through `InventoryService.host_add()`/`PowerupService.host_grant()`,
 ## both of which already reach a remote peer through their own existing snapshot RPC (`_commit()`).
@@ -62,6 +66,7 @@ var _next_reward_event_id: int = 1
 func _ready() -> void:
 	EVENT_BUS.subscribe_wellspring_capped(_on_wellspring_capped)
 	EVENT_BUS.subscribe_boss_defeated(_on_boss_defeated)
+	EVENT_BUS.subscribe_enemy_killed(_on_enemy_killed)
 	var game_state: Node = get_node_or_null(^"/root/GameState")
 	if game_state != null:
 		game_state.connect(&"seed_ready", _on_seed_ready)
@@ -70,6 +75,7 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	EVENT_BUS.unsubscribe_wellspring_capped(_on_wellspring_capped)
 	EVENT_BUS.unsubscribe_boss_defeated(_on_boss_defeated)
+	EVENT_BUS.unsubscribe_enemy_killed(_on_enemy_killed)
 
 
 func _on_seed_ready(_value: int) -> void:
@@ -82,6 +88,50 @@ func _on_wellspring_capped(_wellspring_name: StringName, _world_position: Vector
 
 func _on_boss_defeated(_boss_id: StringName, _world_position: Vector3) -> void:
 	_grant_tier_to_party(BOSS_TIER)
+
+
+## F-539 — the kill bounty. `docs/ITEMS.md` §4 lists Old Coins' sources as "kills, caches"; the
+## caches shipped with 3.5 and the kills never did, which left every coin below a boss coming out of
+## scattered Reed Caches. This is the missing half, and it lives here rather than in `Enemy` for the
+## same reason the wellspring and boss paycheques do: `Enemy` should not know what an inventory is.
+##
+## Three deliberate calls, none of which the wellspring/boss path above shares:
+##   1. **The killer is paid, not the party.** A wellspring cap and a boss kill are objectives the
+##      whole party earned; an individual mob is not, and paying everyone for every Peatling turns a
+##      six-player lobby into a six-times-faster economy for the same amount of killing. Whoever
+##      landed the blow gets it.
+##   2. **No loot table.** A bounty is one number in one currency; routing it through a
+##      `LootTableDef` would mean authoring ten single-entry tables to say what two ints already say,
+##      and `EnemyDef` is where the rest of a kind's identity already lives (D-006).
+##   3. **Seeded off the same per-run counter as everything else here** (F-219), so a same-seed
+##      replay pays the same bounties in the same order. `_next_reward_event_id` is shared with the
+##      tier grants above on purpose: it is a per-run "how many rewards have happened" ordinal, and
+##      kills are rewards.
+func _on_enemy_killed(
+	enemy_id: StringName,
+	coin_min: int,
+	coin_max: int,
+	instigator_peer_id: int,
+	_world_position: Vector3,
+) -> void:
+	if not _owns_mutation():
+		return
+	# A kind authored with no bounty, or a death nobody is credited with — a burst, a bloom-split
+	# child killed by its parent's burst, a fall — pays nobody. The event still fired; there is just
+	# no one to pay and nothing to pay them.
+	if coin_max <= 0 or instigator_peer_id <= 0:
+		return
+	var event_id: int = _next_reward_event_id
+	_next_reward_event_id += 1
+	var rng := RandomNumberGenerator.new()
+	rng.seed = _seed_for_run(_run_seed(), "kill:%s:%d:%d" % [enemy_id, event_id, instigator_peer_id])
+	var amount: int = rng.randi_range(maxi(coin_min, 0), coin_max)
+	if amount <= 0:
+		return
+	var inventory: Node = get_node_or_null(^"/root/InventoryService")
+	if inventory == null or not bool(inventory.call("host_add", instigator_peer_id, COIN_ITEM_ID, amount)):
+		return
+	MireLog.info(LOG_CHANNEL, "kill bounty '%s' -> peer %d: %d coins" % [enemy_id, instigator_peer_id, amount])
 
 
 ## Host-only. One independent `LootTableDef.roll()` per currently present player, granted straight

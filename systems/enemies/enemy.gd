@@ -525,6 +525,20 @@ func _enter_death(instigator_peer_id: int) -> void:
 			maxi(roundi(float(definition.attack_damage) * definition.death_burst_fraction), 1),
 			definition.burst_radius_m,
 		)
+	# F-539's kill bounty. Emitted here rather than from a `died` listener because `died` is also
+	# how `SfxDirector` hears a death on a CLIENT's own copy, and a bounty must be paid exactly once,
+	# by the host: `_enter_death()` is only ever reached through `host_apply_damage()`'s
+	# `_owns_simulation()` guard, so this call site is the host by construction. It carries the
+	# authored bounty range so `RewardService` never has to resolve the def of a body already turning into
+	# a corpse. Last in the function, after the burst and the stain, so a consumer that looks at the
+	# world sees a death that has fully happened.
+	EVENT_BUS.emit_enemy_killed(
+		definition.id,
+		definition.coin_drop_min,
+		definition.coin_drop_max,
+		instigator_peer_id,
+		global_position,
+	)
 	died.emit(instigator_peer_id)
 
 

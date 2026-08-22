@@ -23,3 +23,5 @@ attack_damage = 4
 attack_tell_seconds = 0.22
 attack_seconds = 0.2
 attack_recovery_seconds = 0.35
+coin_drop_min = 1
+coin_drop_max = 3

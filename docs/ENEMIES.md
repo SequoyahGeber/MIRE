@@ -625,13 +625,23 @@ a body back.
 
 ## 8. The ladder, finished
 
-| Tier | Kind | Model | Rig | Polys | Its mechanic |
-|---|---|---|---|---:|---|
-| 1 | Peatling | slime mould | 8 bones | 502 | Dies into a stain of corruption |
-| 2 | Fen Stalker | heron / bittern | 19 bones | 578 | Lunges through your retreat; doubled opener out of ambush |
-| 3 | Bog Bulwark | snapping turtle | 20 bones | 721 | 160° of frontal armour, and it never lets go |
-| 4 | Bloatcap | puffball | 12 bones | 592 | Area burst, and it bursts again when it dies |
-| 5 | Mire Herald | Irish elk | 20 bones | 688 | Corrupts the ground it walks on, without dying and without stopping |
+| Tier | Kind | Model | Rig | Polys | Bounty | Its mechanic |
+|---|---|---|---|---:|---:|---|
+| 1 | Peatling | slime mould | 8 bones | 502 | 3–7 | Dies into a stain of corruption |
+| 2 | Fen Stalker | heron / bittern | 19 bones | 578 | 8–14 | Lunges through your retreat; doubled opener out of ambush |
+| 3 | Bog Bulwark | snapping turtle | 20 bones | 721 | 18–30 | 160° of frontal armour, and it never lets go |
+| 4 | Bloatcap | puffball | 12 bones | 592 | 32–48 | Area burst, and it bursts again when it dies |
+| 5 | Mire Herald | Irish elk | 20 bones | 688 | 55–90 | Corrupts the ground it walks on, without dying and without stopping |
+
+**The bounty column is a pay scale, not flavour** (F-539/D-210). Killing one of these pays coins to
+whoever landed the blow, rolled in the range its `.tres` authors on `EnemyDef.coin_drop_min`/
+`coin_drop_max`. Every rung's floor sits above the rung below's ceiling, so climbing the ladder
+always pays better than farming the bottom of it — priced against a ~25-coin Bog Chest and a
+~60-coin Strongbox, and against the off-ladder kinds (Marsh Strider 1–3, Hollow Crawler 2–4,
+Broodcaller 2–5, Bog Crawler 3–6, Mire Tusker 12–20). The values are authored per kind rather than
+derived from health: a Bulwark is a long fight because of its armour and a Bloatcap is a short one
+that costs you a burst, and only authoring prices that. `tools/kill_bounty_check.gd` asserts the
+ordering, which is the property a balance pass breaks silently.
 
 Six new `EnemyDef` mechanics, every one of them defaulting to off, so the five kinds task 5.2
 authored are unchanged byte for byte. Five generators, five headless checks, five real animals

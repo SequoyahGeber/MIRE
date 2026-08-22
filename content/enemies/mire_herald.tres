@@ -29,3 +29,5 @@ aura_corruption_radius_m = 9.0
 vision_angle_deg = 220.0
 alert_radius_m = 34.0
 max_concurrent_attackers = 1
+coin_drop_min = 55
+coin_drop_max = 90

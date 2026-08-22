@@ -7100,3 +7100,36 @@ the lock exactly (0 buildables reachable) when the log cost is put back.
 **Would change my mind:** handcrafting landing. If a station-less recipe becomes craftable, the
 wooden axe moves to it and the workbench can go back to costing logs, since by then the axe genuinely
 precedes it.
+
+### D-210 · 2026-08-22 · Kills pay a coin bounty, priced per kind and paid to the killer alone
+
+`docs/ITEMS.md` §4 has always listed Old Coins' sources as **"kills, caches"**. The caches shipped
+with 3.5; the kills never did. `Enemy._enter_death()` emitted `died()` and the only listener was
+`SfxDirector`, so every coin a party held below a boss came out of scattered Reed Caches — a fixed
+supply with no relationship to how much of the night they actually fought. F-539 closes it:
+`EventBus.emit_enemy_killed()` fires from the death path, and `RewardService` pays the bounty.
+
+**Priced as two ints on `EnemyDef` (`coin_drop_min`/`coin_drop_max`), not a per-kind `LootTableDef`.**
+A bounty is one number in one currency; ten single-entry tables would say what two exported ints
+already say, and `EnemyDef` is where the rest of a kind's identity lives (D-006). Derivation from
+`max_health` was considered and rejected — health is not worth. A Bog Bulwark is a long fight because
+of its armour, a Bloatcap is a short fight that costs you a burst, and only authoring can price that.
+
+**The ladder is the pay scale, and the rungs must not overlap.** Tier *n*'s floor sits above tier
+*n−1*'s ceiling, so killing up the ladder always pays better than farming down it — 3–7 for a
+Peatling through 55–90 for a Mire Herald, against a ~25-coin Bog Chest and a ~60-coin Strongbox.
+`tools/kill_bounty_check.gd` asserts the ordering rather than the numbers, which is the property a
+later balance pass would otherwise break silently (it caught exactly that overlap while this landed).
+
+**Paid to the killer, not the party.** The wellspring cap and the boss kill are party objectives and
+fan out to everyone present; an ordinary mob is not one. Paying the whole party per kill would make
+a six-player lobby a six-times-faster economy for the same amount of killing. An uncredited death —
+a burst, a bloom-split child killed by its parent, a fall — pays nobody.
+
+**Emitted from `Enemy._enter_death()` rather than from `EnemyWorld.enemy_died`.** The latter is wired
+only in `host_spawn()`, so anything placed by another path would silently never pay; the death
+function itself is reached only through `host_apply_damage()`'s `_owns_simulation()` guard, which
+makes the host-only property structural rather than incidental.
+
+**Would change my mind:** a playtest where coins stop being scarce enough for chest prices to mean
+anything. The fix then is the pay scale, not the mechanic — the ranges are data.

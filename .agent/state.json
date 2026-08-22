@@ -30,6 +30,12 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "autoload/app_exit.gd": {
+      "agent": "duska7668b",
+      "at": "2026-08-22T05:11:53+00:00",
+      "task": "F-537",
+      "token": "CLAUDE_CODE_SESSION_ID:e53e22ff-f266-497e-84fe-9d2939e5d427"
+    },
     "autoload/command_service.gd": {
       "agent": "wickec4384",
       "at": "2026-08-22T05:10:14+00:00",
@@ -41,6 +47,12 @@
       "at": "2026-08-22T05:10:14+00:00",
       "task": "F-534",
       "token": "CLAUDE_CODE_SESSION_ID:c6081344-5cdb-423d-8314-804698ccf35c"
+    },
+    "autoload/enemy_world.gd": {
+      "agent": "onyxbe8065",
+      "at": "2026-08-22T05:12:44+00:00",
+      "task": "F-538",
+      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "autoload/inventory_service.gd": {
       "agent": "flint04a51d",
@@ -54,71 +66,11 @@
       "task": "F-535",
       "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
     },
-    "autoload/reward_service.gd": {
-      "agent": "larch28fcaa",
-      "at": "2026-08-22T05:08:16+00:00",
-      "task": "F-533",
-      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
-    },
-    "content/enemies/bloatcap.tres": {
-      "agent": "larch28fcaa",
-      "at": "2026-08-22T05:08:16+00:00",
-      "task": "F-533",
-      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
-    },
-    "content/enemies/bog_bulwark.tres": {
-      "agent": "larch28fcaa",
-      "at": "2026-08-22T05:08:16+00:00",
-      "task": "F-533",
-      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
-    },
-    "content/enemies/bog_crawler.tres": {
-      "agent": "larch28fcaa",
-      "at": "2026-08-22T05:08:16+00:00",
-      "task": "F-533",
-      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
-    },
-    "content/enemies/broodcaller.tres": {
-      "agent": "larch28fcaa",
-      "at": "2026-08-22T05:08:16+00:00",
-      "task": "F-533",
-      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
-    },
-    "content/enemies/crawler.tres": {
-      "agent": "larch28fcaa",
-      "at": "2026-08-22T05:08:16+00:00",
-      "task": "F-533",
-      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
-    },
-    "content/enemies/fen_stalker.tres": {
-      "agent": "larch28fcaa",
-      "at": "2026-08-22T05:08:16+00:00",
-      "task": "F-533",
-      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
-    },
-    "content/enemies/mire_herald.tres": {
-      "agent": "larch28fcaa",
-      "at": "2026-08-22T05:08:16+00:00",
-      "task": "F-533",
-      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
-    },
-    "content/enemies/peatling.tres": {
-      "agent": "larch28fcaa",
-      "at": "2026-08-22T05:08:16+00:00",
-      "task": "F-533",
-      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
-    },
-    "content/enemies/strider.tres": {
-      "agent": "larch28fcaa",
-      "at": "2026-08-22T05:08:16+00:00",
-      "task": "F-533",
-      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
-    },
-    "content/enemies/tusker.tres": {
-      "agent": "larch28fcaa",
-      "at": "2026-08-22T05:08:16+00:00",
-      "task": "F-533",
-      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    "autoload/steam_lobby.gd": {
+      "agent": "duska7668b",
+      "at": "2026-08-22T05:11:53+00:00",
+      "task": "F-537",
+      "token": "CLAUDE_CODE_SESSION_ID:e53e22ff-f266-497e-84fe-9d2939e5d427"
     },
     "content/harvestables/apple_tree.tres": {
       "agent": "gale43d16e",
@@ -210,23 +162,11 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "core/events/event_bus.gd": {
-      "agent": "larch28fcaa",
-      "at": "2026-08-22T05:08:16+00:00",
-      "task": "F-533",
-      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
-    },
     "docs/ASSET_TRACKER.md": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:13:34+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
-    },
-    "docs/ENEMIES.md": {
-      "agent": "larch28fcaa",
-      "at": "2026-08-22T05:08:16+00:00",
-      "task": "F-533",
-      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
     },
     "docs/FINDINGS.md": {
       "agent": "flint04a51d",
@@ -234,29 +174,17 @@
       "task": "F-535",
       "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
     },
-    "docs/ITEMS.md": {
-      "agent": "larch28fcaa",
-      "at": "2026-08-22T05:08:16+00:00",
-      "task": "F-533",
-      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
-    },
-    "systems/enemies/enemy.gd": {
-      "agent": "larch28fcaa",
-      "at": "2026-08-22T05:08:16+00:00",
-      "task": "F-533",
-      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
-    },
-    "systems/enemies/enemy_def.gd": {
-      "agent": "larch28fcaa",
-      "at": "2026-08-22T05:08:16+00:00",
-      "task": "F-533",
-      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
-    },
     "systems/loot/item_drop.gd": {
       "agent": "flint04a51d",
       "at": "2026-08-22T05:10:38+00:00",
       "task": "F-535",
       "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
+    },
+    "tools/ambient_spawn_check.gd": {
+      "agent": "onyxbe8065",
+      "at": "2026-08-22T05:13:25+00:00",
+      "task": "F-538",
+      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "tools/blender/build_deep_materials.py": {
       "agent": "birche6b40e",
@@ -312,17 +240,23 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "tools/kill_bounty_check.gd": {
-      "agent": "larch28fcaa",
-      "at": "2026-08-22T05:10:38+00:00",
-      "task": "F-533",
-      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    "ui/frontend/frontend.gd": {
+      "agent": "duska7668b",
+      "at": "2026-08-22T05:11:53+00:00",
+      "task": "F-537",
+      "token": "CLAUDE_CODE_SESSION_ID:e53e22ff-f266-497e-84fe-9d2939e5d427"
     },
     "ui/hud/focus_prompt.gd": {
       "agent": "flint04a51d",
       "at": "2026-08-22T05:10:38+00:00",
       "task": "F-535",
       "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
+    },
+    "ui/menu/main_menu.gd": {
+      "agent": "duska7668b",
+      "at": "2026-08-22T05:11:53+00:00",
+      "task": "F-537",
+      "token": "CLAUDE_CODE_SESSION_ID:e53e22ff-f266-497e-84fe-9d2939e5d427"
     }
   },
   "in_flight": {
@@ -393,31 +327,6 @@
       "started": "2026-08-22T00:29:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "F-533": {
-      "agent": "larch28fcaa",
-      "files": [
-        "systems/enemies/enemy_def.gd",
-        "systems/enemies/enemy.gd",
-        "core/events/event_bus.gd",
-        "autoload/reward_service.gd",
-        "content/enemies/peatling.tres",
-        "content/enemies/fen_stalker.tres",
-        "content/enemies/bog_bulwark.tres",
-        "content/enemies/bloatcap.tres",
-        "content/enemies/mire_herald.tres",
-        "content/enemies/crawler.tres",
-        "content/enemies/bog_crawler.tres",
-        "content/enemies/broodcaller.tres",
-        "content/enemies/strider.tres",
-        "content/enemies/tusker.tres",
-        "docs/ENEMIES.md",
-        "docs/ITEMS.md",
-        "tools/kill_bounty_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-22T05:08:16+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
-    },
     "F-534": {
       "agent": "wickec4384",
       "files": [
@@ -442,6 +351,28 @@
       "notes": [],
       "started": "2026-08-22T05:10:38+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
+    },
+    "F-537": {
+      "agent": "duska7668b",
+      "files": [
+        "autoload/app_exit.gd",
+        "autoload/steam_lobby.gd",
+        "ui/frontend/frontend.gd",
+        "ui/menu/main_menu.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-22T05:11:53+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:e53e22ff-f266-497e-84fe-9d2939e5d427"
+    },
+    "F-538": {
+      "agent": "onyxbe8065",
+      "files": [
+        "autoload/enemy_world.gd",
+        "tools/ambient_spawn_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-22T05:12:44+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     }
   },
   "recent": {
@@ -1754,6 +1685,13 @@
       "task": "3.19",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "autoload/reward_service.gd": {
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:14:33+00:00",
+      "hash": "c93d956ff926345a2562b7b6085508ec0f3c74a17e8e66f1faff1a7c4ca17369",
+      "task": "F-539",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    },
     "autoload/salvage_service.gd": {
       "agent": "birche6b40e",
       "at": "2026-08-21T23:26:09+00:00",
@@ -2049,39 +1987,74 @@
       "token": "CLAUDE_CODE_SESSION_ID:477892e7-5d82-480a-a521-2a01185a8c00"
     },
     "content/enemies/bloatcap.tres": {
-      "agent": "ember5da2c4",
-      "at": "2026-08-22T03:24:39+00:00",
-      "hash": "be2ea891ad9812a976b991d33e19f43d51fb53aae078adcf4c9bc0de00a5ab68",
-      "task": "5.11",
-      "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:14:33+00:00",
+      "hash": "a7eaf9099b3c9c04dbf513b6fd62013655df4b5a09635da3f406e7e82766e59d",
+      "task": "F-539",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
     },
     "content/enemies/bog_bulwark.tres": {
-      "agent": "ember5da2c4",
-      "at": "2026-08-22T03:24:39+00:00",
-      "hash": "7806d9eb3c0b77e6550362c3c001b2ee0993ad1497aa6be6ddb51d21149143eb",
-      "task": "5.11",
-      "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:14:33+00:00",
+      "hash": "6e5e886a8ed85c1595e3bdc1a7e0e49178835a671c20bed2a035d3b628ed52c7",
+      "task": "F-539",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    },
+    "content/enemies/bog_crawler.tres": {
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:14:33+00:00",
+      "hash": "00399063a6239d7f003f5bf728731c1d03c2c4afed5103df696b878349bb9087",
+      "task": "F-539",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    },
+    "content/enemies/broodcaller.tres": {
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:14:33+00:00",
+      "hash": "16ad7d0a3a74be6e9f054aa2fa1755a112cd70b82e5ce1e3c8203da26c7d055b",
+      "task": "F-539",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    },
+    "content/enemies/crawler.tres": {
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:14:33+00:00",
+      "hash": "016b97cf0386c211b1b0866e17483ba3965176221694a794c60fff100615ef28",
+      "task": "F-539",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
     },
     "content/enemies/fen_stalker.tres": {
-      "agent": "ember5da2c4",
-      "at": "2026-08-22T03:24:39+00:00",
-      "hash": "131f144a11ce4fea216c05340a7043f1baa6c89f3cfc1e03d868320cdbfd59f7",
-      "task": "5.11",
-      "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:14:33+00:00",
+      "hash": "2dc77dffd92f5a5e31d672df45acd58fdeea1c643023d9307c46f2fff106db45",
+      "task": "F-539",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
     },
     "content/enemies/mire_herald.tres": {
-      "agent": "ember5da2c4",
-      "at": "2026-08-22T03:24:39+00:00",
-      "hash": "432d9ef97f941567944b85f44d527e2742817390258665e214e6f5d5fb365609",
-      "task": "5.11",
-      "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:14:33+00:00",
+      "hash": "48e9cfc0a3457e60db0f3cb7dc795e018fe6668eaff8b34e4d42ad850b3f8663",
+      "task": "F-539",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
     },
     "content/enemies/peatling.tres": {
-      "agent": "ember5da2c4",
-      "at": "2026-08-22T03:24:39+00:00",
-      "hash": "346d500d37abfe91ee95e6ee7ddd5bea47dde20ea499a7f4ee32700de5084714",
-      "task": "5.11",
-      "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:14:33+00:00",
+      "hash": "af5f4942d9e0c33a449242da2fcf0408b844c410c6ecd8b9b71a392e3fd6f797",
+      "task": "F-539",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    },
+    "content/enemies/strider.tres": {
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:14:33+00:00",
+      "hash": "9a2fe5e5c5ce2c486c1f742447d2011a9e35b2d89d395a7347700cd44c061ab1",
+      "task": "F-539",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    },
+    "content/enemies/tusker.tres": {
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:14:33+00:00",
+      "hash": "28e0698469a24d50916862664c247965606e1d54e2f23426d216a9b1f5bba53f",
+      "task": "F-539",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
     },
     "content/guide/build_anvil.tres": {
       "agent": "birche6b40e",
@@ -3743,11 +3716,11 @@
       "token": "CODEX_SESSION_ID:01a027aa-467b-74f2-a125-1d485a4b40e9"
     },
     "core/events/event_bus.gd": {
-      "agent": "birche6b40e",
-      "at": "2026-08-21T23:26:09+00:00",
-      "hash": "82a8fb352621206bba68c71d0c9b0f54975b43772bcb88a2550f44d8ab42154f",
-      "task": "3.18",
-      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:14:33+00:00",
+      "hash": "6fd082cff70a69816ee423713f1c59eeb07766118f8d80d66ce90e3948e044f5",
+      "task": "F-539",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
     },
     "core/net/net_version.gd": {
       "agent": "coil26502f",
@@ -3777,6 +3750,13 @@
       "task": "F-514",
       "token": "CODEX_SESSION_ID:01a02772-862e-7242-889a-a20257660bfa"
     },
+    "docs/ARCHITECTURE.md": {
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:14:33+00:00",
+      "hash": "a1188cfb56cdb10176b0f3984baa4985c04759eeba241491cbed5e4e4844b5c3",
+      "task": "F-539",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    },
     "docs/ASSET_TRACKER.md": {
       "agent": "gale43d16e",
       "at": "2026-08-21T08:34:48+00:00",
@@ -3792,11 +3772,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:079ec6c8-3025-4d18-9503-6b15fbd8d6f2"
     },
     "docs/DECISIONS.md": {
-      "agent": "tine5ad92a",
-      "at": "2026-08-22T04:26:25+00:00",
-      "hash": "8ae31fa79bcab92209b1a67f07ff15cfd1b37d198438c2d8dd32e9e7db9eabd7",
-      "task": "F-522",
-      "token": "CLAUDE_CODE_SESSION_ID:477892e7-5d82-480a-a521-2a01185a8c00"
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:14:33+00:00",
+      "hash": "b01cf3a20184f9c0213df423de55b1dcc4371e8ffeea80657585ec0996256b4e",
+      "task": "F-539",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
     },
     "docs/DELEGATION.md": {
       "agent": "vaneabd52b",
@@ -3806,11 +3786,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
     },
     "docs/ENEMIES.md": {
-      "agent": "ember5da2c4",
-      "at": "2026-08-22T03:24:39+00:00",
-      "hash": "c7b6014b8263b06d6a1e5b0680600ac81837ca3d7bd1f9c8188ec99cf87d8269",
-      "task": "5.11",
-      "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:14:33+00:00",
+      "hash": "f8d2393380b3b60d315d14729249f31a3d22b52c2bf1297ffec031a5ac856845",
+      "task": "F-539",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
     },
     "docs/FINDINGS.md": {
       "agent": "hollow25eed7",
@@ -3820,11 +3800,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
     },
     "docs/ITEMS.md": {
-      "agent": "hollow25eed7",
-      "at": "2026-08-22T01:45:21+00:00",
-      "hash": "0c7e164abf71aaa0a55f92814590ccdb667a762ca3b1f1c32fba206bb77b9385",
-      "task": "F-492",
-      "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:14:33+00:00",
+      "hash": "3d9d6d1fbd2804d7a6f925d1d43e3e235042443c1fbe39602e3691c03ac302e0",
+      "task": "F-539",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
     },
     "docs/PERFORMANCE.md": {
       "agent": "wick5e2d04",
@@ -4044,18 +4024,18 @@
       "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
     "systems/enemies/enemy.gd": {
-      "agent": "ember5da2c4",
-      "at": "2026-08-22T03:24:39+00:00",
-      "hash": "de636f41c150b5a8242531ae4e8a7e5170205430a28e4614691077e05d232812",
-      "task": "5.11",
-      "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:14:33+00:00",
+      "hash": "9738f6d969b7e911b410f7795047164c9ddf571f476e4550e48d019f17f9adc4",
+      "task": "F-539",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
     },
     "systems/enemies/enemy_def.gd": {
-      "agent": "ember5da2c4",
-      "at": "2026-08-22T03:24:39+00:00",
-      "hash": "6fb60c3b42914d2153f4df16c0e9b31384a7ade53516e92a360edcd0e938c86e",
-      "task": "5.11",
-      "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:14:33+00:00",
+      "hash": "cd6038dffdefbcf8c4d2cf72034cf1951babc3c70cd8a5b9e4522de2cb480c8c",
+      "task": "F-539",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
     },
     "systems/extraction/extraction_ship.gd": {
       "agent": "quill3c83cf",
@@ -4728,6 +4708,13 @@
       "hash": "3e89851f48a06a3c31af3049191cdfe4222c78facfa943d2914e6eaa98a00e34",
       "task": "F-450",
       "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
+    },
+    "tools/kill_bounty_check.gd": {
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:14:33+00:00",
+      "hash": "a81e8cb1ab31716671b40cc7452d082e02adbdbeac08674d9b1a6f034f85b929",
+      "task": "F-539",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
     },
     "tools/main_menu_check.gd": {
       "agent": "flinta92725",
@@ -5465,7 +5452,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1435,
+  "rev": 1447,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -11512,7 +11499,7 @@
     "F-533": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Harvest yields teleport into the pack instead of dropping on the ground"
     },
@@ -11529,6 +11516,36 @@
       "status": "in_flight",
       "tier": "F",
       "title": "Harvested items should drop on the ground and be picked up, not credited instantly"
+    },
+    "F-536": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Scattered pickup models are decorative and cannot be collected as loose world loot"
+    },
+    "F-537": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "macOS: the game process can outlive its window because Steam is never shut down and nothing guarantees exit"
+    },
+    "F-538": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Ambient daytime spawns are hardcoded to one kind, so three authored enemies never appear"
+    },
+    "F-539": {
+      "done_at": "2026-08-22T05:14:33+00:00",
+      "done_by": "larch28fcaa",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Killing an enemy grants no coins, so the only pre-boss coin source is scattered caches"
     }
   },
   "version": 1

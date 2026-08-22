@@ -29,3 +29,5 @@ armor_damage_multiplier = 0.3
 vision_angle_deg = 200.0
 alert_radius_m = 0.0
 max_concurrent_attackers = 1
+coin_drop_min = 18
+coin_drop_max = 30

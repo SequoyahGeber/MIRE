@@ -28,3 +28,5 @@ death_burst_fraction = 0.55
 vision_angle_deg = 360.0
 alert_radius_m = 18.0
 max_concurrent_attackers = 3
+coin_drop_min = 32
+coin_drop_max = 48

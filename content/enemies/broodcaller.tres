@@ -17,3 +17,5 @@ aggro_radius_m = 22.0
 deaggro_radius_m = 30.0
 alert_radius_m = 28.0
 max_concurrent_attackers = 5
+coin_drop_min = 2
+coin_drop_max = 5

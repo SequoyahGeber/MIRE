@@ -27,3 +27,5 @@ death_corruption_amount = 0.35
 death_corruption_radius_m = 6.0
 alert_radius_m = 0.0
 max_concurrent_attackers = 3
+coin_drop_min = 3
+coin_drop_max = 7

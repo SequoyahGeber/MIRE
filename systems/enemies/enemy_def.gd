@@ -161,6 +161,24 @@ extends Resource
 ## Falls off linearly to nothing at this radius, so the stain has a soft edge.
 @export_range(0.0, 24.0, 0.5) var death_corruption_radius_m: float = 0.0
 
+@export_group("Bounty")
+## F-539 — what killing one of these is worth in coins, rolled uniformly in `[coin_drop_min,
+## coin_drop_max]` and granted to whoever landed the killing blow. `docs/ITEMS.md` §4 has always
+## listed Old Coins' sources as "kills, caches"; the caches shipped and the kills did not, so the
+## whole pre-boss economy ran on scattered Reed Caches alone.
+##
+## **The ladder is the pay scale.** A Peatling is worth a handful and a Mire Herald is worth a Bog
+## Chest, and that spread is authored here per kind rather than computed from `max_health` — health
+## is not worth, a Bog Bulwark is a long fight because of its armour and a Bloatcap is a short one
+## that costs you a burst. Expressing it as data keeps D-006 ("content is data, not code") intact and
+## lets a kind be priced against how much of a problem it actually is.
+##
+## Both default to 0: an `EnemyDef` that never opts in pays nothing, exactly as every def behaved
+## before this field existed.
+@export_range(0, 999, 1) var coin_drop_min: int = 0
+## Inclusive ceiling. Equal to `coin_drop_min` for a flat payout.
+@export_range(0, 999, 1) var coin_drop_max: int = 0
+
 @export_group("Perception")
 ## The full arc, centred on the enemy's own facing, it can ACQUIRE a new target within. 360 means
 ## omnidirectional — Enemy v1's original behaviour, and still the default: a value below 360 gives
@@ -210,6 +228,10 @@ func validation_errors() -> PackedStringArray:
 	# authoring slip the two pairs above are guarded against.
 	if death_burst_fraction > 0.0 and burst_radius_m <= 0.0:
 		errors.append("death_burst_fraction needs a burst_radius_m to burst into")
+	# An inverted bounty range would roll nothing at all, silently, and read as "this kind is worth
+	# zero" rather than as the typo it is.
+	if coin_drop_max < coin_drop_min:
+		errors.append("coin_drop_max must be >= coin_drop_min")
 	# The same pair-of-fields slip once more: an aura with no radius, or a radius with no rate, is
 	# an aura that silently does nothing.
 	if (aura_corruption_per_second > 0.0) != (aura_corruption_radius_m > 0.0):

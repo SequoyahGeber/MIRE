@@ -9682,3 +9682,15 @@ Notes along the way:
 Files: `content/poi/loot_cache.tres`, `tools/poi_check.gd`, `tools/chest_placement_check.gd`, `world/gen/poi_map.gd`
 
 Commit at time of writing: `98e0b011`
+
+---
+
+### DONE · F-539 · larch28fcaa · 2026-08-22T05:14:33+00:00
+
+**Killing an enemy grants no coins, so the only pre-boss coin source is scattered caches**
+
+Kills pay coins, priced per kind on EnemyDef and paid to the killer. New EventBus.enemy_killed from Enemy._enter_death (host-only by construction), consumed by RewardService. tools/kill_bounty_check.gd verifies the pay scale, the real kill path, the bystander, the uncredited death and F-219 determinism. D-210.
+
+Files: `systems/enemies/enemy_def.gd`, `systems/enemies/enemy.gd`, `core/events/event_bus.gd`, `autoload/reward_service.gd`, `content/enemies/peatling.tres`, `content/enemies/fen_stalker.tres`, `content/enemies/bog_bulwark.tres`, `content/enemies/bloatcap.tres`, `content/enemies/mire_herald.tres`, `content/enemies/crawler.tres`, `content/enemies/bog_crawler.tres`, `content/enemies/broodcaller.tres`, `content/enemies/strider.tres`, `content/enemies/tusker.tres`, `docs/ENEMIES.md`, `docs/ITEMS.md`, `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `tools/kill_bounty_check.gd`
+
+Commit at time of writing: `db626b01`

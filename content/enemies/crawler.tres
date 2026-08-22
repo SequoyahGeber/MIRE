@@ -10,3 +10,5 @@ display_name = "Hollow Crawler"
 model = ExtResource("1_uh0gl")
 model_yaw_offset_degrees = 180.0
 move_speed = 4.4
+coin_drop_min = 2
+coin_drop_max = 4

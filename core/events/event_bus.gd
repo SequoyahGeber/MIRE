@@ -27,6 +27,7 @@ static var _boss_defeated_subscribers: Array[Callable] = []
 static var _run_restarted_subscribers: Array[Callable] = []
 static var _world_rebuilt_subscribers: Array[Callable] = []
 static var _tier_reached_subscribers: Array[Callable] = []
+static var _enemy_killed_subscribers: Array[Callable] = []
 ## Monotonic count of `world_rebuilt` emits — the PULL half of that event. See its block below.
 static var _world_generation: int = 0
 
@@ -585,6 +586,48 @@ static func emit_tier_reached(tier: int, item_id: StringName) -> void:
 static func tier_reached_subscriber_count() -> int:
 	_prune_invalid(_tier_reached_subscribers)
 	return _tier_reached_subscribers.size()
+
+
+## Listener signature:
+##     (enemy_id: StringName, coin_min: int, coin_max: int, instigator_peer_id: int,
+##      world_position: Vector3) -> void
+##
+## F-539's kill bounty. Fires from `Enemy._enter_death()`, which — unlike `Boss.phase`'s setter
+## above — is reached ONLY through `host_apply_damage()`'s `_owns_simulation()` guard, so this event
+## is HOST-ONLY by construction and is deliberately not a party fact a client re-derives. It exists
+## to pay a killer, and paying flows through `InventoryService.host_add()`, which is host-authority
+## anyway and already replicates its result; a client emitting this locally would have nothing to do
+## with it. `RewardService` is its one consumer.
+##
+## `coin_min`/`coin_max` are the dead kind's authored `EnemyDef` bounty range, passed rather than
+## looked up so a consumer never has to resolve the def of a body that is already a corpse. A range
+## of 0..0 means this kind pays nothing and the event is still emitted, because "it died and was
+## worth nothing" is a fact a future consumer (a kill counter, a stat) still wants.
+static func subscribe_enemy_killed(listener: Callable) -> void:
+	_prune_invalid(_enemy_killed_subscribers)
+	if listener.is_valid() and not _enemy_killed_subscribers.has(listener):
+		_enemy_killed_subscribers.append(listener)
+
+
+static func unsubscribe_enemy_killed(listener: Callable) -> void:
+	_enemy_killed_subscribers.erase(listener)
+
+
+static func emit_enemy_killed(
+	enemy_id: StringName,
+	coin_min: int,
+	coin_max: int,
+	instigator_peer_id: int,
+	world_position: Vector3,
+) -> void:
+	_prune_invalid(_enemy_killed_subscribers)
+	for listener: Callable in _enemy_killed_subscribers.duplicate():
+		listener.call(enemy_id, coin_min, coin_max, instigator_peer_id, world_position)
+
+
+static func enemy_killed_subscriber_count() -> int:
+	_prune_invalid(_enemy_killed_subscribers)
+	return _enemy_killed_subscribers.size()
 
 
 static func _prune_invalid(subscribers: Array[Callable]) -> void:

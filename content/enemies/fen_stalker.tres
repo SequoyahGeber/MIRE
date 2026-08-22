@@ -28,3 +28,5 @@ ambush_damage_multiplier = 2.0
 vision_angle_deg = 120.0
 alert_radius_m = 14.0
 max_concurrent_attackers = 2
+coin_drop_min = 8
+coin_drop_max = 14

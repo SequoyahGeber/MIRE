@@ -13,3 +13,5 @@ visual_tint = Color(0.38, 0.5, 0.34, 1)
 max_health = 20
 move_speed = 3.6
 attack_damage = 9
+coin_drop_min = 3
+coin_drop_max = 6
