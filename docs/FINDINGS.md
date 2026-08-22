@@ -3549,9 +3549,11 @@ plus a hard watchdog, not a repro-chase.
 
 ---
 
+## Resolved
+
 ### F-538 · Ambient daytime spawns are hardcoded to one kind, so three authored enemies never appear
 
-**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by onyxbe8065
+**Area:** enemies · **Severity:** medium · **Resolved:** 2026-08-22 by onyxbe8065 (fd4af35e) · **Found:** 2026-08-22 by onyxbe8065
 
 `EnemyWorld.ambient_enemy` is a single `StringName` fixed at `&"crawler"`
 (autoload/enemy_world.gd:65), and the ambient loop is the only thing that spawns during the day.
@@ -3569,9 +3571,30 @@ game? i still see old default crawlers." Daytime is 100% `crawler` by constructi
 Fix: give the ambient field a weighted spread across the crawler-variant family instead of one
 hardcoded id, keeping `crawler` the common case (docs — variety means a spread, not a uniform swap).
 
----
 
-## Resolved
+**Resolved.** `EnemyWorld` gained `ambient_variants` (`bog_crawler`, `strider`, `tusker`,
+`broodcaller`) and `ambient_base_weight`, and `top_up_ambient()` now calls `_roll_ambient_kind()`
+per BODY instead of spawning `ambient_enemy` every time — so refilling a single corpse varies too,
+rather than locking to one kind for the whole field.
+
+Weighted, not uniform: 6 for `ambient_enemy` against 1 per variant puts the plain crawler at ~60% of
+the daytime field. A flat split would have satisfied "the variants now spawn" while replacing the
+reported symptom with its mirror image — a day in which the ordinary crawler is the rare one and
+every body is a tinted special. The roll draws from the seeded `_ambient_rng`, never `randi()`, so
+the placement scatter that shares that stream stays reproducible. A variant id with no `.tres`
+behind it is skipped, thinning the spread rather than failing the top-up and emptying the day.
+
+Verified by a new section 5 in `tools/ambient_spawn_check.gd`, which asserts the two failure
+directions separately — every variant is reachable from 4000 sampled rolls, AND the base kind still
+holds 0.40–0.85 of them — then drives the real `top_up_ambient()` producer over twelve fills and
+confirms all five kinds reach the ground. `failures=0`; `enemy_check`, `wave_director_check`,
+`enemy_content_check` and `cycle_check` are green alongside it.
+
+Not fixed here, because it is not a bug: the night `roster_order` still excludes these three. That
+set is the authored LADDER (docs/ENEMIES.md §2), and the crawler variants are deliberately not rungs
+of it — they wear one model under a tint, so they read as "that one is faster", not as a new tier.
+
+---
 
 ### F-534 · Dev console has no TAB completion for commands or arguments — **fixed**
 
