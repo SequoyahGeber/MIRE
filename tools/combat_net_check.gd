@@ -12,9 +12,6 @@ const TIMEOUT_SEC: float = 15.0
 ## result has to outlast the sum of the client's own waits, not one of them.
 const CLIENT_COMPLETE_TIMEOUT_SEC: float = 60.0
 
-## Backpack is 0-23 and the hotbar 24-31, so the first hotbar slot is 24 (F-521).
-const HOTBAR_FIRST_SLOT: int = 24
-
 var failures: int = 0
 var transport: Node
 var player_net: Node
@@ -168,10 +165,19 @@ func _run_driver() -> void:
 	# replicated hotbar slot — passed either way: the axe was already there. What this cares about
 	# is the axe ENDING UP in the first hotbar slot, so assert that, and only move it if it is not
 	# already there. That holds whichever way the placement policy goes next.
+	# Asked of the service rather than restated here. A layout constant copied into a check is how a
+	# check goes stale without anyone touching it — which is this finding.
+	var hotbar_first: int = int(inventory.call("hotbar_start_index"))
 	var axe_slot: int = _slot_of(inventory, peer_id, &"stone_axe")
-	if axe_slot >= 0 and axe_slot != HOTBAR_FIRST_SLOT:
-		inventory.call("host_move_stack", peer_id, axe_slot, HOTBAR_FIRST_SLOT, 1)
-	check(_slot_of(inventory, peer_id, &"stone_axe") == HOTBAR_FIRST_SLOT,
+	# Tolerant of either placement policy, but SAYS which branch it took, so a silent policy change
+	# is visible in the log instead of being absorbed. `inventory_store.gd:70` records the current
+	# rule — hotbar first, left to right, then the backpack — as a change made from play feedback.
+	if axe_slot == hotbar_first:
+		print("  note: the grant already landed in hotbar slot %d, no move needed" % hotbar_first)
+	elif axe_slot >= 0:
+		print("  note: the grant landed in slot %d, moving it to hotbar slot %d" % [axe_slot, hotbar_first])
+		inventory.call("host_move_stack", peer_id, axe_slot, hotbar_first, 1)
+	check(_slot_of(inventory, peer_id, &"stone_axe") == hotbar_first,
 		"the axe is in the client's first hotbar slot (granted to %d)" % axe_slot)
 	var armed: bool = await _until(
 		func() -> bool: return bool(_read_result().get("armed", false)), TIMEOUT_SEC

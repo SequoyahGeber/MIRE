@@ -120,6 +120,10 @@ func _run_driver() -> void:
 	# after a move — pinning the indices made it a second, silent assertion about where `host_add`
 	# happens to place a grant, which is what went stale.
 	var client_slots: Array = inventory.call("host_slots", client_peer_id)
+	# NOTE (F-521): these two come from the CLIENT's own report of what it asked for, which is the
+	# weakest link in this assertion — a client that lied about its own request would be believed.
+	# It is mitigated rather than eliminated: the slots compared below are read from the HOST's copy
+	# independently, so a false report fails the check rather than passing it.
 	var moved_from: int = int(result.get("move_from", -1))
 	var moved_to: int = int(result.get("move_to", -1))
 	check(client_slots.size() == 32, "the host holds a full 32-slot layout for the client")
