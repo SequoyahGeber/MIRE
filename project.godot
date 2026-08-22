@@ -94,6 +94,8 @@ LooseLootService="*res://autoload/loose_loot_service.gd"
 AppExit="*res://autoload/app_exit.gd"
 MaterialWarmer="*res://autoload/material_warmer.gd"
 ForagerSenseHud="*res://ui/hud/forager_sense_hud.gd"
+PickupFeedService="*res://autoload/pickup_feed_service.gd"
+PickupHud="*res://ui/hud/pickup_hud.gd"
 
 [display]
 
