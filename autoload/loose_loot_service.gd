@@ -50,8 +50,16 @@ func _maybe_place(marker: Node3D) -> void:
 	var key: String = String(marker.get_path())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = _seed_for_marker(_run_seed(), key)
-	# Roughly half of chest sites also advertise loose loot, keeping the world readable while still
-	# producing 20-30 collectible piles on the 50-chest procedural island.
+	# Roughly half of loot markers also advertise loose loot, keeping the world readable rather than
+	# putting a pile beside every chest.
+	#
+	# F-536: this comment used to claim "20-30 collectible piles on the 50-chest procedural island"
+	# and that was never what the code produced. MEASURED on the real composer across three seeds
+	# (`tools/loose_loot_world_check.gd`): the procedural island places 152 `loot` markers — the sum
+	# of the six loot POI defs' `target_count`, and identical on every seed — which the coin flip
+	# below turns into 71-86 live drops. Roughly three times the stated number, and the check now
+	# pins a floor and a ceiling around the real figure so the code and its documentation cannot
+	# drift apart again silently.
 	if rng.randi_range(0, 1) == 0:
 		return
 	var item_id: StringName = ITEM_POOL[rng.randi_range(0, ITEM_POOL.size() - 1)]
