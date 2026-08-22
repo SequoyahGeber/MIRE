@@ -57,7 +57,12 @@ const BOOTSTRAP_DELAY_SEC: float = 0.75
 ## Gamerule `ambient_enemy_population` (task 3.14). The export is the fallback COMMANDS.md §4.3
 ## describes; `_bind_rules()` adopts the rule's value into it when one is authored, so every reader
 ## below — the loop, the `enemies` status line — keeps reading one field and pays nothing per tick.
-@export_range(0, 24, 1) var ambient_population: int = 4
+## F-599 review (wick1c650c): the export is the FALLBACK — any path where the rule is not authored,
+## or `RuleService` is not up yet, reads this number and not the rule. Left at 4 it silently handed
+## back the empty island the finding exists to fix, on exactly the paths nobody tests. The range also
+## has to track the rule's ceiling (raised to 64) or the inspector and the gamerule disagree about
+## what is legal.
+@export_range(0, 64, 1) var ambient_population: int = 18
 @export_range(1.0, 60.0, 0.5) var ambient_respawn_seconds: float = 12.0
 ## Spread around the marker, so four crawlers do not stack in one spot.
 @export_range(0.0, 20.0, 0.5) var ambient_scatter_m: float = 4.0
