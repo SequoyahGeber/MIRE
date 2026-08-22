@@ -213,11 +213,11 @@ func _phase_restart(game_state: Node) -> void:
 		int(vfx.get("foliage_mesh_count")), int(vfx.get("sway_asset_count"))])
 
 
-# ── 4 · the path no signal announces ─────────────────────────────────────────────────────────────
+# ── 4 · direct rebuild announces its completed generation boundary ───────────────────────────────
 
 
 func _phase_reroll() -> void:
-	print("\n== VFX RESEED 4 · rebuild_for_seed() called directly, with nothing to subscribe to ==")
+	print("\n== VFX RESEED 4 · rebuild_for_seed() called directly emits world_rebuilt ==")
 	var poi_root: Node = world.get_node_or_null(^"PoiSites")
 	check(poi_root != null, "the rebuilt island has a PoiSites node")
 	if poi_root == null:
@@ -235,8 +235,9 @@ func _phase_reroll() -> void:
 		await process_frame
 
 	check(not _holds_site(_all_sites(), REROLL_GHOST_POSITION),
-		"the periodic prune retired a site whose prop was freed with no run_restarted to hear "
+		"world_rebuilt retired a site whose prop was freed with no run_restarted to hear "
 		+ "(%d frames)" % frames)
+	check(frames <= 1, "the direct reroll ghost survives at most one rendered frame (%d)" % frames)
 	check(_holds_site(_all_sites(), SURVIVOR_POSITION),
 		"...and still did not touch the prop that is still standing")
 	check(int(vfx.get("emitter_site_count")) == _total_sites(),

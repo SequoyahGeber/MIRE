@@ -9106,3 +9106,18 @@ Notes along the way:
 Files: `autoload/settings_service.gd`, `ui/frontend/graphics_settings_page.gd`, `tools/settings_check.gd`, `tools/settings_screen_check.gd`
 
 Commit at time of writing: `d457e8e0`
+
+---
+
+### DONE · F-311 · quill3c83cf · 2026-08-22T02:40:27+00:00
+
+**EnvironmentVfx can now subscribe to the new EventBus.world_rebuilt instead of covering a direct rebuild_for_seed() with a quarter-second sweep**
+
+EnvironmentVfx now reacts synchronously to world_rebuilt while retaining periodic cleanup. Direct reroll ghost cleanup: 2 frames before, 0 after; reseed and general VFX checks failures=0.
+
+Notes along the way:
+- Pre-edit check passes only via periodic fallback: direct rebuild retired the ghost in 2 frames. Add synchronous world_rebuilt subscription while retaining the periodic prune.
+
+Files: `autoload/environment_vfx.gd`, `tools/environment_vfx_reseed_check.gd`
+
+Commit at time of writing: `6966fd6a`

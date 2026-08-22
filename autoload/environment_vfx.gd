@@ -169,11 +169,16 @@ func _ready() -> void:
 	# invalidation this file had — deliberately does not fire, and every site of the ended island
 	# would otherwise stay in the pools alongside the new one's.
 	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
+	# F-311: unlike run_restarted, this lands after ProceduralWorld has synchronously published the
+	# replacement island, including direct rebuild_for_seed() callers. Rediscovery is therefore
+	# immediate; the periodic prune remains the invariant for streamed-out and harvested props.
+	EVENT_BUS.subscribe_world_rebuilt(_rediscover_world)
 	call_deferred("refresh_scene")
 
 
 func _exit_tree() -> void:
 	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
+	EVENT_BUS.unsubscribe_world_rebuilt(_rediscover_world)
 
 
 func _process(delta: float) -> void:

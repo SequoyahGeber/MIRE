@@ -1445,11 +1445,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:1fa80f33-5837-4090-96af-2212ae64d909"
     },
     "autoload/environment_vfx.gd": {
-      "agent": "kiln384569",
-      "at": "2026-08-21T18:28:38+00:00",
-      "hash": "8b82c72dd793746bc8f300f986551c268e6489a27ad3462eaf5693651066f07f",
-      "task": "F-442",
-      "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
+      "agent": "quill3c83cf",
+      "at": "2026-08-22T02:40:27+00:00",
+      "hash": "9cb73ab8227bd713b4aa473158339a810d8c609d74930ddae185f8731f566487",
+      "task": "F-311",
+      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
     },
     "autoload/god_mode_service.gd": {
       "agent": "flinta92725",
@@ -4083,6 +4083,13 @@
       "task": "F-383",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
+    "tools/environment_vfx_reseed_check.gd": {
+      "agent": "quill3c83cf",
+      "at": "2026-08-22T02:40:27+00:00",
+      "hash": "4afa2253695354cce1addcf17b83b81a8684d21bd978a296dd9721dcccef6e7e",
+      "task": "F-311",
+      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
+    },
     "tools/f356_night_probe.gd": {
       "agent": "emberd89a44",
       "at": "2026-08-21T06:17:41+00:00",
@@ -4910,7 +4917,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:120f1976-6c96-46a1-8784-38dd75780df4"
     }
   },
-  "rev": 1118,
+  "rev": 1124,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9190,9 +9197,11 @@
       "title": "Ten tools/ checks call a consumer's event handler directly instead of driving the producer, so the fan-out ordering between two or three independent subscribers is never exercised \u2014 the exact blind spot that let F-282 ship"
     },
     "F-311": {
+      "done_at": "2026-08-22T02:40:27+00:00",
+      "done_by": "quill3c83cf",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "EnvironmentVfx can now subscribe to the new EventBus.world_rebuilt instead of covering a direct rebuild_for_seed() with a quarter-second sweep"
     },
