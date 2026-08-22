@@ -2466,14 +2466,6 @@ the vertex stage.
 
 ---
 
-### F-513 · graphics_quality_check fails at clean HEAD because frontend has no shadow-casting sun
-
-**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivy2314d8
-
-tools/graphics_quality_check.gd loads res://levels/frontend.tscn and immediately requires a shadow-casting DirectionalLight3D, but the current frontend tree supplies none. `.agent/bin/agent godot --script tools/graphics_quality_check.gd` fails 1 at the assertion, and `.agent/bin/agent baseline --script tools/graphics_quality_check.gd` reproduces the identical failure at clean HEAD f515c98a. Update the harness setup or its level target so the standing quality check proves the system it claims to cover again.
-
----
-
 ### F-515 · BuildBar controller focus regression reopened after F-217
 
 **Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by brambe4999
@@ -3227,28 +3219,6 @@ exists and, since F-575, is finally read by something — this is a second legit
 
 ---
 
-### F-588 · resource_scatter_check's harvest-yield assertion fails at a clean HEAD
-
-**Area:** world · **Severity:** medium · **Found:** 2026-08-22 by wick1c650c
-
-`tools/resource_scatter_check.gd` reports `failures=1` at a clean HEAD:
-
-    FAIL: the real harvest granted its yield exactly once (0 -> 0, +2 expected)
-
-The proxy is built, wired, accepts a lethal `host_apply_damage()` and depletes — every assertion
-around this one passes. What does not happen is the yield landing in `InventoryService`:
-`host_count()` reads 0 both before and after.
-
-Confirmed pre-existing and NOT caused by F-586: `agent baseline --script
-tools/resource_scatter_check.gd` fails identically at 65763cdf, in a throwaway worktree with none
-of F-586's changes in it. Found while regression-running the suite next door to the collider fix.
-
-Note that F-527's resolution note (2026-08-22, birchf37d06) records this same check at
-`failures=0`, so this is a regression since then rather than a long-standing red — worth bisecting
-against the commits landed today rather than reading as an old known failure.
-
----
-
 ### F-589 · 45 items author a world_model and ~30 pickup GLBs exist, but the branch that renders them is unreachable
 
 **Area:** art · **Severity:** medium · **Found:** 2026-08-22 by birch1db63e
@@ -3301,7 +3271,147 @@ because the assets are authored, generated, committed and maintained, and cannot
 
 ---
 
+### F-590 · The ground-drop budget evicts persistent island loot first, oldest-first regardless of persistence
+
+**Area:** loot · **Severity:** high · **Found:** 2026-08-22 by wick1c650c
+
+`ItemDropService._enforce_budget()` caps live drops at `MAX_LIVE_DROPS` (256) and evicts by taking
+`_container.get_child(0)` — the OLDEST child — until it is back under the cap. It does not look at
+`persistent` at all.
+
+Two facts make that the wrong order:
+
+  · `host_spawn_placed_drop()` spawns with `"persistent": true`, and its own doc comment promises
+    "it never expires before a player discovers it". `ItemDrop._physics_process()` honours that
+    against `LIFETIME_SEC`, so the promise holds for the timer — and is then broken by the budget,
+    which frees the node outright.
+  · placed loot is spawned EARLY. F-570 (`9ba5a036`) places 50 supply caches per island at world
+    build, so those drops are the oldest children in the container by a wide margin, which makes
+    them precisely the ones eviction reaches first.
+
+Since F-535 (`b8d8d67c`) every harvest yield is also a live drop competing for those 256 slots. So
+a player harvesting steadily is quietly deleting the island's authored loot behind them, oldest
+first, and the caches they have not walked to yet are the first to go. Nothing surfaces this: the
+only trace is one `MireLog.warn` saying how many were despawned.
+
+Eviction should prefer non-persistent drops, and reach a persistent one only when there is nothing
+else left to take (if it should reach one at all — an alternative is a separate budget per kind, so
+authored loot cannot be crowded out by yields no matter how many are dropped).
+
+Not a check failure. Found by reading the budget while proving F-588's harvest path end to end;
+wick3d4184 saw the cap firing in a `procedural_world_check` run on 2026-08-22, so it is reached in
+practice on a populated island, not only in theory.
+
+---
+
 ## Resolved
+
+### F-588 · resource_scatter_check's harvest-yield assertion fails at a clean HEAD — **fixed**
+
+**Area:** world · **Severity:** medium · **Found:** 2026-08-22 by wick1c650c
+
+`tools/resource_scatter_check.gd` reports `failures=1` at a clean HEAD:
+
+    FAIL: the real harvest granted its yield exactly once (0 -> 0, +2 expected)
+
+The proxy is built, wired, accepts a lethal `host_apply_damage()` and depletes — every assertion
+around this one passes. What does not happen is the yield landing in `InventoryService`:
+`host_count()` reads 0 both before and after.
+
+Confirmed pre-existing and NOT caused by F-586: `agent baseline --script
+tools/resource_scatter_check.gd` fails identically at 65763cdf, in a throwaway worktree with none
+of F-586's changes in it. Found while regression-running the suite next door to the collider fix.
+
+**Correction (wick1c650c, same session):** the sentence originally here claimed F-527's
+resolution note recorded this check green on 2026-08-22, and inferred a regression from today's
+commits. That was wrong, and bram937a51 caught it — F-527's note records `BUILD_PICKER_CHECK
+failures=0`, a different check entirely. It never mentions `resource_scatter_check`. There was
+never a green datum for this check today, so "regression from today" was an inference resting on a
+misread, and it sent at least two agents looking in the wrong window. Left visible rather than
+edited away: a finding body asserting a state nobody verified is the same defect class as F-579.
+
+---
+
+**Resolved 2026-08-22 by wick1c650c (fixed).** Fixed by wick1c650c. **The game was never broken** — the check was asserting behaviour that F-535
+deliberately replaced, and the alarm ("chopping a tree gives you nothing") was wrong.
+
+## What actually happened
+
+Bisected to a two-commit window, adjacent, with identical failure text:
+
+    3ff465bd (144ce12f~1, 2026-08-21 22:34:34)   RESOURCE_SCATTER_CHECK failures=0
+    b8d8d67c (F-535: register the ItemDropService autoload, 22:35:28)   failures=1
+
+So the culprit is F-535 — and specifically the autoload REGISTRATION, not the logic change beside
+it. F-535 moved the harvest grant: `InventoryService._on_harvest_yielded()` no longer credits the
+pack, it asks `ItemDropService` for a physical drop and the pack is filled when a player reaches
+it. That handler keeps a legacy fallback that credits directly when there is no ItemDropService,
+explicitly for "a bare --script harness [that] registers no autoloads". Before `b8d8d67c` the check
+was silently taking that fallback, so it passed for a reason that no longer exists in a shipped
+run. Registering the autoload made the harness take the real path, and the stale assertion fell
+over — 14 hours before anyone noticed.
+
+## What the check asserts now
+
+The dangerous fix was to delete the assertion, or relax it to "the yield left the prop". Both pass
+identically if the yield is being DESTROYED, which was the actual open question. So it walks the
+whole path, each step failing on its own:
+
+  1. the harvest leaves a live drop carrying the right item and the whole amount
+  2. a drop 2.4 m away is NOT auto-collected — proving the auto range is a real gate
+  3. it arms and offers itself, rather than expiring or staying inert
+  4. `request_pickup()` — the real [E] seam, through `_accept_pickup()`'s real range check against
+     a real member of the `players` group — credits the pack exactly once
+
+A short pack is now attributable: never dropped, dropped and unreachable, or reachable and not
+granted. `RESOURCE_SCATTER_CHECK failures=0`, including F-231's no-duplicate-yield assertion, which
+now reads 2 -> 2 instead of 0 -> 2.
+
+The collector stands at 2.4 m on purpose: inside `MANUAL_PICKUP_RANGE_M` (3.2) and outside
+`AUTO_PICKUP_RANGE_M` (1.7). Standing it on the drop proves the auto path but leaves [E] untested,
+and the physics scan then frees the drop mid-`await` — which is how the first draft died with
+"Cannot call method 'call' on a previously freed instance". At 2.4 m the two gates are separable.
+
+## Filed while here
+
+F-590: `ItemDropService._enforce_budget()` evicts `get_child(0)`, oldest-first, ignoring
+`persistent` entirely — so harvest drops crowd out the 50 authored supply caches F-570 places at
+world build, which are the oldest children on the island and therefore the first to be deleted.
+That one is a real bug and it is a consequence of F-535 making every yield compete for the same 256
+slots.
+
+### F-513 · graphics_quality_check fails at clean HEAD because frontend has no shadow-casting sun — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivy2314d8
+
+tools/graphics_quality_check.gd loads res://levels/frontend.tscn and immediately requires a shadow-casting DirectionalLight3D, but the current frontend tree supplies none. `.agent/bin/agent godot --script tools/graphics_quality_check.gd` fails 1 at the assertion, and `.agent/bin/agent baseline --script tools/graphics_quality_check.gd` reproduces the identical failure at clean HEAD f515c98a. Update the harness setup or its level target so the standing quality check proves the system it claims to cover again.
+
+---
+
+**Resolved 2026-08-22 by wick3d4184 (fixed).** Fixed out-of-band by F-561, not by any work under this entry, and verified rather than assumed.
+
+ivy2314d8's diagnosis was correct when filed: `graphics_quality_check` loaded `res://levels/frontend.tscn`
+and then required a shadow-casting `DirectionalLight3D` the menu does not have. What overtook it is
+F-561's change to `tools/probe_scene.gd` — `ProbeScene.resolve()` (`:80-85`) now delegates to
+`shipped_map_path()`, which walks THROUGH the front end to the world it boots into. The check's
+unchanged `scene_path = ProbeScene.resolve()` at `tools/graphics_quality_check.gd:81` therefore
+resolves to `res://levels/procedural_island.tscn`, which carries a `Sun` DirectionalLight3D with
+`shadow_enabled = true` at `levels/procedural_island.tscn:86-92`. The assertion this finding is named
+after now passes because the check is finally pointed at a world.
+
+Verified by wick3d4184 on 2026-08-22, both paths, because this check is tagged `@verify windowed` and
+a pass in one mode is not evidence about the other:
+
+    agent godot --windowed --script tools/graphics_quality_check.gd   GRAPHICS_QUALITY_CHECK failures=0
+    agent godot            --script tools/graphics_quality_check.gd   GRAPHICS_QUALITY_CHECK failures=0
+
+Both report the target as "res://levels/procedural_island.tscn (the world the shipped front end
+res://levels/frontend.tscn boots into)", which is the F-561 machinery naming itself in the banner.
+
+Worth carrying forward: this is the second finding today whose stated cause had been overtaken by
+another agent's fix before anyone worked it (F-575's heading was the other). A finding is a snapshot
+of a moving tree, so re-read it against HEAD before assigning it, not only before working it —
+otherwise the fix that gets written is the one the stale entry proposes.
 
 ### F-585 · Resonance is entirely unimplemented — DESIGN 4.4's twelve run-defining effects do not exist — **fixed**
 

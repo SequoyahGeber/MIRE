@@ -196,6 +196,85 @@ func _check_slope_grounding() -> void:
 	check(bounded_embed, "grounding embed never exceeds %.2fm" % ResourceScatterLib.MAX_GROUNDING_EMBED_M)
 
 
+## F-588: what a harvest owes the player, asserted end to end.
+##
+## This used to read `host_count()` straight after the depleting hit and demand `+yield_amount`.
+## F-535 moved that grant: `InventoryService._on_harvest_yielded()` no longer credits the pack, it
+## asks `ItemDropService` for a physical drop at the prop, and the pack is filled when a player
+## reaches it. So the old assertion started failing at `b8d8d67c` — the commit that REGISTERED the
+## ItemDropService autoload, which is what first made the drop path reachable in a harness (before
+## it, `_on_harvest_yielded()` fell through to its no-drop-service legacy credit and the check
+## passed for a reason that no longer exists in a shipped run).
+##
+## The dangerous fix would have been to delete the assertion, or to relax it to "the yield left the
+## prop". Both would pass equally well if the yield were being DESTROYED, which is exactly the
+## question the failure raised and the reason it was briefly called a P0. So the check now walks
+## the whole path instead, and each step can fail on its own:
+##
+##   1. the harvest puts a live drop in the world, carrying the right item and the right amount
+##   2. the drop arms, and offers itself for collection rather than expiring or refusing
+##   3. collecting it — through `request_pickup()`, the real [E] seam, with a real range check
+##      against a real member of the `players` group — credits the pack exactly once
+##
+## A pack that ends up short is now attributable: which of the three failed says whether the yield
+## was never dropped, dropped and unreachable, or reachable and not granted.
+func _check_yield_is_recoverable(
+	scene: Node3D, inventory: Node, item_id: StringName, expected: int, before: int
+) -> int:
+	var drops: Node = root.get_node_or_null(^"/root/ItemDropService")
+	check(drops != null, "ItemDropService is registered as an autoload (b8d8d67c)")
+	if drops == null:
+		return int(inventory.call("host_count", NetConfig.HOST_PEER_ID, item_id))
+
+	var drop: Node3D = null
+	for candidate: Node in drops.call(&"live_drops"):
+		if StringName(candidate.get(&"item_id")) == item_id:
+			drop = candidate as Node3D
+			break
+	check(drop != null, "the harvest left a physical drop in the world, rather than voiding the yield")
+	if drop == null:
+		return int(inventory.call("host_count", NetConfig.HOST_PEER_ID, item_id))
+	check(int(drop.get(&"amount")) == expected,
+		"the drop carries the whole yield (%d, %d expected)" % [int(drop.get(&"amount")), expected])
+
+	# A stand-in for the collector. `_accept_pickup()` gates on real distance to a real member of
+	# the `players` group, so a check that skipped this would be asserting a code path the game
+	# never takes.
+	#
+	# Stood at 2.4 m: deliberately OUTSIDE `AUTO_PICKUP_RANGE_M` (1.7) and inside
+	# `MANUAL_PICKUP_RANGE_M` (3.2). Standing on top of the drop instead makes the physics scan
+	# collect it during the arm wait, which proves the auto path but leaves the [E] seam untested
+	# and frees the drop out from under this function. At 2.4 m the two gates are separable, so
+	# each is asserted for itself.
+	var collector := Node3D.new()
+	collector.name = "PickupCollectorStandIn"
+	collector.add_to_group(&"players")
+	scene.add_child(collector)
+	collector.global_position = drop.global_position + Vector3(2.4, 0.0, 0.0)
+
+	# ARM_SEC is 0.5 s of PHYSICS time and the drop refuses collection before it elapses — "still
+	# settling". Waited in real time rather than counted in frames, because a fixed frame loop is
+	# satisfied identically by a world whose physics never ticked.
+	await _wait_real_seconds(0.75)
+	check(is_instance_valid(drop),
+		"a drop 2.4 m away is not auto-collected — the auto range is a real gate, not a formality")
+	if not is_instance_valid(drop):
+		collector.queue_free()
+		return int(inventory.call("host_count", NetConfig.HOST_PEER_ID, item_id))
+	check(bool(drop.call(&"is_collectable")),
+		"the drop arms and offers itself for collection instead of expiring or staying inert")
+
+	drop.call(&"request_pickup")
+	await _settle()
+	var after: int = int(inventory.call("host_count", NetConfig.HOST_PEER_ID, item_id))
+	check(after == before + expected,
+		"pressing [E] on the drop credits the pack exactly once (%d -> %d, +%d expected)"
+			% [before, after, expected])
+	if is_instance_valid(collector):
+		collector.queue_free()
+	return after
+
+
 func _check_field_lifecycle() -> void:
 	print("\n== ResourceScatterField materializes/tears down proxies with the LOD0/collision ring ==")
 	var biome_defs: Array = registry.get(&"biomes").values()
@@ -282,10 +361,9 @@ func _check_field_lifecycle() -> void:
 
 	var count_after_harvest: int = count_before_harvest
 	if inventory != null and not yield_item_id.is_empty():
-		count_after_harvest = int(inventory.call("host_count", NetConfig.HOST_PEER_ID, yield_item_id))
-		check(count_after_harvest == count_before_harvest + yield_amount,
-			"the real harvest granted its yield exactly once (%d -> %d, +%d expected)"
-				% [count_before_harvest, count_after_harvest, yield_amount])
+		count_after_harvest = await _check_yield_is_recoverable(
+			scene, inventory, yield_item_id, yield_amount, count_before_harvest
+		)
 
 	fake_streamer.chunk_unloaded.emit(coord)
 	check(field.chunk_count() == 0, "the chunk tears down on chunk_unloaded")
