@@ -7269,3 +7269,37 @@ ones to `rare` (rarity 2), the 1-stack identities and run-definers to `epic`/`le
 **Would change my mind:** a playtest where players open the cheapest affordable chest every time and
 never save. That would mean the price curve is steeper than the odds curve — the fix is the odds, not
 the prices, since D-063 keeps potency fixed and frequency is the only lever the ladder has.
+
+### D-216 · 2026-08-22 · A file leaves the check suite by being renamed, never by declaring itself exempt
+bram937a51 proposed, while closing F-562, that the verdict contract become a declared marker the way
+`@verify windowed` did under F-556: a `@verify none` line would let a file that only photographs stay
+named `*_check.gd` and describe itself as a probe, with no rename and no glob to fool. The argument is
+symmetric and it is a good one — `_verify_checks()` collects by filename glob and enforces the verdict
+by output parsing, so a file joins the suite by being *named* a check and satisfies the contract by
+*happening to print* matching text. Nothing declares anything, which is why F-555 swept 25 files and
+left six, and why the survivors were near-misses rather than obvious gaps.
+
+**Declined, and the asymmetry is the reason.** `@verify windowed` and `@verify none` look like the
+same kind of declaration and are not:
+
+- `@verify windowed` tells the runner **how to run** a check. Getting it wrong makes the check fail
+  loudly — the engine refuses, or crashes on the dummy driver. It cannot be used to hide anything.
+- `@verify none` would tell the runner **not to judge** a file. It is a mute button. One line in a
+  header turns a failing check into a silent one, and the diff that does it is indistinguishable from
+  the diff that correctly reclassifies a probe.
+
+The rename is worse ergonomics and better safety, which is the right trade for this particular
+control. You cannot silence a check by editing a line inside it; you have to state, in the filename,
+that it was never a check — and that shows up in `ls tools/`, in `git log --stat`, and in review, where
+somebody will ask. Six files were reclassified tonight (`f410_asset_material`, `enemy_facing`,
+`crafting_ui_render`, `inventory_ui_render`) or given real verdicts, and in every case the rename made
+the judgement visible rather than absorbing it.
+
+The general form: **prefer a declaration when it changes how something runs, and a rename when it
+changes whether something counts.** The first is a fact about the environment the code needs; the
+second is a claim about what the code is, and claims about what code is should be expensive to make.
+
+**Would change my mind:** a case where a genuine check must live under a `*_check.gd` name it cannot
+change — an external tool keying on the path, or a rename that breaks a reference nothing else can
+follow. Or evidence that the rename is being avoided *because* it is visible, and files are instead
+sitting red forever, which would mean the safety is buying nothing and costing the suite its signal.
