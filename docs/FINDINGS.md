@@ -3715,6 +3715,40 @@ that build did, not a measurement of HEAD, and HEAD is likely worse.
 
 ---
 
+### F-610 · Nothing in any graphics preset turns off anti-aliasing, and MEDIUM keeps HIGH's full shadow pass
+
+**Area:** perf · **Severity:** high · **Found:** 2026-08-22 by wick1c650c
+
+Read off `autoload/graphics_quality.gd`'s own `PRESETS` table while answering "what should Sequoyah's
+friend run on an M1 MacBook Air" (F-606). Two gaps, and both hit an integrated GPU hardest.
+
+**No preset touches anti-aliasing at all.** MSAA 2x + FXAA ships to every machine, reachable only
+through the settings menu. `docs/PERFORMANCE.md` §3.2 measured it at **28% of the 1%-low frame** — on
+an M-series Pro. On an integrated GPU with roughly a third of that fill rate, MSAA is among the first
+things that hurts, and the preset a non-technical player picks does nothing about it.
+
+**MEDIUM keeps HIGH's entire shadow pass.** The table names no shadow knob for MEDIUM, so it inherits
+HIGH's authored cascades, 4096 atlas, full shadow distance and bias set. That is deliberate and
+documented — the comment says do not "fix" it to match LOW — but the consequence for a weak machine
+is that MEDIUM buys only render scale 0.77, undergrowth 0.8, draw distance 0.8 and LOD 2.0, while
+paying the full price of the most expensive pass in the frame.
+
+So the honest advice for that machine is **LOW, and then turn anti-aliasing off by hand** — the
+second half of which no preset will do for him and no player would think to.
+
+What LOW actually does, for the record: render scale 0.59, two shadow splits, 38 m shadow distance,
+2048 atlas, glow off, volumetric fog off, SSAO off, undergrowth 0.45, draw distance 0.55, LOD
+threshold 4.0.
+
+Two changes worth considering, neither taken here because both are tuning calls:
+
+  · put anti-aliasing in the preset table so LOW turns it off. §3.2 already recommends this and
+    F-592's converted table puts it at +31 fps on the 1%-low frame.
+  · `scaling_3d_mode` is bilinear on every preset. FSR 1.0 measured at the same cost for a sharper
+    image (PERFORMANCE.md §3.1), so LOW and MEDIUM are paying for bilinear's softness for nothing.
+
+---
+
 ## Resolved
 
 ### F-606 · Nobody has measured what today's pressure work costs, and the target is an M1 Air — **fixed**
