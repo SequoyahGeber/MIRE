@@ -3021,45 +3021,6 @@ effect rather than a proxy for it.
 
 ---
 
-### F-456 · ChunkStreamer overruns its own 4 ms FRAME_BUDGET_MS by 10x under motion — 39 to 55 ms frames observed
-
-**Area:** performance · **Severity:** medium · **Found:** 2026-08-21 by wick5e2d04
-
-Found 2026-08-21 by wick5e2d04 while profiling F-454.
-
-`ChunkStreamer` reports its own per-frame issuing cost through `last_process_cost_ms()`, and it
-holds itself to `FRAME_BUDGET_MS = 4.0` (D-074, task 4.0a). Standing still it respects that. Walking
-at 7 m/s through unstreamed terrain, `tools/traversal_profile.gd` recorded these frames:
-
-    frame ms   streamer ms
-      94.80        54.90
-      94.78        53.10
-      84.44        39.73
-      79.99        47.75
-      77.71        36.15
-      76.64        42.98
-      74.05        38.74
-      73.54        43.28
-
-That is the streamer's OWN reported cost, not the frame's — 10x to 14x its stated budget, and
-across the 155 hitch frames of a 45-second walk it accounts for ~21% of all hitch time
-(1,650 ms of 7,556 ms).
-
-A budget that is checked between work items cannot bound a single work item that exceeds it, so the
-likely cause is one indivisible operation — most plausibly a collider cook, which the file's own
-header already flags as "~1.15-1.5 ms/chunk and NOT movable to WorkerThreadPool, because it calls
-PhysicsServer/Jolt". Eight of those in a frame is 12 ms, not 55, so either the per-chunk figure is
-much worse under motion than it was when measured, or something else in the budgeted section is.
-
-Worth measuring before fixing: instrument the inside of `_process()`'s budgeted loop to say which
-work item is overrunning, rather than assuming it is the collider. The fix shape depends entirely on
-the answer — a cheaper cook, a smaller work item, or a deadline checked more often.
-
-Filed separately from F-454 because it is a distinct defect with a distinct fix: F-454's dominant
-cost is ~90 ms per hitch frame that no scene-tree counter can see, and this is 4-8 ms of it.
-
----
-
 ### F-457 · Traversal hitches to a 17 fps 1% low on the fastest machine in the project
 
 **Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
@@ -3778,7 +3739,9 @@ and looked at in-game with `tools/ruin_look_probe.gd` — `assets/audit/terrain/
 
 ---
 
-### F-494 · EnemyWorld's navmesh bake segfaults Godot in a worker thread — every headless check that reaches bootstrap crashes
+## Resolved
+
+### F-494 · EnemyWorld's navmesh bake segfaults Godot in a worker thread — every headless check that reaches bootstrap crashes — **fixed**
 
 **Area:** content · **Severity:** high · **Found:** 2026-08-22 by dusk544993
 
@@ -3829,9 +3792,121 @@ check that fails AFTER bootstrap looks identical to one that crashed.
 60s showed exactly one Godot binary alive at a time with peer sessions' wrappers queued behind the
 lock, so F-044's shared-import-cache race is not this.
 
+**Resolved 2026-08-22 by dusk544993.** **One line: `nav_mesh.cell_height = NAV_CELL_HEIGHT_M` (0.1 m), added beside the `cell_size` it was
+always missing next to.** `bake_navigation()` configured every other Recast parameter and left
+`cell_height` at the engine default 0.25, which is the vertical voxel the whole heightfield is
+rasterised into. With `agent_height` 0.7 and `agent_max_climb` 0.6 against a 0.25 voxel, the engine
+quantised both (0.75 and 0.5, each warned about on every bake) and the detail-mesh pass that runs on
+the NavigationServer worker thread afterwards wrote through a null pointer. 0.1 divides both agent
+figures exactly, so nothing is quantised and the warnings are gone as well.
+
+**Verified by A/B on the one line**, `tools/resource_scatter_check.gd`, same working tree, same
+session, back to back:
+
+    with the line commented out : exit=245, `handle_crash` twice in the output
+    with the line restored      : exit=0,   no crash, `failures=0`
+
+Then across the four checks the crash reports named, all clean afterwards:
+`resource_scatter_check`, `enemy_content_check`, `cycle_check`, `run_restart_check` — every one
+`exit=0`, no `handle_crash`, `failures=0`. Before the fix these could not report an exit status at
+all; the process died first.
+
+**Not a workaround.** The quantisation was a real content bug independently of the segfault: enemies
+were pathing on a mesh baked for a 0.75 m-tall agent that could only climb 0.5 m, neither of which is
+what `NAV_AGENT_HEIGHT_M`/`NAV_MAX_CLIMB_M` ask for. The finer voxel costs a little bake time on a
+bake that happens once per level.
+
+**Still open, and NOT this.** A crash at 18:37:36 on 2026-08-21 has a different signature entirely —
+main thread, `abort()`, no worker thread and no navmesh anywhere near it — from a different session's
+run. Chasing it is separate work; do not read a surviving crash report as this finding reopening
+without checking the faulting thread first.
+
+### F-456 · ChunkStreamer overruns its own 4 ms FRAME_BUDGET_MS by 10x under motion — 39 to 55 ms frames observed — **fixed**
+
+**Area:** performance · **Severity:** medium · **Found:** 2026-08-21 by wick5e2d04
+
+Found 2026-08-21 by wick5e2d04 while profiling F-454.
+
+`ChunkStreamer` reports its own per-frame issuing cost through `last_process_cost_ms()`, and it
+holds itself to `FRAME_BUDGET_MS = 4.0` (D-074, task 4.0a). Standing still it respects that. Walking
+at 7 m/s through unstreamed terrain, `tools/traversal_profile.gd` recorded these frames:
+
+    frame ms   streamer ms
+      94.80        54.90
+      94.78        53.10
+      84.44        39.73
+      79.99        47.75
+      77.71        36.15
+      76.64        42.98
+      74.05        38.74
+      73.54        43.28
+
+That is the streamer's OWN reported cost, not the frame's — 10x to 14x its stated budget, and
+across the 155 hitch frames of a 45-second walk it accounts for ~21% of all hitch time
+(1,650 ms of 7,556 ms).
+
+A budget that is checked between work items cannot bound a single work item that exceeds it, so the
+likely cause is one indivisible operation — most plausibly a collider cook, which the file's own
+header already flags as "~1.15-1.5 ms/chunk and NOT movable to WorkerThreadPool, because it calls
+PhysicsServer/Jolt". Eight of those in a frame is 12 ms, not 55, so either the per-chunk figure is
+much worse under motion than it was when measured, or something else in the budgeted section is.
+
+Worth measuring before fixing: instrument the inside of `_process()`'s budgeted loop to say which
+work item is overrunning, rather than assuming it is the collider. The fix shape depends entirely on
+the answer — a cheaper cook, a smaller work item, or a deadline checked more often.
+
+Filed separately from F-454 because it is a distinct defect with a distinct fix: F-454's dominant
+cost is ~90 ms per hitch frame that no scene-tree counter can see, and this is 4-8 ms of it.
+
 ---
 
-## Resolved
+**Resolved 2026-08-22 by vane99f1bb — the overrun does not reproduce at HEAD, and the instrument
+that reported it was measuring an empty world.**
+
+`tools/traversal_profile.gd` found no `ChunkStreamer` on the shipped scene. It looked for the player
+as `_level.get_node_or_null(^"Player")` and for the streamer under `_level`, but `levels/frontend.tscn`
+is a bare `Node3D` that builds `ProceduralWorld` — and with it the streamer, the nav baker and the
+scatter field — at runtime, outside that subtree. So the tool aborted with "no Player node" before
+this session touched it, and `ProbeScene.settle()` returned "0 chunk(s) in 0 frame(s)" because it had
+nothing to settle. Fixed here: the player is found through the `players` group it already adds itself
+to, the streamer/baker/scatter through `root`, and the tool waits for a run to stand its world up
+before settling.
+
+With the instrument repaired, a 45 s / 315 m walk on an M5 Pro reports:
+
+    ChunkStreamer's own reported cost accounts for 3.3% of hitch time (114.33 of 3495.57 ms).
+
+and `tools/chunk_stream_check.gd`'s own 500 m sprint acceptance test agrees:
+
+    STREAMER'S OWN COST  mean 0.0483 ms | worst 10.0020 ms | hitches(>16.667 ms)=0
+
+Not 39-55 ms. The streamer is inside its budget.
+
+**What the 4 ms budget genuinely did not cover, now measured.** `_upload_chunk()` ends in a
+synchronous `chunk_mesh_ready.emit()`, and both `ResourceScatterField._on_chunk_mesh_ready()` and
+`NavBaker._on_chunk_mesh_ready()` do real per-chunk work inside that emit. Every microsecond they
+spend is charged to the streamer's stopwatch and drawn against the streamer's frame budget, which is
+the mechanism that would produce exactly F-456's symptom — a node reporting 10x its own budget
+without any single thing it does itself taking a millisecond. `last_phase_costs_ms()` now returns a
+fourth number, `emit`, which is that share (a SUBSET of `drain`, not a disjoint slice), and the
+profile prints it as `s:emit`. On this walk it is small (1.21 ms on the worst streamer frame), so it
+is instrumented rather than a live defect — but it is now visible instead of hidden, which is what
+would have made this finding a five-minute diagnosis rather than a session.
+
+**One real inefficiency found and fixed while in here.** `_cook_lazy_collision()` walked all of
+`_loaded` every frame to find LOD0 chunks without colliders — at a settled 289 chunks that is 289
+dictionary fetches and 289 `Time.get_ticks_usec()` calls per frame to discover, almost always, that
+there is nothing to cook. Membership only changes on upload, cook and unload, so it is now tracked in
+`_cook_pending` and the common case is a single `is_empty()`.
+
+**Where the traversal hitch actually is**, per the repaired tool's own attribution over 58 hitch
+frames: `Nodes added: 31 per hitch frame vs 6 per quiet frame` -> "The cost is downstream of
+streaming: whatever instantiates and enters the tree per newly-resident chunk (scatter placement,
+prop wiring, nav bake), none of which the 4 ms budget covers." That is F-454's territory, and the
+`s:emit` column added here is the instrument for splitting it.
+
+Verified: `tools/chunk_stream_check.gd` 0 functional failure(s), including the LOD/lazy-collision
+phase that exercises `_cook_pending` directly, and `tools/traversal_profile.gd` end to end.
 ### F-486 · Pine and willow read wrong against their real subjects; birch is the standard both should meet — **fixed**
 
 **Area:** art · **Severity:** high · **Found:** 2026-08-22 by moss7f4dd3
