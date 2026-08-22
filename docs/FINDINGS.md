@@ -3323,56 +3323,6 @@ the F-586 A/B are mine (larchcc2572).
 
 ---
 
-### F-593 · Chests read as too small against the player, and the ladder's two most common rungs are below knee height
-
-**Area:** art · **Severity:** medium · **Found:** 2026-08-22 by birch1db63e
-
-Sequoyah, from a live playtest: *"chests need to be bigger, there too small."*
-
-He is right, and the measurement says the complaint is sharper than "all of them are small". Measured
-from `assets/loot/catalog.json` (exported bounds, not authored body+lid numbers), against the shipped
-player — `entities/player/player.tscn` is a CapsuleShape3D of height 1.8 m with its origin at the
-feet, and the camera sits at 1.6 m, so the player is exactly **1.8 m tall**:
-
-    rung          asset height   lands at (1.8 m player)
-    basic         crate  0.464   below the knee (knee ≈ 0.51 m)
-    common        small  0.566   knee
-    rare     reinforced  0.708   mid-thigh
-    epic         warded  0.748   mid-thigh
-    legendary    gilded  1.013   hip/low waist
-    (Wellspring, off-ladder)  0.658
-
-Two things fall out that a flat "make them bigger" would get wrong:
-
-**1. The top of the ladder is not the problem.** The gilded chest is already 1.013 m — hip height, and
-1.12 m wide, which is a real sea chest. Scaling the whole family up by a single factor large enough to
-fix the crate would put the gilded chest at ~1.45 m, chest-height on the player, which is a wardrobe
-rather than a chest.
-
-**2. The problem is what the player actually MEETS.** F-570 set the field at 150 chests per island:
-60 basic, 40 common, 25 rare, 15 epic, 10 legendary. So **100 of the 150 chests on an island are the
-two smallest rungs**, at 0.464 m and 0.566 m — below-knee and knee. Two thirds of every chest a player
-walks up to is an ankle-to-knee box. That is the experience behind the report, and it is why the fix
-has to raise the bottom of the ladder more than the top.
-
-**The ladder's own gaps are also uneven in a way that hurts tier reading.** `chest_placement_service.gd`
-(lines 61-63) states that silhouette size is how a player reads the price tier before any UI resolves.
-The current steps are 0.10, 0.14, **0.04**, 0.27 — rare and epic differ by four centimetres, which no
-player can see across a clearing, while epic to legendary jumps by 27. The comment at line 62 also
-claims "Sizes run 0.62 m → 1.12 m", which describes neither the current heights nor the widths.
-
-Fix is in the BUILD script, never a `scale` on the placed node: a placement-time scale would break
-`PropCollider`'s fit and the kit's ground-contact and anchor rules. `tools/blender/build_loot_set.py`
-normalizes every asset through one `create_asset()` choke point, which is the right place for a
-per-chest factor — a constant passed identically to a pair's closed and open builders, so the
-state-set rule (A-005; relearned by A-011 and A-051) cannot be violated by deriving scale from each
-state's own bounds.
-
-Perceptual, so it ends with Sequoyah's eyes and not a green check: the numbers below are a judgement
-about where each rung should land on a body, and the call is his.
-
----
-
 ### F-594 · Arrows fly sideways and never nose over, the bow has no draw animation, and nothing shows arrows remaining
 
 **Area:** combat · **Severity:** high · **Found:** 2026-08-22 by wick410d34
@@ -3471,6 +3421,128 @@ item. Worth a roadmap task rather than a finding, if the next triage agrees.
 ---
 
 ## Resolved
+
+### F-593 · Chests read as too small against the player, and the ladder's two most common rungs are below knee height — **fixed**
+
+**Area:** art · **Severity:** medium · **Found:** 2026-08-22 by birch1db63e
+
+Sequoyah, from a live playtest: *"chests need to be bigger, there too small."*
+
+He is right, and the measurement says the complaint is sharper than "all of them are small". Measured
+from `assets/loot/catalog.json` (exported bounds, not authored body+lid numbers), against the shipped
+player — `entities/player/player.tscn` is a CapsuleShape3D of height 1.8 m with its origin at the
+feet, and the camera sits at 1.6 m, so the player is exactly **1.8 m tall**:
+
+    rung          asset height   lands at (1.8 m player)
+    basic         crate  0.464   below the knee (knee ≈ 0.51 m)
+    common        small  0.566   knee
+    rare     reinforced  0.708   mid-thigh
+    epic         warded  0.748   mid-thigh
+    legendary    gilded  1.013   hip/low waist
+    (Wellspring, off-ladder)  0.658
+
+Two things fall out that a flat "make them bigger" would get wrong:
+
+**1. The top of the ladder is not the problem.** The gilded chest is already 1.013 m — hip height, and
+1.12 m wide, which is a real sea chest. Scaling the whole family up by a single factor large enough to
+fix the crate would put the gilded chest at ~1.45 m, chest-height on the player, which is a wardrobe
+rather than a chest.
+
+**2. The problem is what the player actually MEETS.** F-570 set the field at 150 chests per island:
+60 basic, 40 common, 25 rare, 15 epic, 10 legendary. So **100 of the 150 chests on an island are the
+two smallest rungs**, at 0.464 m and 0.566 m — below-knee and knee. Two thirds of every chest a player
+walks up to is an ankle-to-knee box. That is the experience behind the report, and it is why the fix
+has to raise the bottom of the ladder more than the top.
+
+**The ladder's own gaps are also uneven in a way that hurts tier reading.** `chest_placement_service.gd`
+(lines 61-63) states that silhouette size is how a player reads the price tier before any UI resolves.
+The current steps are 0.10, 0.14, **0.04**, 0.27 — rare and epic differ by four centimetres, which no
+player can see across a clearing, while epic to legendary jumps by 27. The comment at line 62 also
+claims "Sizes run 0.62 m → 1.12 m", which describes neither the current heights nor the widths.
+
+Fix is in the BUILD script, never a `scale` on the placed node: a placement-time scale would break
+`PropCollider`'s fit and the kit's ground-contact and anchor rules. `tools/blender/build_loot_set.py`
+normalizes every asset through one `create_asset()` choke point, which is the right place for a
+per-chest factor — a constant passed identically to a pair's closed and open builders, so the
+state-set rule (A-005; relearned by A-011 and A-051) cannot be violated by deriving scale from each
+state's own bounds.
+
+Perceptual, so it ends with Sequoyah's eyes and not a green check: the numbers below are a judgement
+about where each rung should land on a body, and the call is his.
+
+---
+
+**Resolved 2026-08-22 by birch1db63e (fixed).** **Fixed in 1b1a8dc1 (+ aa7ae405 for the regenerated catalog): the whole chest family is scaled 1.25x
+in the build script.**
+
+Measured against the shipped player rather than eyeballed. `entities/player/player.tscn` is a 1.8 m
+CapsuleShape3D with its origin at the feet and its camera at 1.6 m, so:
+
+    rung          was     ->  now    lands at (1.8 m player)
+    basic         0.464       0.581  knee to low thigh   (32%)
+    common        0.566       0.708  mid thigh           (39%)
+    Wellspring    0.658       0.822  upper thigh         (46%)
+    rare          0.708       0.885  hip                 (49%)
+    epic          0.748       0.935  hip                 (52%)
+    legendary     1.013       1.266  above the waist     (70%)
+
+**THE TRAP, recorded because it is non-obvious and the next person will re-derive it the hard way.**
+The obvious fix — and the one I built first — is a PER-CHEST factor that places each rung on a chosen
+part of the body, which also evens out the ladder's uneven height gaps. The heights come out exactly
+as designed and **the silhouette ladder inverts.** The epic warded chest is a wide low slab (W/H
+1.39) and the legendary gilded one is a tall box (W/H 1.11), so scaling them to different heights
+made the epic **1.335 m wide against the legendary's 1.220 m** — the epic reading as the bigger
+chest, which is precisely the tier cue `chest_placement_service.gd` says silhouette size carries
+before any UI resolves.
+
+The general rule: **width and height are both already monotonic across the ladder, and a uniform
+scale is the only transform that preserves both.** Any per-rung factor can invert one of them, and it
+will do so silently, because nothing about a height table shows you what happened to the widths.
+Measure both. This is why the fix is one number and not six, and why a future "just make the gilded
+one bigger" is the same bug again.
+
+1.25 rather than the ~1.29 the crate alone wants: the smallest factor that lifts the two common rungs
+clear of the knee without pushing the legendary chest past chest height. At 1.30 it is 1.32 m tall
+and 1.46 m wide, which reads as furniture.
+
+**Two defects found while fixing it, both fixed here.**
+
+  · `audit_all_sides.py` caught the exported GLBs carrying `scale=(1.25, 1.25, 1.25)` on every node.
+    Leaving a factor on `obj.scale` is an unapplied transform a consumer can lose, override or
+    double, and `PropCollider` fits colliders to geometry that is meant to be at final size already.
+    Now baked into mesh data, the way `box()` already does with its own size. **The catalog numbers
+    were correct either way** — which is exactly why this needed an instrument that looks at the mesh
+    rather than at the measurements. Same shape as F-580 and F-536: the record agreed while the thing
+    did not.
+  · `Chest._build_locator()` put the discoverability mote at a flat 1.35 m, authored when the tallest
+    chest was 1.01 m. At 1.27 m the mote's underside (radius 0.13) sits at 1.18 m — inside the lid, a
+    discoverability aid hidden inside the thing it advertises. The height now derives from the
+    chest's own mesh with a fixed visual clearance and a floor at the old value, and is re-seated in
+    `_refresh_locator()` because `_build_locator()` runs before the visual exists.
+
+**`check_state_pairs()` turns A-005's state-set rule into an assertion.** A chest's closed and open
+meshes must size their SHARED body-and-feet frame identically, or the host's swap-on-open visibly
+jumps and desyncs from a collider authored against the closed mesh. A-011 and A-051 each hit this by
+deriving a scale from per-state bounds; a per-chest scale factor would have been the third. 0.0000 mm
+drift across all 8 pairs.
+
+**Still open, and deliberately not done here.** The ladder's gaps are uneven: rare and epic sit 0.05 m
+apart, which no player can tell across a clearing, while epic to legendary jumps 0.33. That is a
+PROPORTIONS defect, not a scale one — fixing it means re-authoring those two bodies, and doing it
+inside a "make them bigger" change would be a silent redesign of the rarity ladder. Worth a separate
+decision.
+
+Verified: `asset_repro_check` A-005 PASS (byte-identical across two separate Blender processes),
+`audit_all_sides` clean on all 12 chest GLBs, `chest_placement_check` failures=0, `chest_gate_check`
+failures=0, `chest_check` failures=0. `loot_content_check`'s one failure (`item 'gilded_key' exists`)
+is F-574's in-flight work, not this.
+
+**The size is a judgement and the call is Sequoyah's** — contact sheet sent showing all six beside a
+1.8 m figure at his 1.6 m eye height, the angle a player actually meets a chest from, rather than the
+three-quarter art shot that flatters an object's size and is part of how these shipped small in the
+first place. Note that `treasure_gilded` sites currently build nothing (F-574), so he has never seen
+the legendary chest in play; the top of the ladder was sized so it arrives correct when that lands
+rather than being tuned to a complaint about chests he has actually met.
 
 ### F-590 · The ground-drop budget evicts persistent island loot first, oldest-first regardless of persistence — **fixed**
 
