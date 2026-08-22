@@ -9853,3 +9853,63 @@ Notes along the way:
 Files: `entities/player/player_controller.gd`, `tools/remote_held_item_check.gd`
 
 Commit at time of writing: `ccc48f53`
+
+---
+
+### HANDOFF · F-025 · cinder9818da · 2026-08-22T05:39:03+00:00
+
+**Steam's callback pump runs once per rendered frame, so a slow frame rate slows the handshake**
+
+Item 1 was already fixed (pump on the physics tick). Item 2's code half is now in: NetTransport records the AVERAGE render rate across a handshake and prints it on the 'connected ... in N.NNs at N.N FPS' line, exposed as last_connect_fps(), reset to -1.0 per attempt. What is left is not code — it is the physical run on the D-028 Windows PC with a real GPU. Collect the connected line from all three platforms, discard any whose FPS is single-digit (that is the renderer, not Steam), and set STEAM_CONNECT_TIMEOUT_SEC from the observed tail. Closes F-023 at the same time.
+
+Files: `autoload/net_transport.gd`
+
+Commit at time of writing: `5072a6ca`
+
+---
+
+### DONE · F-044 · cinder9818da · 2026-08-22T05:42:03+00:00
+
+**Concurrent headless Godot runs share one import cache, which is the likely cause of F-038**
+
+Decided as D-211: shared cache + lock stays; cold reimport measured at 11.7s, and per-lane caches would mean per-lane project copies. Added a durable lock ledger and 'agent locks'.
+
+Files: `.agent/bin/agent`
+
+Commit at time of writing: `d246f5f9`
+
+---
+
+### DONE · F-289 · cinder9818da · 2026-08-22T05:54:43+00:00
+
+**`agent ship` structurally cannot commit docs/FINDINGS.md — resolve/finding write it, but only claimed files get staged, so every resolve move is left uncommitted unless the agent notices by hand**
+
+resolve/finding now record docs/FINDINGS.md in state.recent so ship commits it, no claim taken
+
+Files: `.agent/bin/agent`
+
+Commit at time of writing: `658acbf8`
+
+---
+
+### DONE · F-264 · cinder9818da · 2026-08-22T05:55:52+00:00
+
+**`Boss._tick_move_lunge()` duplicates `Enemy._tick_lunge()`'s logic instead of calling it, because the inherited method reads its speed off a def field rather than taking one as a parameter**
+
+parameterised Enemy._tick_lunge(speed_m_s); deleted Boss._tick_move_lunge
+
+Files: `systems/enemies/enemy.gd`, `systems/enemies/boss.gd`, `systems/enemies/boss_move_def.gd`
+
+Commit at time of writing: `23e01202`
+
+---
+
+### DONE · F-541 · nettled7199c · 2026-08-22T05:57:17+00:00
+
+**Chest tiers: only three loot tiers are actually placeable and only three chest silhouettes exist**
+
+Five-rung chest ladder shipped: basic/common/rare/epic/legendary, each with its own price (10/30/75/150/300), odds (powerup share 5/48/50/55/72%), silhouette (3 new Blender chest families, widths 0.62-1.12 m, no two palettes shared) and per-island budget (5/4/3/2/1, asserted in mapgen validate()). 47 previously unreachable powerups entered the loot pool. Free Cache_ crates kept at cost 0. Chest.locator_tint added so tier reads by colour at range. Fixed F-545 en route (F-166's hand-edited shipwreck marker was in a generated file and regeneration deleted it). chest_placement_check gained _check_ladder(), failures=0 against the real Hollowmere boot; HOLLOWMERE_VALIDATE PASS and deterministic. D-215 staged at scratchpad/d_215.md - docs/DECISIONS.md held by larch543bba.
+
+Files: `content/loot/basic.tres`, `content/loot/common.tres`, `content/loot/rare.tres`, `content/loot/epic.tres`, `content/loot/legendary.tres`, `content/loot/small.tres`, `content/loot/bog.tres`, `content/loot/strongbox.tres`, `autoload/chest_placement_service.gd`, `systems/loot/chest.gd`, `tools/blender/build_loot_set.py`, `tools/mapgen/hollowmere_layout.py`, `tools/chest_placement_check.gd`, `tools/loot_content_check.gd`, `tools/cycle_modifier_effects_check.gd`, `assets/loot/README.md`, `assets/loot/catalog.json`, `content/poi/treasure_strongbox.tres`, `content/poi/chest_common.tres`, `content/poi/chest_rare.tres`, `content/poi/chest_epic.tres`, `content/poi/chest_legendary.tres`, `docs/ITEMS.md`, `docs/FINDINGS.md`
+
+Commit at time of writing: `2eb1f207`
