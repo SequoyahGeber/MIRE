@@ -4596,6 +4596,13 @@ Verifying — always launch the engine through this, never bare (F-044):
   agent resolve <F-NNN>                     move it to '## Resolved'; note on stdin. Use this
                                             rather than editing the file — the hand-rolled slice
                                             has eaten the section heading twice (F-134)
+  agent decision "title"                    record a decision in docs/DECISIONS.md; body on stdin,
+                                            D-number allocated under a lock. NEVER hand-append an
+                                            entry — two agents reading "highest plus one" from an
+                                            unsorted file both get the same answer, which is how
+                                            D-146/D-153 collided (F-260) and how a second D-197 got
+                                            minted on 2026-08-22 (F-550). Body must end with a
+                                            '**Would change my mind:** ...' line (F-218)
 
 Directing three worker accounts (docs/ORCHESTRATION.md):
 
