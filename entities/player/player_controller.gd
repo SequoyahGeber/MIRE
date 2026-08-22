@@ -73,9 +73,47 @@ const BUILD_BAR := preload("res://ui/building/build_bar.gd")
 var _effective_walk_speed: float = 0.0
 var _effective_sprint_speed: float = 0.0
 
+## F-580: the same two speeds under every combination of the two movement conditions
+## docs/POWERUPS.md §2 authorises (`move_speed_low_hp`, `move_speed_in_mire`). Indexed by
+## `CONDITION_LOW_HP | CONDITION_IN_MIRE`, so index 0 is the unconditional pair and index 3 is both
+## chained. Precomputed for the same reason the unconditional pair is: `stat()` walks every held
+## powerup's modifier dictionary, and this is read twice a physics frame.
+##
+## D-179 is why the CONDITION lives here and not in PowerupService: the service stays condition-blind
+## and the consumer that already owns the fact (this controller knows its own hp and its own
+## position) evaluates it.
+var _conditional_walk_speed: PackedFloat32Array = PackedFloat32Array([0.0, 0.0, 0.0, 0.0])
+var _conditional_sprint_speed: PackedFloat32Array = PackedFloat32Array([0.0, 0.0, 0.0, 0.0])
+
+const CONDITION_LOW_HP: int = 1
+const CONDITION_IN_MIRE: int = 2
+
+## docs/POWERUPS.md §2: the `_low_hp` suffix means "health below a third".
+const LOW_HP_FRACTION: float = 1.0 / 3.0
+
+## The Mire condition is a world-grid query, not a local field, so it is sampled on a timer rather
+## than every physics tick — the grid answers a cell at a time out of WorldDeltaLog on a client
+## (mire_grid.gd's own note), and a player cannot cross a corruption boundary meaningfully faster
+## than this.
+const MIRE_SAMPLE_INTERVAL_SEC: float = 0.25
+var _time_since_mire_sample: float = INF
+var _in_mire: bool = false
+
+## F-580: `jump_height` and `air_acceleration` after their powerup stats, recomputed on the same
+## signal as the speeds. `_extra_jumps` is the flat count `extra_jumps` grants (docs/POWERUPS.md §2,
+## "additional mid-air jumps"); `_air_jumps_used` counts them down between groundings.
+var _effective_jump_height: float = 0.0
+var _effective_air_acceleration: float = 0.0
+var _extra_jumps: int = 0
+var _air_jumps_used: int = 0
+
 ## Floor for any modified speed. Slow enough to be a real penalty, fast enough that the player is
 ## never stuck in place with no way to know why.
 const MIN_EFFECTIVE_SPEED_MPS: float = 0.5
+
+## F-580's equivalent floor for the jump. Low enough to be a real penalty, high enough that the
+## player can still clear `step_height` and is never trapped by a stacked negative modifier.
+const MIN_EFFECTIVE_JUMP_HEIGHT_M: float = 0.45
 
 @export_group("God Mode Flight")
 ## Playtesting flight speed while GodModeService has approved this peer. Flight stays in the own-
@@ -524,6 +562,12 @@ func _refresh_effective_speeds() -> void:
 	if powerups == null:
 		_effective_walk_speed = walk_speed
 		_effective_sprint_speed = sprint_speed
+		_effective_jump_height = jump_height
+		_effective_air_acceleration = air_acceleration
+		_extra_jumps = 0
+		for condition: int in 4:
+			_conditional_walk_speed[condition] = walk_speed
+			_conditional_sprint_speed[condition] = sprint_speed
 		return
 	_effective_walk_speed = maxf(
 		float(powerups.call(&"local_stat", &"move_speed", walk_speed)), MIN_EFFECTIVE_SPEED_MPS
@@ -533,6 +577,61 @@ func _refresh_effective_speeds() -> void:
 		float(powerups.call(&"local_stat", &"sprint_speed", sprint_after_move)),
 		_effective_walk_speed
 	)
+
+	# F-580. Each condition chains onto the unconditional result, exactly as docs/POWERUPS.md §2's
+	# worked example does, and the two chain onto each other when both hold — a player who is both
+	# hurt and standing in the Mire gets both, which is the only reading that does not make one
+	# powerup silently cancel the other.
+	for condition: int in 4:
+		var walk: float = _effective_walk_speed
+		var sprint: float = _effective_sprint_speed
+		if condition & CONDITION_LOW_HP:
+			walk = float(powerups.call(&"local_stat", &"move_speed_low_hp", walk))
+			sprint = float(powerups.call(&"local_stat", &"move_speed_low_hp", sprint))
+		if condition & CONDITION_IN_MIRE:
+			walk = float(powerups.call(&"local_stat", &"move_speed_in_mire", walk))
+			sprint = float(powerups.call(&"local_stat", &"move_speed_in_mire", sprint))
+		_conditional_walk_speed[condition] = maxf(walk, MIN_EFFECTIVE_SPEED_MPS)
+		_conditional_sprint_speed[condition] = maxf(sprint, _conditional_walk_speed[condition])
+
+	# F-580: jump apex, air steering authority and the mid-air jump allowance. `jump_height` is
+	# floored well above zero — a jump that launches at 0 m/s is not a nerfed jump, it is a lost
+	# verb — and `air_control` cannot go negative, which would invert steering rather than remove it.
+	_effective_jump_height = maxf(
+		float(powerups.call(&"local_stat", &"jump_height", jump_height)), MIN_EFFECTIVE_JUMP_HEIGHT_M
+	)
+	_effective_air_acceleration = maxf(
+		float(powerups.call(&"local_stat", &"air_control", air_acceleration)), 0.0
+	)
+	# Asked on a base of 0.0: `extra_jumps` is authored flat (skip_step is Vector2(1, 0)), so the
+	# service's `(0 + 1*N) * (1 + 0)` is exactly "N extra jumps" and a peer holding none gets 0.
+	_extra_jumps = maxi(int(roundf(float(powerups.call(&"local_stat", &"extra_jumps", 0.0)))), 0)
+	_air_jumps_used = mini(_air_jumps_used, _extra_jumps)
+
+
+## F-580: which of the two authorised movement conditions currently hold, as the index into
+## `_conditional_walk_speed`/`_conditional_sprint_speed`.
+func _movement_condition() -> int:
+	var condition: int = 0
+	var health: Node = _health_node()
+	if health != null:
+		var max_hp: int = int(health.call(&"local_max_hp"))
+		if max_hp > 0 and float(health.call(&"local_hp")) / float(max_hp) < LOW_HP_FRACTION:
+			condition |= CONDITION_LOW_HP
+	if _in_mire:
+		condition |= CONDITION_IN_MIRE
+	return condition
+
+
+## Resamples the Mire grid at MIRE_SAMPLE_INTERVAL_SEC. Absent grid (a bare check scene) means "not
+## in the Mire", which is the same answer as an uncorrupted world and never a speed change.
+func _tick_mire_condition(delta: float) -> void:
+	_time_since_mire_sample += delta
+	if _time_since_mire_sample < MIRE_SAMPLE_INTERVAL_SEC:
+		return
+	_time_since_mire_sample = 0.0
+	var mire_grid: Node = get_node_or_null(^"/root/MireGrid")
+	_in_mire = mire_grid != null and bool(mire_grid.call(&"is_corrupted", global_position))
 
 
 func _on_local_powerups_changed(_stacks: Dictionary) -> void:
@@ -723,6 +822,8 @@ func _physics_process(delta: float) -> void:
 
 	_tick_timers(delta)
 	_tick_dodge(delta)
+	# F-580: the `_in_mire` half of the conditional-speed condition, resampled on its own interval.
+	_tick_mire_condition(delta)
 	if _god_mode_enabled():
 		_apply_god_flight(delta, input_allowed)
 		move_and_slide()
@@ -782,7 +883,13 @@ func _apply_god_flight(delta: float, input_allowed: bool) -> void:
 
 
 func _tick_timers(delta: float) -> void:
-	_time_since_grounded = 0.0 if is_on_floor() else _time_since_grounded + delta
+	if is_on_floor():
+		_time_since_grounded = 0.0
+		# F-580: the mid-air jump allowance refills on the ground, not on a timer — one extra jump
+		# per airborne stretch is what "additional mid-air jumps" means.
+		_air_jumps_used = 0
+	else:
+		_time_since_grounded += delta
 
 	if Input.is_action_just_pressed(&"jump"):
 		_time_since_jump_pressed = 0.0
@@ -856,13 +963,18 @@ func _apply_horizontal_movement(
 	var sprinting: bool = wants_sprint and has_stamina
 	if health != null:
 		health.call(&"local_tick_stamina", delta, sprinting)
-	var move_speed: float = crawl_speed if downed else _effective_walk_speed
+	# F-580: the conditional pair for whichever of `_low_hp`/`_in_mire` currently hold. Index 0 is
+	# the unconditional pair, so a peer holding no conditional powerup reads exactly the old values.
+	var condition: int = _movement_condition()
+	var walk_now: float = _conditional_walk_speed[condition]
+	var sprint_now: float = _conditional_sprint_speed[condition]
+	var move_speed: float = crawl_speed if downed else walk_now
 	# F-375: wading multiplies the TARGET speed, not the acceleration, so water changes how fast you
 	# can go and not how sharply you can steer — a player who walks into the sea decelerates to the
 	# wade speed through the ordinary `ground_friction`/`ground_acceleration` ramp rather than
 	# snapping to it. A downed crawl is scaled too: crawling through water is the slowest thing in
 	# the game, which is correct and is DESIGN.md §4.5's point about downed being a predicament.
-	var target: Vector3 = wish_dir * (_effective_sprint_speed if sprinting else move_speed) * wade
+	var target: Vector3 = wish_dir * (sprint_now if sprinting else move_speed) * wade
 
 	var horizontal: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
 
@@ -892,7 +1004,9 @@ func _apply_horizontal_movement(
 		# steering REDIRECTS the arc instead of eating it, and the clamp means air control can never
 		# push past the speed the same input would reach on the ground.
 		var speed_along: float = horizontal.dot(wish_dir)
-		var add: float = clampf(target.length() - speed_along, 0.0, air_acceleration * delta)
+		var add: float = clampf(
+			target.length() - speed_along, 0.0, _effective_air_acceleration * delta
+		)
 		horizontal += wish_dir * add
 		# The clamp above only limits speed ALONG the input, so repeatedly steering into a new
 		# direction can compound total speed — the air-strafe/bunny-hop accumulation every game with
@@ -900,7 +1014,7 @@ func _apply_horizontal_movement(
 		# steer still redirects freely and still keeps its momentum, it just cannot be stacked into
 		# something faster than sprinting. Measured: one hard perpendicular steer takes 6.00 m/s to
 		# 6.95, comfortably under this.
-		var airborne_ceiling: float = _effective_sprint_speed * AIR_SPEED_CEILING_FACTOR * wade
+		var airborne_ceiling: float = sprint_now * AIR_SPEED_CEILING_FACTOR * wade
 		if horizontal.length() > airborne_ceiling:
 			horizontal = horizontal.normalized() * airborne_ceiling
 	# ...and with no input in the air, nothing is applied at all. Momentum carries, which is what
@@ -1023,8 +1137,14 @@ func _try_jump(input_allowed: bool, downed: bool, dead: bool) -> void:
 	if not input_allowed or downed or dead:
 		return
 	var buffered: bool = _time_since_jump_pressed <= jump_buffer_time
+	if not buffered:
+		return
 	var grounded_recently: bool = _time_since_grounded <= coyote_time
-	if not (buffered and grounded_recently):
+	# F-580: `extra_jumps` — a mid-air jump, allowed only once the ground/coyote jump is spent and
+	# only as many times per airborne stretch as the stat grants. A peer holding none has
+	# `_extra_jumps == 0`, so this whole branch collapses to the old "grounded or coyote, or nothing".
+	var air_jump: bool = not grounded_recently and _air_jumps_used < _extra_jumps
+	if not (grounded_recently or air_jump):
 		return
 	# Stamina gates jump (task 3.8, same client-local row as sprint) — a harness with no PlayerHealth
 	# jumps freely rather than losing the verb. The buffered press is NOT consumed on rejection, so a
@@ -1035,7 +1155,12 @@ func _try_jump(input_allowed: bool, downed: bool, dead: bool) -> void:
 	):
 		return
 
-	velocity.y = sqrt(2.0 * _gravity * gravity_scale * jump_height)
+	# F-580: the powerup-modified apex, not the raw export. Set outright rather than added to, the
+	# same as it always was — an air jump that added to a falling velocity would give a weaker second
+	# jump the faster you were falling, which reads as the jump failing.
+	velocity.y = sqrt(2.0 * _gravity * gravity_scale * _effective_jump_height)
+	if air_jump:
+		_air_jumps_used += 1
 
 	# Consume both windows so one press can never produce two jumps.
 	_time_since_jump_pressed = INF
@@ -1356,7 +1481,9 @@ func _tick_revive_hold(delta: float, input_allowed: bool, downed: bool, dead: bo
 	_revive_hold_elapsed += delta
 	if _revive_request_sent:
 		return
-	if _revive_hold_elapsed >= float(health.get(&"revive_seconds")):
+	# F-580: `revive_seconds` — how long THIS reviver has to hold (docs/POWERUPS.md §2: "peer = the
+	# reviver"). Asked of PlayerHealth rather than read off its export, so the powerup applies.
+	if _revive_hold_elapsed >= float(health.call(&"local_revive_seconds")):
 		_revive_request_sent = true
 		health.call(&"request_revive", target_peer)
 
@@ -1370,7 +1497,8 @@ func _reset_revive_hold() -> void:
 ## Nearest OTHER player PlayerHealth's broadcast flag says is downed, within revive_radius_m. Reads
 ## only replicated data — a client has no business knowing more about a peer it might not even see.
 func _nearest_downed_teammate(health: Node) -> int:
-	var radius: float = float(health.get(&"revive_radius_m"))
+	# F-580: `revive_radius_m`, so the prompt appears at the range the host will actually accept.
+	var radius: float = float(health.call(&"local_revive_radius_m"))
 	var best: int = 0
 	var best_distance: float = radius
 	for node: Node in get_tree().get_nodes_in_group(&"players"):

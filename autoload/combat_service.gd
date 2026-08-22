@@ -48,6 +48,34 @@ var unarmed: WeaponDef
 
 var _local_phase: Phase = Phase.IDLE
 var _local_elapsed: float = 0.0
+
+## F-580: `attack_seconds` — how much longer or shorter this peer's whole swing takes
+## (docs/POWERUPS.md §2: "swing phase durations (wind-up/commit/recovery scaled together), negative
+## mult = faster"). Applied by scaling the swing CLOCK rather than the three authored durations, so
+## every phase boundary, `swing_seconds()` and `local_phase_progress()` keep reading the WeaponDef
+## unchanged and stay in step with each other for free.
+##
+## Floored well above zero: a stacked speed-up that reached zero would resolve a hit on the same tick
+## it was requested and make the wind-up unreadable, which is the tell the whole melee design rests
+## on. Cached per swing rather than per tick — a grant mid-swing applies to the next one.
+var _local_attack_scale: float = 1.0
+
+const MIN_ATTACK_SCALE: float = 0.25
+
+## docs/POWERUPS.md §2's `_low_hp` condition: health below a third.
+const LOW_HP_FRACTION: float = 1.0 / 3.0
+
+## Floor for `melee_range_m`. Short enough to be a real penalty, long enough that a swing can still
+## reach something the player is standing next to.
+const MIN_REACH_M: float = 0.5
+
+## F-580: the fractional remainder of `on_hit_lifesteal`/`on_kill_heal_hp`, per peer, carried between
+## swings — see `_apply_hit_rewards()` for why rounding per hit would silently zero the stat.
+var _heal_accum: Dictionary[int, float] = {}
+
+## PowerupService, path-resolved (F-011) and cached (F-099) — the melee resolve path asks it up to
+## four times per landed swing.
+var _powerup_node: Node
 var _local_weapon: WeaponDef
 ## The weapon the local peer last swung. A remote host's answer can arrive after the local swing has
 ## already recovered, and the hit still has to feel like the weapon that threw it.
@@ -208,7 +236,10 @@ func _begin_host_swing(peer_id: int, hotbar_index: int, request_id: int) -> void
 		return
 
 	var weapon: WeaponDef = _host_weapon_for(peer_id, hotbar_index)
-	_host_swings[peer_id] = {"weapon": weapon, "elapsed": 0.0, "resolved": false}
+	_host_swings[peer_id] = {
+		"weapon": weapon, "elapsed": 0.0, "resolved": false,
+		"attack_scale": _attack_scale(peer_id),
+	}
 
 
 ## The host reads its own inventory for the slot the client named, so the worst a lying client can do
@@ -228,7 +259,11 @@ func _advance_host_swings(delta: float) -> void:
 		if weapon == null:
 			finished.append(peer_id)
 			continue
-		var elapsed: float = float(swing.get("elapsed", 0.0)) + delta
+		# F-580: the same scaled clock the local swing uses, so the host's resolve tick and the
+		# owner's viewmodel stay on the same schedule for a peer holding `attack_seconds`.
+		var elapsed: float = (
+			float(swing.get("elapsed", 0.0)) + delta / float(swing.get("attack_scale", 1.0))
+		)
 		swing["elapsed"] = elapsed
 		if not bool(swing.get("resolved", false)) and elapsed >= weapon.wind_up_seconds:
 			swing["resolved"] = true
@@ -245,7 +280,7 @@ func _resolve_hit(peer_id: int, weapon: WeaponDef) -> void:
 		_broadcast(peer_id, false, Vector3.ZERO, 0, &"")
 		return
 
-	var target: Node = _best_target(player, weapon)
+	var target: Node = _best_target(player, weapon, peer_id)
 	if target == null:
 		_broadcast(peer_id, false, Vector3.ZERO, 0, &"")
 		return
@@ -271,8 +306,10 @@ func _resolve_hit(peer_id: int, weapon: WeaponDef) -> void:
 		# with the real peer id, not `local_stat()` — CombatService resolves every peer's swing.
 		# `applied` is reassigned as well as passed, so the damage number the HUD shows is the
 		# damage the enemy took. `maxi(..., 1)` keeps a connected swing from reading as a whiff.
-		applied = maxi(_modified_damage(peer_id, &"melee_damage", weapon.damage), 1)
+		applied = maxi(_modified_melee_damage(peer_id, weapon.damage), 1)
 		connected = bool(target.call("host_apply_damage", applied, peer_id))
+		if connected:
+			host_apply_hit_rewards(peer_id, applied, target)
 	if not connected:
 		_broadcast(peer_id, false, Vector3.ZERO, 0, &"")
 		return
@@ -282,7 +319,7 @@ func _resolve_hit(peer_id: int, weapon: WeaponDef) -> void:
 ## Nearest damageable inside the swing's reach and horizontal arc. The arc is measured on the
 ## horizontal plane with a separate vertical band, so a prop whose origin sits on the ground is hit
 ## by a level swing rather than requiring the player to aim at its feet.
-func _best_target(player: Node3D, weapon: WeaponDef) -> Node:
+func _best_target(player: Node3D, weapon: WeaponDef, peer_id: int) -> Node:
 	var eye: Vector3 = player.global_position + Vector3.UP * EYE_HEIGHT_M
 	var aim: Vector3 = _aim_direction(player)
 	var aim_flat: Vector3 = Vector3(aim.x, 0.0, aim.z)
@@ -290,7 +327,10 @@ func _best_target(player: Node3D, weapon: WeaponDef) -> Node:
 		aim_flat = Vector3(0.0, 0.0, -1.0).rotated(Vector3.UP, player.rotation.y)
 	aim_flat = aim_flat.normalized()
 
-	var reach: float = weapon.range_m + HOST_RANGE_TOLERANCE_M
+	# F-580: `melee_range_m` — the swing's reach for the peer who threw it (docs/POWERUPS.md §2,
+	# base `WeaponDef.range_m`). The host's own tolerance is added AFTER the stat, so a reach powerup
+	# does not also scale the latency allowance it has nothing to do with.
+	var reach: float = _modified_reach(peer_id, weapon.range_m) + HOST_RANGE_TOLERANCE_M
 	var half_arc_cosine: float = cos(deg_to_rad(weapon.arc_degrees * 0.5))
 	var best: Node = null
 	var best_distance: float = INF
@@ -382,6 +422,7 @@ func _start_local_swing(weapon: WeaponDef) -> void:
 	_local_weapon = weapon
 	_last_local_weapon = weapon
 	_local_elapsed = 0.0
+	_local_attack_scale = _attack_scale(_local_peer_id())
 	_local_hitstop_remaining = 0.0
 	_set_local_phase(Phase.WIND_UP)
 	swing_started.emit(weapon.item_id)
@@ -396,7 +437,9 @@ func _advance_local_swing(delta: float) -> void:
 		_local_hitstop_remaining = maxf(_local_hitstop_remaining - delta, 0.0)
 		return
 
-	_local_elapsed += delta
+	# F-580: the scaled clock. `/ scale` and not `* scale` — a scale of 0.9 means the swing TAKES 90%
+	# as long, so its clock has to run faster to reach the same authored boundaries sooner.
+	_local_elapsed += delta / _local_attack_scale
 	var wind_up: float = _local_weapon.wind_up_seconds
 	var commit_end: float = wind_up + _local_weapon.commit_seconds
 	if _local_elapsed >= _local_weapon.swing_seconds():
@@ -558,8 +601,108 @@ func _build_placeholder_impact() -> AudioStream:
 ## F-543: one place for "this peer's version of an authored damage number". Both damage stats
 ## (`melee_damage` here, `bow_damage` in RangedCombatService) are authored as multipliers on a base
 ## that comes from the weapon def, so the base is never zero on a path that reaches this.
+## F-580: `melee_damage`, then the two condition-suffixed variants docs/POWERUPS.md §2 authorises,
+## chained onto the unconditional pass exactly as that section's worked example does. D-179: the
+## CONDITION is evaluated here, by the consumer that can see it — the service stays condition-blind.
+func _modified_melee_damage(peer_id: int, base: int) -> int:
+	var powerups: Node = _powerup_service()
+	if powerups == null:
+		return base
+	var damage: float = float(powerups.call(&"stat", peer_id, &"melee_damage", float(base)))
+	if _is_low_hp(peer_id):
+		damage = float(powerups.call(&"stat", peer_id, &"melee_damage_low_hp", damage))
+	if _is_night():
+		damage = float(powerups.call(&"stat", peer_id, &"melee_damage_at_night", damage))
+	return int(roundi(damage))
+
+
+## docs/POWERUPS.md §2's `_low_hp` condition: health below a third, read off PlayerHealth's HOST
+## state — CombatService resolves every peer's swing, so a client's own cache is the wrong source.
+func _is_low_hp(peer_id: int) -> bool:
+	var health: Node = get_node_or_null(^"/root/PlayerHealth")
+	if health == null:
+		return false
+	var maximum: int = int(health.call(&"host_max_hp", peer_id))
+	if maximum <= 0:
+		return false
+	return float(int(health.call(&"host_hp", peer_id))) / float(maximum) < LOW_HP_FRACTION
+
+
+## docs/POWERUPS.md §2's `_at_night` condition, off the shared day/night state. Read as the same
+## `fraction >= night_started_at or fraction < day_started_at` comparison DayNight makes internally,
+## from its own replicated `time_of_day` and its own two thresholds, rather than through a method of
+## its own — the fraction and both thresholds are already public and this file has no business
+## adding an API to a system it only reads. No DayNight (a bare combat harness) means "not night",
+## which is the same answer as an unmodified swing.
+func _is_night() -> bool:
+	var day_night: Node = get_node_or_null(^"/root/DayNight")
+	if day_night == null:
+		return false
+	var fraction: float = float(day_night.get(&"time_of_day"))
+	return (
+		fraction >= float(day_night.get(&"night_started_at"))
+		or fraction < float(day_night.get(&"day_started_at"))
+	)
+
+
+## F-580: the swing's reach after `melee_range_m`. Floored above zero so a stacked negative cannot
+## produce a weapon that can never connect with anything.
+func _modified_reach(peer_id: int, base: float) -> float:
+	var powerups: Node = _powerup_service()
+	if powerups == null:
+		return base
+	return maxf(float(powerups.call(&"stat", peer_id, &"melee_range_m", base)), MIN_REACH_M)
+
+
+## F-580: `on_hit_lifesteal` (a FRACTION of damage dealt, returned as HP) and `on_kill_heal_hp` (a
+## flat heal when the swing killed). Both are asked on a base of 0.0, so a peer holding neither does
+## no work and no heal is attempted. Host-side: healing is host-authoritative state.
+##
+## Public because RangedCombatService lands damage through its own resolve path and a bow user
+## holding `red_quench` must not silently get nothing — the same shared-helper precedent as
+## `placeholder_impact_sound()`, and the accumulator has to be one per peer, not one per weapon.
+##
+## The kill test is "the target was alive before this hit and is not now", asked of the target itself
+## rather than of a kill event, because melee's resolve seam has no kill callback of its own and a
+## dead node is freed on its own schedule.
+func host_apply_hit_rewards(peer_id: int, damage: int, target: Node) -> void:
+	var powerups: Node = _powerup_service()
+	var health: Node = get_node_or_null(^"/root/PlayerHealth")
+	if powerups == null or health == null or damage <= 0:
+		return
+	var heal: float = float(powerups.call(&"stat", peer_id, &"on_hit_lifesteal", 0.0)) * float(damage)
+	if target.has_method(&"is_alive") and not bool(target.call(&"is_alive")):
+		heal += float(powerups.call(&"stat", peer_id, &"on_kill_heal_hp", 0.0))
+	# Accumulated across swings rather than rounded per hit: 8% lifesteal on a 6-damage swing is
+	# 0.48 hp, and rounding that to zero every time would make the powerup do nothing at all while
+	# reading as if it worked.
+	if heal <= 0.0:
+		return
+	var carried: float = float(_heal_accum.get(peer_id, 0.0)) + heal
+	var whole: int = int(carried)
+	_heal_accum[peer_id] = carried - float(whole)
+	if whole > 0:
+		health.call(&"host_heal", peer_id, whole)
+
+
 func _modified_damage(peer_id: int, stat_name: StringName, base: int) -> int:
-	var powerups: Node = get_node_or_null(^"/root/PowerupService")
+	var powerups: Node = _powerup_service()
 	if powerups == null:
 		return base
 	return int(roundi(float(powerups.call(&"stat", peer_id, stat_name, float(base)))))
+
+
+func _powerup_service() -> Node:
+	if _powerup_node == null or not is_instance_valid(_powerup_node):
+		_powerup_node = get_node_or_null(^"/root/PowerupService")
+	return _powerup_node
+
+
+## F-580: the swing-duration scale for one peer, resolved once per swing. `attack_seconds` is asked
+## on a base of 1.0 for the same reason `Chest._luck_for()` does (F-140): every authored modifier is
+## multiplicative, and asking on 0.0 would return 0 however many stacks are held.
+func _attack_scale(peer_id: int) -> float:
+	var powerups: Node = _powerup_service()
+	if powerups == null:
+		return 1.0
+	return maxf(float(powerups.call(&"stat", peer_id, &"attack_seconds", 1.0)), MIN_ATTACK_SCALE)

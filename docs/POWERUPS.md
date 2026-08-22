@@ -44,11 +44,17 @@ per 3.4's spec, no system reads a stat until its own task routes its base value 
 `PowerupService.stat()`. **F-543 closed the gap between this table and reality** for every stat the
 four Attunements name: `move_speed`, `max_hp`, `food_value`, `blight_rate`, `harvest_yield`,
 `harvest_damage`, `melee_damage`, `bow_damage`, `craft_seconds`, `coin_gain`, `ward_radius_m` and the
-new `structure_hp` all have real reads now, guarded by `tools/attunement_effects_check.gd`. The rest
-of the "live systems" table below is still *authored-but-unread* — a `sprint_speed` or `damage_taken`
-powerup loads, validates and does nothing, exactly as this paragraph has always warned. That is the
-next slice of the same work, not a separate bug — authoring against a `pending` stat is correct data that waits, which is
-expected, not a bug (and now, not a typo either).
+new `structure_hp` all have real reads now, guarded by `tools/attunement_effects_check.gd`.
+
+**F-580 closed the rest.** The staging rule above — "no system reads a stat until its own task routes
+its base value" — was reasonable while the systems were being built, and by the time they were built
+it had produced a shipped chest economy whose most common outcome was a placebo: **30 of the 72
+authored powerups modified only stats nothing read, and therefore did nothing at all when granted.**
+Reported as, exactly, "power ups from chests do nothing". Every stat below is now either live or
+listed in the pending table with the system it is genuinely waiting on, and
+`tools/powerup_effects_check.gd` fails if a stat is in neither — so the gap cannot silently regrow.
+Six stats remain pending, and each is pending because **its consuming system does not exist**, not
+because nobody wired the read.
 
 ### Live systems (the consuming code exists; wiring is that system's one-line route)
 
@@ -80,24 +86,29 @@ expected, not a bug (and now, not a typo either).
 | `chest_price` | cost to open | negative = discount | `systems/loot/chest.gd` (host) |
 | `loot_luck` | weight bias toward higher-tier chest entries | | loot roll (host) |
 | `dodge_iframe_seconds` | how long past the dash the i-frame flag stays true | flat seconds; cannot shorten the window below `dodge_duration_sec` (D-087) | `player_controller.gd` `_execute_dodge()` (client-local; the host reads the resulting flag) |
+| `max_stamina` | stamina pool | raising it GRANTS the difference rather than diluting the bar | `player_health.gd` (client-local) |
+| `stamina_regen` | stamina per second | clamped at zero | `player_health.gd` (client-local) |
+| `stamina_cost` | discrete sprint/jump/dodge spends (negative mult = cheaper) | a factor on each action's own cost, never the continuous sprint drain | `player_health.gd` (client-local) |
+| `on_hit_lifesteal` | fraction of damage dealt returned as HP | fractions accumulate across swings rather than rounding to zero per hit | `combat_service.gd` `host_apply_hit_rewards()` (host; `ranged_combat_service.gd` feeds the same accumulator) |
+| `on_kill_heal_hp` | flat HP healed per kill you land | | `combat_service.gd` `host_apply_hit_rewards()` (host) |
+| `arrow_save_chance` | chance a fired arrow isn't consumed | clamped into 0..1; rolled on the host's own stream, never the run seed | `ranged_combat_service.gd` `_fire()` (host) |
+| `aggro_radius_m` | enemy detection radius vs this player (negative = stealth) | a FACTOR on each enemy's own authored radius, applied to retention as well as acquisition | `systems/enemies/enemy.gd` `_resolve_target()` (host) |
 
-### Pending systems (the stat waits for its system's task — listed so 3.4 can author toward them without inventing names)
+### Pending systems — the stat waits for a system that does not exist yet
 
-| Stat | Consumed quantity | Arrives with |
-|---|---|---|
-| `max_stamina` | stamina pool | 3.8 (client-local stamina) |
-| `stamina_regen` | stamina per second | 3.8 |
-| `stamina_cost` | cost of sprint/jump/dodge actions (negative mult = cheaper) | 3.8 |
-| `fall_damage_taken` | landing damage (negative mult = softer) | 3.8-adjacent, if fall damage ships |
-| `knockback_taken` | knockback applied to you (negative mult = stability) | enemy knockback |
-| `aggro_radius_m` | enemy detection radius vs this player (negative = stealth) | enemy AI consult |
-| `haul_speed` | heavy-carry drag speed | 3.10 |
-| `on_kill_heal_hp` | flat HP healed per kill you land | kill-attribution site (host) |
-| `on_hit_lifesteal` | fraction of dealt damage returned as HP | damage-dealt site (host) |
-| `ignite_chance` | chance per hit to apply Burning | the Fire-Resonance task's status effect |
-| `slow_chance` | chance per hit to apply Chilled | the Cold-Resonance task's status effect |
-| `slow_potency` | strength of Chilled you apply | the Cold-Resonance task |
-| `arrow_save_chance` | chance a fired arrow isn't consumed | bow fire site (host) |
+Six, after F-580, and every one of them is a *missing system*, not a missing line. A powerup here
+still loads, validates and does nothing; the fix is that system's task, and
+`tools/powerup_effects_check.gd` prints each of these as `PENDING` with its reason rather than
+passing it silently.
+
+| Stat | Consumed quantity | Waiting on | Inert powerup(s) today |
+|---|---|---|---|
+| `fall_damage_taken` | landing damage (negative mult = softer) | there is no fall-damage system — nothing in the project damages a player for landing | `cat_fall` |
+| `knockback_taken` | knockback applied to you (negative mult = stability) | there is no player-knockback system; enemy attacks apply damage only | `root_hold` |
+| `ignite_chance` | chance per hit to apply Burning | the Fire-Resonance task's status effect, unbuilt | `ashen_temper` |
+| `slow_chance` | chance per hit to apply Chilled | the Cold-Resonance task's status effect, unbuilt | `chill_edge` |
+| `slow_potency` | strength of Chilled you apply | the Cold-Resonance task's status effect, unbuilt | `deep_frost` |
+| `haul_speed` | heavy-carry drag speed | hauling has no shipped gameplay caller — `HaulService.host_spawn()` is reached only from `tools/` | `pack_frame` |
 
 ### Condition-suffixed stats — a closed set, on purpose
 

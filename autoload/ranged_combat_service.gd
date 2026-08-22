@@ -66,6 +66,12 @@ var _next_request_id: int = 1
 ## peer_id -> {"weapon": RangedWeaponDef, "phase": Phase, "phase_elapsed": float, "request_id": int,
 ##             "position": Vector3, "velocity": Vector3, "traveled_m": float}. The last three keys
 ## only exist once phase >= COMMIT.
+## F-580's `arrow_save_chance` stream. Host-side only, seeded from the OS rather than from the run
+## seed on purpose: whether one arrow survives is a per-shot flourish, not part of the deterministic
+## world a seed reproduces, and threading it into the run's stream would make every ammo save a
+## divergence risk between peers for no gain.
+var _rng := RandomNumberGenerator.new()
+
 var _host_shots: Dictionary[int, Dictionary] = {}
 ## peer_id -> {"node": Node3D or null, "weapon": RangedWeaponDef, "origin": Vector3,
 ##             "direction": Vector3, "speed": float, "gravity_scale": float, "elapsed": float}.
@@ -75,6 +81,7 @@ var _flight_visuals: Dictionary[int, Dictionary] = {}
 
 func _ready() -> void:
 	_gravity = float(ProjectSettings.get_setting("physics/3d/default_gravity", 9.8))
+	_rng.randomize()
 	set_process(true)
 	set_physics_process(true)
 
@@ -252,7 +259,13 @@ func _fire(peer_id: int, shot: Dictionary) -> void:
 		shot["phase"] = Phase.RECOVERY
 		shot["phase_elapsed"] = 0.0
 		return
-	InventoryService.host_remove(peer_id, weapon.ammo_item_id, 1)
+	# F-580: `arrow_save_chance` — the chance this shot does not consume its arrow
+	# (docs/POWERUPS.md §2). Asked on a base of 0.0, so a peer holding neither `bottomless_quiver`
+	# nor `fletchers_debt` rolls nothing and the arrow is always spent, exactly as before. Rolled on
+	# the HOST's own stream: ammo is host-authoritative inventory state, and a client-rolled save
+	# would be a client deciding whether it paid for its own shot.
+	if not _saves_arrow(peer_id):
+		InventoryService.host_remove(peer_id, weapon.ammo_item_id, 1)
 	var direction: Vector3 = CombatAim.direction(player)
 	var origin: Vector3 = CombatAim.eye_position(player) + direction * ARROW_SPAWN_OFFSET_M
 	shot["position"] = origin
@@ -333,6 +346,12 @@ func _resolve_flight(peer_id: int, shot: Dictionary, hit_node: Node, hit_positio
 	var applied: int = maxi(_modified_damage(peer_id, &"bow_damage", weapon.damage), 1)
 	var connected: bool = valid_target and bool(damageable.call("host_apply_damage", applied, peer_id))
 	if connected:
+		# F-580: `on_hit_lifesteal`/`on_kill_heal_hp`, through CombatService's shared accumulator so
+		# a bow hit and a melee hit feed one running remainder per peer rather than two that each
+		# round their own fraction away.
+		var melee: Node = get_node_or_null(^"/root/CombatService")
+		if melee != null:
+			melee.call(&"host_apply_hit_rewards", peer_id, applied, damageable)
 		_broadcast_resolved(
 			peer_id, request_id, true, hit_position, applied, StringName(String(damageable.name))
 		)
@@ -601,6 +620,21 @@ func _owns_resolution() -> bool:
 ## F-543: this peer's version of the authored ranged damage. Same shape as CombatService's melee
 ## twin — a separate copy rather than a shared helper because these two services already keep their
 ## own resolution paths deliberately independent (one is a swing timeline, one is a raycast).
+## F-580: does this peer's `arrow_save_chance` spare this shot's arrow? Clamped into 0..1 — an
+## authored stack above 1.0 would otherwise mean an infinite quiver, which is a different powerup
+## from the one either description promises.
+func _saves_arrow(peer_id: int) -> bool:
+	var powerups: Node = get_node_or_null(^"/root/PowerupService")
+	if powerups == null:
+		return false
+	var chance: float = clampf(
+		float(powerups.call(&"stat", peer_id, &"arrow_save_chance", 0.0)), 0.0, 1.0
+	)
+	if chance <= 0.0:
+		return false
+	return _rng.randf() < chance
+
+
 func _modified_damage(peer_id: int, stat_name: StringName, base: int) -> int:
 	var powerups: Node = get_node_or_null(^"/root/PowerupService")
 	if powerups == null:

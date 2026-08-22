@@ -649,7 +649,11 @@ func _resolve_target() -> Node3D:
 		if _target_node == null or not is_instance_valid(_target_node):
 			_target_node = _player_for(_target_peer)
 		if _target_node != null and is_instance_valid(_target_node):
-			if global_position.distance_to(_target_node.global_position) <= definition.deaggro_radius_m:
+			# F-580: `aggro_radius_m` scales retention as well as acquisition, by the same ratio.
+			# Acquisition alone would be half a stealth powerup — an enemy that cannot see you from
+			# 14 m but never loses you once it has is not quieter, it is stickier.
+			var hold_radius: float = definition.deaggro_radius_m * _aggro_scale(_target_peer)
+			if global_position.distance_to(_target_node.global_position) <= hold_radius:
 				return _target_node
 	_target_peer = 0
 	_target_node = null
@@ -661,12 +665,19 @@ func _resolve_target() -> Node3D:
 	_rescan_wait = RESCAN_INTERVAL_SEC
 
 	var best: Node3D = null
-	var best_distance: float = definition.aggro_radius_m
+	var best_distance: float = INF
 	for node: Node in get_tree().get_nodes_in_group(&"players"):
 		var player := node as Node3D
 		if player == null:
 			continue
 		var distance: float = global_position.distance_to(player.global_position)
+		# F-580: `aggro_radius_m` — "enemy detection radius vs THIS player, negative = stealth"
+		# (docs/POWERUPS.md §2). Per-player and not one radius for the scan, which is the whole
+		# point of the stat: a quiet player standing beside a loud one is passed over for the loud
+		# one. `best_distance` therefore starts at INF and the authored radius moves inside the
+		# loop — without that, one player's shorter radius would cap everyone else's.
+		if distance > definition.aggro_radius_m * _aggro_scale(_peer_of(player)):
+			continue
 		if distance > best_distance:
 			continue
 		if not _can_perceive(player):
@@ -676,6 +687,23 @@ func _resolve_target() -> Node3D:
 	if best != null:
 		_acquire_target(_peer_of(best), best)
 	return best
+
+
+## F-580: how much this peer's `aggro_radius_m` powerups scale an enemy's radius against them.
+## A factor rather than an absolute radius, because the stat modifies EVERY enemy's own authored
+## radius rather than replacing it — a crawler's 14 m and a boss's 30 m both shrink by the same
+## proportion for a player wearing `moss_shroud`. Asked on a base of 1.0, the shape every
+## multiplicative-only stat uses (F-140), and floored at zero so a stacked negative can make a
+## player unnoticed but never make enemies aggro from behind them.
+##
+## Host-side: enemy AI is host-authoritative (ARCHITECTURE §2.2), so `stat()` with the real peer id.
+func _aggro_scale(peer_id: int) -> float:
+	if peer_id <= 0:
+		return 1.0
+	var powerups: Node = get_node_or_null(^"/root/PowerupService")
+	if powerups == null:
+		return 1.0
+	return maxf(float(powerups.call(&"stat", peer_id, &"aggro_radius_m", 1.0)), 0.0)
 
 
 ## Sets the held target, and — only on a genuinely NEW acquisition, not a re-affirmed hold of the

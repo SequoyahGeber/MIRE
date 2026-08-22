@@ -183,6 +183,24 @@ var _local_bleed_out_remaining: float = 0.0
 var _local_hunger: float = 0.0
 var _local_max_hunger: float = 0.0
 var _local_stamina: float = 0.0
+
+## F-580: the three client-local stamina numbers after their powerup stats (`max_stamina`,
+## `stamina_regen`, `stamina_cost`). Stamina is the §2.2 row-1 client-authority case — a client is
+## only sent its OWN powerup map — so these are read through `local_stat()` and cached on the
+## `local_powerups_changed` signal rather than asked inside `local_tick_stamina()`, which runs every
+## physics tick on the owning peer.
+##
+## `_effective_max_stamina` is floored above zero: a zero pool would lock out sprint, jump and dodge
+## at once with no way for the player to tell why.
+var _effective_max_stamina: float = 0.0
+var _effective_stamina_regen: float = 0.0
+## Multiplier applied to every discrete stamina COST. Stored as a factor rather than a per-action
+## number because the costs are per-action (jump, dodge, and whatever 3.8b adds) while the stat is
+## one line — `(base + add*N)*(1 + mult*N)` on a base of 1.0 makes both authoring shapes work, the
+## same trick `Chest._luck_for()` uses and for the same reason (F-140).
+var _stamina_cost_scale: float = 1.0
+
+const MIN_EFFECTIVE_MAX_STAMINA: float = 1.0
 ## True from the instant local_tick_stamina() drains stamina to exactly zero until it regenerates
 ## back above sprint_resume_fraction of max — see local_can_sprint()'s note.
 var _sprint_locked_out: bool = false
@@ -229,6 +247,11 @@ func _ready() -> void:
 	var powerups: Node = _powerups()
 	if powerups != null and powerups.has_signal(&"host_powerups_changed"):
 		powerups.connect(&"host_powerups_changed", _on_host_powerups_changed)
+	# F-580: the client-local half. Same unconditional connect, opposite authority row — this one
+	# fires on the OWNING peer for its own stacks, which is exactly what the stamina block needs.
+	if powerups != null and powerups.has_signal(&"local_powerups_changed"):
+		powerups.connect(&"local_powerups_changed", _on_local_powerups_changed)
+	_refresh_effective_stamina()
 
 	set_physics_process(true)
 	if bool(transport.call("is_active")):
@@ -295,7 +318,11 @@ func _physics_process(delta: float) -> void:
 ## years of accumulated starvation damage in a single frame.
 func _tick_hunger(peer_id: int, downed_state: DOWNED_STATE, delta: float) -> bool:
 	var previous_hunger: float = float(_hunger.get(peer_id, max_hunger))
-	var next_hunger: float = maxf(previous_hunger - hunger_drain_per_sec * delta, 0.0)
+	# F-580: `hunger_drain` — hunger lost per second (docs/POWERUPS.md §2, negative mult = slower).
+	# Clamped at zero for the same reason `blight_rate` is: a stacked resist that went negative would
+	# silently turn a survival stat into a food source.
+	var drain_per_sec: float = _hunger_drain_for(peer_id)
+	var next_hunger: float = maxf(previous_hunger - drain_per_sec * delta, 0.0)
 	_hunger[peer_id] = next_hunger
 	if next_hunger > 0.0 or not downed_state.is_alive():
 		_starvation_accum[peer_id] = 0.0
@@ -304,15 +331,15 @@ func _tick_hunger(peer_id: int, downed_state: DOWNED_STATE, delta: float) -> boo
 		_starvation_accum[peer_id] = 0.0
 		return false
 	var empty_seconds: float = delta
-	if previous_hunger > 0.0 and hunger_drain_per_sec > 0.0:
-		empty_seconds = maxf(delta - previous_hunger / hunger_drain_per_sec, 0.0)
+	if previous_hunger > 0.0 and drain_per_sec > 0.0:
+		empty_seconds = maxf(delta - previous_hunger / drain_per_sec, 0.0)
 	var accum: float = float(_starvation_accum.get(peer_id, 0.0)) + starvation_hp_drain_per_sec * empty_seconds
 	var whole: int = int(accum)
 	if whole <= 0:
 		_starvation_accum[peer_id] = accum
 		return false
 	_starvation_accum[peer_id] = accum - float(whole)
-	var transition: int = downed_state.apply_damage(whole, bleed_out_seconds)
+	var transition: int = downed_state.apply_damage(whole, _bleed_out_for(peer_id))
 	if transition == DOWNED_STATE.Transition.WENT_DOWN:
 		MireLog.info(LOG_CHANNEL, "PlayerHealth: peer %d starved down" % peer_id)
 		player_downed.emit(peer_id)
@@ -333,7 +360,14 @@ func host_apply_damage(peer_id: int, amount: int, instigator_peer_id: int) -> bo
 	var downed_state: DOWNED_STATE = _states[peer_id]
 	if not downed_state.is_alive():
 		return false
-	var transition: int = downed_state.apply_damage(amount, bleed_out_seconds)
+	# F-580: `damage_taken` — incoming damage AFTER the attacker's own calculation, which is what
+	# docs/POWERUPS.md §2 means by "after the attacker's calc" and why it is applied here at the one
+	# seam every source of player damage already funnels through rather than per damage source.
+	# A negative multiplier is armour; it can never take a landed hit below 1, because a hit that
+	# rounds to zero is indistinguishable from a hit that missed and would make a stacked resist read
+	# as invulnerability.
+	var taken: int = _damage_taken_for(peer_id, amount)
+	var transition: int = downed_state.apply_damage(taken, _bleed_out_for(peer_id))
 	_commit(peer_id)
 	if transition == DOWNED_STATE.Transition.WENT_DOWN:
 		MireLog.info(LOG_CHANNEL, "PlayerHealth: peer %d downed (instigator %d)" % [
@@ -521,7 +555,13 @@ func _validate_revive(reviver_peer: int, target_peer: int) -> String:
 	var target_body: Node3D = _player_body(target_peer)
 	if reviver_body == null or target_body == null:
 		return "revive rejected: player not spawned"
-	if reviver_body.global_position.distance_to(target_body.global_position) > revive_radius_m:
+	# F-580: `revive_radius_m` is the REVIVER's reach (docs/POWERUPS.md §2: "peer = the reviver, not
+	# the downed"), so the stat is asked for `reviver_peer`. The host is the authority on range —
+	# `player_controller.gd` applies the same stat to its own target search so the prompt the player
+	# sees and the range the host accepts agree, but this is the check that decides.
+	if reviver_body.global_position.distance_to(target_body.global_position) > _revive_radius_for(
+		reviver_peer
+	):
 		return "revive rejected: out of range"
 	return ""
 
@@ -543,11 +583,11 @@ func local_stamina() -> float:
 
 
 func local_max_stamina() -> float:
-	return max_stamina
+	return _effective_max_stamina
 
 
 func local_jump_stamina_cost() -> float:
-	return jump_stamina_cost
+	return jump_stamina_cost * _stamina_cost_scale
 
 
 ## True while there is stamina to spend AND sprint is not locked out — entities/player/
@@ -570,14 +610,19 @@ func local_can_sprint() -> bool:
 ## alternating sprint on and off every single frame. Locking out at zero and only clearing the lock
 ## once stamina is back above sprint_resume_fraction of max breaks the cycle.
 func local_tick_stamina(delta: float, draining: bool) -> void:
-	var rate: float = -stamina_drain_per_sec if draining else stamina_regen_per_sec
-	var next_stamina: float = clampf(_local_stamina + rate * delta, 0.0, max_stamina)
+	# F-580: `stamina_regen` and `max_stamina`, both precomputed. The DRAIN rate is deliberately not
+	# routed through `stamina_cost` — §2's `stamina_cost` is "cost of sprint/jump/dodge ACTIONS", the
+	# discrete spends, and folding a continuous drain into it would make one stack of a jump-discount
+	# powerup silently double as a sprint-duration powerup.
+	var rate: float = -stamina_drain_per_sec if draining else _effective_stamina_regen
+	var ceiling: float = _effective_max_stamina
+	var next_stamina: float = clampf(_local_stamina + rate * delta, 0.0, ceiling)
 	if next_stamina != _local_stamina:
 		_local_stamina = next_stamina
-		local_stamina_changed.emit(_local_stamina, max_stamina)
+		local_stamina_changed.emit(_local_stamina, ceiling)
 	if _local_stamina <= 0.0:
 		_sprint_locked_out = true
-	elif _local_stamina >= max_stamina * sprint_resume_fraction:
+	elif _local_stamina >= ceiling * sprint_resume_fraction:
 		_sprint_locked_out = false
 	_stamina_reconcile_elapsed += delta
 	if _stamina_reconcile_elapsed < stamina_reconcile_interval_sec:
@@ -593,9 +638,46 @@ func local_try_spend_stamina(amount: float) -> bool:
 		return true
 	if _local_stamina < amount:
 		return false
-	_local_stamina = clampf(_local_stamina - amount, 0.0, max_stamina)
-	local_stamina_changed.emit(_local_stamina, max_stamina)
+	_local_stamina = clampf(_local_stamina - amount, 0.0, _effective_max_stamina)
+	local_stamina_changed.emit(_local_stamina, _effective_max_stamina)
 	return true
+
+
+## F-580: recompute the three cached stamina numbers. Called at `_ready` and on every change to this
+## peer's own stacks. A peer holding nothing gets exactly the authored exports back.
+func _refresh_effective_stamina() -> void:
+	var powerups: Node = _powerups()
+	if powerups == null:
+		_effective_max_stamina = max_stamina
+		_effective_stamina_regen = stamina_regen_per_sec
+		_stamina_cost_scale = 1.0
+		return
+	var previous_max: float = _effective_max_stamina
+	_effective_max_stamina = maxf(
+		float(powerups.call(&"local_stat", &"max_stamina", max_stamina)), MIN_EFFECTIVE_MAX_STAMINA
+	)
+	_effective_stamina_regen = maxf(
+		float(powerups.call(&"local_stat", &"stamina_regen", stamina_regen_per_sec)), 0.0
+	)
+	# Never negative: a stacked discount that inverted the sign would REFUND stamina for jumping.
+	_stamina_cost_scale = maxf(float(powerups.call(&"local_stat", &"stamina_cost", 1.0)), 0.0)
+	if previous_max <= 0.0:
+		# First computation, at _ready and before `_reset_local_cache()` has run: seed the pool full
+		# rather than clamping a zero into a valid range. Without this the very first refresh leaves
+		# a peer at 0 stamina — sprint locked out and every jump refused — for a run in which nothing
+		# has been spent. Found by tools/player_vitals_check.gd, not by reading this function.
+		_local_stamina = _effective_max_stamina
+	elif _effective_max_stamina > previous_max:
+		# A raised ceiling grants the difference rather than leaving the player at a fraction of a
+		# bigger bar — picking up a stamina powerup should read as an immediate gain, not a dilution.
+		# A lowered one simply clamps below.
+		_local_stamina += _effective_max_stamina - previous_max
+	_local_stamina = clampf(_local_stamina, 0.0, _effective_max_stamina)
+	local_stamina_changed.emit(_local_stamina, _effective_max_stamina)
+
+
+func _on_local_powerups_changed(_stacks: Dictionary) -> void:
+	_refresh_effective_stamina()
 
 
 ## Advisory only (see the class doc): tells the host roughly what this peer's stamina is, so a later
@@ -616,7 +698,7 @@ func net_report_local_stamina(value: float) -> void:
 	var peer_id: int = multiplayer.get_remote_sender_id()
 	if peer_id <= 0:
 		return
-	var clamped: float = clampf(value, 0.0, max_stamina)
+	var clamped: float = clampf(value, 0.0, _effective_max_stamina)
 	_host_stamina_reports[peer_id] = clamped
 	host_stamina_reported.emit(peer_id, clamped)
 
@@ -844,6 +926,17 @@ func host_hp(peer_id: int) -> int:
 	if not _owns_mutation() or not _states.has(peer_id):
 		return 0
 	return int((_states[peer_id] as DOWNED_STATE).hp)
+
+
+## F-580: the host-side sibling of `local_max_hp()`, so a host consumer that needs a health FRACTION
+## for somebody else — CombatService evaluating docs/POWERUPS.md §2's `_low_hp` condition for the
+## peer who swung — can read one without reaching into `_states`. Returns the peer's live ceiling,
+## `max_hp` after their own `max_hp` powerups, which is the number their hp is actually measured
+## against; an unknown peer reads 0 and the caller treats the fraction as unavailable.
+func host_max_hp(peer_id: int) -> int:
+	if not _owns_mutation() or not _states.has(peer_id):
+		return 0
+	return int((_states[peer_id] as DOWNED_STATE).max_hp)
 
 
 func host_is_downed(peer_id: int) -> bool:
@@ -1115,7 +1208,7 @@ func _reset_local_cache() -> void:
 	_local_bleed_out_remaining = 0.0
 	_local_hunger = max_hunger
 	_local_max_hunger = max_hunger
-	_local_stamina = max_stamina
+	_local_stamina = _effective_max_stamina
 	_sprint_locked_out = false
 	_local_revision = -1
 
@@ -1172,7 +1265,7 @@ func _tick_blight(peer_id: int, downed_state: DOWNED_STATE, delta: float) -> boo
 		_blight_accum[peer_id] = accum
 		return false
 	_blight_accum[peer_id] = accum - float(whole)
-	var transition: int = downed_state.apply_damage(whole, bleed_out_seconds)
+	var transition: int = downed_state.apply_damage(whole, _bleed_out_for(peer_id))
 	if transition == DOWNED_STATE.Transition.WENT_DOWN:
 		MireLog.info(LOG_CHANNEL, "PlayerHealth: peer %d downed by Blight" % peer_id)
 		player_downed.emit(peer_id)
@@ -1194,6 +1287,66 @@ func _max_hp_for(peer_id: int) -> int:
 	if powerups == null:
 		return max_hp
 	return maxi(int(roundi(float(powerups.call(&"stat", peer_id, &"max_hp", float(max_hp))))), 1)
+
+
+## F-580: how long THIS peer bleeds out for after `bleed_out_seconds` (docs/POWERUPS.md §2, positive
+## = longer to save you — `pale_guard` and `second_sunrise` both buy time here). Floored above zero:
+## a zero timer would down and kill in the same instant, removing the rescue window the downed state
+## exists for.
+func _bleed_out_for(peer_id: int) -> float:
+	var powerups: Node = _powerups()
+	if powerups == null:
+		return bleed_out_seconds
+	return maxf(
+		float(powerups.call(&"stat", peer_id, &"bleed_out_seconds", bleed_out_seconds)), 1.0
+	)
+
+
+## F-580: the REVIVER's reach after `revive_radius_m`. Floored above zero so a stacked negative
+## cannot make reviving impossible from any distance at all.
+func _revive_radius_for(reviver_peer: int) -> float:
+	var powerups: Node = _powerups()
+	if powerups == null:
+		return revive_radius_m
+	return maxf(float(powerups.call(&"stat", reviver_peer, &"revive_radius_m", revive_radius_m)), 0.5)
+
+
+## F-580: how long the REVIVER must hold, after `revive_seconds`. Client-local: the hold timer runs
+## on the reviving player's own controller, which is only ever sent its OWN powerup map, so this is
+## the `local_stat()` seam. The host does not re-derive the duration — `player_controller.gd` calls
+## `host_request_revive()` when its own timer elapses, and the host validates identity and range.
+func local_revive_seconds() -> float:
+	var powerups: Node = _powerups()
+	if powerups == null:
+		return revive_seconds
+	return maxf(float(powerups.call(&"local_stat", &"revive_seconds", revive_seconds)), 0.1)
+
+
+## F-580: the reviver's own reach, for the target search their controller runs. Same client-local
+## seam and the same stat the host validates with above.
+func local_revive_radius_m() -> float:
+	var powerups: Node = _powerups()
+	if powerups == null:
+		return revive_radius_m
+	return maxf(float(powerups.call(&"local_stat", &"revive_radius_m", revive_radius_m)), 0.5)
+
+
+## F-580: this peer's hunger drain after `hunger_drain`. Never negative — see the call site.
+func _hunger_drain_for(peer_id: int) -> float:
+	var powerups: Node = _powerups()
+	if powerups == null:
+		return hunger_drain_per_sec
+	return maxf(float(powerups.call(&"stat", peer_id, &"hunger_drain", hunger_drain_per_sec)), 0.0)
+
+
+## F-580: one landed hit after `damage_taken`. Floored at 1 — see host_apply_damage()'s note.
+func _damage_taken_for(peer_id: int, amount: int) -> int:
+	var powerups: Node = _powerups()
+	if powerups == null:
+		return amount
+	return maxi(
+		int(roundi(float(powerups.call(&"stat", peer_id, &"damage_taken", float(amount))))), 1
+	)
 
 
 ## F-543: re-seat one peer's ceiling after their stack map changed. A DownedState is built at spawn
