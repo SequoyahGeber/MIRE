@@ -3001,6 +3001,191 @@ Separately worth its own fix: the icon builder should overwrite rather than emit
 
 ---
 
+### F-573 · The `standing_stones` POI places six sites per island that build nothing at all
+
+**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-22 by wick3d4184 during a
+never-runs audit
+
+`content/poi/standing_stones.tres` sets `target_count = 6`, `clearance_m = 30.0` and
+`min_spacing_m = 90.0`, but it has **no** `scene_path`, **no** `structure_id`, and **no**
+`marker_kind`. `world/gen/procedural_world.gd:407` skips the scene branch on the empty path,
+`world/gen/poi_structures.gd:35` only registers a builder for `&"ruins"`, and
+`world/gen/procedural_world.gd:427` hits `continue` on the empty kind before any marker is made.
+The result is six bare `Node3D` site roots per island containing literally nothing.
+
+The concrete cost is not just missing landmarks. Each of those six invisible sites still reserves a
+30 m clearance radius and a 90 m mutual spacing in `PoiMap`, so they push real POIs apart and hold
+scatter out of six 30 m circles of otherwise empty grassland. `entities/props/standing_stone_circle.tscn`
+is the repo's only orphan scene and is the obvious intended occupant — nothing references it.
+
+Confirmed empirically: `agent godot --script tools/procedural_world_check.gd` reports
+`sites=176 markers={objective:4, shipwreck:1, station:4, enemy_nest:5, loot:152, spawn:1}` — 167
+markers for 176 sites, and the standing stones account for six of the nine unmarked ones (the ruins
+are the rest, and those legitimately build a structure instead).
+
+Fixing it is one line of content: point `scene_path` at the orphan scene, or add a `standing_stones`
+builder to `PoiStructures.BUILDERS` if it should be kit-assembled like the ruins.
+
+---
+
+### F-574 · The `gilded` chest tier is locked by an item that does not exist anywhere in content
+
+**Area:** loot · **Severity:** medium · **Found:** 2026-08-22 by wick3d4184 during a
+never-runs audit
+
+`autoload/chest_placement_service.gd:82` prices the `gilded` tier as
+`{"cost_coins": 0, "locked_by": &"gilded_key"}`. `gilded_key` appears in **exactly one file in the
+whole repo** — that line. There is no `content/items/gilded_key.tres`, no loot-table entry that
+drops it, no recipe that crafts it, and no enemy or POI that grants it.
+
+`content/poi/treasure_gilded.tres` places two sites per island with
+`marker_name = "Chest_gilded_poi"`, which `_tier_for_marker_name()`
+(`autoload/chest_placement_service.gd:183`) resolves to tier `gilded`. So every procedural island
+ships two of the game's top-tier containers, fully built and visible with their own locator tint,
+that **no player can ever open** — `Chest._accept_open_request()` charges `cost_coins` and
+`locked_by` together and the key can never be in anyone's inventory.
+
+The `sunken` tier in the same table has the opposite problem and is worth checking alongside it: no
+procedural marker is ever named `Chest_sunken_*`, so that rung only exists on the authored maps.
+
+---
+
+### F-575 · Four buildable crafting stations have zero recipes bound to them
+
+**Area:** content · **Severity:** medium · **Found:** 2026-08-22 by wick3d4184 during a
+never-runs audit
+
+Across all of `content/recipes/*.tres` the `station` field only ever takes four values:
+`anvil` (10 recipes), `workbench` (7), `furnace` (2) and `campfire` (1, and that one is
+`content/recipes/charcoal.tres`, not food).
+
+That leaves **`cooking_spit`, `repair_bench`, `woodcutting_block` and `workbench_upgraded`** with
+nothing bound to them. All four ship a `StationDef` (`content/stations/`), a `BuildableDef`
+(`content/buildables/`), and a resource cost the player pays. `CraftingService._station_in_range()`
+(`autoload/crafting_service.gd:321`) is never asked about any of them, because the question is only
+ever raised by a recipe. Outside the content files their ids appear in the shipped tree in exactly
+one place: `world/environment/asset_vfx_library.gd:200` gives `station_cooking_spit` an ember
+emitter. So a player can spend real resources building a station that renders, emits sparks, and
+does nothing.
+
+This is the code-side twin of the asset-side gap wick410d34 catalogued under F-439: the food kit has
+13 unplaced models and there are zero cooking recipes. The cooking spit is where those two meet.
+`workbench_upgraded` is the more surprising one — it is a *tier-two* station whose whole purpose is
+to unlock recipes the primitive workbench cannot make, and there are none.
+
+---
+
+### F-576 · Twenty-two signals are emitted every run with nothing in the shipped tree connected
+
+**Area:** architecture · **Severity:** low · **Found:** 2026-08-22 by wick3d4184 during a
+never-runs audit
+
+Swept every `signal` declaration under `autoload/ systems/ world/ ui/ core/ entities/` for a
+connection anywhere outside `tools/`. Twenty-two have none. Most are harmless reserved API, but four
+are worth a look because the missing consumer is a feature, not an omission:
+
+- `autoload/combat_service.gd:40` `swing_phase_changed(phase)` — emitted at line 416 on every melee
+  swing state change. Nothing consumes it. An attack-animation driver or a wind-up HUD tell is
+  exactly what this signal is for, and neither exists.
+- `autoload/ranged_combat_service.gd:49` `shot_phase_changed(phase)` — same shape, emitted at 482,
+  same absent consumer for draw/loose feedback.
+- `systems/health/player_health.gd:127,129` `host_health_changed` / `host_stamina_reported` — the
+  host-authoritative broadcast pair. The HUD gets its numbers some other way, so these are a second,
+  unused publication of the same state.
+- `ui/frontend/expedition_screen.gd:50` `sail_requested` — emitted at line 100, but
+  `request_host_and_sail()` also calls `frontend.enter_world()` directly on the next line, so the
+  signal is a vestigial duplicate of a path that already works. Only `tools/expedition_check.gd:79`
+  connects it, which means the check is verifying a signal no shipped code listens to.
+
+Full list of the twenty-two, for whoever triages: `_rpc_result_received`, `attack_missed`,
+`attack_rejected`, `category_changed`, `collected`, `connection_interrupted`, `display_name_changed`,
+`drop_confirmed`, `hit_accepted`, `host_health_changed`, `host_stamina_reported`, `peer_refused`,
+`pickup_confirmed`, `player_despawned`, `region_ready`, `region_retired`, `sail_requested`,
+`shot_phase_changed`, `shot_rejected`, `stack_emptied`, `swing_phase_changed`, `warm_completed`.
+
+---
+
+### F-577 · `content/hooks/` ships one hook and it is disabled, so the family never executes
+
+**Area:** content · **Severity:** low · **Found:** 2026-08-22 by wick3d4184 during a
+never-runs audit
+
+`Registry` loads `content/hooks/` as a first-class content family
+(`autoload/registry.gd:179`, exposed through `hook_defs()`/`get_hook()`), and
+`CommandService.wire_hook()` binds each one to a shipped `EventBus` signal at boot. The directory
+contains exactly one file, `content/hooks/night_siege.tres`, and it carries `enabled = false` with
+the description "Worked example (COMMANDS.md §5.2) … Ships disabled — flip `enabled` to try it."
+
+So the whole hook subsystem — registry loading, validation, `wire_hook()`, the event binding table
+that `tools/hook_events_check.gd` and `tools/function_check.gd` exercise — runs on an empty set in
+every real run. This is a deliberate state (D-094 parks gameplay-by-hook behind M6 Cycle Modifiers)
+rather than a defect, and it is filed here only so the audit's ledger is complete: if M6 lands and
+hooks stay a one-entry worked example, the machinery should be deleted rather than shipped inert.
+
+Worth noting what the same audit did **not** find, so nobody re-derives it: the unlock gate is not a
+content-reachability problem. `UnlockService.is_content_unlocked()` returns true for any content id
+nothing gates, so the 65 powerups without an `UnlockDef` roll freely — only the 7 with a `gates_id`
+are held back. Likewise every marker `kind` a service consumes (`objective`, `shipwreck`, `station`,
+`enemy_nest`, `loot`) is genuinely produced procedurally, verified by the marker census in F-573, so
+`LooseLootService` and its five sibling consumers do all fire on `procedural_island`.
+
+---
+
+### F-578 · Four of the eight craftable stations do nothing: StationDef's family/tier are never read, so the Reinforced Workbench unlocks no recipes
+
+**Area:** crafting · **Severity:** high · **Found:** 2026-08-22 by wick410d34
+
+Found during an audit of "what has been built but never runs in game" (2026-08-22, wick410d34).
+
+`content/stations/` holds eight StationDefs and `content/recipes/` holds twenty recipes. Bound by
+`RecipeDef.station`, they land like this:
+
+    anvil                10 recipes
+    workbench             7 recipes
+    furnace               2 recipes
+    campfire              1 recipe   (`charcoal` — not food)
+    cooking_spit          0
+    repair_bench          0
+    woodcutting_block     0
+    workbench_upgraded    0
+
+All four zero-recipe stations are fully reachable by the player: each has a model (A-003), an icon,
+a `content/buildables/` def, a `scenes/buildables/` scene and a StationDef. A player spends the
+resources, places one, walks up to it and it opens an empty list. `grep -rn 'repair_bench|
+woodcutting_block|workbench_upgraded' autoload systems ui` returns nothing at all — no code path
+gives any of the three a purpose outside crafting either.
+
+`workbench_upgraded` is the sharp one, because it is not "content not authored yet" — it is wired
+wrong. `content/stations/workbench_upgraded.tres` declares `family = &"workbench"` and `tier = 2`,
+and `content/stations/workbench.tres` is the same family at tier 1. But `autoload/crafting_service.gd:85`
+matches with `recipe.station == station`, an exact id comparison, and `family`/`tier` appear nowhere
+else in that file or in any other script — `grep -n 'family\|tier' autoload/crafting_service.gd`
+returns two comment lines. So the tier-2 workbench does not satisfy a recipe that asks for
+`workbench`. A player who builds the upgrade gets a station that unlocks strictly LESS than the one
+it upgrades, which reads as a broken game rather than as missing content.
+
+Two separable fixes:
+
+* **The tier rule.** `recipes_for_station()` and `local_station_in_range()` should resolve a recipe's
+  station through family+tier — a station satisfies a recipe if `family` matches and `tier >=` the
+  required tier — rather than by id. That is the shape `StationDef` was authored for and it is
+  already Sequoyah's stated design (tiered station families, first tier buildable from base gathered
+  resources). One-line data becomes reachable for every future upgraded station, not just this one.
+* **The missing content.** `cooking_spit` and `woodcutting_block` have no recipes because the
+  cooking half of the game does not exist: there are seven CONSUMABLE items and all seven are raw
+  forage (`apple`, `berry`, `mushroom`, `raw_meat`, `herb`, `honey`, `wild_onion`). `raw_meat` has
+  no cooked counterpart. This is the same hole F-439 records on the art side — `assets/food/exports/`
+  has held all thirteen cooked/tonic models since A-012 (`cooked_meat`, `cooked_fish`, `meat_skewer`,
+  `bog_loaf`, `honey_jar`, two stews, three draughts, `suspicious_sludge`, `fired_flask`) with no
+  item def naming any of them. The art is done; the recipes, item defs and icons are not.
+  `ItemDef` already carries `hunger_restore`/`hp_restore` and `PlayerHealth.request_consume_item()`
+  already works, so this is authoring, not systems work.
+
+`repair_bench` is a third case again — it may be intended to drive the repair mechanic rather than a
+recipe list, but nothing references it, so today it is inert either way.
+
+---
+
 ## Resolved
 
 ### F-570 · Playtest: procedural map shows only basic chests and ChestUI does not display the coin cost before opening — **fixed**
