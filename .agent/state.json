@@ -204,17 +204,23 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "core/net/net_session.gd": {
-      "agent": "cinder9818da",
-      "at": "2026-08-22T05:29:34+00:00",
-      "task": "F-020",
-      "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
+    "docs/ARCHITECTURE.md": {
+      "agent": "flint04a51d",
+      "at": "2026-08-22T05:33:46+00:00",
+      "task": "F-535",
+      "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
     },
     "docs/ASSET_TRACKER.md": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:13:34+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "docs/DELEGATION.md": {
+      "agent": "flint04a51d",
+      "at": "2026-08-22T05:33:46+00:00",
+      "task": "F-535",
+      "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
     },
     "docs/FINDINGS.md": {
       "agent": "flint04a51d",
@@ -312,6 +318,12 @@
       "task": "F-535",
       "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
     },
+    "tools/item_drop_shot.gd": {
+      "agent": "flint04a51d",
+      "at": "2026-08-22T05:33:10+00:00",
+      "task": "F-535",
+      "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
+    },
     "tools/item_icons_check.gd": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:52:45+00:00",
@@ -341,12 +353,6 @@
       "at": "2026-08-22T05:21:21+00:00",
       "task": "F-535",
       "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
-    },
-    "tools/steam_rejoin_check.gd": {
-      "agent": "cinder9818da",
-      "at": "2026-08-22T05:29:34+00:00",
-      "task": "F-020",
-      "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
     },
     "tools/terminal_focus_check.gd": {
       "agent": "onyxbe8065",
@@ -385,16 +391,6 @@
       "notes": [],
       "started": "2026-08-21T17:13:34+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
-    },
-    "F-020": {
-      "agent": "cinder9818da",
-      "files": [
-        "core/net/net_session.gd",
-        "tools/steam_rejoin_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-22T05:29:34+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
     },
     "F-321": {
       "agent": "onyxbe8065",
@@ -462,7 +458,10 @@
         "tools/inventory_check.gd",
         "tools/mire_interaction_check.gd",
         "tools/harvest_world_check.gd",
-        "tools/inventory_net_check.gd"
+        "tools/inventory_net_check.gd",
+        "tools/item_drop_shot.gd",
+        "docs/ARCHITECTURE.md",
+        "docs/DELEGATION.md"
       ],
       "notes": [],
       "started": "2026-08-22T05:10:38+00:00",
@@ -3855,6 +3854,13 @@
       "task": "F-539",
       "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
     },
+    "core/net/net_session.gd": {
+      "agent": "cinder9818da",
+      "at": "2026-08-22T05:33:45+00:00",
+      "hash": "b3e3c41c282722a4fda9f18793f4017b6da6753a1fbbeed58cd49e56211370d4",
+      "task": "F-020",
+      "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
+    },
     "core/net/net_version.gd": {
       "agent": "coil26502f",
       "at": "2026-08-22T05:27:56+00:00",
@@ -5136,6 +5142,13 @@
       "task": "F-477",
       "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
     },
+    "tools/steam_rejoin_check.gd": {
+      "agent": "cinder9818da",
+      "at": "2026-08-22T05:33:45+00:00",
+      "hash": "cacefb2863418116fa6e36b5de4f3b3fcee373c9a5db8887f84d7829fec0d1c7",
+      "task": "F-020",
+      "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
+    },
     "tools/target_feedback_check.gd": {
       "agent": "pike3c5846",
       "at": "2026-08-21T17:43:48+00:00",
@@ -5627,7 +5640,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1497,
+  "rev": 1503,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -7288,9 +7301,11 @@
       "title": "Generated asset import sidecars flood every clean-tree audit \u2014 **fixed**"
     },
     "F-020": {
+      "done_at": "2026-08-22T05:33:45+00:00",
+      "done_by": "cinder9818da",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Steam sessions cannot use NetSession's direct-address auto-rejoin loop"
     },

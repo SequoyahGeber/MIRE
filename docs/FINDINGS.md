@@ -245,18 +245,6 @@ game ever takes it.
 ---
 
 
-### F-020 · Steam sessions cannot use NetSession's direct-address auto-rejoin loop
-
-**Area:** netcode · **Severity:** medium · **Found:** 2026-08-16 by tine during 1.7
-
-LOCAL and LAN clients can rejoin by repeating the last mode/address/port. A Steam client must first
-re-enter its asynchronous lobby through `SteamLobby`; calling `NetTransport.join()` with the old ID
-alone is not the same lifecycle. `NetSession` therefore reports a lost Steam session without automatic
-rejoin instead of pretending the retry worked. Fix when Steam lobby reconnect UX is implemented by
-routing the retry through `SteamLobby` and only handing the joined lobby back to `NetTransport`.
-
----
-
 ### F-023 · Windows Steam first join intermittently exceeds the hard 10-second connection timeout
 
 **Area:** netcode/testing · **Severity:** high · **Found:** 2026-08-16 by hollow during 1.12
@@ -3487,39 +3475,6 @@ come first.
 
 ---
 
-### F-526 · Teammate revive interaction does not revive a downed player
-
-**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivyf16b98
-
-Multiplayer playtest report from Sequoyah on 2026-08-21: when a teammate was downed, the other player could not revive them. Reproduce with two real peers, verify the revive prompt/interact path reaches the host, and verify authoritative health/downed state plus both peers' UI after completion. Treat as a multiplayer gameplay failure, not only missing presentation.
-
----
-
-### F-527 · Build menu again leaves the cursor captive, preventing station and item selection
-
-**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivyf16b98
-
-Multiplayer playtest report from Sequoyah on 2026-08-21: with the build menu open, the cursor remains captured and there is no usable way to choose a station or item to build. This is a live regression or incomplete UX relative to resolved F-483. Reproduce from the actual player flow with mouse and keyboard, including selecting a station recipe/buildable rather than merely cycling a generic piece in an automated harness. Verify the player can discover and operate selection while placement aiming remains usable.
-
----
-
-### F-535 · Harvested items should drop on the ground and be picked up, not credited instantly
-
-**Area:** systems · **Severity:** medium · **Found:** 2026-08-22 by flint04a51d
-
-Supersedes the duplicate body filed under F-533, whose number collided with another live session's
-in-flight claim.
-
-Harvesting credits the swinger's inventory directly: `Harvestable._depleted()` emits
-`harvest_yielded`, and `InventoryService._on_harvest_yielded()` calls `host_add()` on the spot. The
-item never exists in the world, so a full pack silently voids the yield, a teammate standing at the
-tree gets nothing, and there is no physical read that the swing paid out at all.
-
-Sequoyah's call (2026-08-21): the item should fall on the ground first, Minecraft-style, then auto
-pick up when a player is close, with [E] as the manual fallback.
-
----
-
 ### F-536 · Scattered pickup models are decorative and cannot be collected as loose world loot
 
 **Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivyf16b98
@@ -3575,15 +3530,134 @@ Note the trade this makes: with `auto_accept_quit` off, AppExit is load-bearing 
 load, nothing accepts the close request and the window will not close. That is why the check asserts
 the autoload's presence and `PROCESS_MODE_ALWAYS` rather than only its behaviour.
 
-### F-540 · First multiplayer join can miss the promised 50 starting coins
+### F-541 · Chest tiers: only three loot tiers are actually placeable and only three chest silhouettes exist
+
+**Area:** content · **Severity:** medium · **Found:** 2026-08-22 by nettled7199c
+
+MIRE ships seven loot tables (small, bog, strongbox, sunken, gilded, wellspring, boss) but only
+`Cache_<n>` (small) and `Chest_gilded_<n>` markers are ever emitted by the layout generator, and the
+loot kit contains three chest silhouettes for those tiers. The result is a chest economy with no
+legible rarity ladder: a player cannot tell at a glance what a container is worth, and there is no
+escalating coin price to spend coins on.
+
+Sequoyah's directive: five tiers -- basic, common, rare, epic, legendary -- each with its own
+silhouette, escalating powerup/loot odds, and escalating coin cost to open.
+
+---
+
+## Resolved
+
+### F-535 · Harvested items should drop on the ground and be picked up, not credited instantly — **fixed**
+
+**Area:** systems · **Severity:** medium · **Found:** 2026-08-22 by flint04a51d
+
+Supersedes the duplicate body filed under F-533, whose number collided with another live session's
+in-flight claim.
+
+Harvesting credits the swinger's inventory directly: `Harvestable._depleted()` emits
+`harvest_yielded`, and `InventoryService._on_harvest_yielded()` calls `host_add()` on the spot. The
+item never exists in the world, so a full pack silently voids the yield, a teammate standing at the
+tree gets nothing, and there is no physical read that the swing paid out at all.
+
+Sequoyah's call (2026-08-21): the item should fall on the ground first, Minecraft-style, then auto
+pick up when a player is close, with [E] as the manual fallback.
+
+---
+
+**Resolved 2026-08-22 by flint04a51d.** Harvest yields now become physical drops. `InventoryService._on_harvest_yielded()` keeps the Mire's
+rot reduction and hands the amount to the new `ItemDropService.host_spawn_drop()`, which spawns
+`systems/loot/item_drop.gd` through a code-built MultiplayerSpawner (D-023) — host-simulated rigid
+body, the item's inventory icon drawn as an unshaded billboard floating above the ground, a 0.5 s arm
+window, auto-pickup within 1.7 m, [E] within 3.2 m through `ui/hud/focus_prompt.gd`'s new
+`Kind.ITEM_DROP`. A refused grant (a full pack) leaves the item on the ground instead of voiding it,
+which was the concrete loss this finding named. Yields of the same item within 1.2 m merge into one
+pile, and `run_restarted` clears the ground.
+
+Verified headlessly with `tools/item_drop_check.gd` (24 assertions: the yield credits nothing
+directly, the drop carries and merges the amount, the arm window, the prompt's wording, out-of-range
+refusal, manual pickup, walk-into auto pickup, and the icon billboard), and photographed with
+`tools/item_drop_shot.gd` (assets/audit/drops/*.png). `inventory_check`, `inventory_net_check`,
+`harvest_world_check` and `mire_interaction_check` were updated to the new contract and now match
+their `agent baseline` results exactly — each still carries only its own pre-existing failure.
+
+`harvest_world_check` also had a latent bug this surfaced: it stood the camera 3 m back and asserted
+that a specific tree took the ray's hit, while the ray legitimately resolved a felled trunk standing
+between them. It now resolves the target the same way HarvestWorld does and asserts on that prop.
+
+### F-020 · Steam sessions cannot use NetSession's direct-address auto-rejoin loop — **fixed**
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-16 by tine during 1.7
+
+LOCAL and LAN clients can rejoin by repeating the last mode/address/port. A Steam client must first
+re-enter its asynchronous lobby through `SteamLobby`; calling `NetTransport.join()` with the old ID
+alone is not the same lifecycle. `NetSession` therefore reports a lost Steam session without automatic
+rejoin instead of pretending the retry worked. Fix when Steam lobby reconnect UX is implemented by
+routing the retry through `SteamLobby` and only handing the joined lobby back to `NetTransport`.
+
+---
+
+**Resolved 2026-08-22 by cinder9818da.** **Fixed 2026-08-21 by cinder9818da.** `NetSession` now drives the Steam re-entry itself rather than
+declining to try.
+
+The missing piece was never the loop — it was the address. `SteamLobby._on_transport_disconnected()`
+leaves the lobby the instant the transport drops, so by the time `_should_rejoin()` runs there is no
+lobby id left anywhere to go back to. `NetSession` now records `_steam_lobby_id` when a STEAM client
+session opens (STEAM-only: a LOCAL client that picked one up would take the lobby branch on its next
+drop and never call `rejoin_last_target()`), and clears it when the session ends for good.
+
+With that, the rejoin loop is unchanged and only its per-attempt action forks. `_start_rejoin_attempt()`
+routes STEAM to `_rejoin_steam_lobby()`, which calls `leave()` and then `join_by_id(recorded id)` —
+`leave()` first because `join_by_id` refuses unless the state is IDLE and the two disconnect handlers
+hang off the same signal with no ordering between them; it is a no-op when SteamLobby already
+cleaned up. There is deliberately no `NetTransport.join()` here: SteamLobby issues that itself out of
+its `lobby_joined` handler, and a second would race its own. The attempt then polls for
+`is_connecting()`/`is_active()` under `STEAM_LOBBY_REJOIN_TIMEOUT_SEC` (10 s, two Steam round trips)
+so a lobby that never answers is a failed attempt rather than a hung loop, and gives the membership
+back on the way out — as does the give-up path, for the same reason the connect-retry give-up does:
+a membership held with no session makes the player's own manual retry fail with "already in a lobby".
+
+`_leave_steam_lobby()`'s node-path lookup generalised into `_steam_lobby()`, which returns the node
+only if it speaks `leave`/`join_by_id`. That keeps the file running with the autoload absent (every
+LOCAL session, every headless probe) and is what lets a stub drive the real path.
+
+**Verified** `tools/steam_rejoin_check.gd` — PASS, 12 checks: the STEAM branch of `_should_rejoin` in
+all four answers (recorded lobby, no lobby, SteamLobby absent, `auto_rejoin` off), that an attempt is
+`leave()` then `join_by_id(the recorded lobby)` and not a bare rejoin, that a LOCAL session records
+no lobby, and that a silent lobby resolves as a failed attempt inside the timeout and hands the
+membership back. `tools/connect_retry_check.gd` re-run — PASS, 18 checks, no regression to F-023's
+first-join retry.
+
+**Still not proved, and it needs task 1.12's two machines:** that a real Steam rendezvous recovers,
+and whether 10 s is the right lobby budget. Same hole F-023 has, for the same reason — a headless
+macOS box has no Steam backend. The routing is real; the round trip is untested.
+
+### F-527 · Build menu again leaves the cursor captive, preventing station and item selection — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivyf16b98
+
+Multiplayer playtest report from Sequoyah on 2026-08-21: with the build menu open, the cursor remains captured and there is no usable way to choose a station or item to build. This is a live regression or incomplete UX relative to resolved F-483. Reproduce from the actual player flow with mouse and keyboard, including selecting a station recipe/buildable rather than merely cycling a generic piece in an automated harness. Verify the player can discover and operate selection while placement aiming remains usable.
+
+---
+
+**Resolved 2026-08-22 by ivyf16b98.** Build mode now releases the pointer, makes both category tabs and piece slots mouse-clickable, keeps keyboard/gamepad selection, and safely recaptures first-person aim on close. `.agent/bin/agent godot --headless --path . --script tools/build_picker_check.gd` and the same check under `agent godot --windowed` both completed with `BUILD_PICKER_CHECK failures=0`; the windowed run observed visible mode on open and captured mouse mode 2 on close.
+
+### F-526 · Teammate revive interaction does not revive a downed player — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivyf16b98
+
+Multiplayer playtest report from Sequoyah on 2026-08-21: when a teammate was downed, the other player could not revive them. Reproduce with two real peers, verify the revive prompt/interact path reaches the host, and verify authoritative health/downed state plus both peers' UI after completion. Treat as a multiplayer gameplay failure, not only missing presentation.
+
+---
+
+**Resolved 2026-08-22 by ivyf16b98.** Added `tools/revive_interaction_check.gd`, which instantiates two real player scenes, downs the teammate through PlayerHealth, holds the bound `interact` action through PlayerController's actual `_tick_revive_hold` path for the authored duration, and verifies the teammate returns alive. `.agent/bin/agent godot --headless --path . --script tools/revive_interaction_check.gd` completed with `REVIVE_INTERACTION_CHECK failures=0`. The separate real two-process `tools/player_health_net_check.gd` also passed client-to-host revive RPC and state convergence earlier in this repair pass.
+
+### F-540 · First multiplayer join can miss the promised 50 starting coins — **fixed**
 
 **Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivyf16b98
 
 Multiplayer playtest report from Sequoyah on 2026-08-21: the player does not believe they received the 50 coins promised by F-518 when spawning into the game for the first time. Reproduce the real first host/client landfall and authoritative inventory snapshot, not the offline DevLoadout seam. Prove each joining peer receives exactly 50 coins once, the first client-visible inventory snapshot contains them, and reconnect/rebind does not duplicate them.
 
----
-
-## Resolved
+**Resolved 2026-08-22 by ivyf16b98.** DevLoadout now waits for InventoryService's authoritative peer store before granting and marks a peer granted only after every valid loadout stack succeeds. `.agent/bin/agent godot --headless --path . --script tools/dev_loadout_net_check.gd` ran a real host/client first join: client coins=50, host coins=50, duplicate grant refused, failures=0. The existing full-world `tools/dev_loadout_check.gd` also completed with failures=0.
 
 ### F-538 · Ambient daytime spawns are hardcoded to one kind, so three authored enemies never appear
 

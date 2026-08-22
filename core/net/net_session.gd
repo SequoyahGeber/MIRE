@@ -116,6 +116,12 @@ const REJOIN_BACKOFF_SEC: Array[float] = [0.5, 1.0, 2.0, 4.0]
 ## session that simply failed.
 const CONNECT_RETRY_BACKOFF_SEC: Array[float] = [0.5, 2.0]
 
+## How long one STEAM rejoin attempt gets to become a lobby member again before we call it a failed
+## attempt and back off (F-020). Generous next to a local join because it is two Steam round trips —
+## joinLobby's callback, then the rendezvous — and short enough that four attempts still bound the
+## whole loop under a minute.
+const STEAM_LOBBY_REJOIN_TIMEOUT_SEC: float = 10.0
+
 ## How often the rejoin loop checks whether the attempt in flight has resolved.
 const REJOIN_POLL_SEC: float = 0.1
 
@@ -162,6 +168,11 @@ var _rejoining: bool = false
 ## mutually exclusive states with different exits, and because the loop's own failed attempts come
 ## back through _on_connection_failed — without this it would start a second loop inside itself.
 var _connect_retrying: bool = false
+
+## The lobby a STEAM session was entered through, remembered while the session is open (F-020).
+## SteamLobby drops its own copy the moment the transport disconnects — it is a member of nothing at
+## that point — so by the time we decide to rejoin, this is the only record of where to go back to.
+var _steam_lobby_id: int = 0
 
 
 ## Host-only registry of who is who this run. A client's copy stays empty.
@@ -439,6 +450,9 @@ func _on_session_opened() -> void:
 		"host" if _was_host else "client", NetTransport.local_peer_id()
 	])
 
+	if not _was_host and NetTransport.last_target_mode() == NetConfig.Mode.STEAM:
+		_steam_lobby_id = _current_steam_lobby_id()
+
 	# Only the client hellos — the host never has to tell itself what it is running. The host is the
 	# arbiter of the answer (task 1.11); we report our version and accept its verdict.
 	if not _was_host:
@@ -471,6 +485,7 @@ func _on_disconnected() -> void:
 		_run_rejoin()
 		return
 
+	_steam_lobby_id = 0
 	session_ended.emit(reason, detail)
 
 
@@ -529,9 +544,9 @@ func _should_retry_connect() -> bool:
 	# STEAM only, and for a specific reason rather than caution. A timed-out attempt tears down
 	# WITHOUT announcing, so SteamLobby never sees `disconnected`, never calls _leave_lobby(), and we
 	# are still a member of the lobby — which is the one precondition connect_to_lobby() has. That is
-	# what makes the retry a plain NetTransport.join() and NOT F-020's problem: F-020 is the
-	# rejoin-after-drop case, where the session WAS announced, the lobby WAS left, and getting back in
-	# means SteamLobby's asynchronous flow all over again.
+	# what makes the retry a plain NetTransport.join() and NOT the rejoin-after-drop case, where the
+	# session WAS announced, the lobby WAS left, and getting back in means re-entering the lobby
+	# first — that is what _rejoin_steam_lobby() does (F-020).
 	#
 	# LOCAL and LAN first joins are retried by DevLaunch instead, which is debug-only — see F-024 for
 	# the gap that leaves in a shipped LAN join, which M6's join screen has to close.
@@ -582,11 +597,28 @@ func _run_connect_retry() -> void:
 
 ## By node path, not by name: this file must keep parsing and running with the SteamLobby autoload
 ## absent, which is every LOCAL session and every headless probe (same reason, same shape, as
-## NetTransport._current_steam_lobby).
-func _leave_steam_lobby() -> void:
+## NetTransport._current_steam_lobby). Returns null unless the node is there AND speaks the small
+## slice of the lobby API the rejoin path needs, so a stub in a probe is enough to drive it.
+func _steam_lobby() -> Node:
 	var lobby: Node = get_node_or_null(^"/root/SteamLobby")
-	if lobby != null and lobby.has_method(&"leave"):
+	if lobby == null:
+		return null
+	if not lobby.has_method(&"leave") or not lobby.has_method(&"join_by_id"):
+		return null
+	return lobby
+
+
+func _leave_steam_lobby() -> void:
+	var lobby: Node = _steam_lobby()
+	if lobby != null:
 		lobby.call(&"leave")
+
+
+func _current_steam_lobby_id() -> int:
+	var lobby: Node = _steam_lobby()
+	if lobby == null or not lobby.has_method(&"current_lobby_id"):
+		return 0
+	return int(lobby.call(&"current_lobby_id"))
 
 
 # ── Rejoining (CLIENT) ────────────────────────────────────────────────────────────────────────────
@@ -596,12 +628,18 @@ func _should_rejoin() -> bool:
 	if not auto_rejoin or _was_host:
 		return false
 	if NetTransport.last_target_mode() == NetConfig.Mode.STEAM:
-		# A Steam rejoin is not join(same address) — the peer has to be a lobby member again first,
-		# which is SteamLobby's asynchronous flow, not this file's. Recorded as F-020 rather than
-		# faked here, because a rejoin that silently does nothing is worse than one that says so.
-		MireLog.warn(NetConfig.LOG_CHANNEL,
-			"NetSession: STEAM sessions do not auto-rejoin yet (F-020) — rejoin via the lobby")
-		return false
+		# A Steam rejoin is not join(same address): the peer has to be a lobby MEMBER again first,
+		# and that is SteamLobby's asynchronous flow (F-020). We can still drive it — but only if we
+		# know which lobby, and only if SteamLobby is actually present to drive.
+		if _steam_lobby_id == 0:
+			MireLog.warn(NetConfig.LOG_CHANNEL,
+				"NetSession: no lobby recorded for this STEAM session — rejoin via the lobby")
+			return false
+		if _steam_lobby() == null:
+			MireLog.warn(NetConfig.LOG_CHANNEL,
+				"NetSession: SteamLobby is absent — a STEAM session cannot be rejoined without it")
+			return false
+		return true
 	return NetTransport.has_rejoin_target()
 
 
@@ -626,7 +664,7 @@ func _run_rejoin() -> void:
 		])
 		rejoin_attempted.emit(attempt, REJOIN_BACKOFF_SEC.size())
 
-		if NetTransport.rejoin_last_target() != OK:
+		if not await _start_rejoin_attempt():
 			continue
 		if await _await_connect_result():
 			# _on_session_opened clears _rejoining and emits rejoined().
@@ -636,8 +674,60 @@ func _run_rejoin() -> void:
 
 	_rejoining = false
 	MireLog.error(NetConfig.LOG_CHANNEL, "NetSession: gave up rejoining after %d attempts" % REJOIN_BACKOFF_SEC.size())
+
+	# Same trap as the connect-retry give-up: a lobby membership held with no session left to reach
+	# makes the player's own manual retry fail with "already in a lobby".
+	if _steam_lobby_id != 0:
+		_leave_steam_lobby()
+		_steam_lobby_id = 0
+
 	session_ended.emit(EndReason.CONNECTION_LOST,
 		"lost contact with the host and could not reconnect after %d attempts" % REJOIN_BACKOFF_SEC.size())
+
+
+## Kick off ONE rejoin attempt, whatever the mode needs. True if something is now in flight and
+## _await_connect_result has a verdict coming; false if this attempt is already dead and the loop
+## should back off and try the next one.
+func _start_rejoin_attempt() -> bool:
+	if NetTransport.last_target_mode() == NetConfig.Mode.STEAM:
+		return await _rejoin_steam_lobby()
+	return NetTransport.rejoin_last_target() == OK
+
+
+## F-020. Re-enter the lobby, then let SteamLobby connect us the same way a fresh join does.
+##
+## The order is what matters. SteamLobby.join_by_id() refuses unless its state is IDLE, and after a
+## drop it usually IS — _on_transport_disconnected leaves the lobby for us — but the two handlers
+## hang off the same transport signal and nothing orders them, so a leave() first makes the
+## precondition true either way and is a no-op when it already was. On success SteamLobby itself
+## calls NetTransport.join() out of its lobby_joined handler, so there is deliberately no join here:
+## a second one would race its own.
+func _rejoin_steam_lobby() -> bool:
+	var lobby: Node = _steam_lobby()
+	if lobby == null or _steam_lobby_id == 0:
+		return false
+
+	lobby.call(&"leave")
+	if lobby.call(&"join_by_id", str(_steam_lobby_id)) != OK:
+		return false
+
+	# The lobby answers asynchronously through Steam's callbacks; the transport join that follows is
+	# what _await_connect_result then waits on. Poll rather than await the signal so that a lobby
+	# that never answers at all cannot park the loop forever.
+	var deadline: int = Time.get_ticks_msec() + int(STEAM_LOBBY_REJOIN_TIMEOUT_SEC * 1000.0)
+	while Time.get_ticks_msec() < deadline:
+		if not _rejoining:
+			return false
+		if NetTransport.is_connecting() or NetTransport.is_active():
+			return true
+		await get_tree().create_timer(REJOIN_POLL_SEC).timeout
+
+	MireLog.warn(NetConfig.LOG_CHANNEL,
+		"NetSession: lobby %d did not let us back in within %.0fs" % [
+			_steam_lobby_id, STEAM_LOBBY_REJOIN_TIMEOUT_SEC
+		])
+	lobby.call(&"leave")
+	return false
 
 
 ## Wait out one join attempt. True if it became a session. The deadline is a backstop only — the
