@@ -3054,6 +3054,69 @@ stops paying 92 seconds a run in the meantime.
 
 ## Resolved
 
+### F-560 · SfxDirector's local-peer fallback answers HOST_PEER_ID while a client is still connecting, so host-owned cues briefly test as the local player's own — **fixed**
+
+**Area:** audio · **Severity:** medium · **Found:** 2026-08-22 by hollowbfcf67
+
+Found by bram937a51 reviewing F-553's commit `864eed8d` — a behaviour change the fix introduced and
+the commit message did not mention.
+
+`SfxDirector._local_peer_id()` reads `NetTransport.local_peer_id()` and falls back to
+`NetConfig.HOST_PEER_ID` when it is 0, copying `CombatService._local_peer_id()`. That fallback is
+right for CombatService, which uses it to decide *offline authority* — with no session, being the
+host is the correct answer. It is wrong for SfxDirector, which uses the same value for a different
+question: **"is this cue mine?"**
+
+`NetTransport._local_id` initialises to 0 (`autoload/net_transport.gd:105`) and only becomes real at
+line 236 (host) or line 293 (client, on connect). So on a CLIENT, in the window between boot and the
+connection being established — and again after `_teardown()` resets it to 0 at line 764 — the helper
+answers **1**, the host's id.
+
+Before F-553 that window answered 0, which matches nothing, so the four ownership tests
+(`autoload/sfx_director.gd:681`, `734`, `775`, `817`) silently failed closed. They now match the
+HOST's id, so a client in that window treats host-owned cues as its own: `_on_enemy_attack_landed`
+plays `hit_flesh` for a hit the host took, and `_on_resonance_changed` fires for the host's tier
+change. **"Fails closed" became "fails as the host."**
+
+The window is narrow and there is probably nothing to hear inside it today, which is why this is
+medium rather than high — F-553's removal of a per-frame engine ERROR from 53 checks is
+unambiguously worth having, and reverting it would be wrong. But the default is the problem, not the
+symptom: the next call site added to this file inherits "when in doubt, I am the host", and that is
+not a safe thing for an ownership test to assume.
+
+**Fix:** distinguish *no session* from *a session that has not assigned this peer an id yet*.
+`NetTransport` already exposes both — `is_active()` is true while HOSTING or CONNECTED, and
+`is_connecting()` is true between `join()` returning OK and the connection resolving. When either is
+true and the id is still 0, answer 0 and fail closed. Keep `HOST_PEER_ID` only for the genuinely
+offline case, where it is correct.
+
+**Resolved 2026-08-22 by hollowbfcf67.** **Fixed 2026-08-22 by hollowbfcf67; found by bram937a51 in review of F-553.** `_local_peer_id()` now
+distinguishes *no session* from *a session that has not assigned this peer an id yet*:
+
+    if peer_id > 0:
+        return peer_id
+    if bool(transport.call(&"is_active")) or bool(transport.call(&"is_connecting")):
+        return 0
+    return NetConfig.HOST_PEER_ID
+
+`is_active()` is true while HOSTING or CONNECTED, `is_connecting()` between `join()` returning OK and
+the connection resolving, so between them they cover the whole window in which `_local_id` is 0 but a
+real id is coming — boot-to-connect on a client, and the post-`_teardown()` frames. In that window
+the helper answers 0, which matches nothing, so the four ownership tests fail CLOSED. `HOST_PEER_ID`
+survives only for the genuinely offline case, where it is the correct answer.
+
+The comment at the call site says why this file diverges from `CombatService._local_peer_id()`, which
+it was copied from and which is right to answer `HOST_PEER_ID` there — CombatService is deciding
+offline *authority*, and this file is asking *"is this cue mine?"* with the same value. That is the
+part worth keeping: the shapes are identical and the questions are not.
+
+**Verified**: `SFX_CHECK failures=0`, `COMBAT_CHECK landed=1 missed=2 rejected=1 failures=0`,
+`DOOR_CHECK failures=0`, and F-553's win holds — no `No multiplayer peer is assigned` line in any of
+them.
+
+The review process is what caught this, one commit after the change landed. Worth noting because
+F-553 was itself a fix for a defect that had survived in shipped code for months.
+
 ### F-556 · agent verify runs every check headless, so the ten checks that require a window can only ever fail or skip — **fixed**
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-22 by hollowbfcf67

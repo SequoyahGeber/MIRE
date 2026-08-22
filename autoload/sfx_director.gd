@@ -142,7 +142,18 @@ func _local_peer_id() -> int:
 	if transport == null:
 		return NetConfig.HOST_PEER_ID
 	var peer_id: int = int(transport.call(&"local_peer_id"))
-	return peer_id if peer_id > 0 else NetConfig.HOST_PEER_ID
+	if peer_id > 0:
+		return peer_id
+	# No id yet, and WHY matters (F-560). `CombatService._local_peer_id()` answers HOST_PEER_ID here
+	# and is right to, because it is deciding offline AUTHORITY — with no session, being the host is
+	# the correct answer. This file asks a different question with the same value: "is this cue
+	# mine?". `_local_id` is 0 from boot until a client connects, and again after `_teardown()`, so
+	# answering 1 in that window makes a client treat the HOST's cues as its own — it would play
+	# `hit_flesh` for a hit the host took. Answer 0 while a session is live or forming: it matches
+	# nothing, so an ownership test fails closed rather than failing as somebody else.
+	if bool(transport.call(&"is_active")) or bool(transport.call(&"is_connecting")):
+		return 0
+	return NetConfig.HOST_PEER_ID
 
 
 func _process(delta: float) -> void:
