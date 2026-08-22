@@ -108,6 +108,32 @@ func _run() -> void:
 	check(axe.hitstop_seconds < axe.recovery_seconds,
 		"hitstop is shorter than the recovery it interrupts, so it reads as impact not as a hitch")
 
+	# Reported from play: "the weapons dont feel like they have an impact". Measuring the mix found
+	# three cues present and the fourth missing outright — `Enemy.host_apply_knockback()` had existed
+	# since F-585 and was called from ONE place, the Kinetic shockwave, so an ordinary swing moved
+	# nothing. A body that does not move when struck reads as a wall. These assertions exist so the
+	# wiring cannot quietly come undone again, which is how it got here.
+	check(axe.knockback_impulse_mps > 0.0,
+		"a connected hit shoves what it hit — the cue that lands on the TARGET, not the camera")
+	# Well under `ResonanceService`'s KINETIC_GREATER_SHOCKWAVE_IMPULSE of 9.0: that is an ability
+	# fired occasionally, this fires several times a second, and a melee push the size of a shockwave
+	# turns every fight into a shoving match with the enemy permanently out of reach.
+	check(axe.knockback_impulse_mps <= 5.0,
+		"the melee shove stays far below the shockwave's 9.0 — impact, not crowd control (%.1f)"
+			% axe.knockback_impulse_mps)
+	# The mechanism, not just the number. A field nothing reads is what this whole finding is about.
+	var combat_source: String = FileAccess.get_file_as_string("res://autoload/combat_service.gd")
+	# Matches the CALL, not the name. The first cut of this asserted `contains("_apply_hit_knockback(")`
+	# and was vacuous: the function's own `func _apply_hit_knockback(` definition satisfies that
+	# substring, so deleting the call site left this green. Caught by negative control, which is the
+	# entire argument for running one.
+	check(combat_source.contains("_apply_hit_knockback(player, target, weapon)"),
+		"CombatService actually CALLS the knockback on a connected hit, not merely defines it")
+	check(combat_source.contains("has_method(&\"host_apply_knockback\")"),
+		"and guards it, so a harvestable taking the same swing is not shoved")
+
+	note("knockback    %.1f m/s   (shockwave, for scale: 9.0)" % axe.knockback_impulse_mps)
+
 	print("")
 	for line: String in notes:
 		print("  %s" % line)

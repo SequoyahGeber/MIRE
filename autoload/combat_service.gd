@@ -328,10 +328,47 @@ func _resolve_hit(peer_id: int, weapon: WeaponDef) -> void:
 		connected = bool(target.call("host_apply_damage", applied, peer_id))
 		if connected:
 			host_apply_hit_rewards(peer_id, applied, target)
+			_apply_hit_knockback(player, target, weapon)
 	if not connected:
 		_broadcast(peer_id, false, Vector3.ZERO, 0, &"")
 		return
 	_broadcast(peer_id, true, target_position, applied, StringName(String(target.name)))
+
+
+## Shove the thing that was just hit, away from whoever hit it.
+##
+## Reported from play: *"the weapons dont feel like they have an impact, like when i hit something i
+## want it to feel like i just hit something."* Measuring the mix rather than guessing at it found
+## three of the four impact cues already present — hitstop, camera shake, and the target's own white
+## flash — and this one missing outright. `Enemy.host_apply_knockback()` had existed since F-585 and
+## was called from exactly ONE place in the tree, `ResonanceService`'s Kinetic Greater shockwave, so
+## an ordinary swing moved nothing at all. A body that does not move when struck reads as a wall.
+##
+## HOST-side, unlike the other three. Hitstop and shake are client-local by construction (D-033);
+## this moves a simulated body, so it belongs beside the damage and is applied on the same authority.
+## Nothing new goes on the wire: `Enemy` holds the impulse in its own `_knockback_velocity` and
+## decays it per physics frame, and the resulting motion replicates through the position it already
+## replicates.
+##
+## Deliberately tolerant of a target that cannot be pushed. Harvestables take the same swing through
+## the same `host_apply_damage` seam and are rooted scenery — a tree that recoils is worse than a
+## tree that does not — so the method check is the whole guard, exactly as `ResonanceService` does it.
+func _apply_hit_knockback(player: Node3D, target: Node, weapon: WeaponDef) -> void:
+	if weapon.knockback_impulse_mps <= 0.0 or not target.has_method(&"host_apply_knockback"):
+		return
+	var body := target as Node3D
+	if body == null:
+		return
+	# Away from the attacker along the ground. The vertical component is dropped on purpose: a hit
+	# that lifts a creature reads as a launch, and a creature that leaves the ground stops being
+	# something the navmesh can bring back to you.
+	var away: Vector3 = body.global_position - player.global_position
+	away.y = 0.0
+	if away.length_squared() < 0.0001:
+		# Struck from exactly on top of it: push it along the attacker's facing instead of nowhere.
+		away = -player.global_transform.basis.z
+		away.y = 0.0
+	body.call(&"host_apply_knockback", away, weapon.knockback_impulse_mps)
 
 
 ## F-585's seam. Returns the extra damage the attacker's Resonances add to this hit, and applies
@@ -422,6 +459,20 @@ func _reject(peer_id: int, request_id: int, detail: String) -> void:
 
 
 # ── Client-local feel ─────────────────────────────────────────────────────────────────────────────
+#
+# READ THIS BEFORE TUNING `hitstop_seconds`, because the constant does not do what its name implies
+# to anyone who has tuned hitstop in another engine.
+#
+# Here it stalls THE ATTACKER'S OWN SWING CLOCK and nothing else. It is not a frame freeze: the world
+# keeps running, the struck creature keeps moving, and no other peer sees anything. `Engine.time_scale`
+# would give the usual whole-screen freeze, and it is ruled out by D-033 because it stalls this peer's
+# frame loop and with it the network pump every transport is polled from.
+#
+# The consequence for feel work: raising this number buys RECOVERY WEIGHT, not punch. Someone chasing
+# "hits feel weak" by pushing 0.075 toward 0.2 will get a weapon that feels sluggish and no more
+# impactful, then push it further. The cues that actually read as impact are the ones on the target
+# and the camera — `Enemy`'s white flash, the shake below, and the knockback in `_apply_hit_knockback()`.
+# Noted here rather than in a finding because this is where someone will be standing when they wonder.
 
 func _apply_resolution(
 	peer_id: int, hit: bool, position: Vector3, damage: int, target_name: StringName

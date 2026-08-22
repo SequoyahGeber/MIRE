@@ -54,8 +54,17 @@ const ANIM_HIT: StringName = &"hit"
 const ANIM_DEATH: StringName = &"death"
 
 ## Feel constants (2.9). Short enough to read as an impact rather than a state change.
-const HIT_FLASH_SEC: float = 0.12
-const HIT_FLASH_ALPHA: float = 0.75
+##
+## Raised from 0.12 s / 0.75 alpha against Sequoyah's "weapons don't feel like they have an impact"
+## report. At 0.12 s the flash is seven frames at 60 fps and it decays linearly from the start, so
+## the bright part of it — the only part a player actually registers mid-swing — was about three
+## frames. The flash is the cue that lands on the THING BEING LOOKED AT, which makes it worth more
+## than the two cues on the camera, and it costs nothing but an overlay colour.
+##
+## Still short enough not to read as a state change: at 0.18 s a struck creature is white for under
+## a fifth of a second, well inside the gap between two swings of even the fastest weapon.
+const HIT_FLASH_SEC: float = 0.18
+const HIT_FLASH_ALPHA: float = 0.92
 ## Fraction of the corpse's life spent lying still before it starts sinking, so the death clip lands
 ## before anything moves.
 const DISSOLVE_HOLD_FRACTION: float = 0.35

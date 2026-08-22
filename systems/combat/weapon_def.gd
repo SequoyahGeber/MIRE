@@ -60,6 +60,25 @@ extends Resource
 @export var impact_sound: AudioStream
 @export_range(0.0, 60.0, 0.5) var impact_audible_range_m: float = 24.0
 
+## How hard a connected melee hit shoves the thing it hit, in metres per second of initial impulse.
+##
+## Reported from play: *"the weapons dont feel like they have an impact, like when i hit something I
+## want it to feel like i just hit something."* Of the four cues in the mix this was the only one
+## missing entirely. `Enemy.host_apply_knockback()` has existed since F-585 and was called from
+## exactly one place in the tree — `ResonanceService`'s Kinetic Greater shockwave, at impulse 9.0 —
+## so an ordinary swing moved nothing. A body that does not move when struck reads as a wall, which
+## is the complaint almost word for word.
+##
+## Deliberately NOT in the "client-local, never networked" group above: unlike hitstop and shake,
+## this moves a simulated body, so it is HOST-authoritative and applied where the damage is applied.
+## `Enemy` decays it at `KNOCKBACK_DECAY_PER_SEC` and never replicates the velocity itself.
+##
+## Scaled well below the shockwave's 9.0 on purpose. This fires on EVERY connected hit, several
+## times a second, where the shockwave is an ability; a melee push big enough to feel like a
+## shockwave would shove every enemy permanently out of reach and turn a fight into a shoving match.
+## 3.0 moves a creature visibly for about a third of a second and does not break the spacing.
+@export_range(0.0, 12.0, 0.1) var knockback_impulse_mps: float = 3.0
+
 
 ## Total locked-out duration of one swing.
 func swing_seconds() -> float:
