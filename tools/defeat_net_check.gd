@@ -176,13 +176,37 @@ func _run_driver() -> void:
 
 	# ── 2 · placement: home, not where it fell ───────────────────────────────────────────────────
 	print("\n-- 2 · it comes back to the spawn point, not to where it died --")
+	# F-605 diagnostics. "the RPC never went" and "the RPC went and the client ignored it" are
+	# different bugs with the same red line — the same conflation that made F-521 look like a broken
+	# client when it was a stale check.
+	var transforms: Dictionary = health.get("_spawn_transforms")
+	var host_has_entry: bool = transforms.has(client_peer)
+	print("  host holds a spawn transform for the client: %s%s" % [
+		host_has_entry,
+		("  -> %s" % transforms.get(client_peer, {})) if host_has_entry else "",
+	])
+	print("  client body class on the host: %s (respawn needs CharacterBody3D)"
+		% client_body.get_class())
+	# BOUNDED WAIT, not a single read and not a delay. The respawn teleport is applied by the CLIENT
+	# on its own body (own movement is client authority, §2.2 row 1) and travels back to the host as
+	# an ordinary position update, so the host's copy is stale for a few frames after the state flips
+	# to alive. The first cut read it once, caught it stale, and reported a defect that does not
+	# exist; adding two diagnostic prints then "fixed" it by accident, which is the clearest possible
+	# demonstration that a delay is not a fix. This waits for the arrival with a real deadline and
+	# fails if it never comes.
+	var came_home: bool = await _until(
+		func() -> bool:
+			var now: Vector3 = client_body.global_position
+			return Vector2(now.x - spawn_home.x, now.z - spawn_home.z).length() <= HOME_TOLERANCE_M,
+		10.0
+	)
 	var landed: Vector3 = client_body.global_position
 	var from_home: float = Vector2(landed.x - spawn_home.x, landed.z - spawn_home.z).length()
 	var from_death: float = Vector2(landed.x - DEATH_SITE.x, landed.z - DEATH_SITE.z).length()
 	print("  landed at %s — %.1f m from spawn, %.1f m from where it died" %
 		[landed, from_home, from_death])
-	check(from_home <= HOME_TOLERANCE_M,
-		"respawn lands at the captured spawn (%.1f m from it, tolerance %.1f)"
+	check(came_home,
+		"respawn reaches the captured spawn on the host within 10 s (%.1f m from it, tolerance %.1f)"
 			% [from_home, HOME_TOLERANCE_M])
 	# Stated separately and deliberately: this is the F-063 failure — `_teleport_to_spawn()` warning
 	# and returning leaves the body exactly where it fell, which for a death in the Mire or the water
