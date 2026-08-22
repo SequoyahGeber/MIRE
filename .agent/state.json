@@ -3628,11 +3628,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "docs/FINDINGS.md": {
-      "agent": "larchcc2572",
-      "at": "2026-08-22T17:55:32+00:00",
+      "agent": "wick1c650c",
+      "at": "2026-08-22T17:57:53+00:00",
       "hash": null,
-      "task": "F-585",
-      "token": "CLAUDE_CODE_SESSION_ID:f6a5aef5-de72-4d9b-91ac-05faf9176f8d"
+      "task": "F-588",
+      "token": "CLAUDE_CODE_SESSION_ID:ed76fede-3ff8-4b92-b62b-624d86778fe4"
     },
     "docs/ITEMS.md": {
       "agent": "larchcc2572",
@@ -5116,11 +5116,11 @@
     },
     "tools/powerup_effects_check.gd": {
       "agent": "birch1db63e",
-      "at": "2026-08-22T17:42:38+00:00",
-      "claimed_at": "2026-08-22T17:37:34+00:00",
-      "dirty_at_claim": true,
-      "hash": "02939d9629243dd11ff44187fb3fdc8c8a129b778893ec2129d7e579dddd41e5",
-      "task": "F-580",
+      "at": "2026-08-22T17:58:09+00:00",
+      "claimed_at": "2026-08-22T17:57:00+00:00",
+      "dirty_at_claim": false,
+      "hash": "1448d492748180e3f38c6bbbf372776683e87843c31c9e043106a1b0fc716590",
+      "task": "F-589",
       "token": "CLAUDE_CODE_SESSION_ID:f4f7b0ab-0b40-4c88-a2d0-b7de993492f1"
     },
     "tools/probe_scene.gd": {
@@ -5929,7 +5929,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1778,
+  "rev": 1783,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -12435,6 +12435,15 @@
       "status": "in_flight",
       "tier": "F",
       "title": "resource_scatter_check's harvest-yield assertion fails at a clean HEAD"
+    },
+    "F-589": {
+      "done_at": "2026-08-22T17:58:09+00:00",
+      "done_by": "birch1db63e",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "45 items author a world_model and ~30 pickup GLBs exist, but the branch that renders them is unreachable"
     }
   },
   "version": 1
