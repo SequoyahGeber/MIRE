@@ -3752,47 +3752,6 @@ verdict, so this is currently invisible unless somebody greps the log for "Progr
 
 ---
 
-### F-496 · ResourceScatterField fills every MultiMesh one Variant-boxed set_instance_transform() at a time, on the main thread, per chunk
-
-**Area:** performance · **Severity:** medium · **Found:** 2026-08-22 by vane99f1bb
-
-Found 2026-08-22 by vane99f1bb, from the attribution `tools/traversal_profile.gd` produces now that
-F-456 repaired it.
-
-Over a 45 s / 315 m sprint walk on an M5 Pro (shipped scene, seed 20260821), the repaired profile
-reports 58 hitch frames costing 7.8% of the wall clock, and attributes them like this:
-
-    ChunkStreamer's own reported cost accounts for 3.3% of hitch time (114.33 of 3495.57 ms).
-    Nodes added: 31 per hitch frame vs 6 per quiet frame.
-    -> The cost is downstream of streaming: whatever instantiates and enters the tree per
-       newly-resident chunk (scatter placement, prop wiring, nav bake).
-
-35,796 nodes entered the tree over that walk. The dressing pass that creates them is
-`ResourceScatterField._build_asset_group()`, and inside it every MultiMesh is filled a call at a
-time:
-
-    multimesh.instance_count = transforms.size()
-    for index: int in transforms.size():
-        multimesh.set_instance_transform(index, transforms[index] * (part["offset"] as Transform3D))
-
-`set_instance_transform()` is a scripting-API call per instance, each marshalling a `Transform3D`
-through a `Variant`. `MultiMesh.buffer` takes the whole group as one `PackedFloat32Array` (12 floats
-per instance for `TRANSFORM_3D`, the 3x4 matrix row-major) and writes it in a single call. This is
-the same class of fix `MireGrid._upload_field_texture()` already documents for `Image.set_pixel`:
-"65,536 Variant-boxed calls" replaced by "one allocation and a tight loop".
-
-The census in F-454 counts 10,087 `MultiMeshInstance3D` nodes across the settled world, so this loop
-runs on the order of a hundred thousand times per full world, all of it on the main thread inside
-`ChunkStreamer`'s `chunk_mesh_ready` emit, and all of it inside `SCATTER_BUILD_BUDGET_MS` (2.0 ms) —
-a budget that is checked between groups and cannot bound a single group that exceeds it.
-
-Fix shape: build the `PackedFloat32Array` once and assign `multimesh.buffer`. Purely mechanical, no
-behaviour change, verifiable with `tools/resource_scatter_check.gd` and
-`tools/multimesh_readback_check.gd` (which already reads transforms back out of these MultiMeshes)
-plus a before/after `tools/traversal_profile.gd`.
-
----
-
 ### F-497 · Every music director leaves its AudioStreamPlayers running at engine shutdown, leaking playbacks and streams past cleanup
 
 **Area:** content · **Severity:** medium · **Found:** 2026-08-22 by dusk544993
@@ -3838,6 +3797,89 @@ unsubscribes that are already there.
 ---
 
 ## Resolved
+
+### F-496 · ResourceScatterField fills every MultiMesh one Variant-boxed set_instance_transform() at a time, on the main thread, per chunk — **measured and rejected: the proposed fix is 2.5x slower**
+
+**Area:** performance · **Severity:** medium · **Found:** 2026-08-22 by vane99f1bb
+
+Found 2026-08-22 by vane99f1bb, from the attribution `tools/traversal_profile.gd` produces now that
+F-456 repaired it.
+
+Over a 45 s / 315 m sprint walk on an M5 Pro (shipped scene, seed 20260821), the repaired profile
+reports 58 hitch frames costing 7.8% of the wall clock, and attributes them like this:
+
+    ChunkStreamer's own reported cost accounts for 3.3% of hitch time (114.33 of 3495.57 ms).
+    Nodes added: 31 per hitch frame vs 6 per quiet frame.
+    -> The cost is downstream of streaming: whatever instantiates and enters the tree per
+       newly-resident chunk (scatter placement, prop wiring, nav bake).
+
+35,796 nodes entered the tree over that walk. The dressing pass that creates them is
+`ResourceScatterField._build_asset_group()`, and inside it every MultiMesh is filled a call at a
+time:
+
+    multimesh.instance_count = transforms.size()
+    for index: int in transforms.size():
+        multimesh.set_instance_transform(index, transforms[index] * (part["offset"] as Transform3D))
+
+`set_instance_transform()` is a scripting-API call per instance, each marshalling a `Transform3D`
+through a `Variant`. `MultiMesh.buffer` takes the whole group as one `PackedFloat32Array` (12 floats
+per instance for `TRANSFORM_3D`, the 3x4 matrix row-major) and writes it in a single call. This is
+the same class of fix `MireGrid._upload_field_texture()` already documents for `Image.set_pixel`:
+"65,536 Variant-boxed calls" replaced by "one allocation and a tight loop".
+
+The census in F-454 counts 10,087 `MultiMeshInstance3D` nodes across the settled world, so this loop
+runs on the order of a hundred thousand times per full world, all of it on the main thread inside
+`ChunkStreamer`'s `chunk_mesh_ready` emit, and all of it inside `SCATTER_BUILD_BUDGET_MS` (2.0 ms) —
+a budget that is checked between groups and cannot bound a single group that exceeds it.
+
+Fix shape: build the `PackedFloat32Array` once and assign `multimesh.buffer`. Purely mechanical, no
+behaviour change, verifiable with `tools/resource_scatter_check.gd` and
+`tools/multimesh_readback_check.gd` (which already reads transforms back out of these MultiMeshes)
+plus a before/after `tools/traversal_profile.gd`.
+
+---
+
+**Resolved 2026-08-22 by vane99f1bb.** **Resolved 2026-08-22 by vane99f1bb — the proposed fix is 2.5x SLOWER. Not done; measured, rejected,
+and left behind as a benchmark so nobody spends a second session on it.**
+
+Implemented across all three bulk-fill sites, verified exact against `set_instance_transform()`
+instance by instance, and then benchmarked. On an M5 Pro, Godot 4.7.1, 200 groups x 400 instances
+(80,000 transforms, sized from F-454's census):
+
+    set_instance_transform     9.21 ms
+    MultiMesh.buffer          26.29 ms  (23.16 ms when timed first)
+
+Both paths warmed before either was timed, and the buffer path additionally timed first in its own
+pass — on a 2x difference a first-loop warm-up cost would otherwise BE the result. It is not.
+
+**Why the reasoning in this finding was wrong.** `set_instance_transform(index, t)` is one call into
+the engine per instance. Filling the buffer is TWELVE `PackedFloat32Array` element writes per
+instance, and an indexed write into a Packed array from GDScript is itself a boxed operation —
+twelve of them do not come out cheaper than the one call they replace. The `Image.set_pixel` case
+this finding cited as precedent (`MireGrid._upload_field_texture()`) wins for the opposite reason: it
+builds a `PackedByteArray` of ONE byte per cell, a 12:1 ratio the other way.
+
+**The rule worth carrying out of this:** a bulk buffer write beats a per-item engine call only when
+the buffer holds FEWER elements per item than the call costs. At 12 floats per `Transform3D` it does
+not, and this applies to any future attempt to batch MultiMesh transforms from GDScript. Genuinely
+moving this cost needs a different lever — fewer instances, fewer groups, or building them off the
+main thread — not a faster way to write the same loop.
+
+All three call sites (`resource_scatter_field.gd`, `undergrowth.gd`, `authored_world.gd`) are
+reverted and unchanged from HEAD. What ships is `tools/multimesh_fill_bench.gd`, which verifies the
+two paths produce identical transforms and then times them, so the claim above is one command rather
+than a note to be trusted:
+
+    .agent/bin/agent godot --display-driver macos --script tools/multimesh_fill_bench.gd
+
+It needs a real renderer: MultiMesh instance transforms are write-only under `--headless` (F-103), so
+a headless run would compare identity to identity and report a meaningless PASS. It refuses to run
+rather than doing that.
+
+**What this leaves open.** The attribution that produced this finding still stands — over a 45 s
+walk the hitch frames are the ones that ADD NODES (30 per hitch frame vs 5 per quiet frame), and the
+cost is downstream of `ChunkStreamer`, which is at 0.9-3.3% of hitch time. The dressing pass is still
+the place to look; the per-instance transform write is simply not the part of it that is expensive.
 
 ### F-492 · Pinecones: a thrown starter projectile gathered under pine trees — **fixed**
 
