@@ -9517,3 +9517,15 @@ Recovered and reviewed the omitted benchmark_report.gd change: report text now l
 Files: `core/bench/benchmark_report.gd`
 
 Commit at time of writing: `92955b4d`
+
+---
+
+### DONE · F-517 · pikee95746 · 2026-08-22T03:45:45+00:00
+
+**The shipped deep-material asset kit omitted its Blender source file even though its generator explicitly saves it**
+
+Recovered the omitted deep-material Blender source. Blender 5.2.0 LTS opened it successfully: 66 objects, 1 scene.
+
+Files: `assets/source/deep_materials.blend`
+
+Commit at time of writing: `d540706d`

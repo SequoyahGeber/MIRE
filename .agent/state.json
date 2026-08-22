@@ -1451,6 +1451,13 @@
       "task": "F-508",
       "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
+    "assets/source/deep_materials.blend": {
+      "agent": "pikee95746",
+      "at": "2026-08-22T03:45:45+00:00",
+      "hash": "d8253fd18ac5eec333f17408630cb33f68c09206f333b4d4577a80b7f5cf4b79",
+      "task": "F-517",
+      "token": "CODEX_SESSION_ID:01a02790-3c14-7053-95bf-50d5449b9a78"
+    },
     "assets/source/playtest_hollow.blend": {
       "agent": "birchf37d06",
       "at": "2026-08-22T03:21:11+00:00",
@@ -4727,13 +4734,6 @@
       "task": "F-450",
       "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
     },
-    "tools/terrain_normal_check.gd": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T03:44:40+00:00",
-      "hash": "78793babf63afe37d434f6f85fb4ddbf96ff7779c263573723f892aea0052d21",
-      "task": "F-372",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
-    },
     "tools/terrain_texture_check.gd": {
       "agent": "kilnd3a089",
       "at": "2026-08-21T05:34:42+00:00",
@@ -5169,7 +5169,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1362,
+  "rev": 1369,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -11078,6 +11078,15 @@
       "status": "in_flight",
       "tier": "F",
       "title": "Nothing pre-warms shipped materials, so every player pays shader/pipeline compilation as hitches during their first minutes of play"
+    },
+    "F-517": {
+      "done_at": "2026-08-22T03:45:45+00:00",
+      "done_by": "pikee95746",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "The shipped deep-material asset kit omitted its Blender source file even though its generator explicitly saves it"
     }
   },
   "version": 1
