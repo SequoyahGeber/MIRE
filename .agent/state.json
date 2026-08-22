@@ -216,12 +216,6 @@
       "task": "F-533",
       "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
     },
-    "entities/player/player.tscn": {
-      "agent": "ivyf16b98",
-      "at": "2026-08-22T05:08:44+00:00",
-      "task": "F-529",
-      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
-    },
     "systems/enemies/enemy.gd": {
       "agent": "larch28fcaa",
       "at": "2026-08-22T05:08:16+00:00",
@@ -281,18 +275,6 @@
       "at": "2026-08-21T17:52:45+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
-    },
-    "tools/player_camera_ownership_check.gd": {
-      "agent": "ivyf16b98",
-      "at": "2026-08-22T05:08:57+00:00",
-      "task": "F-529",
-      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
-    },
-    "tools/player_net_check.gd": {
-      "agent": "ivyf16b98",
-      "at": "2026-08-22T05:08:44+00:00",
-      "task": "F-529",
-      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     },
     "tools/poi_check.gd": {
       "agent": "ivyf16b98",
@@ -391,23 +373,6 @@
         }
       ],
       "started": "2026-08-22T05:07:39+00:00",
-      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
-    },
-    "F-529": {
-      "agent": "ivyf16b98",
-      "files": [
-        "entities/player/player.tscn",
-        "tools/player_net_check.gd",
-        "tools/player_camera_ownership_check.gd"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-22T05:08:44+00:00",
-          "by": "ivyf16b98",
-          "text": "Root cause: player.tscn authors Camera3D current=true for every instance. A remote/rejoin spawn steals the client's viewport on tree entry before PlayerController._ready disables it; local camera activation must be opt-in by the owning controller."
-        }
-      ],
-      "started": "2026-08-22T05:08:44+00:00",
       "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     },
     "F-533": {
@@ -3831,6 +3796,13 @@
       "task": "F-445",
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     },
+    "entities/player/player.tscn": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:10:05+00:00",
+      "hash": "98b2a8cd61fae2836e3593e9c9ac853bc8c0d8f2b44a21b288fda57427d00aa6",
+      "task": "F-529",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
     "entities/player/player_camera.gd": {
       "agent": "hollowe6edef",
       "at": "2026-08-22T03:35:54+00:00",
@@ -4776,6 +4748,20 @@
       "task": "F-506",
       "token": "CODEX_SESSION_ID:01a02761-cfcd-7582-a37a-9065b6fa147a"
     },
+    "tools/player_camera_ownership_check.gd": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:10:05+00:00",
+      "hash": "3dbaf53d0ad0cf91d357623aa89569ea43154f0a2f823aa0ad17f8217f7dba90",
+      "task": "F-529",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
+    "tools/player_net_check.gd": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:10:05+00:00",
+      "hash": null,
+      "task": "F-529",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
     "tools/powerup_icon_check.gd": {
       "agent": "gale43d16e",
       "at": "2026-08-21T08:34:48+00:00",
@@ -5414,7 +5400,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1428,
+  "rev": 1429,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -11421,9 +11407,11 @@
       "title": "Procedural map chest and loose-loot density is far below the intended scavenging experience"
     },
     "F-529": {
+      "done_at": "2026-08-22T05:10:05+00:00",
+      "done_by": "ivyf16b98",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "A rejoining player can inherit the host camera viewport and visor overlay"
     },

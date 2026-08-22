@@ -9652,3 +9652,18 @@ Notes along the way:
 Files: `systems/wellspring/wellspring.gd`, `tools/wellspring_check.gd`
 
 Commit at time of writing: `93a00990`
+
+---
+
+### DONE · F-529 · ivyf16b98 · 2026-08-22T05:10:05+00:00
+
+**A rejoining player can inherit the host camera viewport and visor overlay**
+
+Remote/rejoin player cameras are inactive by default; only local ownership activates one. player_camera_ownership_check failures=0.
+
+Notes along the way:
+- Root cause: player.tscn authors Camera3D current=true for every instance. A remote/rejoin spawn steals the client's viewport on tree entry before PlayerController._ready disables it; local camera activation must be opt-in by the owning controller.
+
+Files: `entities/player/player.tscn`, `tools/player_net_check.gd`, `tools/player_camera_ownership_check.gd`
+
+Commit at time of writing: `4419f38d`
