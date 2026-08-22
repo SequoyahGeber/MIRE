@@ -37,7 +37,10 @@ const DARTS_PER_SITE: int = 30
 ## constraints exclude most of the island (a shore-only landmark on a mountainous seed) must not spin
 ## forever; it places what fits and the caller sees a short list, which `poi_check` asserts is
 ## reported honestly rather than padded.
-const MAX_ROUNDS_PER_SITE: int = 24
+## Must cover PoiDef.target_count's authored maximum. One round can accept at most one site, so the
+## old value 24 silently made every target above 24 impossible even on an empty kilometre-wide
+## island (F-528's 50-cache scavenging target exposed it).
+const MAX_ROUNDS_PER_SITE: int = 64
 
 
 ## The one entry point. `poi_defs` and `biome_defs` are `Registry.poi_defs().values()` and

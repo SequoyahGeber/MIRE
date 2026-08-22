@@ -9667,3 +9667,18 @@ Notes along the way:
 Files: `entities/player/player.tscn`, `tools/player_net_check.gd`, `tools/player_camera_ownership_check.gd`
 
 Commit at time of writing: `4419f38d`
+
+---
+
+### DONE · F-528 · ivyf16b98 · 2026-08-22T05:11:24+00:00
+
+**Procedural map chest and loose-loot density is far below the intended scavenging experience**
+
+Procedural island chest target raised 8->50; generator ceiling fixed 24->64; five seeds each place 50/50 legally. Loose interactive pickups split to F-536.
+
+Notes along the way:
+- The authored target 50 initially capped at exactly 24 on every seed because PoiMap MAX_ROUNDS_PER_SITE=24 and each round can accept at most one site. Raising the bounded attempt budget to the PoiDef schema maximum 64.
+
+Files: `content/poi/loot_cache.tres`, `tools/poi_check.gd`, `tools/chest_placement_check.gd`, `world/gen/poi_map.gd`
+
+Commit at time of writing: `98e0b011`

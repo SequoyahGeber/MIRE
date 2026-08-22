@@ -30,6 +30,30 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "autoload/command_service.gd": {
+      "agent": "wickec4384",
+      "at": "2026-08-22T05:10:14+00:00",
+      "task": "F-534",
+      "token": "CLAUDE_CODE_SESSION_ID:c6081344-5cdb-423d-8314-804698ccf35c"
+    },
+    "autoload/debug_console.gd": {
+      "agent": "wickec4384",
+      "at": "2026-08-22T05:10:14+00:00",
+      "task": "F-534",
+      "token": "CLAUDE_CODE_SESSION_ID:c6081344-5cdb-423d-8314-804698ccf35c"
+    },
+    "autoload/inventory_service.gd": {
+      "agent": "flint04a51d",
+      "at": "2026-08-22T05:10:38+00:00",
+      "task": "F-535",
+      "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
+    },
+    "autoload/item_drop_service.gd": {
+      "agent": "flint04a51d",
+      "at": "2026-08-22T05:10:38+00:00",
+      "task": "F-535",
+      "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
+    },
     "autoload/reward_service.gd": {
       "agent": "larch28fcaa",
       "at": "2026-08-22T05:08:16+00:00",
@@ -180,12 +204,6 @@
       "task": "F-482",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "content/poi/loot_cache.tres": {
-      "agent": "ivyf16b98",
-      "at": "2026-08-22T05:07:39+00:00",
-      "task": "F-528",
-      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
-    },
     "content/scatter/highland_rocks.tres": {
       "agent": "birche6b40e",
       "at": "2026-08-22T00:06:31+00:00",
@@ -210,6 +228,12 @@
       "task": "F-533",
       "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
     },
+    "docs/FINDINGS.md": {
+      "agent": "flint04a51d",
+      "at": "2026-08-22T05:10:38+00:00",
+      "task": "F-535",
+      "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
+    },
     "docs/ITEMS.md": {
       "agent": "larch28fcaa",
       "at": "2026-08-22T05:08:16+00:00",
@@ -227,6 +251,12 @@
       "at": "2026-08-22T05:08:16+00:00",
       "task": "F-533",
       "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    },
+    "systems/loot/item_drop.gd": {
+      "agent": "flint04a51d",
+      "at": "2026-08-22T05:10:38+00:00",
+      "task": "F-535",
+      "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
     },
     "tools/blender/build_deep_materials.py": {
       "agent": "birche6b40e",
@@ -264,11 +294,17 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "tools/chest_placement_check.gd": {
-      "agent": "ivyf16b98",
-      "at": "2026-08-22T05:07:39+00:00",
-      "task": "F-528",
-      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    "tools/command_complete_check.gd": {
+      "agent": "wickec4384",
+      "at": "2026-08-22T05:10:14+00:00",
+      "task": "F-534",
+      "token": "CLAUDE_CODE_SESSION_ID:c6081344-5cdb-423d-8314-804698ccf35c"
+    },
+    "tools/item_drop_check.gd": {
+      "agent": "flint04a51d",
+      "at": "2026-08-22T05:10:38+00:00",
+      "task": "F-535",
+      "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
     },
     "tools/item_icons_check.gd": {
       "agent": "gale43d16e",
@@ -276,17 +312,17 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "tools/poi_check.gd": {
-      "agent": "ivyf16b98",
-      "at": "2026-08-22T05:07:39+00:00",
-      "task": "F-528",
-      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    "tools/kill_bounty_check.gd": {
+      "agent": "larch28fcaa",
+      "at": "2026-08-22T05:10:38+00:00",
+      "task": "F-533",
+      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
     },
-    "world/gen/poi_map.gd": {
-      "agent": "ivyf16b98",
-      "at": "2026-08-22T05:08:01+00:00",
-      "task": "F-528",
-      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    "ui/hud/focus_prompt.gd": {
+      "agent": "flint04a51d",
+      "at": "2026-08-22T05:10:38+00:00",
+      "task": "F-535",
+      "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
     }
   },
   "in_flight": {
@@ -357,24 +393,6 @@
       "started": "2026-08-22T00:29:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "F-528": {
-      "agent": "ivyf16b98",
-      "files": [
-        "content/poi/loot_cache.tres",
-        "tools/poi_check.gd",
-        "tools/chest_placement_check.gd",
-        "world/gen/poi_map.gd"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-22T05:08:01+00:00",
-          "by": "ivyf16b98",
-          "text": "The authored target 50 initially capped at exactly 24 on every seed because PoiMap MAX_ROUNDS_PER_SITE=24 and each round can accept at most one site. Raising the bounded attempt budget to the PoiDef schema maximum 64."
-        }
-      ],
-      "started": "2026-08-22T05:07:39+00:00",
-      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
-    },
     "F-533": {
       "agent": "larch28fcaa",
       "files": [
@@ -393,11 +411,37 @@
         "content/enemies/strider.tres",
         "content/enemies/tusker.tres",
         "docs/ENEMIES.md",
-        "docs/ITEMS.md"
+        "docs/ITEMS.md",
+        "tools/kill_bounty_check.gd"
       ],
       "notes": [],
       "started": "2026-08-22T05:08:16+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+    },
+    "F-534": {
+      "agent": "wickec4384",
+      "files": [
+        "autoload/command_service.gd",
+        "autoload/debug_console.gd",
+        "tools/command_complete_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-22T05:10:14+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:c6081344-5cdb-423d-8314-804698ccf35c"
+    },
+    "F-535": {
+      "agent": "flint04a51d",
+      "files": [
+        "systems/loot/item_drop.gd",
+        "autoload/item_drop_service.gd",
+        "autoload/inventory_service.gd",
+        "ui/hud/focus_prompt.gd",
+        "tools/item_drop_check.gd",
+        "docs/FINDINGS.md"
+      ],
+      "notes": [],
+      "started": "2026-08-22T05:10:38+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
     }
   },
   "recent": {
@@ -2613,6 +2657,13 @@
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "content/poi/loot_cache.tres": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:11:24+00:00",
+      "hash": "b64610c618aa3a2ff027f1b6b3fbd31f0fa6f5697d2133d7057ba8a3844d6472",
+      "task": "F-528",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
     "content/poi/ruins.tres": {
       "agent": "tine0bda72",
       "at": "2026-08-22T01:38:49+00:00",
@@ -4399,11 +4450,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "tools/chest_placement_check.gd": {
-      "agent": "kilne5d049",
-      "at": "2026-08-22T03:10:17+00:00",
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:11:24+00:00",
       "hash": "b4a8f9dce9aeb6642d6449ef6ed352b1b978661f2487c53a6ad192c1feeb2ee5",
-      "task": "F-511",
-      "token": "CODEX_SESSION_ID:01a0276e-bd11-78b2-af5f-d23a5375375d"
+      "task": "F-528",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     },
     "tools/chunk_mesh_weight.gd": {
       "agent": "vane99f1bb",
@@ -4760,6 +4811,13 @@
       "at": "2026-08-22T05:10:05+00:00",
       "hash": null,
       "task": "F-529",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
+    "tools/poi_check.gd": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:11:24+00:00",
+      "hash": "06c588d31053a5bb714a7e9093ee11c8c381b5f8db5245127353ac09f49ed071",
+      "task": "F-528",
       "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     },
     "tools/powerup_icon_check.gd": {
@@ -5322,6 +5380,13 @@
       "task": "F-493",
       "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
+    "world/gen/poi_map.gd": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:11:24+00:00",
+      "hash": "b24e0e0a8fd13d789bd136654f69539ccc5d38eb236cd1d87cfb98ab49daaa67",
+      "task": "F-528",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
     "world/gen/poi_structures.gd": {
       "agent": "tine0bda72",
       "at": "2026-08-22T01:38:49+00:00",
@@ -5400,7 +5465,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1429,
+  "rev": 1435,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -11400,9 +11465,11 @@
       "title": "Build menu again leaves the cursor captive, preventing station and item selection"
     },
     "F-528": {
+      "done_at": "2026-08-22T05:11:24+00:00",
+      "done_by": "ivyf16b98",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Procedural map chest and loose-loot density is far below the intended scavenging experience"
     },
@@ -11448,6 +11515,20 @@
       "status": "in_flight",
       "tier": "F",
       "title": "Harvest yields teleport into the pack instead of dropping on the ground"
+    },
+    "F-534": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Dev console has no TAB completion for commands or arguments"
+    },
+    "F-535": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Harvested items should drop on the ground and be picked up, not credited instantly"
     }
   },
   "version": 1

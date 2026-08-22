@@ -244,6 +244,8 @@ func _check_every_kind_appears() -> void:
 			var id := StringName(String(definition.get(&"id")))
 			parts.append("%s %d/%d" % [id, int(per_seed.get(id, 0)), definition.get(&"target_count")])
 		print("    seed %d: %s" % [world_seed, ", ".join(parts)])
+		check(int(per_seed.get(&"loot_cache", 0)) == 50,
+			"seed %d reaches F-528's full 50-cache scavenging target" % world_seed)
 
 	for definition: Resource in poi_defs:
 		var id := StringName(String(definition.get(&"id")))
