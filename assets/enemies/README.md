@@ -170,3 +170,54 @@ Blender --background --python tools/blender/build_enemy_fen_stalker.py
 The check covers the import, the yaw offset measured off the mesh (F-039), the ambush end to end
 through the real state machine — first strike doubled, second not, a dodged strike still spends it,
 losing the target re-arms it — and the stat band the tier's identity lives in.
+
+
+---
+
+# The Bog Bulwark (enemy ladder, tier 3)
+
+Task 5.11, `docs/ENEMIES.md` §5. Fourth rigged family here.
+
+| Asset | Family | Contents |
+|---|---|---|
+| `enemy_bog_bulwark` | enemy | Armoured shell-beast — skinned mesh, 20-bone rig, the same 6 clips |
+| `enemy_bog_bulwark_fragment_scute` | debris | A keel plate cracked off with its spike still on it |
+| `enemy_bog_bulwark_fragment_beak` | debris | The hooked beak, with the lure still faintly lit behind it |
+
+1.96 x 3.03 x 1.18 m and 721 polygons — the largest thing in the roster and the first that is wider
+than a doorway.
+
+Modelled on the alligator snapping turtle. The **three keels** — one centre line, one either side,
+each a row of pyramid elevations carrying a spike — are the silhouette; without them it is a boulder
+with legs. The **hooked beak** shears against the lower jaw, so the strike is a snap that closes. The
+**plastron is small and protects little**, which is a fact about the animal and also the entire
+origin of `EnemyDef.armor_arc_degrees`. And it **fishes**: the one emissive on the body is a
+`glowcap`-green lure inside the mouth, visible only when the jaws are open.
+
+Its vertebrae are fused to its shell, so the rig has **no spine chain** and its `hit` clip is a
+shudder rather than a recoil — there is nothing in the middle of it that bends. The eyes are
+`critical` red, per the roster-wide directive.
+
+```bash
+Blender --background --python tools/blender/build_enemy_bog_bulwark.py
+.agent/bin/agent godot --headless --script tools/enemy_bog_bulwark_check.gd
+```
+
+The check covers the import, the yaw offset measured off the mesh, and the armour from every side
+that matters: reduced from dead ahead, unreduced from behind, correct on both sides of the arc
+boundary, never reduced when there is no locatable instigator (armour must fail OPEN), and no
+`hit_counter` bump on a deflect — which is the entire feedback channel for "you are hitting the wrong
+end of this thing".
+
+## A roster-wide note: the eyes are red
+
+Sequoyah, on seeing the ladder: *"red eyes on the enemies please, i think its scarier."* Every
+generator in this directory now points its eye material at `critical` (`#F17661` over a `#FF5030`
+glow) instead of the palette's warm gold `eye` token — warm gold reads as alive and curious, and an
+enemy has to read as hostile at a glance, in fog, at distance. The Peatling, which has no eyes at
+all, was given two red points suspended in its gel for the same reason: an eyeless blob reads as
+scenery.
+
+The correct fix is to change the `eye` token itself in `mire_art.PALETTE`, which repoints every
+enemy at once. That file was claimed by another agent for the whole of task 5.11, so these are
+per-generator overrides until it is free.

@@ -75,6 +75,40 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-21 — 5.11: the enemy ladder, tier 3, and red eyes everywhere (ember5da2c4)
+
+The **Bog Bulwark** — alligator-snapping-turtle-shaped, 3.03 m long, 20-bone rig,
+`content/enemies/bog_bulwark.tres`. `roster_order` is now
+`[fen_stalker, bog_bulwark, bog_crawler]`; **tier 4 goes in front of `bog_crawler`.**
+
+```gdscript
+# systems/enemies/enemy_def.gd — new @export_group("Armour"). Both default to "no armour".
+armor_arc_degrees: float          # arc centred on the enemy's own facing; 0.0 = none
+armor_damage_multiplier: float    # what a hit inside it is multiplied by; never 0.0
+```
+
+`Enemy._is_frontal_hit()` decides it from the INSTIGATOR'S position at the moment damage lands, so it
+already works for a projectile whose instigator is the shooter. Measured against the BODY's facing,
+never the visual's — the visual carries `model_yaw_offset_degrees`, which is an exporter correction
+(F-039) and has nothing to do with which way the creature is turned. It **fails open** at every step;
+armour must never silently nullify a damage source it was not designed against.
+
+**A deflected hit does not bump `hit_counter`**, and that omission is the feedback: no flash, no
+flinch, nothing. It is deliberate and it is also not free — see **F-498**, which describes the
+dedicated `deflect_counter` this wants and why it could not ship here (a new replicated property
+requires a `NetVersion.PROTOCOL_VERSION` bump, and that file was claimed for the whole task).
+
+**Red eyes are now a roster-wide rule.** Sequoyah, mid-task: *"red eyes on the enemies please, i
+think its scarier."* All four enemy generators — including A-006's crawler — point their eye material
+at `critical` instead of the palette's warm gold `eye`, and the Peatling was given two red points in
+its gel because an eyeless blob reads as scenery. **Author new enemies with red eyes without being
+asked.** The right fix is to change the `eye` token in `mire_art.PALETTE` itself, which repoints
+everything at once; that file was claimed for the duration, so these are per-generator overrides.
+
+Also filed: **F-500**, `tools/wave_director_check.gd`'s Cycle 6 live-count assertion went red once in
+five runs and has a printing diagnostic in front of it now, so the next occurrence arrives with
+evidence instead of as a bare boolean.
+
 ### 2026-08-21 — 5.11: the enemy ladder, tier 2 (ember5da2c4)
 
 The **Fen Stalker** — heron-like, 1.94 m, 19-bone rig, `content/enemies/fen_stalker.tres`. It is now

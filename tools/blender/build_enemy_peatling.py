@@ -503,6 +503,29 @@ def build_peatling_parts(mats: dict[str, bpy.types.Material]) -> list[tuple[bpy.
         flank = surface_point(azimuth, 0.92)
         add(vein(f"Peatling_Vein_Rear_{index}", crown, flank, 0.023, mats["vein"]), "mass_rear")
 
+    # ── Two red points suspended in the gel, high on the crown and angled
+    # forward over the fan. A slime mould has no eyes and this one is not
+    # pretending otherwise — they are not in a skull, they do not sit in sockets,
+    # and nothing around them is a face. They exist because Sequoyah asked for red
+    # eyes across the roster ("i think its scarier") and because an eyeless blob
+    # reads as SCENERY: at knee height in fog the Peatling is a bump on the ground
+    # until something in it is looking at you. Two points of `critical` red is the
+    # cheapest possible way to say that, and it is also the only warm colour
+    # anywhere on the creature.
+    for index, side in enumerate((1.0, -1.0)):
+        seat = surface_point(18.0 * side, 0.42)
+        add(
+            ico(
+                f"Peatling_Eye_{index}",
+                (seat[0], seat[1], seat[2] + 0.004),
+                # Points, not headlights: at 3 cm they read as a creature looking
+                # at you, and any larger they read as a face, which this is not.
+                (0.024, 0.024, 0.021),
+                mats["eye"],
+            ),
+            "mass_core",
+        )
+
     # ── Inclusions: what it has eaten and not finished. They sit PROUD of the
     # skin, not suspended in it — the body is opaque and flat-shaded, so a pebble
     # fully inside it is a pebble nobody will ever see. The bone shard does the
@@ -1233,6 +1256,10 @@ def main() -> None:
         # what it is.
         "margin": mat("mire_flesh"),
         "vein": mat("mire_glow"),
+        # Red, per Sequoyah: "red eyes on the enemies please, i think its
+        # scarier". `critical` is the palette's red emissive; the `eye` token is
+        # warm gold, which reads as alive and curious rather than as hostile.
+        "eye": mat("critical"),
         "stone": mat("stone"),
         "bone": mat("bone"),
         "wood": mat("wood_dead"),

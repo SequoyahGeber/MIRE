@@ -215,8 +215,24 @@ func host_apply_damage(amount: int, instigator_peer_id: int) -> bool:
 	if not _owns_simulation() or amount <= 0 or state == State.DEAD or definition == null:
 		return false
 
-	health = maxi(health - amount, 0)
-	hit_counter += 1
+	# docs/ENEMIES.md §5.2 — directional armour. Tier 3 is a wall from the front and soft from
+	# anywhere else, so the fight is about where the attacker is standing rather than about how big
+	# its health pool is.
+	var deflected: bool = _is_frontal_hit(instigator_peer_id)
+	var applied: int = amount
+	if deflected:
+		applied = maxi(roundi(float(amount) * definition.armor_damage_multiplier), 1)
+
+	health = maxi(health - applied, 0)
+	# A deflected hit deliberately does NOT bump the counter, and that omission is the feedback: no
+	# white flash, no flinch clip, nothing. "You hit it and it did not react" is the exact sentence a
+	# player has to hear to work out that this end of the creature is the wrong end, and it costs no
+	# new replicated state to say — which matters, because a new synced property would require a
+	# `NetVersion.PROTOCOL_VERSION` bump (see that file's own rule) and this delivers the same read
+	# without one. A dedicated deflect cue with its own counter would be better still; that is filed
+	# rather than smuggled in.
+	if not deflected:
+		hit_counter += 1
 	# Being hit does not interrupt a committed attack. An enemy whose swing can be cancelled by any
 	# chip of damage cannot threaten a group, and DESIGN.md §6's readable telegraph only means
 	# anything if the thing it telegraphs actually arrives.
@@ -227,6 +243,36 @@ func host_apply_damage(amount: int, instigator_peer_id: int) -> bool:
 
 	_enter_death(instigator_peer_id)
 	return true
+
+
+## docs/ENEMIES.md §5.2. Whether `instigator_peer_id` is standing inside this enemy's armoured arc.
+##
+## Measured horizontally only — a hit from a rooftop is still a hit from the front — and against the
+## BODY's facing rather than the visual's, because the visual can carry an `EnemyDef`
+## `model_yaw_offset_degrees` that exists purely to correct an exporter's idea of forward (F-039) and
+## has nothing to do with which way the creature is actually turned.
+##
+## Fails OPEN at every step: no armour authored, no instigator, no locatable player, or an attacker
+## standing exactly on top of this enemy all return false and leave the damage unreduced. Armour
+## should never be able to silently nullify a damage source it was not designed against.
+func _is_frontal_hit(instigator_peer_id: int) -> bool:
+	if definition == null or definition.armor_arc_degrees <= 0.0:
+		return false
+	if definition.armor_damage_multiplier >= 1.0 or instigator_peer_id <= 0:
+		return false
+	var attacker: Node3D = _player_for(instigator_peer_id)
+	if attacker == null or not is_instance_valid(attacker):
+		return false
+	var to_attacker: Vector3 = attacker.global_position - global_position
+	to_attacker.y = 0.0
+	if to_attacker.length_squared() < 0.0001:
+		return false
+	var forward: Vector3 = -global_transform.basis.z
+	forward.y = 0.0
+	if forward.length_squared() < 0.0001:
+		return false
+	var angle: float = rad_to_deg(forward.normalized().angle_to(to_attacker.normalized()))
+	return angle <= definition.armor_arc_degrees * 0.5
 
 
 func is_alive() -> bool:

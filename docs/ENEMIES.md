@@ -33,7 +33,7 @@ lunge or with a mechanic, never with a bigger `attack_range_m`.
 |---|---|---|---|---|
 | 1 | **Peatling** | Cycle 1 (night 1) | *Where* you fight starts to matter | Dies into a stain of corruption — it spreads the Mire by being killed |
 | 2 | **Fen Stalker** | Cycle 2 (night 4) | You cannot stand in the open | Strikes *through* your retreat — the first kind in the game that lunges — and its first strike out of ambush hits far harder |
-| 3 | *tier 3* | Cycle 4 (night 10) | You cannot trade hits head-on | (authored at tier 3) |
+| 3 | **Bog Bulwark** | Cycle 4 (night 10) | You cannot trade hits head-on | Armoured through a 160-degree frontal arc, and it never stops following you |
 | 4 | *tier 4* | Cycle 6 (night 16) | You cannot just close the distance | (authored at tier 4) |
 | 5 | *tier 5* | Cycle 8 (night 22) | The night stops being survivable by habit | (authored at tier 5) |
 
@@ -291,3 +291,116 @@ same dagger that was pointed at the player thirty seconds earlier.
 | `vision_angle_deg` | 120 | A real blind side. Spot it first and you can walk around it entirely. |
 | `alert_radius_m` | 14 | It calls. Tier 1 never did — this is where "a pack" starts. |
 | `max_concurrent_attackers` | 2 | Two at a time commit; the rest circle. A wall of simultaneous 3.2 m strikes is not a fight. |
+
+
+---
+
+## 5. Tier 3 — **Bog Bulwark**
+
+> Three metres of armoured shell on four short legs, lying in the shallows with its jaws open and a
+> pale green light glowing somewhere inside them.
+
+**The verb: you cannot trade hits head-on.** Tiers 1 and 2 were both, in the end, answerable by one
+player doing the right thing. This one is not. Its front 160 degrees are armour: hits from inside
+that arc land for **30% of their damage and do not even make it flinch**. Everything you know about
+fighting works, and works *four times too slowly*, and it keeps coming.
+
+And it does keep coming. `deaggro_radius_m` is 120 m — effectively the whole island — so leaving,
+which was the correct answer to the Peatling and a viable one against the Stalker, only postpones it.
+A Bulwark that acquired you at dusk is still walking toward you at dawn.
+
+The counterplay is **position, and preferably a second player**. It turns at 1.4 rad/s, less than a
+third of the Stalker's, so somebody standing in front of it holding its attention buys somebody else
+all the time in the world to get behind it and hit an unarmoured back for full. That is `DESIGN.md`
+§P3 — roles without classes — falling out of one enemy's geometry rather than out of a class system.
+Solo it is not unwinnable, just slow and expensive: circle-strafe, hit, back off the 1.6 s recovery,
+repeat.
+
+**How you find out.** There is no armour meter and there is not going to be one. A deflected hit
+simply produces *nothing* — no hit flash, no flinch, no reaction of any kind — where an unarmoured
+hit produces all three. "I hit it and it ignored me" is a sentence players read correctly and
+immediately, and it costs no new networked state to say it.
+
+### 5.1 The real thing it is modelled on
+
+The alligator snapping turtle, *Macrochelys temminckii*. Four facts, and the third is the tier:
+
+- The carapace carries **three keels** — one down the centre line and one either side — formed by
+  pyramid-shaped elevations of the vertebral and pleural scutes, running front to back and carrying
+  prominent spikes. That is the silhouette, and without it the creature is a boulder with legs.
+- The head ends in a **sharp hooked beak** whose upper jaw works as a *cleaver* against the lower.
+  Shearing, not biting — so the strike is a snap that closes, and the tell is the jaws opening.
+- **The plastron is small and affords little protection to the underside.** A fact about the animal,
+  not a concession to the game, and the entire origin of `armor_arc_degrees`: this thing is a wall
+  from the front and soft everywhere else.
+- It **fishes**. It lies with its jaws open and wiggles a worm-like lure on its tongue until
+  something swims in. So the one emissive on the creature is *bait* rather than corruption — a warm
+  `glowcap` green that no other enemy in the roster owns — and it is only visible when the mouth is
+  open, which is the idle and the tell and nothing else.
+
+Its vertebrae are also fused to its shell, which is why the rig has **no spine chain at all** and why
+its `hit` clip is a shudder rather than a recoil. There is nothing in the middle of it that bends.
+
+### 5.2 The mechanic: directional armour
+
+Two new `EnemyDef` fields, both defaulting to "no armour", so nothing authored before the ladder
+changes by a byte:
+
+- `armor_arc_degrees` — the arc, centred on the enemy's own facing, that is armoured. 0.0 = none.
+- `armor_damage_multiplier` — what a hit inside it is multiplied by. Never 0: a hit that does
+  literally nothing reads as a bug, and it would make a solo fight unwinnable rather than merely
+  expensive.
+
+Expressed as an **arc** rather than as a flat resistance on purpose. A flat 70% reduction is a health
+bar with more numbers in it. A 160-degree frontal arc is a *question about where you are standing*,
+and in co-op it is a question two people can answer better than one.
+
+The direction comes from the **instigator's own position at the moment the damage lands**, which
+means it works for melee today and will work unchanged for a projectile whose instigator is the
+shooter. It is measured against the *body's* facing, not the visual's — the visual can carry a
+`model_yaw_offset_degrees` that exists only to correct an exporter's idea of forward (F-039). And it
+**fails open** at every step: no armour authored, no instigator, no locatable player, or an attacker
+standing exactly on top of it all leave the damage unreduced. Armour must never be able to silently
+nullify a damage source it was not designed against.
+
+### 5.3 The asset (`assets/enemies/exports/enemy_bog_bulwark.glb`)
+
+1.96 m wide, **3.03 m long**, 1.18 m tall, 721 polygons on a 20-bone rig — by a distance the largest
+thing in the roster, and the first that is wider than a doorway. The palette is the third distinct
+one on the ladder: `peat` and `wood_charred` over a `bone` plastron, where tier 1 is purple gel and
+tier 2 is cold grey plumage. The soft parts — head, neck, legs, tail — are deliberately a *mid* grey
+(`mire_dormant`) rather than the shell's near-black, because on a creature whose whole fight is about
+which end of it you are standing at, the end with the jaws on it has to be findable.
+
+The Mire's mark is two crystal growths, and they are on the **rear** keel: the one glowing thing on
+its armour is also the thing that tells you you are standing in the right place.
+
+| Clip | Length | Loops | What it does |
+|---|---:|---|---|
+| `idle` | 3.00 s | yes | **It is fishing.** Sat low with the jaws open and the lure showing. An open mouth with a light in it, at knee height, in fog — and it is not a threat display, it is an invitation. |
+| `locomotion` | 1.40 s | yes | The plod. Diagonal pairs, and it *rocks*: a shell on four short legs cannot help rolling onto whichever pair is planted, and the roll is most of what sells the mass. |
+| `attack_tell` | 0.60 s | no | The longest telegraph in the roster, and it has to be. What you read is the head **disappearing** — the neck hauls back until the skull is inside the shell's own shadow, and the lure goes out with it. |
+| `attack` | 0.40 s | no | The snap. The neck fires the head out along a line and the jaws shear shut *before* full extension, which is what makes it a bite rather than a headbutt. |
+| `hit` | 0.30 s | no | It barely notices — deliberately the weakest reaction in the game. And a *deflected* hit does not play it at all. |
+| `death` | 1.60 s | no | One last gape at nothing, then the legs go out sideways and the whole mass settles onto the plastron with the head lying out in front of it: the one thing it never let anybody see while it was alive. |
+
+Companions: `enemy_bog_bulwark_fragment_scute` (a keel plate cracked off with its spike still on it)
+and `enemy_bog_bulwark_fragment_beak` — the hooked beak, **with the lure still faintly lit behind
+it**. The thing that was pretending to be food, lying on the ground next to the thing it was
+attached to.
+
+### 5.4 Stats (`content/enemies/bog_bulwark.tres`)
+
+| Field | Value | Why that number |
+|---|---:|---|
+| `max_health` | 120 | Four times the Stalker — but the armour is what makes it feel like twelve, and only from the wrong side. |
+| `armor_arc_degrees` / `_multiplier` | 160° / 0.30 | Wide enough that "in front of it" is a real place to be standing by accident; not 180, so the sides are already better than the front. |
+| `move_speed` | 2.2 | Slower than a walk. It is not going to catch you — it is going to *arrive*. |
+| `deaggro_radius_m` | 120 | It never lets go. Slow is only fair if leaving does not solve it. |
+| `turn_speed_rad` | 1.4 | Less than a third of the Stalker's. This number is the counterplay. |
+| `attack_damage` | 26 | The heaviest hit on the ladder. Standing in front of it is not survivable for long even when you *are* hurting it. |
+| `attack_tell_seconds` | 0.6 | The longest telegraph in the game, paid for by the damage and the lunge behind it. |
+| `lunge_speed_m_s` | 5.0 | Faster than it walks, by a lot. A creature that shuffles and then *explodes* forward is the actual animal. |
+| `attack_recovery_seconds` | 1.6 | The window. Every rung of the ladder has one; this one's is the widest, and it is where the fight is won. |
+| `alert_radius_m` | 0 | It calls nobody. It does not need to. |
+| `max_concurrent_attackers` | 1 | Only one commits at a time — two simultaneous 26-damage snaps is not a fight, it is a coin flip. |

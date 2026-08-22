@@ -1109,7 +1109,15 @@ def main() -> None:
         "leg_dark": mat("stone_dark"),
         "bill": mat("bone"),
         "bill_dark": mat("wood_dead"),
-        "eye": mat("eye"),
+        # RED, not the palette's warm gold `eye`. Sequoyah, on seeing the roster:
+        # "red eyes on the enemies please, i think its scarier" — and he is right:
+        # warm gold reads as alive and curious, and an enemy has to read as hostile
+        # at a glance, in fog, at distance. `critical` is the palette's red emissive
+        # (#F17661 over a #FF5030 glow). The genuinely correct fix is to change the
+        # `eye` token itself in `mire_art.PALETTE`, which would repoint every enemy
+        # at once; that file was claimed by another agent (F-473) for the whole of
+        # this task, so this is the per-generator override until it is free.
+        "eye": mat("critical"),
         "glow": mat("mire_glow"),
         "crystal": mat("crystal"),
         "ground": mat("preview_ground"),

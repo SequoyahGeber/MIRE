@@ -68,6 +68,13 @@ func _run() -> void:
 	var spawned_cycle6: int = int(wave.call(&"host_start_wave"))
 	check(spawned_cycle6 == expected_cycle6,
 		"Cycle 6 wave size is (base + per_player) * 1.75 = %d" % expected_cycle6)
+	if int(world.call("live_count")) != expected_cycle6:
+		var seen := {}
+		for e in world.call("live_enemies"):
+			var d = e.get("definition")
+			var k = String(d.get(&"id")) if d != null else "?"
+			seen[k] = int(seen.get(k, 0)) + 1
+		print("DIAG spawned=%d expected=%d live=%d kinds=%s" % [spawned_cycle6, expected_cycle6, int(world.call("live_count")), str(seen)])
 	check(int(world.call("live_count")) == expected_cycle6,
 		"Cycle 6 field actually holds that many live enemies")
 	wave.call(&"host_stop_wave")

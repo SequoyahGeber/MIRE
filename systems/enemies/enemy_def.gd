@@ -88,6 +88,28 @@ extends Resource
 ## sits on the moment of being surprised instead of turning the whole fight into a damage check.
 @export_range(1.0, 4.0, 0.05) var ambush_damage_multiplier: float = 1.0
 
+@export_group("Armour")
+## docs/ENEMIES.md §5.2 — the tier-3 Bog Bulwark's directional armour. Damage arriving from inside
+## this arc, centred on the enemy's own facing, is multiplied by `armor_damage_multiplier`; damage
+## from anywhere else is unreduced. 0.0 — the default — means no armour at all, so no kind authored
+## before the ladder changes by a byte.
+##
+## Expressed as an ARC rather than as a flat resistance because the point is not that the creature is
+## tough, it is that the fight is about **where you are standing**. A flat 70% reduction is a health
+## bar with more numbers in it; a 160-degree frontal arc is a co-op problem — somebody holds its
+## attention while somebody else gets behind it (`DESIGN.md` §P3, roles without classes).
+##
+## The direction is taken from the INSTIGATOR'S OWN POSITION at the moment the damage lands, so it
+## works for melee and will work unchanged for a projectile whose instigator is the shooter. Damage
+## with no locatable instigator — a peer id of 0, a player that has left — is never reduced: failing
+## OPEN matters, because failing closed would let an unattributable damage source be silently
+## nullified by armour it was never meant to be standing in front of.
+@export_range(0.0, 360.0, 5.0) var armor_arc_degrees: float = 0.0
+## What a hit inside the arc is multiplied by. Never zero in practice: a hit that does literally
+## nothing reads as a bug rather than as armour, and it also makes a solo player's fight unwinnable
+## rather than merely wrong.
+@export_range(0.05, 1.0, 0.05) var armor_damage_multiplier: float = 1.0
+
 @export_group("Death")
 ## docs/ENEMIES.md §3.5 — how much corruption this kind pours into the Mire grid where it dies, and
 ## how wide. 0.0 — the default — means it leaves nothing, so every `EnemyDef` authored before the
@@ -146,4 +168,8 @@ func validation_errors() -> PackedStringArray:
 	# both fail SILENTLY, which is the worst way for a kind's entire identity to go missing.
 	if (death_corruption_amount > 0.0) != (death_corruption_radius_m > 0.0):
 		errors.append("death_corruption_amount and death_corruption_radius_m must both be set or both be zero")
+	# Same shape of authoring slip as the pair above: an arc with no reduction and a reduction with no
+	# arc both mean "no armour", and both do it silently.
+	if (armor_arc_degrees > 0.0) != (armor_damage_multiplier < 1.0):
+		errors.append("armor_arc_degrees and armor_damage_multiplier must both be set or neither")
 	return errors

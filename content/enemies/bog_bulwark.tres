@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="EnemyDef" format=3]
+
+[ext_resource type="PackedScene" path="res://assets/enemies/exports/enemy_bog_bulwark.glb" id="1_bgblw"]
+[ext_resource type="Script" path="res://systems/enemies/enemy_def.gd" id="2_d3gob"]
+
+[resource]
+script = ExtResource("2_d3gob")
+id = &"bog_bulwark"
+display_name = "Bog Bulwark"
+model = ExtResource("1_bgblw")
+model_yaw_offset_degrees = 180.0
+radius_m = 1.0
+height_m = 1.15
+max_health = 120
+corpse_seconds = 5.0
+move_speed = 2.2
+stop_distance_m = 2.8
+turn_speed_rad = 1.4
+aggro_radius_m = 26.0
+deaggro_radius_m = 120.0
+attack_range_m = 3.4
+attack_damage = 26
+attack_tell_seconds = 0.6
+attack_seconds = 0.4
+attack_recovery_seconds = 1.6
+lunge_speed_m_s = 5.0
+armor_arc_degrees = 160.0
+armor_damage_multiplier = 0.3
+vision_angle_deg = 200.0
+alert_radius_m = 0.0
+max_concurrent_attackers = 1

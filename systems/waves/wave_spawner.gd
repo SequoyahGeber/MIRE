@@ -54,7 +54,7 @@ const CORRUPTED_SPAWN_CAP_PROBABILITY: float = 0.75
 ## — it is `enemy_id` above, in the pool from night one. `bog_crawler` keeps its place at the back:
 ## task 4.11 authored it for corrupted-spawn substitution and it is a legitimate extra archetype, it
 ## is simply not a rung. **A newly authored tier goes in front of it, after the tiers below it.**
-@export var roster_order: Array[StringName] = [&"fen_stalker", &"bog_crawler"]
+@export var roster_order: Array[StringName] = [&"fen_stalker", &"bog_bulwark", &"bog_crawler"]
 ## How many Cycle advances one roster unlock costs (docs/ENEMIES.md §2). 1 is the pre-5.11 behaviour
 ## — a new archetype every Cycle.
 ##
