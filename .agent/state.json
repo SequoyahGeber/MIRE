@@ -30,6 +30,12 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "autoload/harvest_world.gd": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T00:58:22+00:00",
+      "task": "F-488",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
     "content/harvestables/apple_tree.tres": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:45:13+00:00",
@@ -114,23 +120,59 @@
       "task": "F-482",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "content/recipes/arrow.tres": {
-      "agent": "quillb947a7",
-      "at": "2026-08-22T00:52:48+00:00",
-      "task": "F-487",
-      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
+    "content/scatter/birchwood_canopy.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T00:55:49+00:00",
+      "task": "F-488",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
-    "content/recipes/charcoal.tres": {
-      "agent": "quillb947a7",
-      "at": "2026-08-22T00:52:48+00:00",
-      "task": "F-487",
-      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
+    "content/scatter/birchwood_floor.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T00:53:51+00:00",
+      "task": "F-488",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
-    "content/recipes/flint.tres": {
-      "agent": "quillb947a7",
-      "at": "2026-08-22T00:52:48+00:00",
-      "task": "F-487",
-      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
+    "content/scatter/forest_canopy.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T00:55:49+00:00",
+      "task": "F-488",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/scatter/forest_floor.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T00:53:51+00:00",
+      "task": "F-488",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/scatter/forest_undergrowth.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T00:53:51+00:00",
+      "task": "F-488",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/scatter/grassland_shrubs.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T00:53:51+00:00",
+      "task": "F-488",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/scatter/grassland_trees.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T00:54:11+00:00",
+      "task": "F-488",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/scatter/heath_scrub.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T00:53:51+00:00",
+      "task": "F-488",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
+    "content/scatter/heath_trees.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T00:55:32+00:00",
+      "task": "F-488",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/scatter/highland_rocks.tres": {
       "agent": "birche6b40e",
@@ -138,17 +180,23 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "content/scatter/marsh_floor.tres": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T00:53:51+00:00",
+      "task": "F-488",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
+    },
     "docs/ASSET_TRACKER.md": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:13:34+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "docs/DECISIONS.md": {
-      "agent": "quillb947a7",
-      "at": "2026-08-22T00:52:48+00:00",
-      "task": "F-487",
-      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
+    "systems/harvesting/harvest_library.gd": {
+      "agent": "tine0bda72",
+      "at": "2026-08-22T00:53:51+00:00",
+      "task": "F-488",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "tools/blender/build_deep_materials.py": {
       "agent": "birche6b40e",
@@ -203,12 +251,6 @@
       "at": "2026-08-21T17:52:45+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
-    },
-    "tools/recipe_station_check.gd": {
-      "agent": "quillb947a7",
-      "at": "2026-08-22T00:52:48+00:00",
-      "task": "F-487",
-      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     }
   },
   "in_flight": {
@@ -289,18 +331,25 @@
       "started": "2026-08-22T00:47:57+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:7a55bc0f-4fc2-48cf-9c62-318569fb449e"
     },
-    "F-487": {
-      "agent": "quillb947a7",
+    "F-488": {
+      "agent": "tine0bda72",
       "files": [
-        "content/recipes/charcoal.tres",
-        "content/recipes/flint.tres",
-        "content/recipes/arrow.tres",
-        "tools/recipe_station_check.gd",
-        "docs/DECISIONS.md"
+        "systems/harvesting/harvest_library.gd",
+        "content/scatter/forest_floor.tres",
+        "content/scatter/forest_undergrowth.tres",
+        "content/scatter/grassland_shrubs.tres",
+        "content/scatter/birchwood_floor.tres",
+        "content/scatter/marsh_floor.tres",
+        "content/scatter/heath_scrub.tres",
+        "content/scatter/grassland_trees.tres",
+        "content/scatter/heath_trees.tres",
+        "content/scatter/forest_canopy.tres",
+        "content/scatter/birchwood_canopy.tres",
+        "autoload/harvest_world.gd"
       ],
       "notes": [],
-      "started": "2026-08-22T00:52:48+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
+      "started": "2026-08-22T00:53:51+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     }
   },
   "recent": {
@@ -1544,11 +1593,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "content/buildables/anvil.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:53:18+00:00",
-      "hash": "2d889163af63c203427266f055aa2ea00735a45388e0bcc57eef467416bded85",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:58:58+00:00",
+      "hash": "3ddeb825125fe00ca044abd5de50ba24a4766fe860dd75886af9574a953163e7",
+      "task": "F-487",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
     "content/buildables/barricade.tres": {
       "agent": "galee581ee",
@@ -1579,11 +1628,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/cooking_spit.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:53:18+00:00",
-      "hash": "d52a27ee04bb108f85671f816a301c55b09abca8a86422aa95142fcd65a76fcd",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:58:58+00:00",
+      "hash": "75beec6a15686191d961119410c7ed602f47f0cb64030d7c389e1a242301c216",
+      "task": "F-487",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
     "content/buildables/dock.tres": {
       "agent": "galee581ee",
@@ -1607,11 +1656,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/furnace.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:53:18+00:00",
-      "hash": "69555043be1eceaeb7728d5d71b177b67dec9e1e97595a7307a542080d15f0ec",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:58:58+00:00",
+      "hash": "118eb16c4192355515d4061cf1f114d061a20414c46e0dfc6bede64229b6aea6",
+      "task": "F-487",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
     "content/buildables/gate.tres": {
       "agent": "galee581ee",
@@ -1649,11 +1698,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/repair_bench.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:53:18+00:00",
-      "hash": "b79dac4d8ea064feb0fb9fbf92e8863913990079dcfe514573cea58b06578aba",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:58:58+00:00",
+      "hash": "ee4398507fdf6831195859f058d1808e123c11e78916c920729ffe20fb3563fd",
+      "task": "F-487",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
     "content/buildables/wall.tres": {
       "agent": "galee581ee",
@@ -1677,11 +1726,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/woodcutting_block.tres": {
-      "agent": "galee581ee",
-      "at": "2026-08-22T00:53:18+00:00",
-      "hash": "0606b58669726a33a003117257cf1a43e1a65e7f8761a0cdc21224f5e5ef26af",
-      "task": "F-483",
-      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:58:58+00:00",
+      "hash": "a0f388d77c845398177c202e2f1402fbbc786424293dec081b58e360f33ff85a",
+      "task": "F-487",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
     "content/buildables/workbench.tres": {
       "agent": "galee581ee",
@@ -2714,9 +2763,9 @@
     },
     "content/recipes/arrow.tres": {
       "agent": "quillb947a7",
-      "at": "2026-08-22T00:46:40+00:00",
+      "at": "2026-08-22T00:58:58+00:00",
       "hash": "d879a44a25144d2b625ade3bac207f6bdded4c54c4e4c09c1fea4918d2f60db6",
-      "task": "F-484",
+      "task": "F-487",
       "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
     "content/recipes/bogsilver_axe.tres": {
@@ -2740,11 +2789,25 @@
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "content/recipes/charcoal.tres": {
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:58:58+00:00",
+      "hash": "485d9b409d1d137ebbeb750fb410148e0c293609bc1a848ffef8a376ebb2a082",
+      "task": "F-487",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
+    },
     "content/recipes/cleaver.tres": {
       "agent": "quillb947a7",
       "at": "2026-08-22T00:46:40+00:00",
       "hash": "b7a3c5992862ef7d96c79adf1f73d23343f19f79fb013283768ae5455c25b10e",
       "task": "F-484",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
+    },
+    "content/recipes/flint.tres": {
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:58:58+00:00",
+      "hash": "8a01a437a6bb5f67f58c17f4b0db6294cf4a2a58476921c23730e57ee21257ca",
+      "task": "F-487",
       "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
     "content/recipes/iron_axe.tres": {
@@ -3056,46 +3119,60 @@
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "content/stations/anvil.tres": {
-      "agent": "birche6b40e",
-      "at": "2026-08-21T23:26:09+00:00",
-      "hash": "6177877545d26152b73b9f28f9e329b017c218b59161c8e2ec6c990a41e057e2",
-      "task": "3.18",
-      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:58:58+00:00",
+      "hash": "54663f716d60d1bac7d0ab2c498d2d1ff392e6393ae914ddd656fe138e2aea97",
+      "task": "F-487",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
     "content/stations/campfire.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-22T00:03:18+00:00",
-      "hash": "f8fb91c06d28a3504ab8df1c675b2d747615c6eceb19c46772cf9470860e5309",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:58:58+00:00",
+      "hash": "70bd636cbf15bd12b054304f55da6d9fc547d25dbee310c4cb3396410e933606",
+      "task": "F-487",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
     "content/stations/cooking_spit.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-22T00:03:18+00:00",
-      "hash": "df911a8a03ec6a5832d32e2be81d69007fc06ad5de97d306a37ad1ba0c1ff6f5",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:58:58+00:00",
+      "hash": "486a69df96040eab0c0e819a43f9e16adce30312e0cc21824c0699021fcaf5cb",
+      "task": "F-487",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
+    },
+    "content/stations/furnace.tres": {
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:58:58+00:00",
+      "hash": "1497e42f6d0d0bb58d366b18535a631e4f3ba372f0f858df8d5cee0b7191cdff",
+      "task": "F-487",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
     "content/stations/repair_bench.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-22T00:03:18+00:00",
-      "hash": "3f50bc7c042074e2bdf8d33affdea2d376855f294de8a149202b80a8b7b62bf9",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:58:58+00:00",
+      "hash": "f613061536bea9dc4ef965fc7406ba77ff1f3ef2da47f56b6c5ea6b3651e8a57",
+      "task": "F-487",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
     "content/stations/woodcutting_block.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-22T00:03:18+00:00",
-      "hash": "fa6c89efc6304f3fa34415e8fcc72a3513ca90804e724275e286c587efa24875",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:58:58+00:00",
+      "hash": "a3639827e12d8303164733951e21d1f26dee55cb56741c5cd2ea8341200daa9f",
+      "task": "F-487",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
+    },
+    "content/stations/workbench.tres": {
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:58:58+00:00",
+      "hash": "b895c1ad950a9a35db8f81234e5503967e2a4538a74296c8146a142735fa15f0",
+      "task": "F-487",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
     "content/stations/workbench_upgraded.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-22T00:03:18+00:00",
-      "hash": "8479f1f23d0198e1ff752dfa83f06c2283e094122e34394111a681a5da3d675f",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:58:58+00:00",
+      "hash": "ce97748e7cf9b9f8420468704e5fdabb3e010c7c20da150f0778080f5fcd7197",
+      "task": "F-487",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
     "content/weapons/bogsilver_axe.tres": {
       "agent": "birche6b40e",
@@ -3224,11 +3301,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:079ec6c8-3025-4d18-9503-6b15fbd8d6f2"
     },
     "docs/DECISIONS.md": {
-      "agent": "birche6b40e",
-      "at": "2026-08-21T23:26:09+00:00",
-      "hash": "f0147ee199f2633673d6d2d87e25ffb0266f3c8e5ffeb4d89f2783848b75bced",
-      "task": "3.18",
-      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:58:58+00:00",
+      "hash": "06aab2c4df8c31e7db20ac7d55cde03314f77e22ac474bb2f71e47fb2110aaeb",
+      "task": "F-487",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
     "docs/DELEGATION.md": {
       "agent": "vaneabd52b",
@@ -3453,6 +3530,13 @@
       "hash": "d6e50ac9fe49b0679435fc1ab1319b942b2828e24b0444d040913c5d3a2b397c",
       "task": "F-472",
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+    },
+    "systems/crafting/station_def.gd": {
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:58:58+00:00",
+      "hash": "b8cbbe624d2e71c54dda9ddf562cd650e29f48b7501396b093fdaf4732cc11b3",
+      "task": "F-487",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
     "systems/enemies/enemy.gd": {
       "agent": "ivycc0920",
@@ -4142,9 +4226,9 @@
     },
     "tools/recipe_station_check.gd": {
       "agent": "quillb947a7",
-      "at": "2026-08-22T00:46:40+00:00",
-      "hash": "6ec3f603389658fa15d055f25efa375f8ef0bf1d96849b17eec90a8e2fc3735c",
-      "task": "F-484",
+      "at": "2026-08-22T00:58:58+00:00",
+      "hash": "6de530b094c246aa72a4306bda32606d2585d4b495bebcaf608954b8f6fdafdf",
+      "task": "F-487",
       "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
     "tools/render_census.gd": {
@@ -4153,6 +4237,13 @@
       "hash": "178dc2167df3d9c624aba257ffcbf5da172c3a705487db008b3180e841b259ee",
       "task": "F-452",
       "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
+    },
+    "tools/resource_reachability_check.gd": {
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:58:58+00:00",
+      "hash": "43299c0e596b324f91a7be1d6c2a11b7b889a7c594d763c8b28d1646bd1046e5",
+      "task": "F-487",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
     "tools/resource_scatter_check.gd": {
       "agent": "kilnf96279",
@@ -4673,7 +4764,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     }
   },
-  "rev": 1011,
+  "rev": 1021,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -10303,11 +10394,20 @@
       "title": "Pine and willow read wrong against their real subjects; birch is the standard both should meet"
     },
     "F-487": {
+      "done_at": "2026-08-22T00:58:58+00:00",
+      "done_by": "quillb947a7",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Station tiers: the tier-1 forge and wood stations cost flint and coal, which no run can obtain"
+    },
+    "F-488": {
       "est": "\u2014",
       "milestone": "Findings",
       "status": "in_flight",
       "tier": "F",
-      "title": "Station tiers: the tier-1 forge and wood stations cost flint and coal, which no run can obtain"
+      "title": "Food gatherables never spawn: apple tree, berry bush and mushroom patch have definitions and art but no HarvestLibrary rule and no scatter entry"
     }
   },
   "version": 1

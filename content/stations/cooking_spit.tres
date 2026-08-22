@@ -7,4 +7,5 @@ script = ExtResource("1_stationdef")
 id = &"cooking_spit"
 display_name = "Cooking Spit"
 world_scene = &"station_cooking_spit"
-tier = 1
+family = &"fire"
+tier = 2

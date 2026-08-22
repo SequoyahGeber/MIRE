@@ -7,4 +7,5 @@ script = ExtResource("1_anvil")
 id = &"anvil"
 display_name = "Anvil"
 world_scene = &"station_anvil"
-tier = 3
+family = &"forge"
+tier = 2

@@ -20,8 +20,8 @@ max_ground_slope_degrees = 15.0
 max_build_range_m = 5.0
 cost = Dictionary[StringName, int]({
 &"stone": 20,
-&"flint": 4,
-&"coal": 4
+&"log": 6,
+&"branch": 8
 })
 refund_fraction = 0.5
 max_hp = 60

@@ -8883,3 +8883,15 @@ Notes along the way:
 Files: `ui/building/build_bar.gd`, `systems/building/buildable_def.gd`, `project.godot`, `content/buildables/anvil.tres`, `content/buildables/barricade.tres`, `content/buildables/barricade_spike.tres`, `content/buildables/bridge.tres`, `content/buildables/campfire.tres`, `content/buildables/cooking_spit.tres`, `content/buildables/dock.tres`, `content/buildables/door.tres`, `content/buildables/floor.tres`, `content/buildables/furnace.tres`, `content/buildables/gate.tres`, `content/buildables/ladder.tres`, `content/buildables/palisade.tres`, `content/buildables/palisade_gate.tres`, `content/buildables/ramp.tres`, `content/buildables/repair_bench.tres`, `content/buildables/wall.tres`, `content/buildables/ward.tres`, `content/buildables/ward_post.tres`, `content/buildables/woodcutting_block.tres`, `content/buildables/workbench.tres`, `content/buildables/workbench_upgraded.tres`
 
 Commit at time of writing: `da66a8a`
+
+---
+
+### DONE · F-487 · quillb947a7 · 2026-08-22T00:58:58+00:00
+
+**Station tiers: the tier-1 forge and wood stations cost flint and coal, which no run can obtain**
+
+Station families/tiers in data; tier-1 costs are gathered-only; flint knappable, charcoal moved to campfire. Two new checks guard it.
+
+Files: `content/recipes/charcoal.tres`, `content/recipes/flint.tres`, `content/recipes/arrow.tres`, `tools/recipe_station_check.gd`, `docs/DECISIONS.md`, `content/buildables/furnace.tres`, `content/buildables/woodcutting_block.tres`, `content/buildables/anvil.tres`, `content/buildables/repair_bench.tres`, `content/buildables/cooking_spit.tres`, `systems/crafting/station_def.gd`, `content/stations/anvil.tres`, `content/stations/campfire.tres`, `content/stations/cooking_spit.tres`, `content/stations/furnace.tres`, `content/stations/repair_bench.tres`, `content/stations/woodcutting_block.tres`, `content/stations/workbench.tres`, `content/stations/workbench_upgraded.tres`, `tools/resource_reachability_check.gd`
+
+Commit at time of writing: `9335ee8`

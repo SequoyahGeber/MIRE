@@ -21,6 +21,18 @@ extends Resource
 ## matches against — see CraftingService._station_in_range.
 @export var world_scene: StringName = &""
 
+## Which station family this belongs to — the same grouping `assets/crafting_stations/catalog.json`
+## already gives the art ("workbench", "fire", "forge", "repair", "wood"). Stations progress in
+## families rather than as one flat set: the workbench is upgraded into the reinforced workbench, the
+## furnace is followed by the anvil. `tier` orders the family; this names it.
+##
+## The rule the family exists to express (Sequoyah, 2026-08-21): THE FIRST TIER OF EVERY FAMILY MUST
+## BE BUILDABLE FROM BASE GATHERED RESOURCES — log, branch, stone, fibre — never from a crafted
+## intermediate and never from a loot or POI drop. A family whose entry point needs something the
+## world may not hand out is a branch of progression that can fail to open at all; that is exactly
+## how the forge branch shipped closed (F-487). tools/station_tier_check.gd enforces it.
+@export var family: StringName = &""
+
 ## Crafting tier — DESIGN.md §4.3/§4.5 ("Tinker: ... station tiers"). Presentation and future
 ## unlock-gating only for now; resolving a recipe's station through Registry (rather than the bare
 ## string comparison 2.6 shipped) is what task 3.1 means by "the station-tier check" — a recipe whose
@@ -40,6 +52,8 @@ func validation_errors() -> PackedStringArray:
 		errors.append("display_name is empty")
 	if world_scene == &"":
 		errors.append("world_scene is empty")
+	if family == &"":
+		errors.append("family is empty")
 	if tier < 1:
 		errors.append("tier must be at least 1")
 	return errors

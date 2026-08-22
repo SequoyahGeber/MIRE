@@ -7,4 +7,5 @@ script = ExtResource("1_stationdef")
 id = &"workbench_upgraded"
 display_name = "Reinforced Workbench"
 world_scene = &"station_workbench_upgraded"
+family = &"workbench"
 tier = 2

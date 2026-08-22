@@ -6806,3 +6806,44 @@ corner posts, half-offsets for staggered joins), `_mate_points()` is where they 
 idempotence argument survives unchanged as long as the candidate set stays a finite function of the
 neighbour. A continuous "slide along the face" rule would break it and would need a different
 authority story.
+
+### D-203 · 2026-08-21 · Crafting stations are tiered families, and every family's tier 1 is built from base gathered resources
+
+Sequoyah, on the anvil's `wellglass_shard` cost: *"that recipe doesnt make sense, there should be
+tiers of crafting stations, with the first tier of each being craftable from base resources."*
+
+**Stations progress in families, not as one flat set.** The art catalog already grouped them this
+way; `StationDef` now carries the same grouping as data — `family` names it, `tier` orders it —
+and `validation_errors()` rejects a station that omits the family:
+
+| Family | Tier 1 | Tier 2 |
+| --- | --- | --- |
+| `workbench` | Workbench | Reinforced Workbench |
+| `fire` | Campfire | Cooking Spit |
+| `forge` | Furnace | Anvil |
+| `repair` | Repair Bench | — |
+| `wood` | Woodcutting Block | — |
+
+**The hard constraint is on the entry point.** A family's tier-1 station must be buildable from
+**base gathered resources** — items a `HarvestableDef` actually yields: log, branch, stone, fibre.
+Never a crafted intermediate, and never a loot or POI drop. Tier 2 and up are exactly where crafted
+intermediates belong; that is what makes them upgrades, and the anvil still costs six iron ingots.
+
+The reason is not flavour. A tier-1 cost the world may not hand out is a branch of progression that
+can fail to open for an entire run, and it fails silently, because each individual cost reads as
+plausible. That is how MIRE shipped with the forge branch closed: the furnace cost flint, which
+*nothing in the game produced*, so no run could smelt, so no iron gear existed (F-487). The anvil
+cost a wellglass_shard the wellspring POI might never place (F-485).
+
+Two checks hold the line, and both must stay green:
+
+* `tools/station_tier_check.gd` — every family starts at tier 1 with no gaps, every tier-1 station
+  has a buildable, and every ingredient in a tier-1 cost is one the world yields.
+* `tools/resource_reachability_check.gd` — the general form: every item consumed by any recipe or
+  any buildable cost is produced by *something* (a harvest yield, a loot entry, or a recipe), and no
+  item is produced only by a recipe that also consumes it. Removing `content/recipes/flint.tres`
+  reds it immediately, which is the state the game was actually in.
+
+**Corollary — fuel comes before the furnace.** Charcoal used to be made *from coal* at the furnace
+whose own cost was coal. It is now made from logs at the campfire, a tier-1 station, so the chain
+reads campfire → charcoal → furnace → ingots → anvil. Flint is knapped from stone at the workbench.

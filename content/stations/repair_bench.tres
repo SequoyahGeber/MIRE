@@ -7,4 +7,5 @@ script = ExtResource("1_stationdef")
 id = &"repair_bench"
 display_name = "Repair Bench"
 world_scene = &"station_repair_bench"
-tier = 2
+family = &"repair"
+tier = 1

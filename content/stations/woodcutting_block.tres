@@ -7,4 +7,5 @@ script = ExtResource("1_stationdef")
 id = &"woodcutting_block"
 display_name = "Woodcutting Block"
 world_scene = &"station_woodcutting_block"
+family = &"wood"
 tier = 1

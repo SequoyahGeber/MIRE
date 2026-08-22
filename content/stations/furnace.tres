@@ -7,4 +7,5 @@ script = ExtResource("1_royfg")
 id = &"furnace"
 display_name = "Furnace"
 world_scene = &"station_stone_furnace"
-tier = 2
+family = &"forge"
+tier = 1

@@ -21,7 +21,7 @@ max_build_range_m = 5.0
 cost = Dictionary[StringName, int]({
 &"log": 8,
 &"stone": 6,
-&"iron_ingot": 3
+&"branch": 6
 })
 refund_fraction = 0.5
 max_hp = 45

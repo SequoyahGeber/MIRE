@@ -7,3 +7,5 @@ script = ExtResource("1_rmekp")
 id = &"workbench"
 display_name = "Workbench"
 world_scene = &"station_workbench_primitive"
+family = &"workbench"
+tier = 1

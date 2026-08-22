@@ -6,7 +6,8 @@ extends SceneTree
 ## exist.
 
 const EXPECTED: Dictionary = {
-	&"charcoal": &"furnace",
+	&"charcoal": &"campfire",
+	&"flint": &"workbench",
 	&"iron_ingot": &"furnace",
 	&"bogsilver_ingot": &"furnace",
 	&"iron_axe": &"anvil",
@@ -49,7 +50,7 @@ func _run() -> void:
 		check(bool(registry.call("has_recipe", recipe_id)), "%s is registered" % recipe_id)
 		var ids: Array[StringName] = _ids(crafting.call("recipes_for_station", expected))
 		check(ids.has(recipe_id), "%s is craftable at the %s" % [recipe_id, expected])
-		for other: StringName in [&"workbench", &"furnace", &"anvil"]:
+		for other: StringName in [&"workbench", &"furnace", &"anvil", &"campfire"]:
 			if other == expected:
 				continue
 			check(not _ids(crafting.call("recipes_for_station", other)).has(recipe_id),
