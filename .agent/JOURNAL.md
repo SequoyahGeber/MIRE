@@ -9250,3 +9250,18 @@ Notes along the way:
 Files: `.agent/bin/agent`, `tools/harness_check.py`, `.gitignore`
 
 Commit at time of writing: `1b041089`
+
+---
+
+### DONE · F-506 · asheb20c0 · 2026-08-22T02:56:15+00:00
+
+**perf_probe opens class picker during automated traversal**
+
+Removed perf_probe's menu-open traversal row and made the probe choose warden temporarily so the mandatory class picker stays closed throughout every measurement. Parse/startup guard reached as expected; attunement check 0 failures; benchmark check 214/214 assertions passed.
+
+Notes along the way:
+- Removed the deliberate T3 menu-open traversal row. perf_probe now temporarily selects fixed warden attunement before sampling, hides/closes AttunementUI as fallback, and clears probe-owned selection at close-out; this matches BenchmarkRunner's proven mandatory-picker seam.
+
+Files: `tools/perf_probe.gd`
+
+Commit at time of writing: `f3e2a6e7`

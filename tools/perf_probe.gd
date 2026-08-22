@@ -17,6 +17,9 @@ extends SceneTree
 
 const ProbeScene := preload("res://tools/probe_scene.gd")
 const DrawPolicy := preload("res://world/environment/draw_policy.gd")
+## Fixed rather than random so repeated runs measure the same passive/VFX load. This is the first
+## role in AttunementUI's authored order, matching the in-game benchmark harness.
+const PROBE_ATTUNEMENT: StringName = &"warden"
 
 ## Whatever `project.godot` boots, unless `-- --scene res://...` overrides it (F-342).
 var level_path: String = ""
@@ -53,6 +56,8 @@ const TRAVEL_SPEED: float = 7.0
 ## deltas swung +-170 ms and told you nothing about the lever. Travel is a SCENARIO instead: the
 ## rows at the end turn it on and their whole job is quantifying the hitch.
 var _travelling: bool = false
+## True only when this probe supplied the otherwise-mandatory class choice.
+var _chose_attunement: bool = false
 
 
 func _initialize() -> void:
@@ -90,6 +95,7 @@ func _run() -> void:
 	_level = packed.instantiate() as Node3D
 	root.add_child(_level)
 	current_scene = _level
+	await _dismiss_class_picker()
 
 	# Undergrowth waits two physics frames, then scatters synchronously; give the level a
 	# moment beyond that for colliders, player spawn and first-frame shader compiles.
@@ -260,14 +266,6 @@ func _configs() -> Array[Dictionary]:
 			"undo": func() -> void:
 				_travelling = false
 				_apply_gfx_preset(2)},
-		# Sequoyah asked whether an open menu costs frames. Measured rather than guessed.
-		{"name": "T3 traversal + menu open", "settle": 2.0,
-			"apply": func() -> void:
-				_travelling = true
-				_set_menu_open(true),
-			"undo": func() -> void:
-				_travelling = false
-				_set_menu_open(false)},
 	]
 
 
@@ -400,30 +398,24 @@ func _measure(name: String, quiet: bool = false) -> Dictionary:
 	return row
 
 
-## Opens the Attunement/class picker if this build has one in the tree, so a row can measure what
-## an open menu costs. Best-effort by design: the picker is driven by run state, and a probe that
-## hard-failed when it could not be opened would block the far more important traversal rows.
-func _set_menu_open(open: bool) -> void:
-	var ui: CanvasLayer = _find_attunement_ui(root)
-	if ui == null:
-		if open:
-			push_warning("no AttunementUI in the tree — the menu row measures nothing")
-		return
-	ui.visible = open
-	if open:
-		ui.call(&"_open_picker")
-	else:
-		ui.call(&"_close_picker")
+## Satisfies the mandatory class choice before any sample begins, so AttunementUI's half-second
+## poll has no reason to reopen the full-screen picker over the moving probe. Merely closing the
+## panel is insufficient: it reopens while local_selection() is empty (F-216).
+func _dismiss_class_picker() -> void:
+	var picker: Node = root.get_node_or_null(^"/root/AttunementUI")
+	if picker is CanvasLayer:
+		(picker as CanvasLayer).visible = false
 
+	var service: Node = root.get_node_or_null(^"/root/AttunementService")
+	if service != null and String(service.call(&"local_selection")).is_empty():
+		service.call(&"request_select", PROBE_ATTUNEMENT)
+		_chose_attunement = true
+		await process_frame
 
-func _find_attunement_ui(node: Node) -> CanvasLayer:
-	if node is CanvasLayer and node.has_method(&"_open_picker") and node.has_method(&"is_picking"):
-		return node as CanvasLayer
-	for child: Node in node.get_children():
-		var found: CanvasLayer = _find_attunement_ui(child)
-		if found != null:
-			return found
-	return null
+	if picker != null and picker.has_method(&"is_open") and bool(picker.call(&"is_open")):
+		picker.call(&"_close_picker")
+	if picker is CanvasLayer:
+		(picker as CanvasLayer).visible = false
 
 
 ## Walks the anchor body outward at a constant speed, turning a little each frame so the path
@@ -533,6 +525,10 @@ func _warn_if_refresh_capped(results: Array[Dictionary]) -> void:
 
 
 func _close_out() -> void:
+	if _chose_attunement:
+		var service: Node = root.get_node_or_null(^"/root/AttunementService")
+		if service != null and service.has_method(&"host_clear_all"):
+			service.call(&"host_clear_all")
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED)
 	quit(0)
 

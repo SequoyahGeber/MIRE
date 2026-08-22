@@ -282,12 +282,6 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "tools/perf_probe.gd": {
-      "agent": "asheb20c0",
-      "at": "2026-08-22T02:53:21+00:00",
-      "task": "F-506",
-      "token": "CODEX_SESSION_ID:01a02761-cfcd-7582-a37a-9065b6fa147a"
-    },
     "tools/wave_director_check.gd": {
       "agent": "ember5da2c4",
       "at": "2026-08-22T01:25:45+00:00",
@@ -404,15 +398,6 @@
       "notes": [],
       "started": "2026-08-22T00:29:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
-    },
-    "F-506": {
-      "agent": "asheb20c0",
-      "files": [
-        "tools/perf_probe.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-22T02:53:21+00:00",
-      "token": "CODEX_SESSION_ID:01a02761-cfcd-7582-a37a-9065b6fa147a"
     }
   },
   "recent": {
@@ -4393,11 +4378,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "tools/perf_probe.gd": {
-      "agent": "wick5e2d04",
-      "at": "2026-08-21T21:17:45+00:00",
-      "hash": "c9b4b08f927df99511e8189bf12316a072e5d342c691b2c7990378a13eca1523",
-      "task": "F-452",
-      "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
+      "agent": "asheb20c0",
+      "at": "2026-08-22T02:56:15+00:00",
+      "hash": "994d166beb304c24622e379a7e58c1af8ee98558c89835584392a86c5ebace30",
+      "task": "F-506",
+      "token": "CODEX_SESSION_ID:01a02761-cfcd-7582-a37a-9065b6fa147a"
     },
     "tools/powerup_icon_check.gd": {
       "agent": "gale43d16e",
@@ -5002,7 +4987,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:120f1976-6c96-46a1-8784-38dd75780df4"
     }
   },
-  "rev": 1169,
+  "rev": 1171,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -10814,9 +10799,11 @@
       "title": "verify_setup rejects the shipped frontend main scene"
     },
     "F-506": {
+      "done_at": "2026-08-22T02:56:15+00:00",
+      "done_by": "asheb20c0",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "perf_probe opens class picker during automated traversal"
     }
