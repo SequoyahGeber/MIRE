@@ -82,6 +82,24 @@ const SWING_PIVOT := Vector3(0.22, -0.40, 0.10)
 ## since the contact frame is the one the player reads the hit from. Measured at the extremes rather
 ## than at a centroid, which is what hid a sword tip sitting 75% past the right edge at full cock.
 ## `viewmodel_check.gd` additionally asserts nothing crosses the camera near plane.
+## F-594. The bow's own arc, kept out of `STYLE_POSES` because that array is indexed by
+## `ItemDef.AttackStyle` and a bow's style is NONE — the row shared with lanterns and carried things.
+## A draw is the opposite shape from a swing: the weapon comes BACK toward the player under tension
+## (+Z is toward the camera in this space), holds, then snaps forward on release. Reusing a swing arc
+## would have the bow lunge downrange, which is what a sword does and what a bow conspicuously does
+## not.
+##
+## Magnitudes obey the same constraint as every row below — the design's extreme point stays inside
+## the frame for every frame of the action, `viewmodel_check.gd` asserts it — so the draw is a firm
+## pull rather than a full archer's anchor, which at viewmodel scale would put the bow limb through
+## the camera near plane.
+const BOW_POSE: Dictionary = {
+	"cock_pos": Vector3(0.004, 0.012, 0.046), "cock_rot": Vector3(-5.0, 7.0, 2.0),
+	"hit_pos": Vector3(-0.002, -0.005, -0.022), "hit_rot": Vector3(4.0, -3.0, -1.0),
+	"follow_pos": Vector3(0.000, -0.002, 0.008), "follow_rot": Vector3(1.5, 1.0, 0.5),
+	"arc": Vector3(0.000, 0.005, 0.006),
+}
+
 const STYLE_POSES: Array[Dictionary] = [
 	{   # NONE — a bow or a carried thing. Enough motion that a click is not dead.
 		"cock_pos": Vector3(0.008, 0.020, 0.020), "cock_rot": Vector3(6.0, -3.0, 3.0),
@@ -146,6 +164,14 @@ var _sway_blend: float = 1.0
 ## Resolved by path, never bare (F-011, F-046). Fetched once in _ready: this node only exists inside
 ## a running scene, where the autoloads are already up.
 var _combat: Node
+## F-594. The bow had no draw because this file only ever asked the MELEE service what phase it was
+## in, so a bow fell through to `STYLE_POSES[NONE]` — the row whose own comment calls itself "enough
+## motion that a click is not dead", i.e. a placeholder standing in for an animation nobody wrote.
+## `RangedCombatService` publishes the same `local_phase()` / `local_phase_progress()` contract with
+## an identical `Phase` enum, and nothing consumed either. (Not a consequence of F-576 deleting
+## `shot_phase_changed`: the accessors that replaced that signal are live and this file never asked
+## for the signal OR the accessor. The gap is older.)
+var _ranged: Node
 var _inventory: Node
 var _registry: Node
 var _hotbar_ui: Node
@@ -156,6 +182,7 @@ func _ready() -> void:
 	# camera the moment it swings toward it.
 	set_process(true)
 	_combat = get_node_or_null(^"/root/CombatService")
+	_ranged = get_node_or_null(^"/root/RangedCombatService")
 	_inventory = get_node_or_null(^"/root/InventoryService")
 	_registry = get_node_or_null(^"/root/Registry")
 	_hotbar_ui = get_node_or_null(^"/root/InventoryUI")
@@ -249,14 +276,28 @@ func _apply_pose(delta: float) -> void:
 	if _instance == null:
 		return
 
-	var phase: int = int(_combat.call(&"local_phase")) if _combat != null else 0
-	var progress: float = float(_combat.call(&"local_phase_progress")) if _combat != null else 0.0
+	# A shot and a swing can never overlap — the same input drives both and each service refuses
+	# while the other is mid-action — so whichever is not IDLE is the one to pose from. Ranged is
+	# asked first: a bow's `ItemDef.attack_style` is NONE, so falling through to the melee service
+	# would silently pick the placeholder row even while a real draw was in progress.
+	var phase: int = 0
+	var progress: float = 0.0
+	var drawing: bool = false
+	if _ranged != null:
+		phase = int(_ranged.call(&"local_phase"))
+		if phase != 0:
+			drawing = true
+			progress = float(_ranged.call(&"local_phase_progress"))
+	if not drawing:
+		phase = int(_combat.call(&"local_phase")) if _combat != null else 0
+		progress = float(_combat.call(&"local_phase_progress")) if _combat != null else 0.0
 	var position_offset := Vector3.ZERO
 	var rotation_offset := Vector3.ZERO
 
 	if phase == PHASE_WIND_UP or phase == PHASE_COMMIT or phase == PHASE_RECOVERY:
 		_sway_blend = 0.0
-		var keyed: Array = swing_pose(_attack_style, phase, progress)
+		var keyed: Array = bow_pose(phase, progress) if drawing \
+			else swing_pose(_attack_style, phase, progress)
 		position_offset = keyed[0]
 		rotation_offset = keyed[1]
 	else:
@@ -283,6 +324,45 @@ func _apply_pose(delta: float) -> void:
 ## Public and pure so `viewmodel_check.gd` can walk a whole swing without needing that weapon in the
 ## hotbar. That matters more than it looks: the dev loadout carries six of the eleven holdable items,
 ## so assertions written against "whatever is selected" silently never exercise SLASH at all.
+## F-594. A draw is not a swing run backwards, so it gets its own phase mapping rather than sharing
+## `swing_pose`'s curve with a substituted pose table.
+##
+## The difference that matters is WHERE the hold is. A swing cocks, hangs at the top — that hang is
+## the telegraph — and then DRIVES forward through the rest of its wind-up into contact. A bow does
+## the opposite: it pulls to full draw and stays there under tension for the whole of the wind-up,
+## and everything happens at release. Running a bow through the swing curve would walk it forward
+## before the arrow left, which is the one thing a drawn bow visibly does not do.
+##
+## So: wind-up eases out to full draw and holds; COMMIT is the release snap; recovery settles with
+## the same overshoot every other weapon uses, because a bow arm does rebound.
+func bow_pose(phase: int, progress: float) -> Array:
+	match phase:
+		PHASE_WIND_UP:
+			# Ease out, then hold. `pow(1 - t, 3)` is flat enough past ~0.6 that a long draw reads
+			# as held rather than as still creeping backwards.
+			var t: float = 1.0 - pow(1.0 - clampf(progress, 0.0, 1.0), 3.0)
+			return [
+				REST_POSITION.lerp(BOW_POSE["cock_pos"], t),
+				Vector3.ZERO.lerp(BOW_POSE["cock_rot"], t),
+			]
+		PHASE_COMMIT:
+			# Release. Ease IN — the fastest part is the start, when the string is doing the work.
+			var eased: float = 1.0 - pow(1.0 - progress, 4.0)
+			return [
+				(BOW_POSE["cock_pos"] as Vector3).lerp(BOW_POSE["hit_pos"], eased),
+				(BOW_POSE["cock_rot"] as Vector3).lerp(BOW_POSE["hit_rot"], _lead(eased)),
+			]
+		PHASE_RECOVERY:
+			var eased: float = 1.0 - pow(1.0 - progress, 3.0)
+			var overshoot: float = eased + RECOVERY_OVERSHOOT * sin(progress * PI) * (1.0 - progress)
+			var settled: Vector3 = (BOW_POSE["hit_pos"] as Vector3).lerp(BOW_POSE["follow_pos"], eased)
+			return [
+				settled.lerp(REST_POSITION, overshoot),
+				(BOW_POSE["follow_rot"] as Vector3).lerp(Vector3.ZERO, overshoot),
+			]
+	return [Vector3.ZERO, Vector3.ZERO]
+
+
 func swing_pose(style: int, phase: int, progress: float) -> Array:
 	var pose: Dictionary = STYLE_POSES[clampi(style, 0, STYLE_POSES.size() - 1)]
 	match phase:

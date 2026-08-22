@@ -529,8 +529,7 @@ func _spawn_visual_projectile(
 			node.name = "RangedShotVisual%d" % peer_id
 			get_tree().root.add_child(node)
 			node.global_position = origin
-			if direction.length_squared() > 0.000001:
-				node.look_at(origin + direction, Vector3.UP if absf(direction.y) < 0.999 else Vector3.FORWARD)
+			_orient_projectile(node, direction)
 	_flight_visuals[peer_id] = {
 		"node": node, "weapon": weapon, "origin": origin, "direction": direction, "speed": speed,
 		"gravity_scale": gravity_scale, "elapsed": 0.0,
@@ -553,6 +552,40 @@ func _advance_visual_projectiles(delta: float) -> void:
 		var direction: Vector3 = visual.get("direction", Vector3.FORWARD)
 		var speed: float = float(visual.get("speed", 0.0))
 		node.global_position = origin + direction * speed * elapsed - Vector3.UP * drop
+		# F-594: orientation follows the CURRENT velocity, not the launch direction. The arrow's
+		# path curves — `drop` is right there in the line above — and the old code set the rotation
+		# once at spawn and never touched it again, so an arrow flew level all the way into the
+		# ground it was descending towards. Velocity is the analytic derivative of the position
+		# expression, so this costs one vector subtract and no extra state.
+		_orient_projectile(node, direction * speed - Vector3.UP * _gravity * gravity_scale * elapsed)
+
+
+## Point a flying visual along `velocity`.
+##
+## F-594, and the reason Sequoyah saw arrows "turn sideways while still going forwards": the flying
+## visual reuses the ammo item's PICKUP mesh, and a pickup is authored standing up. `arrow_world` is
+## 0.226 x 0.239 x 1.476 m in `assets/tools_weapons/catalog.json` — the shaft runs along **+Y**.
+## `Node3D.look_at()` aims the node's **-Z** at its target, so pointing -Z down the flight path left
+## the shaft broadside to it on every single shot. It read as intermittent only because a broadside
+## arrow is nearly invisible edge-on and unmistakable in profile, so whether you notice depends on
+## where you are standing relative to the shot.
+##
+## So: aim -Z along the velocity, then roll the model's +Y onto that -Z. A rotation of -90 degrees
+## about the local X axis maps +Y to -Z exactly, which is the whole correction.
+##
+## Done here rather than by re-authoring the mesh: `arrow_world.glb` is also the ground pickup and
+## the inventory-adjacent world model, where standing up is correct. The projectile is the caller
+## with the unusual requirement, so the projectile carries the adjustment.
+static func _orient_projectile(node: Node3D, velocity: Vector3) -> void:
+	if node == null or not is_instance_valid(node) or velocity.length_squared() <= 0.000001:
+		return
+	var direction: Vector3 = velocity.normalized()
+	# `look_at` degenerates when the forward axis is parallel to the up hint — a shot fired at the
+	# sky or straight down. Swap the hint rather than skipping the update, or a steep arrow keeps a
+	# stale attitude for its whole flight.
+	var up_hint: Vector3 = Vector3.UP if absf(direction.y) < 0.999 else Vector3.FORWARD
+	node.look_at(node.global_position + direction, up_hint)
+	node.rotate_object_local(Vector3.RIGHT, -PI * 0.5)
 
 
 func _despawn_visual_projectile(peer_id: int) -> void:

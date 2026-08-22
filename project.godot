@@ -98,6 +98,7 @@ PickupFeedService="*res://autoload/pickup_feed_service.gd"
 PickupHud="*res://ui/hud/pickup_hud.gd"
 StatusService="*res://autoload/status_service.gd"
 ResonanceService="*res://autoload/resonance_service.gd"
+AmmoHud="*res://ui/hud/ammo_hud.gd"
 
 [display]
 
