@@ -20,5 +20,6 @@ count = 3
 script = ExtResource("4_b03ns")
 id = &"stone_axe"
 display_name = "Stone Axe"
+station = &"workbench"
 inputs = Array[ExtResource("1_8pilw")]([SubResource("Resource_nn03j"), SubResource("Resource_b310r")])
 output_item = ExtResource("4_1tn08")

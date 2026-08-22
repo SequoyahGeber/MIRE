@@ -20,6 +20,7 @@ count = 1
 script = ExtResource("5_recipe")
 id = &"arrow"
 display_name = "Arrows"
+station = &"workbench"
 inputs = Array[ExtResource("1_ing")]([SubResource("Resource_branch"), SubResource("Resource_flint")])
 output_item = ExtResource("4_out")
 output_count = 4

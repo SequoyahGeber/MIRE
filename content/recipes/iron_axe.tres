@@ -20,6 +20,6 @@ count = 3
 script = ExtResource("9_recipe")
 id = &"iron_axe"
 display_name = "Iron Axe"
-station = &"workbench"
+station = &"anvil"
 inputs = Array[ExtResource("1_ing")]([SubResource("Resource_log"), SubResource("Resource_iron_ingot")])
 output_item = ExtResource("8_out")

@@ -20,5 +20,6 @@ count = 2
 script = ExtResource("5_recipe")
 id = &"wooden_pickaxe"
 display_name = "Wooden Pickaxe"
+station = &"workbench"
 inputs = Array[ExtResource("1_ing")]([SubResource("Resource_branch"), SubResource("Resource_fibre")])
 output_item = ExtResource("4_out")

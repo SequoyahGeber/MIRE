@@ -18,12 +18,6 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "assets/icons/catalog.json": {
-      "agent": "cindere7060a",
-      "at": "2026-08-21T23:58:48+00:00",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
-    },
     "assets/pickups/catalog.json": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:31:01+00:00",
@@ -37,58 +31,136 @@
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
     "content/buildables/anvil.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-21T23:58:48+00:00",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:42:44+00:00",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
+    },
+    "content/buildables/barricade.tres": {
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:42:44+00:00",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
+    },
+    "content/buildables/barricade_spike.tres": {
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:42:44+00:00",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
+    },
+    "content/buildables/bridge.tres": {
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:42:44+00:00",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/campfire.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-21T23:50:57+00:00",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:42:44+00:00",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/cooking_spit.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-21T23:50:57+00:00",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:42:44+00:00",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
+    },
+    "content/buildables/dock.tres": {
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:42:44+00:00",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
+    },
+    "content/buildables/door.tres": {
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:42:44+00:00",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
+    },
+    "content/buildables/floor.tres": {
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:42:44+00:00",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/furnace.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-21T23:50:57+00:00",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:42:44+00:00",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
+    },
+    "content/buildables/gate.tres": {
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:42:44+00:00",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
+    },
+    "content/buildables/ladder.tres": {
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:42:44+00:00",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
+    },
+    "content/buildables/palisade.tres": {
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:42:44+00:00",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
+    },
+    "content/buildables/palisade_gate.tres": {
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:42:44+00:00",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
+    },
+    "content/buildables/ramp.tres": {
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:42:44+00:00",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/repair_bench.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-21T23:50:57+00:00",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:42:44+00:00",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
+    },
+    "content/buildables/wall.tres": {
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:42:44+00:00",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
+    },
+    "content/buildables/ward.tres": {
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:42:44+00:00",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
+    },
+    "content/buildables/ward_post.tres": {
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:42:44+00:00",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/woodcutting_block.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-21T23:50:57+00:00",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:42:44+00:00",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/workbench.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-21T23:50:57+00:00",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:42:44+00:00",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/buildables/workbench_upgraded.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-21T23:50:57+00:00",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
-    },
-    "content/guide/place_workbench.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-21T23:53:26+00:00",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:42:44+00:00",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "content/harvestables/apple_tree.tres": {
       "agent": "gale43d16e",
@@ -102,6 +174,12 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "content/harvestables/bogsilver_node.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-22T00:06:31+00:00",
+      "task": "F-473",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
     "content/harvestables/mushroom_patch.tres": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:45:13+00:00",
@@ -114,35 +192,65 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "content/stations/campfire.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-21T23:50:57+00:00",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    "content/items/bogsilver_axe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-22T00:29:56+00:00",
+      "task": "F-482",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "content/stations/cooking_spit.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-21T23:50:57+00:00",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    "content/items/bogsilver_pickaxe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-22T00:29:56+00:00",
+      "task": "F-482",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "content/stations/repair_bench.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-21T23:50:57+00:00",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    "content/items/bolt.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-22T00:29:56+00:00",
+      "task": "F-482",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "content/stations/woodcutting_block.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-21T23:50:57+00:00",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    "content/items/crossbow.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-22T00:29:56+00:00",
+      "task": "F-482",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "content/stations/workbench_upgraded.tres": {
-      "agent": "cindere7060a",
-      "at": "2026-08-21T23:50:57+00:00",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    "content/items/iron_axe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-22T00:29:56+00:00",
+      "task": "F-482",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/longbow.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-22T00:29:56+00:00",
+      "task": "F-482",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/sling.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-22T00:29:56+00:00",
+      "task": "F-482",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/wellglass_axe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-22T00:29:56+00:00",
+      "task": "F-482",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/items/wellglass_pickaxe.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-22T00:29:56+00:00",
+      "task": "F-482",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/scatter/highland_rocks.tres": {
+      "agent": "birche6b40e",
+      "at": "2026-08-22T00:06:31+00:00",
+      "task": "F-473",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
     "docs/ASSET_TRACKER.md": {
       "agent": "gale43d16e",
@@ -150,53 +258,17 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "levels/procedural_island.tscn": {
-      "agent": "vaneabd52b",
-      "at": "2026-08-21T23:51:13+00:00",
-      "task": "F-478",
-      "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
+    "project.godot": {
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:42:22+00:00",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
-    "scenes/buildables/campfire.tscn": {
-      "agent": "cindere7060a",
-      "at": "2026-08-21T23:50:57+00:00",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
-    },
-    "scenes/buildables/cooking_spit.tscn": {
-      "agent": "cindere7060a",
-      "at": "2026-08-21T23:50:57+00:00",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
-    },
-    "scenes/buildables/furnace.tscn": {
-      "agent": "cindere7060a",
-      "at": "2026-08-21T23:50:57+00:00",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
-    },
-    "scenes/buildables/repair_bench.tscn": {
-      "agent": "cindere7060a",
-      "at": "2026-08-21T23:50:57+00:00",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
-    },
-    "scenes/buildables/woodcutting_block.tscn": {
-      "agent": "cindere7060a",
-      "at": "2026-08-21T23:50:57+00:00",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
-    },
-    "scenes/buildables/workbench.tscn": {
-      "agent": "cindere7060a",
-      "at": "2026-08-21T23:50:57+00:00",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
-    },
-    "scenes/buildables/workbench_upgraded.tscn": {
-      "agent": "cindere7060a",
-      "at": "2026-08-21T23:50:57+00:00",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    "systems/building/buildable_def.gd": {
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:42:22+00:00",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     },
     "tools/blender/build_deep_materials.py": {
       "agent": "birche6b40e",
@@ -234,53 +306,17 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "tools/blender/render_item_icons.py": {
-      "agent": "cindere7060a",
-      "at": "2026-08-21T23:58:48+00:00",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
-    },
     "tools/item_icons_check.gd": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:52:45+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "tools/river_water_check.gd": {
-      "agent": "vaneabd52b",
-      "at": "2026-08-21T23:51:13+00:00",
-      "task": "F-478",
-      "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
-    },
-    "tools/station_buildable_check.gd": {
-      "agent": "cindere7060a",
-      "at": "2026-08-21T23:52:57+00:00",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
-    },
     "ui/building/build_bar.gd": {
-      "agent": "cindere7060a",
-      "at": "2026-08-21T23:53:26+00:00",
-      "task": "F-477",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
-    },
-    "world/environment/river_water.gd": {
-      "agent": "vaneabd52b",
-      "at": "2026-08-21T23:51:13+00:00",
-      "task": "F-478",
-      "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
-    },
-    "world/gen/island_heightmap.gd": {
-      "agent": "vaneabd52b",
-      "at": "2026-08-21T23:51:13+00:00",
-      "task": "F-478",
-      "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
-    },
-    "world/gen/procedural_world.gd": {
-      "agent": "vaneabd52b",
-      "at": "2026-08-21T23:51:13+00:00",
-      "task": "F-478",
-      "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
+      "agent": "galee581ee",
+      "at": "2026-08-22T00:42:22+00:00",
+      "task": "F-483",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     }
   },
   "in_flight": {
@@ -326,63 +362,63 @@
         "tools/blender/build_deep_materials.py",
         "assets/deep_materials/catalog.json",
         "tools/blender/build_harvestable_resources.py",
-        "assets/harvestables/catalog.json"
+        "assets/harvestables/catalog.json",
+        "content/scatter/highland_rocks.tres",
+        "content/harvestables/bogsilver_node.tres"
       ],
       "notes": [],
       "started": "2026-08-21T23:42:44+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "F-477": {
-      "agent": "cindere7060a",
+    "F-482": {
+      "agent": "birche6b40e",
       "files": [
-        "content/buildables/workbench.tres",
-        "content/buildables/workbench_upgraded.tres",
-        "content/buildables/campfire.tres",
-        "content/buildables/cooking_spit.tres",
-        "content/buildables/furnace.tres",
-        "content/buildables/repair_bench.tres",
-        "content/buildables/woodcutting_block.tres",
-        "scenes/buildables/workbench.tscn",
-        "scenes/buildables/workbench_upgraded.tscn",
-        "scenes/buildables/campfire.tscn",
-        "scenes/buildables/cooking_spit.tscn",
-        "scenes/buildables/furnace.tscn",
-        "scenes/buildables/repair_bench.tscn",
-        "scenes/buildables/woodcutting_block.tscn",
-        "content/stations/campfire.tres",
-        "content/stations/cooking_spit.tres",
-        "content/stations/repair_bench.tres",
-        "content/stations/woodcutting_block.tres",
-        "content/stations/workbench_upgraded.tres",
-        "tools/station_buildable_check.gd",
-        "ui/building/build_bar.gd",
-        "content/guide/place_workbench.tres",
-        "tools/blender/render_item_icons.py",
-        "content/buildables/anvil.tres",
-        "assets/icons/catalog.json"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-22T00:02:11+00:00",
-          "by": "cindere7060a",
-          "text": "Build-menu icons added after the fact, on Sequoyah's follow-up: eight new 256px renders (icon_build_workbench, _workbench_upgraded, _campfire, _cooking_spit, _furnace, _anvil, _repair_bench, _woodcutting_block) through tools/blender/render_item_icons.py, from the same GLB each piece places. The anvil had no icon either, so this closes all eight rather than the seven new ones. Verified in-engine: every registered buildable now resolves an icon (BAR_ICONS missing=[]), and the bar renders with an icon in all 22 slots at 1280x720. Note for whoever holds the tool_weapon GLBs: re-running the icon script re-rendered icon_{wooden,stone,iron}_pickaxe.png differently, because those source GLBs are modified and uncommitted in the shared tree. Those three were restored to HEAD rather than committed here."
-        }
-      ],
-      "started": "2026-08-21T23:50:57+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
-    },
-    "F-478": {
-      "agent": "vaneabd52b",
-      "files": [
-        "world/gen/island_heightmap.gd",
-        "world/gen/procedural_world.gd",
-        "world/environment/river_water.gd",
-        "levels/procedural_island.tscn",
-        "tools/river_water_check.gd"
+        "content/items/sling.tres",
+        "content/items/longbow.tres",
+        "content/items/crossbow.tres",
+        "content/items/bolt.tres",
+        "content/items/iron_axe.tres",
+        "content/items/bogsilver_axe.tres",
+        "content/items/bogsilver_pickaxe.tres",
+        "content/items/wellglass_axe.tres",
+        "content/items/wellglass_pickaxe.tres"
       ],
       "notes": [],
-      "started": "2026-08-21T23:51:13+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
+      "started": "2026-08-22T00:29:56+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "F-483": {
+      "agent": "galee581ee",
+      "files": [
+        "ui/building/build_bar.gd",
+        "systems/building/buildable_def.gd",
+        "project.godot",
+        "content/buildables/anvil.tres",
+        "content/buildables/barricade.tres",
+        "content/buildables/barricade_spike.tres",
+        "content/buildables/bridge.tres",
+        "content/buildables/campfire.tres",
+        "content/buildables/cooking_spit.tres",
+        "content/buildables/dock.tres",
+        "content/buildables/door.tres",
+        "content/buildables/floor.tres",
+        "content/buildables/furnace.tres",
+        "content/buildables/gate.tres",
+        "content/buildables/ladder.tres",
+        "content/buildables/palisade.tres",
+        "content/buildables/palisade_gate.tres",
+        "content/buildables/ramp.tres",
+        "content/buildables/repair_bench.tres",
+        "content/buildables/wall.tres",
+        "content/buildables/ward.tres",
+        "content/buildables/ward_post.tres",
+        "content/buildables/woodcutting_block.tres",
+        "content/buildables/workbench.tres",
+        "content/buildables/workbench_upgraded.tres"
+      ],
+      "notes": [],
+      "started": "2026-08-22T00:42:22+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:691a56c0-c464-4d8b-bf02-3edceaed361d"
     }
   },
   "recent": {
@@ -1079,33 +1115,12 @@
       "task": "F-401",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
-    "assets/audit/terrain/island_orbit.png": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-21T00:25:01+00:00",
-      "hash": "4e12c0e48bb3f9f2609b5ebb20254a5d5920a137ce4d5a830ae19ce1b8f53a81",
-      "task": "4.18",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
-    },
     "assets/audit/terrain/island_seed7.png": {
       "agent": "kilnd3a089",
       "at": "2026-08-21T05:34:42+00:00",
       "hash": "602595a29a9977e6f8f22c54823d50cc35ca6b5b88c5d18b59e50ddc8e04d55b",
       "task": "F-401",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
-    },
-    "assets/audit/terrain/island_shore_look.png": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-21T00:25:01+00:00",
-      "hash": "97c28ec4df44350360275de541d06b7173ce20bd52ac788ff7bb1fcf8c178585",
-      "task": "4.18",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
-    },
-    "assets/audit/terrain/island_spawn_view.png": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-21T00:25:01+00:00",
-      "hash": "326acab23823295dee1f6d14d282e62e7ef8a646a213ce620b84204a140a72c3",
-      "task": "4.18",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
     },
     "assets/audit/terrain/shape_20260819.png": {
       "agent": "kilnd3a089",
@@ -1401,6 +1416,13 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "assets/icons/catalog.json": {
+      "agent": "cindere7060a",
+      "at": "2026-08-22T00:03:18+00:00",
+      "hash": "639de27c3e69d0bb544fe46ab793ad1b2b3a6cda14722deb874a8e6f8a2e7372",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
     "assets/icons/exports/icon_build_floor.png": {
       "agent": "coil26502f",
       "at": "2026-08-21T23:04:24+00:00",
@@ -1640,11 +1662,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "content/buildables/anvil.tres": {
-      "agent": "birche6b40e",
-      "at": "2026-08-21T23:26:09+00:00",
-      "hash": "370f75339d9c25e4f10ede534200754b5425d62bd98e004052215ef562297c05",
-      "task": "3.18",
-      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+      "agent": "cindere7060a",
+      "at": "2026-08-22T00:03:18+00:00",
+      "hash": "632ee0bcca15ec33652cc3bee8771f77312aed666910b66909065c262ab4b86e",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
     },
     "content/buildables/barricade.tres": {
       "agent": "gale43d16e",
@@ -1667,6 +1689,20 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "content/buildables/campfire.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-22T00:03:18+00:00",
+      "hash": "b77fd05d35908dd651536a669abb5ff38623a80a7bc6165904a437cc60c62a8d",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "content/buildables/cooking_spit.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-22T00:03:18+00:00",
+      "hash": "d876b3a0eda717012810575b4cc0ceb4e7c8ccf9b1750cb906d4cb761b88c691",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
     "content/buildables/dock.tres": {
       "agent": "gale43d16e",
       "at": "2026-08-21T08:34:48+00:00",
@@ -1687,6 +1723,13 @@
       "hash": "2382abd35e18aed2cfe8fac4a071ab37a34d212755186d9deb50aadfbd5af9b0",
       "task": "3.7",
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+    },
+    "content/buildables/furnace.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-22T00:03:18+00:00",
+      "hash": "10bac94fc203f05c5f8a50af841cef772e50a7fc659f39489e64f5abc03ca534",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
     },
     "content/buildables/gate.tres": {
       "agent": "gale43d16e",
@@ -1723,6 +1766,13 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "content/buildables/repair_bench.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-22T00:03:18+00:00",
+      "hash": "afff7ba008758416a1dfa61070879aeac62bf923879505620b594ac42a146e1b",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
     "content/buildables/wall.tres": {
       "agent": "gale43d16e",
       "at": "2026-08-21T08:34:48+00:00",
@@ -1743,6 +1793,27 @@
       "hash": "e7bb0303f80018e98ad19f782457d65a1f6a7a6e1aa98f5210781a88f41291bd",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "content/buildables/woodcutting_block.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-22T00:03:18+00:00",
+      "hash": "3b1fde4af97179b8c67cfb09c641a7e142b74ccee866b6253b093f22ca78f9bd",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "content/buildables/workbench.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-22T00:03:18+00:00",
+      "hash": "232c72aaa68a64180f276659f474a60347ef2ec5355b772ff53c5c992f24381e",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "content/buildables/workbench_upgraded.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-22T00:03:18+00:00",
+      "hash": "2fb71844621b68db51ee33a6c2ba4db957c238ffa29c5d57f0e7655d8c8ef0cb",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
     },
     "content/guide/build_anvil.tres": {
       "agent": "birche6b40e",
@@ -1815,11 +1886,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
     "content/guide/place_workbench.tres": {
-      "agent": "birche6b40e",
-      "at": "2026-08-21T23:26:09+00:00",
-      "hash": "d02863c80fbce62465bd350fe09017f256466a20cfa7b5cf0d903816de67aa98",
-      "task": "3.19",
-      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+      "agent": "cindere7060a",
+      "at": "2026-08-22T00:03:18+00:00",
+      "hash": "d32d49d68bb2f35110ab5f62ab0f791a1872a95e11a3ad189f3ab56a19eb95ba",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
     },
     "content/guide/push_or_leave.tres": {
       "agent": "birche6b40e",
@@ -2759,6 +2830,13 @@
       "task": "F-449",
       "token": "CLAUDE_CODE_SESSION_ID:f97215fe-2359-4eab-a329-74522e35831e"
     },
+    "content/recipes/arrow.tres": {
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:46:40+00:00",
+      "hash": "d879a44a25144d2b625ade3bac207f6bdded4c54c4e4c09c1fea4918d2f60db6",
+      "task": "F-484",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
+    },
     "content/recipes/bogsilver_axe.tres": {
       "agent": "birche6b40e",
       "at": "2026-08-21T23:26:09+00:00",
@@ -2780,12 +2858,68 @@
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "content/recipes/cleaver.tres": {
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:46:40+00:00",
+      "hash": "b7a3c5992862ef7d96c79adf1f73d23343f19f79fb013283768ae5455c25b10e",
+      "task": "F-484",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
+    },
     "content/recipes/iron_axe.tres": {
-      "agent": "birche6b40e",
-      "at": "2026-08-21T23:26:09+00:00",
-      "hash": "ac0bef2f9b5006822e27777133848bd3356d6a55979fbd7bba508c1f40d27217",
-      "task": "3.18",
-      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:46:40+00:00",
+      "hash": "748270bbf29f58b9c1ff0892dea2d646e64dcd871921b93aaea0fca6fc0a017e",
+      "task": "F-484",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
+    },
+    "content/recipes/iron_pickaxe.tres": {
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:46:40+00:00",
+      "hash": "d33471e1cbb21be73ba3928cda67313da68e73bb89ce9859a233e917b588dc42",
+      "task": "F-484",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
+    },
+    "content/recipes/iron_sword.tres": {
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:46:40+00:00",
+      "hash": "1ae514c57c7fcb8bf66cd34e49a09711bd72e90358389e5c2767735e89229f93",
+      "task": "F-484",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
+    },
+    "content/recipes/repair_hammer.tres": {
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:46:40+00:00",
+      "hash": "f5112789a21c5fbeeb1ff57076f1f722c9f31c520023e0480beced71c491b79e",
+      "task": "F-484",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
+    },
+    "content/recipes/short_bow.tres": {
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:46:40+00:00",
+      "hash": "55d61b4f99a0c07ae1bba079e30202c9e6b423ff760d71ce4794c8313234c4e0",
+      "task": "F-484",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
+    },
+    "content/recipes/skewer.tres": {
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:46:40+00:00",
+      "hash": "41329093d018c08576e2425379b08b6ae71d81383b7e6243ca07606109d37e1e",
+      "task": "F-484",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
+    },
+    "content/recipes/stone_axe.tres": {
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:46:40+00:00",
+      "hash": "1486cf6b13ea6ba6aa283b41aefa6ea88a48715e19aa6717e4e0616e7806a342",
+      "task": "F-484",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
+    },
+    "content/recipes/stone_pickaxe.tres": {
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:46:40+00:00",
+      "hash": "f7a8103ca28590d1499459431d56d0b19e1a7ae5f48131f33b4ed0f344195c42",
+      "task": "F-484",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
     "content/recipes/wellglass_axe.tres": {
       "agent": "birche6b40e",
@@ -2800,6 +2934,20 @@
       "hash": "ffd915e0664b30665d87ea23d9d1699597637d5ce388c9469e984de3b1a4983a",
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/recipes/wooden_axe.tres": {
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:46:40+00:00",
+      "hash": "b3a954a68570132734d62b56bc2e6a36cb8581c2ca8d14f59f0e6f8714539a1c",
+      "task": "F-484",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
+    },
+    "content/recipes/wooden_pickaxe.tres": {
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:46:40+00:00",
+      "hash": "d85247e43aedcea8ed5495390ca9d5cfdbeace6f225a4e00591b32e35e491534",
+      "task": "F-484",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
     "content/scatter/birchwood_canopy.tres": {
       "agent": "kilnd3a089",
@@ -3032,6 +3180,41 @@
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "content/stations/campfire.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-22T00:03:18+00:00",
+      "hash": "f8fb91c06d28a3504ab8df1c675b2d747615c6eceb19c46772cf9470860e5309",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "content/stations/cooking_spit.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-22T00:03:18+00:00",
+      "hash": "df911a8a03ec6a5832d32e2be81d69007fc06ad5de97d306a37ad1ba0c1ff6f5",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "content/stations/repair_bench.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-22T00:03:18+00:00",
+      "hash": "3f50bc7c042074e2bdf8d33affdea2d376855f294de8a149202b80a8b7b62bf9",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "content/stations/woodcutting_block.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-22T00:03:18+00:00",
+      "hash": "fa6c89efc6304f3fa34415e8fcc72a3513ca90804e724275e286c587efa24875",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "content/stations/workbench_upgraded.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-22T00:03:18+00:00",
+      "hash": "8479f1f23d0198e1ff752dfa83f06c2283e094122e34394111a681a5da3d675f",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
     "content/weapons/bogsilver_axe.tres": {
       "agent": "birche6b40e",
       "at": "2026-08-21T23:26:09+00:00",
@@ -3137,47 +3320,12 @@
       "task": "F-452",
       "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
     },
-    "core/save/atomic_json.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:31:57+00:00",
-      "hash": "55a93653c05fb2e4b1941812b0075d4474b046af83a84d3811ec46b1709db4f9",
-      "task": "F-326",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "core/save/run_record_save.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:31:57+00:00",
-      "hash": "03162138cee4e4d45f95df3a9d8fa34e2ab597df6af4919c0159e4396b1da3c1",
-      "task": "F-326",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "core/save/salvage_save.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:31:57+00:00",
-      "hash": "de18aa27eb1e86c87b842174bd6cd1e90d9f30647b15bd7955352c32c97d6d21",
-      "task": "F-326",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
     "core/save/settings_save.gd": {
       "agent": "birche6b40e",
       "at": "2026-08-21T23:26:09+00:00",
       "hash": "2ca5ce1e5fbf553f78c5da5bbe13934ec235b107732b4ba65b4d7428b95d839d",
       "task": "3.19",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
-    },
-    "core/save/steam_stats_save.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:31:57+00:00",
-      "hash": "9301ce56ca7433ed75752f6e0eaf09cb223f833a24daf8ed8f896f7fa145ada9",
-      "task": "F-326",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
-    "core/save/unlock_save.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:31:57+00:00",
-      "hash": "c2e385da878a222a07f0055bf632f415893e341d4043945c179192456efa9552",
-      "task": "F-326",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "docs/ASSET_TRACKER.md": {
       "agent": "gale43d16e",
@@ -3201,11 +3349,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
     "docs/DELEGATION.md": {
-      "agent": "coil26502f",
-      "at": "2026-08-21T23:28:27+00:00",
-      "hash": "10806d19fd992bb7ef772b9f2ac71055022e0db098f5d50a8d02250de1341f6b",
-      "task": "F-472",
-      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+      "agent": "vaneabd52b",
+      "at": "2026-08-22T00:14:23+00:00",
+      "hash": "10caa92afcc08112a3048ed9cf760bb76e31a0efb5f361b903aef5bf30590050",
+      "task": "F-478",
+      "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
     },
     "docs/FINDINGS.md": {
       "agent": "coil26502f",
@@ -3313,11 +3461,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "levels/procedural_island.tscn": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T07:29:17+00:00",
+      "agent": "vaneabd52b",
+      "at": "2026-08-22T00:14:23+00:00",
       "hash": "00744dbdb6c2c3c415cb201ecfbece2c7dc54b0503a78395bc47afdff80fc130",
-      "task": "F-419",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "task": "F-478",
+      "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
     },
     "project.godot": {
       "agent": "coil26502f",
@@ -3333,6 +3481,20 @@
       "task": "3.18",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "scenes/buildables/campfire.tscn": {
+      "agent": "cindere7060a",
+      "at": "2026-08-22T00:03:18+00:00",
+      "hash": "714c2db8fd3a71a2727f6907845f2e6a9996e98eb2f8e0a14a0ca9aa9fc437bc",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "scenes/buildables/cooking_spit.tscn": {
+      "agent": "cindere7060a",
+      "at": "2026-08-22T00:03:18+00:00",
+      "hash": "e450a0c2f8ca198a4b6ebf75bd66ea76eee20b41cee1a083c70a4084ed83a3f4",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
     "scenes/buildables/floor.tscn": {
       "agent": "coil26502f",
       "at": "2026-08-21T23:04:24+00:00",
@@ -3340,12 +3502,47 @@
       "task": "3.7",
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
+    "scenes/buildables/furnace.tscn": {
+      "agent": "cindere7060a",
+      "at": "2026-08-22T00:03:18+00:00",
+      "hash": "0643fd03efaeeb216558c510b906dfb76942dd98d9db12bf8acceba62dc87e7c",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "scenes/buildables/repair_bench.tscn": {
+      "agent": "cindere7060a",
+      "at": "2026-08-22T00:03:18+00:00",
+      "hash": "a83da29195e8ac9ba25205c5ad10dc20ffcd70daca11ad58af0bccc39d7fb09e",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
     "scenes/buildables/wall.tscn": {
       "agent": "gale43d16e",
       "at": "2026-08-21T08:34:48+00:00",
       "hash": "57c76b4b2b221ef6f858c89461d8ba959419f944704d47d676d7f1c016d1e146",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "scenes/buildables/woodcutting_block.tscn": {
+      "agent": "cindere7060a",
+      "at": "2026-08-22T00:03:18+00:00",
+      "hash": "20fc2dfdc8e412366b950339432cf93698315329ca0271eed56975e598bc6901",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "scenes/buildables/workbench.tscn": {
+      "agent": "cindere7060a",
+      "at": "2026-08-22T00:03:18+00:00",
+      "hash": "4ac788d2297c6babccc56f6f1f33695e90928b9b392229b8133b7f1e5673b744",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "scenes/buildables/workbench_upgraded.tscn": {
+      "agent": "cindere7060a",
+      "at": "2026-08-22T00:03:18+00:00",
+      "hash": "19a75c01364e9bc29058fe94ba75e082128f90b990a412e9303fb20451766c24",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
     },
     "scenes/haulables/heavy_ore_crate.tscn": {
       "agent": "gale43d16e",
@@ -3599,13 +3796,6 @@
       "task": "F-450",
       "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
     },
-    "tools/blender/asset_repro_check.py": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:31:57+00:00",
-      "hash": "5be8daed1ba06c562f6b58cc0ee618e8cb7fbcafa91f622dde9da18b3f2a39d0",
-      "task": "F-329",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
     "tools/blender/build_camp_set.py": {
       "agent": "gale43d16e",
       "at": "2026-08-21T08:34:48+00:00",
@@ -3648,13 +3838,6 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "tools/blender/crafting_stations_repro_check.py": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:31:57+00:00",
-      "hash": "2e55b33b8dc24f023075ac9d785e169f18bf5c6e9707146d68164b83a700fd0e",
-      "task": "F-329",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
-    },
     "tools/blender/mire_art.py": {
       "agent": "coil26502f",
       "at": "2026-08-21T23:04:24+00:00",
@@ -3663,11 +3846,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "tools/blender/render_item_icons.py": {
-      "agent": "coil26502f",
-      "at": "2026-08-21T23:04:24+00:00",
-      "hash": "85a3e3ceb6f87a5942e2784d9ec644dec664e6b00b8e4d07007547bf3cd421ea",
-      "task": "3.7",
-      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+      "agent": "cindere7060a",
+      "at": "2026-08-22T00:03:18+00:00",
+      "hash": "31a19abf23a7a2583b90154c4c83935f2a502223983074a8d21373e297c0d6a1",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
     },
     "tools/blender/trunk_inspect.py": {
       "agent": "gale43d16e",
@@ -3754,11 +3937,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "tools/crafting_ui_check.gd": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T04:09:56+00:00",
-      "hash": "e005612762020fdf17016cd094dc0d38fc3b8918f5471f34ac405729f76994ca",
-      "task": "F-380",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:46:40+00:00",
+      "hash": "cd5ad0db02c3f5dbb224b678cdd83fa26543692240d59f23c90f422836c1f13c",
+      "task": "F-484",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
     "tools/crafting_ui_render_check.gd": {
       "agent": "kilnd3a089",
@@ -4068,6 +4251,13 @@
       "task": "F-327",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
+    "tools/recipe_station_check.gd": {
+      "agent": "quillb947a7",
+      "at": "2026-08-22T00:46:40+00:00",
+      "hash": "6ec3f603389658fa15d055f25efa375f8ef0bf1d96849b17eec90a8e2fc3735c",
+      "task": "F-484",
+      "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
+    },
     "tools/render_census.gd": {
       "agent": "wick5e2d04",
       "at": "2026-08-21T21:17:45+00:00",
@@ -4082,19 +4272,26 @@
       "task": "F-445",
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     },
+    "tools/river_water_check.gd": {
+      "agent": "vaneabd52b",
+      "at": "2026-08-22T00:14:23+00:00",
+      "hash": "a099ed354f0a603edacfff8b3ad0d41847d0196fef803db217aad9c79661606e",
+      "task": "F-478",
+      "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
+    },
+    "tools/river_water_shot.gd": {
+      "agent": "vaneabd52b",
+      "at": "2026-08-22T00:14:23+00:00",
+      "hash": "5982b0e2be8da4e048a6ab2fe0c64f04feec4dd874561741f4cff74b1ed19062",
+      "task": "F-478",
+      "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
+    },
     "tools/run_scope_audit_check.gd": {
       "agent": "wickc3d79c",
       "at": "2026-08-21T17:37:48+00:00",
       "hash": "288e68fe876c25e20a39ebc59a038db6ec0f63112f685aef3ec0ccbeba572259",
       "task": "F-431",
       "token": "CLAUDE_CODE_SESSION_ID:80d76563-dcca-426a-ad54-2909c9fa380a"
-    },
-    "tools/save_atomicity_check.gd": {
-      "agent": "ivy1bcae0",
-      "at": "2026-08-21T00:31:57+00:00",
-      "hash": "255c852b2fc79cbba07c01829c1de509b2589e4b86a76cbd3849a66a62200ade",
-      "task": "F-326",
-      "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "tools/settings_check.gd": {
       "agent": "birche6b40e",
@@ -4130,6 +4327,13 @@
       "hash": "6c2f2254821dc778032465cd99321b31118dc6d9e22e1b347c816434a76a5cbf",
       "task": "F-345",
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
+    },
+    "tools/station_buildable_check.gd": {
+      "agent": "cindere7060a",
+      "at": "2026-08-22T00:03:18+00:00",
+      "hash": "53a80222a3b28fc049236730639f6b2e79c3d74b91e636b1017c1e3f215ae8ac",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
     },
     "tools/steam/export_release.sh": {
       "agent": "moss5523e3",
@@ -4237,11 +4441,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:a72ae762-48c8-4fe5-a801-04568b25f40b"
     },
     "ui/building/build_bar.gd": {
-      "agent": "coil26502f",
-      "at": "2026-08-21T23:28:27+00:00",
-      "hash": "5978e141f57e4c91921977412f382dfc2e36014693e46ca7b2918110f5c7f704",
-      "task": "F-472",
-      "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+      "agent": "cindere7060a",
+      "at": "2026-08-22T00:03:18+00:00",
+      "hash": "f9cab13557b4e4a51da87540ede605d53b23ef5dfd75c1e015395be5f949678f",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
     },
     "ui/building/door_prompt.gd": {
       "agent": "wickc3d79c",
@@ -4474,12 +4678,12 @@
       "task": "F-415",
       "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
     },
-    "world/environment/water_low_poly.gdshader": {
-      "agent": "quill5fa5c7",
-      "at": "2026-08-21T00:10:24+00:00",
-      "hash": "720e1e6d79c700c75c8588d84fc5bc36c40f19fcb206b40ace8eed7d8834a7f4",
-      "task": "4.18",
-      "token": "CLAUDE_CODE_SESSION_ID:0c346232-7c8d-4bff-8c8e-9f117cd7ea22"
+    "world/environment/river_water.gd": {
+      "agent": "vaneabd52b",
+      "at": "2026-08-22T00:14:23+00:00",
+      "hash": "be931e67107942931574e1a6e2ab753cb31a4824b12fcbbfe666cf10e335c8cd",
+      "task": "F-478",
+      "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
     },
     "world/gen/authored_world.gd": {
       "agent": "kiln384569",
@@ -4510,18 +4714,18 @@
       "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
     },
     "world/gen/island_heightmap.gd": {
-      "agent": "onyx059945",
-      "at": "2026-08-21T23:21:42+00:00",
-      "hash": "4c74798705a553ed1649f44d1495bafb41466f0578fe1969477752e54c9bb924",
-      "task": "F-464",
-      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
+      "agent": "vaneabd52b",
+      "at": "2026-08-22T00:14:23+00:00",
+      "hash": "7eb2b76b7427590619b1fc89c2e40853b659ff654b9fe966f003709ca22b183b",
+      "task": "F-478",
+      "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
     },
     "world/gen/procedural_world.gd": {
-      "agent": "onyx059945",
-      "at": "2026-08-21T23:21:42+00:00",
-      "hash": "d8ed2c1bae776b46d7f24add35dad041c99842eaa5c6351d6622223442c837bb",
-      "task": "F-464",
-      "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
+      "agent": "vaneabd52b",
+      "at": "2026-08-22T00:14:23+00:00",
+      "hash": "b90ca779c83fb839e12b5933d9c037dd8ac87089cce47aecc7e10d7f707fa528",
+      "task": "F-478",
+      "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
     },
     "world/gen/prop_collider.gd": {
       "agent": "kiln384569",
@@ -4580,7 +4784,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     }
   },
-  "rev": 983,
+  "rev": 1002,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -10113,7 +10317,7 @@
       "milestone": "Findings",
       "status": "in_flight",
       "tier": "F",
-      "title": "The tier-4 and tier-5 tools ship on placeholder art, and the bogsilver seam has none at all"
+      "title": "PROTOCOL_VERSION has two independent hard-coded expectations, and only the loud one gets maintained"
     },
     "F-474": {
       "est": "\u2014",
@@ -10139,18 +10343,59 @@
       "title": "Two sessions allocated F-473 at the same time, and the numbering check is red at HEAD"
     },
     "F-477": {
+      "done_at": "2026-08-22T00:03:18+00:00",
+      "done_by": "cindere7060a",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Only the anvil is buildable \u2014 the other seven crafting stations can only be found, never made"
     },
     "F-478": {
+      "done_at": "2026-08-22T00:14:23+00:00",
+      "done_by": "vaneabd52b",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "The procedural river is a dry gully \u2014 nothing renders or reports water in the channel"
+    },
+    "F-479": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Five crafting stations are now buildable but have no recipes \u2014 the panel opens empty"
+    },
+    "F-481": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The apple swings like an axe \u2014 it inherits ItemDef's CHOP default and viewmodel_check is red at HEAD for it"
+    },
+    "F-482": {
       "est": "\u2014",
       "milestone": "Findings",
       "status": "in_flight",
       "tier": "F",
-      "title": "The procedural river is a dry gully \u2014 nothing renders or reports water in the channel"
+      "title": "The sling, longbow and crossbow all shipped as the short bow, and the bolt as an arrow"
+    },
+    "F-483": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Build mode's piece picker is unreachable: cursor stays captured and the wrapped bar hides the ghost"
+    },
+    "F-484": {
+      "done_at": "2026-08-22T00:46:40+00:00",
+      "done_by": "quillb947a7",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Tool recipes all live at the workbench instead of their proper station"
     }
   },
   "version": 1

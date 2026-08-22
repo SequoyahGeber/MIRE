@@ -20,5 +20,6 @@ count = 1
 script = ExtResource("5_recipe")
 id = &"repair_hammer"
 display_name = "Repair Hammer"
+station = &"anvil"
 inputs = Array[ExtResource("1_ing")]([SubResource("Resource_branch"), SubResource("Resource_ingot")])
 output_item = ExtResource("4_out")

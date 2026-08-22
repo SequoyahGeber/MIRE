@@ -20,5 +20,6 @@ count = 3
 script = ExtResource("5_recipe")
 id = &"cleaver"
 display_name = "Cleaver"
+station = &"anvil"
 inputs = Array[ExtResource("1_ing")]([SubResource("Resource_log"), SubResource("Resource_ingot")])
 output_item = ExtResource("4_out")

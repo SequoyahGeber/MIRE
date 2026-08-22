@@ -178,8 +178,21 @@ func _run() -> void:
 	player.position = Vector3.ZERO
 	ui.call("poll_station")
 	check(ui.call("current_station_id") == &"workbench", "walking back re-identifies the workbench")
+
+	# F-484 moved every smithed tool off the workbench and onto the anvil, so the workbench is no
+	# longer the longest list in the game — the anvil is. The layout assertions below are about a
+	# list too long for one column, so they follow the recipes to the station that now holds them.
+	var anvil := Node3D.new()
+	anvil.name = "CraftingUICheckAnvil"
+	anvil.position = Vector3(80.0, 0.0, 0.0)
+	anvil.set_meta(&"asset", "station_anvil")
+	anvil.add_to_group(&"playtest_hollow_asset")
+	root.add_child(anvil)
+	player.position = Vector3(80.0, 0.0, 0.0)
+	ui.call("poll_station")
+	check(ui.call("current_station_id") == &"anvil", "walking up to the anvil identifies it")
 	var recipe_count: int = int(ui.call("recipe_row_count"))
-	check(recipe_count >= 8, "the workbench carries enough recipes to have overflowed one column")
+	check(recipe_count >= 8, "the anvil carries enough recipes to have overflowed one column")
 
 	var scroll_node: Node = ui.find_child("RecipeScroll", true, false)
 	check(scroll_node is ScrollContainer,

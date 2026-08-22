@@ -8829,3 +8829,42 @@ Report the window size and stop warning about focus on fullscreen runs.
 Files: `core/bench/benchmark_runner.gd`, `tools/benchmark_check.gd`
 
 Commit at time of writing: `bec24c6`
+
+---
+
+### DONE · F-477 · cindere7060a · 2026-08-22T00:03:18+00:00
+
+**Only the anvil is buildable — the other seven crafting stations can only be found, never made**
+
+All 8 crafting stations buildable, priced, iconed; build bar wraps; new station_buildable_check
+
+Notes along the way:
+- Build-menu icons added after the fact, on Sequoyah's follow-up: eight new 256px renders (icon_build_workbench, _workbench_upgraded, _campfire, _cooking_spit, _furnace, _anvil, _repair_bench, _woodcutting_block) through tools/blender/render_item_icons.py, from the same GLB each piece places. The anvil had no icon either, so this closes all eight rather than the seven new ones. Verified in-engine: every registered buildable now resolves an icon (BAR_ICONS missing=[]), and the bar renders with an icon in all 22 slots at 1280x720. Note for whoever holds the tool_weapon GLBs: re-running the icon script re-rendered icon_{wooden,stone,iron}_pickaxe.png differently, because those source GLBs are modified and uncommitted in the shared tree. Those three were restored to HEAD rather than committed here.
+
+Files: `content/buildables/workbench.tres`, `content/buildables/workbench_upgraded.tres`, `content/buildables/campfire.tres`, `content/buildables/cooking_spit.tres`, `content/buildables/furnace.tres`, `content/buildables/repair_bench.tres`, `content/buildables/woodcutting_block.tres`, `scenes/buildables/workbench.tscn`, `scenes/buildables/workbench_upgraded.tscn`, `scenes/buildables/campfire.tscn`, `scenes/buildables/cooking_spit.tscn`, `scenes/buildables/furnace.tscn`, `scenes/buildables/repair_bench.tscn`, `scenes/buildables/woodcutting_block.tscn`, `content/stations/campfire.tres`, `content/stations/cooking_spit.tres`, `content/stations/repair_bench.tres`, `content/stations/woodcutting_block.tres`, `content/stations/workbench_upgraded.tres`, `tools/station_buildable_check.gd`, `ui/building/build_bar.gd`, `content/guide/place_workbench.tres`, `tools/blender/render_item_icons.py`, `content/buildables/anvil.tres`, `assets/icons/catalog.json`
+
+Commit at time of writing: `2436657`
+
+---
+
+### DONE · F-478 · vaneabd52b · 2026-08-22T00:14:23+00:00
+
+**The procedural river is a dry gully — nothing renders or reports water in the channel**
+
+The procedural river has water: one level function in IslandHeightmap read by both the sheet and water_surface_at, drawn by world/environment/river_water.gd. Checked by tools/river_water_check.gd (5 seeds) and shot by tools/river_water_shot.gd.
+
+Files: `world/gen/island_heightmap.gd`, `world/gen/procedural_world.gd`, `world/environment/river_water.gd`, `levels/procedural_island.tscn`, `tools/river_water_check.gd`, `tools/river_water_shot.gd`, `docs/DELEGATION.md`
+
+Commit at time of writing: `c5a1d3b`
+
+---
+
+### DONE · F-484 · quillb947a7 · 2026-08-22T00:46:40+00:00
+
+**Tool recipes all live at the workbench instead of their proper station**
+
+Recipes split across furnace/workbench/anvil; smithed goods now require the anvil. New tools/recipe_station_check.gd proves it; crafting_ui_check layout test follows the long list to the anvil. Anvil's wellglass_shard cost filed as F-485.
+
+Files: `content/recipes/iron_axe.tres`, `content/recipes/iron_pickaxe.tres`, `content/recipes/iron_sword.tres`, `content/recipes/cleaver.tres`, `content/recipes/repair_hammer.tres`, `content/recipes/skewer.tres`, `content/recipes/arrow.tres`, `content/recipes/short_bow.tres`, `content/recipes/stone_axe.tres`, `content/recipes/stone_pickaxe.tres`, `content/recipes/wooden_axe.tres`, `content/recipes/wooden_pickaxe.tres`, `tools/crafting_ui_check.gd`, `tools/recipe_station_check.gd`
+
+Commit at time of writing: `2d5b78d`

@@ -20,5 +20,6 @@ count = 3
 script = ExtResource("5_recipe")
 id = &"stone_pickaxe"
 display_name = "Stone Pickaxe"
+station = &"workbench"
 inputs = Array[ExtResource("1_ing")]([SubResource("Resource_log"), SubResource("Resource_stone")])
 output_item = ExtResource("4_out")
