@@ -3515,7 +3515,109 @@ this failure's list too and are now registered, so `apple` is the only name left
 
 ---
 
+### F-483 · Build mode's piece picker is unreachable: cursor stays captured and the wrapped bar hides the ghost
+
+**Area:** ui · **Severity:** high · **Found:** 2026-08-22 by galee581ee
+
+Playtest report (Sequoyah, 2026-08-21): *"the cursor stays captive even when opening the build menu
+so there's no way to select building pieces or view the placement of them."*
+
+Two separate faults, one symptom.
+
+**1. Selection is mouse-only, and build mode never frees the mouse.** `ui/building/build_bar.gd`'s
+`PieceSlot` selects on a left click or on `ui_accept` while focused. But build mode is *aiming*
+mode: `player_controller.gd` keeps `Input.mouse_mode == MOUSE_MODE_CAPTURED` throughout, because
+the ghost follows the camera and LMB confirms placement. A captured cursor can never reach a slot,
+and `ui_accept` (Space / gamepad A) is `jump`. So the only reachable selection path is the focus
+chain's `ui_left`/`ui_right` — which on a keyboard are the arrow keys, undiscoverable and
+unmentioned in the bar's own hint line. In practice the player is stuck with whatever
+`toggle_build_mode()` auto-picked: the first piece in Registry iteration order.
+
+Releasing the cursor is *not* the fix. Build mode has to keep aiming; a picker that steals the
+cursor would make the mode unusable. The picker must be driveable from the keys the hand is already
+on.
+
+**2. The bar covers the placement it is previewing.** F-477 took the set from 15 buildables to 22
+and the fixed-width `HFlowContainer` wraps them into four rows ~340 px tall, sitting directly above
+the hotbar. That band is where a first-person builder looks: the ghost sits on the ground a few
+metres ahead, low in frame. The picker occludes the thing it exists to help you place.
+
+**Resolution (Sequoyah's direction):** the bar is a *single row* above the hotbar, with categorized
+tabs — one tab per kind of building — so the row never wraps regardless of how many buildables the
+set grows to. Cycle pieces within the tab and tabs within the bar from bound actions, not the
+cursor.
+
+---
+
+### F-485 · The anvil costs a wellglass shard, so smithing is gated behind a POI drop
+
+**Area:** progression · **Severity:** medium · **Found:** 2026-08-22 by quillb947a7
+
+content/buildables/anvil.tres costs 6 iron_ingot, 4 log and 1 wellglass_shard. wellglass_shard has
+exactly one source in the game — the wellspring loot table (content/loot/wellspring.tres) — so the
+anvil cannot be built until the player has found and looted that POI.
+
+That was tolerable while the anvil only held the four tier-4/5 bogsilver and wellglass recipes. As
+of F-484 the anvil is where all iron gear is smithed, so a run that has smelted iron but has not
+happened across a wellspring can no longer make an iron axe, pickaxe, sword, cleaver, repair hammer
+or skewer at all — the iron tier hangs off a drop the world may not have placed nearby.
+
+Suggested fix: the anvil's cost should be reachable from the furnace's own output — e.g. 6
+iron_ingot, 4 log, 10 stone — and the wellglass shard should gate a station above it, not the
+first smithing station. Not applied here: content/buildables/anvil.tres was claimed by another
+agent (galee581ee, F-483) at the time.
+
+---
+
 ## Resolved
+
+### F-484 · Tool recipes all live at the workbench instead of their proper station — **fixed**
+
+**Area:** crafting · **Severity:** medium · **Found:** 2026-08-22 by quillb947a7
+
+Every metal tool and weapon recipe is craftable at the tier-1 workbench: iron_axe declares
+station = &"workbench", and cleaver, iron_pickaxe, iron_sword, repair_hammer and skewer declare no
+station at all, so they fall back to RecipeDef's default of &"workbench". Only the four tier-4/5
+bogsilver/wellglass tools were ever put on the anvil.
+
+The result is that the anvil, which is a tier-3 buildable with its own StationDef and world scene,
+is skippable for the whole iron tier, and the workbench's recipe list is a flat dump of everything
+in the game rather than a progression step.
+
+Fix: iron-and-up smithed goods (iron_axe, iron_pickaxe, iron_sword, cleaver, repair_hammer, skewer)
+move to the anvil; wood/stone/fibre goods (wooden_axe, wooden_pickaxe, stone_axe, stone_pickaxe,
+short_bow, arrow) stay at the workbench but say so explicitly rather than relying on the default;
+smelting (charcoal, iron_ingot, bogsilver_ingot) stays at the furnace.
+
+---
+
+**Resolved 2026-08-22 by quillb947a7.** Every recipe now names its station explicitly, and the assignment follows the material rather than
+the default:
+
+  furnace    charcoal, iron_ingot, bogsilver_ingot          (unchanged — smelting)
+  workbench  wooden_axe, wooden_pickaxe, stone_axe,         (wood / stone / fibre)
+             stone_pickaxe, short_bow, arrow
+  anvil      iron_axe, iron_pickaxe, iron_sword, cleaver,   (everything smithed from ingots)
+             repair_hammer, skewer, bogsilver_axe,
+             bogsilver_pickaxe, wellglass_axe, wellglass_pickaxe
+
+iron_axe moved off &"workbench"; cleaver, iron_pickaxe, iron_sword, repair_hammer and skewer had no
+station line at all and were silently defaulting to the workbench — they now say &"anvil". The six
+workbench recipes state &"workbench" rather than leaning on RecipeDef's default, so a new recipe
+authored without a station line is visibly the odd one out.
+
+Verified headlessly with the new tools/recipe_station_check.gd, which asserts each of the 19
+recipes is offered at its station and at neither of the other two, and that every station named is
+a registered StationDef: PASS, 0 failures. tools/crafting_check.gd and tools/progression_check.gd
+still pass unchanged.
+
+tools/crafting_ui_check.gd needed one edit: its F-380 layout assertions relied on the workbench
+being the longest recipe list in the game ("recipe_count >= 8"), which it no longer is. The check
+now spawns an anvil and runs the grid/scroll assertions there, where the long list actually lives.
+
+Left open as F-485: the anvil costs a wellglass_shard, whose only source is the wellspring POI loot
+table, so moving iron gear here gates the whole iron tier behind a POI drop. The fix belongs in
+content/buildables/anvil.tres, which was claimed by another agent (F-483) during this task.
 
 ### F-482 · The sling, longbow and crossbow all shipped as the short bow, and the bolt as an arrow — **fixed**
 
