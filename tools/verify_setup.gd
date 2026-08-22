@@ -9,7 +9,8 @@ extends SceneTree
 ##
 ## The playable level is deliberately NOT pinned here (F-028). `greybox_test.tscn` is kept only as a
 ## small physics fixture — it has a Player, a Ground and nothing else to load — while the level the
-## project actually boots is validated structurally, whatever it happens to be.
+## project actually boots is validated structurally, whatever it happens to be. If main_scene is the
+## front end, its live routing seam names the playable scene that receives those assertions (F-505).
 
 ## Minimal scene used to exercise real physics. Not the game's main scene, and not required to be.
 const PHYSICS_FIXTURE_SCENE: String = "res://levels/greybox_test.tscn"
@@ -223,18 +224,30 @@ func _verify_main_scene() -> void:
 
 	var main_root: Node = main_packed.instantiate()
 	_check("main_scene root is a Node3D", main_root is Node3D, main_root.get_class())
-	_check("main_scene has a WorldEnvironment", _has_child_of_type(main_root, "WorldEnvironment"))
-	_check("main_scene has a directional light", _has_child_of_type(main_root, "DirectionalLight3D"))
+	var playable_root: Node = main_root
+	if main_root.get_script() == load("res://ui/frontend/frontend.gd"):
+		var world_scene_path: String = str(main_root.call("_world_scene_path"))
+		_check("frontend routes PLAY to an existing world scene",
+			not world_scene_path.is_empty() and ResourceLoader.exists(world_scene_path), world_scene_path)
+		var world_packed: PackedScene = load(world_scene_path) as PackedScene
+		_check("frontend world scene loads as a PackedScene", world_packed != null, world_scene_path)
+		if world_packed != null:
+			playable_root = world_packed.instantiate()
+
+	_check("playable scene has a WorldEnvironment", _has_child_of_type(playable_root, "WorldEnvironment"))
+	_check("playable scene has a directional light", _has_child_of_type(playable_root, "DirectionalLight3D"))
 	# A playable level must provide a player body; PlayerNet replaces it per peer in a session, but
 	# pressing Play with no session has to spawn you somewhere. An authored map carries one in the
 	# scene; the procedural map (4.19: the shipped scene root runs procedural_world.gd) builds one
 	# in _ready when build_player is true — its default, asserted here so a flipped export in the
 	# .tscn cannot ship a playerless boot.
 	var procedural_root: bool = \
-		main_root.get_script() == load("res://world/gen/procedural_world.gd")
-	_check("main_scene provides a player body",
-		bool(main_root.get(&"build_player")) if procedural_root
-		else _has_child_of_type(main_root, "CharacterBody3D"))
+		playable_root.get_script() == load("res://world/gen/procedural_world.gd")
+	_check("playable scene provides a player body",
+		bool(playable_root.get(&"build_player")) if procedural_root
+		else _has_child_of_type(playable_root, "CharacterBody3D"))
+	if playable_root != main_root:
+		playable_root.free()
 	main_root.free()
 
 

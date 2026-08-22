@@ -9205,3 +9205,18 @@ Notes along the way:
 Files: `tools/environment_vfx_reseed_check.gd`
 
 Commit at time of writing: `ae346fe9`
+
+---
+
+### DONE · F-505 · galedc2f76 · 2026-08-22T02:51:44+00:00
+
+**verify_setup rejects the shipped frontend main scene**
+
+verify_setup now validates the frontend's routed gameplay scene instead of falsely requiring gameplay nodes on the title scene. verify_setup and title_check pass.
+
+Notes along the way:
+- The frontend is intentionally non-playable presentation. verify_setup will validate its declared WORLD_SCENE_PATH as the playable target, then run the existing environment/light/player contract against that scene; direct gameplay main scenes keep the same checks.
+
+Files: `tools/verify_setup.gd`
+
+Commit at time of writing: `51c57a6e`
