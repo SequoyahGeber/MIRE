@@ -248,7 +248,7 @@ func _tick_attack(delta: float) -> void:
 	# F-247: mirrors Enemy._tick_attack()'s own condition (F-240) exactly, one level down — a chosen
 	# move that opts in closes ground during ITS tell instead of the whole span being stationary.
 	if state == State.TELL and move.lunge_speed_m_s > 0.0:
-		_tick_move_lunge(move.lunge_speed_m_s)
+		_tick_lunge(move.lunge_speed_m_s)
 	else:
 		velocity.x = 0.0
 		velocity.z = 0.0
@@ -285,32 +285,6 @@ func _resolve_attack() -> void:
 	if Vector3(to_target.x, 0.0, to_target.z).length() > move.range_m:
 		return
 	EVENT_BUS.emit_enemy_attack_landed(definition.id, _target_peer, move.damage, target.global_position)
-
-
-## F-247: the boss-move equivalent of `Enemy._tick_lunge()` (F-240) — same target-resolution and
-## stop-distance logic, but taking the speed to lunge at as an argument instead of reading
-## `definition.lunge_speed_m_s` off a single shared `EnemyDef`, because each `BossMoveDef` wants its
-## own speed (see that field's doc comment). Reimplemented here rather than parameterising the
-## inherited method: `systems/enemies/enemy.gd` was held by another lane's claim for this task's whole
-## session too, the exact constraint the class doc comment already names for the rest of this file, so
-## changing its signature was not on the table. `definition.stop_distance_m` is still the right cap —
-## it is `EnemyDef`'s own arrival distance, unrelated to any one move, and every `BossDef` already
-## carries it by inheritance.
-func _tick_move_lunge(speed_m_s: float) -> void:
-	var target: Node3D = _resolve_target()
-	if target == null:
-		velocity.x = 0.0
-		velocity.z = 0.0
-		return
-	var to_target: Vector3 = target.global_position - global_position
-	var flat: Vector3 = Vector3(to_target.x, 0.0, to_target.z)
-	if flat.length() <= definition.stop_distance_m:
-		velocity.x = 0.0
-		velocity.z = 0.0
-		return
-	var step: Vector3 = flat.normalized()
-	velocity.x = step.x * speed_m_s
-	velocity.z = step.z * speed_m_s
 
 
 func _current_move() -> BossMoveDef:

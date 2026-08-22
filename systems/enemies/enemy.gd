@@ -409,7 +409,7 @@ func _tick_pursuit(delta: float) -> void:
 
 func _tick_attack(delta: float) -> void:
 	if state == State.TELL and definition.lunge_speed_m_s > 0.0:
-		_tick_lunge()
+		_tick_lunge(definition.lunge_speed_m_s)
 	else:
 		velocity.x = 0.0
 		velocity.z = 0.0
@@ -464,14 +464,21 @@ func _resolve_attack() -> void:
 	)
 
 
-## F-240: only called during TELL, and only when `definition.lunge_speed_m_s > 0.0` — every existing
-## `EnemyDef` leaves that at its 0.0 default and keeps 2.10/5.1's fully-stationary tell untouched. A
-## kind that opts in closes ground toward its live target for the tell's duration, the missing answer
-## to "just take one step back": the hit still resolves at the tell's END against wherever the target
-## then is (`_resolve_attack()`, unchanged), but the enemy is no longer guaranteed to have stood still
-## while that gap opened. Stops at `stop_distance_m` — the same arrival distance pursuit itself stops
-## at — so a lunge cannot carry the enemy through its own target.
-func _tick_lunge() -> void:
+## F-240: only called during TELL, and only when the caller's lunge speed is above 0.0 — every
+## existing `EnemyDef` leaves that at its 0.0 default and keeps 2.10/5.1's fully-stationary tell
+## untouched. A kind that opts in closes ground toward its live target for the tell's duration, the
+## missing answer to "just take one step back": the hit still resolves at the tell's END against
+## wherever the target then is (`_resolve_attack()`, unchanged), but the enemy is no longer guaranteed
+## to have stood still while that gap opened. Stops at `stop_distance_m` — the same arrival distance
+## pursuit itself stops at — so a lunge cannot carry the enemy through its own target.
+##
+## Takes the speed rather than reading `definition.lunge_speed_m_s` (F-264). A boss lunges at its
+## CHOSEN MOVE's speed, and a method that reads one field off the shared def would apply the boss's
+## single inherited speed to every move alike — which defeats the point of a per-move field. `Boss`
+## reimplemented this whole body once for that reason; the parameter is what lets there be one copy.
+## `stop_distance_m` stays off the def either way: it is the kind's arrival distance, not a property
+## of any one attack.
+func _tick_lunge(speed_m_s: float) -> void:
 	var target: Node3D = _resolve_target()
 	if target == null:
 		velocity.x = 0.0
@@ -484,8 +491,8 @@ func _tick_lunge() -> void:
 		velocity.z = 0.0
 		return
 	var step: Vector3 = flat.normalized()
-	velocity.x = step.x * definition.lunge_speed_m_s
-	velocity.z = step.z * definition.lunge_speed_m_s
+	velocity.x = step.x * speed_m_s
+	velocity.z = step.z * speed_m_s
 
 
 func _tick_corpse(delta: float) -> void:

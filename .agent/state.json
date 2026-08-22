@@ -315,6 +315,13 @@
       "task": "F-543",
       "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
     },
+    "docs/DELEGATION.md": {
+      "agent": "larch543bba",
+      "at": "2026-08-22T05:55:35+00:00",
+      "dirty_at_claim": false,
+      "task": "F-543",
+      "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
+    },
     "docs/FINDINGS.md": {
       "agent": "nettled7199c",
       "at": "2026-08-22T05:54:06+00:00",
@@ -622,7 +629,8 @@
         "content/buildables/ward_post.tres",
         "ui/hud/forager_sense_hud.gd",
         "tools/forager_sense_check.gd",
-        "docs/DECISIONS.md"
+        "docs/DECISIONS.md",
+        "docs/DELEGATION.md"
       ],
       "notes": [],
       "started": "2026-08-22T05:38:30+00:00",
@@ -3251,11 +3259,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "docs/FINDINGS.md": {
-      "agent": "nettled7199c",
-      "at": "2026-08-22T05:54:06+00:00",
+      "agent": "cinder9818da",
+      "at": "2026-08-22T05:55:52+00:00",
       "hash": null,
-      "task": "F-541",
-      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+      "task": "F-264",
+      "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
     },
     "docs/ITEMS.md": {
       "agent": "larch28fcaa",
@@ -3439,12 +3447,32 @@
       "task": "F-487",
       "token": "CLAUDE_CODE_SESSION_ID:0150db4a-5991-4175-b28b-a24c0f25602f"
     },
+    "systems/enemies/boss.gd": {
+      "agent": "cinder9818da",
+      "at": "2026-08-22T05:55:52+00:00",
+      "claimed_at": "2026-08-22T05:54:56+00:00",
+      "dirty_at_claim": false,
+      "hash": "1e741c3e69a6bb96a77dbd60fc56d245d5f3ed824298303b3961a24e750c7e1a",
+      "task": "F-264",
+      "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
+    },
+    "systems/enemies/boss_move_def.gd": {
+      "agent": "cinder9818da",
+      "at": "2026-08-22T05:55:52+00:00",
+      "claimed_at": "2026-08-22T05:55:25+00:00",
+      "dirty_at_claim": true,
+      "hash": "cff8fe699f993298fe2a5f94550176809da6343eab94c018aa36e49a2f9abb21",
+      "task": "F-264",
+      "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
+    },
     "systems/enemies/enemy.gd": {
-      "agent": "larch28fcaa",
-      "at": "2026-08-22T05:14:33+00:00",
-      "hash": "9738f6d969b7e911b410f7795047164c9ddf571f476e4550e48d019f17f9adc4",
-      "task": "F-539",
-      "token": "CLAUDE_CODE_SESSION_ID:581032a6-490d-4a72-a03c-09fe695a9a25"
+      "agent": "cinder9818da",
+      "at": "2026-08-22T05:55:52+00:00",
+      "claimed_at": "2026-08-22T05:54:56+00:00",
+      "dirty_at_claim": false,
+      "hash": "0a39e96d7ee8e0cc314a12e26092e5a6ce16091b9044b7d0bc54695a69159a6d",
+      "task": "F-264",
+      "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
     },
     "systems/enemies/enemy_def.gd": {
       "agent": "larch28fcaa",
@@ -4896,7 +4924,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1542,
+  "rev": 1548,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -8772,9 +8800,11 @@
       "title": "Hardening pass: chains run stale code after harness edits, one failing task stops a whole queue, dup-grabs under claim-late, re-reviews refuse, and D-numbers still race"
     },
     "F-264": {
+      "done_at": "2026-08-22T05:55:52+00:00",
+      "done_by": "cinder9818da",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`Boss._tick_move_lunge()` duplicates `Enemy._tick_lunge()`'s logic instead of calling it, because the inherited method reads its speed off a def field rather than taking one as a parameter"
     },

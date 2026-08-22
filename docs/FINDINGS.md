@@ -480,37 +480,6 @@ real `PowerupDef` and actually appears as a POWERUP entry in an authored loot ta
 
 ---
 
-### F-264 · `Boss._tick_move_lunge()` duplicates `Enemy._tick_lunge()`'s logic instead of calling it, because the inherited method reads its speed off a def field rather than taking one as a parameter
-
-**Area:** enemies · **Severity:** low · **Found:** 2026-08-19 by lm during F-247
-
-F-247 gave `BossMoveDef` its own `lunge_speed_m_s` so a boss's individual moves can close ground
-during their own TELL, each at its own speed (`systems/enemies/boss.gd`). The natural implementation
-would have been calling the existing `Enemy._tick_lunge()` (F-240) from `Boss._tick_attack()`'s move
-branch — same target-resolution, same `stop_distance_m` cap, no new code. That does not work as-is:
-`_tick_lunge()` does not take a speed argument, it reads `definition.lunge_speed_m_s` directly off
-the shared `EnemyDef`/`BossDef` resource. Calling it unmodified from a boss's move branch would apply
-the BOSS's own single inherited lunge speed to every move alike, which defeats the entire point of a
-**per-move** field — two moves with different `lunge_speed_m_s` values would lunge identically.
-
-**Not fixed here.** The correct fix is parameterising `Enemy._tick_lunge(speed_m_s: float)` and having
-both callers (`Enemy._tick_attack()`, passing `definition.lunge_speed_m_s`, and
-`Boss._tick_attack()`'s move branch, passing `move.lunge_speed_m_s`) pass their own speed in — at
-which point `Boss._tick_move_lunge()` becomes dead code and should be deleted. `systems/enemies/
-enemy.gd` was held by another lane's claim (F-245) for this task's whole session, so that edit was not
-available; F-247 shipped a ~12-line boss-local reimplementation of the same logic instead, which is
-correct today but is the exact kind of duplication that drifts the next time either copy changes.
-
-**What would close this:** change `Enemy._tick_lunge()`'s signature to take `speed_m_s: float`,
-update its one existing call site in `Enemy._tick_attack()` to pass `definition.lunge_speed_m_s`,
-replace `Boss._tick_move_lunge()`'s body with a call to the now-shared method passing
-`move.lunge_speed_m_s`, and delete `_tick_move_lunge()`. `tools/enemy_lunge_check.gd` and
-`tools/boss_check.gd`'s `_check_move_lunge()` should both still pass unmodified — this is a pure
-refactor, not a behaviour change, and both existing checks are strict enough to catch a signature
-mistake.
-
----
-
 ### F-272 · The seed re-broadcast has no two-process proof — `run_reseed_check` calls the client's own receive path by hand
 
 **Area:** netcode · **Severity:** low · **Found:** 2026-08-20 by lp
@@ -3307,21 +3276,6 @@ Note the trade this makes: with `auto_accept_quit` off, AppExit is load-bearing 
 load, nothing accepts the close request and the window will not close. That is why the check asserts
 the autoload's presence and `PROCESS_MODE_ALWAYS` rather than only its behaviour.
 
-### F-541 · Chest tiers: only three loot tiers are actually placeable and only three chest silhouettes exist
-
-**Area:** content · **Severity:** medium · **Found:** 2026-08-22 by nettled7199c
-
-MIRE ships seven loot tables (small, bog, strongbox, sunken, gilded, wellspring, boss) but only
-`Cache_<n>` (small) and `Chest_gilded_<n>` markers are ever emitted by the layout generator, and the
-loot kit contains three chest silhouettes for those tiers. The result is a chest economy with no
-legible rarity ladder: a player cannot tell at a glance what a container is worth, and there is no
-escalating coin price to spend coins on.
-
-Sequoyah's directive: five tiers -- basic, common, rare, epic, legendary -- each with its own
-silhouette, escalating powerup/loot odds, and escalating coin cost to open.
-
----
-
 ### F-543 · Every Attunement's stat effects are dead — nothing in the game consumes the PowerupService modifiers they grant
 
 **Area:** gameplay · **Severity:** high · **Found:** 2026-08-22 by larch543bba
@@ -3410,6 +3364,130 @@ to whoever holds it — not to patch the output.
 ---
 
 ## Resolved
+
+### F-264 · `Boss._tick_move_lunge()` duplicates `Enemy._tick_lunge()`'s logic instead of calling it, because the inherited method reads its speed off a def field rather than taking one as a parameter — **fixed**
+
+**Area:** enemies · **Severity:** low · **Found:** 2026-08-19 by lm during F-247
+
+F-247 gave `BossMoveDef` its own `lunge_speed_m_s` so a boss's individual moves can close ground
+during their own TELL, each at its own speed (`systems/enemies/boss.gd`). The natural implementation
+would have been calling the existing `Enemy._tick_lunge()` (F-240) from `Boss._tick_attack()`'s move
+branch — same target-resolution, same `stop_distance_m` cap, no new code. That does not work as-is:
+`_tick_lunge()` does not take a speed argument, it reads `definition.lunge_speed_m_s` directly off
+the shared `EnemyDef`/`BossDef` resource. Calling it unmodified from a boss's move branch would apply
+the BOSS's own single inherited lunge speed to every move alike, which defeats the entire point of a
+**per-move** field — two moves with different `lunge_speed_m_s` values would lunge identically.
+
+**Not fixed here.** The correct fix is parameterising `Enemy._tick_lunge(speed_m_s: float)` and having
+both callers (`Enemy._tick_attack()`, passing `definition.lunge_speed_m_s`, and
+`Boss._tick_attack()`'s move branch, passing `move.lunge_speed_m_s`) pass their own speed in — at
+which point `Boss._tick_move_lunge()` becomes dead code and should be deleted. `systems/enemies/
+enemy.gd` was held by another lane's claim (F-245) for this task's whole session, so that edit was not
+available; F-247 shipped a ~12-line boss-local reimplementation of the same logic instead, which is
+correct today but is the exact kind of duplication that drifts the next time either copy changes.
+
+**What would close this:** change `Enemy._tick_lunge()`'s signature to take `speed_m_s: float`,
+update its one existing call site in `Enemy._tick_attack()` to pass `definition.lunge_speed_m_s`,
+replace `Boss._tick_move_lunge()`'s body with a call to the now-shared method passing
+`move.lunge_speed_m_s`, and delete `_tick_move_lunge()`. `tools/enemy_lunge_check.gd` and
+`tools/boss_check.gd`'s `_check_move_lunge()` should both still pass unmodified — this is a pure
+refactor, not a behaviour change, and both existing checks are strict enough to catch a signature
+mistake.
+
+---
+
+**Resolved 2026-08-22 by cinder9818da.** **Fixed 2026-08-21 by cinder9818da**, exactly as this entry specified — `systems/enemies/enemy.gd`
+was free this time.
+
+`Enemy._tick_lunge()` now takes `speed_m_s: float` instead of reading `definition.lunge_speed_m_s`.
+`Enemy._tick_attack()` passes `definition.lunge_speed_m_s`; `Boss._tick_attack()`'s move branch
+passes `move.lunge_speed_m_s`; `Boss._tick_move_lunge()`'s ~12-line reimplementation is deleted.
+`BossMoveDef.lunge_speed_m_s`'s doc comment, which pointed at the deleted method for why the
+inherited one could not be reused, now says the opposite and why.
+
+The parameter is the whole fix, and the reason is worth keeping where the method lives: a boss lunges
+at its **chosen move's** speed, so a method that reads one field off the shared def would apply the
+boss's single inherited speed to every move alike and make two moves with different values lunge
+identically. `stop_distance_m` stays read off the def in both callers — it is the kind's arrival
+distance, not a property of any one attack, and every `BossDef` carries it by inheritance.
+
+**Verified** `tools/enemy_lunge_check.gd` (failures=0) and `tools/boss_check.gd` (failures=0), both
+run **unmodified**, which is the assertion this entry asked for: a pure refactor whose behaviour is
+unchanged, against two checks strict enough to catch a signature mistake.
+
+### F-541 · Chest tiers: only three loot tiers are actually placeable and only three chest silhouettes exist — **fixed**
+
+**Area:** content · **Severity:** medium · **Found:** 2026-08-22 by nettled7199c
+
+MIRE ships seven loot tables (small, bog, strongbox, sunken, gilded, wellspring, boss) but only
+`Cache_<n>` (small) and `Chest_gilded_<n>` markers are ever emitted by the layout generator, and the
+loot kit contains three chest silhouettes for those tiers. The result is a chest economy with no
+legible rarity ladder: a player cannot tell at a glance what a container is worth, and there is no
+escalating coin price to spend coins on.
+
+Sequoyah's directive: five tiers -- basic, common, rare, epic, legendary -- each with its own
+silhouette, escalating powerup/loot odds, and escalating coin cost to open.
+
+---
+
+**Resolved 2026-08-22 by nettled7199c.** Shipped the five-rung chest rarity ladder — basic / common / rare / epic / legendary — as content,
+art, placement and a grader, recorded as D-215.
+
+**Art (3 new chest families, 6 new GLBs).** `tools/blender/build_loot_set.py` gained
+`build_chest_crate` (basic), `build_chest_warded` (epic) and `build_chest_gilded` (legendary),
+joining the existing small and reinforced families; the Wellspring chest stays off the ladder as the
+Mire's own container. Each rung is separated on TWO axes so it reads from across a clearing before
+any prompt resolves: width climbs monotonically 0.62 → 0.75 → 0.96 → 1.04 → 1.12 m, and no two
+palettes share anything (grey deadwood + rope with no metal at all; warm timber + iron; dark timber
++ heavy iron; ward teal on slate with emissive wellglass runes; gold on charred wood with a gemmed
+crest). The legendary's body was moved from `wood_timber` to `wood_charred` on a look pass — gold on
+mid-brown reads as brass-on-timber, which is the RARE rung, and the top of a ladder cannot resemble
+its middle.
+
+**Content (5 new tables, 3 retired).** `content/loot/{basic,common,rare,epic,legendary}.tres`
+replace `small`/`bog`/`strongbox`, which were three prices over three overlapping pools with only
+one of them ever placed. Price doubles per rung (10/30/75/150/300) and what it buys is ODDS, not
+bigger numbers (D-063): the POWERUP share of a draw runs 5% → 48% → 50% → 55% → 72% and the rarity
+of those lines climbs with it. `legendary` guarantees a Wellglass Shard so the price always buys
+something real, and carries the jackpot lines — Guardian Core, and a 200–400 coin dump.
+
+This is also where 47 authored powerups that appeared in NO loot table finally enter the game: the
+old economy drew from the same 25 ids, so two thirds of `content/powerups/` was unreachable from a
+chest.
+
+**Placement, both maps.** `tools/mapgen/hollowmere_layout.py` gained `build_ladder_chests()`:
+5/4/3/2/1 chests per island in price order, so scarcity climbs with price. Each candidate site falls
+back through a deterministic ring search before being given up on, and `validate()` fails the build
+if any rung comes up short — a silently-missing rung is a price ladder with a hole in it, not a
+quieter map. On procedural, `content/poi/treasure_strongbox.tres` is replaced by four PoiDefs
+(`chest_common/rare/epic/legendary`) with climbing spacing; `loot_cache` still seeds the free crates.
+
+**Free caches kept.** `Cache_<n>` markers build the `basic` TABLE at cost 0 — the price comes from
+the marker prefix, not the tier alone. Muck's loop is intact: free caches seed the coins that priced
+chests spend, and a run never opens on a door it cannot afford.
+
+**Locator tint per tier.** `Chest.locator_tint` (new @export, presentation only, never on the wire)
+tints the discoverability mote and its light; ChestPlacementService assigns it per tier. At the
+range the mote exists to work at, colour resolves before silhouette does. Emission is derived by
+saturating the tint in HSV rather than reusing it, because a mote emitting its own albedo at 3.5x
+washes to white and all five tiers become the same dot.
+
+Also removed every `*_open` chest mesh from map scatter (`RUNTIME_ONLY_ASSETS`): the open state
+belongs to `Chest._refresh_visual()`, and a permanently-open decorative chest is a container
+promising a roll it will never make.
+
+**Verified.** `tools/chest_placement_check.gd` gained `_check_ladder()`, which grades the ladder
+against the REAL Hollowmere boot rather than a synthetic scene — strictly increasing prices, no two
+rungs sharing a mesh or a locator tint, coin-gated throughout, and every rung's budget actually
+placed; it prints each rung's powerup share computed from the authored weights, so re-tuning a
+.tres re-grades the ladder. failures=0. Also green: loot_content_check, chest_check, chest_seed_check,
+chest_net_check, cycle_modifier_effects_check. `HOLLOWMERE_VALIDATE PASS`, layout byte-identical
+across two consecutive runs. `world_contract_check` matches its baseline exactly (3 pre-existing
+failures); `unlock_check`'s 6 failures reproduce at HEAD and are unrelated.
+
+DOCS DEBT: D-215 could not be written into docs/DECISIONS.md — larch543bba holds that file for
+F-543. The full entry is staged at scratchpad/d_215.md and the decision itself is documented at
+length in autoload/chest_placement_service.gd's header and docs/ITEMS.md §5.1.
 
 ### F-267 · ship sweeps a sibling's uncommitted hunks when its claimed file carries them — F-197's shape reached source files and carried a debug probe into HEAD — **fixed**
 

@@ -31,8 +31,9 @@ extends Resource
 ## inherited `EnemyDef.lunge_speed_m_s`, because a boss's moves are meant to read and feel different
 ## from each other (`Boss._tick_attack()`'s whole reason for existing) — one shared speed would make
 ## every move lunge identically or not at all. 0.0, the default, preserves every existing `BossMoveDef`
-## fully stationary, bit-for-bit. See `Boss._tick_move_lunge()` for why this is not simply routed
-## through the inherited `Enemy._tick_lunge()`.
+## fully stationary, bit-for-bit. `Boss._tick_attack()` passes this into the inherited
+## `Enemy._tick_lunge(speed_m_s)`, which takes the speed as an argument for exactly this reason
+## (F-264) rather than reading one field off the shared def.
 @export_range(0.0, 20.0, 0.1) var lunge_speed_m_s: float = 0.0
 
 @export_group("Selection")
