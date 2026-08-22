@@ -288,6 +288,9 @@ class CategoryTab extends PanelContainer:
 ## Emitted on a slot click. The player decides what to do with it (player_controller.gd's
 ## set_selected_build_piece()) — this file never touches BuildGhost or BuildService directly.
 signal piece_selected(piece_id: StringName)
+## Emitted only by a pointer click on a piece, after piece_selected. Bound cycling intentionally
+## keeps the picker open; a mouse choice transitions into captured first-person placement (F-571).
+signal placement_aim_requested
 ## Emitted when the open tab changes, for checks and for anything that later wants to react to it.
 signal category_changed(category: StringName)
 
@@ -717,6 +720,7 @@ func _present_category() -> void:
 
 func _on_slot_pressed(piece_id: StringName) -> void:
 	piece_selected.emit(piece_id)
+	placement_aim_requested.emit()
 
 
 func _on_tab_pressed(category: StringName) -> void:
@@ -726,9 +730,8 @@ func _on_tab_pressed(category: StringName) -> void:
 	_open_category = category
 	_present_category()
 	category_changed.emit(category)
-	var bucket: Array = _open_slots()
-	if not bucket.is_empty():
-		piece_selected.emit((bucket[0] as PieceSlot).piece_id)
+	# F-571: a tab click is browsing, not a piece choice. Emitting piece_selected here made the
+	# picker-to-aim transition fire before the player could click an item on the newly opened tab.
 
 
 func _left_click_event() -> InputEventMouseButton:

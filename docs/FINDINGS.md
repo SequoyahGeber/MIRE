@@ -2962,7 +2962,23 @@ ground until now. A gate nobody could reach was never going to look flaky.
 
 ---
 
+### F-570 · Playtest: procedural map shows only basic chests and ChestUI does not display the coin cost before opening
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivy5b8298
+
+Sequoyah reports a live playtest still finds only basic chests around the map, with no other loose loot, and chest interaction does not show the coin cost to open. Verify the five-tier F-541 POIs are registered and instantiated in the shipped procedural world rather than only present as content, add runtime coverage for all tiers, and make ChestUI expose the authoritative local open price before input. Loose ordinary world loot remains F-536 unless this investigation finds a separate already-built path.
+
+---
+
 ## Resolved
+
+### F-571 · Build picker never transitions back to aiming after mouse selection — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by galeb3efe6
+
+After selecting a buildable in the build menu, the picker retains cursor ownership: first-person look does not resume and the placement confirm click cannot reach build placement. Reproduce the full mouse flow in ui/building/build_bar.gd and player/player_controller.gd: open menu, select item, aim ghost, left-click place. Fix the picker-to-placement input transition without regressing category/item selection.
+
+**Resolved 2026-08-22 by galeb3efe6.** Selecting a piece now completes the pointer-driven picker phase: BuildBar emits a dedicated placement-aim request after the piece selection, PlayerController hides the picker while leaving BuildGhost active, captures the mouse, and returns mouse motion plus left click to first-person aim/confirm. Category clicks now browse without prematurely choosing the tab's first piece. Verified windowed with `.agent/bin/agent godot --windowed --script tools/build_picker_check.gd`: BUILD_PICKER_CHECK failures=0, including real slot click, captured mouse look, and consumed placement click. `tools/build_check.gd` passed failures=0 and placed a real wall through PlayerController -> BuildService. `tools/gamepad_check.gd` matched its clean-HEAD baseline exactly at four stale F-217 focus assertions superseded by F-483.
 
 ### F-568 · environment_vfx_reseed_check has a real pre-existing failure: sway_asset_count does not carry the ended island's dressed meshes — **fixed**
 

@@ -10225,3 +10225,18 @@ Notes along the way:
 Files: `tools/river_water_shot.gd`, `tools/graphics_quality_check.gd`
 
 Commit at time of writing: `cf754083`
+
+---
+
+### DONE · F-571 · galeb3efe6 · 2026-08-22T16:54:34+00:00
+
+**Build picker never transitions back to aiming after mouse selection**
+
+Build picker now hands off to captured first-person placement after a piece click; categories browse without auto-selecting. Windowed picker check and build_check pass; gamepad check matches its four pre-existing baseline failures.
+
+Notes along the way:
+- Root cause: set_selected_build_piece() always reopens BuildBar and forces MOUSE_MODE_VISIBLE, including the slot-click path. Fix is a picker-to-aim transition: tab clicks browse only; slot click arms the ghost, hides picker, and captures mouse while build mode remains active.
+
+Files: `entities/player/player_controller.gd`, `ui/building/build_bar.gd`, `tools/build_picker_check.gd`
+
+Commit at time of writing: `ef5484ad`

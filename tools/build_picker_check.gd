@@ -162,12 +162,37 @@ func _check_bar_is_one_row_and_mouse_driven() -> void:
 	var mouse_second_tab: StringName = StringName(bar.call(&"open_category"))
 	check(mouse_second_tab != mouse_first_tab,
 		"clicking a category tab opens it (%s -> %s)" % [mouse_first_tab, mouse_second_tab])
-	check(StringName(bar.call(&"_category_of", ghost.call(&"current_piece_id"))) == mouse_second_tab,
-		"and a tab click arms that category's first piece")
-	var clicked_piece: StringName = StringName(bar.call(&"slot_piece_id", 0))
-	bar.call(&"select_slot", 0)
+	check(bool(bar.call(&"is_active")) and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE,
+		"a tab click only browses; the picker stays open for an item choice")
+	var clicked_index: int = -1
+	for i: int in int(bar.call(&"slot_count")):
+		var candidate: StringName = StringName(bar.call(&"slot_piece_id", i))
+		if StringName(bar.call(&"_category_of", candidate)) == mouse_second_tab:
+			clicked_index = i
+			break
+	var clicked_piece: StringName = StringName(bar.call(&"slot_piece_id", clicked_index))
+	bar.call(&"select_slot", clicked_index)
 	check(StringName(ghost.call(&"current_piece_id")) == clicked_piece,
 		"clicking a piece slot arms that exact piece (%s)" % clicked_piece)
+	check(not bool(bar.call(&"is_active")) and bool(player.call(&"is_build_mode_active")),
+		"choosing a piece closes the picker but keeps placement mode active")
+	check(DisplayServer.get_name() == "headless" or Input.mouse_mode == Input.MOUSE_MODE_CAPTURED,
+		"choosing a piece captures the mouse for first-person aiming")
+	if DisplayServer.get_name() != "headless":
+		var pivot: Node3D = player.get_node(^"CameraPivot") as Node3D
+		var look_before: Vector3 = pivot.rotation
+		root.push_input(_mouse_motion_event(Vector2(18.0, -11.0)))
+		check(not pivot.rotation.is_equal_approx(look_before),
+			"captured mouse motion turns the placement camera")
+	root.push_input(_mouse_button_event(MOUSE_BUTTON_LEFT))
+	check(root.is_input_handled(),
+		"left click in placement mode reaches and consumes the build-confirm branch")
+
+	# Reopen the picker through the same public seam used on initial entry so the remaining bound
+	# input coverage can exercise the menu. The placement phase above is intentionally bar-free.
+	player.call(&"set_selected_build_piece", clicked_piece)
+	check(bool(bar.call(&"is_active")) and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE,
+		"the picker can be shown again without leaving build mode")
 
 	# Stepping the piece. Fed as the real action event into the real _input(), exactly as the engine
 	# would deliver a wheel press, with nothing clicked and no slot method called directly.
@@ -283,6 +308,19 @@ func _wheel_event(button_index: int) -> InputEventMouseButton:
 	var event := InputEventMouseButton.new()
 	event.button_index = button_index
 	event.pressed = true
+	return event
+
+
+func _mouse_button_event(button_index: int) -> InputEventMouseButton:
+	var event := InputEventMouseButton.new()
+	event.button_index = button_index
+	event.pressed = true
+	return event
+
+
+func _mouse_motion_event(relative: Vector2) -> InputEventMouseMotion:
+	var event := InputEventMouseMotion.new()
+	event.relative = relative
 	return event
 
 

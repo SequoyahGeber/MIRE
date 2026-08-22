@@ -37,6 +37,20 @@
       "task": "F-547",
       "token": "CLAUDE_CODE_SESSION_ID:280d7fb3-3816-4517-a003-ea21b2ca6f66"
     },
+    "autoload/item_drop_service.gd": {
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:52:10+00:00",
+      "dirty_at_claim": false,
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
+    },
+    "autoload/loose_loot_service.gd": {
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:52:10+00:00",
+      "dirty_at_claim": false,
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
+    },
     "content/harvestables/apple_tree.tres": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:45:13+00:00",
@@ -121,6 +135,41 @@
       "task": "F-482",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "content/poi/chest_common.tres": {
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:52:10+00:00",
+      "dirty_at_claim": false,
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
+    },
+    "content/poi/chest_epic.tres": {
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:52:10+00:00",
+      "dirty_at_claim": false,
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
+    },
+    "content/poi/chest_legendary.tres": {
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:52:10+00:00",
+      "dirty_at_claim": false,
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
+    },
+    "content/poi/chest_rare.tres": {
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:52:10+00:00",
+      "dirty_at_claim": false,
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
+    },
+    "content/poi/loot_cache.tres": {
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:52:10+00:00",
+      "dirty_at_claim": false,
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
+    },
     "content/scatter/highland_rocks.tres": {
       "agent": "birche6b40e",
       "at": "2026-08-22T00:06:31+00:00",
@@ -132,6 +181,20 @@
       "at": "2026-08-21T17:13:34+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "project.godot": {
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:52:10+00:00",
+      "dirty_at_claim": false,
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
+    },
+    "systems/loot/item_drop.gd": {
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:52:10+00:00",
+      "dirty_at_claim": false,
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
     },
     "tools/_probe_food_grip.gd": {
       "agent": "bram937a51",
@@ -225,6 +288,13 @@
       "task": "F-564",
       "token": "CLAUDE_CODE_SESSION_ID:280d7fb3-3816-4517-a003-ea21b2ca6f66"
     },
+    "tools/focus_prompt_check.gd": {
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:52:10+00:00",
+      "dirty_at_claim": false,
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
+    },
     "tools/grade_probe.gd": {
       "agent": "bram937a51",
       "at": "2026-08-22T08:17:48+00:00",
@@ -266,12 +336,26 @@
       "task": "F-564",
       "token": "CLAUDE_CODE_SESSION_ID:280d7fb3-3816-4517-a003-ea21b2ca6f66"
     },
+    "tools/loose_loot_check.gd": {
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:52:10+00:00",
+      "dirty_at_claim": false,
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
+    },
     "tools/playtest_hollow_render_check.gd": {
       "agent": "bram937a51",
       "at": "2026-08-22T08:44:08+00:00",
       "dirty_at_claim": false,
       "task": "F-562",
       "token": "CLAUDE_CODE_SESSION_ID:280d7fb3-3816-4517-a003-ea21b2ca6f66"
+    },
+    "tools/poi_check.gd": {
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:52:10+00:00",
+      "dirty_at_claim": false,
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
     },
     "tools/probe_scene.gd": {
       "agent": "bram937a51",
@@ -335,6 +419,13 @@
       "dirty_at_claim": false,
       "task": "F-549",
       "token": "CLAUDE_CODE_SESSION_ID:280d7fb3-3816-4517-a003-ea21b2ca6f66"
+    },
+    "ui/hud/focus_prompt.gd": {
+      "agent": "ivy5b8298",
+      "at": "2026-08-22T16:52:10+00:00",
+      "dirty_at_claim": false,
+      "task": "F-570",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
     },
     "world/gen/resource_scatter_field.gd": {
       "agent": "bram937a51",
@@ -477,6 +568,33 @@
       "notes": [],
       "started": "2026-08-22T08:17:48+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:280d7fb3-3816-4517-a003-ea21b2ca6f66"
+    },
+    "F-570": {
+      "agent": "ivy5b8298",
+      "files": [
+        "content/poi/loot_cache.tres",
+        "content/poi/chest_common.tres",
+        "content/poi/chest_rare.tres",
+        "content/poi/chest_epic.tres",
+        "content/poi/chest_legendary.tres",
+        "ui/hud/focus_prompt.gd",
+        "tools/focus_prompt_check.gd",
+        "autoload/item_drop_service.gd",
+        "systems/loot/item_drop.gd",
+        "autoload/loose_loot_service.gd",
+        "project.godot",
+        "tools/loose_loot_check.gd",
+        "tools/poi_check.gd"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-22T16:52:11+00:00",
+          "by": "ivy5b8298",
+          "text": "Root cause: procedural placement technically has all tiers, but 50 free basic caches swamp only 10 priced chests; FocusPrompt suppresses zero-cost hint entirely. F-536 is partly stale because F-535 has since shipped host-authoritative ItemDropService; reuse it for persistent seeded loose loot."
+        }
+      ],
+      "started": "2026-08-22T16:52:10+00:00",
+      "token": "CODEX_SESSION_ID:01a02a60-db05-7151-bcc0-4e8372882312"
     }
   },
   "recent": {
@@ -3781,11 +3899,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "docs/FINDINGS.md": {
-      "agent": "hollowbfcf67",
-      "at": "2026-08-22T08:53:02+00:00",
+      "agent": "galeb3efe6",
+      "at": "2026-08-22T16:54:34+00:00",
       "hash": null,
-      "task": "F-469",
-      "token": "CLAUDE_CODE_SESSION_ID:cfe6388b-b9bd-49ce-be58-b822595f97fb"
+      "task": "F-571",
+      "token": "CODEX_SESSION_ID:01a02a61-6f7b-79c2-9ff9-cf61021f3a96"
     },
     "docs/ITEMS.md": {
       "agent": "nettled7199c",
@@ -3850,13 +3968,13 @@
       "token": "CODEX_SESSION_ID:01a02772-862e-7242-889a-a20257660bfa"
     },
     "entities/player/player_controller.gd": {
-      "agent": "larch543bba",
-      "at": "2026-08-22T06:53:24+00:00",
-      "claimed_at": "2026-08-22T05:38:30+00:00",
+      "agent": "galeb3efe6",
+      "at": "2026-08-22T16:54:34+00:00",
+      "claimed_at": "2026-08-22T16:52:42+00:00",
       "dirty_at_claim": false,
-      "hash": "f313aad1f47894bba3e6f1d44f7d31a4761be8aa402d1f2277358298e0d17779",
-      "task": "F-543",
-      "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
+      "hash": "9fa32b034d272a3f5ea42815612260db83dadbd0d690f7e30fb28e510305d24f",
+      "task": "F-571",
+      "token": "CODEX_SESSION_ID:01a02a61-6f7b-79c2-9ff9-cf61021f3a96"
     },
     "export_presets.cfg": {
       "agent": "slatef9bff1",
@@ -4433,11 +4551,13 @@
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "tools/build_picker_check.gd": {
-      "agent": "ivyf16b98",
-      "at": "2026-08-22T05:32:37+00:00",
-      "hash": "416898a017903f54fcc2314fdcbf2c03e4a46f0eda09afb44c03f35159e52933",
-      "task": "F-527",
-      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+      "agent": "galeb3efe6",
+      "at": "2026-08-22T16:54:34+00:00",
+      "claimed_at": "2026-08-22T16:52:42+00:00",
+      "dirty_at_claim": false,
+      "hash": "d73b8dbedf94579da89301ef89bc039b9cbc3db25b8ffd83572b680da830f938",
+      "task": "F-571",
+      "token": "CODEX_SESSION_ID:01a02a61-6f7b-79c2-9ff9-cf61021f3a96"
     },
     "tools/build_snap_check.gd": {
       "agent": "coil26502f",
@@ -5508,11 +5628,13 @@
       "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "ui/building/build_bar.gd": {
-      "agent": "ivyf16b98",
-      "at": "2026-08-22T05:32:37+00:00",
-      "hash": "25303f943cbc4774f06dce6e5224fc6c702a18fd6cdd8262ad4f5d2f7427105d",
-      "task": "F-527",
-      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+      "agent": "galeb3efe6",
+      "at": "2026-08-22T16:54:34+00:00",
+      "claimed_at": "2026-08-22T16:52:42+00:00",
+      "dirty_at_claim": false,
+      "hash": "ea78f35488ae44063f8d80e7cabe80db33633bcfb8892f7f877784e19a474a2a",
+      "task": "F-571",
+      "token": "CODEX_SESSION_ID:01a02a61-6f7b-79c2-9ff9-cf61021f3a96"
     },
     "ui/building/door_prompt.gd": {
       "agent": "wickc3d79c",
@@ -5854,7 +5976,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1687,
+  "rev": 1701,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -12195,6 +12317,36 @@
       "status": "done",
       "tier": "F",
       "title": "ProceduralWorld re-anchors its streamer every physics tick even with no player, so build_player=false does NOT protect an externally-set anchor"
+    },
+    "F-567": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Six D-numbers each head two unrelated decisions, hidden until the wrong heading shape was corrected"
+    },
+    "F-569": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "terrain_texture_check's 90 m contrast gate sits inside its own run-to-run variance, so it flakes"
+    },
+    "F-570": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Playtest: procedural map shows only basic chests and ChestUI does not display the coin cost before opening"
+    },
+    "F-571": {
+      "done_at": "2026-08-22T16:54:34+00:00",
+      "done_by": "galeb3efe6",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Build picker never transitions back to aiming after mouse selection"
     }
   },
   "version": 1

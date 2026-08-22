@@ -383,6 +383,7 @@ func _build_building_presentation() -> void:
 	_build_bar.name = "BuildBar"
 	add_child(_build_bar)
 	_build_bar.connect(&"piece_selected", _on_build_piece_selected)
+	_build_bar.connect(&"placement_aim_requested", _on_build_placement_aim_requested)
 
 
 ## Until a third-person character asset exists, remote players still need a visible body for the
@@ -1270,6 +1271,20 @@ func _first_registered_piece() -> StringName:
 
 func _on_build_piece_selected(piece_id: StringName) -> void:
 	set_selected_build_piece(piece_id)
+
+
+func _on_build_placement_aim_requested() -> void:
+	if not is_build_mode_active():
+		return
+	# F-571: choosing is the boundary between the pointer-driven picker and first-person
+	# placement. Keep the ghost (and therefore build mode) active, but get the bar out of the way
+	# and give mouse motion/LMB back to aim + confirm. Without this transition F-527's visible
+	# cursor remained in force forever, so a player could choose a piece but could neither turn nor
+	# place it.
+	if _build_bar != null:
+		_build_bar.call(&"set_active", false)
+	_capture_deferred = false
+	_capture_mouse(true)
 
 
 ## Every physics tick while building: re-aims the ghost from the real camera (mirrors update_aim()'s
