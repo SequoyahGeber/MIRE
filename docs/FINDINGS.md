@@ -3937,6 +3937,18 @@ the vertex stage.
 
 ## Resolved
 
+### F-505 · verify_setup rejects the shipped frontend main scene — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by galedc2f76
+
+project.godot now intentionally boots res://levels/frontend.tscn, but tools/verify_setup.gd still requires application/run/main_scene itself to contain WorldEnvironment, DirectionalLight3D, and CharacterBody3D or be procedural_world.gd. The smoke check therefore reports three failures even though the frontend is the correct title/menu entry point and launches the gameplay scene through its own contract. Update the verifier to recognize and prove the frontend-to-gameplay seam while preserving the direct playable-scene assertions for any non-frontend main scene.
+
+**Resolved 2026-08-22 by galedc2f76.** Updated verify_setup's main-scene contract to recognize the intentional Frontend boot scene, follow the same _world_scene_path() seam used by PLAY, and apply the existing environment, directional-light, and player assertions to that routed gameplay scene. Direct gameplay main scenes retain the same structural checks.
+
+Verified:
+- `.agent/bin/agent godot --script tools/verify_setup.gd` -> all checks passed; frontend route, routed PackedScene, WorldEnvironment, DirectionalLight3D, and player all reported ok.
+- `.agent/bin/agent godot --script tools/title_check.gd` -> TITLE_CHECK failures=0.
+
 ### F-503 · Resolution selector silently does nothing outside windowed mode — **fixed**
 
 **Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by galedc2f76
