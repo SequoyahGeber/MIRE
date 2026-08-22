@@ -356,91 +356,6 @@ checked against anything but relative deltas on the fastest machine in the proje
 
 ---
 
-### F-285 · `tools/nav_bake_check.gd` has 4 pre-existing failures at a clean HEAD — chunk-streamed terrain reports NaN heights to the check's seam search
-
-**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-20 by lp
-
-Found by lp during F-268's regression sweep — `BuildService`/`HaulService` are `NavBaker`'s
-`piece_placed`/`piece_destroyed` producers, so this check was run to prove F-268's new
-`host_clear_all()` did not regress it. It did not: the failures are **pre-existing and identical**.
-
-`.agent/bin/agent baseline --script tools/nav_bake_check.gd` at `a28f346`, in a throwaway worktree,
-produces the byte-identical four FAIL lines the working tree does — confirmed by diffing the sorted
-`FAIL:` lines of both runs, not by comparing the failure count:
-
-```
-FAIL: the map became queryable within 10s
-FAIL: found a chunk boundary with walkable land on both sides: x=nan z=0, chunks []
-FAIL: placing a piece dead centre on that spot pushes the closest walkable point measurably farther away (nanm, baseline nanm)
-FAIL: and the map became queryable within 10s
-```
-
-The whole check does not fail. `NAV_BAKE_CHECK` reports `failures=4` out of a much longer PASS list,
-and every failure is in the **chunk-streaming** half: the buildable half — "re-baking after a REAL
-host placement forces the same path to detour around it (7.525m, was 6.000m straight, 5 waypoints)"
-and "destroying it un-carves the path back to a straight line" — passes. So `NavBaker`'s reaction to
-`BuildService` is proven; what is unproven is the streamed-chunk navmesh underneath it.
-
-**The shape.** `x=nan` in the seam search is the root: the check walks chunk boundaries looking for
-one with walkable land on both sides, and the coordinate it computes is NaN, so `chunks []` comes
-back empty and the two measurements downstream of it are NaN-vs-NaN comparisons that can never
-succeed. The `map became queryable within 10s` failure is likely the same cause one step earlier — a
-NavigationServer map with no valid region never becomes queryable — rather than a genuinely separate
-timing bug, but that is an inference from the ordering, not something this task measured.
-
-**Why it is worth its own finding.** This is F-268's own class: a shipped check that has been failing
-at HEAD long enough that its failure reads as background noise. F-251 and F-253 and F-246 are three
-more of the same, all filed separately, which is the argument for a standing "which checks fail at
-HEAD" sweep rather than another one-off. Nothing here should be read as blaming a recent commit: the
-worldgen files this touches have churned heavily (F-241, F-252, F-261, F-271/D-163 changed how a
-point's biome is classified), and `git log` alone will not say which of those, if any, introduced the
-NaN — a bisect over `tools/nav_bake_check.gd`'s seam search is the cheap way to find out.
-
-**Trap for whoever takes it:** `world/chunk/nav_baker.gd`, `world/chunk/chunk_streamer.gd` and
-`world/chunk/chunk_mesher.gd` were all claimed by lane lm under F-274 while this was filed. Check the
-board before claiming; a NaN in the mesher's height sampling would be visible from that task too.
-
-**What would close this:** the seam search finds a real chunk boundary (no NaN coordinate), the map
-becomes queryable, and `NAV_BAKE_CHECK failures=0` — or, if one of the four is genuinely
-environment-dependent rather than a defect, that assertion is either made robust or removed with the
-reason written in, so the check's clean state is `failures=0` and a future regression is visible.
-
----
-
-### F-292 · tools/nav_bake_check.gd has had 4 failures at HEAD since the 4.13/4.14 terrain retune — the island has no gentle chunk-boundary strip at its 30-degree gate
-
-**Area:** world · **Severity:** high · **Found:** 2026-08-20 by lm
-
-`agent baseline --script tools/nav_bake_check.gd` at 76d8aa0 reports `NAV_BAKE_CHECK failures=4`,
-with the first one being `found a chunk boundary with walkable land on both sides: x=nan z=0,
-chunks []`. Everything after it fails as a consequence: `coords` is empty, so the bake set is empty,
-the map never becomes queryable, and both buildable-obstruction assertions read `nan`. This is
-**not** F-274's doing — F-274 only changed which surface `_gentle()` samples, and the failure
-reproduces identically at HEAD and with F-274's own biome-blind control table.
-
-`_locate_walkable_terrain()` needs four probes (`boundary ± 2 m`, `boundary ± 6 m`) that are all
-above `MIN_LAND_HEIGHT = 2.0 m` and all below `WALKABLE_SLOPE_DEG = 30`. Measured on seed 20260818
-over every chunk boundary in `x ∈ [-8, 8)` and every `z` at 1 m spacing across ±240 m: 4,046 probes
-land above water, 256 of those are also gentle, and **not one boundary gets all four**. Widening the
-z sampling from the shipped 4 m to 1 m changed nothing but the counts.
-
-The file's own header records a slope census from when it was written — "82.5% of LAND is walkable"
-— which is what makes this diagnosable: that census predates D-142/4.13-4.14, which added the
-domain-warped ridged layer and the carved river and dropped `HEIGHT_SCALE` 60 -> 26. The island got
-rougher per metre, and the check's 30-degree gate (chosen as a conservative margin under
-`NavBaker.AGENT_MAX_SLOPE = 45`) no longer finds four-in-a-row anywhere. Exactly F-251's shape, in a
-second file: a check whose hardcoded terrain assumption the retune invalidated, still passing its
-own logic and asserting nothing.
-
-**What fixing it takes.** Decide whether the gate should track `AGENT_MAX_SLOPE` (45, which is what
-the navmesh actually bakes against) rather than sit at 30, and whether four probes spanning 12 m is
-the right shape for a 26 m island — then re-measure the census and record the new number in the
-header, so the next retune has something to notice. Do NOT simply widen until it passes: the point
-of the four probes is that the bake set is real walkable ground, and a gate that accepts anything
-makes every seam assertion below it meaningless.
-
----
-
 ### F-296 · NetInterest.configure() installs authority-only visibility processing on every peer, so each client logs ERR_BUG from _update_spawn_visibility on join
 
 **Area:** netcode · **Severity:** low · **Found:** 2026-08-20 by lp
@@ -3053,6 +2968,177 @@ stops paying 92 seconds a run in the meantime.
 ---
 
 ## Resolved
+
+### F-285 · `tools/nav_bake_check.gd` has 4 pre-existing failures at a clean HEAD — chunk-streamed terrain reports NaN heights to the check's seam search — **fixed**
+
+**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-20 by lp
+
+Found by lp during F-268's regression sweep — `BuildService`/`HaulService` are `NavBaker`'s
+`piece_placed`/`piece_destroyed` producers, so this check was run to prove F-268's new
+`host_clear_all()` did not regress it. It did not: the failures are **pre-existing and identical**.
+
+`.agent/bin/agent baseline --script tools/nav_bake_check.gd` at `a28f346`, in a throwaway worktree,
+produces the byte-identical four FAIL lines the working tree does — confirmed by diffing the sorted
+`FAIL:` lines of both runs, not by comparing the failure count:
+
+```
+FAIL: the map became queryable within 10s
+FAIL: found a chunk boundary with walkable land on both sides: x=nan z=0, chunks []
+FAIL: placing a piece dead centre on that spot pushes the closest walkable point measurably farther away (nanm, baseline nanm)
+FAIL: and the map became queryable within 10s
+```
+
+The whole check does not fail. `NAV_BAKE_CHECK` reports `failures=4` out of a much longer PASS list,
+and every failure is in the **chunk-streaming** half: the buildable half — "re-baking after a REAL
+host placement forces the same path to detour around it (7.525m, was 6.000m straight, 5 waypoints)"
+and "destroying it un-carves the path back to a straight line" — passes. So `NavBaker`'s reaction to
+`BuildService` is proven; what is unproven is the streamed-chunk navmesh underneath it.
+
+**The shape.** `x=nan` in the seam search is the root: the check walks chunk boundaries looking for
+one with walkable land on both sides, and the coordinate it computes is NaN, so `chunks []` comes
+back empty and the two measurements downstream of it are NaN-vs-NaN comparisons that can never
+succeed. The `map became queryable within 10s` failure is likely the same cause one step earlier — a
+NavigationServer map with no valid region never becomes queryable — rather than a genuinely separate
+timing bug, but that is an inference from the ordering, not something this task measured.
+
+**Why it is worth its own finding.** This is F-268's own class: a shipped check that has been failing
+at HEAD long enough that its failure reads as background noise. F-251 and F-253 and F-246 are three
+more of the same, all filed separately, which is the argument for a standing "which checks fail at
+HEAD" sweep rather than another one-off. Nothing here should be read as blaming a recent commit: the
+worldgen files this touches have churned heavily (F-241, F-252, F-261, F-271/D-163 changed how a
+point's biome is classified), and `git log` alone will not say which of those, if any, introduced the
+NaN — a bisect over `tools/nav_bake_check.gd`'s seam search is the cheap way to find out.
+
+**Trap for whoever takes it:** `world/chunk/nav_baker.gd`, `world/chunk/chunk_streamer.gd` and
+`world/chunk/chunk_mesher.gd` were all claimed by lane lm under F-274 while this was filed. Check the
+board before claiming; a NaN in the mesher's height sampling would be visible from that task too.
+
+**What would close this:** the seam search finds a real chunk boundary (no NaN coordinate), the map
+becomes queryable, and `NAV_BAKE_CHECK failures=0` — or, if one of the four is genuinely
+environment-dependent rather than a defect, that assertion is either made robust or removed with the
+reason written in, so the check's clean state is `failures=0` and a future regression is visible.
+
+---
+
+**Resolved 2026-08-22 by bram937a51.** **Duplicate of F-292, and already fixed at HEAD.** Closed by bram937a51, 2026-08-22. No code change
+was needed and none was made.
+
+**How the duplication was established** — by the evidence, not by the titles, which do not resemble
+each other:
+
+- **Same subject.** Both are `tools/nav_bake_check.gd` at a clean HEAD, both reached via
+  `agent baseline` in a throwaway worktree.
+- **Same count and same set.** Both report `NAV_BAKE_CHECK failures=4`, and the four are the same
+  four. This finding quotes all of them; F-292 quotes the first and states that the rest follow from
+  it. The lists agree line for line: the seam search, the queryable-map assertion, and the two
+  buildable-obstruction measurements.
+- **Same root cause, identified independently.** Both name `x=nan` in `_locate_walkable_terrain()`
+  as the origin and `chunks []` as its immediate consequence, and both reason that the remaining
+  three failures are downstream of it rather than separate defects.
+- **Same day, different lanes, neither citing the other.** This one is 2026-08-20 by lp, found while
+  sweeping F-268's regressions; F-292 is 2026-08-20 by lm. Two agents hit the same red check hours
+  apart and each filed it. That is the collision this finding's own closing paragraph predicted when
+  it argued for "a standing 'which checks fail at HEAD' sweep rather than another one-off".
+
+**Which was kept, and why F-292.** F-292 carries the diagnosis this one explicitly leaves open. This
+finding says the queryable-map failure is "an inference from the ordering, not something this task
+measured"; F-292 measured it — 4,046 probes above water across every chunk boundary in
+`x ∈ [-8, 8)` at 1 m z-spacing, 256 of them gentle, not one boundary getting all four probes — and
+tied it to the 4.13/4.14 retune that added the ridged layer and dropped `HEIGHT_SCALE` 60 → 26.
+It also rules out F-274 as the cause with a control. Closing the better-evidenced one would have
+thrown that away.
+
+**The proof it is fixed** is recorded in full on F-292. In short, at `8920433c`:
+`NAV_BAKE_CHECK failures=0`, with `x=nan` now reading `x=-224 z=-112` and a real four-chunk bake
+set, and the two obstruction measurements returning real distances (`6.192m, baseline 0.582m`)
+instead of NaN-vs-NaN. The 30-degree gate this finding also flagged is untouched, so nothing was
+made to pass by loosening it.
+
+**The trap this finding recorded is now spent** and should not be carried forward: it warned that
+`nav_baker.gd`, `chunk_streamer.gd` and `chunk_mesher.gd` were claimed by lane lm under F-274. That
+claim is long released and F-274 landed as `87548440`.
+
+### F-292 · tools/nav_bake_check.gd has had 4 failures at HEAD since the 4.13/4.14 terrain retune — the island has no gentle chunk-boundary strip at its 30-degree gate — **fixed**
+
+**Area:** world · **Severity:** high · **Found:** 2026-08-20 by lm
+
+`agent baseline --script tools/nav_bake_check.gd` at 76d8aa0 reports `NAV_BAKE_CHECK failures=4`,
+with the first one being `found a chunk boundary with walkable land on both sides: x=nan z=0,
+chunks []`. Everything after it fails as a consequence: `coords` is empty, so the bake set is empty,
+the map never becomes queryable, and both buildable-obstruction assertions read `nan`. This is
+**not** F-274's doing — F-274 only changed which surface `_gentle()` samples, and the failure
+reproduces identically at HEAD and with F-274's own biome-blind control table.
+
+`_locate_walkable_terrain()` needs four probes (`boundary ± 2 m`, `boundary ± 6 m`) that are all
+above `MIN_LAND_HEIGHT = 2.0 m` and all below `WALKABLE_SLOPE_DEG = 30`. Measured on seed 20260818
+over every chunk boundary in `x ∈ [-8, 8)` and every `z` at 1 m spacing across ±240 m: 4,046 probes
+land above water, 256 of those are also gentle, and **not one boundary gets all four**. Widening the
+z sampling from the shipped 4 m to 1 m changed nothing but the counts.
+
+The file's own header records a slope census from when it was written — "82.5% of LAND is walkable"
+— which is what makes this diagnosable: that census predates D-142/4.13-4.14, which added the
+domain-warped ridged layer and the carved river and dropped `HEIGHT_SCALE` 60 -> 26. The island got
+rougher per metre, and the check's 30-degree gate (chosen as a conservative margin under
+`NavBaker.AGENT_MAX_SLOPE = 45`) no longer finds four-in-a-row anywhere. Exactly F-251's shape, in a
+second file: a check whose hardcoded terrain assumption the retune invalidated, still passing its
+own logic and asserting nothing.
+
+**What fixing it takes.** Decide whether the gate should track `AGENT_MAX_SLOPE` (45, which is what
+the navmesh actually bakes against) rather than sit at 30, and whether four probes spanning 12 m is
+the right shape for a 26 m island — then re-measure the census and record the new number in the
+header, so the next retune has something to notice. Do NOT simply widen until it passes: the point
+of the four probes is that the bake set is real walkable ground, and a gate that accepts anything
+makes every seam assertion below it meaningless.
+
+---
+
+**Resolved 2026-08-22 by bram937a51.** **Already fixed at HEAD.** Verified by bram937a51, 2026-08-22 — no code change was needed, and none
+was made.
+
+`agent baseline --script tools/nav_bake_check.gd` at `8920433c`, in a throwaway worktree:
+
+    NAV_BAKE_CHECK failures=0 · EXPECTED_ERROR_PATTERNS="before first map synchronization"
+
+All four of the failures this finding is about now pass, and they pass with **real numbers rather
+than NaN**, which is the part that matters — a check can go green by not measuring anything, and
+this one did not:
+
+    PASS: found a chunk boundary with walkable land on both sides:
+          x=-224 z=-112, chunks [(-8, -4), (-7, -4), (-8, -3), (-7, -3)]
+    PASS: the map became queryable within 10s
+    PASS: placing a piece dead centre on that spot pushes the closest walkable point measurably
+          farther away (6.192m, baseline 0.582m)
+    PASS: and destroying it un-carves the path back to a straight line (6.000m, was 6.000m)
+
+`x=nan` / `chunks []` is now `x=-224 z=-112` with a real four-chunk bake set, so
+`_locate_walkable_terrain()` is finding genuine four-probe walkable ground. Everything downstream
+that this finding correctly identified as consequential — the empty bake set, the map never becoming
+queryable, the two NaN-vs-NaN obstruction comparisons — resolved with it. The seam is also proven
+connected end to end: `a path exists across the chunk boundary (5 waypoints)` and `it ARRIVES —
+0.000m from the target`.
+
+**What did NOT change, and why that locates the cause.** The gate this finding proposed re-deciding
+is untouched: `WALKABLE_SLOPE_DEG = 30.0` and `MIN_LAND_HEIGHT = 2.0` are byte-identical to when
+they were introduced (`20e92102`), and the four-probe ±2 m / ±6 m shape is unchanged. So the fix did
+not come from relaxing the check — which is exactly what this finding warned against ("do NOT simply
+widen until it passes"). The island got gentler again at chunk boundaries.
+
+**I did not bisect to the specific commit, and I am saying so rather than guessing.** Twelve commits
+touched `world/gen/` and `world/chunk/` since this was filed on 2026-08-20, several of which plainly
+reshape ground — `670af590` (F-508, "guarantee a clear procedural arrival view"), `bdc02378`
+(ground slope-spawned scatter props), `d457e8e0` (F-294, cached river geometry). Any of those could
+be it. Establishing which would cost a bisect for no benefit now that the assertion is real again,
+so the proportionate close is the proof above.
+
+**One thing this finding asked for is still worth doing, and is deliberately left undone here.** It
+asked that the slope census in the file's header be re-measured and recorded, so the next terrain
+retune has something to notice. That header still cites the pre-4.13 figure ("82.5% of LAND is
+walkable"), which is now stale in the other direction. It is a documentation debt, not a failure, and
+it belongs with whoever next touches the check's terrain assumptions rather than in a close-out that
+changed no code.
+
+**Duplicate:** F-285 is the same four failures on the same check, filed the same day by a different
+lane. It is closed pointing here.
 
 ### F-561 · Every renderer instrument measures the FRONT END and labels it 'the shipped main scene', because ProbeScene.resolve() still trusts run/main_scene — **fixed**
 
