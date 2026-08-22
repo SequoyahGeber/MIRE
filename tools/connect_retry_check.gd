@@ -163,6 +163,7 @@ func _check_budget_table() -> void:
 func _check_successful_connect_is_measured() -> void:
 	print("\n-- a successful connect records how long it took --")
 	_check("no measurement before the first connect", int(_transport.last_connect_msec()) == -1)
+	_check("and no render rate either", is_equal_approx(float(_transport.last_connect_fps()), -1.0))
 
 	_host_pid = _spawn_host()
 	if _host_pid == 0:
@@ -179,6 +180,13 @@ func _check_successful_connect_is_measured() -> void:
 
 	var elapsed: int = int(_transport.last_connect_msec())
 	_check("the connect duration was recorded", elapsed >= 0, "%d ms" % elapsed)
+
+	# F-025. The duration alone cannot be told apart from one taken on a software-rendered machine,
+	# which is exactly what contaminated F-023's evidence. Headless draws no frames, so 0.0 is the
+	# correct answer here — what must never come back is the -1.0 that means nothing was measured.
+	var fps: float = float(_transport.last_connect_fps())
+	_check("and the render rate it was measured at", fps >= 0.0,
+		"%.1f FPS — 0.0 is right for --headless; -1.0 would mean unmeasured" % fps)
 	_check("and it is inside the budget it was measured against",
 		elapsed < int(NetConfig.LOCAL_CONNECT_TIMEOUT_SEC * 1000.0),
 		"%d ms < %d ms" % [elapsed, int(NetConfig.LOCAL_CONNECT_TIMEOUT_SEC * 1000.0)])

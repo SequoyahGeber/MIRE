@@ -340,6 +340,27 @@ collapse no longer starves Steam by the same factor it starves rendering. At a h
 nothing changes — it is the same 60 Hz the render loop was giving. At the observed 2–3 FPS it is up
 to 8× more pumps per frame, and the 10 s deadline is no longer only *checked* every ~390 ms.
 
+**2026-08-21, cinder9818da — item 2's code half is now in. The measurement itself is what is left.**
+
+Item 2 asked for two things: don't take the number on a software-rendered machine, and *record frame
+rate alongside the* `connected … in N.NNs` *line*. The second is now done, so the log line cannot be
+misread by whoever collects it. `NetTransport` samples `Engine.get_frames_drawn()` when an attempt
+starts and again when it succeeds, and reports the **average** FPS across the handshake:
+
+    connected to steam:<lobby_id> as peer 2 (STEAM) in 4.31s at 2.6 FPS
+
+Average and not `Engine.get_frames_per_second()` on purpose — an instantaneous reading at the moment
+of success reports the healthy rate a slow handshake finally warmed up to, which is precisely the
+case F-023 saw and precisely the one that must not be hidden. Also exposed as
+`NetTransport.last_connect_fps()`, and reset to `-1.0` on every new attempt so "unmeasured" and
+"measured as zero" stay distinguishable. Headless correctly reports `0.0 FPS`, and
+`tools/connect_retry_check.gd` asserts that rather than papering over it.
+
+**What still keeps this open is the physical run, and only that.** Nobody has taken a Windows Steam
+first-join latency yet. It needs the D-028 PC with a real GPU, and the line above now carries its own
+contamination check: a `connected …` line reporting single-digit FPS is not evidence about Steam, it
+is evidence about the renderer, and the budget must not be set from it.
+
 This is a mitigation, not a decoupling to an independent clock: physics steps are still capped per
 frame, so a truly pathological frame rate still dilates. A dedicated thread or a `Timer` on
 `PROCESS_MODE_ALWAYS` would be the real fix, and neither is worth building before item 2 says whether
@@ -3527,15 +3548,41 @@ silhouette, escalating powerup/loot odds, and escalating coin cost to open.
 
 ---
 
-### F-542 · Remote players do not visibly display the item they are holding
+### F-543 · Every Attunement's stat effects are dead — nothing in the game consumes the PowerupService modifiers they grant
+
+**Area:** gameplay · **Severity:** high · **Found:** 2026-08-22 by larch543bba
+
+DESIGN §4.5 gives each of the four Attunements a "better at / worse at" identity, and SPECS §3.9
+ships that identity as PowerupService modifiers granted at selection. The selection half works
+(`AttunementService` records, broadcasts, locks, clears on restart, and `host_grant`s the backing
+PowerupDef). The EFFECT half does not exist.
+
+`PowerupService.stat()` is consumed at exactly three sites repo-wide:
+`systems/loot/chest.gd` (`chest_price`, `loot_luck`) and
+`entities/player/player_controller.gd` (`dodge_iframe_seconds`). Every stat the four Attunement
+PowerupDefs name — `move_speed`, `max_hp`, `food_value`, `harvest_yield`, `melee_damage`,
+`bow_damage`, `craft_seconds`, `coin_gain`, `blight_rate`, `ward_radius_m` — is never read by any
+system. Picking Warden, Forager, Tinker or Reaver changes a label in the roster and nothing else.
+
+F-078 recorded the cause honestly at the time ("No system consumes any stat yet (3.4's spec says so
+explicitly)") and docs/POWERUPS.md §2 marks these consumers "live — wiring is that system's one-line
+route". Those systems all shipped since; the routes were never added. So this is not just an
+Attunement bug: the same dead-modifier gap silently covers most of the authored powerup pool.
+
+SPECS §3.9's own acceptance line — "Check: selection replicates, modifiers apply, second selection
+refused" — has a check for the first and third and none for the second.
+
+---
+
+## Resolved
+
+### F-542 · Remote players do not visibly display the item they are holding — **fixed**
 
 **Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivyf16b98
 
 In multiplayer, each player sees their own first-person held item, but other clients see only the remote debug body with no equipped tool, weapon, or resource. Add an authoritative/replicated held-item identity and a third-person hand attachment so peers can read one another's current equipment; verify host and client changes converge without exposing first-person viewmodels remotely.
 
----
-
-## Resolved
+**Resolved 2026-08-22 by ivyf16b98.** The owning PlayerController now publishes its selected hotbar item id through the existing owner-authoritative MultiplayerSynchronizer. Remote copies instantiate that ItemDef.world_model on a separate visible hand socket, while the owner retains only its camera viewmodel; empty selection clears the model. `.agent/bin/agent godot --headless --path . --script tools/remote_held_item_check.gd` completed with `REMOTE_HELD_ITEM_CHECK failures=0`, and `tools/synced_group_check.gd` remained PASS.
 
 ### F-024 · A shipped LAN first join has no retry — only the debug launcher does — **fixed**
 

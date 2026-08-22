@@ -9,18 +9,18 @@
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
 | **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | gale43d16e | 2026-08-21 17:13 | `docs/ASSET_TRACKER.md`, `tools/blender/build_gatherable_plants.py`, `assets/gatherables/catalog.json`, `tools/blender/build_pickup_kit.py`, `assets/pickups/catalog.json`, `content/items/apple.tres`, `content/harvestables/berry_bush.tres`, `content/harvestables/apple_tree.tres`, `content/harvestables/mushroom_patch.tres`, `tools/item_icons_check.gd` |
-| **F-025** Steam's callback pump runs once per rendered frame, so a slow frame rate slows the handshake | cinder9818da | 2026-08-22 05:37 | `autoload/net_transport.gd` |
 | **F-321** `AttunementUI` is the third mandatory panel and it still has F-307's soft-lock — it closes only on an accepted pick, so an orphaned client can never leave it | onyxbe8065 | 2026-08-22 05:25 | `ui/attunement/attunement_ui.gd`, `tools/terminal_focus_check.gd` |
 | **F-473** PROTOCOL_VERSION has two independent hard-coded expectations, and only the loud one gets maintained | birche6b40e | 2026-08-21 23:42 | `tools/blender/mire_art.py`, `tools/blender/build_tool_weapon_set.py`, `assets/tools_weapons/catalog.json`, `tools/blender/build_deep_materials.py`, `assets/deep_materials/catalog.json`, `tools/blender/build_harvestable_resources.py`, `assets/harvestables/catalog.json`, `content/scatter/highland_rocks.tres`, `content/harvestables/bogsilver_node.tres` |
 | **F-482** The sling, longbow and crossbow all shipped as the short bow, and the bolt as an arrow | birche6b40e | 2026-08-22 00:29 | `content/items/sling.tres`, `content/items/longbow.tres`, `content/items/crossbow.tres`, `content/items/bolt.tres`, `content/items/iron_axe.tres`, `content/items/bogsilver_axe.tres`, `content/items/bogsilver_pickaxe.tres`, `content/items/wellglass_axe.tres`, `content/items/wellglass_pickaxe.tres` |
 | **F-516** Nothing pre-warms shipped materials, so every player pays shader/pipeline compilation as hitches during their first minutes of play | onyxbe8065 | 2026-08-22 05:29 | `autoload/material_warmer.gd`, `tools/material_warm_check.gd` |
-| **F-541** Chest tiers: only three loot tiers are actually placeable and only three chest silhouettes exist | nettled7199c | 2026-08-22 05:26 | `content/loot/basic.tres`, `content/loot/common.tres`, `content/loot/rare.tres`, `content/loot/epic.tres`, `content/loot/legendary.tres`, `content/loot/small.tres`, `content/loot/bog.tres`, `content/loot/strongbox.tres`, `autoload/chest_placement_service.gd`, `systems/loot/chest.gd`, `tools/blender/build_loot_set.py`, `tools/mapgen/hollowmere_layout.py`, `tools/chest_placement_check.gd`, `tools/loot_content_check.gd`, `tools/cycle_modifier_effects_check.gd`, `assets/loot/README.md`, `assets/loot/catalog.json` |
+| **F-541** Chest tiers: only three loot tiers are actually placeable and only three chest silhouettes exist | nettled7199c | 2026-08-22 05:26 | `content/loot/basic.tres`, `content/loot/common.tres`, `content/loot/rare.tres`, `content/loot/epic.tres`, `content/loot/legendary.tres`, `content/loot/small.tres`, `content/loot/bog.tres`, `content/loot/strongbox.tres`, `autoload/chest_placement_service.gd`, `systems/loot/chest.gd`, `tools/blender/build_loot_set.py`, `tools/mapgen/hollowmere_layout.py`, `tools/chest_placement_check.gd`, `tools/loot_content_check.gd`, `tools/cycle_modifier_effects_check.gd`, `assets/loot/README.md`, `assets/loot/catalog.json`, `content/poi/treasure_strongbox.tres`, `content/poi/chest_common.tres`, `content/poi/chest_rare.tres`, `content/poi/chest_epic.tres`, `content/poi/chest_legendary.tres` |
+| **F-543** Every Attunement's stat effects are dead — nothing in the game consumes the PowerupService modifiers they grant | larch543bba | 2026-08-22 05:38 | `entities/player/player_controller.gd`, `systems/health/player_health.gd`, `autoload/harvest_world.gd`, `autoload/combat_service.gd`, `autoload/ranged_combat_service.gd`, `autoload/crafting_service.gd`, `autoload/build_service.gd`, `tools/attunement_effects_check.gd` |
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `████████░░` 455/545 | 90 |
+| Findings | `████████░░` 455/546 | 91 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -55,7 +55,7 @@
 | | Finding | Status |
 |---|---|---|
 | ⬜ | **F-023** Windows Steam first join intermittently exceeds the hard 10-second connection timeout | todo |
-| 🔵 | **F-025** Steam's callback pump runs once per rendered frame, so a slow frame rate slows the handshake | in_flight |
+| ⬜ | **F-025** Steam's callback pump runs once per rendered frame, so a slow frame rate slows the handshake | todo |
 | ⬜ | **F-044** Concurrent headless Godot runs share one import cache, which is the likely cause of F-038 | todo |
 | ⬜ | **F-174** No dev machine can stand in for "mid-range" — `tools/perf_probe.gd`'s baseline is only ever measured on the fastest hardware in the project | todo |
 | ⬜ | **F-236** Three shipped systems have essentially no content in them: the Cycle Modifier deck holds 1 card, the unlock tree 1 unlock, the ranged rack 1 weapon | todo |
@@ -144,6 +144,7 @@
 | ⬜ | **F-524** Handcrafting is described everywhere and implemented nowhere | todo |
 | ⬜ | **F-536** Scattered pickup models are decorative and cannot be collected as loose world loot | todo |
 | 🔵 | **F-541** Chest tiers: only three loot tiers are actually placeable and only three chest silhouettes exist | in_flight |
+| 🔵 | **F-543** Every Attunement's stat effects are dead — nothing in the game consumes the PowerupService modifiers they grant | in_flight |
 
 ## Done
 

@@ -117,6 +117,17 @@ var _connect_deadline_msec: int = 0
 ## the number in the log and in last_connect_msec(), so the next cross-platform run produces the
 ## distribution as a side effect instead of needing its own trip.
 var _connect_started_msec: int = 0
+
+## Engine.get_frames_drawn() when the attempt started (F-025). The pair of these gives the AVERAGE
+## render rate across the handshake, which is the number that matters: Steam's pump and this file's
+## watchdog were both starved by a frame-rate collapse, and a first-join latency measured on a
+## software-rendered machine is contaminated by it. An instantaneous FPS reading at the moment of
+## success would miss exactly the case that caused F-023 — a slow start that warmed up.
+var _connect_frames_drawn: int = 0
+
+## Average frames per second across the last successful connect, or -1.0 if none. Headless reports
+## 0.0 rather than -1.0: no frames is a real answer, and one this deliberately does not hide.
+var _last_connect_fps: float = -1.0
 var _last_connect_msec: int = -1
 
 ## Set by the _create_*_peer helpers on the way out; read once by host()/join().
@@ -282,7 +293,9 @@ func join(mode: NetConfig.Mode, address: String, port: int = -1) -> Error:
 	_local_id = multiplayer.get_unique_id()
 	_peers = PackedInt32Array()
 	_connect_started_msec = Time.get_ticks_msec()
+	_connect_frames_drawn = Engine.get_frames_drawn()
 	_last_connect_msec = -1
+	_last_connect_fps = -1.0
 	_connect_deadline_msec = _connect_started_msec + int(connect_timeout_sec(mode) * 1000.0)
 	_last_end_kind = EndKind.NONE
 	_target_mode = mode
@@ -392,6 +405,13 @@ func last_end_kind() -> EndKind:
 ## and set NetConfig.STEAM_CONNECT_TIMEOUT_SEC from the tail rather than from a guess.
 func last_connect_msec() -> int:
 	return _last_connect_msec
+
+
+## Average FPS across the last successful connect; -1.0 before there has been one (F-025). Read it
+## next to last_connect_msec(): a duration without it cannot be told apart from a duration taken on a
+## machine that was rendering at 2 FPS, and that is the whole reason F-023's number is still owed.
+func last_connect_fps() -> float:
+	return _last_connect_fps
 
 
 ## The mode of the last join() this process attempted — OFFLINE if it has never joined one. Survives
@@ -515,10 +535,21 @@ func _on_peer_disconnected(id: int) -> void:
 	_display_names.erase(id)
 
 
+## Frames actually drawn across the attempt, over its wall-clock duration. Not Engine.get_frames_
+## per_second(), which is an instantaneous reading and would report the healthy rate a slow handshake
+## finally warmed up to rather than the starved one that made it slow.
+func _measure_connect_fps() -> float:
+	if _last_connect_msec <= 0:
+		return -1.0
+	var frames: int = Engine.get_frames_drawn() - _connect_frames_drawn
+	return float(frames) * 1000.0 / float(_last_connect_msec)
+
+
 func _on_connected_to_server() -> void:
 	set_physics_process(false)
 	_connect_deadline_msec = 0
 	_last_connect_msec = Time.get_ticks_msec() - _connect_started_msec
+	_last_connect_fps = _measure_connect_fps()
 	_status = _Status.CONNECTED
 
 	# Re-read rather than trust the id join() cached: the host has the final say on who we are.
@@ -529,8 +560,8 @@ func _on_connected_to_server() -> void:
 
 	# The elapsed time is not decoration. It is the only per-platform record of what a handshake
 	# actually costs, and F-023 exists because the deadline above it was set without one.
-	MireLog.info(NetConfig.LOG_CHANNEL, "connected to %s as peer %d (%s) in %.2fs" % [
-		_describe_target(), self_id, mode_name(_mode), _last_connect_msec / 1000.0
+	MireLog.info(NetConfig.LOG_CHANNEL, "connected to %s as peer %d (%s) in %.2fs at %.1f FPS" % [
+		_describe_target(), self_id, mode_name(_mode), _last_connect_msec / 1000.0, _last_connect_fps
 	])
 	connected_to_host.emit()
 
