@@ -3321,6 +3321,74 @@ regrow the way F-580's stat list did.
 
 ---
 
+### F-586 · Scattered rocks and boulders have no collider at all — you walk through them
+
+**Area:** world · **Severity:** high · **Found:** 2026-08-22 by wick1c650c
+
+Player-reported from a real run: "theres some rocks and stuff that i could walk through".
+
+`world/gen/resource_scatter_field.gd` builds a scattered group two ways. `_build_node_holder()`
+(NODE harvestables only, inside the collision ring) fits a shape through
+`world/gen/prop_collider.gd` and gives the prop a `StaticBody3D`. Every other scattered prop —
+all decorative scatter, and every BATCH harvestable — goes down `_build_asset_group()`'s MultiMesh
+branch, which builds visuals and harvest proxies and **never builds a collider of any kind**.
+
+That is the entire rock population of the generated island. `content/scatter/forest_rocks.tres`,
+`grassland_rocks`, `highland_rocks`, `heath_stones`, `shore_rocks` and `cliff_rubble` place
+`boulder_e/f/g`, `rock_cluster_d/e` and `mire_mossy_boulder` — none of them harvestable, so none of
+them NODE, so none of them solid. Same for stumps, fallen logs and any batched tree.
+
+The fitter already knows solid from soft: `PropCollider.fit()` returns an EMPTY dictionary for
+foliage and for anything under `COLLIDER_MIN_HEIGHT_M`, so grass, ferns and moss cost nothing and
+a tree gets its trunk only (the standing directive). The gap is purely that the batched branch
+never asks.
+
+---
+
+### F-587 · The Reinforced Workbench is now exactly equal to the bench it replaces, not better
+
+**Area:** content · **Severity:** medium · **Found:** 2026-08-22 by birch1db63e
+
+Found reviewing F-575 (commit 2fdb7a9b), which is correct and should ship — this is the half that
+finding did not claim.
+
+F-575 fixed `workbench_upgraded` satisfying NONE of the seven workbench recipes. It now satisfies all
+seven. But nothing else distinguishes it: zero recipes in `content/recipes/` name `workbench_upgraded`
+as their station, and `StationDef` has no craft-speed, yield, or any other benefit field — its whole
+schema is `id`, `display_name`, `world_scene`, `family`, `tier`, `upgrades_from`.
+
+So the Reinforced Workbench is now precisely equal to the Workbench. F-575's own framing was "a
+player who paid for the upgrade got strictly less than the bench it replaces"; the state after the
+fix is that they get exactly the same. Parity is the correct fix for that finding and is not an
+upgrade — a tier-2 station a player spends resources on and cannot tell apart from the tier-1 one is
+still a broken promise, just a quieter one.
+
+Two ways out, and it is a design call rather than a code one:
+
+  · **Exclusive recipes.** The upgraded bench gets recipes the plain one cannot make. This is the
+    shape the content model already supports and needs no code — but see the trap below, which it
+    arms.
+  · **A benefit field on StationDef.** e.g. a craft-duration multiplier the bench contributes,
+    read where `CraftingService` already applies the `craft_seconds` powerup stat. Applies to every
+    future upgraded station rather than being re-authored per recipe, and does not touch recipe data
+    at all.
+
+**The trap, which is latent right now and becomes live the moment the first option is taken.**
+`CraftingService.nearby_station_id()` breaks ties by registry iteration order, and its own comment
+concedes the order "is not meaningfully orderable beyond that". Today that is harmless because the
+two benches resolve to identical recipe sets. After F-575 one set is a SUPERSET of the other, so as
+soon as a `workbench_upgraded`-only recipe exists, a player standing within range of both benches
+gets whichever the registry happens to list first — and if that is the plain `workbench`, the
+upgrade-only recipes silently disappear from the crafting list with no message and no way to tell
+why. Before F-575 the sets were disjoint and the tie-break could not hide anything.
+
+The fix for the trap is small and worth doing WITH whichever option above is chosen, not after a bug
+report: `nearby_station_id()` should prefer the highest-tier station in range among those whose
+instances are actually present, rather than the first the registry yields. `StationDef.tier` already
+exists and, since F-575, is finally read by something — this is a second legitimate consumer for it.
+
+---
+
 ## Resolved
 
 ### F-580 · 30 of 72 powerups are fully inert — the stat name they modify has no consumer — **fixed**
