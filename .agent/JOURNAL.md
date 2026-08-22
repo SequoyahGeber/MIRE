@@ -10472,3 +10472,102 @@ All perf output converted to FPS/% via new tools/perf_format.gd; perf_format_che
 Files: `tools/perf_format.gd`, `tools/perf_format_check.gd`, `tools/perf_probe.gd`, `docs/PERFORMANCE.md`, `tools/frame_cost_check.gd`, `tools/traversal_profile.gd`, `tools/revisit_probe.gd`, `tools/chunk_stream_check.gd`
 
 Commit at time of writing: `54ef06d3`
+
+---
+
+### DONE · F-591 · larchcc2572 · 2026-08-22T18:12:03+00:00
+
+**The scatter/material warm pumps corrupt the heap — a real data race, not a flaky check (supersedes F-495's framing)**
+
+Threaded-load registry landed: one lifecycle per path, invariant-checked with a negative control. F-591 stays open — scatter check still crashes later in the chunk-build path.
+
+Notes along the way:
+- Registry landed; F-591 NOT closed. Confirming runs: material_warm_check exit 0 failures=0 no crash (it SIGSEGV'd in the 2026-08-20 audit, so that owner looks fixed); resource_scatter_check exit 245 (signal 11), ZERO handle_crash output, zero ERROR lines, dying right after 'no harvest proxy is built while the chunk still has no collider' — the _wait_real_seconds(0.35) where the field builds the chunk. It got far further than before. The invariant is proven (tools/threaded_load_check.gd, 21 assertions, 0 failures, with a negative control) and one of the two crashing checks is now clean, but the scatter check still dies in the chunk-build path: the double-lifecycle was real and is closed, and it was not the only defect there. Deliberately NOT diagnosed further by running it — each reproduction is a crash dialog on Sequoyah's machine, and a non-deterministic crash cannot be bisected at an affordable sample size. Next owner: read the chunk-build path the way this pass read the load path (F-494 was a navmesh bake segfault in the same neighbourhood), or capture a report from a run he is already doing.
+
+Files: `systems/health/player_health.gd`, `docs/FINDINGS.md`, `autoload/material_warmer.gd`, `world/gen/resource_scatter_field.gd`
+
+Commit at time of writing: `bab66dbb`
+
+---
+
+### DONE · F-590 · wick1c650c · 2026-08-22T18:14:02+00:00
+
+**The ground-drop budget evicts persistent island loot first, oldest-first regardless of persistence**
+
+Eviction skips persistent drops; placement-time cap prevents starvation. drop_budget_check failures=0; negative control shows 0 of 71 surviving without the fix.
+
+Files: `autoload/item_drop_service.gd`, `tools/drop_budget_check.gd`
+
+Commit at time of writing: `b6b7e4a0`
+
+---
+
+### DONE · F-593 · birch1db63e · 2026-08-22T18:17:30+00:00
+
+**Chests read as too small against the player, and the ladder's two most common rungs are below knee height**
+
+Chests scaled 1.25x uniformly (basic 0.58 m, legendary 1.27 m against a 1.8 m player). Uniform, not per-chest: per-rung factors invert the width ladder. Locator mote height now derives from the mesh. check_state_pairs() added. Contact sheet sent to Sequoyah; size is his call.
+
+Files: `tools/blender/build_loot_set.py`, `systems/loot/chest.gd`, `assets/loot/exports/loot_chest_crate_closed.glb`, `assets/loot/exports/loot_chest_crate_open.glb`, `assets/loot/exports/loot_chest_gilded_closed.glb`, `assets/loot/exports/loot_chest_gilded_open.glb`, `assets/loot/exports/loot_chest_reinforced_closed.glb`, `assets/loot/exports/loot_chest_reinforced_open.glb`, `assets/loot/exports/loot_chest_small_closed.glb`, `assets/loot/exports/loot_chest_small_open.glb`, `assets/loot/exports/loot_chest_warded_closed.glb`, `assets/loot/exports/loot_chest_warded_open.glb`, `assets/loot/exports/loot_chest_wellspring_closed.glb`, `assets/loot/exports/loot_chest_wellspring_open.glb`, `assets/loot/preview/loot_preview.png`, `assets/loot/preview/loot_scale_preview.png`, `assets/source/loot_set.blend`
+
+Commit at time of writing: `ca70c03e`
+
+---
+
+### DONE · F-598 · wick1c650c · 2026-08-22T18:41:24+00:00
+
+**loop_audit_check is red at HEAD in three places — the check that walks the whole game loop**
+
+All three loop-audit failures were the instrument; game fine. failures=0 both endings. Filed F-600 (hollowmere stacks 16 props on the campfire, station unusable).
+
+Files: `tools/loop_audit_check.gd`
+
+Commit at time of writing: `5634a8c1`
+
+---
+
+### DONE · F-601 · birch1db63e · 2026-08-22T18:46:10+00:00
+
+**The Sling exists as a full item and ranged weapon but nothing in the game produces it**
+
+Reachability check built and green apart from the sling gap it found. gilded promoted to a reachable tier after verifying the gate.
+
+Files: `tools/progression_reachability_check.gd`
+
+Commit at time of writing: `64a226c1`
+
+---
+
+### DONE · F-602 · wick1c650c · 2026-08-22T18:49:38+00:00
+
+**Whether a run ever meets the Mire is decided by a dice roll**
+
+Mire seed bounded to 180-420m from spawn; measured 296-383m across 6 seeds, 3-4 min walk, 10.6 Cycles before it reaches camp. failures=0.
+
+Files: `world/mire/mire_grid_sim.gd`, `world/gen/procedural_world.gd`, `tools/mire_encounter_check.gd`
+
+Commit at time of writing: `43927235`
+
+---
+
+### DONE · F-574 · wick3d4184 · 2026-08-22T18:54:58+00:00
+
+**The `gilded` chest tier is locked by an item that does not exist anywhere in content**
+
+gilded key shipped: model, icon, item def, boss drop; chest_gate and chest_placement pending 1/2 -> 0
+
+Files: `content/items/gilded_key.tres`, `content/loot/boss.tres`, `tools/blender/render_item_icons.py`, `tools/blender/build_loot_set.py`, `assets/loot/catalog.json`
+
+Commit at time of writing: `2eb33b7e`
+
+---
+
+### DONE · F-521 · wick3d4184 · 2026-08-22T18:54:58+00:00
+
+**Core multiplayer readiness checks are red at HEAD**
+
+both multiplayer checks were stale not broken; combat-impact knockback landed under the same claim
+
+Files: `tools/combat_net_check.gd`, `tools/inventory_net_check.gd`, `systems/combat/weapon_def.gd`, `systems/enemies/enemy.gd`, `autoload/combat_service.gd`, `tools/combat_feel_check.gd`
+
+Commit at time of writing: `2eb33b7e`
