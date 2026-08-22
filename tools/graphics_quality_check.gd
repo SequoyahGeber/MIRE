@@ -776,7 +776,30 @@ func _start_day_cycle(level: Node) -> void:
 
 ## Moves the chunk streamer's anchor, so the walk builds and retires real chunks rather than just
 ## advancing frames. Duck-typed: a fixture with no streamer is a silent no-op.
+## Moves the LOCAL PLAYER as well as calling `set_anchors()` — F-566, and without the first half the
+## second half is a no-op.
+##
+## `ProceduralWorld._physics_process()` calls `streamer.set_anchors(_stream_anchors())` every physics
+## tick, and `_stream_anchors()` reads the bodies in the `players` group. This check instantiates the
+## shipped world without touching `build_player`, which defaults to `true`, so a player exists and
+## wins: the anchor set here was replaced before the next ring evaluation and the walk below never
+## moved the streamer at all.
+##
+## That mattered even though nothing this check samples is streamed geometry. The walk exists to
+## assert that shadow and render-scale settings do NOT drift while chunks are arriving and retiring
+## — so with the anchor pinned, "nothing drifted" was true because nothing happened, which is the
+## same self-certifying shape F-563 found in `terrain_texture_check`'s settle loop. The assertion was
+## passing without ever being exercised.
+##
+## Setting the anchor as well is kept: it primes the ring evaluation on the very next frame instead
+## of waiting for the world's next physics tick, and it is the correct and sufficient call for any
+## world that does not re-anchor itself.
 func _set_anchor(level: Node, position: Vector3) -> void:
+	for node: Node in level.get_tree().get_nodes_in_group(&"players"):
+		var body := node as Node3D
+		if body != null:
+			body.global_position = position
+			break
 	for node: Node in level.find_children("*", "Node", true, false):
 		if node.has_method(&"set_anchors"):
 			# Typed to match the streamer's own `Array[Vector3]` parameter — `call()` will not
