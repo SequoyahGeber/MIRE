@@ -9296,3 +9296,35 @@ Notes along the way:
 Files: `world/gen/resource_scatter.gd`, `tools/resource_scatter_check.gd`
 
 Commit at time of writing: `edcfa882`
+
+---
+
+### DONE · F-510 · ivy9f49c8 · 2026-08-22T03:10:17+00:00
+
+**Repair hammer viewmodel fills the right third of an ultrawide frame**
+
+Repair hammer reframed smaller/lower/right; 16:9 and 32:9 Forward+ captures inspected, identity/scale/swing/near-plane checks pass. viewmodel_check still reports only tracked F-481 apple default-CHOP failure.
+
+Notes along the way:
+- Screenshot-selected slot 1 is wooden_axe, not repair_hammer. Scope corrected to the actual equipped item; the near-identical oversized screen read is evidence that silhouette/framing is failing.
+- Current dev loadout and screenshot both select stone_axe in slot 1; wooden_axe is backpack-only. F-510 will reframe stone_axe and keep the shared setup table aligned.
+- Reframed repair_hammer from scale 0.31 at (0.1597,-0.3941,-0.5003) to 0.235 at (0.205,-0.425,-0.59): 24% smaller plus farther/lower/right, preserving the solved rotation and swing style.
+
+Files: `content/items/wooden_axe.tres`, `tools/setup_tool_content.gd`, `tools/viewmodel_check.gd`, `content/items/stone_axe.tres`, `content/items/repair_hammer.tres`
+
+Commit at time of writing: `bdc02378`
+
+---
+
+### DONE · F-511 · kilne5d049 · 2026-08-22T03:10:17+00:00
+
+**Playtest still shows no visible chests around the map after F-367/F-504**
+
+Procedural world already had 13 chests; made every unopened chest discoverable through grass with a warm elevated emissive mote and 5 m local glow, hidden on open. Placement and host authority unchanged. chest_placement_check and chest_check failures=0.
+
+Notes along the way:
+- Live procedural boot creates 13 chests, but shipped models are only 0.75-0.96 m wide across a ~295 m island; existing checks assert only ChestVisual node presence. Fixing discoverability on Chest without changing deterministic placement or authority.
+
+Files: `systems/loot/chest.gd`, `tools/chest_placement_check.gd`
+
+Commit at time of writing: `bdc02378`

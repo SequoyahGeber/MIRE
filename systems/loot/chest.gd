@@ -22,6 +22,8 @@ const EVENT_BUS := preload("res://core/events/event_bus.gd")
 
 const SYNC_NODE_NAME: StringName = &"ChestSync"
 const VISUAL_NODE_NAME: StringName = &"ChestVisual"
+const LOCATOR_NODE_NAME: StringName = &"ChestLocator"
+const LOCATOR_LIGHT_NAME: StringName = &"ChestLocatorLight"
 const CHEST_GROUP: StringName = &"chest"
 ## Coins are an item (ItemDef stack_size 999, content/items/coins.tres), not a parallel currency
 ## system — granted through the exact same InventoryService.host_add() seam as any other loot.
@@ -57,6 +59,8 @@ var opened: bool = false:
 
 var _configuration_valid: bool = false
 var _visual: Node3D
+var _locator: MeshInstance3D
+var _locator_light: OmniLight3D
 var _sync: MultiplayerSynchronizer
 var _visual_refresh_scheduled: bool = false
 ## Per-chest, independent of every other chest's stream. Never the global randi() (AGENTS.md).
@@ -78,6 +82,7 @@ func _ready() -> void:
 		_rng.seed = _seed_for_run(_run_seed(), String(name))
 	_configuration_valid = _validate_configuration()
 	_build_synchronizer()
+	_build_locator()
 	_refresh_visual()
 	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
 
@@ -376,6 +381,43 @@ func _refresh_visual() -> void:
 		return
 	_visual.name = VISUAL_NODE_NAME
 	add_child(_visual)
+	_refresh_locator()
+
+
+## The smallest chest is only 0.75 m wide on an island hundreds of metres across. This warm mote
+## keeps an unopened chest legible through grass without changing placement, collision, interaction,
+## or network authority. It disappears from every peer when the replicated `opened` state changes.
+func _build_locator() -> void:
+	_locator = MeshInstance3D.new()
+	_locator.name = LOCATOR_NODE_NAME
+	_locator.position = Vector3(0.0, 1.35, 0.0)
+	var mote := SphereMesh.new()
+	mote.radius = 0.13
+	mote.height = 0.34
+	_locator.mesh = mote
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(1.0, 0.64, 0.12, 1.0)
+	material.emission_enabled = true
+	material.emission = Color(1.0, 0.36, 0.035, 1.0)
+	material.emission_energy_multiplier = 3.5
+	_locator.material_override = material
+	add_child(_locator)
+
+	_locator_light = OmniLight3D.new()
+	_locator_light.name = LOCATOR_LIGHT_NAME
+	_locator_light.position = Vector3(0.0, 0.85, 0.0)
+	_locator_light.light_color = Color(1.0, 0.48, 0.12, 1.0)
+	_locator_light.light_energy = 1.8
+	_locator_light.omni_range = 5.0
+	_locator_light.shadow_enabled = false
+	add_child(_locator_light)
+
+
+func _refresh_locator() -> void:
+	if _locator != null:
+		_locator.visible = not opened
+	if _locator_light != null:
+		_locator_light.visible = not opened
 
 
 func _schedule_visual_refresh() -> void:

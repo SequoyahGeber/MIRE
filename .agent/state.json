@@ -18,6 +18,108 @@
       "task": "5.11",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
     },
+    "assets/environment/catalog.json": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:06:57+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/fallen_log_a.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:06:58+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/fallen_log_b.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:06:58+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/fallen_log_c.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:06:58+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/fallen_log_d.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:06:58+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/grass_seedhead_a.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:06:58+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/grass_seedhead_b.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:06:58+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/grass_seedhead_c.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:06:58+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/grass_seedhead_d.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:06:58+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/reeds_a.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:06:58+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/reeds_b.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:06:58+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/reeds_c.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:06:58+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/reeds_d.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:06:58+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/stump_a.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:06:57+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/stump_b.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:06:57+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/stump_c.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:06:57+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/environment/exports/stump_d.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:06:57+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
     "assets/gatherables/catalog.json": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:16:22+00:00",
@@ -30,17 +132,47 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
+    "assets/maps/playtest_hollow.glb": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:08:52+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "assets/maps/preview/playtest_hollow_preview.png": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:08:52+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
     "assets/pickups/catalog.json": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:31:01+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "assets/source/playtest_hollow.blend": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:08:52+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
     "assets/tools_weapons/catalog.json": {
       "agent": "birche6b40e",
       "at": "2026-08-21T23:42:44+00:00",
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "autoload/graphics_quality.gd": {
+      "agent": "ivy2314d8",
+      "at": "2026-08-22T03:10:15+00:00",
+      "task": "F-512",
+      "token": "CODEX_SESSION_ID:01a0276f-2e99-7a63-b23a-45d0077b62f6"
+    },
+    "autoload/settings_service.gd": {
+      "agent": "ivy2314d8",
+      "at": "2026-08-22T03:10:15+00:00",
+      "task": "F-512",
+      "token": "CODEX_SESSION_ID:01a0276f-2e99-7a63-b23a-45d0077b62f6"
     },
     "content/enemies/bloatcap.tres": {
       "agent": "ember5da2c4",
@@ -294,11 +426,47 @@
       "task": "F-508",
       "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
+    "tools/settings_check.gd": {
+      "agent": "ivy2314d8",
+      "at": "2026-08-22T03:10:15+00:00",
+      "task": "F-512",
+      "token": "CODEX_SESSION_ID:01a0276f-2e99-7a63-b23a-45d0077b62f6"
+    },
+    "tools/settings_screen_check.gd": {
+      "agent": "ivy2314d8",
+      "at": "2026-08-22T03:10:15+00:00",
+      "task": "F-512",
+      "token": "CODEX_SESSION_ID:01a0276f-2e99-7a63-b23a-45d0077b62f6"
+    },
     "tools/wave_director_check.gd": {
       "agent": "ember5da2c4",
       "at": "2026-08-22T01:25:45+00:00",
       "task": "5.11",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
+    },
+    "ui/frontend/graphics_settings_page.gd": {
+      "agent": "ivy2314d8",
+      "at": "2026-08-22T03:10:15+00:00",
+      "task": "F-512",
+      "token": "CODEX_SESSION_ID:01a0276f-2e99-7a63-b23a-45d0077b62f6"
+    },
+    "ui/hud/focus_prompt.gd": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:05:04+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "ui/hud/guide_hud.gd": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:05:04+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "world/gen/layouts/playtest_hollow.json": {
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:06:58+00:00",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
     "world/mire/mire_grid.gd": {
       "agent": "ember5da2c4",
@@ -415,11 +583,53 @@
       "agent": "birchf37d06",
       "files": [
         "tools/blender/build_mire_map_kit.py",
-        "tools/mapgen/hollow_layout.py"
+        "tools/mapgen/hollow_layout.py",
+        "ui/hud/guide_hud.gd",
+        "ui/hud/focus_prompt.gd",
+        "assets/environment/catalog.json",
+        "assets/environment/exports/stump_a.glb",
+        "assets/environment/exports/stump_b.glb",
+        "assets/environment/exports/stump_c.glb",
+        "assets/environment/exports/stump_d.glb",
+        "assets/environment/exports/fallen_log_a.glb",
+        "assets/environment/exports/fallen_log_b.glb",
+        "assets/environment/exports/fallen_log_c.glb",
+        "assets/environment/exports/fallen_log_d.glb",
+        "assets/environment/exports/grass_seedhead_a.glb",
+        "assets/environment/exports/grass_seedhead_b.glb",
+        "assets/environment/exports/grass_seedhead_c.glb",
+        "assets/environment/exports/grass_seedhead_d.glb",
+        "assets/environment/exports/reeds_a.glb",
+        "assets/environment/exports/reeds_b.glb",
+        "assets/environment/exports/reeds_c.glb",
+        "assets/environment/exports/reeds_d.glb",
+        "world/gen/layouts/playtest_hollow.json",
+        "assets/source/playtest_hollow.blend",
+        "assets/maps/playtest_hollow.glb",
+        "assets/maps/preview/playtest_hollow_preview.png"
       ],
       "notes": [],
       "started": "2026-08-22T03:04:23+00:00",
       "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    },
+    "F-512": {
+      "agent": "ivy2314d8",
+      "files": [
+        "autoload/graphics_quality.gd",
+        "autoload/settings_service.gd",
+        "ui/frontend/graphics_settings_page.gd",
+        "tools/settings_check.gd",
+        "tools/settings_screen_check.gd"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-22T03:10:15+00:00",
+          "by": "ivy2314d8",
+          "text": "Display resolution is client-local presentation. In fullscreen, keep the macOS native window and cap uniform 3D render scale so neither rendered dimension exceeds the selected target; UI remains native. Quality presets may render lower, never higher, and dynamic resolution steps below the same cap."
+        }
+      ],
+      "started": "2026-08-22T03:10:15+00:00",
+      "token": "CODEX_SESSION_ID:01a0276f-2e99-7a63-b23a-45d0077b62f6"
     }
   },
   "recent": {
@@ -2293,11 +2503,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/items/repair_hammer.tres": {
-      "agent": "birche6b40e",
-      "at": "2026-08-21T23:26:09+00:00",
-      "hash": "b8fb0adbfadaf7af82eeb9f9ad55e7f116a7b5d5e1ae066b7d0172d104f06812",
-      "task": "3.18",
-      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+      "agent": "ivy9f49c8",
+      "at": "2026-08-22T03:10:17+00:00",
+      "hash": "f7425f9f187d87ac07d992422fb64b89b8f3a70915226ab2f48c6e02f6355be7",
+      "task": "F-510",
+      "token": "CODEX_SESSION_ID:01a0276a-92a7-79c0-8d76-3a6319f124d1"
     },
     "content/items/resin.tres": {
       "agent": "tine0bda72",
@@ -2335,11 +2545,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
     "content/items/stone_axe.tres": {
-      "agent": "birche6b40e",
-      "at": "2026-08-21T23:26:09+00:00",
+      "agent": "ivy9f49c8",
+      "at": "2026-08-22T03:10:17+00:00",
       "hash": "77f95d8977b49f38612964bd85a4b8368c634186a460213f4c59cb4218a1bb53",
-      "task": "3.18",
-      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+      "task": "F-510",
+      "token": "CODEX_SESSION_ID:01a0276a-92a7-79c0-8d76-3a6319f124d1"
     },
     "content/items/stone_pickaxe.tres": {
       "agent": "birche6b40e",
@@ -2377,11 +2587,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "content/items/wooden_axe.tres": {
-      "agent": "birche6b40e",
-      "at": "2026-08-21T23:26:09+00:00",
+      "agent": "ivy9f49c8",
+      "at": "2026-08-22T03:10:17+00:00",
       "hash": "bfc2993ef8263cae635594390fc4c0ac12ed34397c8706831567e0da53b75e81",
-      "task": "3.18",
-      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+      "task": "F-510",
+      "token": "CODEX_SESSION_ID:01a0276a-92a7-79c0-8d76-3a6319f124d1"
     },
     "content/items/wooden_pickaxe.tres": {
       "agent": "birche6b40e",
@@ -3826,11 +4036,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
     "systems/loot/chest.gd": {
-      "agent": "quill3c83cf",
-      "at": "2026-08-22T02:44:43+00:00",
-      "hash": "dbaf020c582e0cc7ff7665e67b1efd118a5e2c46a0e45e461524ffd620baa37e",
-      "task": "F-312",
-      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
+      "agent": "kilne5d049",
+      "at": "2026-08-22T03:10:17+00:00",
+      "hash": "432a8b8b383a37c868684e570fe5680dc2acebf9da3d4b8d691bc8d748bcde66",
+      "task": "F-511",
+      "token": "CODEX_SESSION_ID:01a0276e-bd11-78b2-af5f-d23a5375375d"
     },
     "systems/loot/loot_table_def.gd": {
       "agent": "birche6b40e",
@@ -4099,11 +4309,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
     },
     "tools/chest_placement_check.gd": {
-      "agent": "ember4ba1b4",
-      "at": "2026-08-22T02:43:48+00:00",
-      "hash": "1dec927062eb1e1651a4e48a2592026c33f3a51c58272d1297d053c69b94a1f4",
-      "task": "F-504",
-      "token": "CODEX_SESSION_ID:01a02757-7a2b-7441-aade-0d362325e85b"
+      "agent": "kilne5d049",
+      "at": "2026-08-22T03:10:17+00:00",
+      "hash": "b4a8f9dce9aeb6642d6449ef6ed352b1b978661f2487c53a6ad192c1feeb2ee5",
+      "task": "F-511",
+      "token": "CODEX_SESSION_ID:01a0276e-bd11-78b2-af5f-d23a5375375d"
     },
     "tools/chunk_mesh_weight.gd": {
       "agent": "vane99f1bb",
@@ -4357,13 +4567,6 @@
       "task": "F-382",
       "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
-    "tools/lobby_menu_check.gd": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T03:07:34+00:00",
-      "hash": "73e9f422ff3a8dc2c69eb6e2ed10c8a5d1cc7303a44cffd28f9f63edec876eae",
-      "task": "F-384",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
-    },
     "tools/main_menu_check.gd": {
       "agent": "flinta92725",
       "at": "2026-08-21T06:17:58+00:00",
@@ -4546,6 +4749,13 @@
       "task": "F-503",
       "token": "CODEX_SESSION_ID:01a02752-64f4-7b03-88cb-24234c204f6e"
     },
+    "tools/setup_tool_content.gd": {
+      "agent": "ivy9f49c8",
+      "at": "2026-08-22T03:10:17+00:00",
+      "hash": "0af5b75eb66e158727e374150c95732a4a24be83c851d9bb6f4d0293b114b809",
+      "task": "F-510",
+      "token": "CODEX_SESSION_ID:01a0276a-92a7-79c0-8d76-3a6319f124d1"
+    },
     "tools/sfx_check.gd": {
       "agent": "ash843af8",
       "at": "2026-08-21T08:53:46+00:00",
@@ -4636,6 +4846,13 @@
       "hash": "0a1ca30dff6f331076888fad75b9667d7ecbd94337f64bc7c047cf5eb4af066f",
       "task": "F-505",
       "token": "CODEX_SESSION_ID:01a02752-64f4-7b03-88cb-24234c204f6e"
+    },
+    "tools/viewmodel_check.gd": {
+      "agent": "ivy9f49c8",
+      "at": "2026-08-22T03:10:17+00:00",
+      "hash": "4846b3531b6b3db37cec4703007dae12fc22963cf4da5ae4833d191a94f218e2",
+      "task": "F-510",
+      "token": "CODEX_SESSION_ID:01a0276a-92a7-79c0-8d76-3a6319f124d1"
     },
     "tools/virtual_shadow_check.gd": {
       "agent": "mossb81aeb",
@@ -4790,13 +5007,6 @@
       "hash": "4df1dd223352f831c6384fc6a5d38031dd9dd7bcd6008f6bed73cd33e76cf1cf",
       "task": "F-431",
       "token": "CLAUDE_CODE_SESSION_ID:80d76563-dcca-426a-ad54-2909c9fa380a"
-    },
-    "ui/lobby/lobby_menu.gd": {
-      "agent": "kilnd3a089",
-      "at": "2026-08-21T03:07:34+00:00",
-      "hash": "0048484cde04056af31514d1a0170875aa2ef270773f3d718ff978f08d26d661",
-      "task": "F-384",
-      "token": "CLAUDE_CODE_SESSION_ID:63adb129-5167-4234-ac47-64d53deeb779"
     },
     "ui/loot/chest_ui.gd": {
       "agent": "wickc3d79c",
@@ -5030,7 +5240,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:120f1976-6c96-46a1-8784-38dd75780df4"
     }
   },
-  "rev": 1191,
+  "rev": 1239,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -10874,6 +11084,31 @@
       "status": "done",
       "tier": "F",
       "title": "Slope-spawned scatter props float above terrain"
+    },
+    "F-510": {
+      "done_at": "2026-08-22T03:10:17+00:00",
+      "done_by": "ivy9f49c8",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Repair hammer viewmodel fills the right third of an ultrawide frame"
+    },
+    "F-511": {
+      "done_at": "2026-08-22T03:10:17+00:00",
+      "done_by": "kilne5d049",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Playtest still shows no visible chests around the map after F-367/F-504"
+    },
+    "F-512": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Fullscreen resolution should control internal 3D render resolution for performance instead of being disabled"
     }
   },
   "version": 1

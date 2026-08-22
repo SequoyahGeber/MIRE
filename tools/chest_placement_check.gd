@@ -92,6 +92,7 @@ func _check_live_hollowmere(service: Node) -> void:
 		check(StringName(chest.get("locked_by")) == &"", "Reed Cache is unlocked")
 		check(chest.get_node_or_null(^"ChestVisual") != null,
 			"Reed Cache has a visible closed-state model")
+		_check_locator(chest, "Reed Cache")
 	for chest: Node in gilded_chests:
 		check(StringName(chest.get("tier")) == &"gilded", "gilded marker resolved to tier 'gilded'")
 		check(int(chest.get("cost_coins")) == 0, "gilded chest has no coin price")
@@ -99,11 +100,17 @@ func _check_live_hollowmere(service: Node) -> void:
 			"gilded chest is locked by a Gilded Key (ITEMS.md line 243)")
 		check(chest.get_node_or_null(^"ChestVisual") != null,
 			"gilded chest has a visible closed-state model")
+		_check_locator(chest, "gilded chest")
 
 	if not cache_chests.is_empty():
 		var result: Dictionary = await _request_and_await(cache_chests[0])
 		check(bool(result.get("accepted", false)), "a live, free Cache_ chest actually opens",
 			String(result.get("detail", "")))
+		for _frame: int in 2:
+			await process_frame
+		var opened_locator := cache_chests[0].get_node_or_null(^"ChestLocator") as MeshInstance3D
+		check(opened_locator != null and not opened_locator.visible,
+			"an opened chest removes its discoverability mote")
 
 	if not gilded_chests.is_empty():
 		var result: Dictionary = await _request_and_await(gilded_chests[0])
@@ -171,6 +178,7 @@ func _check_synthetic(service: Node) -> void:
 			"the synthetic marker's tier parsed from its own name")
 		check(synthetic_chest.get_node_or_null(^"ChestVisual") != null,
 			"a dynamically placed chest receives a real visual model")
+		_check_locator(synthetic_chest, "dynamically placed chest")
 
 	service.call("refresh_current_scene")
 	for _frame: int in 3:
@@ -183,6 +191,18 @@ func _check_synthetic(service: Node) -> void:
 		str(rebuilt_count))
 
 	holder.queue_free()
+
+
+func _check_locator(chest: Node, label: String) -> void:
+	var locator := chest.get_node_or_null(^"ChestLocator") as MeshInstance3D
+	check(locator != null and locator.mesh != null,
+		"%s has a rendered discoverability mote" % label)
+	if locator != null:
+		check(locator.position.y >= 1.0,
+			"%s locator clears grass-height occlusion" % label)
+	var light := chest.get_node_or_null(^"ChestLocatorLight") as OmniLight3D
+	check(light != null and light.omni_range >= 4.0,
+		"%s has a local warm locator light" % label)
 
 
 func check(condition: bool, description: String, detail: String = "") -> void:
