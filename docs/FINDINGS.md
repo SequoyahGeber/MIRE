@@ -3417,42 +3417,6 @@ its own path instead of rebuilding it.
 
 ---
 
-### F-473 · The tier-4 and tier-5 tools ship on placeholder art, and the bogsilver seam has none at all
-
-**Area:** assets · **Severity:** medium · **Found:** 2026-08-21 by birche6b40e
-
-Task 3.18 authored the top two rungs of the tool ladder (`docs/PROGRESSION.md` §2, D-200) as correct
-data ahead of their art, which is the right posture — but the placeholders are load-bearing enough to
-be worth naming rather than discovering in a playtest.
-
-**Tools on borrowed art.** `bogsilver_axe` and `wellglass_axe` both point at `stone_axe_world.glb` /
-`stone_axe_viewmodel.glb` and `icon_stone_axe.png`; `bogsilver_pickaxe` and `wellglass_pickaxe` both
-point at the `iron_pickaxe` exports and icon. `iron_axe` — which is new too, task 3.1 shipped an iron
-pickaxe and no iron axe — is also on the stone axe's art. So five tools currently look like two, and
-a player who forges wellglass gets a fanfare and a stone axe in their hands. The `.tres` grip offsets
-were copied from the borrowed asset and will need re-tuning per model, not reusing.
-
-`bogsilver_ore` / `bogsilver_ingot` borrow the iron ore/ingot art, `wellglass_shard` borrows flint's,
-and `guardian_core` borrows the iron ingot's.
-
-**The bogsilver seam has no art at all.** `content/harvestables/bogsilver_node.tres` is authored and
-`HarvestLibrary`'s rule table has its `bogsilver_node_*` prefix, but no export matches that prefix, so
-the rule claims nothing and the seam never appears. Tier 4 is still reachable — a Wellspring cap grants
-`bogsilver_ore` outright through `content/loot/wellspring.tres`'s new `guaranteed` list — but mining is
-meant to be the bulk source, and until the model exists the only bogsilver in a run is objective payout.
-
-**What is actually needed**, in the order it pays off:
-1. `bogsilver_node_intact` + damaged/depleted states, matching the `iron_node_*` family's four-state
-   shape (the definition already expects `active_state_scenes` and will use its own visual until then).
-2. `iron_axe`, `bogsilver_axe`, `bogsilver_pickaxe`, `wellglass_axe`, `wellglass_pickaxe` world +
-   viewmodel exports, plus icons through `render_item_icons.py`.
-3. Pickup meshes and icons for `bogsilver_ore`, `bogsilver_ingot`, `wellglass_shard`, `guardian_core`.
-
-Wellglass should read as a material, not as a colour swap — it is what a Wellspring leaves behind, and
-it is the only thing in the kit that is not metal, wood or stone.
-
----
-
 ### F-474 · Bogsilver is a plain item, so tier 4 lost its two-player carry
 
 **Area:** gameplay · **Severity:** medium · **Found:** 2026-08-21 by birche6b40e
@@ -3552,6 +3516,78 @@ rather than a duplicate of its list.
 ---
 
 ## Resolved
+
+### F-480 · The tier-4 and tier-5 tools ship on placeholder art, and the bogsilver seam has none at all — **fixed**
+
+> **Renumbered from F-473 on 2026-08-21 by its own author (birche6b40e), per F-476.** Two sessions
+> allocated 473 minutes apart; coil26502f's PROTOCOL_VERSION entry keeps the number because it is
+> the older of the two and is already cited from that session's commits. Anything citing F-473 for
+> ART means this entry.
+
+**Area:** assets · **Severity:** medium · **Found:** 2026-08-21 by birche6b40e
+
+Task 3.18 authored the top two rungs of the tool ladder (`docs/PROGRESSION.md` §2, D-200) as correct
+data ahead of their art, which is the right posture — but the placeholders are load-bearing enough to
+be worth naming rather than discovering in a playtest.
+
+**Tools on borrowed art.** `bogsilver_axe` and `wellglass_axe` both point at `stone_axe_world.glb` /
+`stone_axe_viewmodel.glb` and `icon_stone_axe.png`; `bogsilver_pickaxe` and `wellglass_pickaxe` both
+point at the `iron_pickaxe` exports and icon. `iron_axe` — which is new too, task 3.1 shipped an iron
+pickaxe and no iron axe — is also on the stone axe's art. So five tools currently look like two, and
+a player who forges wellglass gets a fanfare and a stone axe in their hands. The `.tres` grip offsets
+were copied from the borrowed asset and will need re-tuning per model, not reusing.
+
+`bogsilver_ore` / `bogsilver_ingot` borrow the iron ore/ingot art, `wellglass_shard` borrows flint's,
+and `guardian_core` borrows the iron ingot's.
+
+**The bogsilver seam has no art at all.** `content/harvestables/bogsilver_node.tres` is authored and
+`HarvestLibrary`'s rule table has its `bogsilver_node_*` prefix, but no export matches that prefix, so
+the rule claims nothing and the seam never appears. Tier 4 is still reachable — a Wellspring cap grants
+`bogsilver_ore` outright through `content/loot/wellspring.tres`'s new `guaranteed` list — but mining is
+meant to be the bulk source, and until the model exists the only bogsilver in a run is objective payout.
+
+**What is actually needed**, in the order it pays off:
+1. `bogsilver_node_intact` + damaged/depleted states, matching the `iron_node_*` family's four-state
+   shape (the definition already expects `active_state_scenes` and will use its own visual until then).
+2. `iron_axe`, `bogsilver_axe`, `bogsilver_pickaxe`, `wellglass_axe`, `wellglass_pickaxe` world +
+   viewmodel exports, plus icons through `render_item_icons.py`.
+3. Pickup meshes and icons for `bogsilver_ore`, `bogsilver_ingot`, `wellglass_shard`, `guardian_core`.
+
+Wellglass should read as a material, not as a colour swap — it is what a Wellspring leaves behind, and
+it is the only thing in the kit that is not metal, wood or stone.
+
+---
+
+**Resolved 2026-08-22 by birche6b40e.** Done. 19 new exports, no placeholder art left on any tier-3/4/5 item.
+
+**Tools** (`assets/tools_weapons/`): `iron_axe`, `bogsilver_axe`, `bogsilver_pickaxe`, `wellglass_axe`,
+`wellglass_pickaxe`, world + viewmodel each. `build_tool_weapon_set.py` gained `build_forged_axe()`
+(iron and bogsilver share it), `build_wellglass_axe()`, and two more tiers on `build_pickaxe()`.
+Grips did not need retuning after all: the forged axes reuse `AXE_HAFT` and the picks `PICK_HAFT`, so
+the offsets copied from `stone_axe`/`iron_pickaxe` were already correct rather than approximate.
+
+**Materials** (`assets/deep_materials/`, a new kit): `pickup_bogsilver_ore`, `pickup_bogsilver_ingot`,
+`pickup_wellglass_shard`, `pickup_guardian_core`. Their own generator because `build_pickup_kit.py`
+and its catalog are claimed by gale43d16e for 2.1d.
+
+**The seam** (`assets/harvestables/`): `bogsilver_node_` intact/chipped/cracked/shattered/depleted,
+via a third family on the existing `build_node()`. It scatters in `highland_rocks` at weight 0.14
+against iron's 0.60, so it is in generated worlds and not only in the registry.
+
+**Icons**: nine, rendered from those same GLBs by `render_item_icons.py` — 58 in the set now.
+
+**Palette**: six new `mire_art` tokens. Wellglass emission is 0.30/0.90 against the Ward's 2.2-3.4,
+so a wellglass tool catches light without promising the safety a Ward does.
+
+Verified: `progression_check`, `guide_check`, `item_icons_check`, `harvest_tool_ladder_check`,
+`crafting_check`, `chest_check`, `focus_prompt_check`, `build_check`, `loot_content_check`,
+`resource_scatter_check` and `harvest_world_check` all green; every asset inspected on the
+eight-azimuth-plus-poles contact sheet, and four were rebuilt because it said no (the seam read as a
+grey boulder, the wellglass pick's tips floated beside the tool, the guardian core's cage was inside
+its own heart, and the shard cluster's pieces did not touch).
+
+Not fixed here and still open: **F-474**, bogsilver as a two-player Heavy Chunk. That one needs a
+system seam between `Harvestable` and `HaulService`, not art.
 
 ### F-477 · Only the anvil is buildable — the other seven crafting stations can only be found, never made — **fixed**
 
