@@ -405,10 +405,10 @@ func _run_orphan_client(which: String) -> void:
 		"what": "before the host leaves, the client sees the disabled waiting-on-the-host label",
 	})
 	checks.append({
-		"ok": hud.is_in_group(BLOCKING_UI_GROUP),
+		"ok": hud.is_in_group(BLOCKING_UI_GROUP),  # latch-ok: asserting the latch is PRESENT — that IS this check's subject, not something the latch invalidates
 		"what": "before the host leaves, the overlay blocks gameplay input (D-032), as F-243 shipped it",
 	})
-	main_menu.call(&"set_open", true)
+	main_menu.call(&"set_open", true)  # latch-ok: the emit above exists to stand a real terminal overlay up so D-032 can be caught refusing this open; resetting first would erase what is being tested
 	checks.append({
 		"ok": not bool(main_menu.call(&"is_open")),
 		"what": "before the host leaves, D-032's interlock correctly refuses to open a menu over a live run's overlay",
@@ -437,7 +437,7 @@ func _run_orphan_client(which: String) -> void:
 		"what": "D-185: the control becomes Leave to Menu, not a restart of a world the dead session already tore down",
 	})
 	checks.append({
-		"ok": not hud.is_in_group(BLOCKING_UI_GROUP),
+		"ok": not hud.is_in_group(BLOCKING_UI_GROUP),  # latch-ok: F-307's subject IS this latch: the assertion is that the overlay has LEFT the group once the session died
 		"what": "F-307: the overlay leaves blocks_gameplay_input once the session is dead, so a menu can open over it",
 	})
 	checks.append({
@@ -496,10 +496,10 @@ func _run_orphan_attunement_client(checks: Array) -> void:
 		"what": "the picker opens for the joined client, so this is the real panel and not a stand-in",
 	})
 	checks.append({
-		"ok": picker.is_in_group(BLOCKING_UI_GROUP),
+		"ok": picker.is_in_group(BLOCKING_UI_GROUP),  # latch-ok: asserting the latch is PRESENT — that IS this check's subject, not something the latch invalidates
 		"what": "before the host leaves, the picker blocks gameplay input (D-032), as task 3.9 shipped it",
 	})
-	main_menu.call(&"set_open", true)
+	main_menu.call(&"set_open", true)  # latch-ok: the emit above exists to stand a real terminal overlay up so D-032 can be caught refusing this open; resetting first would erase what is being tested
 	checks.append({
 		"ok": not bool(main_menu.call(&"is_open")),
 		"what": "before the host leaves, D-032's interlock correctly refuses a menu over the live picker",
@@ -531,7 +531,7 @@ func _run_orphan_attunement_client(checks: Array) -> void:
 		"what": "F-321: the pending request is cleared, so the 8 s timer cannot re-arm the loop it used to",
 	})
 	checks.append({
-		"ok": not picker.is_in_group(BLOCKING_UI_GROUP),
+		"ok": not picker.is_in_group(BLOCKING_UI_GROUP),  # latch-ok: F-321's subject IS this latch: the assertion is that the picker has LEFT the group, which is what actually frees the player
 		"what": "F-321: the picker leaves blocks_gameplay_input, which is what actually frees the player",
 	})
 	checks.append({
