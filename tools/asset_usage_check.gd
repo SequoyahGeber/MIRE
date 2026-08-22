@@ -43,6 +43,13 @@ const ART_SUFFIXES: PackedStringArray = [".glb", ".png"]
 ## `audit/` is screenshots from past investigations.
 const NON_SHIPPING_DIRS: PackedStringArray = ["preview", "source", "audit"]
 
+## F-572: a file is SHIPPED if it is in the repository, and `.gitignore:49` already excludes the
+## `<name> <n>.<ext>` shape — the second-copy name Finder and the icon builder both produce. This
+## check walks the filesystem rather than git, so without this filter it counted 228 local scratch
+## renders (222 in `assets/icons/exports/`, 6 byte-identical `.glb` copies in `harvestables/`) as
+## dead art, exited non-zero forever, and buried the 34 real entries it exists to surface.
+const IGNORED_COPY_SUFFIX := "^.+ [0-9]+$"
+
 ## Top-level directories that are NOT consumers. `assets/` would let a catalog vouch for itself,
 ## `docs/` and `tools/` describe and validate art rather than using it.
 const NON_CONSUMER_DIRS: PackedStringArray = ["res://assets", "res://docs", "res://tools",
@@ -140,12 +147,22 @@ func _shipped_exports() -> Array[String]:
 		if not DirAccess.dir_exists_absolute(exports):
 			continue
 		for name: String in DirAccess.get_files_at(exports):
+			if _is_ignored_copy(name):
+				continue
 			for suffix: String in ART_SUFFIXES:
 				if name.ends_with(suffix):
 					out.append(exports + name)
 					break
 	out.sort()
 	return out
+
+
+## Mirrors `.gitignore:49`'s `* [0-9].*` rule: `icon_apple 3.png` is a local re-render, not a
+## shipped export, and git already refuses to track it.
+static func _is_ignored_copy(file_name: String) -> bool:
+	var regex := RegEx.new()
+	regex.compile(IGNORED_COPY_SUFFIX)
+	return regex.search(file_name.get_basename()) != null
 
 
 ## Everything that can legitimately make the game load an asset. Read once, held as text — the

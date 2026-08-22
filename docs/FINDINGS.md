@@ -2962,6 +2962,45 @@ ground until now. A gate nobody could reach was never going to look flaky.
 
 ---
 
+### F-572 · asset_usage_check counts gitignored local scratch renders, so the dead-asset guard is permanently red and its signal is buried
+
+**Area:** art · **Severity:** medium · **Found:** 2026-08-22 by wick410d34
+
+`tools/asset_usage_check.gd` is F-439's standing guard: it walks `assets/*/exports/` on the
+filesystem and fails while any export is reachable from nothing. It does not ask git whether a file
+is actually shipped, so it counts local scratch output.
+
+`.gitignore:49` already ignores `* [0-9].*` — the Finder/Blender "second copy" shape. As of
+2026-08-22 `assets/icons/exports/` holds 723 PNGs of which only 143 are tracked; the icon builder has
+been writing successive renders as `icon_apple 2.png`, `icon_apple 3.png` … rather than overwriting,
+and `assets/harvestables/exports/` carries six ` 2.glb` copies that are byte-identical to their base
+file.
+
+The result, measured today:
+
+    camp           2   real
+    enemies        6   real (death fragments, nothing spawns them)
+    food          13   real (whole kit, no item defs)
+    paths         13   real (whole kit, no placement system)
+    harvestables   6   NOISE — gitignored byte-identical ` 2.glb` duplicates
+    icons        222   NOISE — gitignored ` N.png` scratch renders
+
+So 228 of the 262 reported entries are files that are not in the repository at all. The guard exits
+non-zero on every run regardless of whether the 34 real ones ever get wired, which is exactly the
+failure mode a standing guard exists to avoid: it can no longer distinguish "someone shipped a dead
+asset" from "someone re-rendered an icon locally". The 34 real entries are also unreadable, buried
+under 222 lines of `icon_stone_axe 6`.
+
+Fix: `_shipped_exports()` should skip names matching `.gitignore`'s own ` N.` shape (or, better, ask
+`git ls-files` and only consider tracked files — that is the actual definition of "shipped"). The
+34 real entries are unchanged by this and stay failing, which is correct; they are catalogued in
+F-439 with the companion work each is blocked on.
+
+Separately worth its own fix: the icon builder should overwrite rather than emit numbered copies —
+23 MB of `assets/icons/exports/` is local scratch.
+
+---
+
 ## Resolved
 
 ### F-570 · Playtest: procedural map shows only basic chests and ChestUI does not display the coin cost before opening — **fixed**
