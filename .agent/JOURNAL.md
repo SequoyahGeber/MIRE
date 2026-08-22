@@ -10091,3 +10091,137 @@ Recovered 172 intentional outputs and removed six orphan scratch UID sidecars; J
 Files: `assets/audit/geometry_report.json`, `assets/audit/geometry_report.jsonl`, `assets/audit/terrain/after_20260819.png`, `assets/audit/terrain/after_4242.png`, `assets/audit/terrain/after_7.png`, `assets/audit/terrain/after_90210.png`, `assets/audit/terrain/ocean_glint_grazing.png`, `assets/audit/terrain/ocean_glint_high.png`, `assets/audit/terrain/ocean_glint_shore.png`, `assets/environment/catalog.json`, `assets/environment/exports/fallen_log_a.glb`, `assets/environment/exports/fallen_log_b.glb`, `assets/environment/exports/fallen_log_c.glb`, `assets/environment/exports/fallen_log_d.glb`, `assets/environment/exports/fence_post.glb`, `assets/environment/exports/grass_seedhead_a.glb`, `assets/environment/exports/grass_seedhead_b.glb`, `assets/environment/exports/grass_seedhead_c.glb`, `assets/environment/exports/grass_seedhead_d.glb`, `assets/environment/exports/mire_crystal_a.glb`, `assets/environment/exports/mire_crystal_b.glb`, `assets/environment/exports/mire_crystal_c.glb`, `assets/environment/exports/mire_crystal_d.glb`, `assets/environment/exports/mire_crystal_e.glb`, `assets/environment/exports/mire_crystal_f.glb`, `assets/environment/exports/standing_stone_a.glb`, `assets/environment/exports/standing_stone_b.glb`, `assets/environment/exports/standing_stone_c.glb`, `assets/environment/exports/standing_stone_d.glb`, `assets/environment/exports/stump_a.glb`, `assets/environment/exports/stump_b.glb`, `assets/environment/exports/stump_c.glb`, `assets/environment/exports/stump_d.glb`, `assets/environment/exports/tree_bare_a.glb`, `assets/environment/exports/tree_bare_b.glb`, `assets/environment/exports/tree_bare_c.glb`, `assets/environment/exports/tree_bare_d.glb`, `assets/environment/exports/tree_birch_a.glb`, `assets/environment/exports/tree_birch_b.glb`, `assets/environment/exports/tree_birch_c.glb`, `assets/environment/exports/tree_birch_d.glb`, `assets/environment/exports/tree_crooked_a.glb`, `assets/environment/exports/tree_crooked_b.glb`, `assets/environment/exports/tree_crooked_c.glb`, `assets/environment/exports/tree_crooked_d.glb`, `assets/environment/exports/tree_pine_a.glb`, `assets/environment/exports/tree_pine_b.glb`, `assets/environment/exports/tree_pine_c.glb`, `assets/environment/exports/tree_pine_d.glb`, `assets/environment/exports/tree_pine_e.glb`, `assets/environment/exports/tree_pine_f.glb`, `assets/environment/preview/building_pieces_preview.png`, `assets/environment/preview/forest_debris_preview.png`, `assets/environment/preview/ground_cover_preview.png`, `assets/environment/preview/mire_growth_preview.png`, `assets/environment/preview/mire_map_kit_preview.png`, `assets/environment/preview/rocks_preview.png`, `assets/environment/preview/ruins_preview.png`, `assets/environment/preview/trees_preview.png`, `assets/flora/catalog.json`, `assets/flora/exports/tree_willow_a.glb`, `assets/flora/exports/tree_willow_b.glb`, `assets/flora/exports/tree_willow_c.glb`, `assets/flora/preview/flora_set_preview.png`, `assets/flora/preview/flowers_preview.png`, `assets/flora/preview/grasses_preview.png`, `assets/flora/preview/ground_cover_preview.png`, `assets/flora/preview/leafy_plants_preview.png`, `assets/flora/preview/shrubs_preview.png`, `assets/flora/preview/small_trees_preview.png`, `assets/icons/exports/icon_apple.png`, `assets/icons/exports/icon_arrow.png`, `assets/icons/exports/icon_berry.png`, `assets/icons/exports/icon_bogsilver_axe.png`, `assets/icons/exports/icon_bogsilver_ingot.png`, `assets/icons/exports/icon_bogsilver_ore.png`, `assets/icons/exports/icon_bogsilver_pickaxe.png`, `assets/icons/exports/icon_bolt.png`, `assets/icons/exports/icon_branch.png`, `assets/icons/exports/icon_build_anvil.png`, `assets/icons/exports/icon_build_barricade.png`, `assets/icons/exports/icon_build_barricade_spike.png`, `assets/icons/exports/icon_build_bridge.png`, `assets/icons/exports/icon_build_campfire.png`, `assets/icons/exports/icon_build_cooking_spit.png`, `assets/icons/exports/icon_build_dock.png`, `assets/icons/exports/icon_build_door.png`, `assets/icons/exports/icon_build_floor.png`, `assets/icons/exports/icon_build_furnace.png`, `assets/icons/exports/icon_build_gate.png`, `assets/icons/exports/icon_build_ladder.png`, `assets/icons/exports/icon_build_palisade.png`, `assets/icons/exports/icon_build_palisade_gate.png`, `assets/icons/exports/icon_build_ramp.png`, `assets/icons/exports/icon_build_repair_bench.png`, `assets/icons/exports/icon_build_wall.png`, `assets/icons/exports/icon_build_ward.png`, `assets/icons/exports/icon_build_ward_post.png`, `assets/icons/exports/icon_build_woodcutting_block.png`, `assets/icons/exports/icon_build_workbench.png`, `assets/icons/exports/icon_build_workbench_upgraded.png`, `assets/icons/exports/icon_clay.png`, `assets/icons/exports/icon_cleaver.png`, `assets/icons/exports/icon_coal.png`, `assets/icons/exports/icon_coin.png`, `assets/icons/exports/icon_coin_stack.png`, `assets/icons/exports/icon_coins.png`, `assets/icons/exports/icon_crossbow.png`, `assets/icons/exports/icon_fibre_bundle.png`, `assets/icons/exports/icon_flint.png`, `assets/icons/exports/icon_guardian_core.png`, `assets/icons/exports/icon_herb.png`, `assets/icons/exports/icon_honey.png`, `assets/icons/exports/icon_iron_axe.png`, `assets/icons/exports/icon_iron_ingot.png`, `assets/icons/exports/icon_iron_ore.png`, `assets/icons/exports/icon_iron_pickaxe.png`, `assets/icons/exports/icon_iron_sword.png`, `assets/icons/exports/icon_log.png`, `assets/icons/exports/icon_longbow.png`, `assets/icons/exports/icon_mushroom.png`, `assets/icons/exports/icon_peat.png`, `assets/icons/exports/icon_poison_berry.png`, `assets/icons/exports/icon_raw_meat.png`, `assets/icons/exports/icon_repair_hammer.png`, `assets/icons/exports/icon_resin.png`, `assets/icons/exports/icon_salvage_fragment.png`, `assets/icons/exports/icon_short_bow.png`, `assets/icons/exports/icon_skewer.png`, `assets/icons/exports/icon_sling.png`, `assets/icons/exports/icon_stone.png`, `assets/icons/exports/icon_stone_axe.png`, `assets/icons/exports/icon_stone_pickaxe.png`, `assets/icons/exports/icon_wellglass_axe.png`, `assets/icons/exports/icon_wellglass_pickaxe.png`, `assets/icons/exports/icon_wellglass_shard.png`, `assets/icons/exports/icon_wild_onion.png`, `assets/icons/exports/icon_wooden_axe.png`, `assets/icons/exports/icon_wooden_pickaxe.png`, `assets/icons/preview/item_icons_sheet.png`, `assets/maps/playtest_hollow.glb`, `assets/maps/preview/playtest_hollow_preview.png`, `assets/source/flora_set.blend`, `assets/source/harvestable_resources.blend`, `assets/source/mire_map_kit.blend`, `assets/source/playtest_hollow.blend`, `assets/source/tool_weapon_set.blend`, `project.godot`, `tools/f488_food_scatter_check.gd.uid`, `world/gen/layouts/playtest_hollow.json`, `assets/audit/drops`, `assets/audit/terrain/ruin_site_0.png`, `assets/audit/terrain/ruin_site_1.png`, `assets/audit/terrain/ruin_site_2.png`, `autoload/material_warmer.gd.uid`, `tools/_probe_new_grips.gd.uid`, `tools/bare_hands_reach_check.gd.uid`, `tools/blocking_ui_event_check.gd.uid`, `tools/bootstrap_reachability_check.gd.uid`, `tools/enemy_bloatcap_check.gd.uid`, `tools/enemy_bog_bulwark_check.gd.uid`, `tools/enemy_fen_stalker_check.gd.uid`, `tools/enemy_mire_herald_check.gd.uid`, `tools/enemy_peatling_check.gd.uid`, `tools/lobby_frontend_check.gd.uid`, `tools/material_warm_check.gd.uid`, `tools/mire_land_seed_check.gd.uid`, `tools/river_water_check.gd.uid`, `tools/river_water_shot.gd.uid`, `tools/station_buildable_check.gd.uid`, `world/environment/river_water.gd.uid`
 
 Commit at time of writing: `35f54f37`
+
+---
+
+### DONE · F-551 · hollowbfcf67 · 2026-08-22T07:10:34+00:00
+
+**Two checks fail at clean HEAD with nobody owning them — ranged_combat_check (1) and attunement_restart_check (3)**
+
+Four stale check assertions fixed; F-297 and F-321 scenarios separated.
+
+Files: `tools/ranged_combat_check.gd`, `tools/attunement_restart_check.gd`, `tools/combat_check.gd`, `tools/combat_self_hit_check.gd`
+
+Commit at time of writing: `1f343ddf`
+
+---
+
+### DONE · F-553 · hollowbfcf67 · 2026-08-22T07:14:38+00:00
+
+**SfxDirector reads multiplayer.get_unique_id() directly every frame, which errors offline and mis-keys the local player after teardown**
+
+SfxDirector routes the local peer id through NetTransport.
+
+Files: `autoload/sfx_director.gd`, `ui/hud/focus_prompt.gd`, `autoload/debug_overlay.gd`
+
+Commit at time of writing: `864eed8d`
+
+---
+
+### DONE · F-554 · hollowbfcf67 · 2026-08-22T07:17:06+00:00
+
+**agent verify fails a check on Godot's exit-time leak diagnostics, so 129 of 218 checks are red with every assertion passing**
+
+verify separates teardown leaks from check verdicts.
+
+Files: `.agent/bin/agent`
+
+Commit at time of writing: `62e25428`
+
+---
+
+### DONE · F-406 · hollowbfcf67 · 2026-08-22T07:26:00+00:00
+
+**agent claim with more than one file stores the whole list as a single dictionary key, so the pre-commit hook never sees any of them as claimed**
+
+Verified already fixed at HEAD; closed with the proof.
+
+Commit at time of writing: `62e25428`
+
+---
+
+### DONE · F-555 · hollowbfcf67 · 2026-08-22T07:42:45+00:00
+
+**32 checks never print the failures=N verdict agent verify requires, so they are red however green they run**
+
+25 checks now print the canonical verdict line; one probe renamed out of the suite.
+
+Files: `tools/dimension_check.gd`, `tools/flora_check.gd`, `tools/hollowmere_check.gd`, `tools/mesh_merge_check.gd`, `tools/prop_chunk_merge_check.gd`, `tools/ship_check.gd`, `tools/world_contract_check.gd`, `tools/blight_ground_check.gd`, `tools/ground_fog_check.gd`, `tools/mire_land_seed_check.gd`, `tools/spawn_ground_check.gd`, `tools/terrain_texture_check.gd`, `tools/frame_cap_check.gd`, `tools/enemy_crawler_check.gd`, `tools/interest_check.gd`, `tools/synced_group_check.gd`, `tools/art_coverage_check.gd`, `tools/blight_timeline_check.gd`, `tools/construction_check.gd`, `tools/f410_asset_material_probe.gd`, `tools/f410_asset_material_check.gd`, `tools/frame_cost_check.gd`, `tools/hardware_tier_check.gd`, `tools/interp_check.gd`, `tools/rich_presence_check.gd`, `tools/spawn_slot_check.gd`, `tools/virtual_shadow_check.gd`
+
+Commit at time of writing: `1a820809`
+
+---
+
+### DONE · F-556 · hollowbfcf67 · 2026-08-22T07:54:59+00:00
+
+**agent verify runs every check headless, so the ten checks that require a window can only ever fail or skip**
+
+Windowed marker in the runner; structural guard in findings_hygiene_check.
+
+Files: `.agent/bin/agent`, `tools/findings_hygiene_check.py`
+
+Commit at time of writing: `dafce06c`
+
+---
+
+### DONE · F-560 · hollowbfcf67 · 2026-08-22T07:56:24+00:00
+
+**SfxDirector's local-peer fallback answers HOST_PEER_ID while a client is still connecting, so host-owned cues briefly test as the local player's own**
+
+Ownership tests fail closed again.
+
+Files: `autoload/sfx_director.gd`
+
+Commit at time of writing: `cf7f161d`
+
+---
+
+### DONE · F-563 · hollowbfcf67 · 2026-08-22T08:32:05+00:00
+
+**terrain_texture_check photographs open ocean where the world's own height_at() reports 32 m of land, on the shipped procedural island**
+
+Anchoring goes through the player; check passes for the first time.
+
+Files: `tools/terrain_texture_check.gd`
+
+Commit at time of writing: `63947d8a`
+
+---
+
+### DONE · F-565 · hollowbfcf67 · 2026-08-22T08:46:52+00:00
+
+**graphics_quality_check asserts raw preset render scales while a user-settings-derived clamp caps them, so it fails on whatever resolution the machine happens to have saved**
+
+Preset assertions no longer depend on the machine's saved resolution.
+
+Files: `tools/graphics_quality_check.gd`
+
+Commit at time of writing: `b73e3cda`
+
+---
+
+### DONE · F-469 · hollowbfcf67 · 2026-08-22T08:53:02+00:00
+
+**Four recent decisions use a heading shape decision_ref_check.py cannot see**
+
+Ten decision headings canonicalised; six collisions exposed and filed as F-567.
+
+Files: `docs/DECISIONS.md`
+
+Commit at time of writing: `6cdd8a5b`
+
+---
+
+### DONE · F-566 · bram937a51 · 2026-08-22T08:55:40+00:00
+
+**ProceduralWorld re-anchors its streamer every physics tick even with no player, so build_player=false does NOT protect an externally-set anchor**
+
+Completed.
+
+Notes along the way:
+- test
+- graphics_quality_check._set_anchor() is now DONE, closing the 'Still open' item in the finding body: it moves the local player as well as calling set_anchors(), because build_player defaults true there so a player existed and won every physics tick. The drift walk had never moved the streamer, so 'nothing drifted' was passing because nothing happened. Verified windowed: GRAPHICS_QUALITY_CHECK failures=0, low/medium/high walks report scale 0.59/0.77/1.00 with no DRIFTED. environment_vfx_reseed_check remains hollowbfcf67's to confirm. (Disregard the earlier one-word 'test' note above — a stray from checking where agent note writes.)
+
+Files: `tools/river_water_shot.gd`, `tools/graphics_quality_check.gd`
+
+Commit at time of writing: `cf754083`
