@@ -3420,6 +3420,25 @@ item. Worth a roadmap task rather than a finding, if the next triage agrees.
 
 ---
 
+### F-596 · Fauna Phase 2 — the ordinary six have no models, rigs or clips
+
+**Area:** art · **Severity:** medium · **Found:** 2026-08-22 by wick1c650c
+
+`docs/FAUNA.md` §5 phase 2: chicken, cow, deer, hare, boar and songbird each need a model, a rig and
+`idle`/`walk`/`flee`/`death`. Phase 1 (`AnimalDef` + `FaunaService`) is in flight separately; the art
+does not depend on the defs landing, so the two run in parallel and meet at the id vocabulary fixed
+in D-218.
+
+Scale is against the PLAYER — `player_controller.gd` builds a 1.8 m capsule — not against the other
+animals, and each species is researched against the real animal before it is modelled rather than
+being a generic quadruped wearing a species name (the A-000W willow and A-051 apple tree were both
+rebuilt for exactly that).
+
+Expected intermediate state, so it does not read as a regression: between these exports and Phase 1's
+defs naming them, `asset_usage_check` is red — six modelled assets that nothing places.
+
+---
+
 ## Resolved
 
 ### F-593 · Chests read as too small against the player, and the ladder's two most common rungs are below knee height — **fixed**

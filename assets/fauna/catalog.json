@@ -1,0 +1,31 @@
+{
+  "kit": "fauna",
+  "assets": [
+    {
+      "id": "chicken",
+      "family": "fauna",
+      "export": "exports/chicken.glb",
+      "size_m": [
+        0.188,
+        0.484,
+        0.412
+      ],
+      "height_m": 0.412,
+      "player_fraction": 0.229,
+      "polygons": 770,
+      "materials": [
+        "MIRE_Bone",
+        "MIRE_FleshRaw",
+        "MIRE_Leather",
+        "MIRE_LeatherDark"
+      ],
+      "clips": [
+        "idle-loop",
+        "walk-loop",
+        "flee",
+        "death"
+      ],
+      "note": "Brown bog fowl. Horizontal ovoid body on short scaly legs, S-neck carried forward, tail up at 42 degrees, comb and wattles the only saturated colour. The walk is the real head-bob: the head holds still in space while the body advances under it."
+    }
+  ]
+}

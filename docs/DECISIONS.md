@@ -7355,3 +7355,32 @@ inferred call, which the anvil case settles independently. Also: if `station_cou
 makes a guide step clear that Sequoyah wants to require a SPECIFIC bench, the answer is a new
 condition (`STATION_BUILT_EXACT`) rather than narrowing this rule — narrowing it re-opens the
 tutorial deadlock this decision exists to prevent.
+
+### D-218 · 2026-08-22 · Fauna asset kit, id vocabulary and clip names
+FAUNA.md Phase 2 (the ordinary six) is art, and Phase 1 (`AnimalDef` + `FaunaService`) is being built
+in parallel by another session. The two halves only meet at names, so the names are fixed here rather
+than discovered when nothing resolves — a mismatch between a def's `asset` and an export's filename
+fails as silence, not as an error.
+
+**Kit:** `assets/fauna/`, exports at `assets/fauna/exports/<asset>.glb`, catalog at
+`assets/fauna/catalog.json`, previews at `assets/fauna/preview/`. Identical in shape to every other
+kit, so existing loaders and `asset_usage_check` need no special case.
+
+**Asset ids:** `chicken`, `cow`, `deer`, `hare`, `boar`, `songbird`. Bare species names — the kit
+directory already namespaces them, and `fauna/exports/animal_deer.glb` says "animal" twice.
+
+**Clip names, identical on all six:** `idle`, `walk`, `flee`, `death`. A def therefore never needs
+per-species clip names, and a behaviour state can pick a clip without knowing which animal it is
+driving. `idle` and `walk` carry the `-loop` suffix the enemy kits use for clips that may loop;
+`flee` and `death` do not.
+
+**Scale is against the player, never against the other animals.** `player_controller.gd` builds a
+1.8 m capsule, and every species is authored against that figure and stated as a fraction of it. A
+batch that is internally consistent and collectively wrong against the player is the exact failure
+the chest batch is being resized for.
+
+**Would change my mind:** Phase 1 landing first with different names. It is upstream and its defs are
+what actually place these, so if `AnimalDef` already says `animal_deer` or per-species clip names,
+Phase 1 wins and this entry is amended to match rather than the other way round. Also: if a species
+turns out to need a clip the other five do not (the Fen Stilt's motionless stand, in Phase 5), that
+is an argument for per-species clip lists and this uniform vocabulary would be the thing in the way.
