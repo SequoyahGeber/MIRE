@@ -3162,6 +3162,62 @@ are held back. Likewise every marker `kind` a service consumes (`objective`, `sh
 
 ---
 
+### F-579 · `agent resolve` stamps "— **fixed**" on every finding it moves, including the three outcomes that are not fixes
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-22 by wick3d4184 during a
+never-runs audit
+
+`.agent/bin/agent:4174` is unconditional:
+
+```python
+title_line, _, remainder = body.partition("\n")
+if not title_line.rstrip().endswith("**fixed**"):
+    title_line = title_line.rstrip() + " — **fixed**"
+```
+
+`cmd_resolve` takes no outcome argument, so every entry it moves to `## Resolved` arrives claiming
+the work is done. But this file's own *Triage* section (above) names **four** outcomes and only one
+of them is a fix: **Promote** moves the entry to *Resolved* noting a roadmap task id, **Won't fix**
+moves it to *Resolved* with a reason and is explicitly called "a legitimate outcome", and folding a
+duplicate is a fifth case that happens in practice. Three of those five land in *Resolved* wearing a
+`**fixed**` heading that is simply false.
+
+**The failure this causes is losing a live bug, and it just nearly happened.** F-578 was folded into
+F-575 as a duplicate in commit `c40a2807`; `agent resolve` stamped its heading `— **fixed**`. The
+entry that carried the root cause — `StationDef`'s `family`/`tier` being read nowhere, so the
+tier-2 workbench unlocks strictly less than the tier-1 bench — was then sitting in *Resolved*
+announcing that it was done. Nothing was done; no code has changed. It was caught by hand
+(`fc65b05b`) only because two agents happened to be comparing notes across the merge. A `**fixed**`
+heading in *Resolved* is precisely what triage skims past, which is the whole point of the section.
+
+**The two halves of the tool already disagree, which is the tell.** `_self_resolved_findings()` at
+`.agent/bin/agent:835` detects settled findings with
+
+```python
+r"—\s*\*\*(fixed|partly fixed|decided|won't[^*]*)[^*]*\*\*\s*$"
+```
+
+— a four-word vocabulary including `won't`, an outcome `cmd_resolve` has no way to write. So the
+reader already understands outcomes the writer cannot express, and neither of them knows
+`duplicate`.
+
+**A concrete second-order bug, worth fixing in the same pass.** The guard at :4174 is
+`endswith("**fixed**")`, and the detector regex at :835 matches only its own four words. F-578's
+heading now correctly reads `— **duplicate of F-575**`, which satisfies neither. Re-running
+`agent resolve` on it would append a second suffix and produce
+`… — **duplicate of F-575** — **fixed**`, and were the entry ever under `## Open`, the detector
+would not recognise it as settled at all.
+
+**What fixing it would take**, if someone picks it up: give `cmd_resolve` an outcome — positional or
+`--as fixed|partly-fixed|promoted|duplicate|wont-fix`, defaulting to `fixed` so no existing call
+site changes — stamp that word instead of the literal, widen the :835 regex and the :4174 guard to
+the same shared list so writer and reader cannot drift again, and require the note to name the
+roadmap task for `promoted` and the surviving F-number for `duplicate`. `agent reopen` already
+exists for the status correction (F-131), so the recovery path is there; this is about not needing
+it.
+
+---
+
 ## Resolved
 
 ### F-578 · Four of the eight craftable stations do nothing: StationDef's family/tier are never read, so the Reinforced Workbench unlocks no recipes — **duplicate of F-575**
