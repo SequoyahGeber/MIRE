@@ -90,33 +90,6 @@ the number twice: `handshake_check.gd` should assert the invariant the manifest 
 (`NetVersion.PROTOCOL_VERSION == RpcManifest.RECORDED_PROTOCOL_VERSION`) rather than restating a
 literal that has to be hand-maintained in a second place.
 
-### F-472 · Placement snaps to a fixed world grid with no toggle and no piece-to-piece mating, so a structure lines up only where the grid happens to agree
-
-**Area:** systems/building · **Severity:** medium · **Found:** 2026-08-21 by coil26502f, raised by Sequoyah
-
-`PlacementValidator.snap_transform()` rounds x and z to the piece's authored `snap_step` (1.0 m for
-every shipped piece) and snaps yaw to `rotation_step_degrees`. That is the whole of the snapping
-system, and it has three problems the moment someone tries to build an actual structure:
-
-1. **It is a world grid, not a piece grid.** Two walls line up only because both landed on the same
-   metre lines. A 2.0 m wall on a 1.0 m grid can be placed half-overlapping its neighbour or one
-   metre away from it, and nothing pulls it flush. Nothing mates a floor to a floor edge-to-edge, and
-   nothing stacks a wall on top of a wall except D-056's incidental "the aim ray reports the piece's
-   real top surface", which only works while you are aiming straight down at it.
-2. **There is no way to turn it off.** `snap_step` is authored per piece and read from the `.tres`,
-   so a player who wants a barricade at an angle across a path cannot have one — the grid is not a
-   preference, it is a property of the piece.
-3. **The host re-snaps.** `BuildService._process_place()` re-runs `snap_transform()` on whatever the
-   client sent (`autoload/build_service.gd:194`), which is correct as authority but means any snapping
-   the client invents that the host does not reproduce will visibly move the piece on placement.
-
-Sequoyah's requirement, verbatim: *"they should be able to be placed anywhere but when building
-pieces near each other I want there to be a snapping toggle so that it's easy to build structures
-without little gaps and stuff."* So the target behaviour is free placement by default, with an
-explicit toggle that mates a piece to its neighbours' real edges — not a finer grid.
-
-**Being fixed now** by this session under D-202.
-
 ### F-468 · Re-running either art generator rewrites every asset it owns with no pixel or vertex change, so a one-piece addition looks like a 48-file rebuild
 
 **Area:** tooling/assets · **Severity:** low · **Found:** 2026-08-21 by coil26502f during 3.7
@@ -2520,38 +2493,6 @@ this failure's list too and are now registered, so `apple` is the only name left
 
 ---
 
-### F-488 · Food gatherables never spawn: apple tree, berry bush and mushroom patch have definitions and art but no HarvestLibrary rule and no scatter entry
-
-**Area:** world · **Severity:** high · **Found:** 2026-08-22 by tine0bda72
-
-`content/harvestables/apple_tree.tres`, `berry_bush.tres` and `mushroom_patch.tres` exist with full
-and depleted GLBs under `assets/gatherables/exports/`, but:
-
-- `systems/harvesting/harvest_library.gd` HARVEST_RULES has no prefix for `apple_tree_*`,
-  `berry_bush_*` or `mushroom_patch_*`, so even a placed one would be inert scenery.
-- No `content/scatter/*.tres` table references any of the three, so procedural worlds place none.
-
-Net effect reported from play: no food gatherables anywhere on the map.
-
-**Resolved 2026-08-22 by tine0bda72.** Three parts:
-
-1. `systems/harvesting/harvest_library.gd` gained rules for `apple_tree_full`, `berry_bush_full` and
-   `mushroom_patch_full` (all `Represent.NODE`, because each has authored picked art that BATCH
-   depletion could not show), with the `*_picked`/`*_harvested` exports explicitly inert.
-2. Scatter entries: apple tree in `grassland_trees`, `heath_trees`, `forest_canopy` and
-   `birchwood_canopy`; berry bush in `forest_undergrowth`, `grassland_shrubs` and `heath_scrub`;
-   mushroom patch in `forest_floor`, `birchwood_floor` and `marsh_floor`. Weights are tuned so each
-   stays under ~1% of placed props — a find, not dressing.
-3. `autoload/harvest_world.gd` no longer refuses to wire a state-swap harvestable that has no
-   `CollisionBody`. Berry bushes and mushroom patches are soft flora `world/gen/prop_collider.gd`
-   deliberately emits no body for, so every scattered one was being dropped on the floor.
-
-Verified headless with `tools/f488_food_scatter_check.gd` (classification, definition/yield
-resolution, and placement counts over 144 chunks on two seeds); `resource_scatter_check`,
-`harvest_batch_check`, `harvest_state_chain_check` and `harvest_restart_check` all still pass.
-
----
-
 ### F-495 · ResourceScatterField's asset warm pump segfaults on load(), about one headless run in six
 
 **Area:** world · **Severity:** medium · **Found:** 2026-08-22 by hollow25eed7
@@ -2717,85 +2658,11 @@ F-217 is marked fixed on the strength of these exact assertions, so this is a re
 ---
 
 
-### F-519 · Bare hands cannot reach what the prompt says they can harvest
-
-**Area:** combat · **Severity:** high · **Found:** 2026-08-22 by tine5ad92a
-
-Reported from play: "harvesting with bare hands does not work for bushes or twig trees etc".
-
-Two separate causes, one of them a real bug.
-
-**The bug — the bare-hands reach is shorter than the prompt's promise.** `ui/hud/focus_prompt.gd`
-offers a harvestable at its definition's `request_range_m`, which is 3.0 m for every bare-hands
-plant (`bush`, `sapling`, `nettle`, `berry_bush`, `medicinal_herb`, `mushroom_patch`, ...).
-`CombatService._best_target()` reaches `weapon.range_m + HOST_RANGE_TOLERANCE_M`, and the unarmed
-`WeaponDef` built in `autoload/combat_service.gd::_build_unarmed()` had `range_m = 1.8` → 2.55 m,
-with a `vertical_reach_m` of 2.0 rather than the 2.4 every authored weapon uses. So the HUD read
-"Gather Bush with Bare Hands" from 3.0 m while the swing silently missed from 2.55 m out — and
-worse in practice, because a scattered plant's origin sits at the player's feet, 1.5 m below the
-eye the reach is measured from, leaving only sqrt(2.55² − 1.5²) ≈ 2.06 m of horizontal reach.
-Every authored weapon is 2.4–3.1 m and clears 3.0 m with the tolerance, so the mismatch existed
-*only* bare-handed, which is exactly the tier the report is about.
-
-Verified with `tools/bare_hands_reach_check.gd` against `levels/procedural_island.tscn`: before
-the fix, unarmed connected on a bush at 0.6/1.2/1.8 m and missed at 2.4 m; after it, every
-`required_tool = 0` prop the seed scattered is reachable at all four sample distances and the
-swing loop depletes each one (bush 3 swings, sapling 4, nettle 2, herb and onion 1). That check
-is now the regression guard, and it asserts the invariant directly: the unarmed reach plus
-`HOST_RANGE_TOLERANCE_M` must be at least the 3.0 m the prompt offers.
-
-Fixed by giving unarmed `range_m = 2.3` (2.3 + 0.75 = 3.05 ≥ 3.0) and `vertical_reach_m = 2.4`.
-It stays the shortest reach in the game — the cleaver is 2.4 — so this is not a combat buff so
-much as removing an outlier that broke the entry tier of the tool tree.
-
-**Not a bug — "twig trees".** The bare, twiggy `tree_bare_*` exports classify as `wild_tree`
-(`HarvestLibrary.HARVEST_RULES`' `tree_` prefix), whose `required_tool` is CHOP. Bare hands are
-`Tool.NONE` power 1, and `HarvestableDef.damage_from_tool()` floors `1 × 0.34` to 0, so they can
-never chip it. That is F-113's deliberate design ("you need an axe for this", without a tutorial),
-and the prompt correctly says "Needs an axe". If the twiggy silhouette is reading as gatherable
-rather than as a tree, that is an art/legibility call for Sequoyah, not a code fix.
-
----
-
 ### F-521 · Core multiplayer readiness checks are red at HEAD
 
 **Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by slatef9bff1
 
 `tools/combat_net_check.gd` consistently reports `FAIL: host places the axe in the client's first hotbar slot`, although the client receives the axe and both authoritative attacks resolve. `tools/inventory_net_check.gd` consistently reports `FAIL: client receives accepted slot-move confirmation`, although host/client final counts agree. Both reproduce through `.agent/bin/agent baseline --script ...` at HEAD a26bc163, not only in the shared dirty tree. Investigate whether the stocked starting hotbar invalidated test preconditions or whether confirmations are genuinely missing; do not treat the automated multiplayer gate as green until both checks pass.
-
----
-
-### F-522 · The workbench costs logs, so a run cannot craft its first axe
-
-**Area:** content · **Severity:** high · **Found:** 2026-08-22 by tine5ad92a
-
-Sequoyah, from play: "we need to be able to harvest the base resource to get the first tools and
-workbench without any tools."
-
-The opening of a run is a closed loop today:
-
-- `content/buildables/workbench.tres` costs `log` 8 + `fibre_bundle` 2.
-- `log` comes only from `tree`, `wild_tree`, `stump` and `fallen_log`, every one of them
-  `required_tool = 1` (CHOP).
-- The axe that satisfies CHOP is `content/recipes/wooden_axe.tres`, whose `station` is `workbench`.
-
-So you need an axe to build the workbench that makes the axe. Bare hands can gather exactly three
-things — `branch` (bushes, saplings), `fibre_bundle` (nettles, sedge, fibre plants) and the foods —
-and `stone` is no escape either, since every stone source is `required_tool = 2` and the pickaxe is
-also a workbench recipe.
-
-F-487's `tools/resource_reachability_check.gd` did not catch this because it asks only whether
-*something* in the game produces an item, which `log` plainly does. Circular locks need the
-tool gate walked, not just the source list.
-
-Fixed by paying for the tier-1 workbench in what bare hands can actually gather: `branch` 10 +
-`fibre_bundle` 4. It reads as what the description already claims it is — a top on lashed legs —
-and the log cost moves up to `workbench_upgraded`, where a crafted-intermediate cost belongs per
-the tier rule in F-477.
-
-`tools/bootstrap_reachability_check.gd` now closes the graph from an empty inventory forward
-(bare-hands harvests -> buildables affordable -> stations standing -> recipes craftable, repeat)
-and fails if the workbench, the wooden axe or the wooden pickaxe is not reached.
 
 ---
 
@@ -2861,53 +2728,6 @@ come first.
 Split from F-528 after its 50-chest density target was implemented. The map and asset kits already scatter pickup_* meshes, but MIRE has no host-authoritative ordinary-item world-pickup component/service: only Haulable.request_pickup exists, for two-person carried objects. Build a stable seed-derived loose-loot placement path, host-validate pickup range and inventory capacity, replicate consumed state/rejoin state, and wire FocusPrompt interaction. Preserve the active 2.1d pickup asset lane; do not edit its claimed generator/catalog files until released.
 
 ---
-
-### F-537 · macOS: the game process can outlive its window because Steam is never shut down and nothing guarantees exit — **fixed**
-
-**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by duska7668b
-
-Every quit path in the game is a bare `get_tree().quit()` — ui/frontend/frontend.gd:143,151,
-ui/menu/main_menu.gd:176, autoload/debug_console.gd:324 — and nothing anywhere handles
-NOTIFICATION_WM_CLOSE_REQUEST. More importantly `Steam.steamShutdown()` is never called: SteamLobby
-calls `steamInitEx` (autoload/steam_lobby.gd:139) on demand and has no shutdown counterpart, so the
-Steam API's own threads and the macOS overlay hook are still live when the SceneTree finalises. That
-is the classic shape of a macOS build whose window disappears while the process stays in the
-background holding the GPU and the audio device. There is also no backstop: if any exit-time step
-blocks (a Steam thread, an in-flight WorkerThreadPool mesh job, a Jolt teardown), no GDScript is
-running any more and nothing can force the process down.
-
-A frontend-only exit does terminate cleanly (verified: launched the release app, sent the Apple quit
-event, process gone), and SIGTERM from a `--host` run also exits in under a second, so this is not a
-deterministic hang at HEAD — it is a missing guarantee. The fix is an ownership of the close path
-plus a hard watchdog, not a repro-chase.
-
----
-
-
-**Resolved 2026-08-21 by duska7668b.** `AppExit` (`autoload/app_exit.gd`) is now the only supported
-way to end the game. It takes the close request itself with `set_auto_accept_quit(false)`, tears down
-in dependency order — NetTransport first so the peer's Steam-side close lands while the API is still
-initialised, then `SteamLobby.shutdown()`, which leaves the lobby, pumps `run_callbacks()` once so
-the leave goes out, and finally calls the `steamShutdown()` that had no caller anywhere in the repo.
-All four bare `get_tree().quit()` call sites now route through it, and
-`tools/app_exit_check.gd` fails the build if a new one appears.
-
-The guarantee is a detached watchdog armed *before* any teardown runs: `/bin/sh -c 'sleep 8; ...
-kill -9 <pid>'`. A separate process rather than a Thread, because a thread lives inside the process
-that is trying to die and is subject to the same finalisation that would be wedging it. It is never
-disarmed, because the window it covers — servers, audio device, Steam's threads — opens *after*
-`_exit_tree`, so cancelling it there would cancel it a moment before it was needed. It re-checks
-`ps -p <pid> -o comm=` against our own executable name before firing, so a recycled PID is not shot;
-both directions of that guard were verified directly (matching name killed, mismatched name spared).
-
-Verified on macOS 27 / Apple M5 Pro: a real windowed `--host` run driven by an Apple quit event
-logged `[info] ui: quitting` and exited in 3 seconds, with the watchdog observed armed and carrying
-the correct executable name (`/bin/sh -c sleep 8.0; [ "$(ps -p 57647 -o comm= …)" = "Godot" ] &&
-kill -9 57647`) and then expiring harmlessly. `tools/app_exit_check.gd` passes 6/6.
-
-Note the trade this makes: with `auto_accept_quit` off, AppExit is load-bearing — if it ever fails to
-load, nothing accepts the close request and the window will not close. That is why the check asserts
-the autoload's presence and `PROCESS_MODE_ALWAYS` rather than only its behaviour.
 
 ### F-544 · Three DESIGN §4.5 Attunement promises name systems that do not exist — Ward turrets, taunts, and station tiers
 
@@ -3300,6 +3120,221 @@ is how a red check becomes two red checks.
 ---
 
 ## Resolved
+
+### F-537 · macOS: the game process can outlive its window because Steam is never shut down and nothing guarantees exit — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by duska7668b
+
+Every quit path in the game is a bare `get_tree().quit()` — ui/frontend/frontend.gd:143,151,
+ui/menu/main_menu.gd:176, autoload/debug_console.gd:324 — and nothing anywhere handles
+NOTIFICATION_WM_CLOSE_REQUEST. More importantly `Steam.steamShutdown()` is never called: SteamLobby
+calls `steamInitEx` (autoload/steam_lobby.gd:139) on demand and has no shutdown counterpart, so the
+Steam API's own threads and the macOS overlay hook are still live when the SceneTree finalises. That
+is the classic shape of a macOS build whose window disappears while the process stays in the
+background holding the GPU and the audio device. There is also no backstop: if any exit-time step
+blocks (a Steam thread, an in-flight WorkerThreadPool mesh job, a Jolt teardown), no GDScript is
+running any more and nothing can force the process down.
+
+A frontend-only exit does terminate cleanly (verified: launched the release app, sent the Apple quit
+event, process gone), and SIGTERM from a `--host` run also exits in under a second, so this is not a
+deterministic hang at HEAD — it is a missing guarantee. The fix is an ownership of the close path
+plus a hard watchdog, not a repro-chase.
+
+---
+
+
+**Resolved 2026-08-21 by duska7668b.** `AppExit` (`autoload/app_exit.gd`) is now the only supported
+way to end the game. It takes the close request itself with `set_auto_accept_quit(false)`, tears down
+in dependency order — NetTransport first so the peer's Steam-side close lands while the API is still
+initialised, then `SteamLobby.shutdown()`, which leaves the lobby, pumps `run_callbacks()` once so
+the leave goes out, and finally calls the `steamShutdown()` that had no caller anywhere in the repo.
+All four bare `get_tree().quit()` call sites now route through it, and
+`tools/app_exit_check.gd` fails the build if a new one appears.
+
+The guarantee is a detached watchdog armed *before* any teardown runs: `/bin/sh -c 'sleep 8; ...
+kill -9 <pid>'`. A separate process rather than a Thread, because a thread lives inside the process
+that is trying to die and is subject to the same finalisation that would be wedging it. It is never
+disarmed, because the window it covers — servers, audio device, Steam's threads — opens *after*
+`_exit_tree`, so cancelling it there would cancel it a moment before it was needed. It re-checks
+`ps -p <pid> -o comm=` against our own executable name before firing, so a recycled PID is not shot;
+both directions of that guard were verified directly (matching name killed, mismatched name spared).
+
+Verified on macOS 27 / Apple M5 Pro: a real windowed `--host` run driven by an Apple quit event
+logged `[info] ui: quitting` and exited in 3 seconds, with the watchdog observed armed and carrying
+the correct executable name (`/bin/sh -c sleep 8.0; [ "$(ps -p 57647 -o comm= …)" = "Godot" ] &&
+kill -9 57647`) and then expiring harmlessly. `tools/app_exit_check.gd` passes 6/6.
+
+Note the trade this makes: with `auto_accept_quit` off, AppExit is load-bearing — if it ever fails to
+load, nothing accepts the close request and the window will not close. That is why the check asserts
+the autoload's presence and `PROCESS_MODE_ALWAYS` rather than only its behaviour.
+
+**Resolved 2026-08-22 by hollowbfcf67.** Bookkeeping — resolved 2026-08-21 by duska7668b; the entry already carries the account. `AppExit`
+owns the close path with `set_auto_accept_quit(false)` and tears down NetTransport then
+`SteamLobby.shutdown()` (which finally calls the `steamShutdown()` that had no caller). Re-verified
+in this session's full-suite run: `tools/app_exit_check.gd` reports `0 failure(s)` with all six
+assertions passing, including "no shipped script calls get_tree().quit() directly".
+
+### F-522 · The workbench costs logs, so a run cannot craft its first axe — **fixed**
+
+**Area:** content · **Severity:** high · **Found:** 2026-08-22 by tine5ad92a
+
+Sequoyah, from play: "we need to be able to harvest the base resource to get the first tools and
+workbench without any tools."
+
+The opening of a run is a closed loop today:
+
+- `content/buildables/workbench.tres` costs `log` 8 + `fibre_bundle` 2.
+- `log` comes only from `tree`, `wild_tree`, `stump` and `fallen_log`, every one of them
+  `required_tool = 1` (CHOP).
+- The axe that satisfies CHOP is `content/recipes/wooden_axe.tres`, whose `station` is `workbench`.
+
+So you need an axe to build the workbench that makes the axe. Bare hands can gather exactly three
+things — `branch` (bushes, saplings), `fibre_bundle` (nettles, sedge, fibre plants) and the foods —
+and `stone` is no escape either, since every stone source is `required_tool = 2` and the pickaxe is
+also a workbench recipe.
+
+F-487's `tools/resource_reachability_check.gd` did not catch this because it asks only whether
+*something* in the game produces an item, which `log` plainly does. Circular locks need the
+tool gate walked, not just the source list.
+
+Fixed by paying for the tier-1 workbench in what bare hands can actually gather: `branch` 10 +
+`fibre_bundle` 4. It reads as what the description already claims it is — a top on lashed legs —
+and the log cost moves up to `workbench_upgraded`, where a crafted-intermediate cost belongs per
+the tier rule in F-477.
+
+`tools/bootstrap_reachability_check.gd` now closes the graph from an empty inventory forward
+(bare-hands harvests -> buildables affordable -> stations standing -> recipes craftable, repeat)
+and fails if the workbench, the wooden axe or the wooden pickaxe is not reached.
+
+---
+
+**Resolved 2026-08-22 by hollowbfcf67.** Bookkeeping — resolved 2026-08-22 by tine5ad92a. The tier-1 workbench now costs `branch` 10 +
+`fibre_bundle` 4, both bare-hands gatherable, and the log cost moved to `workbench_upgraded`.
+Re-verified in this session's full-suite run: `tools/bootstrap_reachability_check.gd` closes the
+graph from an empty inventory and reports `PASS — 0 failure(s)`, reaching 35 items, 22 buildables
+and 8 stations, including workbench, wooden_axe and wooden_pickaxe from nothing.
+
+### F-519 · Bare hands cannot reach what the prompt says they can harvest — **fixed**
+
+**Area:** combat · **Severity:** high · **Found:** 2026-08-22 by tine5ad92a
+
+Reported from play: "harvesting with bare hands does not work for bushes or twig trees etc".
+
+Two separate causes, one of them a real bug.
+
+**The bug — the bare-hands reach is shorter than the prompt's promise.** `ui/hud/focus_prompt.gd`
+offers a harvestable at its definition's `request_range_m`, which is 3.0 m for every bare-hands
+plant (`bush`, `sapling`, `nettle`, `berry_bush`, `medicinal_herb`, `mushroom_patch`, ...).
+`CombatService._best_target()` reaches `weapon.range_m + HOST_RANGE_TOLERANCE_M`, and the unarmed
+`WeaponDef` built in `autoload/combat_service.gd::_build_unarmed()` had `range_m = 1.8` → 2.55 m,
+with a `vertical_reach_m` of 2.0 rather than the 2.4 every authored weapon uses. So the HUD read
+"Gather Bush with Bare Hands" from 3.0 m while the swing silently missed from 2.55 m out — and
+worse in practice, because a scattered plant's origin sits at the player's feet, 1.5 m below the
+eye the reach is measured from, leaving only sqrt(2.55² − 1.5²) ≈ 2.06 m of horizontal reach.
+Every authored weapon is 2.4–3.1 m and clears 3.0 m with the tolerance, so the mismatch existed
+*only* bare-handed, which is exactly the tier the report is about.
+
+Verified with `tools/bare_hands_reach_check.gd` against `levels/procedural_island.tscn`: before
+the fix, unarmed connected on a bush at 0.6/1.2/1.8 m and missed at 2.4 m; after it, every
+`required_tool = 0` prop the seed scattered is reachable at all four sample distances and the
+swing loop depletes each one (bush 3 swings, sapling 4, nettle 2, herb and onion 1). That check
+is now the regression guard, and it asserts the invariant directly: the unarmed reach plus
+`HOST_RANGE_TOLERANCE_M` must be at least the 3.0 m the prompt offers.
+
+Fixed by giving unarmed `range_m = 2.3` (2.3 + 0.75 = 3.05 ≥ 3.0) and `vertical_reach_m = 2.4`.
+It stays the shortest reach in the game — the cleaver is 2.4 — so this is not a combat buff so
+much as removing an outlier that broke the entry tier of the tool tree.
+
+**Not a bug — "twig trees".** The bare, twiggy `tree_bare_*` exports classify as `wild_tree`
+(`HarvestLibrary.HARVEST_RULES`' `tree_` prefix), whose `required_tool` is CHOP. Bare hands are
+`Tool.NONE` power 1, and `HarvestableDef.damage_from_tool()` floors `1 × 0.34` to 0, so they can
+never chip it. That is F-113's deliberate design ("you need an axe for this", without a tutorial),
+and the prompt correctly says "Needs an axe". If the twiggy silhouette is reading as gatherable
+rather than as a tree, that is an art/legibility call for Sequoyah, not a code fix.
+
+---
+
+**Resolved 2026-08-22 by hollowbfcf67.** Bookkeeping — resolved 2026-08-22 by tine5ad92a. Unarmed is `range_m = 2.3` and
+`vertical_reach_m = 2.4`, so the reach plus HOST_RANGE_TOLERANCE_M (3.05 m) covers the 3.0 m
+`request_range_m` the focus prompt offers. Re-verified in this session's full-suite run:
+`tools/bare_hands_reach_check.gd` reports `BARE_HANDS_REACH failures=0`, with every
+`required_tool = 0` scattered prop reachable and depleting at 0.6/1.2/1.8/2.4 m.
+
+### F-488 · Food gatherables never spawn: apple tree, berry bush and mushroom patch have definitions and art but no HarvestLibrary rule and no scatter entry — **fixed**
+
+**Area:** world · **Severity:** high · **Found:** 2026-08-22 by tine0bda72
+
+`content/harvestables/apple_tree.tres`, `berry_bush.tres` and `mushroom_patch.tres` exist with full
+and depleted GLBs under `assets/gatherables/exports/`, but:
+
+- `systems/harvesting/harvest_library.gd` HARVEST_RULES has no prefix for `apple_tree_*`,
+  `berry_bush_*` or `mushroom_patch_*`, so even a placed one would be inert scenery.
+- No `content/scatter/*.tres` table references any of the three, so procedural worlds place none.
+
+Net effect reported from play: no food gatherables anywhere on the map.
+
+**Resolved 2026-08-22 by tine0bda72.** Three parts:
+
+1. `systems/harvesting/harvest_library.gd` gained rules for `apple_tree_full`, `berry_bush_full` and
+   `mushroom_patch_full` (all `Represent.NODE`, because each has authored picked art that BATCH
+   depletion could not show), with the `*_picked`/`*_harvested` exports explicitly inert.
+2. Scatter entries: apple tree in `grassland_trees`, `heath_trees`, `forest_canopy` and
+   `birchwood_canopy`; berry bush in `forest_undergrowth`, `grassland_shrubs` and `heath_scrub`;
+   mushroom patch in `forest_floor`, `birchwood_floor` and `marsh_floor`. Weights are tuned so each
+   stays under ~1% of placed props — a find, not dressing.
+3. `autoload/harvest_world.gd` no longer refuses to wire a state-swap harvestable that has no
+   `CollisionBody`. Berry bushes and mushroom patches are soft flora `world/gen/prop_collider.gd`
+   deliberately emits no body for, so every scattered one was being dropped on the floor.
+
+Verified headless with `tools/f488_food_scatter_check.gd` (classification, definition/yield
+resolution, and placement counts over 144 chunks on two seeds); `resource_scatter_check`,
+`harvest_batch_check`, `harvest_state_chain_check` and `harvest_restart_check` all still pass.
+
+---
+
+**Resolved 2026-08-22 by hollowbfcf67.** Bookkeeping — resolved 2026-08-22 by tine0bda72; the entry already carries the full account and
+state.json already marked it done. Harvest rules for `apple_tree_full`, `berry_bush_full` and
+`mushroom_patch_full` are in `systems/harvesting/harvest_library.gd`, the three are scattered across
+eleven tables, and `autoload/harvest_world.gd` no longer drops a state-swap harvestable that has no
+CollisionBody. `tools/f488_food_scatter_check.gd` passes in the current full-suite run, as do
+resource_scatter_check, harvest_batch_check and harvest_state_chain_check.
+
+### F-472 · Placement snaps to a fixed world grid with no toggle and no piece-to-piece mating, so a structure lines up only where the grid happens to agree — **fixed**
+
+**Area:** systems/building · **Severity:** medium · **Found:** 2026-08-21 by coil26502f, raised by Sequoyah
+
+`PlacementValidator.snap_transform()` rounds x and z to the piece's authored `snap_step` (1.0 m for
+every shipped piece) and snaps yaw to `rotation_step_degrees`. That is the whole of the snapping
+system, and it has three problems the moment someone tries to build an actual structure:
+
+1. **It is a world grid, not a piece grid.** Two walls line up only because both landed on the same
+   metre lines. A 2.0 m wall on a 1.0 m grid can be placed half-overlapping its neighbour or one
+   metre away from it, and nothing pulls it flush. Nothing mates a floor to a floor edge-to-edge, and
+   nothing stacks a wall on top of a wall except D-056's incidental "the aim ray reports the piece's
+   real top surface", which only works while you are aiming straight down at it.
+2. **There is no way to turn it off.** `snap_step` is authored per piece and read from the `.tres`,
+   so a player who wants a barricade at an angle across a path cannot have one — the grid is not a
+   preference, it is a property of the piece.
+3. **The host re-snaps.** `BuildService._process_place()` re-runs `snap_transform()` on whatever the
+   client sent (`autoload/build_service.gd:194`), which is correct as authority but means any snapping
+   the client invents that the host does not reproduce will visibly move the piece on placement.
+
+Sequoyah's requirement, verbatim: *"they should be able to be placed anywhere but when building
+pieces near each other I want there to be a snapping toggle so that it's easy to build structures
+without little gaps and stuff."* So the target behaviour is free placement by default, with an
+explicit toggle that mates a piece to its neighbours' real edges — not a finer grid.
+
+**Being fixed now** by this session under D-202.
+
+**Resolved 2026-08-22 by hollowbfcf67.** Bookkeeping — the fix shipped under D-202 and the entry's body was never updated past "being fixed
+now". At HEAD, `PlacementValidator.resolve_placement()` is the single path from an aim point to a
+transform, and both the ghost and `BuildService._process_place()` call it. Snapping off leaves the
+aim point untouched on all three axes (yaw still quantises, because yaw never came from the aim);
+snapping on mates to the nearest neighbour face within `SNAP_TOLERANCE_M`, computed in the
+neighbour's own frame with the placed piece's rotated footprint, and falls back to the old world
+grid when there is no neighbour. The toggle travels with the request (`net_request_place` gained a
+`snapping` bool, PROTOCOL_VERSION 22 -> 23), so the host re-resolves in the same mode the client
+showed. `tools/build_snap_check.gd` is the regression guard and asserts idempotence directly.
 
 ### F-552 · Shared worktree has 178 uncommitted artifacts — **fixed**
 
