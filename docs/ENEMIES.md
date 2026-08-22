@@ -6,10 +6,19 @@ built so the five read as a ladder rather than five separate good ideas.
 
 Task 5.2 already shipped five `EnemyDef`s (`crawler`, `bog_crawler`, `strider`, `tusker`,
 `broodcaller`). Those are **stat variants of one model** — D-073 forbade new art on a stats task, so
-all five wear `enemy_crawler.glb` under a tint. They are not deleted and not wasted: they stay as the
-ambient daytime field and as the substitution targets systems already name by id
+all five wear `enemy_crawler.glb` under a `visual_tint` and a scale. They are not deleted and not
+wasted: they are the ambient daytime field and the substitution targets systems already name by id
 (`WaveSpawner.CORRUPTED_ENEMY_ID`, `HUNT_ELITE_ENEMY_ID`). This ladder is the *night* roster, and it
 is the one the player learns.
+
+**F-538 — that daytime sentence was aspirational until it was fixed.** `EnemyWorld.ambient_enemy` was
+a single `StringName` pinned to `crawler`, and the ambient loop is the only thing that spawns during
+the day, so `strider`, `tusker` and `broodcaller` were designed, tuned, tested and then reachable
+from no spawn path in the shipped game. Reported from play as "i still see old default crawlers",
+which is exactly what a 100%-`crawler` day looks like. The field now rolls per body across
+`ambient_variants` with `ambient_enemy` weighted to about 60% of it — a spread that keeps the
+ordinary crawler the common case, rather than a uniform split that would just make every daytime
+enemy a tinted special instead. Proven by section 5 of `tools/ambient_spawn_check.gd`.
 
 ---
 

@@ -22,6 +22,12 @@ extends SceneTree
 ##      that clock burns down even while `ambient_enabled` is false (WaveSpawner owns the field at
 ##      night, and a grace owed at dusk must not still be owed at dawn).
 ##
+##   5. F-538, the composition: the daytime field is a SPREAD of the crawler variants, not one
+##      hardcoded id. `strider`, `tusker` and `broodcaller` were authored and tuned by task 5.2 and
+##      then spawned by nothing — `ambient_enemy` named only `crawler`, and `WaveSpawner` rolls the
+##      night ladder, which is a different set. This asserts every variant is actually reachable and
+##      that the plain crawler is still the common case.
+##
 ##   .agent/bin/agent godot --script tools/ambient_spawn_check.gd
 
 ## Constants are not properties, so `world.get("AMBIENT_RESPAWN_GRACE_SEC")` would hand back null —
@@ -71,6 +77,7 @@ func _run() -> void:
 	await _check_distance_guard()
 	await _check_furthest_fallback()
 	await _check_respawn_grace()
+	await _check_ambient_composition()
 	_report()
 
 
@@ -250,6 +257,65 @@ func _clear(nodes: Array) -> void:
 	for node: Node in nodes:
 		node.queue_free()
 	await _clear_enemies()
+
+
+# ── 5. F-538: the daytime field is a spread, not one id ───────────────────────────────────────────
+
+
+## Two separate claims, because they fail in different directions and a single "did we see variety"
+## assertion would pass on either bug alone.
+##
+##   · Reachability — every id in `ambient_variants` comes out of the roll. This is the F-538 bug
+##     itself: three authored `EnemyDef`s that no spawn path in the shipped game could produce.
+##   · Proportion — the plain `ambient_enemy` still dominates. A uniform swap would "fix" the first
+##     claim and replace the reported symptom with its mirror image: a day where the ordinary crawler
+##     is now the rare one and every body is a tinted special.
+##
+## The roll is sampled directly rather than through `top_up_ambient()`: the population is capped at
+## 24, so a fill-based sample could never separate "a variant is unreachable" from "a variant did not
+## come up in 24 draws". The integration half — that a real fill honours the roll — is the last
+## assertion, which drives the actual producer.
+func _check_ambient_composition() -> void:
+	print("\n== F-538: the ambient field spreads across the crawler variants ==")
+	var base: StringName = StringName(world.get("ambient_enemy"))
+	var variants: Array = world.get("ambient_variants")
+	check(variants.size() >= 3,
+		"more than one crawler variant is authored into the daytime field (%d)" % variants.size())
+	for id: StringName in variants:
+		check(bool(world.call("has_def", id)),
+			"the daytime field names a real EnemyDef: '%s'" % id)
+
+	var samples: int = 4000
+	var counts: Dictionary = {}
+	for _i: int in samples:
+		var id: StringName = StringName(world.call("_roll_ambient_kind"))
+		counts[id] = int(counts.get(id, 0)) + 1
+	print("   sampled %d rolls: %s" % [samples, counts])
+
+	for id: StringName in variants:
+		check(int(counts.get(id, 0)) > 0,
+			"'%s' is reachable from the ambient roll at all — the F-538 bug" % id)
+	var base_share: float = float(counts.get(base, 0)) / float(samples)
+	# The authored weights are 6 against four variants at 1 each, so 0.60 exactly; the window is wide
+	# enough that retuning `ambient_base_weight` within its intent does not fail the check, and tight
+	# enough to catch both "one id again" (1.0) and "flat split" (0.20).
+	check(base_share > 0.40 and base_share < 0.85,
+		"the plain '%s' is still the common case but not the only one (%.2f of the field)"
+			% [base, base_share])
+
+	# The producer, end to end: a real top-up puts something other than the base kind on the ground.
+	# Twelve fills of four rather than one fill, because at a 60% base share a single field of four is
+	# all-crawler about one time in eight and this must not be a check that fails one run in eight.
+	var nest: Node3D = _nest(Vector3(5000.0, 0.0, 5000.0))
+	var seen: Dictionary = {}
+	for _round: int in 12:
+		for body: Node3D in await _fill(4):
+			var definition: Resource = body.get("definition")
+			if definition != null:
+				seen[StringName(definition.get("id"))] = true
+	check(seen.size() > 1,
+		"a real top_up_ambient() field contains more than one kind: %s" % [seen.keys()])
+	await _clear([nest])
 
 
 ## Horizontal distance, matching the guard's own measure — a marker authored at y=0 under a body

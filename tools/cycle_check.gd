@@ -86,8 +86,14 @@ func _check_state_machine_step() -> void:
 	var pool_after: Array = wave_spawner.call("unlocked_enemy_pool")
 	check(pool_after.size() == pool_before.size() + 1,
 		"3. expands the enemy roster (%d -> %d unlocked)" % [pool_before.size(), pool_after.size()])
-	check(pool_after.size() > 0 and pool_after[pool_after.size() - 1] == &"bog_crawler",
-		"the unlocked archetype is content that actually exists (bog_crawler)")
+	# Asserted against the registry, NOT against a hardcoded id: this check named `bog_crawler` until
+	# task 5.11 rewrote `roster_order` into the night ladder and moved `fen_stalker` to the front, at
+	# which point it failed on a change that was entirely correct. What it is actually for is that the
+	# roster never unlocks a name with no `.tres` behind it — a wave that spawns nothing.
+	var unlocked_id: StringName = pool_after[pool_after.size() - 1] if pool_after.size() > 0 else &""
+	var enemy_world: Node = root.get_node_or_null(^"/root/EnemyWorld")
+	check(unlocked_id != &"" and enemy_world != null and bool(enemy_world.call("has_def", unlocked_id)),
+		"the unlocked archetype is content that actually exists (%s)" % unlocked_id)
 
 	# A second advance past roster_order's one authored entry must not crash or duplicate — it is a
 	# legitimate "nothing left to unlock yet" state, same as WaveSpawner's own host_unlock_next_enemy

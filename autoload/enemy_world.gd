@@ -62,6 +62,23 @@ const BOOTSTRAP_DELAY_SEC: float = 0.75
 ## Spread around the marker, so four crawlers do not stack in one spot.
 @export_range(0.0, 20.0, 0.5) var ambient_scatter_m: float = 4.0
 @export var ambient_enemy: StringName = &"crawler"
+## F-538. The rest of the daytime field. `docs/ENEMIES.md` §intro says the task-5.2 stat variants
+## "stay as the ambient daytime field" — they did not: `ambient_enemy` was a single id, so `strider`,
+## `tusker` and `broodcaller` were authored, tuned and tested (`tools/enemy_content_check.gd`) and
+## then reachable from no spawn path in the game. `WaveSpawner` never rolls them either; its
+## `roster_order` is the night LADDER, which is a different set on purpose.
+##
+## These are variants of the crawler and belong here rather than in the night roster: they wear
+## `enemy_crawler.glb` under a `visual_tint` and a scale, so they read as "that one is faster / that
+## one is bigger", not as a new tier. An id absent from `defs` is skipped rather than fatal, so
+## deleting a variant's `.tres` does not brick the daytime loop.
+@export var ambient_variants: Array[StringName] = [&"bog_crawler", &"strider", &"tusker", &"broodcaller"]
+## F-538. Relative weight of `ambient_enemy` against ONE variant when `_roll_ambient_kind()` rolls.
+## 6 against four variants at weight 1 each puts the plain crawler at 60% of the field, so a
+## population of 4 is usually two or three crawlers and one oddity. Deliberately not an even split:
+## variety means a spread that still contains the ordinary case — a day where every crawler is a
+## different tinted special is not more varied, it just moves the sameness somewhere else.
+@export_range(1.0, 20.0, 0.5) var ambient_base_weight: float = 6.0
 ## F-392. No ambient crawler may materialise closer than this to a live player. Reported from play:
 ## "a crawler randomly spawned in the middle of the map right after i respawned during the day" —
 ## the loop picked a nest marker with no regard for who was standing on it, so respawning next to a
@@ -333,10 +350,36 @@ func top_up_ambient() -> int:
 	var attempts: int = 0
 	while live_count() < ambient_population and attempts < ambient_population:
 		attempts += 1
-		if host_spawn(ambient_enemy, _pick_ambient_position(points, players)) == null:
+		if host_spawn(_roll_ambient_kind(), _pick_ambient_position(points, players)) == null:
 			break
 		added += 1
 	return added
+
+
+## F-538. Which kind the next ambient body is: `ambient_enemy` at `ambient_base_weight`, or one of
+## `ambient_variants` at weight 1 each. Rolled per BODY rather than once per top-up, so a field that
+## refills a single corpse still varies instead of locking to whatever the first roll picked.
+##
+## Uses `_ambient_rng` — the same seeded stream the placement scatter draws from, never `randi()`.
+## Ambient spawning is host-only (F-392), so this does not have to agree across peers the way a
+## replicated roll would; it draws from the seeded stream anyway because a run that replays the same
+## way from the same seed is worth more than the two lines it costs, and mixing an unseeded call into
+## a seeded stream is how the placement scatter would quietly stop being reproducible too.
+func _roll_ambient_kind() -> StringName:
+	var pool: Array[StringName] = []
+	for id: StringName in ambient_variants:
+		# Skip silently: a variant whose .tres was deleted or renamed should thin the spread, not
+		# fail the top-up and leave the day empty.
+		if id != ambient_enemy and has_def(id):
+			pool.append(id)
+	if pool.is_empty():
+		return ambient_enemy
+	var total: float = ambient_base_weight + float(pool.size())
+	var roll: float = _ambient_rng.randf() * total
+	if roll < ambient_base_weight:
+		return ambient_enemy
+	var index: int = mini(int(roll - ambient_base_weight), pool.size() - 1)
+	return pool[index]
 
 
 ## F-392. Where one ambient crawler actually lands: a nest marker plus scatter, re-rolled until the
