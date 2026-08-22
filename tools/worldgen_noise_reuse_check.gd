@@ -81,27 +81,32 @@ const SEEDS: Array[int] = [1, 20260819, -77, 0x5EED, 999983]
 ##   written down. A golden that is not deterministic is worse than a stale one: it converts every
 ##   future run into a coin flip and teaches people to re-capture on red without reading why.
 ##
+## - **All twenty re-captured again under F-294 on 2026-08-21.** They were already stale before
+##   F-294's first edit after the later ellipse, river and coast work. The pre-edit and post-edit
+##   processes printed the same current values, proving this allocation-only refactor moved none of
+##   them. The superseded F-340 values remain visible in git history.
+##
 ## See point 3 in the header: these are a tripwire, not a specification of the layout.
 const GOLDEN_POI: Dictionary = {
-	1: "600f400bd3e47afb",
-	20260819: "77cd0f7cbf5ceaaf",
-	-77: "5ecc9980ab085d27",
-	0x5EED: "2f66eb28d0e7aef3",
-	999983: "d863d05a6ca834e4",
+	1: "b81204def3014f86",
+	20260819: "272ea84f1d272e30",
+	-77: "a86dea9418d2e34e",
+	0x5EED: "7f7b2015bab10734",
+	999983: "3fc0766284e00e6c",
 }
 const GOLDEN_BIOME: Dictionary = {
-	1: "8a302f2dff58e302",
-	20260819: "21d757dcd3c3ea98",
-	-77: "4ba377eabfcd1b4c",
-	0x5EED: "a04249ac1903e44b",
-	999983: "f4e7f38be6d643c4",
+	1: "83189fefab77a14d",
+	20260819: "19f2b2c69a631d1b",
+	-77: "4cfb0c76ab2a2481",
+	0x5EED: "30ab9ab8fe10fe60",
+	999983: "9fd1f6a4abf85843",
 }
 const GOLDEN_AMPLITUDES: Dictionary = {
-	1: "eb3b1eb76c641933",
-	20260819: "6ad186f647f1f3ef",
-	-77: "2a16a1ce41d904e5",
-	0x5EED: "aea0961ef28de2c0",
-	999983: "cacb8d21ceb99fd6",
+	1: "2e0419ee10993e78",
+	20260819: "7d3fc29700cac614",
+	-77: "5c59842c51defa07",
+	0x5EED: "320ac802b3110a18",
+	999983: "e76d663a6405e272",
 }
 ## Scatter got its own witness at F-271, which is when it first moved (from e1b81b6cdf97bb57 /
 ## 0ba6f0e311c68e58 / eadd61e208e89c9f / 357d154af9590f1a / 8ff13290e7187f75, when scatter stopped
@@ -109,11 +114,11 @@ const GOLDEN_AMPLITUDES: Dictionary = {
 ## became the biome-shaped surface. A worldgen change that moves it must say so and re-capture; one
 ## that claims to move nothing must leave it alone.
 const GOLDEN_SCATTER: Dictionary = {
-	1: "ddd54fb1041f05dd",
-	20260819: "d91208295ca223f7",
-	-77: "2b77e122cf60a40e",
-	0x5EED: "9dd6749ae9585b8b",
-	999983: "eedfb82051d38761",
+	1: "ff8ac33911b091a6",
+	20260819: "086c2d2616533850",
+	-77: "68d7925b15ae6398",
+	0x5EED: "850f6a9c6c350694",
+	999983: "274150384089271d",
 }
 
 var failures: int = 0
@@ -144,6 +149,7 @@ func _run() -> void:
 
 	_check_equivalence()
 	_check_adoption()
+	_check_seed_geometry()
 	_check_layout_unchanged()
 	_check_hashes_are_sensitive()
 	_check_poi_determinism()
@@ -225,6 +231,24 @@ func _check_adoption() -> void:
 					mismatches += 1
 		_check(mismatches == 0, "seed %d: adopted and self-built sets agree everywhere" % world_seed,
 			"%d mismatched" % mismatches)
+
+
+## F-294: all geometry that depends only on the seed lives on the reusable island set too.
+func _check_seed_geometry() -> void:
+	print("\n== seed-derived river geometry is built once on NoiseSet ==")
+	for world_seed: int in SEEDS:
+		var set: IslandHeightmap.NoiseSet = IslandHeightmap.make_noise_set(world_seed)
+		var expected: PackedVector2Array = IslandHeightmap.river_polyline(world_seed)
+		_check(set.river_points == expected, "seed %d: cached river polyline matches public API"
+			% world_seed)
+		_check(set.river_segment_vectors.size() == expected.size() - 1
+			and set.river_segment_lengths.size() == expected.size() - 1,
+			"seed %d: every river segment is precomputed once" % world_seed)
+		var total: float = 0.0
+		for index in range(expected.size() - 1):
+			total += expected[index].distance_to(expected[index + 1])
+		_check(set.river_total_length == total,
+			"seed %d: cached river length is bit-identical" % world_seed)
 
 
 ## The tripwire. Same hashes as the recorded ones, or something moved the world — see the

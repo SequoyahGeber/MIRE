@@ -1046,11 +1046,16 @@ static func islet_centres(world_seed: int) -> Array[Vector2]:
 ## the mask fades the carve out at the real shoreline so the overshoot costs nothing. Two bends
 ## give the line a reason to exist before the warp bends it further.
 static func river_polyline(world_seed: int) -> PackedVector2Array:
+	return _river_polyline_from_lobes(world_seed, lobes(world_seed))
+
+
+## `river_polyline()` from the lobe list already carried by a `NoiseSet` (F-294).
+static func _river_polyline_from_lobes(world_seed: int,
+		lobe_list: Array[Vector4]) -> PackedVector2Array:
 	var mixed: int = (world_seed ^ RIVER_SALT) & 0x7FFFFFFF
 	var source_dir := Vector2(1.0, 0.0)
 	var source_offset: float = ISLAND_RADIUS * LOBE_BODY_RADIUS * 0.5
 	var best_reach: float = 0.0
-	var lobe_list: Array[Vector4] = lobes(world_seed)
 	for index in range(1, lobe_list.size()):
 		var lobe: Vector4 = lobe_list[index]
 		var centre := Vector2(lobe.x, lobe.y)
@@ -1099,9 +1104,22 @@ static func river_track(bent: Vector2, world_seed: int) -> Vector2:
 ## and measured at the same order: hoisting the line out of the loop took a seed's sheet from ~470 ms
 ## to well under half that.
 static func river_track_on(points: PackedVector2Array, bent: Vector2) -> Vector2:
+	var segment_vectors: Array[Vector2] = []
+	var segment_lengths: Array[float] = []
 	var total_length: float = 0.0
 	for index in range(points.size() - 1):
-		total_length += points[index].distance_to(points[index + 1])
+		var segment: Vector2 = points[index + 1] - points[index]
+		var segment_length: float = segment.length()
+		segment_vectors.append(segment)
+		segment_lengths.append(segment_length)
+		total_length += segment_length
+	return _river_track_precomputed(points, segment_vectors, segment_lengths, total_length, bent)
+
+
+## River projection against geometry precomputed once on `NoiseSet` (F-294).
+static func _river_track_precomputed(points: PackedVector2Array,
+		segment_vectors: Array[Vector2], segment_lengths: Array[float],
+		total_length: float, bent: Vector2) -> Vector2:
 	if total_length <= 0.0:
 		return Vector2(-1.0, INF)
 
@@ -1110,9 +1128,8 @@ static func river_track_on(points: PackedVector2Array, bent: Vector2) -> Vector2
 	var walked: float = 0.0
 	for index in range(points.size() - 1):
 		var a: Vector2 = points[index]
-		var b: Vector2 = points[index + 1]
-		var segment: Vector2 = b - a
-		var segment_length: float = segment.length()
+		var segment: Vector2 = segment_vectors[index]
+		var segment_length: float = segment_lengths[index]
 		var to_point: Vector2 = bent - a
 		var projection: float = clampf(to_point.dot(segment) / (segment_length * segment_length),
 			0.0, 1.0)
@@ -1190,8 +1207,9 @@ static func river_water_surface(t: float) -> float:
 	return maxf(lerpf(RIVER_BED_SOURCE, RIVER_BED_MOUTH, t) + RIVER_WATER_DEPTH, 0.0)
 
 
-static func _river_channel(bent: Vector2, world_seed: int, wander: float = 0.0) -> Vector3:
-	var track: Vector2 = river_track(bent, world_seed)
+static func _river_channel(bent: Vector2, set: NoiseSet, wander: float = 0.0) -> Vector3:
+	var track: Vector2 = _river_track_precomputed(set.river_points, set.river_segment_vectors,
+		set.river_segment_lengths, set.river_total_length, bent)
 	if track.x < 0.0:
 		return NO_CHANNEL
 	var best_t: float = track.x
@@ -1346,6 +1364,10 @@ class NoiseSet:
 	var lobe_list: Array[Vector4] = []
 	var islet_list: Array[Vector2] = []
 	var hill_list: Array[Hill] = []
+	var river_points: PackedVector2Array = PackedVector2Array()
+	var river_segment_vectors: Array[Vector2] = []
+	var river_segment_lengths: Array[float] = []
+	var river_total_length: float = 0.0
 
 
 ## Everything about a point that does NOT depend on which biome it is in, computed once: the
@@ -1379,9 +1401,9 @@ class Shape:
 	##
 	## Cached here because the carve is applied TWICE per biome-shaped sample — once to the continent
 	## the biome is classified from, once to the finished surface — and the channel is a function of
-	## `bent` and `world_seed` alone, so the two applications cannot disagree. Walking the polyline
-	## twice was measured at roughly a third of a sample's cost: `_river_channel()` rebuilds the
-	## polyline (which rebuilds `lobes()`), sums its length and then walks its segments again.
+	## `bent` and the seed geometry on `NoiseSet` alone, so the two applications cannot disagree.
+	## F-294 hoisted the polyline, segment vectors, lengths and total onto that set; this per-point
+	## projection now allocates nothing and walks the segments only once.
 	var channel: Vector3 = NO_CHANNEL
 
 
@@ -1400,6 +1422,13 @@ static func _make_shape_noise_set(world_seed: int) -> NoiseSet:
 	set.lobe_list = lobes(world_seed)
 	set.islet_list = islet_centres(world_seed)
 	set.hill_list = hills(world_seed)
+	set.river_points = _river_polyline_from_lobes(world_seed, set.lobe_list)
+	for index in range(set.river_points.size() - 1):
+		var segment: Vector2 = set.river_points[index + 1] - set.river_points[index]
+		var segment_length: float = segment.length()
+		set.river_segment_vectors.append(segment)
+		set.river_segment_lengths.append(segment_length)
+		set.river_total_length += segment_length
 	return set
 
 
@@ -1466,7 +1495,7 @@ static func shape_into(x: float, z: float, set: NoiseSet, world_seed: int, out: 
 	out.raw_continent = ((set.base_noise.get_noise_2d(x, z) * BASE_NOISE_WEIGHT + LAND_BIAS)
 		* HEIGHT_SCALE + _hill_lift(out.bent, set.hill_list)) * out.mask \
 		- OCEAN_FLOOR_DEPTH * offshore * offshore * offshore
-	out.channel = _river_channel(out.bent, world_seed, coast)
+	out.channel = _river_channel(out.bent, set, coast)
 
 
 ## The carved continent from an already-filled `Shape` — what `continent()` returns.
@@ -1522,9 +1551,8 @@ static func height(x: float, z: float, world_seed: int,
 
 ## Same result as `height()`, sampled through a `NoiseSet` the caller built once via
 ## `make_noise_set()` instead of six fresh `FastNoiseLite` constructions per call (F-241).
-## `world_seed` is still required alongside `set`: the island mask (`lobes`/`islet_centres`) and
-## the river carve (`_river_channel` -> `river_polyline`) derive their geometry from it directly via
-## integer mixing, not from any noise field, so it is not something the noise set alone determines.
+## `world_seed` remains in the public signature for symmetry with the bare API and its callers.
+## All seed-derived geometry is already cached on `set` (F-294).
 static func height_from_set(x: float, z: float, set: NoiseSet, world_seed: int,
 		detail_amplitude: float = 1.0, ridge_amplitude: float = 1.0) -> float:
 	var shape := Shape.new()

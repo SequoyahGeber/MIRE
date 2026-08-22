@@ -306,23 +306,11 @@
       "task": "5.11",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
     },
-    "tools/worldgen_noise_reuse_check.gd": {
-      "agent": "quill3c83cf",
-      "at": "2026-08-22T02:35:28+00:00",
-      "task": "F-294",
-      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
-    },
     "ui/frontend/graphics_settings_page.gd": {
       "agent": "galedc2f76",
       "at": "2026-08-22T02:36:19+00:00",
       "task": "F-503",
       "token": "CODEX_SESSION_ID:01a02752-64f4-7b03-88cb-24234c204f6e"
-    },
-    "world/gen/island_heightmap.gd": {
-      "agent": "quill3c83cf",
-      "at": "2026-08-22T02:35:28+00:00",
-      "task": "F-294",
-      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
     },
     "world/mire/mire_grid.gd": {
       "agent": "ember5da2c4",
@@ -385,22 +373,6 @@
       "notes": [],
       "started": "2026-08-22T01:08:05+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
-    },
-    "F-294": {
-      "agent": "quill3c83cf",
-      "files": [
-        "world/gen/island_heightmap.gd",
-        "tools/worldgen_noise_reuse_check.gd"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-22T02:35:28+00:00",
-          "by": "quill3c83cf",
-          "text": "Pre-edit check: equivalence/adoption/order tests pass; 20 golden hashes are already stale after later worldgen commits. Preserve the current measured hashes across this refactor and do not bless unrelated output drift."
-        }
-      ],
-      "started": "2026-08-22T02:35:28+00:00",
-      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
     },
     "F-469": {
       "agent": "coil26502f",
@@ -4601,6 +4573,13 @@
       "task": "F-445",
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     },
+    "tools/worldgen_noise_reuse_check.gd": {
+      "agent": "quill3c83cf",
+      "at": "2026-08-22T02:37:27+00:00",
+      "hash": "06925b12665c2302383b225c3d52eaa1498e4ec68be25460183fce3d85e1b33d",
+      "task": "F-294",
+      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
+    },
     "ui/building/build_bar.gd": {
       "agent": "galee581ee",
       "at": "2026-08-22T00:53:18+00:00",
@@ -4882,11 +4861,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:3a3eca72-922f-49db-aa07-af9f0f3a5b81"
     },
     "world/gen/island_heightmap.gd": {
-      "agent": "vaneabd52b",
-      "at": "2026-08-22T00:14:23+00:00",
-      "hash": "7eb2b76b7427590619b1fc89c2e40853b659ff654b9fe966f003709ca22b183b",
-      "task": "F-478",
-      "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
+      "agent": "quill3c83cf",
+      "at": "2026-08-22T02:37:27+00:00",
+      "hash": "2d8576a9347a62f21aae3c8ad96926627718992ac70c1f7df5a372f12ace1586",
+      "task": "F-294",
+      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
     },
     "world/gen/poi_def.gd": {
       "agent": "tine0bda72",
@@ -4973,7 +4952,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:120f1976-6c96-46a1-8784-38dd75780df4"
     }
   },
-  "rev": 1116,
+  "rev": 1117,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9133,9 +9112,11 @@
       "title": "Nothing enumerates and runs the tools/ check suite, so a red check sits at HEAD indefinitely \u2014 two were red for days and a third was asserting nothing"
     },
     "F-294": {
+      "done_at": "2026-08-22T02:37:27+00:00",
+      "done_by": "quill3c83cf",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Every surface sample allocates two or three Arrays inside island_heightmap.gd \u2014 lobes(), islet_centres() and river_polyline() are rebuilt per point, and F-274 doubled the river walk"
     },

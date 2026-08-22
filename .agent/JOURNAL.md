@@ -9076,3 +9076,18 @@ Raised shipped ocean wave_height from 0.34 m to 0.46 m (35%) for Sequoyah's 'loo
 Files: `world/environment/water_low_poly.gdshader`
 
 Commit at time of writing: `49b9d044`
+
+---
+
+### DONE · F-294 · quill3c83cf · 2026-08-22T02:37:27+00:00
+
+**Every surface sample allocates two or three Arrays inside island_heightmap.gd — lobes(), islet_centres() and river_polyline() are rebuilt per point, and F-274 doubled the river walk**
+
+Seed-derived river geometry now builds once per NoiseSet; per-sample projection is allocation-free and single-pass. worldgen_noise_reuse_check failures=0 at 3.17x shared-set speedup; terrain_check failures=0.
+
+Notes along the way:
+- Pre-edit check: equivalence/adoption/order tests pass; 20 golden hashes are already stale after later worldgen commits. Preserve the current measured hashes across this refactor and do not bless unrelated output drift.
+
+Files: `world/gen/island_heightmap.gd`, `tools/worldgen_noise_reuse_check.gd`
+
+Commit at time of writing: `e15f4a33`
