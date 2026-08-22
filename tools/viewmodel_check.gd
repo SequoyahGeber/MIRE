@@ -29,6 +29,7 @@ const CHOP_ITEMS: Dictionary[StringName, bool] = {
 }
 ## How finely the whole swing is walked when looking for near-plane clipping.
 const SWING_SAMPLES: int = 24
+const PROBE_ATTUNEMENT: StringName = &"warden"
 
 ## |cheek · view| above this means the flat face is square enough to the camera to read as "the side
 ## of the axe is facing the player" (F-073). Calibrated against both ends rather than guessed: the
@@ -52,9 +53,15 @@ func _initialize() -> void:
 
 func _run() -> void:
 	root.size = Vector2i(1280, 720)
-	var packed: PackedScene = load(
-		str(ProjectSettings.get_setting("application/run/main_scene", ""))
-	) as PackedScene
+	var scene_path: String = str(ProjectSettings.get_setting("application/run/main_scene", ""))
+	# F-505 made the frontend the shipped main scene. This check needs the frontend's declared
+	# gameplay world because its subject is the real owning player and camera, not menu dressing.
+	if scene_path == "res://levels/frontend.tscn":
+		var frontend_script: Script = load("res://ui/frontend/frontend.gd") as Script
+		if frontend_script != null:
+			scene_path = String(frontend_script.get_script_constant_map().get(
+				"WORLD_SCENE_PATH", scene_path))
+	var packed: PackedScene = load(scene_path) as PackedScene
 	if packed == null:
 		push_error("FAIL: no main scene")
 		quit(1)
@@ -94,6 +101,7 @@ func _run() -> void:
 	await process_frame
 	check(viewmodel.call("current_instance") != null,
 		"and that item's viewmodel mesh is instantiated on screen")
+	await _dismiss_class_picker()
 
 	var registry: Node = root.get_node_or_null(^"Registry")
 	var missing: PackedStringArray = PackedStringArray()
@@ -267,7 +275,21 @@ func _run() -> void:
 		"no held item crosses the camera near plane during its swing (%s)" % ", ".join(clipped))
 
 	# ── the swing, one frame per phase ────────────────────────────────────────────────────────────
+	# F-510's framing evidence is item-pinned, not slot-pinned: dev loadout order has changed before,
+	# while the screenshot being guarded is specifically the repair hammer.
+	ui.call("select_hotbar_slot", 3)
+	await process_frame
+	await process_frame
+	check(StringName(viewmodel.call("held_item_id")) == &"repair_hammer",
+		"framing evidence selects the repair hammer by today's loadout identity")
+	var framed_hammer: ItemDef = registry.call("get_item", &"repair_hammer") as ItemDef
+	check(framed_hammer != null and framed_hammer.grip_scale <= 0.25,
+		"repair hammer framing stays below one-quarter model scale (%.3f)"
+		% (framed_hammer.grip_scale if framed_hammer != null else INF))
 	await _shoot("/tmp/mire_viewmodel_idle.png", "idle")
+	root.size = Vector2i(2560, 720)
+	await _shoot("/tmp/mire_viewmodel_idle_ultrawide.png", "idle ultrawide")
+	root.size = Vector2i(1280, 720)
 	var rest_position: Vector3 = viewmodel.position
 	check(int(combat.call("request_attack")) > 0, "the swing starts")
 	await _shoot("/tmp/mire_viewmodel_windup.png", "wind-up")
@@ -310,6 +332,18 @@ func _shoot(path: String, label: String) -> void:
 		failures += 1
 		return
 	print("VIEWMODEL_RENDER %s (%s)" % [path, label])
+
+
+func _dismiss_class_picker() -> void:
+	var service: Node = root.get_node_or_null(^"/root/AttunementService")
+	if service != null and String(service.call(&"local_selection")).is_empty():
+		service.call(&"request_select", PROBE_ATTUNEMENT)
+		await process_frame
+	var picker: Node = root.get_node_or_null(^"/root/AttunementUI")
+	if picker != null and picker.has_method(&"is_open") and bool(picker.call(&"is_open")):
+		picker.call(&"_close_picker")
+	if picker is CanvasLayer:
+		(picker as CanvasLayer).visible = false
 
 
 ## Every mesh AABB corner under `node`, in `node`'s OWN space. An AABB is enough here: it strictly

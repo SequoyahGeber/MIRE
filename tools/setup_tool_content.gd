@@ -51,8 +51,8 @@ const GRIPS: Dictionary[StringName, Dictionary] = {
 		"scale": 0.3, "style": 0},
 	&"arrow": {"pos": Vector3(0.283, -0.283, -0.191), "rot": Vector3(57.4, 138.1, -55.9),
 		"scale": 0.38, "style": 0},
-	&"repair_hammer": {"pos": Vector3(0.1597, -0.3941, -0.5003), "rot": Vector3(6.9, 117.2, 20.5),
-		"scale": 0.31, "style": 2},
+	&"repair_hammer": {"pos": Vector3(0.205, -0.425, -0.59), "rot": Vector3(6.9, 117.2, 20.5),
+		"scale": 0.235, "style": 2},
 	&"iron_sword": {"pos": Vector3(0.1839, -0.3656, -0.4897), "rot": Vector3(23.4, 22.5, -11.9),
 		"scale": 0.28, "style": 3},
 }

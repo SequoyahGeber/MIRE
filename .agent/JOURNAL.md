@@ -9391,3 +9391,15 @@ Notes along the way:
 Files: `autoload/graphics_quality.gd`, `autoload/settings_service.gd`, `ui/frontend/graphics_settings_page.gd`, `tools/settings_check.gd`, `tools/settings_screen_check.gd`
 
 Commit at time of writing: `f515c98a`
+
+---
+
+### DONE · F-510 · ivy9f49c8 · 2026-08-22T03:12:39+00:00
+
+**Repair hammer viewmodel fills the right third of an ultrawide frame**
+
+Repair hammer reframed to scale 0.235 at (0.205,-0.425,-0.59); Forward+ 16:9 and 32:9 captures inspected. Identity, scale bound, swing, orientation and near-plane checks pass; only tracked F-481 apple CHOP assertion remains.
+
+Files: `content/items/repair_hammer.tres`, `tools/setup_tool_content.gd`, `tools/viewmodel_check.gd`
+
+Commit at time of writing: `70eb7125`
