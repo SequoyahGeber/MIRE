@@ -942,12 +942,54 @@ func _build_asset_group(
 		group_holder.add_child(instance)
 		slots.append(multimesh)
 
+	# F-586: the batched branch is where every rock on the island lives, and until now it built
+	# visuals and nothing else — so boulders, rock clusters, stumps and fallen logs were walked
+	# straight through. Reported from a run as "theres some rocks and stuff that i could walk
+	# through". Built here, with the group and unconditionally, NOT gated on `with_proxies`: a
+	# decorative group is deliberately identical on both sides of the collision ring, which is the
+	# assumption `_retarget_chunk()` relies on when it skips decorative assets entirely.
+	_build_batch_collision(group_holder, kit, asset_id, mesh_parts, transforms)
+
 	if not harvestable:
 		return
 	for index: int in placements.size():
 		_build_batch_holder(
 			group_holder, placements[index], asset_id, kit, slots, mesh_parts, transforms[index], index
 		)
+
+
+## One [StaticBody3D] for a whole batched group, carrying one shape per instance (F-586).
+##
+## The MultiMesh draws N copies of a mesh and owns no nodes, so nothing in the batched path had
+## anywhere to hang collision. It gets one body rather than N: a body per rock would put thousands
+## of physics nodes in a chunk, while a body with thousands of child shapes is one broadphase entry
+## per shape and no node overhead beyond the shapes themselves — the same trade the MultiMesh makes
+## on the render side.
+##
+## Which props this actually costs anything for is decided by the fitter, not here, and that is the
+## whole reason "give every world asset a collision box" is safe to do on a path that runs to tens
+## of thousands of instances: `PropCollider.fit()` returns EMPTY for foliage surfaces and for
+## anything shorter than [constant COLLIDER_MIN_HEIGHT_M], so grass, ferns, moss, reeds and flowers
+## — the overwhelming bulk of scatter — build no body at all, and a batched tree gets its trunk
+## band and never its canopy (the standing directive, F-348/F-390).
+func _build_batch_collision(
+	group_holder: Node3D, kit: String, asset_id: StringName, mesh_parts: Array,
+	transforms: Array[Transform3D]
+) -> void:
+	var fit: Dictionary = _collider_for(kit, String(asset_id), mesh_parts)
+	if fit.is_empty():
+		return
+	var body := StaticBody3D.new()
+	body.name = "CollisionBody"
+	body.set_meta(&"asset", asset_id)
+	group_holder.add_child(body)
+	for placement: Transform3D in transforms:
+		var shape_node: CollisionShape3D = PROP_COLLIDER.make_shape(fit)
+		# The fit is in the prop's own space and `transforms` are already in the group holder's
+		# space (it sits at identity under the chunk holder), so composing the two puts the shape
+		# exactly where that instance's mesh is drawn — including its yaw and its uniform scale.
+		shape_node.transform = placement * shape_node.transform
+		body.add_child(shape_node)
 
 
 func _transform_for(placement: Dictionary) -> Transform3D:
@@ -987,22 +1029,10 @@ func _build_node_holder(
 	if not fit.is_empty():
 		var body := StaticBody3D.new()
 		body.name = "CollisionBody"
-		var shape_node := CollisionShape3D.new()
 		# F-434: a prop that lies down gets a box along its own length, not a disc as wide as it is
-		# long. `_collider_for()` decides which; both keys are authored in the prop's own space, so
-		# the holder's yaw and scale carry the shape with the mesh either way.
-		if StringName(fit.get("shape", &"cylinder")) == &"box":
-			var box := BoxShape3D.new()
-			box.size = fit["size"] as Vector3
-			shape_node.shape = box
-			shape_node.position = fit["center"] as Vector3
-		else:
-			var cylinder := CylinderShape3D.new()
-			cylinder.radius = float(fit["radius"])
-			cylinder.height = float(fit["height"])
-			shape_node.shape = cylinder
-			shape_node.position.y = float(fit["center_y"])
-		body.add_child(shape_node)
+		# long. `_collider_for()` decides which; the shape is authored in the prop's own space, so
+		# the holder's yaw and scale carry it with the mesh either way.
+		body.add_child(PROP_COLLIDER.make_shape(fit))
 		holder.add_child(body)
 
 	parent.add_child(holder)

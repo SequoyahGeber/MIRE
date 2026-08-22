@@ -77,6 +77,31 @@ static func fit_cached(cache: Dictionary, key: String, mesh_parts: Array) -> Dic
 	return shape
 
 
+## One [CollisionShape3D] built from a [method fit] answer, in the PROP's own space — the shape it
+## returns is positioned relative to the prop origin, so a caller places it by composing its own
+## placement transform onto `shape.transform` (batched scatter) or by parenting it under a holder
+## that already carries that transform (node scatter).
+##
+## F-586: this used to be written out by hand at every call site, three times, and the batched
+## scatter path — every rock and boulder on the generated island — simply never wrote it at all.
+## `fit` returning empty still means "this prop does not collide"; callers check that first.
+static func make_shape(fit_result: Dictionary) -> CollisionShape3D:
+	var node := CollisionShape3D.new()
+	if StringName(fit_result.get("shape", &"cylinder")) == &"box":
+		# A prop that lies down gets a box along its own length, not a disc as wide as it is long.
+		var box := BoxShape3D.new()
+		box.size = fit_result["size"] as Vector3
+		node.shape = box
+		node.position = fit_result["center"] as Vector3
+	else:
+		var cylinder := CylinderShape3D.new()
+		cylinder.radius = float(fit_result["radius"])
+		cylinder.height = float(fit_result["height"])
+		node.shape = cylinder
+		node.position.y = float(fit_result["center_y"])
+	return node
+
+
 ## True when this prop has any foliage on it at all — the question an AUTHORED map asks, because a
 ## layout's own collider is only suspect for props with a canopy. Solid props keep whatever the
 ## mapgen authored for them.

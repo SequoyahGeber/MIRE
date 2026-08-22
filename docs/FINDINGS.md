@@ -3228,30 +3228,6 @@ regrow the way F-580's stat list did.
 
 ---
 
-### F-586 · Scattered rocks and boulders have no collider at all — you walk through them
-
-**Area:** world · **Severity:** high · **Found:** 2026-08-22 by wick1c650c
-
-Player-reported from a real run: "theres some rocks and stuff that i could walk through".
-
-`world/gen/resource_scatter_field.gd` builds a scattered group two ways. `_build_node_holder()`
-(NODE harvestables only, inside the collision ring) fits a shape through
-`world/gen/prop_collider.gd` and gives the prop a `StaticBody3D`. Every other scattered prop —
-all decorative scatter, and every BATCH harvestable — goes down `_build_asset_group()`'s MultiMesh
-branch, which builds visuals and harvest proxies and **never builds a collider of any kind**.
-
-That is the entire rock population of the generated island. `content/scatter/forest_rocks.tres`,
-`grassland_rocks`, `highland_rocks`, `heath_stones`, `shore_rocks` and `cliff_rubble` place
-`boulder_e/f/g`, `rock_cluster_d/e` and `mire_mossy_boulder` — none of them harvestable, so none of
-them NODE, so none of them solid. Same for stumps, fallen logs and any batched tree.
-
-The fitter already knows solid from soft: `PropCollider.fit()` returns an EMPTY dictionary for
-foliage and for anything under `COLLIDER_MIN_HEIGHT_M`, so grass, ferns and moss cost nothing and
-a tree gets its trunk only (the standing directive). The gap is purely that the batched branch
-never asks.
-
----
-
 ### F-587 · The Reinforced Workbench is now exactly equal to the bench it replaces, not better
 
 **Area:** content · **Severity:** medium · **Found:** 2026-08-22 by birch1db63e
@@ -3304,7 +3280,98 @@ exists and, since F-575, is finally read by something — this is a second legit
 
 ---
 
+### F-588 · resource_scatter_check's harvest-yield assertion fails at a clean HEAD
+
+**Area:** world · **Severity:** medium · **Found:** 2026-08-22 by wick1c650c
+
+`tools/resource_scatter_check.gd` reports `failures=1` at a clean HEAD:
+
+    FAIL: the real harvest granted its yield exactly once (0 -> 0, +2 expected)
+
+The proxy is built, wired, accepts a lethal `host_apply_damage()` and depletes — every assertion
+around this one passes. What does not happen is the yield landing in `InventoryService`:
+`host_count()` reads 0 both before and after.
+
+Confirmed pre-existing and NOT caused by F-586: `agent baseline --script
+tools/resource_scatter_check.gd` fails identically at 65763cdf, in a throwaway worktree with none
+of F-586's changes in it. Found while regression-running the suite next door to the collider fix.
+
+Note that F-527's resolution note (2026-08-22, birchf37d06) records this same check at
+`failures=0`, so this is a regression since then rather than a long-standing red — worth bisecting
+against the commits landed today rather than reading as an old known failure.
+
+---
+
 ## Resolved
+
+### F-586 · Scattered rocks and boulders have no collider at all — you walk through them — **fixed**
+
+**Area:** world · **Severity:** high · **Found:** 2026-08-22 by wick1c650c
+
+Player-reported from a real run: "theres some rocks and stuff that i could walk through".
+
+`world/gen/resource_scatter_field.gd` builds a scattered group two ways. `_build_node_holder()`
+(NODE harvestables only, inside the collision ring) fits a shape through
+`world/gen/prop_collider.gd` and gives the prop a `StaticBody3D`. Every other scattered prop —
+all decorative scatter, and every BATCH harvestable — goes down `_build_asset_group()`'s MultiMesh
+branch, which builds visuals and harvest proxies and **never builds a collider of any kind**.
+
+That is the entire rock population of the generated island. `content/scatter/forest_rocks.tres`,
+`grassland_rocks`, `highland_rocks`, `heath_stones`, `shore_rocks` and `cliff_rubble` place
+`boulder_e/f/g`, `rock_cluster_d/e` and `mire_mossy_boulder` — none of them harvestable, so none of
+them NODE, so none of them solid. Same for stumps, fallen logs and any batched tree.
+
+The fitter already knows solid from soft: `PropCollider.fit()` returns an EMPTY dictionary for
+foliage and for anything under `COLLIDER_MIN_HEIGHT_M`, so grass, ferns and moss cost nothing and
+a tree gets its trunk only (the standing directive). The gap is purely that the batched branch
+never asks.
+
+---
+
+**Resolved 2026-08-22 by wick1c650c (fixed).** Fixed by wick1c650c.
+
+`ResourceScatterField._build_asset_group()`'s MultiMesh branch now calls the new
+`_build_batch_collision()`, which fits the asset once through `PropCollider` and — when the fit is
+non-empty — gives the group ONE `StaticBody3D` carrying one `CollisionShape3D` per instance,
+composed onto that instance's placement transform. One body rather than one per rock: a body per
+instance would put thousands of physics nodes in a chunk, while a body with N child shapes is N
+broadphase entries and no node overhead beyond the shapes.
+
+Built with the group and deliberately NOT gated on `with_proxies`. A decorative group has to be
+identical on both sides of the collision ring, because that is exactly the assumption
+`_retarget_chunk()` relies on when it skips decorative assets ("decorative: identical either way").
+Gating collision on the ring would have made that comment false and silently dropped colliders on
+every retarget.
+
+The shape-node construction was written out by hand at three call sites, so it moved to
+`PropCollider.make_shape()` and `_build_node_holder()` now uses it too.
+
+Which props this costs anything for is decided by the fitter, not by the new code, and that is what
+makes "every world asset gets a collision box" safe on a path running to tens of thousands of
+instances: `PropCollider.fit()` returns EMPTY for all-foliage surfaces and for anything shorter
+than COLLIDER_MIN_HEIGHT_M, so grass, ferns, moss, reeds and flowers build no body at all. The
+standing trunk-only directive is untouched — a tree still gets its trunk band and never its canopy.
+Measured on the shipped island: 307 shapes across 210 solid groups, out of 1481 batched groups.
+
+Verified with the new `tools/scatter_collision_check.gd`, failures=0. It asserts both halves
+separately: that the fitter calls the six shipped boulder/rock-cluster assets solid and all 87
+all-foliage assets soft, that no tree's radius is measured off its canopy, and that every solid
+batched group the live field builds carries one correctly-positioned shape per drawn instance.
+
+Negative control: with the one `_build_batch_collision()` call disabled, the check fails on
+"every solid batched group has a CollisionBody" and nothing else — so it witnesses this defect
+specifically rather than passing vacuously.
+
+Two traps the check hit while being written, recorded because both look like real failures:
+
+  · `multimesh.get_instance_transform()` reads back as IDENTITY under `--headless` (F-103/F-547) —
+    the transforms live in the RenderingServer and there is no server. A positional assertion
+    using it "fails" on every group by exactly that group's distance from the origin. Use the
+    `placements` meta part 0 publishes for EnvironmentVfx instead.
+  · the trunk-only rule is about RADIUS, not height. A pine's bole really is solid for 18 m, and a
+    cylinder clipped to COLLIDER_OBSTACLE_HEIGHT_M would let a player walk through the upper
+    trunk. What must never happen is the radius growing out to the canopy, so that is what the
+    check asserts — fitted radius against the prop's full foliage-inclusive half-width.
 
 ### F-584 · tools/dodge_check.gd fails its last assertion on a clean checkout — **fixed**
 
