@@ -351,7 +351,9 @@ func _finish() -> void:
 	# Real imported meshes exercise Godot's dummy renderer in this headless check. These messages
 	# are renderer limitations rather than gameplay failures; every other ERROR remains undeclared.
 	print(("\nENVIRONMENT_VFX_RESEED_CHECK failures=%d" % failures)
-		+ " · EXPECTED_ERROR_PATTERNS=\"Attempting to (initialize the wrong|use an uninitialized) RID"
+		+ " · EXPECTED_ERROR_PATTERNS=\"(Attempting to (initialize the wrong|use an uninitialized)"
+		+ "|Initializing already initialized) RID"
 		+ "|Parameter \\\"(mem|m)\\\" is null|unimplemented base type encountered in renderer scene cull"
+		+ "|Trying to assign value of type 'Nil' to a variable of type 'PackedVector3Array'"
 		+ "|RID allocations? of type .*DummyMesh.* leaked at exit|resources still in use at exit\"")
 	quit(1 if failures > 0 else 0)

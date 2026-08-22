@@ -9178,3 +9178,30 @@ Notes along the way:
 Files: `autoload/environment_vfx.gd`, `tools/environment_vfx_reseed_check.gd`
 
 Commit at time of writing: `692abbc7`
+
+---
+
+### REOPEN · F-312 · quill3c83cf · 2026-08-22T02:46:25+00:00
+
+**tools/environment_vfx_reseed_check.gd prints 15 undeclared ERROR: lines at a clean HEAD while reporting failures=0**
+
+Reopened (was marked done 2026-08-22 by quill3c83cf).
+
+A subsequent rerun exposed intermittent dummy-renderer variants the first close-out did not declare: 'Initializing already initialized RID' and the downstream typed Nil collision_faces SCRIPT ERROR. Reopening to make the declared family complete.
+
+Commit at time of writing: `ae346fe9`
+
+---
+
+### DONE · F-312 · quill3c83cf · 2026-08-22T02:47:38+00:00
+
+**tools/environment_vfx_reseed_check.gd prints 15 undeclared ERROR: lines at a clean HEAD while reporting failures=0**
+
+Follow-up declaration covers both intermittent dummy-renderer variants. Two consecutive reseed runs failures=0; every ERROR/SCRIPT ERROR matched, and invalid absolute-root errors remain absent.
+
+Notes along the way:
+- Expand only the dummy-renderer declaration to cover its intermittent initialization and typed-Nil downstream variants; production detached-node errors remain fixed rather than declared.
+
+Files: `tools/environment_vfx_reseed_check.gd`
+
+Commit at time of writing: `ae346fe9`
