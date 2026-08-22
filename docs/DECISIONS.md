@@ -6955,8 +6955,39 @@ are foreshortened almost to nothing), and only the raised shot shows the scatter
 
 ---
 
-### D-207 · 2026-08-21 · The Mire tick moves to a worker thread, and that is NOT an authority change
+### D-207 · 2026-08-21 · Rougher water is steeper facets, not taller waves
 
+Sequoyah, on the sea from D-206: *"could we make the waves/angles/roughness of the water a bit more
+aggressive?"* Three things changed in `world/environment/water_low_poly.gdshader`, and only one of
+them is amplitude.
+
+**The aggression is in the angles.** What reads as rough water is the spread of facet normals, not
+the height of the peaks. Two dials do that work. `wave_chop` slides each vertex horizontally along
+its wave's direction of travel — the Gerstner trick in miniature — so vertices ahead of a crest fall
+back into it and the sine becomes a narrow peak over a broad trough. `chop_amount` adds a third,
+faster wave crossing the other two whose wavelength is deliberately close to the ocean mesh's own
+~8 m quad size: it does not resolve cleanly, and the beating against the grid is what breaks the two
+big sines out of the regular corduroy they otherwise render as.
+
+**Amplitude is capped by the shore, not by taste.** `wave_height` went 0.18 → 0.34 m and stopped
+there. These waves are paint on a sheet whose gameplay level is a flat 0 (`water_surface_at()`), so
+amplitude is also how far the sea can climb over the sand without the terrain knowing. Seed 7's
+coast rises about 0.5 m over its first 6 m, so 0.34 m floods roughly four metres of beach and the
+0.62 m this pass first tried floods about seven. Going higher needs the displacement tapered toward
+shore first, and the vertex stage has no shore distance to taper against. **F-499 records that this
+cap is arithmetic off the heightmap and not a rendered frame** — the audit tool could not frame the
+waterline, and that failure is itself unexplained.
+
+**The mesh was not touched, and that bounds everything above.** `levels/procedural_island.tscn` is
+claimed by another agent (F-478), so the ocean stayed at 180 subdivisions over 1400 m. Roughly 8 m
+quads against an 11 m wavelength is the real ceiling on how fine this water can look; if a future
+pass wants genuinely small chop, raising `subdivide_width`/`subdivide_depth` is the lever, and it is
+a vertex-count decision to weigh against the low-end performance target, not a free one.
+
+`tools/ocean_glint_shot.gd` now pins `world_seed = 7`. It did not before, and three consecutive runs
+generated three different islands — frames that cannot be compared to each other are not evidence.
+
+### D-208 · 2026-08-22 · The Mire tick moves to a worker thread, and that is NOT an authority change
 F-363 is the largest single main-thread pass this project has measured — a full 65,536-cell sweep
 costing **~16 ms at saturation and 12-14 ms at 80% fill, every 2 seconds, on the HOST**, where it
 lands on top of everything else the host alone does for a 3-6 player session. On the low-end machine
@@ -7011,36 +7042,7 @@ the other.
 
 Blocked only on the file claim: `world/mire/mire_grid.gd` and `world/mire/mire_grid_sim.gd` have been
 held for task 5.11 through this session. Nothing else about it is open.
-
-
-### D-207 · 2026-08-21 · Rougher water is steeper facets, not taller waves
-
-Sequoyah, on the sea from D-206: *"could we make the waves/angles/roughness of the water a bit more
-aggressive?"* Three things changed in `world/environment/water_low_poly.gdshader`, and only one of
-them is amplitude.
-
-**The aggression is in the angles.** What reads as rough water is the spread of facet normals, not
-the height of the peaks. Two dials do that work. `wave_chop` slides each vertex horizontally along
-its wave's direction of travel — the Gerstner trick in miniature — so vertices ahead of a crest fall
-back into it and the sine becomes a narrow peak over a broad trough. `chop_amount` adds a third,
-faster wave crossing the other two whose wavelength is deliberately close to the ocean mesh's own
-~8 m quad size: it does not resolve cleanly, and the beating against the grid is what breaks the two
-big sines out of the regular corduroy they otherwise render as.
-
-**Amplitude is capped by the shore, not by taste.** `wave_height` went 0.18 → 0.34 m and stopped
-there. These waves are paint on a sheet whose gameplay level is a flat 0 (`water_surface_at()`), so
-amplitude is also how far the sea can climb over the sand without the terrain knowing. Seed 7's
-coast rises about 0.5 m over its first 6 m, so 0.34 m floods roughly four metres of beach and the
-0.62 m this pass first tried floods about seven. Going higher needs the displacement tapered toward
-shore first, and the vertex stage has no shore distance to taper against. **F-499 records that this
-cap is arithmetic off the heightmap and not a rendered frame** — the audit tool could not frame the
-waterline, and that failure is itself unexplained.
-
-**The mesh was not touched, and that bounds everything above.** `levels/procedural_island.tscn` is
-claimed by another agent (F-478), so the ocean stayed at 180 subdivisions over 1400 m. Roughly 8 m
-quads against an 11 m wavelength is the real ceiling on how fine this water can look; if a future
-pass wants genuinely small chop, raising `subdivide_width`/`subdivide_depth` is the lever, and it is
-a vertex-count decision to weigh against the low-end performance target, not a free one.
-
-`tools/ocean_glint_shot.gd` now pins `world_seed = 7`. It did not before, and three consecutive runs
-generated three different islands — frames that cannot be compared to each other are not evidence.
+**Would change my mind:** a measurement showing `MireGridSim.tick()` cheap enough at saturation on
+the low-end target to stay on the frame — `tools/bench_mire.gd` is the instrument and its 22 ms
+ceiling is the line. Or a consumer appearing that genuinely cannot tolerate a one-tick-stale read,
+which would make the ordering rule above the wrong trade rather than a free one.

@@ -2032,17 +2032,17 @@ several times worse on the low-end target — is the biggest thing left. `tools/
 (new) frames why it is worth the thread: this game uses **1.1% of system memory and 2 of 15 logical
 processors**, so there is nothing to trade away by moving a pure function off the frame.
 
-The design decision this finding says it needs is now written: **D-207**. In short — moving
+The design decision this finding says it needs is now written: **D-208**. In short — moving
 `MireGridSim.tick()` to a `WorkerThreadPool` task is NOT an authority change, the §2.2 "Mire grid"
 row is unchanged (host, tick delta broadcast, no new RPC, no `PROTOCOL_VERSION` bump), and the one
-real rule is that `_grid` is always a COMPLETED tick, never a partial one. D-207 also settles what
+real rule is that `_grid` is always a COMPLETED tick, never a partial one. D-208 also settles what
 happens to the synchronous mutators (`host_add_corruption`, `clear_radius`, `host_set_corruption_at`
 apply immediately and supersede an in-flight job, whose result is discarded on landing — the same
 pattern `ChunkStreamer._retire()` already uses) and records why time-slicing was rejected instead.
 
 **So nothing about this is open except the file claim.** `world/mire/mire_grid.gd` and
 `world/mire/mire_grid_sim.gd` have been held for task 5.11 for this whole session. Whoever gets them
-next should take this straight away — the spec is D-207 and the gate is `tools/bench_mire.gd`.
+next should take this straight away — the spec is D-208 and the gate is `tools/bench_mire.gd`.
 
 **What must not happen:** `bench_mire.gd` prints an AMBER line naming this gap on every run, and
 gates regressions at a 22 ms ceiling. Raising `TICK_BUDGET_MS` to silence the amber would convert a
