@@ -9163,3 +9163,18 @@ Notes along the way:
 Files: `systems/wellspring/wellspring.gd`, `systems/extraction/extraction_ship.gd`, `systems/loot/chest.gd`, `tools/environment_vfx_reseed_check.gd`
 
 Commit at time of writing: `fd1e4496`
+
+---
+
+### DONE · F-303 · quill3c83cf · 2026-08-22T02:46:15+00:00
+
+**EnvironmentVfx.foliage_mesh_count is a cumulative dressing tally, so it climbs by a whole island on every procedural reseed**
+
+Renamed the cumulative diagnostic to foliage_dressing_count and asserted its work-counter semantics across reseed. General and reseed VFX checks failures=0.
+
+Notes along the way:
+- Choose the finding's cheap honest exit: rename foliage_mesh_count to foliage_dressing_count. It counts successful per-node dressing visits, including cache hits, accumulates within one current scene, and resets only when the scene changes.
+
+Files: `autoload/environment_vfx.gd`, `tools/environment_vfx_reseed_check.gd`
+
+Commit at time of writing: `692abbc7`

@@ -118,7 +118,7 @@ func _phase_boot(game_state: Node) -> void:
 		+ "these the reseed assertions below would only ever see the planted props")
 	print("BOOT sites=%d fires=%d foliage=%d sway_assets=%d frames=%d" % [
 		_total_sites(), int(vfx.get("fire_source_count")),
-		int(vfx.get("foliage_mesh_count")), int(vfx.get("sway_asset_count")), frames])
+		int(vfx.get("foliage_dressing_count")), int(vfx.get("sway_asset_count")), frames])
 
 
 # ── 2/3 · the shipped trigger ────────────────────────────────────────────────────────────────────
@@ -141,6 +141,7 @@ func _phase_restart(game_state: Node) -> void:
 	check(_holds_site(before, SURVIVOR_POSITION),
 		"the survivor prop registered a site before the restart")
 	var sway_before: int = int(vfx.get("sway_asset_count"))
+	var dressing_before: int = int(vfx.get("foliage_dressing_count"))
 	check(before.size() > 2,
 		"the island itself contributed emitter sites too, so this is not a two-prop toy "
 		+ "(%d sites)" % before.size())
@@ -205,12 +206,14 @@ func _phase_restart(game_state: Node) -> void:
 		"sway_asset_count did not carry the ended island's dressed meshes (%d -> %d)"
 			% [sway_before, int(vfx.get("sway_asset_count"))])
 
-	# Printed, not asserted: `foliage_mesh_count` is a per-NODE dressing tally with no per-node
-	# record behind it, so unlike the four counters above it cannot be re-derived and pruned. It
-	# still climbs by a whole island here — filed as its own finding rather than left silent.
+	# `foliage_dressing_count` deliberately counts successful per-node work, including cache hits;
+	# unlike the live censuses above it is expected to increase when a replacement island is dressed.
+	check(int(vfx.get("foliage_dressing_count")) > dressing_before,
+		"foliage_dressing_count honestly accumulates dressing work across the in-place rebuild "
+		+ "(%d -> %d)" % [dressing_before, int(vfx.get("foliage_dressing_count"))])
 	print("RESTART before=%d after=%d shared=%d foliage=%d sway_assets=%d" % [
 		before.size(), after.size(), shared,
-		int(vfx.get("foliage_mesh_count")), int(vfx.get("sway_asset_count"))])
+		int(vfx.get("foliage_dressing_count")), int(vfx.get("sway_asset_count"))])
 
 
 # ── 4 · direct rebuild announces its completed generation boundary ───────────────────────────────

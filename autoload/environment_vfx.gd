@@ -121,8 +121,10 @@ const IMPACT_POOL_SIZE: int = 6
 ## `play_impact` and `systems/harvesting/harvestable.gd`'s own arm delay.
 const IMPACT_MAX_DISTANCE_M: float = 40.0
 
-## Kept from the first version because the existing checks read them.
-var foliage_mesh_count: int = 0
+## Successful per-node sway dressing visits in the current scene, including mesh-cache hits.
+## Cumulative by design across an in-place procedural rebuild; reset only when the scene changes.
+## This is work performed, not a census — `sway_asset_count` is the live unique-mesh census.
+var foliage_dressing_count: int = 0
 var fire_source_count: int = 0
 ## F-391: how many one-shot destruction bursts this process has played, and what the last one was.
 ## Published for the same reason the emitter censuses are — a one-shot leaves nothing behind to
@@ -246,7 +248,7 @@ func _reset() -> void:
 	_dressed_meshes.clear()
 	fire_source_count = 0
 	emitter_site_count = 0
-	foliage_mesh_count = 0
+	foliage_dressing_count = 0
 	sway_asset_count = 0
 	_scene_id = 0
 
@@ -530,7 +532,7 @@ func _apply_sway(node: GeometryInstance3D, sway: AssetVfx.Sway) -> void:
 
 	var mesh_key := mesh.get_instance_id()
 	if _dressed_meshes.has(mesh_key):
-		foliage_mesh_count += 1
+		foliage_dressing_count += 1
 		return
 	# Mesh resources outlive the level that used them — ResourceLoader hands the same ArrayMesh
 	# back after a scene reload, and the authored-prop mesh cache is shared across chunks. Dressing
@@ -539,7 +541,7 @@ func _apply_sway(node: GeometryInstance3D, sway: AssetVfx.Sway) -> void:
 	var existing := mesh.surface_get_material(0)
 	if existing is ShaderMaterial and (existing as ShaderMaterial).shader == FOLIAGE_SHADER:
 		_dressed_meshes[mesh_key] = false
-		foliage_mesh_count += 1
+		foliage_dressing_count += 1
 		return
 	# `false` = "in the cache, but not counted toward `sway_asset_count`". Flipped to `true` below
 	# only on the path that actually increments it, so `_prune_dressed_meshes()` can decrement by
@@ -555,7 +557,7 @@ func _apply_sway(node: GeometryInstance3D, sway: AssetVfx.Sway) -> void:
 		var original := mesh.surface_get_material(surface_index)
 		mesh.surface_set_material(
 			surface_index, _sway_material(original, profile, bounds))
-	foliage_mesh_count += 1
+	foliage_dressing_count += 1
 	sway_asset_count += 1
 	_dressed_meshes[mesh_key] = true
 
@@ -640,12 +642,12 @@ func _apply_baked_sway(node: GeometryInstance3D, sway: AssetVfx.Sway) -> void:
 
 	var mesh_key := mesh.get_instance_id()
 	if _dressed_meshes.has(mesh_key):
-		foliage_mesh_count += 1
+		foliage_dressing_count += 1
 		return
 	var existing := mesh.surface_get_material(0)
 	if existing is ShaderMaterial and (existing as ShaderMaterial).shader == FOLIAGE_SHADER:
 		_dressed_meshes[mesh_key] = false
-		foliage_mesh_count += 1
+		foliage_dressing_count += 1
 		return
 	# `false` = "in the cache, but not counted toward `sway_asset_count`". Flipped to `true` below
 	# only on the path that actually increments it, so `_prune_dressed_meshes()` can decrement by
@@ -657,7 +659,7 @@ func _apply_baked_sway(node: GeometryInstance3D, sway: AssetVfx.Sway) -> void:
 	for surface_index: int in mesh.get_surface_count():
 		var original := mesh.surface_get_material(surface_index)
 		mesh.surface_set_material(surface_index, _baked_sway_material(original, profile))
-	foliage_mesh_count += 1
+	foliage_dressing_count += 1
 	sway_asset_count += 1
 	_dressed_meshes[mesh_key] = true
 

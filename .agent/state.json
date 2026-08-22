@@ -1453,9 +1453,9 @@
     },
     "autoload/environment_vfx.gd": {
       "agent": "quill3c83cf",
-      "at": "2026-08-22T02:40:27+00:00",
-      "hash": "9cb73ab8227bd713b4aa473158339a810d8c609d74930ddae185f8731f566487",
-      "task": "F-311",
+      "at": "2026-08-22T02:46:15+00:00",
+      "hash": "4d60d7a6749671945045ef60e5910e248def6631e49c2a3f81e6289217a6affc",
+      "task": "F-303",
       "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
     },
     "autoload/god_mode_service.gd": {
@@ -4120,9 +4120,9 @@
     },
     "tools/environment_vfx_reseed_check.gd": {
       "agent": "quill3c83cf",
-      "at": "2026-08-22T02:44:43+00:00",
-      "hash": "3712471eba662bca297a37c0a28ceab3636a2107e89ffa983f9be8b5660c18e4",
-      "task": "F-312",
+      "at": "2026-08-22T02:46:15+00:00",
+      "hash": "fb32c421e7f39fd4117ce499718e2ecc168c757d3fd003bc726e30d1bc118cd6",
+      "task": "F-303",
       "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
     },
     "tools/f356_night_probe.gd": {
@@ -4952,7 +4952,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:120f1976-6c96-46a1-8784-38dd75780df4"
     }
   },
-  "rev": 1143,
+  "rev": 1147,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9181,9 +9181,11 @@
       "title": "The two shipped layout JSONs write the spawn record in two different shapes, so every generic reader needs both"
     },
     "F-303": {
+      "done_at": "2026-08-22T02:46:15+00:00",
+      "done_by": "quill3c83cf",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "EnvironmentVfx.foliage_mesh_count is a cumulative dressing tally, so it climbs by a whole island on every procedural reseed"
     },
