@@ -75,6 +75,143 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-22 — F-597: Fauna Phase 1, and F-591's registry (larchcc2572)
+
+**Fauna Phase 1 (docs/FAUNA.md §5.1) is in.** `AnimalDef` (`systems/fauna/animal_def.gd`) is a
+content family loaded by `Registry` from `content/animals/`; `Animal` is a host-simulated
+`CharacterBody3D` spawned through a code-built `MultiplayerSpawner` (D-023) exactly as `ItemDrop`
+is; `FaunaService` (autoload) owns the population.
+
+```gdscript
+FaunaService.top_up() -> int              # host; places whole herds toward `population`
+FaunaService.host_spawn_at(id, position)  # host; the deterministic seam a check or command uses
+FaunaService.live_count() / count_of(id) / live_animals()
+```
+
+**Placement samples the world; it does not read markers.** `EnemyWorld` takes ambient spawns from
+authored `enemy_nest` markers, which is right for enemies — a nest is a place a designer chose.
+FAUNA.md §3 asks for *biome-weighted* placement on a procedural island, so this samples the same pure
+pipeline the scatter field does: `BiomeMap.biome_at()` and `ProceduralWorld.height_at()`. That means
+fauna needs no per-map authoring step and cannot silently spawn nothing on a new map — F-076's
+failure, where Hollowmere shipped four nests `ambient_spawn_points()` could not see.
+
+**The whole spawn mask is one function**, `_find_ground()`: biome weight, `min_height_m` (water),
+`max_slope`, and `max_corruption`. Phase 6's flee-from-corruption extends that one place rather than
+four. Herd size and spread live on the DEF, not the spawner — §3's "a lone cow reads as a bug, five
+reads as a place" is a fact about the species.
+
+**Gamerule `ambient_fauna_population`**, mirroring `ambient_enemy_population` in shape and in
+behaviour: 0 empties the island without disabling the service, and a rule change refills immediately
+rather than at the next tick.
+
+**The terrain-group trap, worth knowing before you write any world-sampling service:** the composers
+do NOT share a group name. `ProceduralWorld` and `AuthoredWorld` both publish
+`authored_world_terrain`; Playtest Hollow publishes `playtest_hollow_terrain`. A single hard-coded
+group finds nothing on one of the three maps, and the check caught exactly that. `FaunaService`
+sweeps a list and confirms `has_method(&"height_at")`, which is the actual contract.
+
+**D-218, the Phase 2 art seam, confirmed from this side:** kit `assets/fauna/`, exports at
+`exports/<bare id>.glb`, ids with no prefix, and four runtime clips `idle`/`walk`/`flee`/`death`.
+`AnimalDef` carries them as constants and `tools/fauna_check.gd` asserts the vocabulary, so a
+re-export that renames a clip fails a check instead of failing in play. **The loop trap:** Godot's
+glTF importer treats a `-loop` suffix as an instruction — it strips it and sets loop mode — so a clip
+exported without it arrives with looping off, and `idle` plays once and freezes. `idle` and `walk`
+must be exported with the suffix; `flee` and `death` must not.
+
+Verified: `tools/fauna_check.gd` boots the REAL procedural island and counts what spawns — 0
+failures, including that every placed animal stands in a weighted biome, above its water line and
+out of corruption. `procedural_world_check` still 0 failures; boot clean.
+
+**Also landed, F-591:** `core/loading/threaded_load_registry.gd` — one threaded-load lifecycle per
+path, process-wide. `request()` refuses a path already in flight; `blocking_load()` takes a live
+request over with `load_threaded_get()` instead of racing it with a bare `load()`. `MaterialWarmer`
+and `ResourceScatterField` both route through it and neither touches `ResourceLoader` directly, which
+`tools/threaded_load_check.gd` asserts at the source level so it cannot regrow.
+
+**F-591 reading pass, suspects RULED OUT** for the second defect still crashing
+`resource_scatter_check` in the chunk-build path, so nobody repeats them: `PlacementJob.run` is pure
+(no RenderingServer, no resource creation, no tree access); `_build_asset_group` and MultiMesh
+creation are main-thread; `NavBaker` builds a fresh `NavigationMeshSourceGeometryData3D` per bake and
+extracts faces on the main thread before submitting, so F-494's shape does not apply. Still suspect:
+`NavigationServer3D` async bakes overlapping scatter tree mutation, and `MireGrid`'s own
+`WorkerThreadPool` tick. Clue: that crash printed no `handle_crash` backtrace where the earlier one
+did, which points outside GDScript.
+
+### 2026-08-22 — F-585: Resonance exists, and so do status effects (larchcc2572)
+
+**Three new APIs the next task builds on.**
+
+`StatusService` (autoload) — combat statuses that live on a target for a while. Host-authoritative;
+clients hold a mirror for VFX only, fed by one broadcast carrying a NodePath.
+
+```gdscript
+StatusService.host_apply(target, &"burning", seconds, potency, source_peer_id)
+StatusService.speed_scale(target)   # 1.0 unless chilled — Enemy multiplies move_speed by it
+StatusService.is_burning(target) / is_chilled(target) / is_staggered(target)
+```
+
+Three kinds: `burning` (potency = damage per tick, paid through the target's own
+`host_apply_damage()` so armour, flinch, death and the killer's lifesteal all behave), `chilled`
+(potency = slow fraction, clamped at 0.75 — a chill must never be a stunlock) and `staggered` (the
+enemy skips its whole state tick). **Refresh, never stack:** a second application takes the longer
+remaining time and the stronger potency, and the ORIGINAL source keeps the kill credit, so re-tagging
+a burning enemy cannot steal a teammate's bounty. It is written against "anything with
+`host_apply_damage()`", not against `Enemy` — a future destructible can burn for free.
+
+`HazardField` (`systems/combat/hazard_field.gd`) — a patch of ground that hurts for a while, the
+primitive four Resonances needed and nothing in the project had. Host builds a simulating one and
+broadcasts a preset name + position; every client builds a visual-only twin from the same constants,
+so there is no synchroniser and no `PROTOCOL_VERSION` bump. Deliberately not an `Area3D`: a radius
+test over the `enemies` group costs no collision layer.
+
+`ResonanceService` (autoload) — DESIGN §4.4's twelve effects. Two host seams and three client-local
+reads:
+
+```gdscript
+ResonanceService.host_on_hit(peer_id, target, damage) -> int   # bonus damage; applies statuses
+ResonanceService.host_on_enemy_death(enemy, instigator_peer_id) # BEFORE statuses are cleared
+ResonanceService.modify_damage_taken(peer_id, amount) -> int    # Blood 6
+ResonanceService.modify_blight_rate(peer_id, rate) -> float     # Fungal 6
+ResonanceService.local_sprint_tick(delta) / local_on_dodge(origin) -> float
+```
+
+**Ordering that is load-bearing, not incidental.** `host_on_hit()` runs BEFORE `host_apply_damage()`
+in both combat services: its bonus folds into one damage event (two would flinch twice and pay two
+hits' worth of lifesteal), and its statuses land on the target before the swing can kill it — which
+is what lets Fire 6 explode an ignited corpse and Cold 6 shatter a frozen one. `Enemy._enter_death()`
+calls `host_on_enemy_death()` before the kill bounty and before anything clears the statuses;
+`ResonanceService` clears them itself once it has read them.
+
+**Where the client-authoritative halves are, and why they are honest.** Kinetic's charge builds from
+sprinting, which only the owning peer knows, so the client reports a full charge and **the host
+rate-limits it to no faster than `KINETIC_CHARGE_SECONDS`** — a lying client gets the charge rate it
+already had. Void's blink extends a dodge (client-authoritative movement) locally, but the rift it
+leaves is *requested* of the host, which verifies the requester actually holds the Greater Resonance
+before spawning a damaging volume.
+
+**F-580's last three stats landed here too**, not in `CombatService`: `ignite_chance`, `slow_chance`
+and `slow_potency` apply the same two statuses the Fire and Cold Resonances do, and one place
+deciding "this hit ignites" is what stops a player holding both from getting two competing burns.
+`slow_potency` is asked against a base of `COLD_CHILL_FRACTION` rather than zero — F-140's shape.
+`haul_speed` is wired in `Haulable` (best carrier sets the pace) and is correct but unreachable in
+play until something spawns a haulable outside `tools/`.
+
+**All five modifier-less powerups now pay out.** `open_flame`, `whetted_thirst`, `quiet_bloom`,
+`white_quiet` and `empty_vessel` declare no stats on purpose — they are pure family counters, and
+`tools/resonance_check.gd` drives every effect through them precisely because an effect observed
+that way can only have come from the Resonance layer.
+
+Verified: `tools/status_effects_check.gd` (27 assertions) and `tools/resonance_check.gd` (41,
+covering all twelve effects), both 0 failures. `resonance_check` also asserts
+`IMPLEMENTED_FAMILIES` covers `PowerupDef.KNOWN_FAMILIES` exactly — a seventh family added to the
+vocabulary without an effect fails the check, which is the regrowth F-580 and F-585 both were.
+
+**Trap worth knowing:** a freed `Object` read out of a `Dictionary` into a typed `Node` variable
+throws "Trying to assign invalid previously freed instance". A target that dies and frees between
+two ticks is the NORMAL case for a status service, so every such read goes through one
+`_node_for()` helper that keeps the value a `Variant` until `is_instance_valid()` has passed. The
+check caught this on its first run.
+
 ### 2026-08-22 — F-581: loot has a moment, and every pickup says so (larchcc2572)
 
 **The API the next task builds on is one signal.** Anything that gives a player anything — a chest,

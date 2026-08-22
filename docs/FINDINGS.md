@@ -3439,6 +3439,60 @@ defs naming them, `asset_usage_check` is red — six modelled assets that nothin
 
 ---
 
+### F-597 · Fauna Phase 1: the world has no animals — AnimalDef, FaunaService and herd placement do not exist
+
+**Area:** world · **Severity:** medium · **Found:** 2026-08-22 by larchcc2572
+
+`docs/FAUNA.md` (784b0d70) specs a ten-design roster and a six-phase build order; **Phase 1 does not
+exist in the repo.** There is no `AnimalDef`, no `content/animals/`, no `FaunaService`, no population
+gamerule, and nothing anywhere places a living creature that is not an enemy.
+
+Sequoyah's ask, from the spec's own framing: animals that spawn in the world, are in the game loop,
+and have a real purpose — "not just default animals in every game".
+
+Phase 1's deliverable, per §5: the `AnimalDef` content family, registry loading, a `FaunaService`
+autoload doing biome-weighted **herd** placement (§3: "a lone cow in a field reads as a bug; five
+reads as a place"), a population target in the shape of the existing `ambient_enemy_population`
+gamerule, HOST authority per ARCHITECTURE §2.2, and a headless check that boots the real procedural
+island and counts what actually spawns. **One placeholder species only** — §5 is explicit that the
+system must be provable before any art exists, and the art batches are Phases 2 and 5.
+
+Corruption is in scope for the spawn mask (§3: "never in corrupted ground"); the fleeing and
+Mire-touched behaviour is Phase 6 and must not be designed out of reach.
+
+---
+
+### F-598 · loop_audit_check is red at HEAD in three places — the check that walks the whole game loop
+
+**Area:** gameplay · **Severity:** high · **Found:** 2026-08-22 by wick1c650c
+
+`tools/loop_audit_check.gd` is the check that walks a whole run start to finish, and it reports
+`LOOP_AUDIT failures=3` at HEAD:
+
+    FAIL: harvesting yielded stone (1 swings)
+    FAIL: CraftingService sees the player at a station ()
+    FAIL: a recipe exists for station '' (<null>)
+
+The second and third are one failure: `nearby_station_id()` returned empty, so the third had nothing
+to look up.
+
+NOT caused by F-575 (`2fdb7a9b`), which changed `nearby_station_id()` to call
+`_station_instance_in_range()`. `agent baseline --rev 9651ec81` — the commit before it — reproduces
+all three with IDENTICAL text and identical numbers, so the comparison is on the failure itself and
+not merely on the count.
+
+This matters more than an ordinary red check because of what it gates. Sequoyah is about to play a
+co-op run with a friend and asked specifically not to be hard-locked in progression. If harvesting
+genuinely yields nothing there is no stone, so no tools, so no run — and if no station is ever
+detected the crafting half of the loop is unreachable. Both are exactly the hard lock he named.
+
+The harvest failure may be F-588's shape — F-535 moved harvest yields to physical ground drops, so an
+assertion on a pack credit fails while the game is fine. That must be PROVEN rather than assumed: the
+assertion as written cannot distinguish "the yield went to the ground" from "the yield was
+destroyed", which is the same defect class as F-590's "the pack did not shrink" passing at 0 -> 0.
+
+---
+
 ## Resolved
 
 ### F-593 · Chests read as too small against the player, and the ladder's two most common rungs are below knee height — **fixed**

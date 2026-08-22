@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="AnimalDef" format=3]
+
+[ext_resource type="Script" path="res://systems/fauna/animal_def.gd" id="1_animaldef"]
+
+[resource]
+script = ExtResource("1_animaldef")
+id = &"hare"
+display_name = "Hare"
+description = "Phase 1's one placeholder species (docs/FAUNA.md §5). The hare is chosen deliberately: it is the roster's only solitary animal, so it proves the placement pipeline — biome weighting, grounding, the corruption mask — without the herd rules hiding a per-member bug behind four siblings that happened to land correctly. Its herd size is widened to 1-2 anyway, so the herd path is exercised rather than skipped."
+biome_weights = Dictionary[StringName, float]({
+&"grassland": 1.0,
+&"heath": 0.8,
+&"highland": 0.5,
+&"birchwood": 0.35
+})
+herd_min = 1
+herd_max = 2
+herd_spread_m = 5.0
+max_corruption = 0.15
+max_slope = 0.55
+min_height_m = 0.6
+body_size_m = 0.45
+tint = Color(0.62, 0.55, 0.44, 1)

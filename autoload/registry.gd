@@ -17,6 +17,7 @@ const WEAPONS_PATH: String = "res://content/weapons"
 const RANGED_WEAPONS_PATH: String = "res://content/ranged_weapons"
 const LOOT_PATH: String = "res://content/loot"
 const POWERUPS_PATH: String = "res://content/powerups"
+const ANIMALS_PATH: String = "res://content/animals"
 const BUILDABLES_PATH: String = "res://content/buildables"
 const HAULABLES_PATH: String = "res://content/haulables"
 const ATTUNEMENTS_PATH: String = "res://content/attunements"
@@ -36,6 +37,10 @@ const LOOT_TABLE_DEF := preload("res://systems/loot/loot_table_def.gd")
 ## Same F-016 reasoning as LOOT_TABLE_DEF above: PowerupDef is a brand-new class_name (task
 ## 3.3) and this autoload boots in every headless run.
 const POWERUP_DEF := preload("res://systems/powerups/powerup_def.gd")
+## F-597 / docs/FAUNA.md Phase 1. Loaded exactly like every other content family — a new species is
+## a .tres in content/animals/ and nothing else, which is the property §5 asks the system to have
+## before any art exists.
+const ANIMAL_DEF := preload("res://systems/fauna/animal_def.gd")
 ## Same F-016 reasoning again: BuildableDef is new in task 3.6.
 const BUILDABLE_DEF := preload("res://systems/building/buildable_def.gd")
 ## Same F-016 reasoning again: StationDef is new in task 3.1.
@@ -104,6 +109,8 @@ var loot_tables: Dictionary[StringName, Resource] = {}
 ## Keyed by powerup id (task 3.3). Shared content, same shape as `recipes`. Untyped Resource
 ## for the same F-016 reason as the preload above.
 var powerups: Dictionary[StringName, Resource] = {}
+## Animal id -> AnimalDef, from content/animals/.
+var animals: Dictionary[StringName, Resource] = {}
 
 ## Keyed by buildable id (task 3.6). Shared content; task 3.7 authors the real set.
 var buildables: Dictionary[StringName, Resource] = {}
@@ -169,6 +176,7 @@ func _ready() -> void:
 	)
 	_load_dir(LOOT_PATH, "LootTableDef", LOOT_TABLE_DEF, &"id", "loot table id", loot_tables)
 	_load_dir(POWERUPS_PATH, "PowerupDef", POWERUP_DEF, &"id", "powerup id", powerups)
+	_load_dir(ANIMALS_PATH, "AnimalDef", ANIMAL_DEF, &"id", "animal id", animals)
 	_load_dir(BUILDABLES_PATH, "BuildableDef", BUILDABLE_DEF, &"id", "buildable id", buildables)
 	_load_dir(HAULABLES_PATH, "HaulableDef", HAULABLE_DEF, &"id", "haulable id", haulables)
 	_load_dir(ATTUNEMENTS_PATH, "AttunementDef", ATTUNEMENT_DEF, &"id", "attunement id", attunements)
@@ -241,6 +249,14 @@ func has_loot_table(id: StringName) -> bool:
 
 func get_powerup(id: StringName) -> Resource:
 	return powerups.get(id)
+
+
+func get_animal(id: StringName) -> Resource:
+	return animals.get(id)
+
+
+func has_animal(id: StringName) -> bool:
+	return animals.has(id)
 
 
 func has_powerup(id: StringName) -> bool:
