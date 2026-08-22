@@ -3183,43 +3183,6 @@ belongs to birch1db63e — reaping another session's process is theirs or Sequoy
 
 ---
 
-### F-584 · tools/dodge_check.gd fails its last assertion on a clean checkout
-
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-22 by birch1db63e
-
-`.agent/bin/agent godot --script tools/dodge_check.gd` ends with
-
-    FAIL: ...and the dash MOVEMENT has ended — horizontal speed 10.00 m/s is below dodge_impulse
-    (10.00). If this fails the stat is lengthening the dash, not the i-frames (F-125)
-    1 failure(s)
-
-and it is NOT a regression from F-580's player_controller changes. Verified by `git checkout
-entities/player/player_controller.gd` back to HEAD and re-running: identical failure, same value.
-
-The assertion is `speed < impulse - 0.01` measured immediately after the dash window closes, and the
-check's own comment (tools/dodge_check.gd:236-239) already concedes the margin is thin: "ground
-friction has had only a frame or two to bite, so a still-running dash reads 10.00 and a just-ended
-one reads ~9.5". The reading is exactly 10.00, i.e. no deceleration has been applied at all — which
-points at the harness rather than at the controller, because the assertion immediately above it
-(`_dodge_time_remaining == 0`) passes, so the dash timer HAS closed and `_apply_horizontal_movement`
-is no longer taking the dash branch.
-
-The likely cause is that the probe drives `_apply_horizontal_movement()` directly on a bare
-CharacterBody3D that never runs `move_and_slide()`, so `is_on_floor()` is false and the post-dash
-tick takes the AIRBORNE branch — where the file's own contract is that with no input "nothing is
-applied at all. Momentum carries". Ground friction is the only thing that would pull 10.00 down to
-~9.5, and an airborne body never reaches it. If so the check has been asserting ground behaviour
-against an airborne body since it was written, and the two readings it takes are not the
-"same fact twice" its comment claims — the timer one is real and the velocity one is unreachable.
-
-Worth resolving deliberately rather than by relaxing the tolerance: either the probe should put the
-body on a floor (or fake `is_on_floor()`) before stepping past the dash, or the velocity assertion
-should be dropped and its comment corrected to say the timer is the only readable proof. Silently
-loosening `- 0.01` would keep a green count over an assertion that cannot fail for the reason it
-names, which is the shape F-046/F-047 exist to prevent.
-
----
-
 ### F-585 · Resonance is entirely unimplemented — DESIGN 4.4's twelve run-defining effects do not exist
 
 **Area:** powerups · **Severity:** high · **Found:** 2026-08-22 by larchcc2572
@@ -3334,6 +3297,75 @@ exists and, since F-575, is finally read by something — this is a second legit
 ---
 
 ## Resolved
+
+### F-584 · tools/dodge_check.gd fails its last assertion on a clean checkout — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-22 by birch1db63e
+
+`.agent/bin/agent godot --script tools/dodge_check.gd` ends with
+
+    FAIL: ...and the dash MOVEMENT has ended — horizontal speed 10.00 m/s is below dodge_impulse
+    (10.00). If this fails the stat is lengthening the dash, not the i-frames (F-125)
+    1 failure(s)
+
+and it is NOT a regression from F-580's player_controller changes. Verified by `git checkout
+entities/player/player_controller.gd` back to HEAD and re-running: identical failure, same value.
+
+The assertion is `speed < impulse - 0.01` measured immediately after the dash window closes, and the
+check's own comment (tools/dodge_check.gd:236-239) already concedes the margin is thin: "ground
+friction has had only a frame or two to bite, so a still-running dash reads 10.00 and a just-ended
+one reads ~9.5". The reading is exactly 10.00, i.e. no deceleration has been applied at all — which
+points at the harness rather than at the controller, because the assertion immediately above it
+(`_dodge_time_remaining == 0`) passes, so the dash timer HAS closed and `_apply_horizontal_movement`
+is no longer taking the dash branch.
+
+The likely cause is that the probe drives `_apply_horizontal_movement()` directly on a bare
+CharacterBody3D that never runs `move_and_slide()`, so `is_on_floor()` is false and the post-dash
+tick takes the AIRBORNE branch — where the file's own contract is that with no input "nothing is
+applied at all. Momentum carries". Ground friction is the only thing that would pull 10.00 down to
+~9.5, and an airborne body never reaches it. If so the check has been asserting ground behaviour
+against an airborne body since it was written, and the two readings it takes are not the
+"same fact twice" its comment claims — the timer one is real and the velocity one is unreachable.
+
+Worth resolving deliberately rather than by relaxing the tolerance: either the probe should put the
+body on a floor (or fake `is_on_floor()`) before stepping past the dash, or the velocity assertion
+should be dropped and its comment corrected to say the timer is the only readable proof. Silently
+loosening `- 0.01` would keep a green count over an assertion that cannot fail for the reason it
+names, which is the shape F-046/F-047 exist to prevent.
+
+---
+
+**Resolved 2026-08-22 by hollowbfcf67 (fixed).** **Fixed 2026-08-22 by hollowbfcf67. The CHECK was wrong, not the game** — and birch1db63e's own
+hypothesis in the body above was right.
+
+`_apply_horizontal_movement()` decelerates only inside its `is_on_floor()` branch. This harness drives
+the method directly on a bare `CharacterBody3D` that never calls `move_and_slide()`, so
+`is_on_floor()` is false; `wish_dir` is zero because no input is held; and **neither branch touches
+`horizontal` at all.** The reading of exactly 10.00 was therefore not "ground friction was slow", it
+was "no deceleration code ran". The check's own comment conceded the margin was thin — the margin was
+zero, and the assertion was measuring the harness rather than the controller.
+
+Shipped play is unaffected: `move_and_slide()` runs every physics frame there, `is_on_floor()` is
+true on the ground, and the dash decays through `ground_friction` normally.
+
+**Fixed by asserting the fact directly instead of through a proxy.** What the assertion was really
+for is that the dash branch keys off `_dodge_time_remaining` and not `dodging` — i.e. that once the
+dash window closes, velocity is no longer being FORCED back to `_dodge_velocity` while the i-frame
+tail runs, which is the whole of F-125. So it now proves exactly that: zero the horizontal velocity,
+tick `_apply_horizontal_movement()` once, and see whether the controller overwrites it. A still-running
+dash reasserts `_dodge_velocity` and the sentinel disappears; an ended one leaves it at zero. No
+friction, no floor state, no margin to be thin.
+
+It is also a strictly stronger assertion than the one it replaces. `speed < impulse - 0.01` would have
+passed on any deceleration at all, including a dash branch that was still running but scaled down;
+the sentinel passes only if the branch does not execute.
+
+**Verified**: `PASS: ...and the dash MOVEMENT has ended — a zeroed velocity stays zeroed (0.00 m/s)
+instead of being forced back to dodge_impulse (10.00)`, `dodge_check 0 failure(s)`.
+
+**No decision was missing here** — nothing in the check asserted an undecided rule, so there is
+nothing to file. The invariant it tests (F-125: i-frames outlive the dash, the dash movement does not)
+was already settled and is now tested properly rather than incidentally.
 
 ### F-575 · Four buildable crafting stations have zero recipes bound to them — **partly fixed**
 

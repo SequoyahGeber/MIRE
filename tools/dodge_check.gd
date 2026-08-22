@@ -240,11 +240,30 @@ func _run_iframe_powerup(health: Node) -> void:
 	check(float(player.get("_dodge_time_remaining")) == 0.0,
 		"...the dash window itself is closed (_dodge_time_remaining == 0) while `dodging` is still "
 		+ "true — the two windows are genuinely separate timers, which is the whole of F-125")
-	var speed: float = Vector2(player.velocity.x, player.velocity.z).length()
-	check(speed < impulse - 0.01,
-		"...and the dash MOVEMENT has ended — horizontal speed %.2f m/s is below dodge_impulse "
-		% speed + "(%.2f). If this fails the stat is lengthening the dash, not the i-frames (F-125)"
-			% impulse)
+	# The dash MOVEMENT has ended, asserted DIRECTLY rather than through deceleration.
+	#
+	# This used to read `speed < impulse - 0.01` a frame or two after the window closed, on the
+	# theory that ground friction would have bitten by then. It never bit, and the check has been red
+	# at HEAD ever since (F-584): `_apply_horizontal_movement()` only decelerates inside its
+	# `is_on_floor()` branch, and this harness drives the method directly on a bare CharacterBody3D
+	# that never runs `move_and_slide()`, so `is_on_floor()` is false, `wish_dir` is zero, and NEITHER
+	# branch touches `horizontal`. The reading was exactly 10.00 — not "friction was slow", but "no
+	# deceleration code ran at all". The check's own comment conceded the margin was thin; the margin
+	# was in fact zero, and the assertion was measuring the harness rather than the controller.
+	#
+	# What it was really trying to prove is that the dash branch is wired to `_dodge_time_remaining`
+	# rather than to `dodging`, i.e. that velocity is no longer being FORCED to `_dodge_velocity`
+	# while the i-frame tail runs. So prove that: perturb the velocity, tick once, and see whether the
+	# controller overwrites it. A still-running dash reasserts `_dodge_velocity` and the sentinel is
+	# gone; an ended one leaves it alone. No friction, no floor state, no margin.
+	var sentinel := Vector3(0.0, player.velocity.y, 0.0)
+	player.velocity = sentinel
+	player.call(&"_apply_horizontal_movement", step, true, false, false)
+	var reasserted: float = Vector2(player.velocity.x, player.velocity.z).length()
+	check(reasserted < 0.01,
+		"...and the dash MOVEMENT has ended — a zeroed velocity stays zeroed (%.2f m/s) instead of "
+		% reasserted + "being forced back to dodge_impulse (%.2f). If this fails the stat is "
+		% impulse + "lengthening the dash, not the i-frames (F-125)")
 
 	# And it does end. Run out the rest of the extended window plus a margin.
 	for _i: int in range(int(bonus / step) + 6):
