@@ -59,6 +59,44 @@ const SEED_LAND_MIN_RING_M: float = 0.25
 const SEED_LAND_RING_FRACTION: float = 0.7
 const SEED_LAND_RING_SAMPLES: int = 8
 
+## F-602: how far the one seed may land from the SPAWN POINT.
+##
+## Sequoyah: *"in terms of the mire spreading and players have to keep it back its super unclear."*
+## Part of why is that nothing related the two. The seed was drawn uniformly inside a 354 m square
+## about the island centre and `ProceduralWorld._pick_spawn()` independently put the party on a
+## shore ring at 0.5-0.85 of the same radius, so the distance between them was an accident ranging
+## from "in your camp" to "the far side of the island". The front advances 1.66 m/min, 25 m per
+## Cycle, on an 1180 m island — so on an unlucky seed a party could play a whole session and never
+## meet corrupted ground. Whether the game HAD an antagonist was a dice roll nobody saw.
+##
+## The band, not a fixed distance: a fixed distance would put the Mire on a circle of known radius
+## and every run would learn to walk the same way. A band keeps the direction and the distance
+## interesting while guaranteeing the encounter.
+##
+## The near edge is a camp-safety number, not an exploration one. `SEED_CLUSTER_RADIUS_M` is 32 m
+## and the front only grows, so the seed's EDGE starts at 180 - 32 = 148 m from spawn and closes at
+## 1.66 m/min. That is roughly an hour and a half before it reaches camp, which is several Cycles of
+## warning — the Mire should be a thing you go and deal with, not a thing that arrives while you are
+## still deciding what to build.
+##
+## The far edge is what makes the encounter certain. Measured (`tools/mire_encounter_check.gd`), not
+## chosen: see that check for the distance distribution and the walking time it implies across a
+## spread of seeds.
+const SEED_SPAWN_MIN_M: float = 180.0
+const SEED_SPAWN_MAX_M: float = 420.0
+
+## Where the party starts, in world XZ, or NAN if nobody has said.
+##
+## `ProceduralWorld` pushes this in immediately after `_pick_spawn()` and BEFORE the scatter field is
+## configured or any chunk streams, which is what keeps the sim and `resource_scatter.gd` looking at
+## the same centres — see the ordering note in that file.
+##
+## Unset is a supported state and deliberately falls back to the pre-F-602 behaviour rather than
+## guessing a spawn: authored maps place the Mire from their own layout, and several checks exercise
+## the grid with no world at all. A band measured against an invented spawn point would be worse than
+## no band, because it would look authoritative.
+static var _spawn_anchor: Vector2 = Vector2(NAN, NAN)
+
 
 ## One seed's centres, memoised. `seed_cluster_centres()` is called once per generated chunk by
 ## `world/gen/resource_scatter.gd`, and F-489's land test made it build a `NoiseSet` and sample the
@@ -66,6 +104,31 @@ const SEED_LAND_RING_SAMPLES: int = 8
 ## restart on a new island recomputes rather than serving the old island's answer.
 static var _centres_cache: PackedVector2Array = PackedVector2Array()
 static var _centres_cache_seed: int = 0
+## F-602: the anchor is part of the cache KEY, not just an input. A cached answer computed before the
+## spawn was known describes a different island than one computed after, and serving the stale one to
+## `resource_scatter.gd` would put the Mire's own scatter somewhere the sim's corruption is not.
+static var _centres_cache_anchor: Vector2 = Vector2(NAN, NAN)
+
+
+## Told to the sim by `ProceduralWorld` once the spawn point exists. Clears the memoised centres,
+## because every previously cached answer was computed without it.
+static func set_spawn_anchor(anchor: Vector2) -> void:
+	if _spawn_anchor.is_equal_approx(anchor):
+		return
+	_spawn_anchor = anchor
+	_centres_cache = PackedVector2Array()
+	_centres_cache_seed = 0
+
+
+## Test seam, and what a run restart onto a fresh island calls.
+static func clear_spawn_anchor() -> void:
+	_spawn_anchor = Vector2(NAN, NAN)
+	_centres_cache = PackedVector2Array()
+	_centres_cache_seed = 0
+
+
+func spawn_anchor() -> Vector2:
+	return _spawn_anchor
 
 
 static func cell_index(cell_x: int, cell_z: int) -> int:
@@ -108,7 +171,8 @@ static func seed_initial(world_seed: int) -> PackedFloat32Array:
 ## give the same answer. `seed_initial()` still walks the same list in the same order, so the two
 ## cannot drift.
 static func seed_cluster_centres(world_seed: int) -> PackedVector2Array:
-	if _centres_cache_seed == world_seed and _centres_cache.size() == SEED_CLUSTER_COUNT:
+	if _centres_cache_seed == world_seed and _centres_cache.size() == SEED_CLUSTER_COUNT \
+			and _anchors_match(_centres_cache_anchor, _spawn_anchor):
 		return _centres_cache
 	var centres := PackedVector2Array()
 	var rng := RandomNumberGenerator.new()
@@ -124,7 +188,12 @@ static func seed_cluster_centres(world_seed: int) -> PackedVector2Array:
 		var best_score: float = -INF
 		for _attempt: int in SEED_LAND_ATTEMPTS:
 			var candidate := Vector2(rng.randf_range(-span, span), rng.randf_range(-span, span))
-			var score: float = _land_score(candidate, noise_set, world_seed)
+			# F-602: a candidate must stand on land AND sit in the encounter band. Combined into one
+			# score rather than filtered separately so the best-of fallback still works: on a seed
+			# where nothing clears both, the existing "driest candidate wins" behaviour becomes
+			# "closest to satisfying both wins", which degrades instead of failing.
+			var score: float = minf(
+				_land_score(candidate, noise_set, world_seed), _spawn_band_score(candidate))
 			if score > best_score:
 				best_score = score
 				best = candidate
@@ -132,8 +201,31 @@ static func seed_cluster_centres(world_seed: int) -> PackedVector2Array:
 				break
 		centres.append(best)
 	_centres_cache_seed = world_seed
+	_centres_cache_anchor = _spawn_anchor
 	_centres_cache = centres
 	return centres
+
+
+## NAN never equals itself, so an unset anchor would miss its own cache on every call and rebuild a
+## NoiseSet per chunk — the exact cost the memo exists to avoid (F-489).
+static func _anchors_match(a: Vector2, b: Vector2) -> bool:
+	if is_nan(a.x) and is_nan(b.x):
+		return true
+	return a.is_equal_approx(b)
+
+
+## How well a candidate centre sits in the encounter band: >= 0.0 accepts, and the value is the
+## margin to whichever edge it is closest to violating, so a best-of fallback picks the least-wrong
+## candidate. Always 0.0 when no spawn anchor is known, which makes an unanchored world behave
+## exactly as it did before F-602 rather than silently preferring the island centre.
+static func _spawn_band_score(centre: Vector2) -> float:
+	if is_nan(_spawn_anchor.x):
+		return 0.0
+	var distance: float = centre.distance_to(_spawn_anchor)
+	# Returned in METRES, on the same scale as `_land_score`'s height margin, so `minf()` above
+	# compares two comparable quantities rather than a height against a distance. Both are "how far
+	# from acceptable", and both are 0 at the boundary.
+	return minf(distance - SEED_SPAWN_MIN_M, SEED_SPAWN_MAX_M - distance)
 
 
 ## How well a candidate centre stands on dry land: >= 0.0 means "accept", and the value itself is

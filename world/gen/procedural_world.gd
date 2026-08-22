@@ -23,6 +23,7 @@ extends Node3D
 const IslandHeightmapScript := preload("res://world/gen/island_heightmap.gd")
 const BiomeMapScript := preload("res://world/gen/biome_map.gd")
 const PoiMapScript := preload("res://world/gen/poi_map.gd")
+const MireGridSimScript := preload("res://world/mire/mire_grid_sim.gd")
 const PoiStructuresScript := preload("res://world/gen/poi_structures.gd")
 const ChunkStreamerScript := preload("res://world/chunk/chunk_streamer.gd")
 const ChunkMesherScript := preload("res://world/chunk/chunk_mesher.gd")
@@ -141,6 +142,7 @@ func _ready() -> void:
 	_build_river_water()
 	_build_poi_sites()
 	spawn_position = _pick_spawn()
+	_anchor_mire_to_spawn()
 	scatter_field.set(&"spawn_clear_center", spawn_position)
 	_publish_spawn_marker()
 	# BEFORE the player, and unconditionally (F-324). Unconditional because the spawn point is a
@@ -211,6 +213,7 @@ func rebuild_for_seed(seed_value: int) -> void:
 	_build_river_water()
 	_build_poi_sites()
 	spawn_position = _pick_spawn()
+	_anchor_mire_to_spawn()
 	scatter_field.set(&"spawn_clear_center", spawn_position)
 	_publish_spawn_marker()
 	_prime_ground_at(spawn_position)
@@ -493,6 +496,22 @@ func _pick_spawn() -> Vector3:
 			return best
 
 	return fallback
+
+
+## F-602: tell `MireGridSim` where the party starts, so the run's one corruption seed is drawn
+## inside the encounter band instead of anywhere in a 354 m square. Without this the distance from
+## spawn to the Mire is an accident of the seed and a party can finish a session never having met
+## corrupted ground.
+##
+## ORDERING IS LOAD-BEARING and this call site is the reason it works. `world/gen/resource_scatter.gd`
+## asks `seed_cluster_centres()` per generated chunk to decide how corrupt each placement's ground
+## is, so the anchor has to be known before ANY chunk is dressed or the Mire's own scatter ends up
+## somewhere the sim's corruption is not. This sits immediately after `_pick_spawn()` — the earliest
+## point the spawn exists, since picking it needs the POI sites — and before the scatter field is
+## configured, which is before streaming starts. `tools/mire_encounter_check.gd` asserts the two
+## agree rather than trusting this comment.
+func _anchor_mire_to_spawn() -> void:
+	MireGridSimScript.set_spawn_anchor(Vector2(spawn_position.x, spawn_position.z))
 
 
 ## (x,z) unit-square perimeter walk — four linear segments, no trig, exact on every platform.

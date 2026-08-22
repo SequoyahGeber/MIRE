@@ -3584,6 +3584,104 @@ own.
 
 ## Resolved
 
+### F-602 · Whether a run ever meets the Mire is decided by a dice roll — **fixed**
+
+**Area:** world · **Severity:** high · **Found:** 2026-08-22 by wick1c650c
+
+Sequoyah: *"in terms of the mire spreading and players have to keep it back its super unclear."*
+
+`MireGridSim.seed_cluster_centres()` draws the run's single corruption seed uniformly inside a
+square of `SEED_CLUSTER_SPAN_FRACTION` (0.6) x `ISLAND_RADIUS` (590 m) — so up to ~354 m from island
+centre in each axis. `ProceduralWorld._pick_spawn()` independently puts the player on a shore ring at
+0.5-0.85 of the same radius. Nothing relates the two.
+
+So the distance from spawn to the Mire is an accident of the seed, and it ranges from "in your camp"
+to "the far side of the island". The front advances 1.66 m/min — 25 m per 15-minute Cycle — so on an
+unlucky seed a party can play a whole session and never encounter corrupted ground at all. The
+antagonist is optional, decided by a dice roll nobody sees.
+
+The fix is to bound the seed's distance from the SPAWN POINT into a band: near enough that a party
+exploring normally meets it within a Cycle or two, far enough that it is not a starting-area problem
+on minute one.
+
+Explicitly NOT by adding a second seed. Exactly one corruption area is a recorded design call
+(D-191, Sequoyah 2026-08-21: "there should only be one corruption area on the map since it will start
+spreading, having more than one is too much"), and the whole feel of the Mire depends on it — one
+thing eating the island that you can point at, rather than weather.
+
+`world/gen/resource_scatter.gd` calls `seed_cluster_centres()` once per generated chunk to answer
+"how corrupt is this point" per placement, so moving the seed moves the Mire's own scatter with it.
+That has to stay consistent and must not add per-chunk cost.
+
+**Resolved 2026-08-22 by wick1c650c (fixed).** Fixed by wick1c650c. `MIRE_ENCOUNTER_CHECK failures=0` across six seeds.
+
+## The measurement, which is the deliverable
+
+    spawn to Mire: 296 m closest, 335 m mean, 383 m furthest (6 seeds)
+    time to REACH corrupted ground walking straight at it, at 35% of walking pace
+    (a LOWER BOUND — a party does not know where it is and has to find it first):
+      3.1 min best case, 4.1 min worst (0.21 - 0.27 Cycles)
+    time before the front reaches camp untouched:
+      159 min worst (10.6 Cycles)
+
+So finding the Mire is a walk rather than an expedition on every seed, and it is still ten Cycles
+from camp if nobody touches it. That is the shape the finding asked for.
+
+The walking figure is stated as a LOWER BOUND on purpose. It models a party that walks toward the
+Mire, and a party does not know where it is — the real time is longer by however long they search,
+which this cannot model and should not pretend to. The distance is the measurement; the time is its
+consequence.
+
+## The mechanism
+
+`SEED_SPAWN_MIN_M` 180 / `SEED_SPAWN_MAX_M` 420, folded into candidate selection as a second score
+alongside `_land_score` via `minf()` — both are "how far from acceptable, in metres", so the
+existing best-of fallback still degrades gracefully: on a seed where nothing clears both, "driest
+candidate wins" becomes "least-wrong candidate wins" rather than failing.
+
+A BAND rather than a fixed distance. A fixed distance puts the Mire on a circle of known radius and
+every run learns to walk the same way; the band keeps direction and distance interesting while
+guaranteeing the encounter.
+
+Still exactly ONE seed. D-191 is untouched and the check asserts `SEED_CLUSTER_COUNT == 1` so the
+band cannot later be "fixed" by adding a second.
+
+## Consistency, which was the real risk
+
+`resource_scatter.gd` calls `seed_cluster_centres()` once per generated chunk, so moving the seed
+moves the Mire's own flora with it and a stale memo would separate the two. Three things hold it
+together:
+
+  · the spawn anchor is part of the memo's cache KEY, not merely an input, so an answer computed
+    before the spawn was known cannot be served after it is
+  · `ProceduralWorld._anchor_mire_to_spawn()` is called immediately after `_pick_spawn()` — the
+    earliest the spawn exists, since picking it needs the POI sites — and BEFORE the scatter field
+    is configured, which is before any chunk streams
+  · the check asserts the centres are unchanged after the world is built, and that the scatter
+    gate reads the centre as corrupt and ground outside it as cleaner, rather than trusting the
+    ordering comment
+
+No per-chunk cost is added: the memo is hit exactly as before, and `_anchors_match()` handles the
+NAN case explicitly because NAN never equals itself — without it an unanchored world would miss its
+own cache every call and rebuild a `NoiseSet` per chunk, which is the F-489 cost the memo exists to
+avoid.
+
+An unset anchor is a supported state that falls back to pre-F-602 behaviour rather than guessing a
+spawn. Authored maps place the Mire from their own layout and several checks drive the grid with no
+world at all; a band measured against an invented spawn would be worse than no band, because it
+would look authoritative.
+
+## What did NOT get exercised, stated so nobody reads more into the numbers
+
+No sampled seed came near the 180 m floor — the closest was 296 m. Candidates are drawn in a square
+about the ISLAND CENTRE while spawn sits on a 295-500 m shore ring, so the natural distribution
+already sits high in the band and the floor is a guard against an unlucky draw rather than a number
+shaping the typical run. If a future change moves spawn inward the floor starts doing real work and
+these figures need re-measuring, not assuming. The check prints this line itself.
+
+`mire_land_seed_check` and `mire_scatter_check` both re-run green — the land test and the
+field/grid agreement are unaffected.
+
 ### F-598 · loop_audit_check is red at HEAD in three places — the check that walks the whole game loop — **fixed**
 
 **Area:** gameplay · **Severity:** high · **Found:** 2026-08-22 by wick1c650c
