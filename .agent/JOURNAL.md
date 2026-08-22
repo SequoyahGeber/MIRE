@@ -9403,3 +9403,54 @@ Repair hammer reframed to scale 0.235 at (0.205,-0.425,-0.59); Forward+ 16:9 and
 Files: `content/items/repair_hammer.tres`, `tools/setup_tool_content.gd`, `tools/viewmodel_check.gd`
 
 Commit at time of writing: `70eb7125`
+
+---
+
+### HANDOFF · F-514 · hollowe6edef · 2026-08-22T03:19:17+00:00
+
+**Settings lacks the approved advanced graphics, accessibility and privacy controls**
+
+Verified partial implementation remains in the shared working tree. Complete and passing: SettingsSave schema v4 migration; SettingsService preview/save/default/capture plumbing; DISPLAY rows for foliage density, shadow quality/distance and volumetric fog; GraphicsQuality runtime application; camera-shake intensity runtime application; UI rows for UI scale, controller deadzones/vibration, crosshair size/opacity/high contrast and Streamer Mode. Verification: agent godot --script tools/settings_check.gd => failures=0; settings_screen_check.gd => failures=0; git diff --check clean. graphics_quality_check hits only open F-513's clean-HEAD frontend-no-shadow-caster failure. NOT complete: F-469 currently holds entities/player/player_controller.gd, blocking deadzone application; F-508 holds ui/hud/focus_prompt.gd, blocking crosshair runtime styling. Streamer Mode still needs exact display consumers (lobby IDs/player IDs/seeds), vibration needs its feedback call sites, crosshair colour needs a menu selector, and UI scale needs live rebuild/application verification. Claim those consumer files after their lanes release, add focused round-trip/runtime assertions for every schema-v4 value, then resolve rather than merely done. Do not ship this finding as complete yet.
+
+Files: `autoload/settings_service.gd`, `core/save/settings_save.gd`, `autoload/graphics_quality.gd`, `ui/frontend/graphics_settings_page.gd`, `ui/frontend/settings_screen.gd`, `entities/player/player_camera.gd`, `tools/settings_check.gd`, `tools/settings_screen_check.gd`
+
+Commit at time of writing: `ba39e524`
+
+---
+
+### DONE · F-508 · birchf37d06 · 2026-08-22T03:21:11+00:00
+
+**Playtest Hollow presentation is visually noisy and obscures traversal**
+
+Procedural-island foliage hierarchy and HUD composition repaired; three Forward+ captures inspected, focused checks green.
+
+Notes along the way:
+- Screenshot is the shipped procedural island, not authored Hollowmere. Final visual authority remains client-local. Reduced forest willow frequency/scale, marsh reed coverage/scale, grass seedhead coverage/scale; compacted blocked focus prompt and guide objective. Forward+ probe now follows frontend PLAY target.
+
+Files: `tools/blender/build_mire_map_kit.py`, `ui/hud/guide_hud.gd`, `ui/hud/focus_prompt.gd`, `content/scatter/marsh_reeds.tres`, `content/scatter/grassland_turf.tres`, `assets/environment/catalog.json`, `assets/environment/exports/stump_a.glb`, `assets/environment/exports/stump_b.glb`, `assets/environment/exports/stump_c.glb`, `assets/environment/exports/stump_d.glb`, `assets/environment/exports/fallen_log_a.glb`, `assets/environment/exports/fallen_log_b.glb`, `assets/environment/exports/fallen_log_c.glb`, `assets/environment/exports/fallen_log_d.glb`, `assets/environment/exports/grass_seedhead_a.glb`, `assets/environment/exports/grass_seedhead_b.glb`, `assets/environment/exports/grass_seedhead_c.glb`, `assets/environment/exports/grass_seedhead_d.glb`, `assets/environment/exports/reeds_a.glb`, `assets/environment/exports/reeds_b.glb`, `assets/environment/exports/reeds_c.glb`, `assets/environment/exports/reeds_d.glb`, `assets/audit/terrain/island_spawn_view.png`, `assets/audit/terrain/island_orbit.png`, `assets/audit/terrain/island_shore_look.png`, `world/gen/layouts/playtest_hollow.json`, `assets/source/playtest_hollow.blend`, `assets/maps/playtest_hollow.glb`, `assets/maps/preview/playtest_hollow_preview.png`, `tools/procedural_look_probe.gd`, `content/scatter/forest_canopy.tres`, `content/scatter/marsh_canopy.tres`
+
+Commit at time of writing: `ba39e524`
+
+---
+
+### REOPEN · F-508 · birchf37d06 · 2026-08-22T03:23:24+00:00
+
+**Playtest Hollow presentation is visually noisy and obscures traversal**
+
+Reopened (was marked done 2026-08-22 by birchf37d06).
+
+First pass rejected in visual review; reopen for a stronger composition pass on the shipped procedural island.
+
+Commit at time of writing: `a94c62e8`
+
+---
+
+### DONE · 5.11 · ember5da2c4 · 2026-08-22T03:24:39+00:00
+
+**Tiered enemy ladder: 5 authored enemies — own model, rig, clips, unique attack, stats — one per escalation step, entering the night pool as Cycles advance (`docs/ENEMIES.md`)**
+
+The enemy ladder: five authored enemies, one per escalation step. Peatling (slime mould, corrupts the ground where it dies), Fen Stalker (heron, lunges through your retreat with a doubled ambush opener), Bog Bulwark (snapping turtle, 160 degrees of frontal armour and never lets go), Bloatcap (puffball, area burst that bursts again on death), Mire Herald (Irish elk, corrupts the ground it walks on without dying). Six new EnemyDef mechanics, all defaulting to off. Five generators, five headless checks, all green. Red eyes across the whole roster per Sequoyah. Filed F-498; resolved F-500.
+
+Files: `docs/ENEMIES.md`, `tools/blender/build_enemy_peatling.py`, `assets/enemies/catalog.json`, `world/mire/mire_grid.gd`, `world/mire/mire_grid_sim.gd`, `systems/enemies/enemy_def.gd`, `systems/enemies/enemy.gd`, `systems/waves/wave_spawner.gd`, `content/enemies/peatling.tres`, `assets/enemies/README.md`, `tools/wave_director_check.gd`, `tools/enemy_peatling_check.gd`, `tools/blender/build_enemy_fen_stalker.py`, `content/enemies/fen_stalker.tres`, `tools/enemy_fen_stalker_check.gd`, `tools/blender/build_enemy_bog_bulwark.py`, `content/enemies/bog_bulwark.tres`, `tools/enemy_bog_bulwark_check.gd`, `tools/blender/build_enemy_crawler.py`, `tools/blender/build_enemy_bloatcap.py`, `content/enemies/bloatcap.tres`, `tools/enemy_bloatcap_check.gd`, `tools/blender/build_enemy_mire_herald.py`, `content/enemies/mire_herald.tres`, `tools/enemy_mire_herald_check.gd`
+
+Commit at time of writing: `2f659a4f`
