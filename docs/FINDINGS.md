@@ -3501,6 +3501,23 @@ rebuild; and give the objective one always-visible marker.
 
 ---
 
+**Measured constraint on the fix, added by birch1db63e after reviewing `1156f091`: POI slots are a
+shared budget, so raising `enemy_nest`'s `target_count` displaces loot sites.** Controlled A/B on
+five seeds, reverting `target_count` to 5 / `min_spacing_m` to 110, re-measuring, and restoring:
+
+    seed              5 nests    12 nests
+    11                  152        152
+    20260822            152        152
+    777001              152        152
+    4242                152        152
+    98765               152        146   <- 6 loot markers lost
+
+At this magnitude it changes nothing — 4% on one seed in five, reachability unmoved (46/46 items),
+and `loose_loot_world_check` still passes with 61-86 live drops against its floor of 8. **But nest
+count cannot be raised again without re-measuring loot placement.** That coupling is invisible from
+either `content/poi/enemy_nest.tres` or the chest POI files, because neither names the other; it
+exists only in `PoiMap`'s placement budget.
+
 ### F-600 · hollowmere.json stacks 16 variant-state props on the campfire, walling off the crafting camp
 
 **Area:** world · **Severity:** high · **Found:** 2026-08-22 by wick1c650c
