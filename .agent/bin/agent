@@ -3459,6 +3459,161 @@ def cmd_godot(args):
         return code
 
 
+# Checks with these names need multiple processes, a framebuffer, Steam, or are deliberately long.
+# The full tier still discovers every tools/*_check.gd file; this is only the explicit --fast cut.
+VERIFY_FULL_ONLY_HINTS = (
+    "_net_check.gd", "render", "_shot", "benchmark", "traversal", "chunk_stream",
+    "reseed", "cross_platform", "session_lifecycle", "steam_", "perf_", "playtest",
+)
+
+
+def _verify_checks(fast=False):
+    checks = sorted(os.path.relpath(p, ROOT) for p in glob.glob(os.path.join(ROOT, "tools", "*_check.gd")))
+    if fast:
+        checks = [p for p in checks if not any(hint in os.path.basename(p) for hint in VERIFY_FULL_ONLY_HINTS)]
+    return checks
+
+
+def _verify_ledger_rows(path):
+    rows = []
+    if not os.path.exists(path):
+        return rows
+    with open(path, encoding="utf-8") as f:
+        lines = f.readlines()
+    for index, line in enumerate(lines):
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError:
+            if index == len(lines) - 1:
+                break
+            raise
+    return rows
+
+
+def _verify_append(path, row):
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(row, sort_keys=True) + "\n")
+        f.flush()
+        os.fsync(f.fileno())
+
+
+def _verify_verdict(output, code):
+    failures = None
+    for pattern in (r"failures\s*=\s*(\d+)", r"\b(\d+)\s+failures?\b"):
+        found = re.findall(pattern, output, re.IGNORECASE)
+        if found:
+            failures = int(found[-1])
+            break
+    expected = None
+    declarations = re.findall(r'EXPECTED_ERROR_PATTERNS\s*=\s*"((?:\\.|[^"\\])*)"', output)
+    if declarations:
+        try:
+            expected = re.compile(declarations[-1].replace(r'\"', '"'))
+        except re.error:
+            expected = None
+    error_lines = [line for line in output.splitlines() if "ERROR:" in line]
+    unexpected = [line for line in error_lines if expected is None or not expected.search(line)]
+    reasons = []
+    if code != 0:
+        reasons.append("exit=%d" % code)
+    if failures is None:
+        reasons.append("missing failures verdict")
+    elif failures:
+        reasons.append("failures=%d" % failures)
+    if unexpected:
+        reasons.append("%d unexpected engine error(s)" % len(unexpected))
+    return not reasons, failures, reasons, unexpected
+
+
+def _run_verify_check(script):
+    argv = _godot_argv(ROOT, ["--script", script])
+    print("%s· %s%s" % (C["dim"], " ".join(argv[1:]), C["x"]), flush=True)
+    started = time.time()
+    proc = subprocess.Popen(argv, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=0)
+    fd, buf, chunks, errored, hung, spoke = proc.stdout.fileno(), b"", [], False, False, time.time()
+    while True:
+        ready = select.select([fd], [], [], 5.0)[0]
+        if ready:
+            chunk = os.read(fd, 65536)
+            if not chunk:
+                break
+            chunks.append(chunk)
+            buf += chunk
+            parts = buf.split(b"\n")
+            buf = parts.pop()
+            for raw in parts:
+                line = raw.decode("utf-8", "replace")
+                print(line, flush=True)
+                errored = errored or any(mark in line for mark in ("SCRIPT ERROR", "Parse Error", "Compile Error"))
+            spoke = time.time()
+        elif errored and proc.poll() is None and time.time() - spoke > SILENT_HANG_SECONDS:
+            hung = True
+            proc.kill()
+            break
+    if buf:
+        print(buf.decode("utf-8", "replace"), flush=True)
+    proc.stdout.close()
+    code = proc.wait()
+    output = b"".join(chunks).decode("utf-8", "replace")
+    if hung:
+        code = code or 1
+        output += "\nERROR: killed after script error and silence\n"
+    passed, failures, reasons, unexpected = _verify_verdict(output, code)
+    return {"script": script, "passed": passed, "failures": failures, "exit_code": code,
+            "reasons": reasons, "unexpected_errors": unexpected,
+            "seconds": round(time.time() - started, 3), "completed_at": now()}
+
+
+def cmd_verify(args):
+    fast, fresh, list_only, ledger, i = False, False, False, None, 0
+    while i < len(args):
+        arg = args[i]
+        if arg in ("--fast", "--fresh", "--list"):
+            fast = fast or arg == "--fast"
+            fresh = fresh or arg == "--fresh"
+            list_only = list_only or arg == "--list"
+            i += 1
+        elif arg == "--ledger" and i + 1 < len(args):
+            ledger = os.path.abspath(args[i + 1])
+            i += 2
+        else:
+            die("usage: agent verify [--fast] [--fresh] [--list] [--ledger PATH]")
+    checks = _verify_checks(fast)
+    if list_only:
+        print("\n".join(checks))
+        print("%d %s check(s)" % (len(checks), "fast" if fast else "full"))
+        return 0
+    if ledger is None:
+        revision = _git("rev-parse", "--short", "HEAD").stdout.strip() or "unknown"
+        ledger = os.path.join(ROOT, ".agent", "verify", "%s-%s.jsonl" % (revision, "fast" if fast else "full"))
+    if fresh and os.path.exists(ledger):
+        os.unlink(ledger)
+    prior = _verify_ledger_rows(ledger)
+    completed = {row.get("script") for row in prior}
+    pending = [script for script in checks if script not in completed]
+    print("verify: %d checks, %d complete, %d pending; ledger %s" %
+          (len(checks), len(checks) - len(pending), len(pending), os.path.relpath(ledger, ROOT)))
+    with file_lock("godot", timeout=1800, label="verify"):
+        if pending:
+            _import_pass()
+        for number, script in enumerate(pending, 1):
+            print("\n[%d/%d] %s" % (number, len(pending), script), flush=True)
+            row = _run_verify_check(script)
+            _verify_append(ledger, row)
+            print("%s %s (%.3fs)" % ("PASS" if row["passed"] else "FAIL", script, row["seconds"]), flush=True)
+    rows = _verify_ledger_rows(ledger)
+    latest = {row.get("script"): row for row in rows}
+    failed = [script for script in checks if script in latest and not latest[script].get("passed")]
+    missing = [script for script in checks if script not in latest]
+    print("\nverify: %d passed, %d failed, %d incomplete" % (len(checks) - len(failed) - len(missing), len(failed), len(missing)))
+    for script in failed:
+        print("  FAIL %s: %s" % (script, ", ".join(latest[script].get("reasons", []))))
+    return 1 if failed or missing else 0
+
+
 def _blame_foreign_break(files):
     """Name the neighbour whose uncommitted work just broke your check.
 
@@ -4178,7 +4333,7 @@ COMMANDS = {
     # Orchestration (D-036)
     "order": cmd_order, "dispatch": cmd_dispatch, "lanes": cmd_lanes,
     "collect": cmd_collect, "report": cmd_report, "reap": in_state_txn(cmd_reap),
-    "godot": cmd_godot,
+    "godot": cmd_godot, "verify": cmd_verify,
     "saturate": cmd_saturate, "finding": cmd_finding, "director": cmd_director,
     "decision": cmd_decision,
     "baseline": cmd_baseline,
@@ -4207,6 +4362,8 @@ USAGE = """agent — multi-agent coordination for MIRE
 Verifying — always launch the engine through this, never bare (F-044):
 
   agent godot --script tools/x_check.gd     headless Godot, under a lock
+  agent verify [--fast] [--fresh]           discover and run tools/*_check.gd sequentially;
+                                            durable JSONL ledger resumes interrupted suites
   agent godot --windowed --script x.gd      same, with a framebuffer — render checks that save
                                             PNGs need this; the window parks offscreen (F-077)
   agent baseline --script tools/x_check.gd  the same check at HEAD, in a throwaway worktree —

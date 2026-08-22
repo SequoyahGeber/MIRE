@@ -1,11 +1,5 @@
 {
   "claims": {
-    ".agent/bin/agent": {
-      "agent": "quill3c83cf",
-      "at": "2026-08-22T02:49:34+00:00",
-      "task": "F-293",
-      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
-    },
     "assets/deep_materials/catalog.json": {
       "agent": "birche6b40e",
       "at": "2026-08-21T23:53:11+00:00",
@@ -282,17 +276,17 @@
       "task": "5.11",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
     },
-    "tools/harness_check.py": {
-      "agent": "quill3c83cf",
-      "at": "2026-08-22T02:49:35+00:00",
-      "task": "F-293",
-      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
-    },
     "tools/item_icons_check.gd": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:52:45+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "tools/perf_probe.gd": {
+      "agent": "asheb20c0",
+      "at": "2026-08-22T02:53:21+00:00",
+      "task": "F-506",
+      "token": "CODEX_SESSION_ID:01a02761-cfcd-7582-a37a-9065b6fa147a"
     },
     "tools/wave_director_check.gd": {
       "agent": "ember5da2c4",
@@ -362,22 +356,6 @@
       "started": "2026-08-22T01:08:05+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
     },
-    "F-293": {
-      "agent": "quill3c83cf",
-      "files": [
-        ".agent/bin/agent",
-        "tools/harness_check.py"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-22T02:49:35+00:00",
-          "by": "quill3c83cf",
-          "text": "verify discovers tools/*_check.gd, journals each completed result to .agent/verify/<commit>-<tier>.jsonl with flush+fsync, tolerates a torn tail, and skips completed scripts on resume. --fast is a deterministic source-based tier excluding multi-process/window/render/long-running probes."
-        }
-      ],
-      "started": "2026-08-22T02:49:34+00:00",
-      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
-    },
     "F-469": {
       "agent": "coil26502f",
       "files": [
@@ -426,9 +404,32 @@
       "notes": [],
       "started": "2026-08-22T00:29:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "F-506": {
+      "agent": "asheb20c0",
+      "files": [
+        "tools/perf_probe.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-22T02:53:21+00:00",
+      "token": "CODEX_SESSION_ID:01a02761-cfcd-7582-a37a-9065b6fa147a"
     }
   },
   "recent": {
+    ".agent/bin/agent": {
+      "agent": "quill3c83cf",
+      "at": "2026-08-22T02:54:35+00:00",
+      "hash": "5de533c04ddf64e82d2270d313b4c646679cfe0663abb2400abc07d4c5b14c0c",
+      "task": "F-293",
+      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
+    },
+    ".gitignore": {
+      "agent": "quill3c83cf",
+      "at": "2026-08-22T02:54:35+00:00",
+      "hash": "43c5b24e19c8b38463a291a85d21b95e296cff026efd9565bba9c86c9dcf7d52",
+      "task": "F-293",
+      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
+    },
     "assets/audio/music/menu_theme.ogg": {
       "agent": "ash843af8",
       "at": "2026-08-21T07:49:42+00:00",
@@ -4286,6 +4287,13 @@
       "task": "F-452",
       "token": "CLAUDE_CODE_SESSION_ID:4310f84e-9f17-4b18-a68b-6df83a83f259"
     },
+    "tools/harness_check.py": {
+      "agent": "quill3c83cf",
+      "at": "2026-08-22T02:54:35+00:00",
+      "hash": "d94ea71bcf0efff638e3bb97cafa5d84dca97441bca5f8022766b83529af7da8",
+      "task": "F-293",
+      "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
+    },
     "tools/harvest_state_chain_check.gd": {
       "agent": "gale43d16e",
       "at": "2026-08-21T08:34:48+00:00",
@@ -4994,7 +5002,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:120f1976-6c96-46a1-8784-38dd75780df4"
     }
   },
-  "rev": 1165,
+  "rev": 1169,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9147,9 +9155,11 @@
       "title": "tools/nav_bake_check.gd has had 4 failures at HEAD since the 4.13/4.14 terrain retune \u2014 the island has no gentle chunk-boundary strip at its 30-degree gate"
     },
     "F-293": {
+      "done_at": "2026-08-22T02:54:35+00:00",
+      "done_by": "quill3c83cf",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Nothing enumerates and runs the tools/ check suite, so a red check sits at HEAD indefinitely \u2014 two were red for days and a third was asserting nothing"
     },
@@ -10802,6 +10812,13 @@
       "status": "done",
       "tier": "F",
       "title": "verify_setup rejects the shipped frontend main scene"
+    },
+    "F-506": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "perf_probe opens class picker during automated traversal"
     }
   },
   "version": 1

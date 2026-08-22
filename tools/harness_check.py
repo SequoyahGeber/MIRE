@@ -999,6 +999,39 @@ def _(harness):
     return "remainder %r survives, drain preserved" % (remainder,)
 
 
+@case("verify requires an explicit zero-failure verdict and rejects unexpected engine errors (F-293)")
+def _(harness):
+    mod = _load_harness(harness)
+    passed, failures, reasons, errors = mod._verify_verdict(
+        'CHECK failures=0 · EXPECTED_ERROR_PATTERNS="known problem"\nERROR: known problem\n', 0)
+    assert passed and failures == 0 and not reasons and not errors, (
+        "a declared expected error made a zero-failure check fail: %r" % (reasons,))
+    passed, failures, reasons, errors = mod._verify_verdict(
+        'CHECK failures=0 · EXPECTED_ERROR_PATTERNS="known problem"\nERROR: different problem\n', 0)
+    assert not passed and errors, "an unexpected engine error was accepted"
+    passed, failures, reasons, errors = mod._verify_verdict("looks fine\n", 0)
+    assert not passed and "missing failures verdict" in reasons, (
+        "exit zero without the check contract was accepted: %r" % (reasons,))
+    return "expected errors accepted; unexpected and verdict-less runs rejected"
+
+
+@case("verify ledger resumes completed checks and tolerates one torn final line (F-293)")
+def _(harness):
+    mod = _load_harness(harness)
+    d = tempfile.mkdtemp(prefix="mire-verify-ledger-")
+    ledger = os.path.join(d, "suite.jsonl")
+    try:
+        mod._verify_append(ledger, {"script": "tools/a_check.gd", "passed": True})
+        with open(ledger, "a") as f:
+            f.write('{"script":"tools/b_check.gd"')
+        rows = mod._verify_ledger_rows(ledger)
+        assert rows == [{"passed": True, "script": "tools/a_check.gd"}], (
+            "the durable row was lost or torn tail was not ignored: %r" % (rows,))
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+    return "one flushed result recovered ahead of a torn tail"
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--rev", help="test the harness as of this git revision instead of the working tree")

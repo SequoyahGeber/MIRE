@@ -9235,3 +9235,18 @@ Notes along the way:
 Files: `tools/enemy_check.gd`
 
 Commit at time of writing: `1105c9ab`
+
+---
+
+### DONE · F-293 · quill3c83cf · 2026-08-22T02:54:35+00:00
+
+**Nothing enumerates and runs the tools/ check suite, so a red check sits at HEAD indefinitely — two were red for days and a third was asserting nothing**
+
+Implemented resumable agent verify runner: discovers 243 checks (202 fast-tier), runs sequentially under the Godot lock, enforces failures and expected-error contracts, and fsyncs one JSONL result per completed check. Harness 39/39; findings structure failures=0.
+
+Notes along the way:
+- verify discovers tools/*_check.gd, journals each completed result to .agent/verify/<commit>-<tier>.jsonl with flush+fsync, tolerates a torn tail, and skips completed scripts on resume. --fast is a deterministic source-based tier excluding multi-process/window/render/long-running probes.
+
+Files: `.agent/bin/agent`, `tools/harness_check.py`, `.gitignore`
+
+Commit at time of writing: `1b041089`
