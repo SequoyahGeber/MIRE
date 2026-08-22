@@ -15,6 +15,9 @@ var transport: Node
 var inventory: Node
 var child_pid: int = 0
 var confirmations: Dictionary[int, bool] = {}
+## F-521 diagnostics: "no confirmation arrived" and "a REFUSAL arrived" are different bugs that
+## produced the same red line, because the result carried one boolean that was false either way.
+var confirmation_details: Dictionary[int, String] = {}
 
 
 func _initialize() -> void:
@@ -112,12 +115,19 @@ func _run_driver() -> void:
 	check(int(result.get("log_count", -1)) == 1, "client finishes with one confirmed log")
 	check(int(inventory.call("host_count", client_peer_id, &"log")) == 1,
 		"host and client agree on the final count")
+	# F-521: follow the move the client actually made rather than hard-coding 0 and 24. The point of
+	# this assertion is that the HOST's copy of the client's slots agrees with the client's own view
+	# after a move — pinning the indices made it a second, silent assertion about where `host_add`
+	# happens to place a grant, which is what went stale.
 	var client_slots: Array = inventory.call("host_slots", client_peer_id)
+	var moved_from: int = int(result.get("move_from", -1))
+	var moved_to: int = int(result.get("move_to", -1))
+	check(client_slots.size() == 32, "the host holds a full 32-slot layout for the client")
 	check(
-		client_slots.size() == 32
-		and (client_slots[0] as Dictionary).is_empty()
-		and StringName(String((client_slots[24] as Dictionary).get("item_id", ""))) == &"log",
-		"host owns distinct backpack and hotbar slot layouts"
+		moved_from >= 0 and moved_to >= 0
+		and (client_slots[moved_from] as Dictionary).is_empty()
+		and StringName(String((client_slots[moved_to] as Dictionary).get("item_id", ""))) == &"log",
+		"the host's copy shows the stack where the client moved it (%d -> %d)" % [moved_from, moved_to]
 	)
 
 	var child_exited: bool = await _until(
@@ -221,12 +231,44 @@ func _client_drive() -> void:
 		overspend_confirmed and not bool(confirmations.get(overspend_id, true))
 	)
 
-	var move_id: int = int(inventory.call("request_move_stack", 0, 24))
+	# F-521. This used to be a hard-coded `request_move_stack(0, 24)` — backpack slot 0 to hotbar
+	# slot 0 — written when a grant landed in the backpack. It does not any more: `host_add` fills
+	# the hotbar first, so the log arrives in slot 24 and slot 0 is EMPTY. The host was therefore
+	# refusing the move for the correct reason (`move_stack` rejects an empty source), replying
+	# "move rejected", and the check was reading that correct refusal as a broken client.
+	#
+	# It looked like a confirmation bug because the companion assertion — the log ends up in hotbar
+	# zero — passed either way: the log was already there and had never moved. A stale assertion
+	# and a real desync produce the same red line, which is why this now moves from wherever the
+	# stack ACTUALLY is into a slot it has verified is empty, and asserts the round trip.
+	var slots_before: Array = inventory.call("local_slots")
+	var move_from: int = -1
+	for index: int in slots_before.size():
+		if not ((slots_before[index]) as Dictionary).is_empty():
+			move_from = index
+			break
+	var move_to: int = -1
+	for index: int in slots_before.size():
+		if index != move_from and ((slots_before[index]) as Dictionary).is_empty():
+			move_to = index
+			break
+	var move_id: int = int(inventory.call("request_move_stack", move_from, move_to))
 	var move_confirmed: bool = await _until(
 		func() -> bool: return confirmations.has(move_id), TIMEOUT_SEC
 	)
 	var move_accepted: bool = move_confirmed and bool(confirmations.get(move_id, false))
-	var move_applied: bool = await _until(_client_log_in_hotbar_zero, TIMEOUT_SEC)
+	# Assert the stack actually ARRIVED where it was sent, rather than that it is where it always
+	# was. The old `_client_log_in_hotbar_zero` was true before the request was even made.
+	var move_applied: bool = await _until(
+		func() -> bool:
+			var now: Array = inventory.call("local_slots")
+			return (
+				move_to >= 0
+				and not ((now[move_to]) as Dictionary).is_empty()
+				and ((now[move_from]) as Dictionary).is_empty()
+			),
+		TIMEOUT_SEC
+	)
 	var direct_add_rejected: bool = not bool(inventory.call("host_add", peer_id, &"log", 50))
 	_write_result({
 		"connected": true,
@@ -236,6 +278,11 @@ func _client_drive() -> void:
 		"remove_accepted": remove_accepted,
 		"overspend_rejected": overspend_rejected,
 		"move_accepted": move_accepted,
+		"move_confirmation_arrived": move_confirmed,
+		"move_confirmation_detail": String(confirmation_details.get(move_id, "<none arrived>")),
+		"move_applied_on_client": move_applied,
+		"move_from": move_from,
+		"move_to": move_to,
 		"direct_add_rejected": direct_add_rejected,
 		"log_count": int(inventory.call("local_count", &"log")),
 	})
@@ -245,8 +292,9 @@ func _client_drive() -> void:
 	finish()
 
 
-func _on_operation_confirmed(request_id: int, accepted: bool, _detail: String) -> void:
+func _on_operation_confirmed(request_id: int, accepted: bool, detail: String) -> void:
 	confirmations[request_id] = accepted
+	confirmation_details[request_id] = detail
 
 
 ## F-060: gate on is_active() directly. local_peer_id() > HOST_PEER_ID and local_revision >= 0 can

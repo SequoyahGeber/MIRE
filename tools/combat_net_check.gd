@@ -12,6 +12,9 @@ const TIMEOUT_SEC: float = 15.0
 ## result has to outlast the sum of the client's own waits, not one of them.
 const CLIENT_COMPLETE_TIMEOUT_SEC: float = 60.0
 
+## Backpack is 0-23 and the hotbar 24-31, so the first hotbar slot is 24 (F-521).
+const HOTBAR_FIRST_SLOT: int = 24
+
 var failures: int = 0
 var transport: Node
 var player_net: Node
@@ -156,8 +159,20 @@ func _run_driver() -> void:
 		finish()
 		return
 	check(bool(inventory.call("host_add", peer_id, &"stone_axe", 1)), "host grants the client an axe")
-	check(bool(inventory.call("host_move_stack", peer_id, 0, 24, 1)),
-		"host places the axe in the client's first hotbar slot")
+	# F-521. This used to be an unconditional `host_move_stack(peer_id, 0, 24, 1)` — backpack slot 0
+	# to hotbar slot 0 — from when a grant landed in the backpack. `host_add` fills the HOTBAR first
+	# now, so the axe already arrives in slot 24, slot 0 is empty, and `move_stack` refused the move
+	# for the correct reason. The check read that correct refusal as a broken host.
+	#
+	# It was invisible because the assertion underneath it — the client sees the axe in its
+	# replicated hotbar slot — passed either way: the axe was already there. What this cares about
+	# is the axe ENDING UP in the first hotbar slot, so assert that, and only move it if it is not
+	# already there. That holds whichever way the placement policy goes next.
+	var axe_slot: int = _slot_of(inventory, peer_id, &"stone_axe")
+	if axe_slot >= 0 and axe_slot != HOTBAR_FIRST_SLOT:
+		inventory.call("host_move_stack", peer_id, axe_slot, HOTBAR_FIRST_SLOT, 1)
+	check(_slot_of(inventory, peer_id, &"stone_axe") == HOTBAR_FIRST_SLOT,
+		"the axe is in the client's first hotbar slot (granted to %d)" % axe_slot)
 	var armed: bool = await _until(
 		func() -> bool: return bool(_read_result().get("armed", false)), TIMEOUT_SEC
 	)
@@ -382,3 +397,13 @@ func finish() -> void:
 	if transport != null and bool(transport.call("is_active")):
 		transport.call("leave")
 	quit(0 if failures == 0 else 1)
+
+
+## Which slot of `peer_id`'s inventory holds `item_id`, or -1. F-521: the checks used to assume a
+## grant landed in backpack slot 0, which stopped being true; asking is cheap and does not go stale.
+func _slot_of(inventory: Node, peer_id: int, item_id: StringName) -> int:
+	var slots: Array = inventory.call("host_slots", peer_id)
+	for index: int in slots.size():
+		if StringName(String((slots[index] as Dictionary).get("item_id", ""))) == item_id:
+			return index
+	return -1
