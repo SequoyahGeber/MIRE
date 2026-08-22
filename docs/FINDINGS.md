@@ -3793,6 +3793,50 @@ plus a before/after `tools/traversal_profile.gd`.
 
 ---
 
+### F-497 · Every music director leaves its AudioStreamPlayers running at engine shutdown, leaking playbacks and streams past cleanup
+
+**Area:** content · **Severity:** medium · **Found:** 2026-08-22 by dusk544993
+
+**Symptom.** Every headless run of this project — including one whose whole script is
+`print("NOOP OK"); quit()` — ends with:
+
+    WARNING: 8 ObjectDB instances were leaked at exit
+    ERROR: 4 resources still in use at exit
+
+`--verbose` names them, and they are all music:
+
+    Leaked instance: OggPacketSequence            Reference count: 3
+    Leaked instance: AudioStreamOggVorbis         Reference count: 1
+    Leaked instance: AudioStreamPlaybackOggVorbis Reference count: 1
+    Leaked instance: OggPacketSequencePlayback    Reference count: 1
+    Resource still in use: res://assets/audio/music/ambient_day.ogg
+    Resource still in use: res://assets/audio/music/theme_landfall.ogg
+
+Two directors, two streams each, plus the live playback objects underneath them.
+
+**Cause.** `AmbientMusicDirector`, `ThemeMusicDirector` and `BossMusicDirector` each define
+`_exit_tree()`, and each one unsubscribes from `EVENT_BUS` and stops there. None of them stops its
+`AudioStreamPlayer`s or clears their `stream`. A playing `AudioStreamPlayer` holds a live
+`AudioStreamPlayback` on the audio thread and a reference to the `AudioStream` resource; if nothing
+stops it before the engine tears the servers down, both outlive `ObjectDB` cleanup and get reported.
+The autoloads are freed at shutdown, but freeing a node that is still playing is not the same as
+stopping it first.
+
+**Severity is about the shape, not today's damage.** Right now these are warnings on stderr and
+nothing worse. But "an autoload still has work in flight when the engine shuts down" is precisely
+the class of thing that becomes an intermittent shutdown segfault, and this project's headless
+checks quit abruptly from a coroutine (`quit(0 if failures == 0 else 1)`) hundreds of times a day.
+Every one of those runs currently exits with the audio thread still holding objects nobody stopped.
+
+**Not F-494.** F-494 was the navmesh bake writing through a null pointer on a NavigationServer
+worker thread mid-run, and it is fixed. This is a separate, quieter problem on the shutdown path,
+found while checking whether anything ELSE about how these processes close was wrong.
+
+**Fix.** Stop the players and clear their streams in each `_exit_tree()`, alongside the
+unsubscribes that are already there.
+
+---
+
 ## Resolved
 
 ### F-492 · Pinecones: a thrown starter projectile gathered under pine trees — **fixed**
