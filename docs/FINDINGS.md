@@ -3269,6 +3269,80 @@ shipped powerup's every modifier is unread, so this cannot silently regrow.
 
 ---
 
+### F-581 · Loot has no moment: chests resolve into a modal list, and picking anything up is silent and invisible
+
+**Area:** ui · **Severity:** high · **Found:** 2026-08-22 by larchcc2572
+
+Opening a chest today freezes the player behind a modal panel (`ui/loot/chest_ui.gd`) that
+lists the granted ids as text rows, and then nothing else happens: no reveal, no VFX, no
+lasting record of what the run has given you. Picking an item up off the ground
+(`systems/loot/item_drop.gd`) is worse — the host grants it and emits `collected` *on the
+host only*, so a client who walks over a drop gets no message, no sound and no feedback of
+any kind. `SfxCatalogue` has shipped an `item_pickup` cue since the audio pass and the only
+thing that plays it is an inventory *operation* confirmation, never an actual pickup.
+
+Consequences:
+
+  · The chest — the loop's headline reward moment, the thing DESIGN.md §4.4 builds the
+    powerup economy around — has less presentation than opening a door.
+  · A powerup grant is invisible. Nothing on screen ever says which powerups you hold, so
+    the Resonance economy (3+ of a family) cannot be played deliberately.
+  · Ground pickups have no confirmation at all on a client, which reads as "the drop
+    despawned" rather than "you got it".
+
+Wanted: a slot-machine reveal in the world above the chest, a client-local pickup feed
+(bottom-left messages for every item and powerup received, from any source), a held-powerup
+icon row, screen VFX on a powerup grant, and the pickup cue actually wired to pickups.
+
+---
+
+### F-582 · agent godot --check-only without --script boots the game instead of checking anything, and holds the shared lock forever
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-22 by hollowbfcf67
+
+Found 2026-08-22 by hollowbfcf67, diagnosing a wedged shared lock for larchcc2572. Live instance at
+the time of filing: `Godot --headless --path <root> --check-only`, pid 46171, **15 minutes elapsed**,
+holding the godot lock with six `agent godot` invocations queued behind it.
+
+**`--check-only` is a modifier for `--script`, not a mode of its own.** It means "parse that script
+for errors and quit". `_godot_argv()` passes it straight through, so `agent godot --check-only` with
+no `--script` builds:
+
+    Godot --headless --path <root> --check-only
+
+There is nothing to check. The flag does nothing, Godot boots the project normally — headless, into
+`run/main_scene`, which is `frontend.tscn` — and sits in its main loop. **There is no path to
+`quit()` in that process.** It runs until something kills it.
+
+**It looks like a slow compile, which is why it survives.** Two samples 20 seconds apart:
+
+    46171   15:08   0:49.46   4.1%
+    46171   15:28   0:50.35   3.2%
+
+CPU is accumulating, so a `%CPU`-only glance says "busy". It is 0.89s per 20s wall — about 4% of one
+core, which is an idle SceneTree ticking, not a parse. The wedge that cost this repo hours previously
+had the same signature (18 min elapsed, 38s CPU, 2.5%). **Elapsed-versus-CPU is the test; `%CPU`
+alone cannot tell a wedged holder from a working one.**
+
+Three things go wrong at once, which is what makes it worth a finding rather than a note:
+
+1. The caller believes their syntax check ran. It did not. Whatever they edited is unverified, and
+   they will read the eventual kill as a tooling problem rather than as "my check never happened".
+2. The shared lock is held indefinitely, and every queued session pays. This is F-557's family
+   reached through the wrapper rather than through a check's own `quit()` placement.
+3. Nothing in the wrapper or its help text says `--check-only` needs `--script`.
+
+**Fix:** `cmd_godot` should refuse `--check-only` without `--script` — it is never a meaningful
+combination — and say what to run instead. Cheap, and it makes the failure impossible rather than
+merely documented. A second, independent guard worth considering: a wall-clock ceiling on a
+lock-holding engine run, so no invocation can hold the shared lock indefinitely whatever the reason.
+That is F-557's proposal and this is a second argument for it.
+
+**Not fixed here:** `.agent/bin/agent` is not claimed by me right now, and the live wedged process
+belongs to birch1db63e — reaping another session's process is theirs or Sequoyah's call, not mine.
+
+---
+
 ## Resolved
 
 ### F-578 · Four of the eight craftable stations do nothing: StationDef's family/tier are never read, so the Reinforced Workbench unlocks no recipes — **duplicate of F-575**
