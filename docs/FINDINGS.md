@@ -2192,30 +2192,6 @@ class of problem as F-131 and F-269 — the doc and the state disagreeing, with 
 
 ---
 
-### F-469 · Four recent decisions use a heading shape decision_ref_check.py cannot see
-
-**Area:** docs · **Severity:** low · **Found:** 2026-08-21 by birche6b40e
-
-`tools/decision_ref_check.py` recognises a decision heading only as `### D-NNN ·` (HEADING_RE, line
-45). D-196, D-197, D-198 and D-199 were authored as `## D-NNN — <title>`, so the checker treats every
-citation of them as DANGLING: four of the ten failures it reports at HEAD are these, and they are
-noise that hides a real dangling reference the moment one appears.
-
-Found while adding D-200/D-201 for task 3.18/3.19 (`docs/PROGRESSION.md`), which initially copied the
-newer `##` shape from D-196 and inherited the same failure; they were re-authored as `### D-NNN ·
-<date> · <title>` and the checker is satisfied with them.
-
-**The fix is one of two calls, and it is a call, not a cleanup:** either re-author the four headings
-to `### D-NNN · <date> · <title>` (DECISIONS.md's "append, never rewrite" rule is about reasoning, and
-a heading shape is not reasoning), or widen `HEADING_RE` to accept both shapes and stop pretending
-the file has one convention. Prefer the first — the date in the heading is load-bearing for anyone
-reading the log chronologically, and the `##` entries dropped it.
-
-Do NOT simply re-run the check and treat 10 as the expected number: that is how the other six stay
-invisible.
-
----
-
 ### F-470 · The fullscreen benchmark harness does not take focus, so its own runs are void
 
 **Area:** ? · **Severity:** medium · **Found:** 2026-08-21 by quill895277
@@ -2957,6 +2933,54 @@ instead of an artefact of it.
 ---
 
 ## Resolved
+
+### F-469 · Four recent decisions use a heading shape decision_ref_check.py cannot see — **fixed**
+
+**Area:** docs · **Severity:** low · **Found:** 2026-08-21 by birche6b40e
+
+`tools/decision_ref_check.py` recognises a decision heading only as `### D-NNN ·` (HEADING_RE, line
+45). D-196, D-197, D-198 and D-199 were authored as `## D-NNN — <title>`, so the checker treats every
+citation of them as DANGLING: four of the ten failures it reports at HEAD are these, and they are
+noise that hides a real dangling reference the moment one appears.
+
+Found while adding D-200/D-201 for task 3.18/3.19 (`docs/PROGRESSION.md`), which initially copied the
+newer `##` shape from D-196 and inherited the same failure; they were re-authored as `### D-NNN ·
+<date> · <title>` and the checker is satisfied with them.
+
+**The fix is one of two calls, and it is a call, not a cleanup:** either re-author the four headings
+to `### D-NNN · <date> · <title>` (DECISIONS.md's "append, never rewrite" rule is about reasoning, and
+a heading shape is not reasoning), or widen `HEADING_RE` to accept both shapes and stop pretending
+the file has one convention. Prefer the first — the date in the heading is load-bearing for anyone
+reading the log chronologically, and the `##` entries dropped it.
+
+Do NOT simply re-run the check and treat 10 as the expected number: that is how the other six stay
+invisible.
+
+---
+
+**Resolved 2026-08-22 by hollowbfcf67.** **Fixed 2026-08-22 by hollowbfcf67, and it was ten decisions rather than four.** D-186, D-187, D-188,
+D-189, D-190, D-191, D-196, D-197, D-198 and D-212 were all authored as `## D-NNN — <title>` instead
+of `### D-NNN · <date> · <title>`. `decision_ref_check.py` scans for `^### D-`, so every one of them
+was invisible to it and all 18 citations across `ITEMS.md`, `AUDIO.md`, `DELEGATION.md` and
+`FINDINGS.md` read as dangling. Dates were recovered from `git log -S` rather than guessed — all ten
+landed 2026-08-21.
+
+`DECISION_REF_CHECK dangling` goes **18 → 0**.
+
+Worth noting as a second benefit: a level-2 heading inside a document is also the F-464/F-467 hazard,
+where a `## ` inside a body closes the section early for any scanner walking it. This removes ten of
+them from `docs/DECISIONS.md`.
+
+**What the fix uncovered, filed as F-567 rather than fixed here.** Making the ten visible showed that
+six of them collide: D-186 through D-191 each head **two unrelated decisions**, by different agents on
+the same day — F-260's exact failure mode, which the locked allocator in `agent decision` exists to
+prevent. The two defects had been masking each other: the citation looked broken, so the collision
+looked like an absence. `D-191` is the sharpest case, cited both for *"the Mire starts as exactly one
+corruption area"* — a standing design rule — and for *"terrain height is upstream of the biome bands"*.
+
+That is six renumberings plus a citation sweep, each of which has to be got right, and it is distinct
+work from the heading fix that revealed it. The full inventory is in F-567. `decision_ref_check.py`
+now reports `dangling=0 duplicate=6`, which states the real problem instead of an artefact of it.
 
 ### F-566 · ProceduralWorld re-anchors its streamer every physics tick even with no player, so build_player=false does NOT protect an externally-set anchor — **fixed**
 
