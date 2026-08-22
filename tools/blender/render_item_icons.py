@@ -60,6 +60,10 @@ SOURCES: list[tuple[str, str]] = [
     ("coin", "pickups/exports/pickup_coin.glb"),
     ("coin_stack", "pickups/exports/pickup_coin_stack.glb"),
     ("coins", "loot/exports/loot_coin_pouch.glb"),
+    # F-574. The only key in the game, and the only thing that opens a gilded chest. Sourced
+    # from the loot kit rather than pickups because it is authored beside the chest it opens,
+    # so the two share `mats["gold"]` and visibly belong together.
+    ("gilded_key", "loot/exports/loot_gilded_key.glb"),
     ("wooden_axe", "tools_weapons/exports/wooden_axe_world.glb"),
     ("stone_axe", "tools_weapons/exports/stone_axe_world.glb"),
     ("wooden_pickaxe", "tools_weapons/exports/wooden_pickaxe_world.glb"),
@@ -152,6 +156,11 @@ AZIMUTH: dict[str, float] = {
     "iron_sword": 22.0,
     "log": 55.0,
     "branch": 55.0,
+    # F-574. The key is a flat plate standing in XZ, so its face IS its silhouette;
+    # the default 35 degrees turns it toward edge-on and loses the pierced bow,
+    # which is the only thing that identifies a key at 64 px. 8 degrees keeps the
+    # face while still showing enough thickness that it is not a paper cut-out.
+    "gilded_key": 8.0,
 }
 DEFAULT_AZIMUTH = 35.0
 ELEVATION = 21.0

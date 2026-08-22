@@ -198,6 +198,19 @@
     ]
   },
   {
+    "name": "loot_gilded_key",
+    "family": "key",
+    "width_m": 0.119,
+    "depth_m": 0.016,
+    "height_m": 0.237,
+    "mesh_parts": 18,
+    "polygons": 108,
+    "materials": [
+      "MIRE_Brass",
+      "MIRE_Gold"
+    ]
+  },
+  {
     "name": "loot_coin_pouch",
     "family": "carried",
     "width_m": 0.304,

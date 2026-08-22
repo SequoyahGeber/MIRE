@@ -200,6 +200,16 @@
     "source_polygons": 296
   },
   {
+    "id": "gilded_key",
+    "source": "assets/loot/exports/loot_gilded_key.glb",
+    "size_px": 256,
+    "azimuth_deg": 8.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.2561,
+    "source_polygons": 216
+  },
+  {
     "id": "wooden_axe",
     "source": "assets/tools_weapons/exports/wooden_axe_world.glb",
     "size_px": 256,

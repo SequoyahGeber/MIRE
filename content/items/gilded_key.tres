@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="1_itemdef"]
+[ext_resource type="PackedScene" path="res://assets/loot/exports/loot_gilded_key.glb" id="2_model"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_gilded_key.png" id="3_icon"]
+
+[resource]
+script = ExtResource("1_itemdef")
+id = &"gilded_key"
+display_name = "Gilded Key"
+description = "Warded, and far heavier than it needs to be. Whatever it was cut for was worth locking twice."
+icon = ExtResource("3_icon")
+category = 0
+stack_size = 8
+world_model = ExtResource("2_model")
+view_model = ExtResource("2_model")
+grip_offset = Vector3(0.22, -0.24, -0.38)
+grip_rotation_degrees = Vector3(-10.0, 168.0, 8.0)
+grip_scale = 0.9

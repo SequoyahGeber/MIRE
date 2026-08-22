@@ -83,6 +83,7 @@ EXPECTED_NAMES = [
     "loot_chest_warded_open",
     "loot_chest_gilded_closed",
     "loot_chest_gilded_open",
+    "loot_gilded_key",
     "loot_coin_pouch",
     "loot_powerup_orb",
     "loot_item_bag",
@@ -476,6 +477,113 @@ def build_chest_gilded(mats: dict[str, bpy.types.Material], is_open: bool) -> No
 # ── Carried and dropped loot ──────────────────────────────────────────────────
 
 
+def build_gilded_key(mats: dict[str, bpy.types.Material]) -> None:
+    """The Gilded Key — the one thing that opens the gilded chest (F-574).
+
+    Modelled on real ornate warded keys rather than on the idea of a key. The
+    anatomy is a specific, named thing: a BOW (the decorative head you turn), a
+    COLLAR or shoulder (the ring that stops the key at the escutcheon), the
+    SHANK (the stem, often carrying turned collars), and the BIT (the blade, cut
+    with stepped wards that match the lock). Ornate 18th-19th century bows are
+    pierced openwork — trefoils, quatrefoils, Gothic Revival tracery — and that
+    PIERCING is the whole reason a key reads as ornate instead of as a stick
+    with a lump on the end.
+
+    ## It stands up, and that is a legibility decision
+
+    The first cut laid the key flat in XY like every other pickup. It rendered
+    as an unreadable gold blob, because `render_item_icons.py` shoots from a
+    fixed 21 degrees of elevation and a flat plate seen from 21 degrees is
+    almost edge-on. So the key is built standing in the XZ plane — length up Z,
+    width across X, thickness in Y — and the icon camera sees its face. The
+    same choice helps in the world: a key is a flat object, and flat objects
+    lying on mud are invisible from standing eye height.
+
+    ## The hole is the point
+
+    The first cut also closed its own bow: a 0.023 m centre boss plus four long
+    corner diagonals filled a 0.054 m opening until the head read as solid. The
+    opening here is 0.075 m across the inside with only a slim cross-brace, and
+    the tracery is pushed right into the corners. At 64 px what identifies a key
+    is a RING with a stem — if the ring fills in, it stops being a key.
+
+    ## Why it is the chest's own gold
+
+    `build_chest_gilded()` above is gold banding and filigree over dark wood.
+    The key uses the same ``mats["gold"]``, so a player who has seen one should
+    recognise the other. The bit alone is ``brass``: it is the part that enters
+    the lock and would be the wearing surface, and the hue break stops the blade
+    merging into the shank at distance.
+
+    ## Scale
+
+    0.23 m tall. Real ceremonial and gate keys run 0.12-0.20 m, so this sits
+    just past the large end deliberately — against the shipped pickups it lands
+    between `pickup_salvage_fragment` (0.190 m) and `pickup_iron_ingot` (0.260
+    m), which is where a treasure key belongs in a set containing both.
+    """
+    gold = mats["gold"]
+    brass = mats["brass"]
+
+    # Thickness is Y and stays thin: a key is a plate. The first cut used 0.019
+    # against a 0.015 bar, which is nearly square in section and read as masonry.
+    thickness = 0.011
+    bar = 0.014
+    bow_span = 0.103
+    half = bow_span * 0.5
+    bow_centre_z = 0.158
+
+    # ── The bow: a pierced ring, four bars around a genuinely open middle.
+    for index, (x, z, w, h) in enumerate((
+        (0.0, bow_centre_z + half, bow_span, bar),   # crown
+        (0.0, bow_centre_z - half, bow_span, bar),   # collar end
+        (-half, bow_centre_z, bar, bow_span),        # left upright
+        (half, bow_centre_z, bar, bow_span),         # right upright
+    )):
+        box(f"Key_Bow_{index + 1}", (x, 0.0, z), (w, thickness, h), gold)
+
+    # Corner tracery, pushed into the corners and kept SHORT so the opening
+    # survives. These are what make the outline ornate rather than a plain loop.
+    for index, (sx, sz) in enumerate(((-1, -1), (1, -1), (-1, 1), (1, 1))):
+        box(
+            f"Key_Bow_Tracery_{index + 1}",
+            (sx * half * 0.74, 0.0, bow_centre_z + sz * half * 0.74),
+            (bar * 0.8, thickness * 0.9, bow_span * 0.26),
+            gold,
+            (0.0, math.radians(45.0 * sx * sz), 0.0),
+        )
+
+    # One slim cross-brace instead of the solid boss the first cut used. It gives
+    # the head something inside its outline without closing it.
+    box("Key_Bow_Brace", (0.0, 0.0, bow_centre_z), (bow_span * 0.62, thickness * 0.9, bar * 0.5), gold)
+
+    # A finial on the crown — the detail that says "made for a treasury", and it
+    # breaks the ring's outline so the top does not read as a plain circle.
+    box("Key_Bow_Finial", (0.0, 0.0, bow_centre_z + half + bar * 0.72), (0.030, thickness, 0.018), gold)
+
+    # ── The collar: the shoulder that stops the key at the escutcheon, and the
+    # visual break between the ornate head and the plain stem.
+    box("Key_Collar", (0.0, 0.0, 0.094), (0.038, thickness * 1.5, 0.014), gold)
+
+    # ── The shank, with two turned collars along it.
+    box("Key_Shank", (0.0, 0.0, 0.055), (0.017, thickness, 0.082), gold)
+    for index, z in enumerate((0.030, 0.074)):
+        box(f"Key_Shank_Collar_{index + 1}", (0.0, 0.0, z), (0.026, thickness * 1.3, 0.009), gold)
+
+    # ── The bit: stepped ward cuts on ONE side, which is what tells a key from a
+    # nail in silhouette. Three descending steps read as cuts even when the
+    # notches themselves are sub-pixel — the staircase survives, the notches do not.
+    for index, (x, z, w, h) in enumerate((
+        (0.026, 0.030, 0.036, 0.020),
+        (0.034, 0.014, 0.052, 0.017),
+        (0.026, 0.000, 0.036, 0.016),
+    )):
+        box(f"Key_Bit_{index + 1}", (x, 0.0, z), (w, thickness * 0.85, h), brass)
+
+    # The tip, squared off. A pointed key is a dagger.
+    box("Key_Tip", (0.0, 0.0, 0.004), (0.017, thickness, 0.024), gold)
+
+
 def build_coin_pouch(mats: dict[str, bpy.types.Material]) -> None:
     ico("Pouch_Body", (0.0, 0.0, 0.13), (0.16, 0.15, 0.13), mats["leather"], subdivisions=2)
     cone("Pouch_Neck", 0.085, 0.062, 0.09, (0.0, 0.0, 0.27), mats["leather_dark"], 10)
@@ -840,6 +948,7 @@ def main() -> None:
         ("loot_chest_warded_open", "chest", lambda: build_chest_warded(mats, True), chest_anchor),
         ("loot_chest_gilded_closed", "chest", lambda: build_chest_gilded(mats, False), chest_anchor),
         ("loot_chest_gilded_open", "chest", lambda: build_chest_gilded(mats, True), chest_anchor),
+        ("loot_gilded_key", "key", lambda: build_gilded_key(mats), ()),
         ("loot_coin_pouch", "carried", lambda: build_coin_pouch(mats), ()),
         ("loot_powerup_orb", "powerup", lambda: build_powerup_orb(mats), ()),
         ("loot_item_bag", "carried", lambda: build_item_bag(mats), ()),
