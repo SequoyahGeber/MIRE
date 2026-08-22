@@ -25,6 +25,12 @@ const SCENE_PATH: String = "res://levels/hollowmere.tscn"
 const TEARDOWN_FRAMES: int = 30
 const HOST_PEER: int = 1
 const TIMEOUT_SEC: float = 20.0
+## Where a player stands to use a station: beside it, not in it. See `_stand_at_station()`.
+const STATION_STAND_OFFSET_M: float = 1.6
+## `CraftingService.MAX_STATION_DISTANCE_M`, restated rather than imported. This check is a WITNESS:
+## importing the service's own constant would make the assertion agree with the code whatever the
+## code said, which is "assert the artefact, never the record of it" applied to a number.
+const CRAFT_RANGE_M: float = 3.25
 
 var failures: int = 0
 var notes: PackedStringArray = []
@@ -135,28 +141,95 @@ func _phase_day_verbs() -> void:
 				"the yield landed in the inventory (%s x%d)"
 					% [item_id, int(inventory.call("host_count", HOST_PEER, item_id))])
 		else:
-			var before: int = int(inventory.call("host_count", HOST_PEER, item_id))
+			var drops: Node = root.get_node_or_null(^"ItemDropService")
+			var pack_before: int = int(inventory.call("host_count", HOST_PEER, item_id))
+			var ground_before: int = int(drops.call(&"live_count")) if drops != null else 0
 			var swings: int = 0
 			while bool(harvestable.get(&"active")) and swings < 32:
 				swings += 1
 				harvestable.call("host_apply_tool_damage", 1, 99, HOST_PEER)
 				await physics_frame
-			check(int(inventory.call("host_count", HOST_PEER, item_id)) > before,
-				"harvesting yielded %s (%d swings)" % [item_id, swings])
+			var pack_after: int = int(inventory.call("host_count", HOST_PEER, item_id))
+			var ground_after: int = int(drops.call(&"live_count")) if drops != null else 0
+			# F-598, and the same shape as F-588: asserted over BOTH destinations, because F-535
+			# moved the harvest grant. `InventoryService._on_harvest_yielded()` no longer credits
+			# the pack — it asks `ItemDropService` for a physical drop at the prop, and the pack is
+			# filled when a player reaches it. The old assertion demanded a pack credit and so went
+			# red on a game that works, which is expensive: a red loop audit is exactly the signal
+			# someone reads as "harvesting is broken, the run is hard-locked".
+			#
+			# A disjunction rather than swapping one destination for the other. "The drop appeared"
+			# alone would pass just as happily if the yield were being DESTROYED somewhere else, and
+			# distinguishing those two is the entire reason to assert this at all.
+			check(pack_after > pack_before or ground_after > ground_before,
+				"harvesting %s put it somewhere the player can get it — pack %d -> %d, ground %d -> %d (%d swings)"
+					% [item_id, pack_before, pack_after, ground_before, ground_after, swings])
+			# And the yield is REACHABLE, not merely spawned. A drop the player cannot collect is a
+			# lost resource, which on `stone` is the hard lock this audit exists to catch: no stone,
+			# no tools, no run.
+			if ground_after > ground_before and drops != null:
+				var reachable: bool = false
+				for candidate: Node in drops.call(&"live_drops"):
+					if StringName(candidate.get(&"item_id")) != item_id:
+						continue
+					if int(candidate.get(&"amount")) > 0:
+						reachable = true
+						break
+				check(reachable,
+					"the dropped %s is a real, collectable pile rather than an empty one" % item_id)
 
 	# CRAFT — stand at a real station marker, let the SERVICE say which station id that is, then
 	# craft the first recipe registered for it. Everything read from live content — nothing named.
 	var crafting: Node = root.get_node_or_null(^"CraftingService")
-	var station: Node3D = _registered_station_marker()
-	check(station != null, "a REGISTERED station stands in the scene (a marker whose asset matches "
-		+ "a StationDef.world_scene — 8 station markers exist, only the registered ones craft)")
+	var stations: Array[Node3D] = _registered_station_markers()
+	check(not stations.is_empty(), "a REGISTERED station stands in the scene (a marker whose asset "
+		+ "matches a StationDef.world_scene — 8 station markers exist, only the registered ones craft)")
+	var station: Node3D = null
+	var closest: float = INF
+	if not stations.is_empty() and crafting != null:
+		# F-598/F-600: try each registered station until the player can actually STAND at one.
+		#
+		# This used to teleport to the first station's own origin plus a metre of height and ask
+		# immediately. Two things were wrong with that and they compounded. Standing on a station's
+		# origin puts the player capsule inside its mesh, so physics depenetrates the capsule out
+		# over the next few frames — and the single awaited frame sampled it mid-ejection. And the
+		# first registered station in `hollowmere.json` is the campfire, which F-600 found buried
+		# under sixteen stacked variant-state props (every ship repair stage, both node damage
+		# states, an enemy model) whose combined collider is about 5 m in radius. The player is
+		# ejected past the 3.25 m craft range from every approach, so that station cannot be used
+		# at all on this map.
+		#
+		# The result was `CraftingService sees the player at a station ()`, which reads as a
+		# crafting bug and is not one — `tp` and `CraftingService` were both verified working. The
+		# audit's job is to prove the CRAFTING LOOP works, so it walks to a station it can reach
+		# rather than failing on one map's geometry. F-600 owns the geometry.
+		for candidate: Node3D in stations:
+			var distance: float = await _stand_at_station(candidate)
+			closest = minf(closest, distance)
+			if distance <= CRAFT_RANGE_M:
+				station = candidate
+				break
+		# Asserted SEPARATELY from the station id. "the player could not reach any station" and
+		# "the service did not recognise the station the player is standing at" are different bugs
+		# with different owners, and the one combined assertion this replaces reported the second
+		# when the truth was the first.
+		check(station != null,
+			"the player can physically stand at a station before we ask the service about it "
+			+ "(closest approach %.2f m across %d station(s), craft range is %.2f m)"
+				% [closest, stations.size(), CRAFT_RANGE_M])
 	if station != null and crafting != null:
-		await _cmd("tp @s %f %f %f" % [station.global_position.x, station.global_position.y + 1.0,
-			station.global_position.z], true)
-		await physics_frame
 		var station_id := StringName(String(crafting.call("nearby_station_id")))
 		check(station_id != &"", "CraftingService sees the player at a station (%s)" % station_id)
-		var recipe: Dictionary = _recipe_for_station(station_id)
+		# F-598: asked through the SERVICE's own substitution rule, not by scanning the registry for
+		# `recipe.station == station_id`. F-575/F-587 made a higher-tier bench craft what the bench
+		# it replaces crafts, so `workbench_upgraded` legitimately has no recipe registered directly
+		# to it and the raw scan found nothing — reporting "a recipe exists for station
+		# 'workbench_upgraded' (<null>)" while a player standing there is offered a full list.
+		#
+		# The audit's question is "can the player craft here", and `recipes_for_station()` is what
+		# actually answers that in the game. Scanning the registry tested a data layout instead of
+		# the behaviour, and would have gone red on every future station that inherits recipes.
+		var recipe: Dictionary = _recipe_for_station_via_service(crafting, station_id)
 		check(not recipe.is_empty(), "a recipe exists for station '%s' (%s)" % [station_id, recipe.get("id")])
 		if not recipe.is_empty():
 			for ingredient: Dictionary in recipe.get("inputs", []):
@@ -511,6 +584,46 @@ func _first_active_harvestable() -> Node:
 ## The marker for a station that is REGISTERED (its asset is some StationDef's world_scene) — the
 ## 3.25 m crafting range means standing at the wrong prop of the station cluster reads as "no
 ## station", which is exactly what happened to this audit's first draft at the campfire.
+## Walks to [param station] and returns how close the player actually got, AFTER physics settles.
+##
+## Tries eight points around it rather than one fixed side: a single hard-coded offset is clear at
+## one station and buried in geometry at the next, so the check would pass or fail on which marker
+## the layout happened to hand it. Walking round to a side you can stand on is also what a player
+## does. Settled over several frames rather than one, because depenetration resolves over several
+## and a single frame samples the capsule mid-ejection.
+func _stand_at_station(station: Node3D) -> float:
+	var best: float = INF
+	for step: int in 8:
+		var angle: float = float(step) / 8.0 * TAU
+		var stand: Vector3 = station.global_position + Vector3(
+			cos(angle) * STATION_STAND_OFFSET_M, 1.0, sin(angle) * STATION_STAND_OFFSET_M)
+		await _cmd("tp @s %f %f %f" % [stand.x, stand.y, stand.z], true)
+		for _settle: int in 8:
+			await physics_frame
+		var body: Node3D = _player_body()
+		if body == null:
+			return INF
+		best = minf(best, body.global_position.distance_to(station.global_position))
+		if best <= CRAFT_RANGE_M:
+			return best
+	return best
+
+
+func _registered_station_markers() -> Array[Node3D]:
+	var found: Array[Node3D] = []
+	var registry: Node = root.get_node_or_null(^"Registry")
+	var assets: Array[StringName] = []
+	for id: Variant in (registry.get(&"stations") as Dictionary):
+		var def: Resource = (registry.get(&"stations") as Dictionary)[id]
+		assets.append(StringName(String(def.get(&"world_scene"))))
+	for node: Node in get_nodes_in_group(&"authored_world_marker"):
+		if String(node.get_meta(&"kind", "")) != "station":
+			continue
+		if assets.has(StringName(String(node.name).trim_prefix("Station_"))):
+			found.append(node as Node3D)
+	return found
+
+
 func _registered_station_marker() -> Node3D:
 	var registry: Node = root.get_node_or_null(^"Registry")
 	var assets: Array[StringName] = []
@@ -528,6 +641,22 @@ func _registered_station_marker() -> Node3D:
 
 ## First recipe registered for [param station_id], read off the real RecipeDef schema
 ## (inputs: Array[RecipeIngredient]{item: ItemDef, count}, output_item: ItemDef).
+## The first recipe the SERVICE says can be crafted at [param station_id], flattened into the shape
+## the rest of this phase already reads. Falls back to the registry scan only if the service has no
+## such method, so the check keeps working against an older build rather than failing as a crash.
+func _recipe_for_station_via_service(crafting: Node, station_id: StringName) -> Dictionary:
+	if crafting == null or not crafting.has_method(&"recipes_for_station"):
+		return _recipe_for_station(station_id)
+	for recipe: Resource in crafting.call(&"recipes_for_station", station_id):
+		if recipe == null:
+			continue
+		var output: Resource = recipe.get(&"output_item")
+		if output == null:
+			continue
+		return _recipe_payload(recipe, output)
+	return {}
+
+
 func _recipe_for_station(station_id: StringName) -> Dictionary:
 	var registry: Node = root.get_node_or_null(^"Registry")
 	var recipes: Dictionary = registry.get(&"recipes")
@@ -538,18 +667,27 @@ func _recipe_for_station(station_id: StringName) -> Dictionary:
 		var output: Resource = recipe.get(&"output_item")
 		if output == null:
 			continue
-		var inputs: Array = []
-		for entry: Variant in (recipe.get(&"inputs") as Array):
-			var ingredient: Resource = entry
-			if ingredient == null or ingredient.get(&"item") == null:
-				continue
-			inputs.append({"item": StringName(String((ingredient.get(&"item") as Resource).get(&"id"))),
-				"amount": int(ingredient.get(&"count"))})
-		if inputs.is_empty():
+		var payload: Dictionary = _recipe_payload(recipe, output)
+		if payload.is_empty():
 			continue
-		return {"id": StringName(String(id)), "inputs": inputs,
-			"output": StringName(String(output.get(&"id")))}
+		return payload
 	return {}
+
+
+## One RecipeDef flattened into the shape this phase reads. Shared by both lookups above so the
+## service route and the registry fallback cannot drift into describing a recipe differently.
+func _recipe_payload(recipe: Resource, output: Resource) -> Dictionary:
+	var inputs: Array = []
+	for entry: Variant in (recipe.get(&"inputs") as Array):
+		var ingredient: Resource = entry
+		if ingredient == null or ingredient.get(&"item") == null:
+			continue
+		inputs.append({"item": StringName(String((ingredient.get(&"item") as Resource).get(&"id"))),
+			"amount": int(ingredient.get(&"count"))})
+	if inputs.is_empty():
+		return {}
+	return {"id": StringName(String(recipe.get(&"id"))), "inputs": inputs,
+		"output": StringName(String(output.get(&"id")))}
 
 
 ## A GROUND piece if one exists — the alphabetically-first buildable was `dock`, which legitimately

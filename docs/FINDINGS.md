@@ -3462,37 +3462,6 @@ Mire-touched behaviour is Phase 6 and must not be designed out of reach.
 
 ---
 
-### F-598 · loop_audit_check is red at HEAD in three places — the check that walks the whole game loop
-
-**Area:** gameplay · **Severity:** high · **Found:** 2026-08-22 by wick1c650c
-
-`tools/loop_audit_check.gd` is the check that walks a whole run start to finish, and it reports
-`LOOP_AUDIT failures=3` at HEAD:
-
-    FAIL: harvesting yielded stone (1 swings)
-    FAIL: CraftingService sees the player at a station ()
-    FAIL: a recipe exists for station '' (<null>)
-
-The second and third are one failure: `nearby_station_id()` returned empty, so the third had nothing
-to look up.
-
-NOT caused by F-575 (`2fdb7a9b`), which changed `nearby_station_id()` to call
-`_station_instance_in_range()`. `agent baseline --rev 9651ec81` — the commit before it — reproduces
-all three with IDENTICAL text and identical numbers, so the comparison is on the failure itself and
-not merely on the count.
-
-This matters more than an ordinary red check because of what it gates. Sequoyah is about to play a
-co-op run with a friend and asked specifically not to be hard-locked in progression. If harvesting
-genuinely yields nothing there is no stone, so no tools, so no run — and if no station is ever
-detected the crafting half of the loop is unreachable. Both are exactly the hard lock he named.
-
-The harvest failure may be F-588's shape — F-535 moved harvest yields to physical ground drops, so an
-assertion on a pack credit fails while the game is fine. That must be PROVEN rather than assumed: the
-assertion as written cannot distinguish "the yield went to the ground" from "the yield was
-destroyed", which is the same defect class as F-590's "the pack did not shrink" passing at 0 -> 0.
-
----
-
 ### F-599 · No pressure in a real session: 4 ambient enemies on a 1.09 km2 island, and a Mire front that moves 25 m per Cycle
 
 **Area:** balance · **Severity:** high · **Found:** 2026-08-22 by wick410d34
@@ -3614,6 +3583,104 @@ own.
 ---
 
 ## Resolved
+
+### F-598 · loop_audit_check is red at HEAD in three places — the check that walks the whole game loop — **fixed**
+
+**Area:** gameplay · **Severity:** high · **Found:** 2026-08-22 by wick1c650c
+
+`tools/loop_audit_check.gd` is the check that walks a whole run start to finish, and it reports
+`LOOP_AUDIT failures=3` at HEAD:
+
+    FAIL: harvesting yielded stone (1 swings)
+    FAIL: CraftingService sees the player at a station ()
+    FAIL: a recipe exists for station '' (<null>)
+
+The second and third are one failure: `nearby_station_id()` returned empty, so the third had nothing
+to look up.
+
+NOT caused by F-575 (`2fdb7a9b`), which changed `nearby_station_id()` to call
+`_station_instance_in_range()`. `agent baseline --rev 9651ec81` — the commit before it — reproduces
+all three with IDENTICAL text and identical numbers, so the comparison is on the failure itself and
+not merely on the count.
+
+This matters more than an ordinary red check because of what it gates. Sequoyah is about to play a
+co-op run with a friend and asked specifically not to be hard-locked in progression. If harvesting
+genuinely yields nothing there is no stone, so no tools, so no run — and if no station is ever
+detected the crafting half of the loop is unreachable. Both are exactly the hard lock he named.
+
+The harvest failure may be F-588's shape — F-535 moved harvest yields to physical ground drops, so an
+assertion on a pack credit fails while the game is fine. That must be PROVEN rather than assumed: the
+assertion as written cannot distinguish "the yield went to the ground" from "the yield was
+destroyed", which is the same defect class as F-590's "the pack did not shrink" passing at 0 -> 0.
+
+---
+
+**Resolved 2026-08-22 by wick1c650c (fixed).** Fixed by wick1c650c. `LOOP_AUDIT failures=0` on both endings — the default arc and `-- defeat`.
+
+**The game was not broken. Nothing here was a hard lock.** All three failures were the instrument.
+
+## Not F-575
+
+`agent baseline --rev 9651ec81` reproduces all three with IDENTICAL failure text and identical
+numbers, so the comparison is on the failures themselves and not merely on the count. The director's
+`nearby_station_id()` change is exonerated.
+
+## Failure 1 — harvesting
+
+F-588's shape exactly, and PROVEN rather than assumed. The instrumented run reads:
+
+    harvesting stone put it somewhere the player can get it — pack 0 -> 0, ground 16 -> 17
+
+F-535 moved the harvest grant to a physical ground drop; the assertion still demanded a pack credit.
+Asserted now as a DISJUNCTION over both destinations plus a reachability check on the resulting pile.
+Not swapped from one destination to the other: "the drop appeared" alone would pass just as happily
+if the yield were being destroyed somewhere else, and telling those apart is the entire reason to
+assert it. On `stone` specifically, a lost yield IS the hard lock this audit exists to catch.
+
+## Failures 2 and 3 — the station, and a real map bug underneath
+
+The check teleported to the first registered station's own origin plus a metre, then asked
+immediately. Two compounding faults, and neither was in `tp` or `CraftingService` — both were
+verified working, the teleport lands exactly where asked:
+
+  · standing on a station's ORIGIN puts the player capsule inside its mesh, and physics depenetrates
+    it out over the following frames. The single awaited frame sampled the capsule mid-ejection.
+  · the first registered station on this map is the campfire, and **F-600**: `hollowmere.json`
+    stacks sixteen mutually exclusive variant-state props on that exact point — every ship repair
+    stage, both node damage states, a whole and a broken mast, and an `enemy_mire_herald` standing
+    as static world geometry. Their combined collider is about 5 m in radius. Measured from eight
+    compass approaches, the player is ejected to between 5.4 m and 6.2 m every time, against a
+    3.25 m craft range. **That station cannot be used at all on this map**, and the cooking spit is
+    inside the same volume.
+
+So the audit now walks around each station looking for a side it can stand on, and moves to the next
+station if it cannot — which is what a player does. F-600 owns the geometry; this check's job is to
+prove the crafting loop works, not to fail on one dev map's layout.
+
+The reachability assertion is SEPARATE from the station-id assertion on purpose. "The player could
+not get to a station" and "the service did not recognise the station the player is standing at" are
+different bugs with different owners, and the single combined assertion this replaces reported the
+second when the truth was the first — for hours, to two agents.
+
+## The recipe lookup was testing a data layout, not a behaviour
+
+With the player finally at a station, the last failure was real and still not a game bug: the
+reachable station is `workbench_upgraded`, and the check scanned the registry for
+`recipe.station == station_id`. F-575/F-587 made a higher-tier bench craft what the bench it replaces
+crafts, so nothing is registered directly to it — while a player standing there is offered a full
+list. Now asked through `CraftingService.recipes_for_station()`, the service's own substitution rule,
+which is what actually answers "can I craft here". It crafts `arrow` and the arrow arrives.
+
+## Verification
+
+`LOOP_AUDIT failures=0`, both endings. Negative control on the new reachability assertion was
+OBSERVED rather than constructed: at an intermediate commit it failed with "the player actually
+reached the station (6.23 m away, 3.25 m is the craft range)" — it detects the real condition and
+names it. The harvest disjunction is the same construction proven under negative control in F-590.
+
+Restated `CRAFT_RANGE_M` as a literal rather than importing `CraftingService.MAX_STATION_DISTANCE_M`:
+this check is a witness, and importing the constant would make it agree with the code whatever the
+code said.
 
 ### F-593 · Chests read as too small against the player, and the ladder's two most common rungs are below knee height — **fixed**
 
