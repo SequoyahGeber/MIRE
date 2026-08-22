@@ -105,11 +105,18 @@ const BIOME_SAMPLE_STEP_M: float = 24.0
 ## oversight; `dev_loadout.gd` is a debug affordance that never runs for a player.
 const STARTING_KIT: Array[StringName] = []
 
-## Loot tiers a run can actually open. `gilded` is excluded on purpose: `ChestPlacementService`
-## refuses to build a gilded chest while its key item does not exist (F-574), so its table's contents
-## are NOT a source today. If that changes, this list is the one line to update.
+## Loot tiers a run can actually open.
+##
+## `gilded` was excluded when this check was written, because `ChestPlacementService` refuses to build
+## a gilded chest while its key item does not exist (F-574) — a gate on the ITEM, so nothing needed
+## editing there when the key shipped. It has now shipped (`content/items/gilded_key.tres`), and
+## `chest_gate_check` confirms it: "gilded is locked by 'gilded_key', which exists ... builds an
+## openable chest". So gilded chests are placed and openable, and their table IS a source.
+##
+## Verified by running the gate check rather than by reading the commit that landed the key — the
+## question is whether the game builds the chest, not whether the file exists.
 const REACHABLE_LOOT_TIERS: Array[StringName] = [
-	&"basic", &"common", &"rare", &"epic", &"legendary",
+	&"basic", &"common", &"rare", &"epic", &"legendary", &"gilded",
 	# Granted on a Wellspring cap and a boss kill respectively (RewardService). Both are objectives
 	# every island carries, so both are genuine sources.
 	&"wellspring", &"boss",
