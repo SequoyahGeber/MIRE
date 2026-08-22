@@ -1,5 +1,5 @@
 extends SceneTree
-const PerfFormat := preload("res://tools/perf_format.gd")
+const PerfFormat := preload("res://core/bench/perf_format.gd")
 
 ## @verify windowed — this check reads the renderer's own counters, which are all zero headless,
 ## so `agent verify` must launch it with a framebuffer instead of the `--headless` it injects by

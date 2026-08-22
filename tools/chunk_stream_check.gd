@@ -1,6 +1,6 @@
 extends SceneTree
 
-const PerfFormat := preload("res://tools/perf_format.gd")
+const PerfFormat := preload("res://core/bench/perf_format.gd")
 
 ## @verify windowed — this check meshes real chunks, which the dummy driver cannot upload, so
 ## `agent verify` must launch it with a framebuffer instead of the `--headless` it injects by

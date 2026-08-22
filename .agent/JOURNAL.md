@@ -10641,3 +10641,66 @@ two-process wipe walk green: a dead client returns to the run at full hp, respaw
 Files: `tools/defeat_net_check.gd`
 
 Commit at time of writing: `0d3d3e3e`
+
+---
+
+### DONE · F-609 · wick410d34 · 2026-08-22T19:13:19+00:00
+
+**A fresh install boots on HIGH with dynamic resolution off, so an M1 Air runs the heaviest preset the game has**
+
+base Apple Silicon now takes the integrated rule; files released for F-610
+
+Files: `autoload/graphics_quality.gd`, `autoload/settings_service.gd`, `core/render/hardware_tier.gd`, `tools/hardware_tier_check.gd`
+
+Commit at time of writing: `31261012`
+
+---
+
+### DONE · F-594 · wick410d34 · 2026-08-22T19:14:41+00:00
+
+**Arrows fly sideways and never nose over, the bow has no draw animation, and nothing shows arrows remaining**
+
+arrows fly point-first, bow draws, ammo counter shipped
+
+Files: `autoload/ranged_combat_service.gd`, `entities/player/viewmodel.gd`, `ui/hud/ammo_hud.gd`, `tools/bow_feel_check.gd`
+
+Commit at time of writing: `49fd9e1d`
+
+---
+
+### DONE · F-575 · wick410d34 · 2026-08-22T19:14:41+00:00
+
+**Four buildable crafting stations have zero recipes bound to them**
+
+mechanism fixed and reviewed; content half tracked in F-587/F-604
+
+Files: `autoload/crafting_service.gd`, `tools/station_tier_check.gd`, `content/stations/workbench_upgraded.tres`, `systems/crafting/station_def.gd`, `tools/recipe_station_check.gd`
+
+Commit at time of writing: `49fd9e1d`
+
+---
+
+### DONE · F-608 · birch1db63e · 2026-08-22T19:15:00+00:00
+
+**A playtest on someone else's machine produces no performance data we can read**
+
+SessionLog: per-minute time series with 1% low leading, event-stamped rows, machine header, Markdown to user://session_logs, pause-menu open button, flush every 30s and on exit. 0.0010% of a frame per sample, measured.
+
+Files: `autoload/session_log.gd`, `ui/menu/pause_menu.gd`, `tools/session_log_check.gd`, `project.godot`
+
+Commit at time of writing: `842d13fb`
+
+---
+
+### DONE · F-611 · vaneb67be3 · 2026-08-22T20:08:35+00:00
+
+**Release build excludes tools/perf_format.gd, so SessionLog fails to parse and instantiate on launch**
+
+SessionLog's runtime PerfFormat dependency now lives under core/bench, so release filtering no longer removes it. Focused formatting and session-log checks pass.
+
+Notes along the way:
+- Moved the runtime-safe pure formatting helper from excluded tools/ into core/bench/ and updated every caller; release packaging can now include SessionLog's dependency without weakening the tools/* exclusion.
+
+Files: `autoload/session_log.gd`, `core/bench/perf_format.gd`, `tools/perf_format.gd`, `tools/frame_cost_check.gd`, `tools/perf_probe.gd`, `tools/chunk_stream_check.gd`, `tools/perf_format_check.gd`, `tools/traversal_profile.gd`, `tools/revisit_probe.gd`, `tools/session_log_check.gd`
+
+Commit at time of writing: `91a62cde`

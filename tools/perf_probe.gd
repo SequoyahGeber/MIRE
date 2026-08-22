@@ -17,7 +17,7 @@ extends SceneTree
 
 const ProbeScene := preload("res://tools/probe_scene.gd")
 const DrawPolicy := preload("res://world/environment/draw_policy.gd")
-const PerfFormat := preload("res://tools/perf_format.gd")
+const PerfFormat := preload("res://core/bench/perf_format.gd")
 ## Fixed rather than random so repeated runs measure the same passive/VFX load. This is the first
 ## role in AttunementUI's authored order, matching the in-game benchmark harness.
 const PROBE_ATTUNEMENT: StringName = &"warden"

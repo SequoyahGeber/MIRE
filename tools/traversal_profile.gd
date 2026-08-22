@@ -1,5 +1,5 @@
 extends SceneTree
-const PerfFormat := preload("res://tools/perf_format.gd")
+const PerfFormat := preload("res://core/bench/perf_format.gd")
 
 ## What the traversal hitch is actually made of (F-454).
 ##

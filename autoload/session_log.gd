@@ -38,7 +38,7 @@ extends Node
 ##   · Nothing is formatted until the minute closes, and the file is touched only on flush.
 ##   · `tools/session_log_check.gd` asserts the per-sample cost rather than assuming it.
 
-const PERF_FORMAT := preload("res://tools/perf_format.gd")
+const PERF_FORMAT := preload("res://core/bench/perf_format.gd")
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
 
 const LOG_DIR: String = "user://session_logs"

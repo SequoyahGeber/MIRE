@@ -3670,16 +3670,38 @@ that build did, not a measurement of HEAD, and HEAD is likely worse.
 
 ---
 
-### F-610 · Nothing in any graphics preset turns off anti-aliasing, and MEDIUM keeps HIGH's full shadow pass
+## Resolved
+
+### F-611 · Release build excludes tools/perf_format.gd, so SessionLog fails to parse and instantiate on launch — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by vaneb67be3
+
+`autoload/session_log.gd:41` preloads `res://tools/perf_format.gd`, while every release preset intentionally excludes `tools/*`. A clean macOS Release export at committed HEAD `91a62cde` completed and passed codesign, but its real Metal launch printed `Preload file res://tools/perf_format.gd does not exist`, then failed to instantiate the SessionLog autoload. Move the runtime formatting helper out of the excluded developer-tools tree or otherwise make the runtime dependency exportable, update references/checks, re-export, and require a real exported-app launch without the parse/autoload errors.
+
+**Resolved 2026-08-22 by vaneb67be3 (fixed).** Moved the pure runtime performance-formatting helper from release-excluded `tools/perf_format.gd` to `core/bench/perf_format.gd`, then updated SessionLog and every diagnostic caller. `.agent/bin/agent godot --script tools/perf_format_check.gd` and `.agent/bin/agent godot --script tools/session_log_check.gd` both report `failures=0`. Final proof is a clean release re-export and real Metal app launch below.
+
+### F-610 · Nothing in any graphics preset turns off anti-aliasing, and MEDIUM keeps HIGH's full shadow pass — **fixed**
 
 **Area:** perf · **Severity:** high · **Found:** 2026-08-22 by wick1c650c
 
 Read off `autoload/graphics_quality.gd`'s own `PRESETS` table while answering "what should Sequoyah's
 friend run on an M1 MacBook Air" (F-606). Two gaps, and both hit an integrated GPU hardest.
 
-**No preset touches anti-aliasing at all.** MSAA 2x + FXAA ships to every machine, reachable only
-through the settings menu. `docs/PERFORMANCE.md` §3.2 measured it at **28% of the 1%-low frame** — on
-an M-series Pro. On an integrated GPU with roughly a third of that fill rate, MSAA is among the first
+**No preset touches anti-aliasing at all.**
+
+**CORRECTION (wick1c650c, same session):** this originally said "MSAA 2x + FXAA ships to every
+machine" and that was WRONG. `settings_service.gd` ships `anti_aliasing: 2`, and its match maps 2 to
+**TAA** — 1 is FXAA, 3 is MSAA 2x, 4 is MSAA 4x. So the shipped default is a temporal pass and
+neither MSAA nor FXAA. `docs/PERFORMANCE.md` §3.2's **28% of the 1%-low frame** measures MSAA 2x +
+FXAA, a configuration the game does not ship, so **that number must not be quoted for this
+finding** — any machine reporting MSAA got it from `benchmark_runner.gd:352` writing the advisor's
+recommendation, not from the default. The director flagged the error; I verified it at the source
+rather than taking it on faith, and it holds. Left visible rather than edited away, because a
+finding that sized a win off the wrong configuration is exactly the kind of thing someone reasons
+from later.
+
+The gap itself is real and unchanged: no preset touched AA, reachable only through the settings
+menu. On an integrated GPU with roughly a third of that fill rate, MSAA is among the first
 things that hurts, and the preset a non-technical player picks does nothing about it.
 
 **MEDIUM keeps HIGH's entire shadow pass.** The table names no shadow knob for MEDIUM, so it inherits
@@ -3702,9 +3724,75 @@ Two changes worth considering, neither taken here because both are tuning calls:
   · `scaling_3d_mode` is bilinear on every preset. FSR 1.0 measured at the same cost for a sharper
     image (PERFORMANCE.md §3.1), so LOW and MEDIUM are paying for bilinear's softness for nothing.
 
----
+**Resolved 2026-08-22 by wick1c650c (fixed).** Fixed by wick1c650c. `GRAPHICS_QUALITY_CHECK failures=0`, `SETTINGS_CHECK failures=0`.
 
-## Resolved
+## Anti-aliasing is now preset-owned, using the mechanism that already existed
+
+`SettingsService.set_graphics_preset()` already reset `_foliage_quality`, `_shadow_quality`,
+`_shadow_distance` and `_volumetric_fog` to follow the preset. **`_anti_aliasing` was simply missing
+from that list** — that omission was the entire bug. Not a system to build; a knob left out of a
+working one. `settings_advisor.gd:149` had already hit it and compensated in the benchmark, with the
+diagnosis written into its reason string.
+
+LOW turns AA off, MEDIUM drops to FXAA, HIGH names TAA explicitly. `SettingsService` remains the
+ONLY writer of the viewport's AA state; `GraphicsQuality` recommends and never touches
+`msaa_3d`/`use_taa`/`screen_space_aa` itself, so there is no second writer and no precedence
+question. A player choice — or the benchmark advisor's, which writes later — still wins.
+
+Adopted as a VALUE rather than a `-1` "follow the preset" sentinel like the other four. `_anti_aliasing`
+has always been a plain 0-4 index and every existing save carries one; giving it -1 semantics would
+make every saved `anti_aliasing: 2` read as an explicit choice of TAA rather than the default, pinning
+existing players to it forever. This keeps the save format unchanged.
+
+HIGH names its AA where it names no shadow keys, and the asymmetry is deliberate: absent shadow keys
+mean "restore the level's AUTHORED values", which HIGH captured. AA is global with no authored value,
+so absence would mean "keep whatever the last preset chose" — and a player going LOW to HIGH would
+silently keep AA off with nothing to tell them. The check caught HIGH inheriting MEDIUM's FXAA.
+
+## MEDIUM has its own shadow budget: 3072 atlas, 48 m
+
+Two independent records said MEDIUM-equals-HIGH was deliberate — a comment in the table and an
+assertion in the check. Both were read before overriding, and **neither is being reverted**: what both
+forbid is MEDIUM matching LOW, and MEDIUM is not being made to match LOW. It has a third budget
+neither considered, keeping HIGH's cascade count and bias set so the authored look is intact, and
+spending less only on resolution and reach. That distinction is written into both the table and the
+check so this is not reverted in three weeks by someone who finds the old comment.
+
+What changed is that there is a machine now. F-609 routes a base M1 to MEDIUM; a MEDIUM carrying
+HIGH's 4096 atlas and full shadow distance meant that machine bought a 0.77 render scale and still
+paid full price for the most expensive pass in the frame.
+
+The check's other MEDIUM assertion was rewritten around a real distinction rather than deleted:
+F-377 was a CONSISTENCY failure among the cascade GEOMETRY knobs (split count, blending, the two
+biases), and atlas size and distance are budget dials that cannot contradict anything on their own.
+MEDIUM may name the budget dials and must name none of the geometry ones.
+
+## Two things I got wrong, both left visible
+
+**The shipped default is TAA, not MSAA 2x + FXAA.** This finding originally claimed the latter and
+sized the win off `docs/PERFORMANCE.md` §3.2's 28%-of-frame figure — which measures a configuration
+the game does not ship. The director flagged it; I verified at the source rather than accepting it.
+The finding body carries the correction. **No number is claimed for this change**: TAA's cost on an
+integrated GPU has not been measured by anyone, and FXAA-over-TAA on an upscaled image is a reasoned
+default, not a benchmarked one.
+
+**My first viewport assertion passed vacuously.** I asserted `viewport.msaa_3d`/`use_taa`/
+`screen_space_aa` directly, on the "assert the artefact" rule, and LOW passed. It passed because
+`_apply_display()` returns early under `headless`, so the viewport is never written in a headless
+check at all — "no AA pass is active" was true because nothing had ever set one. MEDIUM failing is
+what exposed it; had all three presets wanted AA off, all three would have passed and proved nothing.
+The check now asserts the resolved SETTING, which genuinely changes, and names what it does not
+cover: that the index reaches the viewport is behind the headless guard and no headless check can
+verify it.
+
+That guard also hid a real defect on the way through — `set_graphics_preset()` calls
+`_apply_graphics()`, which does not touch AA, so the first version changed the saved value and left
+the frame identical. `_apply_display()` is now called too.
+
+## Not done
+
+FSR on LOW/MEDIUM (`scaling_3d_mode` is bilinear everywhere) was approved but is not in this change.
+It is independent, and this commit is already four files across two subsystems.
 
 ### F-608 · A playtest on someone else's machine produces no performance data we can read — **fixed**
 

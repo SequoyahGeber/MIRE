@@ -1,6 +1,6 @@
 extends SceneTree
 
-const PerfFormat := preload("res://tools/perf_format.gd")
+const PerfFormat := preload("res://core/bench/perf_format.gd")
 
 ## F-459: does a first visit hitch because of CPU work that only happens once, or because of GPU
 ## pipeline/shader compilation on first sight of a material?

@@ -13,7 +13,7 @@ extends SceneTree
 ##
 ##   .agent/bin/agent godot --script tools/perf_format_check.gd
 
-const PerfFormat := preload("res://tools/perf_format.gd")
+const PerfFormat := preload("res://core/bench/perf_format.gd")
 
 var failures: int = 0
 
