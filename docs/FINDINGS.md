@@ -2908,6 +2908,99 @@ stops paying 92 seconds a run in the meantime.
 
 ## Resolved
 
+### F-566 · ProceduralWorld re-anchors its streamer every physics tick even with no player, so build_player=false does NOT protect an externally-set anchor — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by bram937a51
+
+Placeholder — bram937a51 allocating the number first per the agreed protocol. Evidence and fix
+follow on resolve.
+
+`ProceduralWorld._physics_process()` calls `streamer.set_anchors(_stream_anchors())` unconditionally,
+and `_stream_anchors()` falls back to `spawn_position` when no player exists. So a tool that boots
+with `build_player = false` and sets its own anchor is still overwritten within ONE physics frame.
+Proven directly; `tools/river_water_shot.gd` photographs open ocean because of it.
+
+**Resolved 2026-08-22 by bram937a51.** **Fixed** by bram937a51, 2026-08-22, in `tools/river_water_shot.gd`. The mechanism is general and is
+recorded here because it invalidates a plausible piece of reasoning that had already been used to
+clear a file.
+
+### `build_player = false` does not protect an externally-set anchor
+
+`ProceduralWorld._physics_process()` calls `streamer.set_anchors(_stream_anchors())`
+**unconditionally**, every physics tick. The trap is what `_stream_anchors()` does with no player —
+it does not return an empty set, it ends with:
+
+    if anchors.is_empty():
+        anchors.append(spawn_position)
+
+So booting with `build_player = false` does not remove the clobber. It only changes what you are
+clobbered **to**: the spawn, forever, once per physics tick.
+
+Measured directly with no player in the tree:
+
+    ANCHOR_PROBE set anchors to (120.0, 0.0, -80.0)
+    ANCHOR_PROBE immediately after set:   anchors=[(120.0, 0.0, -80.0)]
+    ANCHOR_PROBE after ONE physics frame: anchors=[(-401.2, 3.785393, -300.9)]
+    ANCHOR_PROBE after 180 frames:        anchors=[(-401.2, ...)] loaded_chunks=289 pending=0
+
+One physics frame, and `loaded_chunks=289` is the same 17x17 scan box around the same spawn F-563
+measured. This is F-563's mechanism reached by a second route — the one that "there is no player, so
+nothing can clobber it" specifically exempts.
+
+Worth recording the counterfactual: had `_stream_anchors()` returned empty it would be **worse**, not
+safer. `ChunkStreamer._process()` opens with `if _anchors.is_empty(): return`, so the streamer would
+stop evaluating rings entirely rather than evaluating them in the wrong place.
+
+### The instance
+
+`river_water_shot.gd` searched out the deepest river water, anchored there, and was clobbered back to
+the spawn — **454 m away, against a `LOAD_RADIUS_CHUNKS` of 8 (256 m)**, so the site was never
+resident. Both PNGs were open ocean with the river sheet floating on it and no terrain at all.
+
+Its settle half was worse than F-563's: a bare `for _frame in SETTLE_FRAMES (420): await
+process_frame`. That does not even wait for silence, let alone arrival — it is satisfied identically
+by a world that streamed nothing, which is precisely what happened.
+
+### The fix
+
+**Anchor through the world's own path rather than fighting it.** Setting `scene.spawn_position = here`
+makes the very fallback that was overwriting us anchor at the river instead, every tick, for free.
+`streamer.prime([here])` then builds the neighbourhood synchronously; `prime()` deliberately does not
+touch the streamer's own anchor set (see its comment in `procedural_world.gd:617`), so it is safe
+beside this.
+
+**Settle on arrival, not on a frame count.** The loop now polls `streamer.has_ground_at(here)` and
+`push_error` + `quit(1)`s if the site never becomes resident, with a message that says the shot would
+have been of open water. A probe that cannot photograph its subject should fail, not deliver.
+
+### How it was verified
+
+`agent godot --windowed --script tools/river_water_shot.gd`, exit 0, both shots written.
+`assets/audit/terrain/river_water_bank.png` now shows a river channel with sand banks, pine and
+birch, boulders, ruin blocks and hills behind — where the previous run showed open sea to the
+horizon.
+
+**One honest caveat about that comparison:** this tool does not pin its seed, so the before run was
+seed 339036909 and the after run 4074936487. They are not a controlled A/B. The difference —
+no terrain whatsoever versus a fully dressed river valley — is far outside anything a seed change
+produces, and the mechanism is independently proven by the anchor probe above, so the conclusion
+stands on that rather than on the image pair.
+
+### Adjacent, deliberately not fixed here
+
+That unpinned seed is its own small defect: two runs of this tool photograph **different islands**,
+so its output cannot be used for before/after work. `ProbeScene.pin_seed()` exists for exactly this
+(F-452) and this tool does not call it. Left alone rather than widened into unasked scope, and
+recorded so the next person reaching for these shots as evidence knows what they are holding.
+
+### Still open
+
+`graphics_quality_check._set_anchor()` is the other bare `set_anchors()` call and is untouched here.
+`environment_vfx_reseed_check` anchors at the spawn with `build_player = false` — by the above it is
+clobbered too, but to the spawn, which may make it accidentally correct. That is worth confirming
+rather than assuming, because "right answer for the wrong reason" stops being right the moment the
+harness anchors somewhere else.
+
 ### F-565 · graphics_quality_check asserts raw preset render scales while a user-settings-derived clamp caps them, so it fails on whatever resolution the machine happens to have saved — **fixed**
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-22 by hollowbfcf67

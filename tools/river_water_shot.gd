@@ -87,9 +87,25 @@ func _run() -> void:
 	var downstream := Vector2(line[line.size() - 1] - line[0]).normalized()
 	var flow := Vector3(downstream.x, 0.0, downstream.y)
 
-	if scene.get(&"streamer") != null:
-		var anchors: Array[Vector3] = [here]
-		(scene.get(&"streamer") as Node).call(&"set_anchors", anchors)
+	# Anchor the world at the river, through the world's OWN path — F-566.
+	#
+	# Calling `set_anchors()` from outside does nothing that survives a physics tick:
+	# `ProceduralWorld._physics_process()` calls `streamer.set_anchors(_stream_anchors())`
+	# UNCONDITIONALLY, every tick. `build_player = false` above does not protect against that, which
+	# is the trap — `_stream_anchors()` does not return an empty set when there is no player, it
+	# falls back to `spawn_position`. So the anchor set here was replaced by the spawn within one
+	# physics frame, measured directly, and this shot was taken 454 m from anything resident against
+	# a `LOAD_RADIUS_CHUNKS` of 8 (256 m). Both PNGs were open ocean with the river sheet floating on
+	# it and no terrain at all — the same photograph F-563 produced by a different route.
+	#
+	# Moving `spawn_position` makes that same fallback anchor HERE, so the world re-anchors to the
+	# river every tick instead of fighting us. `prime()` then builds the neighbourhood synchronously
+	# so the first shot is not of a half-arrived world; it deliberately does not touch the streamer's
+	# own anchor set, which is why it is safe to call alongside.
+	var streamer: Node = scene.get(&"streamer") as Node
+	if streamer != null:
+		scene.set(&"spawn_position", here)
+		streamer.call(&"prime", [here] as Array[Vector3])
 
 	var viewport := SubViewport.new()
 	viewport.size = Vector2i(1600, 900)
@@ -102,7 +118,27 @@ func _run() -> void:
 	camera.far = 4000.0
 	viewport.add_child(camera)
 	camera.make_current()
+	# Wait for ARRIVAL, not for a frame count — F-566, and the same lesson F-563 landed for
+	# `terrain_texture_check`. A fixed `for SETTLE_FRAMES` proves nothing whatsoever: it is satisfied
+	# just as happily by a world that streamed nothing at all, which is exactly how this tool
+	# produced two confident photographs of open sea. Ask instead whether the ground under the shot
+	# is actually there, and say so loudly if it never turns up.
+	var arrived: bool = false
 	for _frame: int in SETTLE_FRAMES:
+		await process_frame
+		if streamer != null and bool(streamer.call(&"has_ground_at", here)):
+			arrived = true
+			break
+	if streamer != null and not arrived:
+		push_error(
+			"river site %v never became resident in %d frames — the shot below would be of open "
+			% [here, SETTLE_FRAMES]
+			+ "water, not a river (F-566)"
+		)
+		quit(1)
+		return
+	# Resident, but the neighbourhood behind the camera is still arriving; let the rings finish.
+	for _frame: int in 90:
 		await process_frame
 
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
