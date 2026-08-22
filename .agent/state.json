@@ -168,10 +168,16 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "tools/revisit_probe.gd": {
+    "world/environment/material_prewarm.gd": {
       "agent": "vane99f1bb",
-      "at": "2026-08-22T03:33:44+00:00",
-      "task": "F-459",
+      "at": "2026-08-22T03:43:02+00:00",
+      "task": "F-516",
+      "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
+    },
+    "world/gen/procedural_world.gd": {
+      "agent": "vane99f1bb",
+      "at": "2026-08-22T03:43:02+00:00",
+      "task": "F-516",
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
@@ -193,15 +199,6 @@
       "notes": [],
       "started": "2026-08-21T17:13:34+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
-    },
-    "F-459": {
-      "agent": "vane99f1bb",
-      "files": [
-        "tools/revisit_probe.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-22T03:33:44+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     },
     "F-469": {
       "agent": "coil26502f",
@@ -251,6 +248,16 @@
       "notes": [],
       "started": "2026-08-22T00:29:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "F-516": {
+      "agent": "vane99f1bb",
+      "files": [
+        "world/environment/material_prewarm.gd",
+        "world/gen/procedural_world.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-22T03:41:58+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
   "recent": {
@@ -3468,11 +3475,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
     "core/bench/benchmark_report.gd": {
-      "agent": "quill895277",
-      "at": "2026-08-21T23:03:29+00:00",
-      "hash": "c48baebf042e0e89af06eb914b378a853ccf0ce085a213e82f23b53137241a92",
+      "agent": "pikee95746",
+      "at": "2026-08-22T03:44:23+00:00",
+      "hash": "3419808264feee413a1d3c53befa156ec265290252d11f3699328ccbd28a587d",
       "task": "F-466",
-      "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
+      "token": "CODEX_SESSION_ID:01a02790-3c14-7053-95bf-50d5449b9a78"
     },
     "core/bench/benchmark_runner.gd": {
       "agent": "quill895277",
@@ -4610,9 +4617,9 @@
     },
     "tools/revisit_probe.gd": {
       "agent": "vane99f1bb",
-      "at": "2026-08-22T02:15:33+00:00",
-      "hash": "4c0f999321c05717149f1126044c2269e8fa060e893bbd19c2b1cff9cf1bcd2d",
-      "task": "F-501",
+      "at": "2026-08-22T03:41:52+00:00",
+      "hash": "b8c7d5b2a6448bffceb3c1bb9928faa28a3ddfcb0b7416fbd6b97d9d7171b72d",
+      "task": "F-459",
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     },
     "tools/river_water_check.gd": {
@@ -5162,7 +5169,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1353,
+  "rev": 1362,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -10604,9 +10611,11 @@
       "title": "The benchmark seed is arbitrary, its day/night split is 7:2, and nothing flies over the island"
     },
     "F-459": {
+      "done_at": "2026-08-22T03:41:52+00:00",
+      "done_by": "vane99f1bb",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "First visit to a location hitches; the second visit to the same place does not"
     },
@@ -11062,6 +11071,13 @@
       "status": "todo",
       "tier": "F",
       "title": "BuildBar controller focus regression reopened after F-217"
+    },
+    "F-516": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Nothing pre-warms shipped materials, so every player pays shader/pipeline compilation as hitches during their first minutes of play"
     }
   },
   "version": 1

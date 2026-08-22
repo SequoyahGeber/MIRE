@@ -177,8 +177,10 @@ static func format_text(report: Dictionary) -> String:
 		String(machine.get("adapter_name", "?")),
 		(" (%d GPU cores)" % int(machine["gpu_cores"])) if machine.has("gpu_cores") else "",
 		String(machine.get("os", "?")), String(machine.get("cpu", "?"))])
-	lines.append("%s | %s | %s | %s" % [
-		String(report.get("viewport", "?")), _core_summary(machine),
+	lines.append("%s%s | %s | %s | %s" % [
+		String(report.get("viewport", "?")),
+		" fullscreen" if bool(report.get("fullscreen", false)) else " windowed",
+		_core_summary(machine),
 		String(report.get("settings_summary", "?")), String(report.get("date", ""))])
 	# The machine's CONDITION, on its own line and above the table, because a reader who skips it
 	# will quote a throttled laptop's numbers as that laptop's numbers.

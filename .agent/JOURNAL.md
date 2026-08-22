@@ -9493,3 +9493,27 @@ Advanced settings are persisted, previewable and live-applied client-locally. Gr
 Files: `autoload/settings_service.gd`, `core/save/settings_save.gd`, `autoload/graphics_quality.gd`, `ui/frontend/graphics_settings_page.gd`, `ui/frontend/settings_screen.gd`, `entities/player/player_camera.gd`, `tools/settings_check.gd`, `tools/settings_screen_check.gd`, `ui/hud/focus_prompt.gd`, `ui/frontend/expedition_screen.gd`, `ui/theme/mire_theme.gd`, `tools/focus_prompt_check.gd`, `tools/expedition_check.gd`
 
 Commit at time of writing: `e5dd7692`
+
+---
+
+### DONE · F-459 · vane99f1bb · 2026-08-22T03:41:52+00:00
+
+**First visit to a location hitches; the second visit to the same place does not**
+
+Diagnosed: per-material GPU pipeline compilation, not per-node CPU work. Proven by a cold vs warmed-elsewhere A/B where B creates 2x the nodes for 3.75x less cost. Fix filed as F-516.
+
+Files: `tools/revisit_probe.gd`
+
+Commit at time of writing: `92955b4d`
+
+---
+
+### HANDOFF · F-466 · pikee95746 · 2026-08-22T03:44:23+00:00
+
+**The benchmark reports frame times taken while its window was not being rendered**
+
+Recovered and reviewed the omitted benchmark_report.gd change: report text now labels the viewport fullscreen/windowed. git diff --check passes; the earlier focused run recorded 239 assertions, 0 failures. Finding remains open because honest replacement measurements still require Sequoyah's unobstructed display for the three ~25-minute tools/bench_measure.sh passes.
+
+Files: `core/bench/benchmark_report.gd`
+
+Commit at time of writing: `92955b4d`
