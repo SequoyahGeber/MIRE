@@ -180,37 +180,6 @@ below the LOCAL ground rather than below a global datum — which is what would 
 hold mist and a ridge not. `tools/blight_ground_check.gd`'s four-frame harness is the shape of the
 check it needs.
 
-### F-321 · `AttunementUI` is the third mandatory panel and it still has F-307's soft-lock — it closes only on an accepted pick, so an orphaned client can never leave it
-
-**Area:** UI/netcode · **Severity:** high · **Found:** 2026-08-20 by lp during F-307's sweep
-
-F-275's sweep enumerated the mandatory-panel class — no Esc, no dismiss, joins
-`blocks_gameplay_input` — at exactly three files. F-307 fixed two of them. This is the third.
-
-`ui/attunement/attunement_ui.gd` leaves the blocking group in exactly one place, `_close_picker()`
-(`:189`), and `_close_picker()` is reached from exactly one place that matters:
-`_on_selection_confirmed(accepted = true)` (`:200`). That signal comes from the **host**. Nothing in
-the file subscribes to `NetSession.session_ended`, `NetTransport.disconnected`, or anything else
-session-shaped — `_poll_for_local_player`, `_on_run_restarted` and the F-297 request timer are the
-whole lifecycle.
-
-So a client whose host quits while the picker is up does not get stuck the way F-307's overlays did —
-it gets stuck in a **loop**, which is worse to diagnose. F-297's `REQUEST_TIMEOUT_SEC = 8.0` timer
-re-enables the buttons, the player presses one, `request_select()` goes to a peer that no longer
-exists, `_picking` latches and the buttons disable, eight seconds later they re-enable, forever. The
-panel never leaves `blocks_gameplay_input`, so D-032's interlock refuses `MainMenu`/`SettingsMenu`/
-`LobbyMenu`/`UnlockMenu` the entire time. **F-297 fixed that panel's latch; it did not fix its
-reachability**, and the two are separate properties — this is the same relationship F-275 had to
-F-307.
-
-The fix is F-307's, transposed: subscribe to `session_ended`, and on it either `_close_picker()`
-outright (there is no run left to pick an Attunement for, which is the simplest defensible answer and
-what D-185's reasoning points at) or at minimum leave the blocking group so a menu can open over it.
-`tools/terminal_focus_check.gd`'s phase 3 is the harness — a fourth child with `which = "attunement"`
-is a handful of lines against the driver that already exists, and `tools/attunement_*_check.gd`'s
-`force_request_timeout()` shows this file already exposes a test seam rather than sleeping 8 s.
-
----
 
 ### F-322 · `NetSession.end_session()` has no shipped caller, so every real host quit costs its clients a 19-second rejoin ladder and the wrong end-of-session message
 
@@ -3035,54 +3004,6 @@ F-217 is marked fixed on the strength of these exact assertions, so this is a re
 
 ---
 
-### F-516 · Nothing pre-warms shipped materials, so every player pays shader/pipeline compilation as hitches during their first minutes of play
-
-**Area:** performance · **Severity:** high · **Found:** 2026-08-22 by vane99f1bb
-
-Found 2026-08-22 by vane99f1bb. F-459's diagnosis, filed as its own fix because it is a new system
-rather than a change to an existing one.
-
-`tools/revisit_probe.gd` measures two arrivals at ground the player has never been, with three
-unrelated locations visited in between. Neither leg has cached geometry (F-501's mesh cache is keyed
-by `(coord, lod)`, and both sets of coords are new to it); scatter assets are already warmed at
-startup by F-407's threaded `ResourceLoader` pass, so loading is not what differs. The only thing the
-second leg has is materials the intervening visits left warm.
-
-    run 1   A cold       17035 nodes, 321 frames, 1% low 149.64 ms, 34 hitches
-            B warmed     31247 nodes, 424 frames, 1% low  56.12 ms,  9 hitches
-    run 2   A cold       16476 nodes, 292 frames, 1% low 226.88 ms, 32 hitches
-            B warmed     31247 nodes, 416 frames, 1% low  60.54 ms,  6 hitches
-
-B creates roughly twice the nodes and costs three to four times less. The same probe's four-location
-sweep is non-monotonic in the same direction — 14,440 nodes cost 51.13 ms while 508 nodes cost
-202.29 ms in the same run — so node creation is not what the arrival pays for. What is left is a
-one-time cost per distinct material, paid the first time something is drawn.
-
-**Why this matters more than the numbers suggest.** It is paid during a player's FIRST minutes, once
-per material, on every machine, and no graphics preset touches it (D-194 already excludes travelling
-scenes from choosing a preset for exactly this reason). It is worst on the low-end target this
-project ships to (F-174), where compilation is slowest. And it is the one performance problem that a
-player cannot mitigate and we cannot tune — only pre-pay.
-
-`rendering/shader_compiler/shader_cache/enabled` is already true (the engine default), which caches
-compiled shaders across runs but does nothing for the first run on a given machine, and nothing for
-pipeline state objects created on first draw.
-
-**Fix shape.** Draw every shipped material once behind the loading screen, where a hitch costs
-nothing. The inventory is enumerable: every asset `ResourceScatterField` can place (it already
-enumerates exactly this list for F-407's warm pass), the terrain material, water, ground fog, the
-sky, and the enemy and prop kits. A small off-screen viewport with a camera and one quad per
-material for one frame is the usual shape; the assets are already being loaded at startup, so this
-extends a pass that exists rather than adding a new startup phase.
-
-Verify with `tools/revisit_probe.gd`'s cold/warm A-B: with pre-warming in place, leg A should cost
-what leg B costs, because there would be nothing left for the intervening visits to warm. That is a
-clean, falsifiable acceptance test rather than an eyeball judgement.
-
-Related: F-364 (Godot's macOS shader baker leaves ten MSL 3.1 variants for runtime compilation) is
-the export-time half of the same problem and should be read alongside this.
-
----
 
 ### F-519 · Bare hands cannot reach what the prompt says they can harvest
 
@@ -3276,32 +3197,6 @@ Note the trade this makes: with `auto_accept_quit` off, AppExit is load-bearing 
 load, nothing accepts the close request and the window will not close. That is why the check asserts
 the autoload's presence and `PROCESS_MODE_ALWAYS` rather than only its behaviour.
 
-### F-543 · Every Attunement's stat effects are dead — nothing in the game consumes the PowerupService modifiers they grant
-
-**Area:** gameplay · **Severity:** high · **Found:** 2026-08-22 by larch543bba
-
-DESIGN §4.5 gives each of the four Attunements a "better at / worse at" identity, and SPECS §3.9
-ships that identity as PowerupService modifiers granted at selection. The selection half works
-(`AttunementService` records, broadcasts, locks, clears on restart, and `host_grant`s the backing
-PowerupDef). The EFFECT half does not exist.
-
-`PowerupService.stat()` is consumed at exactly three sites repo-wide:
-`systems/loot/chest.gd` (`chest_price`, `loot_luck`) and
-`entities/player/player_controller.gd` (`dodge_iframe_seconds`). Every stat the four Attunement
-PowerupDefs name — `move_speed`, `max_hp`, `food_value`, `harvest_yield`, `melee_damage`,
-`bow_damage`, `craft_seconds`, `coin_gain`, `blight_rate`, `ward_radius_m` — is never read by any
-system. Picking Warden, Forager, Tinker or Reaver changes a label in the roster and nothing else.
-
-F-078 recorded the cause honestly at the time ("No system consumes any stat yet (3.4's spec says so
-explicitly)") and docs/POWERUPS.md §2 marks these consumers "live — wiring is that system's one-line
-route". Those systems all shipped since; the routes were never added. So this is not just an
-Attunement bug: the same dead-modifier gap silently covers most of the authored powerup pool.
-
-SPECS §3.9's own acceptance line — "Check: selection replicates, modifiers apply, second selection
-refused" — has a check for the first and third and none for the second.
-
----
-
 ### F-544 · Three DESIGN §4.5 Attunement promises name systems that do not exist — Ward turrets, taunts, and station tiers
 
 **Area:** gameplay · **Severity:** medium · **Found:** 2026-08-22 by larch543bba
@@ -3364,6 +3259,230 @@ to whoever holds it — not to patch the output.
 ---
 
 ## Resolved
+
+### F-516 · Nothing pre-warms shipped materials, so every player pays shader/pipeline compilation as hitches during their first minutes of play
+
+**Area:** performance · **Severity:** high · **Found:** 2026-08-22 by vane99f1bb
+
+Found 2026-08-22 by vane99f1bb. F-459's diagnosis, filed as its own fix because it is a new system
+rather than a change to an existing one.
+
+`tools/revisit_probe.gd` measures two arrivals at ground the player has never been, with three
+unrelated locations visited in between. Neither leg has cached geometry (F-501's mesh cache is keyed
+by `(coord, lod)`, and both sets of coords are new to it); scatter assets are already warmed at
+startup by F-407's threaded `ResourceLoader` pass, so loading is not what differs. The only thing the
+second leg has is materials the intervening visits left warm.
+
+    run 1   A cold       17035 nodes, 321 frames, 1% low 149.64 ms, 34 hitches
+            B warmed     31247 nodes, 424 frames, 1% low  56.12 ms,  9 hitches
+    run 2   A cold       16476 nodes, 292 frames, 1% low 226.88 ms, 32 hitches
+            B warmed     31247 nodes, 416 frames, 1% low  60.54 ms,  6 hitches
+
+B creates roughly twice the nodes and costs three to four times less. The same probe's four-location
+sweep is non-monotonic in the same direction — 14,440 nodes cost 51.13 ms while 508 nodes cost
+202.29 ms in the same run — so node creation is not what the arrival pays for. What is left is a
+one-time cost per distinct material, paid the first time something is drawn.
+
+**Why this matters more than the numbers suggest.** It is paid during a player's FIRST minutes, once
+per material, on every machine, and no graphics preset touches it (D-194 already excludes travelling
+scenes from choosing a preset for exactly this reason). It is worst on the low-end target this
+project ships to (F-174), where compilation is slowest. And it is the one performance problem that a
+player cannot mitigate and we cannot tune — only pre-pay.
+
+`rendering/shader_compiler/shader_cache/enabled` is already true (the engine default), which caches
+compiled shaders across runs but does nothing for the first run on a given machine, and nothing for
+pipeline state objects created on first draw.
+
+**Fix shape.** Draw every shipped material once behind the loading screen, where a hitch costs
+nothing. The inventory is enumerable: every asset `ResourceScatterField` can place (it already
+enumerates exactly this list for F-407's warm pass), the terrain material, water, ground fog, the
+sky, and the enemy and prop kits. A small off-screen viewport with a camera and one quad per
+material for one frame is the usual shape; the assets are already being loaded at startup, so this
+extends a pass that exists rather than adding a new startup phase.
+
+Verify with `tools/revisit_probe.gd`'s cold/warm A-B: with pre-warming in place, leg A should cost
+what leg B costs, because there would be nothing left for the intervening visits to warm. That is a
+clean, falsifiable acceptance test rather than an eyeball judgement.
+
+Related: F-364 (Godot's macOS shader baker leaves ten MSL 3.1 variants for runtime compilation) is
+the export-time half of the same problem and should be read alongside this.
+
+**Resolved** (2b31d538). New `MaterialWarmer` autoload draws all 483 shipped GLBs plus the four
+runtime-built spatial shaders through a 32x32 off-screen `SubViewport` while the title screen is up,
+four per frame — roughly two seconds of menu time, where a hitch costs nothing.
+
+Real meshes rather than material swatches, because a pipeline state object is keyed by the mesh's
+vertex format too; a swatch would compile the shader and leave the real pipeline to be built on
+first draw anyway. A directory walk over `assets/*/exports/*.glb` rather than the scatter tables,
+because `ResourceScatterField`'s F-407 list covers most props but no enemies, tools, buildables or
+ships — the walk is a superset of every per-domain list and cannot drift as domains change. A
+`DirectionalLight3D` in the warm viewport, because an unlit draw can take a different pipeline path
+than the lit one the game uses. Skipped entirely under the headless display server, since the dummy
+driver compiles nothing and the pass would otherwise attach 483 loads to every `tools/*_check.gd`
+run. The rig frees itself; a leftover `UPDATE_ALWAYS` viewport would be a permanent per-frame cost
+added by a performance fix.
+
+Known gap, recorded rather than implied: `world/environment/ground_fog.gdshader` is `shader_type
+fog` and needs a `FogVolume` inside a volumetric-fog `Environment` — one shader against 483 assets.
+
+Verified by `tools/material_warm_check.gd`, `failures=0`: enumeration cross-checked against the
+filesystem independently (483 found, 483 on disk, so an enumeration bug cannot agree with itself),
+all 483 instantiated and drawn, teardown asserted.
+
+**The hitch reduction itself is NOT verified, and the check says so in its own output.** Headless
+uses the dummy rendering driver, where no shader is compiled and no pipeline object is created, so a
+hitch comparison measured there measures nothing. This finding's own acceptance test stands as
+written: `tools/revisit_probe.gd`'s cold/warm A-B on a real GPU with a window, where leg A should
+come to cost what leg B costs. That needs a display and has not been run.
+
+---
+
+
+### F-321 · `AttunementUI` is the third mandatory panel and it still has F-307's soft-lock — it closes only on an accepted pick, so an orphaned client can never leave it
+
+**Area:** UI/netcode · **Severity:** high · **Found:** 2026-08-20 by lp during F-307's sweep
+
+F-275's sweep enumerated the mandatory-panel class — no Esc, no dismiss, joins
+`blocks_gameplay_input` — at exactly three files. F-307 fixed two of them. This is the third.
+
+`ui/attunement/attunement_ui.gd` leaves the blocking group in exactly one place, `_close_picker()`
+(`:189`), and `_close_picker()` is reached from exactly one place that matters:
+`_on_selection_confirmed(accepted = true)` (`:200`). That signal comes from the **host**. Nothing in
+the file subscribes to `NetSession.session_ended`, `NetTransport.disconnected`, or anything else
+session-shaped — `_poll_for_local_player`, `_on_run_restarted` and the F-297 request timer are the
+whole lifecycle.
+
+So a client whose host quits while the picker is up does not get stuck the way F-307's overlays did —
+it gets stuck in a **loop**, which is worse to diagnose. F-297's `REQUEST_TIMEOUT_SEC = 8.0` timer
+re-enables the buttons, the player presses one, `request_select()` goes to a peer that no longer
+exists, `_picking` latches and the buttons disable, eight seconds later they re-enable, forever. The
+panel never leaves `blocks_gameplay_input`, so D-032's interlock refuses `MainMenu`/`SettingsMenu`/
+`LobbyMenu`/`UnlockMenu` the entire time. **F-297 fixed that panel's latch; it did not fix its
+reachability**, and the two are separate properties — this is the same relationship F-275 had to
+F-307.
+
+The fix is F-307's, transposed: subscribe to `session_ended`, and on it either `_close_picker()`
+outright (there is no run left to pick an Attunement for, which is the simplest defensible answer and
+what D-185's reasoning points at) or at minimum leave the blocking group so a menu can open over it.
+`tools/terminal_focus_check.gd`'s phase 3 is the harness — a fourth child with `which = "attunement"`
+is a handful of lines against the driver that already exists, and `tools/attunement_*_check.gd`'s
+`force_request_timeout()` shows this file already exposes a test seam rather than sleeping 8 s.
+
+**Resolved** (694b72e3). `AttunementUI` now takes `NetSession.session_ended` as its second input —
+connected in `_ready()` by path (F-011), not per-open, because the session can end on the same frame
+the panel opens — and closes the picker outright on it, clearing `_picking` and stopping F-297's
+timer so the eight-second loop cannot re-arm.
+
+Closing rather than degrading to a dismissable state is D-185's reasoning transposed: `PlayerNet`
+clears on disconnect, so there is no world left to pick an Attunement for. Leaving
+`blocks_gameplay_input` is the half that actually frees the player. The cursor is deliberately left
+VISIBLE instead of restored to `_restore_mouse_captured` — that flag records what gameplay wanted
+when the picker opened, and gameplay is exactly what went away.
+
+Verified by a third case in `tools/terminal_focus_check.gd`'s phase 3, with two real processes and
+no faked transport state. The child joins, opens the picker through its real D-071 trigger (a
+players-group body it has authority over, plus the file's own `poll_now()` seam), then presses
+CHOOSE so `_picking` is genuinely latched — this proves the panel escapes the LOOPING state, not
+merely that a fresh panel closes. The driver leaves via `NetTransport.leave()`, the harsher
+CONNECTION_LOST path that only resolves once the rejoin ladder gives up, because that is the shape a
+host alt-F4 produces. `TERMINAL_FOCUS_CHECK failures=0`, all 30 pre-existing assertions intact.
+
+---
+
+
+### F-543 · Every Attunement's stat effects are dead — nothing in the game consumes the PowerupService modifiers they grant — **fixed**
+
+**Area:** gameplay · **Severity:** high · **Found:** 2026-08-22 by larch543bba
+
+DESIGN §4.5 gives each of the four Attunements a "better at / worse at" identity, and SPECS §3.9
+ships that identity as PowerupService modifiers granted at selection. The selection half works
+(`AttunementService` records, broadcasts, locks, clears on restart, and `host_grant`s the backing
+PowerupDef). The EFFECT half does not exist.
+
+`PowerupService.stat()` is consumed at exactly three sites repo-wide:
+`systems/loot/chest.gd` (`chest_price`, `loot_luck`) and
+`entities/player/player_controller.gd` (`dodge_iframe_seconds`). Every stat the four Attunement
+PowerupDefs name — `move_speed`, `max_hp`, `food_value`, `harvest_yield`, `melee_damage`,
+`bow_damage`, `craft_seconds`, `coin_gain`, `blight_rate`, `ward_radius_m` — is never read by any
+system. Picking Warden, Forager, Tinker or Reaver changes a label in the roster and nothing else.
+
+F-078 recorded the cause honestly at the time ("No system consumes any stat yet (3.4's spec says so
+explicitly)") and docs/POWERUPS.md §2 marks these consumers "live — wiring is that system's one-line
+route". Those systems all shipped since; the routes were never added. So this is not just an
+Attunement bug: the same dead-modifier gap silently covers most of the authored powerup pool.
+
+SPECS §3.9's own acceptance line — "Check: selection replicates, modifiers apply, second selection
+refused" — has a check for the first and third and none for the second.
+
+---
+
+**Resolved 2026-08-22 by larch543bba.** **Fixed 2026-08-22 by larch543bba.**
+
+Two halves: the ten stats that had no readers, and the four §4.5 promises that were not stats at all.
+
+**The stat half — every consumer now routes its own base through `PowerupService.stat()`.** The
+shape docs/POWERUPS.md §2 always described, at the moment of the thing being modified, never a
+central "apply modifiers" pass:
+
+| Stat | Where it is read now |
+|---|---|
+| `move_speed`, `sprint_speed` | `player_controller.gd`, cached in `_effective_walk_speed`/`_effective_sprint_speed` |
+| `max_hp` | `player_health.gd` `_max_hp_for()` / `_ensure_host_state()` / `_on_host_powerups_changed()` |
+| `food_value` | `player_health.gd`, the consume path |
+| `blight_rate` | `player_health.gd` `_tick_blight()` |
+| `harvest_yield`, `harvest_damage` | `harvestable.gd` `_yield_amount()` / `_harvest_damage_for_peer()` |
+| `melee_damage` | `combat_service.gd` `_resolve_hit()` |
+| `bow_damage` | `ranged_combat_service.gd` `_resolve_flight()` |
+| `craft_seconds` | `crafting_service.gd`, host clock AND the client's own progress estimate |
+| `coin_gain` | `reward_service.gd`, kill bounty and chest roll |
+| `ward_radius_m`, `structure_hp` | `build_service.gd`, attributed to `_placed`'s `"owner"` |
+
+Exactly two values are cached rather than asked per use, and only because they are read per physics
+frame or held in state a grant cannot reach: the local player's speeds (off `local_powerups_changed`)
+and the per-peer hp ceiling. The second needed a new host-side signal —
+**`PowerupService.host_powerups_changed(peer_id)`**, emitted from `_commit()` — because a
+`DownedState` is built at spawn and D-071 puts the pick AFTER that, so without it the Tinker's -15%
+would only ever apply to a player who happened to respawn later. `DownedState.set_max_hp()` retunes a
+live ceiling: raising hands over the difference as usable hp, lowering clamps but never below 1 while
+ALIVE, so a negative modifier is a smaller pool and never an instant knockdown.
+
+**Two content gaps found on the way.** DESIGN §4.5 promises the Forager gather *speed* and penalises
+the Warden's gather *rate*; neither role's PowerupDef named `harvest_damage` at all, so the yield
+half shipped and the speed half did not. Both now carry it. And the Warden's "structure HP" had no
+stat anywhere — `structure_hp` is new in `KNOWN_STATS`, resolved on the host at placement and carried
+in the spawn payload (deriving it inside `_net_spawn_piece` would give the builder's machine one hp
+and everyone else's another for the same wall). It is deliberately NOT re-derived on a later grant:
+retuning the ceiling of every standing wall mid-run would either heal the base or destroy pieces.
+Ward radius IS re-derived, so a Warden's existing Wards widen when they attune.
+
+**The non-stat half.** The Forager's "sees resources through terrain" is now a real sense:
+`ui/hud/forager_sense_hud.gd` (new autoload), a screen-space marker over every `&"harvestable"` in
+60 m with no occlusion test anywhere in the file. It disables its own `_process` for every other
+role, so the design gate and the cost gate are the same line. A marker rather than an X-ray
+silhouette, for the two reasons in that file's header — the catalogue shares no material, and a solid
+tree drawn through solid rock reads as broken depth sorting rather than as knowledge.
+
+The Reaver's "can't build Wards" is authored, not coded: `BuildableDef` gained
+`forbidden_attunement_ids` and `required_attunement_id` (D-197), the two Wards name the Reaver, and
+`BuildService._attunement_refusal()` is one host check in the same block as every other refusal. The
+same field is what the Tinker's Ward turret will use when that content exists.
+
+**The design tension, flagged not buried:** DESIGN §4.5's table says the Reaver can't build Wards and
+its prose four lines down says "Nobody is locked out of anything". Specific rule implemented over
+general principle; D-197 records why, and reverting it is one line in each of two `.tres` files
+because nothing in code names a role.
+
+**Verified:** `.agent/bin/agent godot --script tools/attunement_effects_check.gd` →
+`ATTUNEMENT_EFFECTS_CHECK failures=0`, and `tools/forager_sense_check.gd` →
+`FORAGER_SENSE_CHECK failures=0`. The effects check has a catalogue guard as well as behaviour
+assertions: every stat any Attunement PowerupDef names must have a recorded consumer that really
+reads it, so a future content edit authoring a dead stat fails here instead of shipping as a role
+that does nothing. `attunement_check`, `attunement_ui_check` and `attunement_restart_check` still
+pass unchanged.
+
+**Not fixed, filed as F-544:** the Tinker's Ward turrets and station tiers and the Warden's taunts —
+three §4.5 promises whose systems do not exist. And the wider gap this finding exposed stands
+recorded in docs/POWERUPS.md §2: most of the authored powerup pool is still authored-but-unread.
 
 ### F-264 · `Boss._tick_move_lunge()` duplicates `Enemy._tick_lunge()`'s logic instead of calling it, because the inherited method reads its speed off a def field rather than taking one as a parameter — **fixed**
 
