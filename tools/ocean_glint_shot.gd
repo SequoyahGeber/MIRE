@@ -17,13 +17,13 @@ const WIDTH: int = 1280
 const HEIGHT: int = 720
 const OUT_DIR: String = "res://assets/audit/terrain"
 const SETTLE_FRAMES: int = 8
+const WORLD_SEED: int = 7
 
 var _shots: Array = [
 	{"name": "ocean_glint_shore", "pos": Vector3(0.0, 3.2, 330.0), "look": Vector3(0.0, 1.6, 520.0), "warm": 30},
 	{"name": "ocean_glint_grazing", "pos": Vector3(0.0, 1.1, 360.0), "look": Vector3(60.0, 1.0, 620.0), "warm": 140},
 	{"name": "ocean_glint_high", "pos": Vector3(0.0, 34.0, 300.0), "look": Vector3(30.0, 0.0, 560.0), "warm": 260},
 ]
-
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -36,6 +36,11 @@ func _run() -> void:
 		return
 	var scene := (load("res://levels/procedural_island.tscn") as PackedScene).instantiate() as Node3D
 	scene.set(&"build_player", false)
+	# A fixed seed, set before the scene enters the tree. Without it every run generates a different
+	# island and the shore frame lands somewhere else each time — three consecutive runs put the
+	# waterline at z=539, z=590 and z=332, on a flat beach, a shallow beach and a cliff. Frames that
+	# cannot be compared to each other are not evidence.
+	scene.set(&"world_seed", WORLD_SEED)
 	root.add_child(scene)
 	current_scene = scene
 

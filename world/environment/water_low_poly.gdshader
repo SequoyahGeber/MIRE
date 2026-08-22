@@ -30,9 +30,32 @@ shader_type spatial;
 // so what is left reads as deep water rather than as washed-out sky. Deliberately NOT taken further:
 // F-356 already has night rendering too dark, and this mesh covers 1400 m square.
 uniform vec3 albedo_color : source_color = vec3(0.16, 0.33, 0.40);
-uniform float wave_height = 0.18;
-uniform float wave_length = 14.0;
-uniform float wave_speed = 0.8;
+// D-207 — the sea was 0.18 m of gentle swell on 14 m sines and read as a barely-moving sheet.
+// Sequoyah: "could we make the waves/angles/roughness of the water a bit more aggressive?" These
+// are the three dials that answer that, and they are answering "steeper", not "taller": what makes
+// water look rough is the ANGLE of the facets, so most of the aggression comes from `wave_chop`
+// pinching the crests rather than from raising `wave_height`.
+//
+// `wave_height` is capped by the SHORE, not by taste. The gameplay water level is a flat 0
+// (`water_surface_at()`) and these waves are paint on top of it, so every centimetre of amplitude
+// is a centimetre the sea can climb over the sand without the beach knowing. Seed 7's shore rises
+// about 0.5 m over its first 6 m, so 0.62 m of wave — which is where this pass first landed —
+// washes right over seven-odd metres of beach. 0.34 m keeps the flood inside about four. Raising it
+// further needs the displacement tapered toward shore first, which needs a shore distance the
+// vertex stage does not currently have.
+uniform float wave_height = 0.34;
+uniform float wave_length = 9.5;
+uniform float wave_speed = 1.05;
+/// Horizontal pull toward each crest, as a fraction of `wave_length`. This is the Gerstner trick in
+/// miniature: sliding vertices sideways into the peak turns a sine into a narrow crest over a broad
+/// trough, which is the difference between "swell" and "chop". Above ~0.12 the surface starts to
+/// fold through itself on this mesh's ~8 m quads.
+uniform float wave_chop : hint_range(0.0, 0.12) = 0.10;
+/// A third, shorter, faster wave crossing the other two at an angle. Its wavelength is close to the
+/// mesh's own quad size on purpose — it does not resolve cleanly, and the beating against the grid
+/// is what breaks the two big sines out of their regular corduroy into something that reads as
+/// disturbed water.
+uniform float chop_amount : hint_range(0.0, 1.0) = 0.55;
 
 // Crest glint. The reference look is the standard low-poly-water trick: the base sheet stays one
 // flat colour, and the facets that happen to sit on top of a wave AND happen to be tilted toward
@@ -61,8 +84,18 @@ void vertex() {
 	float phase_a = (world.x * 0.9 + world.z * 0.45) * (TAU / wave_length) + TIME * wave_speed;
 	float phase_b = (world.z * 0.8 - world.x * 0.35) * (TAU / (wave_length * 1.7))
 		+ TIME * wave_speed * 1.3;
-	float disp = sin(phase_a) * 0.6 + sin(phase_b) * 0.4;
+	float phase_c = (world.x * 0.62 - world.z * 0.78) * (TAU / (wave_length * 0.43))
+		+ TIME * wave_speed * 2.1;
+	float disp = sin(phase_a) * 0.6 + sin(phase_b) * 0.4 + sin(phase_c) * chop_amount;
+	disp /= 1.0 + chop_amount;
 	VERTEX.y += disp * wave_height;
+
+	// The sideways half of the Gerstner displacement, along each wave's own direction of travel.
+	// Vertices ahead of a crest slide back into it and vertices behind slide forward, so the peak
+	// sharpens and the trough flattens out — steeper facets on the same vertex budget.
+	float pull = wave_chop * wave_length;
+	VERTEX.x -= (cos(phase_a) * 0.9 * 0.6 + cos(phase_b) * -0.35 * 0.4) * pull;
+	VERTEX.z -= (cos(phase_a) * 0.45 * 0.6 + cos(phase_b) * 0.8 * 0.4) * pull;
 
 	// -1..1 -> 0..1: how high this vertex sits within its own wave, independent of wave_height.
 	crest = disp * 0.5 + 0.5;

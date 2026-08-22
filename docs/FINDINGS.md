@@ -3864,6 +3864,77 @@ unsubscribes that are already there.
 
 ---
 
+### F-498 · Directional armour has no dedicated deflect cue, only the absence of one
+
+**Area:** combat · **Severity:** low · **Found:** 2026-08-22 by ember5da2c4
+
+docs/ENEMIES.md §5.2's `armor_arc_degrees` (task 5.11, tier 3's Bog Bulwark) tells a player their
+hit was deflected by producing NOTHING — the host does not bump `hit_counter` on a deflected hit,
+so there is no white flash and no flinch clip, where an unarmoured hit produces both.
+
+That reads correctly and it cost no new networked state, which is why it shipped that way. But it is
+an absence, and an absence is also what a MISS looks like: a player who swings slightly out of range
+and a player who lands a fully deflected hit currently see the same thing, and only the health bar
+distinguishes them.
+
+The better version is a dedicated cue: a replicated `deflect_counter` alongside `hit_counter`, with
+its own setter driving a distinct flash (a hard cold spark rather than the warm white one) and no
+`hit` clip. Exactly one of the two counters moves per hit, so there is no ordering dependency between
+them and no ambiguity on the receiving end.
+
+It was not done in 5.11 for one concrete reason: adding a replicated property requires a
+`NetVersion.PROTOCOL_VERSION` bump — that file's own rule says so in as many words — and
+`core/net/net_version.gd` was claimed by another agent (F-469) for the whole of that task. Smuggling
+the property in without the bump would have been the actual bug: two builds disagreeing about the
+wire shape and desyncing silently, which is the exact failure `net_version.gd` exists to prevent.
+
+To resolve: claim `systems/enemies/enemy.gd`, `systems/enemies/enemy_def.gd` and
+`core/net/net_version.gd` together, add the counter to `_build_synchronizer()`'s property list, bump
+`PROTOCOL_VERSION` with a line naming this change, and extend `tools/enemy_bog_bulwark_check.gd` —
+which already asserts that a deflected hit leaves `hit_counter` alone — to assert the new counter
+moves instead.
+
+---
+
+### F-499 · the ocean's wave amplitude is capped by guesswork, because no audit frame can show the waterline
+
+**Area:** world · **Severity:** medium · **Found:** 2026-08-22 by bram42adb9
+
+D-207 raised the ocean's waves from 0.18 m to 0.34 m and made them steeper. The cap at 0.34 m is
+not a taste call — it is a guess about the shore, and the guess is unverified.
+
+The waves are paint. `water_surface_at()` returns a flat 0 and nothing floats on the displaced
+surface, so every centimetre of `wave_height` in `world/environment/water_low_poly.gdshader` is a
+centimetre the sea can climb over the beach without the terrain knowing. Sampling `height_at()`
+along seed 7's coast gives a rise of roughly 0.5 m over the first 6 m of sand, so 0.34 m of wave
+floods about four metres of beach and the 0.62 m this pass first tried floods about seven. Those are
+numbers off the heightmap, not off a rendered frame.
+
+I could not get a rendered frame. `tools/ocean_glint_shot.gd` photographs open water fine — land is
+visible at the edge of `ocean_glint_high.png`, so terrain does mesh and does render — but four
+attempts at a waterline shot all came back as unbroken sea with no beach anywhere in them:
+
+  · walking outward from the origin along +Z finds the first ground below sea level, which on this
+    island is a lagoon behind the coast, not the coast
+  · walking inward from 700 m out finds ground at z=193 with `height_at()` reporting 7.08 m at the
+    camera 45 m inland — and the frame still rendered as pure ocean, which those two numbers say it
+    should not have
+
+That last point is the actual mystery and is worth a look on its own: either the chunk streamer's
+anchors are not going where `set_anchors()` is told to put them when no player exists to anchor to
+(the tool passes `build_player = false`, and `tools/river_water_shot.gd` documents that anchors
+follow the players group), or `height_at()` and the meshed chunk disagree about that spot. The
+waterline shot was cut from the tool rather than shipped producing misleading frames.
+
+What resolving this looks like: get one frame of the shore at standing height with the sea in it,
+then either confirm 0.34 m is fine or find the real cap. If the answer is that any useful amplitude
+overtops the beach, the fix is to taper the vertex displacement toward shore — which needs a shore
+distance the vertex stage does not currently have, and the cheapest source is probably a per-vertex
+value baked into the ocean mesh rather than a depth-texture read, since the taper has to happen in
+the vertex stage.
+
+---
+
 ## Resolved
 
 ### F-496 · ResourceScatterField fills every MultiMesh one Variant-boxed set_instance_transform() at a time, on the main thread, per chunk — **measured and rejected: the proposed fix is 2.5x slower**
