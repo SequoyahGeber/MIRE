@@ -94,21 +94,19 @@ because nobody wired the read.
 | `arrow_save_chance` | chance a fired arrow isn't consumed | clamped into 0..1; rolled on the host's own stream, never the run seed | `ranged_combat_service.gd` `_fire()` (host) |
 | `aggro_radius_m` | enemy detection radius vs this player (negative = stealth) | a FACTOR on each enemy's own authored radius, applied to retention as well as acquisition | `systems/enemies/enemy.gd` `_resolve_target()` (host) |
 
-### Pending systems — the stat waits for a system that does not exist yet
+### Every stat is now wired — one is wired and unreachable
 
-Six, after F-580, and every one of them is a *missing system*, not a missing line. A powerup here
-still loads, validates and does nothing; the fix is that system's task, and
-`tools/powerup_effects_check.gd` prints each of these as `PENDING` with its reason rather than
-passing it silently.
+F-580 left six stats pending. **F-585 built the last of the missing systems** (status effects, area
+hazards and all twelve Resonances), so `ignite_chance`, `slow_chance` and `slow_potency` are read by
+`ResonanceService.host_on_hit()` and `haul_speed` by `Haulable._haul_speed_scale()`. `fall_damage_taken`
+and `knockback_taken` got their systems in F-580 itself.
 
-| Stat | Consumed quantity | Waiting on | Inert powerup(s) today |
-|---|---|---|---|
-| `fall_damage_taken` | landing damage (negative mult = softer) | there is no fall-damage system — nothing in the project damages a player for landing | `cat_fall` |
-| `knockback_taken` | knockback applied to you (negative mult = stability) | there is no player-knockback system; enemy attacks apply damage only | `root_hold` |
-| `ignite_chance` | chance per hit to apply Burning | the Fire-Resonance task's status effect, unbuilt | `ashen_temper` |
-| `slow_chance` | chance per hit to apply Chilled | the Cold-Resonance task's status effect, unbuilt | `chill_edge` |
-| `slow_potency` | strength of Chilled you apply | the Cold-Resonance task's status effect, unbuilt | `deep_frost` |
-| `haul_speed` | heavy-carry drag speed | hauling has no shipped gameplay caller — `HaulService.host_spawn()` is reached only from `tools/` | `pack_frame` |
+One honest caveat remains, and `tools/powerup_effects_check.gd` prints it as `UNREACHABLE` rather
+than passing it silently:
+
+| Stat | State | Why |
+|---|---|---|
+| `haul_speed` | wired, unreachable | `Haulable._haul_speed_scale()` reads it correctly, but nothing outside `tools/` ever spawns a haulable — `HaulService.host_spawn()` has no shipped gameplay caller, so `pack_frame` cannot be felt in a real run until something places a carryable object. |
 
 ### Condition-suffixed stats — a closed set, on purpose
 

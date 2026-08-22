@@ -13,12 +13,22 @@ extends SceneTree
 ##
 ## Two halves, the same split and for the same reason as the Attunement check:
 ##
-##   1. **The catalogue half.** Every stat named by any shipped PowerupDef either has a recorded
-##      consumer whose source really does read it, or is listed in `PENDING` with the system it is
-##      waiting on. `PENDING` is the honest half — four stats genuinely have no system to read them
-##      (there is no fall-damage, knockback, status-effect or shipped hauling system to consult) and
-##      pretending otherwise would be a worse lie than the one F-580 records. Anything in neither
-##      list fails, so a future content edit cannot quietly author a dead stat again.
+##   1. **The catalogue half.** Every stat named by any shipped PowerupDef must be in exactly one of
+##      three buckets, and a stat in none of them fails the run — so a future content edit cannot
+##      quietly author a dead stat again.
+##
+##        · `CONSUMER_SITES` — a recorded consumer whose source really does read it.
+##        · `PENDING` — no system exists to read it. Empty as of F-585, which built the last of
+##          them; it is kept because the next stat authored ahead of its system belongs here rather
+##          than failing, and because an empty honest-list is a fact worth being able to see.
+##        · `UNREACHABLE` — wired and correct, and still not something a player can meet, because
+##          nothing puts the content in front of them. Reported, never passed silently.
+##
+##      The three-way split is the point. "Nobody wired the read", "there is no system to wire it
+##      to" and "it is wired and no player can trigger it" are three different bugs with three
+##      different fixes, and a check that collapsed them would be unactionable the day someone ran
+##      it. The third bucket exists because F-585 wired `haul_speed` correctly into a system nothing
+##      shipped ever reaches.
 ##   2. **The behaviour half.** The consumers reachable without a physics body are driven for real,
 ##      with a peer holding the powerup and a peer holding nothing, and the two answers must differ
 ##      in the direction docs/POWERUPS.md §2 promises.
@@ -66,6 +76,12 @@ const CONSUMER_SITES: Dictionary = {
 	&"bow_damage": ["res://autoload/ranged_combat_service.gd", "stat"],
 	&"arrow_save_chance": ["res://autoload/ranged_combat_service.gd", "stat"],
 	&"aggro_radius_m": ["res://systems/enemies/enemy.gd", "stat"],
+	# F-585: the two statuses live in one place on purpose — a player holding both a Fire Resonance
+	# and an `ignite_chance` powerup must not get two competing burns.
+	&"ignite_chance": ["res://autoload/resonance_service.gd", "stat"],
+	&"slow_chance": ["res://autoload/resonance_service.gd", "stat"],
+	&"slow_potency": ["res://autoload/resonance_service.gd", "stat"],
+	&"haul_speed": ["res://systems/hauling/haulable.gd", "stat"],
 	# economy / loot / work
 	&"coin_gain": ["res://autoload/reward_service.gd", "stat"],
 	&"chest_price": ["res://systems/loot/chest.gd", "stat"],
@@ -82,11 +98,19 @@ const CONSUMER_SITES: Dictionary = {
 ## a real gap. It is separated from the failures above because "nobody wired the read" and "there is
 ## no system to wire it to" are different bugs with different fixes, and collapsing them would make
 ## this check unactionable the day someone runs it.
-const PENDING: Dictionary = {
-	&"ignite_chance": "no status-effect system — Burning is the Fire-Resonance task's, unbuilt",
-	&"slow_chance": "no status-effect system — Chilled is the Cold-Resonance task's, unbuilt",
-	&"slow_potency": "no status-effect system — Chilled is the Cold-Resonance task's, unbuilt",
-	&"haul_speed": "hauling has no shipped gameplay caller — HaulService.host_spawn() is only ever called from tools/",
+const PENDING: Dictionary = {}
+
+## The third state, and F-585 is why it exists. A stat can have a real, correct consumer and STILL
+## never fire in a shipped run, because nothing puts the content in front of a player. That is a
+## different fact from "nobody wired the read" (which fails above) and from "there is no system to
+## wire it to" (`PENDING`), and collapsing it into either would be a lie in a different direction:
+## calling it PENDING understates the work already done, and passing it silently as live would let
+## `powerup_effects_check` assert that a powerup works when no player can ever trigger it.
+##
+## An entry here still means a powerup nobody will feel. It is reported, not failed, because the fix
+## is in a different system entirely and deleting the wiring would be the wrong response.
+const UNREACHABLE: Dictionary = {
+	&"haul_speed": "wired in Haulable._haul_speed_scale(), but nothing outside tools/ ever spawns a haulable — HaulService.host_spawn() has no shipped gameplay caller",
 }
 
 var failures: int = 0
@@ -153,6 +177,10 @@ func _check_every_authored_stat_is_accounted_for() -> void:
 		check(source != "", "%s is readable" % path)
 		check(source.contains("&\"%s\"" % stat_name),
 			"'%s' is read through PowerupService.%s() in %s" % [stat_name, site[1], path])
+		if UNREACHABLE.has(stat_name):
+			# Wired and correct, and still not something a player can meet. Said out loud rather
+			# than counted as a pass.
+			print("UNREACHABLE: '%s' — %s" % [stat_name, UNREACHABLE[stat_name]])
 
 
 ## F-580's headline number, as an assertion. A powerup every one of whose modifiers is unread is a
@@ -161,6 +189,7 @@ func _check_no_powerup_is_entirely_inert() -> void:
 	print("\n== no shipped powerup consists solely of unread stats ==")
 	var inert: PackedStringArray = PackedStringArray()
 	var blocked: PackedStringArray = PackedStringArray()
+	var unreachable_only: PackedStringArray = PackedStringArray()
 	for definition: Resource in _shipped_powerups():
 		var modifiers: Dictionary = definition.get(&"modifiers")
 		if modifiers.is_empty():
@@ -168,14 +197,23 @@ func _check_no_powerup_is_entirely_inert() -> void:
 			# its effect is not a stat, so a stat catalogue cannot judge it.
 			continue
 		var live: bool = false
+		var reachable: bool = false
 		var all_pending: bool = true
 		for stat_name: StringName in modifiers:
 			if CONSUMER_SITES.has(stat_name):
 				live = true
-				break
+				if not UNREACHABLE.has(stat_name):
+					reachable = true
+					break
+				continue
 			if not PENDING.has(stat_name):
 				all_pending = false
+		if live and reachable:
+			continue
 		if live:
+			# Every stat it names is wired, and every one of them is unreachable content-side. The
+			# powerup is not broken and the player still cannot feel it.
+			unreachable_only.append(String(definition.get(&"id")))
 			continue
 		if all_pending:
 			# Inert, but for a reason already recorded above and in docs/POWERUPS.md's pending table:
@@ -185,6 +223,10 @@ func _check_no_powerup_is_entirely_inert() -> void:
 			blocked.append(String(definition.get(&"id")))
 			continue
 		inert.append(String(definition.get(&"id")))
+	if not unreachable_only.is_empty():
+		print("UNREACHABLE: %d powerup(s) fully wired but not reachable in a shipped run: %s" % [
+			unreachable_only.size(), ", ".join(unreachable_only)
+		])
 	if not blocked.is_empty():
 		print("PENDING: %d powerup(s) inert only because their system does not exist yet: %s" % [
 			blocked.size(), ", ".join(blocked)
