@@ -7436,3 +7436,42 @@ imported from another project — this is a judgement Sequoyah made from descrip
 render, and the contact sheet may change it. Also, if the Mire-touched variant (Phase 5) turns out to
 need the ordinary animals to share silhouette language with the enemies for the corruption to read on
 them, that is a mechanical argument this taste call did not consider.
+
+### D-221 · 2026-08-22 · The cooking spit is an upgraded campfire; the anvil is not an upgraded furnace
+F-604 forced this, and D-217 is why it had to be decided rather than inherited: station substitution
+is DECLARED via `StationDef.upgrades_from` and never inferred from family + tier.
+
+`cooking_spit` is family `fire` tier 2 and `campfire` is family `fire` tier 1 — structurally
+identical to `workbench`/`workbench_upgraded`. It now declares `upgrades_from = &"campfire"`, so
+every campfire recipe (`charcoal`, `cooked_meat`, `honey_jar`) is also makeable at the spit.
+
+**The test is physical containment, not tier order.** A cooking spit IS a fire with a rack over it —
+it contains a campfire, so anything you could do over a campfire you can do under the spit. That is
+what makes it an upgrade rather than a successor.
+
+`forge` is the counterexample and the reason this is not a general rule about tier 2 following tier
+1: it runs furnace (1) then anvil (2), and **an anvil has no fire.** You cannot smelt on it. The
+anvil comes after the furnace because it consumes the furnace's output, which is a progression
+relationship and not a substitution one. F-575's first attempt inferred substitution from family +
+tier and silently moved `iron_ingot` and `bogsilver_ingot` onto the anvil;
+`tools/recipe_station_check.gd` caught it.
+
+**What this prevents.** Without the declaration, a player who builds the better fire — log 6 +
+fibre 3 + stone 4 + coal 2 — **loses the ability to make charcoal**, because `charcoal` names
+`campfire` and nothing else satisfied it. Paying real resources for a station that takes a verb away
+is F-575 exactly, in a different family. The asymmetry D-217 records runs the right way here: the
+spit satisfies a campfire requirement, the campfire does not satisfy a spit requirement, so the two
+stew recipes and the skewer stay spit-only and the tier still means something.
+
+**When adding a station to the `fire` family:** ask whether it physically contains the fire below it.
+If it does, declare `upgrades_from`. If it merely comes later in the progression — a drying rack, a
+smoker that consumes charcoal rather than making it — leave it undeclared, exactly as the anvil is.
+
+**Would change my mind:** a campfire recipe that should NOT be makeable at the spit. The plausible
+shape is a recipe that needs an open flame the spit's rack physically obstructs, or one whose whole
+point is that it is the primitive option. If such a recipe is ever authored, the fix is to give it
+its own station or its own gate rather than to withdraw this declaration — withdrawing it re-opens
+the charcoal trap for every other campfire recipe. Also: if `StationDef` ever grows a benefit field
+(F-587's likely answer for the Reinforced Workbench), a spit that is strictly better at everything
+may want the campfire's recipes to be *slower* on it rather than absent, which is a different
+mechanism than substitution and would not change this call.

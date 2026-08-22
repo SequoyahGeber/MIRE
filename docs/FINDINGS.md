@@ -3372,25 +3372,6 @@ item. Worth a roadmap task rather than a finding, if the next triage agrees.
 
 ---
 
-### F-596 · Fauna Phase 2 — the ordinary six have no models, rigs or clips
-
-**Area:** art · **Severity:** medium · **Found:** 2026-08-22 by wick1c650c
-
-`docs/FAUNA.md` §5 phase 2: chicken, cow, deer, hare, boar and songbird each need a model, a rig and
-`idle`/`walk`/`flee`/`death`. Phase 1 (`AnimalDef` + `FaunaService`) is in flight separately; the art
-does not depend on the defs landing, so the two run in parallel and meet at the id vocabulary fixed
-in D-218.
-
-Scale is against the PLAYER — `player_controller.gd` builds a 1.8 m capsule — not against the other
-animals, and each species is researched against the real animal before it is modelled rather than
-being a generic quadruped wearing a species name (the A-000W willow and A-051 apple tree were both
-rebuilt for exactly that).
-
-Expected intermediate state, so it does not read as a regression: between these exports and Phase 1's
-defs naming them, `asset_usage_check` is red — six modelled assets that nothing places.
-
----
-
 ### F-597 · Fauna Phase 1: the world has no animals — AnimalDef, FaunaService and herd placement do not exist
 
 **Area:** world · **Severity:** medium · **Found:** 2026-08-22 by larchcc2572
@@ -3545,7 +3526,178 @@ than a constant, and it should be its own task rather than a tuning pass.
 
 ---
 
+### F-604 · Cooking Tier 1 is unbuilt: the cooking spit opens an empty list and five shipped food models are unreachable
+
+**Area:** content · **Severity:** medium · **Found:** 2026-08-22 by birch1db63e
+
+`docs/COOKING.md` (6b718ad2) reconciled what Tier 1 cooking actually blocks on, and the answer is
+nothing: **every ingredient for six recipes already ships.** The work has stalled twice because each
+previous attempt hit a missing ingredient and stopped, and nobody had checked which ones resolve
+today.
+
+Two visible costs right now:
+
+  · **`cooking_spit` is a station a player pays log 6 + fibre 3 + stone 4 + coal 2 for, and it opens
+    an EMPTY recipe list.** No recipe in `content/recipes/` names it. That is F-575's bug in a
+    different family — a station that gives you strictly nothing for real resources.
+  · **Five of the thirteen models in `assets/food/exports/` are reachable from nothing** —
+    `cooked_meat`, `meat_skewer`, `hearty_stew`, `healing_stew`, `honey_jar` — built during A-012 and
+    never given an item, a recipe or an icon. Same species as F-580's unread stats, F-585's
+    unimplemented resonances, F-595's enemy loot and F-601's sling: **authored content with no
+    producer.** That is now five instances in one day and is worth sweeping for as a pattern rather
+    than finding one at a time.
+
+Tier 1, all ingredients shipped:
+
+    Cooked Meat   campfire      1 raw_meat
+    Meat Skewer   cooking_spit  1 raw_meat + 1 branch
+    Hearty Stew   cooking_spit  2 raw_meat + 1 wild_onion + 2 mushroom
+    Healing Stew  cooking_spit  2 raw_meat + 2 herb
+    Honey Jar     campfire      2 honey + 1 clay
+
+No systems code is needed: `ItemDef` already carries `hunger_restore` and `hp_restore`, and
+`PlayerHealth.request_consume_item()` already works. Per ITEMS.md §4.4 every food stays hunger
+and/or hp and nothing else until the timed-surge runtime exists.
+
+**One call this forces, and it is one line.** `cooking_spit` is family `fire` tier 2 and `campfire`
+is family `fire` tier 1 — the same shape as `workbench`/`workbench_upgraded`. Post-D-217 substitution
+is DECLARED and never inferred, and the spit does not declare `upgrades_from` today. So a player who
+builds the better fire **loses the ability to make charcoal**, which is F-575 exactly. It needs
+deciding deliberately rather than inheriting: the anvil is the counterexample — `forge` runs
+furnace (1) then anvil (2) and an anvil cannot smelt.
+
+**Not attempted, and deliberately so.** Tier 3 (`suspicious_sludge`, `pale_draught`) needs Blight
+Residue, which does not exist, and every buff food waits on the timed-surge runtime. Tier 2
+(Bog Loaf, Cooked Fish) each need a new harvestable. Shipping a stub for any of them would be the
+same authored-content-with-no-producer bug this finding is about.
+
+**Known and expected:** `raw_meat` has no source yet — no huntable animals — so four of these five
+are craftable in principle rather than in practice until fauna lands. Sequoyah confirmed a cow is
+being designed, which is the supply for both meat and the leather F-601 wants.
+
+---
+
+### F-605 · Nothing proves a client that DIES gets back into the run — the two-process checks stop at revive
+
+**Area:** net · **Severity:** high · **Found:** 2026-08-22 by wick3d4184
+
+The playtest bar is two people finishing a co-op run without getting stuck, and the state machine
+around a wipe is the part with no two-process coverage.
+
+`tools/player_health_net_check.gd` is green and genuinely covers the revive half — the downed flag
+replicating to a peer who did not go down, self-revive refused, out-of-range revive refused, in-range
+revive accepted. `tools/defeat_check.gd` is green and covers the wipe VERDICT — both alive, one down,
+everyone down. Neither goes near what happens after a player stops being revivable.
+
+**Uncovered, and each is a way a session ends badly:**
+
+  · a client bleeds out to DEAD while the host is still alive — does the run correctly NOT end?
+  · does that client respawn at all, and within `respawn_seconds`?
+  · does it respawn at full hp with hunger and blight cleared, as `_physics_process` claims?
+  · **does it respawn at the SPAWN POINT or where it fell?** `_teleport_to_spawn()` warns and
+    returns without moving anybody when `_spawn_transforms` has no entry for the peer, so a client
+    that dies in the Mire or in the ocean would respawn inside the thing that killed it. The entry
+    is written by `_on_player_spawned` for every peer including remotes, so this SHOULD hold — it
+    has simply never been asserted across two processes, and it is the F-063 failure mode.
+  · does the respawned client's own local state agree it is alive, i.e. can that player play again?
+    A client that is alive on the host and a corpse on its own screen reads as a broken game.
+  · both players down at once — defeat fires, and no respawn happens afterwards, since
+    `respawn_seconds` is documented as "only reachable while the run is still" going.
+
+The last one is the hard lock in the literal sense: a client stuck as a corpse looks like the game
+is broken rather than the netcode, and it ends the session.
+
+Filed as the companion to the check that closes it rather than as a defect — nothing here is known
+to be broken. It is unproven, on the path most likely to end a playtest, in a repo that has found
+four stale-or-vacuous assertions today on paths everyone assumed were covered.
+
+---
+
 ## Resolved
+
+### F-596 · Fauna Phase 2 — the ordinary six have no models, rigs or clips — **fixed**
+
+**Area:** art · **Severity:** medium · **Found:** 2026-08-22 by wick1c650c
+
+`docs/FAUNA.md` §5 phase 2: chicken, cow, deer, hare, boar and songbird each need a model, a rig and
+`idle`/`walk`/`flee`/`death`. Phase 1 (`AnimalDef` + `FaunaService`) is in flight separately; the art
+does not depend on the defs landing, so the two run in parallel and meet at the id vocabulary fixed
+in D-218.
+
+Scale is against the PLAYER — `player_controller.gd` builds a 1.8 m capsule — not against the other
+animals, and each species is researched against the real animal before it is modelled rather than
+being a generic quadruped wearing a species name (the A-000W willow and A-051 apple tree were both
+rebuilt for exactly that).
+
+Expected intermediate state, so it does not read as a regression: between these exports and Phase 1's
+defs naming them, `asset_usage_check` is red — six modelled assets that nothing places.
+
+---
+
+**Resolved 2026-08-22 by wick1c650c (fixed).** Done by wick1c650c. `FAUNA_ART_CHECK built=6 failures=0`.
+
+All six ordinary species have a model, a rig and `idle`/`walk`/`flee`/`death`: chicken, cow, deer,
+hare, boar, songbird. Ids and clip names per D-218; each modelled from the real species per D-220
+("Real animal designs" — Sequoyah, asked directly).
+
+**Recording the per-species reasoning here rather than only in commit messages, because the last
+three species' message was lost to the shared git index — a peer's commit swept the staged files up
+and they landed under `120b202d` with someone else's message. The files are intact; the argument for
+them would not have been.**
+
+  · CHICKEN — the walk is the real head-bob: a hen holds her head STILL IN SPACE while her body
+    advances under it, then snaps it forward. Gaze stabilisation, and the reason a walking chicken
+    is recognisable across a field. Keying it as the sine wave it resembles from a distance is what
+    makes a generated bird walk like a generic quadruped.
+  · DEER — nearly all legs. Shoulder 1.15 m with the belly line a little over half that, so the
+    body is a shallow barrel slung high. A deer with a deep body and short legs is a goat. `flee` is
+    a BOUND, not a gallop: it gathers all four legs and launches, head thrown up and back. Running
+    the walk faster gives a horse.
+  · COW — a Highland, a rectangle on short legs, twice as long as tall; the deliberate opposite of
+    the deer at the same shoulder height. Horns go OUT, then forward and level, then up — a curve
+    straight off the head is a dairy cow. The fringe over the eyes and the coat skirt breaking the
+    leg line are the other two reads.
+  · BOAR — a front-heavy wedge with the shoulder hump as its tallest point and effectively no neck.
+    Its "flee" is a CHARGE, flat and driving with the dorsal crest raised as the tell, because
+    FAUNA.md has it exist to teach that not everything runs; a clip of it scurrying off would undo
+    the reason it is in the roster.
+  · HARE — explicitly not a rabbit, since "rabbit" is what a generator defaults to. Rump higher than
+    the shoulders (compact vs coiled), black-tipped upright ears as the distance read, hops rather
+    than walks. Flee has a JINK authored into the clip, because a hare bounding in a straight line
+    is the easiest target in the roster rather than the hardest.
+  · SONGBIRD — built to read as a flock, not an individual. Its `death` is deliberately not a kill
+    animation: nothing hunts these and they drop nothing, so it climbs away. The design's point is
+    that their ABSENCE is a tell — birds leave before the Mire arrives. One dropping dead out of the
+    sky would say the opposite.
+
+## What the batch taught the check
+
+The proportion test was too weak and this batch exposed it. Length:height alone rated boar 1.61 and
+cow 1.59 — two plainly different animals it could not separate, because width was where the
+difference lived (0.45 against 1.01). It now compares a proportion VECTOR, (length/height,
+width/height), with an absolute-size escape so a hare and a cow owe no shape argument. A check that
+calls two distinct animals the same asset gets silenced rather than believed.
+
+Two scale misses were fixed by changing the MESH, never the authored number. The songbird came out
+0.08 m against a real bird's 0.14 and was scaled up twice; the deer came out 1.39 m long against a
+real one's ~2.0 and had its stations pushed apart. The catalog number describes the animal and the
+mesh follows it, not the reverse — that is the same rule as "assert the artefact, not the record".
+
+Earlier in the batch: Blender's `obj.bound_box` is cached and survives a mesh join and an armature
+bind, so the first catalog row claimed 0.499 m for a bird Godot loads at 0.4115. `world_bounds()`
+walks vertices now. And Godot's glTF importer strips a `-loop` suffix and converts it to loop mode,
+so the runtime clip names are the four bare ones D-218 promised — the check asserts both the
+stripped name and that loop mode actually came back set.
+
+## Still open, and not a regression
+
+These are unreferenced until Phase 1's `AnimalDef` names them, so `asset_usage_check` is expected
+red in between. Flagged at filing and repeated here.
+
+Sequoyah has since said **"I want lots of creatures"** — so the ten-design roster in FAUNA.md is a
+floor rather than a target, and the next fauna task is more species, not a closed roster. The
+`fauna_common.py` pipeline and this check are built for that: a new species is one builder file and
+one catalog row, and the check picks it up automatically and skips it until it exists.
 
 ### F-350 · The Mire saturates the whole island in 30 minutes and nothing ever pushes it back — **decided**
 
