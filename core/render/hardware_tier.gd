@@ -55,6 +55,10 @@ const WEAK_GPU_MARKERS: PackedStringArray = [
 	"swiftshader",
 ]
 
+## Suffixes that mark an Apple Silicon part as above the integrated class (F-609). Everything else
+## on Apple Silicon — a bare "Apple M1", "Apple M3" — is a base chip and takes the integrated rule.
+const APPLE_PRO_MARKERS: PackedStringArray = ["pro", "max", "ultra"]
+
 ## Below this, a machine is assumed to be doing something else with its cores too.
 const WEAK_CPU_THREADS: int = 4
 ## Physical memory, in MiB, under which the machine gets dropped a tier. 8 GB is the floor a
@@ -86,10 +90,23 @@ static func detect(probe: Dictionary = {}) -> Dictionary:
 		preset = PRESET_LOW
 		reasons.append("GPU '%s' is a software or entry-level integrated part"
 			% machine.get("adapter_name", "?"))
-	elif device_type == RenderingDevice.DEVICE_TYPE_INTEGRATED_GPU and not _apple_silicon(adapter):
+	elif device_type == RenderingDevice.DEVICE_TYPE_INTEGRATED_GPU and not _apple_silicon_pro(adapter):
 		# Modern integrated (Radeon 780M, Arc, the Steam Deck) plays this fine at MEDIUM's 0.77
-		# render scale and cannot hold HIGH's. Apple Silicon reports integrated and is not in
-		# that class, so it is excluded before the rule, not after it.
+		# render scale and cannot hold HIGH's.
+		#
+		# F-609: this used to exclude ALL Apple Silicon, on the reasoning that it "reports
+		# integrated and is not in that class". That is true of the Pro/Max/Ultra parts and false
+		# of the base chips, and the rule was written on a Pro-class machine — the exact shape of
+		# generalising from the development hardware. A base M1 has 7-8 GPU cores against an
+		# M4 Max's 40, and in a MacBook Air it is **fanless**, so it holds its clocks for five to
+		# ten minutes and then throttles for the rest of a session.
+		#
+		# Measured consequence, reported by Sequoyah from a real session on a friend's M1 Air:
+		# 40-50 fps at 1080p, because the machine had been handed HIGH with dynamic resolution
+		# off. Nothing else in the table caught it — 8 threads clears WEAK_CPU_THREADS and 8 GB
+		# clears LOW_MEMORY_MIB — so the GPU rule was the only thing that could have.
+		#
+		# Pro/Max/Ultra keep HIGH: those are the parts the original exclusion was actually about.
 		preset = PRESET_MEDIUM
 		reasons.append("integrated GPU '%s'" % machine.get("adapter_name", "?"))
 	elif device_type == RenderingDevice.DEVICE_TYPE_VIRTUAL_GPU:
@@ -145,6 +162,18 @@ static func preset_name(preset: int) -> String:
 ## 100 fps. Matched on the vendor's own naming ("Apple M1 Pro", "Apple M5 Max").
 static func _apple_silicon(adapter_lower: String) -> bool:
 	return adapter_lower.begins_with("apple m") or adapter_lower.begins_with("apple a")
+
+
+## The Apple Silicon parts that genuinely outrun the integrated class — "Apple M4 Pro", "Apple M2
+## Max", "Apple M1 Ultra". A bare "Apple M1"/"Apple M3" is a base chip and does not.
+##
+## F-609. Matching on the suffix rather than on a chip list on purpose: a list would need editing
+## for every generation Apple ships, and the failure mode of a stale list is that the newest base
+## chip silently inherits HIGH — which is precisely the bug this replaces.
+static func _apple_silicon_pro(adapter_lower: String) -> bool:
+	if not _apple_silicon(adapter_lower):
+		return false
+	return _matches(adapter_lower, APPLE_PRO_MARKERS)
 
 
 static func _matches(haystack: String, needles: PackedStringArray) -> bool:

@@ -44,6 +44,27 @@ func _check_table() -> void:
 	print("=== hardware tier classification ===")
 	# name, probe, expected preset, expected dynamic resolution
 	var cases: Array = [
+		# F-609. The case that was wrong in the shipped table and cost a real session: an M1 Air
+		# clears WEAK_CPU_THREADS (8) and LOW_MEMORY_MIB (8 GB), so the GPU rule was the only thing
+		# that could catch it — and it excluded ALL Apple Silicon. Sequoyah's friend got HIGH with
+		# dynamic resolution off and 40-50 fps at 1080p.
+		["M1 Air, 8 GB (base Apple Silicon)", {
+			"adapter_name": "Apple M1", "cpu_threads": 8, "memory_mib": 8192,
+			"device_type": RenderingDevice.DEVICE_TYPE_INTEGRATED_GPU,
+		}, HardwareTier.PRESET_MEDIUM, true],
+		["M3 base, 16 GB", {
+			"adapter_name": "Apple M3", "cpu_threads": 8, "memory_mib": 16384,
+			"device_type": RenderingDevice.DEVICE_TYPE_INTEGRATED_GPU,
+		}, HardwareTier.PRESET_MEDIUM, true],
+		# The parts the original exclusion was actually about — these must NOT regress to MEDIUM.
+		["M2 Max (Apple Silicon, above the integrated class)", {
+			"adapter_name": "Apple M2 Max", "cpu_threads": 12, "memory_mib": 32768,
+			"device_type": RenderingDevice.DEVICE_TYPE_INTEGRATED_GPU,
+		}, HardwareTier.PRESET_HIGH, false],
+		["M1 Ultra", {
+			"adapter_name": "Apple M1 Ultra", "cpu_threads": 20, "memory_mib": 65536,
+			"device_type": RenderingDevice.DEVICE_TYPE_INTEGRATED_GPU,
+		}, HardwareTier.PRESET_HIGH, false],
 		["M5 Pro (Apple Silicon)", {
 			"adapter_name": "Apple M5 Pro", "cpu_threads": 12, "memory_mib": 24576,
 			"device_type": RenderingDevice.DEVICE_TYPE_INTEGRATED_GPU,
