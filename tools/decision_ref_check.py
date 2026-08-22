@@ -45,6 +45,15 @@ DOCS_GLOB = os.path.join(ROOT, "docs", "*.md")
 HEADING_RE = re.compile(r"^### (D-\d+)\s*·", re.M)
 CITE_RE = re.compile(r"\bD-(\d{3})\b")
 
+# F-316. SPECS.md is sliced by heading — `agent brief` serves whichever block it reaches first — so a
+# heading that appears twice means two agents briefed on the same id can read different specs. It
+# happened with `## F-226`, whose two blocks listed different claims.
+#
+# Both kinds of SPECS heading, in one pattern. The task-number half must NOT be `[0-9]+\.[0-9]+`:
+# `## 3.8` and `## 3.8b` are different tasks and a naive capture reports them as a collision, which
+# is the false positive to write a case against. Trailing letters are therefore part of the id.
+SPEC_HEADING_RE = re.compile(r"^## (F-\d+|\d+\.\d+[a-z]*)\s*·", re.M)
+
 # The two exact strings F-229 fixed, pinned so a future reflow of these lines can't silently
 # reintroduce the typo without this check noticing. Matched loosely (id + a few words of the
 # surrounding sentence) so a harmless rewording nearby doesn't false-fail the pin.
@@ -66,6 +75,21 @@ def duplicate_decisions(decisions_text):
     seen = {}
     for m in HEADING_RE.finditer(decisions_text):
         line_no = decisions_text.count("\n", 0, m.start()) + 1
+        seen.setdefault(m.group(1), []).append(line_no)
+    return [(ref, lines) for ref, lines in sorted(seen.items()) if len(lines) > 1]
+
+
+def duplicate_spec_headings(specs_text):
+    """Yields (id, [line numbers]) for every SPECS heading that heads more than one block (F-316).
+
+    Same shape and same reason as duplicate_decisions, pointed at the other file that `agent brief`
+    slices by heading. Milder than the DECISIONS case — two `## F-226` blocks are at least about the
+    same finding, where two `### D-150` blocks need not be — but the reader still gets whichever one
+    they scroll to, and those two differed in the claim.
+    """
+    seen = {}
+    for m in SPEC_HEADING_RE.finditer(specs_text):
+        line_no = specs_text.count("\n", 0, m.start()) + 1
         seen.setdefault(m.group(1), []).append(line_no)
     return [(ref, lines) for ref, lines in sorted(seen.items()) if len(lines) > 1]
 
@@ -117,10 +141,11 @@ def report(repo=ROOT):
     defined = defined_decisions(decisions_text)
     dangling = find_dangling(defined, docs)
     duplicates = duplicate_decisions(decisions_text)
+    spec_duplicates = duplicate_spec_headings(dict(docs).get("docs/SPECS.md", ""))
     pins = check_pins(docs)
 
-    print("DECISION_REF_CHECK defined=%d dangling=%d duplicate=%d" %
-          (len(defined), len(dangling), len(duplicates)))
+    print("DECISION_REF_CHECK defined=%d dangling=%d duplicate=%d spec_duplicate=%d" %
+          (len(defined), len(dangling), len(duplicates), len(spec_duplicates)))
     for path, line_no, ref in dangling:
         print("  DANGLING %s:%d cites %s, which has no heading in docs/DECISIONS.md" %
               (path, line_no, ref))
@@ -130,13 +155,19 @@ def report(repo=ROOT):
               "`agent decision`'s allocator and move its citations with it (F-283)." %
               (ref, len(line_nos), ", ".join(str(n) for n in line_nos)))
 
+    for ref, line_nos in spec_duplicates:
+        print("  DUPLICATE %s heads %d blocks in docs/SPECS.md (lines %s) — `agent brief` slices this "
+              "file by heading and serves whichever it reaches first, so two agents briefed on the "
+              "same id can read different specs. Merge them under one heading (F-316)." %
+              (ref, len(line_nos), ", ".join(str(n) for n in line_nos)))
+
     pin_failures = 0
     for path, needle, want_id, got, status in pins:
         print("  PIN %s [%s] want=%s got=%s -> %s" % (path, needle[:40], want_id, got, status))
         if status != "ok":
             pin_failures += 1
 
-    failures = len(dangling) + len(duplicates) + pin_failures
+    failures = len(dangling) + len(duplicates) + len(spec_duplicates) + pin_failures
     print("DECISION_REF_CHECK failures=%d" % failures)
     return failures
 
@@ -171,6 +202,26 @@ Body.
     clean_dupes = duplicate_decisions(decisions_text)
     colliding_dupes = duplicate_decisions(colliding_text)
 
+    # F-316's shape, in the other file. The `## 3.8` / `## 3.8b` pair is the case worth writing
+    # down: a naive `[0-9]+\\.[0-9]+` capture reads them as one task and reports a collision that
+    # is not there, so the fixture carries them alongside a real duplicate to prove the pattern
+    # separates the two.
+    specs_clean = """## 3.8 · Fixture: a task
+Body.
+
+## 3.8b · Fixture: a DIFFERENT task that is not 3.8
+Body.
+
+## F-100 · Fixture: a finding spec
+Body.
+"""
+    specs_colliding = specs_clean + """
+## F-100 · Fixture: a second block that reused F-100
+Body.
+"""
+    clean_specs = duplicate_spec_headings(specs_clean)
+    colliding_specs = duplicate_spec_headings(specs_colliding)
+
     cases = [
         ("D-001 is not flagged (real heading exists)", "D-001" not in dangling_refs),
         ("D-999 is flagged (no heading)", "D-999" in dangling_refs),
@@ -181,6 +232,11 @@ Body.
          colliding_dupes[0][1] == [6, 9] if colliding_dupes else False),
         ("the singleton D-001 is not swept up with it",
          "D-001" not in [r for r, _ in colliding_dupes]),
+        ("a SPECS file with no repeated heading reports no duplicates", clean_specs == []),
+        ("3.8 and 3.8b are not a collision", "3.8" not in [r for r, _ in clean_specs]),
+        ("a repeated SPECS heading is flagged", [r for r, _ in colliding_specs] == ["F-100"]),
+        ("the SPECS duplicate names both of its heading lines",
+         colliding_specs[0][1] == [7, 10] if colliding_specs else False),
     ]
     failed = 0
     for label, ok in cases:

@@ -54,12 +54,6 @@
       "task": "F-543",
       "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
     },
-    "autoload/material_warmer.gd": {
-      "agent": "onyxbe8065",
-      "at": "2026-08-22T05:31:41+00:00",
-      "task": "F-516",
-      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
-    },
     "autoload/powerup_service.gd": {
       "agent": "larch543bba",
       "at": "2026-08-22T05:39:34+00:00",
@@ -226,6 +220,13 @@
       "task": "F-543",
       "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
     },
+    "docs/FINDINGS.md": {
+      "agent": "moss8598bb",
+      "at": "2026-08-22T06:07:08+00:00",
+      "dirty_at_claim": false,
+      "task": "F-236",
+      "token": "CLAUDE_CODE_SESSION_ID:ba8e8bdc-1c55-4638-b9e8-b5fc2b5623fd"
+    },
     "docs/POWERUPS.md": {
       "agent": "larch543bba",
       "at": "2026-08-22T05:47:16+00:00",
@@ -326,12 +327,6 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "tools/material_warm_check.gd": {
-      "agent": "onyxbe8065",
-      "at": "2026-08-22T05:31:41+00:00",
-      "task": "F-516",
-      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
-    },
     "tools/nav_bake_check.gd": {
       "agent": "cinder9818da",
       "at": "2026-08-22T05:56:04+00:00",
@@ -345,18 +340,6 @@
       "dirty_at_claim": false,
       "task": "F-543",
       "token": "CLAUDE_CODE_SESSION_ID:734158be-3070-47b8-8f1d-7aee96701cd4"
-    },
-    "tools/terminal_focus_check.gd": {
-      "agent": "onyxbe8065",
-      "at": "2026-08-22T05:27:47+00:00",
-      "task": "F-321",
-      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
-    },
-    "ui/attunement/attunement_ui.gd": {
-      "agent": "onyxbe8065",
-      "at": "2026-08-22T05:25:47+00:00",
-      "task": "F-321",
-      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "ui/hud/forager_sense_hud.gd": {
       "agent": "larch543bba",
@@ -385,6 +368,15 @@
       "started": "2026-08-21T17:13:34+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "F-236": {
+      "agent": "moss8598bb",
+      "files": [
+        "docs/FINDINGS.md"
+      ],
+      "notes": [],
+      "started": "2026-08-22T06:07:08+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:ba8e8bdc-1c55-4638-b9e8-b5fc2b5623fd"
+    },
     "F-292": {
       "agent": "cinder9818da",
       "files": [
@@ -393,16 +385,6 @@
       "notes": [],
       "started": "2026-08-22T05:56:04+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
-    },
-    "F-321": {
-      "agent": "onyxbe8065",
-      "files": [
-        "ui/attunement/attunement_ui.gd",
-        "tools/terminal_focus_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-22T05:25:47+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "F-473": {
       "agent": "birche6b40e",
@@ -437,16 +419,6 @@
       "notes": [],
       "started": "2026-08-22T00:29:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
-    },
-    "F-516": {
-      "agent": "onyxbe8065",
-      "files": [
-        "autoload/material_warmer.gd",
-        "tools/material_warm_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-22T05:29:58+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "F-543": {
       "agent": "larch543bba",
@@ -562,34 +534,6 @@
       "hash": null,
       "task": "F-432",
       "token": "CLAUDE_CODE_SESSION_ID:9fc8d264-c324-452e-b88b-3aea5d2f6938"
-    },
-    "assets/audit/lighting/f356_20_noon_control.png": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T06:07:24+00:00",
-      "hash": "8e07615c71e667b794c25c8a679d53b2735d84579145c59c19ca36c169dcf626",
-      "task": "F-356",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/audit/lighting/f356_21_blue_hour.png": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T06:07:24+00:00",
-      "hash": "cd7bf38de9aeed5c33592bb49281bc85fb690f0eacf3b468e6869258a2f77868",
-      "task": "F-356",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/audit/lighting/f356_22_moonlit_night.png": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T06:07:24+00:00",
-      "hash": "6ba4b59fa8b3daec02ebb2addec8a33f1b6e0ad3c5c5604481e8e14b02fa9f6d",
-      "task": "F-356",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "assets/audit/lighting/f356_night_render.jsonl": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T06:07:24+00:00",
-      "hash": "53bf6718b5ce8d53e893c7e8caac6b3a215c42060d4bf52581d4cbb0cf0278e2",
-      "task": "F-356",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
     },
     "assets/audit/lighting/f415_10_noon_control.png": {
       "agent": "emberd89a44",
@@ -1051,6 +995,15 @@
       "hash": "2407bf3ee333262887b42c86d767d188ccc7187e9f8bba7edf463a9f67634f4e",
       "task": "F-535",
       "token": "CLAUDE_CODE_SESSION_ID:aaf7de87-5411-4802-820b-026234b34cff"
+    },
+    "autoload/material_warmer.gd": {
+      "agent": "onyxbe8065",
+      "at": "2026-08-22T05:57:23+00:00",
+      "claimed_at": "2026-08-22T05:31:41+00:00",
+      "dirty_at_claim": false,
+      "hash": "b7e26a3cf449574580a33c746b63d8a16d082e4d9c0a8903ac45cdcae879ab74",
+      "task": "F-516",
+      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "autoload/net_transport.gd": {
       "agent": "cinder9818da",
@@ -3242,13 +3195,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "docs/FINDINGS.md": {
-      "agent": "nettled7199c",
-      "at": "2026-08-22T05:57:17+00:00",
-      "claimed_at": "2026-08-22T05:54:06+00:00",
-      "dirty_at_claim": true,
-      "hash": "bfb33b2111efabde2f915f092ec46573824634927ad0fa057c1cde9c0e61bd2b",
-      "task": "F-541",
-      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+      "agent": "cinder9818da",
+      "at": "2026-08-22T06:07:28+00:00",
+      "hash": null,
+      "task": "F-292",
+      "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
     },
     "docs/ITEMS.md": {
       "agent": "nettled7199c",
@@ -3952,6 +3903,15 @@
       "task": "F-541",
       "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
     },
+    "tools/decision_ref_check.py": {
+      "agent": "cinder9818da",
+      "at": "2026-08-22T06:07:46+00:00",
+      "claimed_at": "2026-08-22T06:05:12+00:00",
+      "dirty_at_claim": false,
+      "hash": "dcb63b268c8f32465076818bac2acf232a0a96bbc0b43c00397aa82f1ea0842b",
+      "task": "F-316",
+      "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
+    },
     "tools/dev_loadout_check.gd": {
       "agent": "tine7d9d62",
       "at": "2026-08-22T04:14:10+00:00",
@@ -4034,13 +3994,6 @@
       "at": "2026-08-21T06:17:41+00:00",
       "hash": "f69523d472392c1aaf569af11c91dd8e961ac45a28d0f8bd26d66c8158e3c5fe",
       "task": "F-415",
-      "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
-    },
-    "tools/f410_procedural_sky_probe.gd": {
-      "agent": "emberd89a44",
-      "at": "2026-08-21T06:07:24+00:00",
-      "hash": "63f82b44d7f1380a84ae442b826546cabb5807125c179df1f2bc56b8290bc04a",
-      "task": "F-356",
       "token": "CODEX_SESSION_ID:01a022b7-2d7b-7cf2-b87f-a53ec9b8e649"
     },
     "tools/f492_pinecone_check.gd": {
@@ -4221,6 +4174,15 @@
       "hash": "9f5ba33760ac28673caa88d503905e073a4291b24fec384350c887f2a48bdfa4",
       "task": "F-541",
       "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+    },
+    "tools/material_warm_check.gd": {
+      "agent": "onyxbe8065",
+      "at": "2026-08-22T05:57:23+00:00",
+      "claimed_at": "2026-08-22T05:31:41+00:00",
+      "dirty_at_claim": false,
+      "hash": "b01a66ad6f257d816ab943e341c528155ca16333118a95363753fcc78bece6fe",
+      "task": "F-516",
+      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "tools/menu_focus_check.gd": {
       "agent": "kilnd3a089",
@@ -4495,6 +4457,15 @@
       "task": "F-433",
       "token": "CLAUDE_CODE_SESSION_ID:b95e039a-4098-45fa-89d9-110729466e4a"
     },
+    "tools/terminal_focus_check.gd": {
+      "agent": "onyxbe8065",
+      "at": "2026-08-22T05:57:23+00:00",
+      "claimed_at": "2026-08-22T05:27:47+00:00",
+      "dirty_at_claim": false,
+      "hash": "99c8def8d4cd9437184978c26cef491ac3e57ee935d72618dae61451f9cad31b",
+      "task": "F-321",
+      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
+    },
     "tools/terrain_check.gd": {
       "agent": "birchcf39ce",
       "at": "2026-08-21T19:40:33+00:00",
@@ -4587,11 +4558,13 @@
       "token": "CODEX_SESSION_ID:01a0274f-8324-7201-836e-ef917c91f55a"
     },
     "ui/attunement/attunement_ui.gd": {
-      "agent": "ivyf16b98",
-      "at": "2026-08-22T05:09:40+00:00",
-      "hash": "3b4849de25b6b3238a04db90eb1606f295dafcdc73700782bbcae0e83b7a6ea2",
-      "task": "F-530",
-      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+      "agent": "onyxbe8065",
+      "at": "2026-08-22T05:57:23+00:00",
+      "claimed_at": "2026-08-22T05:25:47+00:00",
+      "dirty_at_claim": false,
+      "hash": "1d52248065838e20da46b4a0bdaecae66803e2a01691151b1040a4fda0d61178",
+      "task": "F-321",
+      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
     },
     "ui/building/build_bar.gd": {
       "agent": "ivyf16b98",
@@ -4951,7 +4924,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1552,
+  "rev": 1562,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -8514,7 +8487,7 @@
     "F-236": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Three shipped systems have essentially no content in them: the Cycle Modifier deck holds 1 card, the unlock tree 1 unlock, the ranged rack 1 weapon"
     },
@@ -9292,9 +9265,11 @@
       "title": "A drain chain silently stops draining the moment it re-executes for a harness change"
     },
     "F-316": {
+      "done_at": "2026-08-22T06:07:46+00:00",
+      "done_by": "cinder9818da",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "docs/SPECS.md carries two different F-226 blocks under one heading, and nothing checks SPECS for duplicate headings"
     },
@@ -9329,9 +9304,11 @@
       "title": "Every gameplay HUD autoload builds and shows itself unconditionally, so they all draw over the front end"
     },
     "F-321": {
+      "done_at": "2026-08-22T05:57:23+00:00",
+      "done_by": "onyxbe8065",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "`AttunementUI` is the third mandatory panel and it still has F-307's soft-lock \u2014 it closes only on an accepted pick, so an orphaned client can never leave it"
     },
@@ -10865,9 +10842,11 @@
       "title": "BuildBar controller focus regression reopened after F-217"
     },
     "F-516": {
+      "done_at": "2026-08-22T05:57:23+00:00",
+      "done_by": "onyxbe8065",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Nothing pre-warms shipped materials, so every player pays shader/pipeline compilation as hitches during their first minutes of play"
     },
@@ -11108,6 +11087,13 @@
       "status": "todo",
       "tier": "F",
       "title": "Three DESIGN \u00a74.5 Attunement promises name systems that do not exist \u2014 Ward turrets, taunts, and station tiers"
+    },
+    "F-545": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Hollowmere's only extraction ship marker was hand-edited into a GENERATED file, and the next regeneration deleted it"
     }
   },
   "version": 1

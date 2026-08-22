@@ -958,60 +958,6 @@ that has never been seen to fail has not been shown to test the fan-out either.
 
 ---
 
-### F-316 · docs/SPECS.md carries two different F-226 blocks under one heading, and nothing checks SPECS for duplicate headings
-
-**Area:** tooling · **Severity:** low · **Found:** 2026-08-20 by lp
-
-Found by lp during F-283's sweep. F-283 fixed the duplicate-heading class in `docs/DECISIONS.md`;
-the same `grep -o '^#* <id>' | sort | uniq -d` over `docs/SPECS.md` finds it there too:
-
-```
-$ grep -n '^## F-226' docs/SPECS.md
-1487:## F-226 · `WaveSpawner.current_cycle()` is documented "readable on any peer" but is stuck at 1 ...
-7392:## F-226 · `WaveSpawner.current_cycle()` is documented "readable on any peer" but is stuck at 1 ...
-```
-
-**Why it is milder than F-283's, and why it is still worth fixing.** Both blocks are about the same
-finding, so a citation of "F-226's spec" cannot land on an unrelated system the way a `D-150`
-citation could — the silent-wrong-page hazard that made F-283 medium is absent. What is present is
-that the two blocks **say different things**: 1487 is a past-tense close-out record (`**Shipped
-2026-08-19.**`, a bug/fix narrative), and 7392 is the execution spec proper (`**Claim:**`,
-`**Authority:**`, `**No spec existed for this finding**`). An agent handed F-226 and told "read its
-block here" gets whichever it scrolls to, and the two differ in the detail that matters most for a
-re-run — 1487 lists `tools/wave_director_check.gd` in its claim, 7392 lists it `(+ its .uid)`.
-`agent brief` slices this file by heading, so it is the one that decides which the reader sees.
-
-**Nothing checks it.** `tools/decision_ref_check.py`'s new `duplicate_decisions()` (F-283) is
-DECISIONS-only by construction — it matches `^### (D-\d+)\s*·` against one file.
-`tools/findings_numbering_check.gd` asserts no F-number heads two entries **within `## Open`** in
-`docs/FINDINGS.md`, which is a narrower claim than "no duplicate headings in SPECS", and it does not
-read SPECS at all. So both existing duplicate detectors have a shape that would catch this and
-neither is pointed at the file.
-
-**What fixing it takes.** Two parts, and the second is the one that stops the class:
-
-1. Merge the two blocks — keep 7392's spec shape as the block (it is the one `agent brief` should
-   serve), fold anything 1487 records that 7392 does not (the `.uid`, the "`wave_director_check`
-   would have PASSED with the bug present" note, which is a real and non-obvious fact about that
-   check's coverage), and leave a single heading. Do NOT delete the close-out prose — it is the
-   evidence for why the fix is believed.
-2. Generalise the duplicate assertion so it covers SPECS' `## F-NNN` and `## <n.m>` headings, not
-   just DECISIONS' `### D-NNN`. Note `## 3.8` and `## 3.8b` are **not** a collision — a naive
-   `[0-9]+\.[0-9]+` capture reports them as one, which is a false positive to write a case against.
-
-Also worth knowing while doing it: `docs/FINDINGS.md` has three duplicate `### F-NNN` headings at
-HEAD (`F-012`, `F-055`, `F-056`). Those are **deliberate** — `agent`'s own `_duplicate_findings()`
-declines to renumber them, and `findings_numbering_check.gd` only forbids the collision inside
-`## Open`. Any generalised check must treat them as a named exception rather than fail on them, or
-it ships red and joins F-293's pile.
-
-**Would change my mind about fixing part 1 at all:** if 1487 turns out to be inside a section this
-file treats as an append-only history rather than as live spec, merging is wrong and the fix is
-part 2 plus a pointer line. Whoever takes this should check that before editing — F-283 did not,
-because a merge was outside its claim.
-
----
-
 ### F-317 · A full headless boot of the shipped procedural map prints ~10 dummy-renderer RID ERROR lines from chunk mesh upload — windowed boots are clean, but the '0 stray ERROR lines' full-boot bar needs a headless caveat
 
 **Area:** worldgen · **Severity:** low · **Found:** 2026-08-20 by quill5fa5c7
@@ -3258,7 +3204,132 @@ to whoever holds it — not to patch the output.
 
 ---
 
+### F-546 · 21 citations of D-215 across ITEMS.md and FINDINGS.md have no heading in DECISIONS.md
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-22 by cinder9818da
+
+Found by cinder9818da during F-316, from `python3 tools/decision_ref_check.py` on the working tree:
+
+```
+DECISION_REF_CHECK defined=208 dangling=21 duplicate=0 spec_duplicate=0
+  DANGLING docs/ITEMS.md:252 cites D-215, which has no heading in docs/DECISIONS.md
+  ...
+```
+
+**Pre-existing, and in both directions at HEAD.** `git show HEAD:docs/ITEMS.md | grep -c D-215`
+returns 2 and `git show HEAD:docs/DECISIONS.md | grep -c '^### D-215'` returns 0, so this is not a
+working-tree artifact of a sibling's uncommitted edit and not something F-316 introduced. Every
+citation resolves to nothing.
+
+**Why it matters more than a broken link.** `D-215` is cited as the authority for shipped item
+behaviour in `docs/ITEMS.md`, which is the file an agent authoring content reads to find out what was
+already settled. A citation of a decision that was never written means the reasoning behind that
+behaviour exists nowhere in the repo — the next agent either re-derives it, or (worse) reads the
+citation as proof it was decided and does not check.
+
+**Two possibilities, and they need different fixes.** Either the decision was made and its block was
+never committed — in which case the fix is to write D-215 from whatever the citing prose asserts, and
+say in it that it was reconstructed — or the number was guessed ahead of the allocator and the real
+block landed under a different id, in which case the citations move. `git log -S 'D-215' -- docs/`
+should tell which, and whoever wrote the citing paragraphs is named in that log.
+
+**Why this went unnoticed:** `decision_ref_check` already detects it and already counts it in
+`failures`, so this is another entry in F-293's pile — a check that has been red at HEAD long enough
+that its output reads as background. It is not a detection gap; it is an unread detector.
+
+---
+
 ## Resolved
+
+### F-316 · docs/SPECS.md carries two different F-226 blocks under one heading, and nothing checks SPECS for duplicate headings — **fixed**
+
+**Area:** tooling · **Severity:** low · **Found:** 2026-08-20 by lp
+
+Found by lp during F-283's sweep. F-283 fixed the duplicate-heading class in `docs/DECISIONS.md`;
+the same `grep -o '^#* <id>' | sort | uniq -d` over `docs/SPECS.md` finds it there too:
+
+```
+$ grep -n '^## F-226' docs/SPECS.md
+1487:## F-226 · `WaveSpawner.current_cycle()` is documented "readable on any peer" but is stuck at 1 ...
+7392:## F-226 · `WaveSpawner.current_cycle()` is documented "readable on any peer" but is stuck at 1 ...
+```
+
+**Why it is milder than F-283's, and why it is still worth fixing.** Both blocks are about the same
+finding, so a citation of "F-226's spec" cannot land on an unrelated system the way a `D-150`
+citation could — the silent-wrong-page hazard that made F-283 medium is absent. What is present is
+that the two blocks **say different things**: 1487 is a past-tense close-out record (`**Shipped
+2026-08-19.**`, a bug/fix narrative), and 7392 is the execution spec proper (`**Claim:**`,
+`**Authority:**`, `**No spec existed for this finding**`). An agent handed F-226 and told "read its
+block here" gets whichever it scrolls to, and the two differ in the detail that matters most for a
+re-run — 1487 lists `tools/wave_director_check.gd` in its claim, 7392 lists it `(+ its .uid)`.
+`agent brief` slices this file by heading, so it is the one that decides which the reader sees.
+
+**Nothing checks it.** `tools/decision_ref_check.py`'s new `duplicate_decisions()` (F-283) is
+DECISIONS-only by construction — it matches `^### (D-\d+)\s*·` against one file.
+`tools/findings_numbering_check.gd` asserts no F-number heads two entries **within `## Open`** in
+`docs/FINDINGS.md`, which is a narrower claim than "no duplicate headings in SPECS", and it does not
+read SPECS at all. So both existing duplicate detectors have a shape that would catch this and
+neither is pointed at the file.
+
+**What fixing it takes.** Two parts, and the second is the one that stops the class:
+
+1. Merge the two blocks — keep 7392's spec shape as the block (it is the one `agent brief` should
+   serve), fold anything 1487 records that 7392 does not (the `.uid`, the "`wave_director_check`
+   would have PASSED with the bug present" note, which is a real and non-obvious fact about that
+   check's coverage), and leave a single heading. Do NOT delete the close-out prose — it is the
+   evidence for why the fix is believed.
+2. Generalise the duplicate assertion so it covers SPECS' `## F-NNN` and `## <n.m>` headings, not
+   just DECISIONS' `### D-NNN`. Note `## 3.8` and `## 3.8b` are **not** a collision — a naive
+   `[0-9]+\.[0-9]+` capture reports them as one, which is a false positive to write a case against.
+
+Also worth knowing while doing it: `docs/FINDINGS.md` has three duplicate `### F-NNN` headings at
+HEAD (`F-012`, `F-055`, `F-056`). Those are **deliberate** — `agent`'s own `_duplicate_findings()`
+declines to renumber them, and `findings_numbering_check.gd` only forbids the collision inside
+`## Open`. Any generalised check must treat them as a named exception rather than fail on them, or
+it ships red and joins F-293's pile.
+
+**Would change my mind about fixing part 1 at all:** if 1487 turns out to be inside a section this
+file treats as an append-only history rather than as live spec, merging is wrong and the fix is
+part 2 plus a pointer line. Whoever takes this should check that before editing — F-283 did not,
+because a merge was outside its claim.
+
+---
+
+**Resolved 2026-08-22 by cinder9818da.** **Fixed 2026-08-21 by cinder9818da.** Both parts, in the order the entry set out.
+
+**Part 1 — merged.** The "would change my mind" check came first, and it went the way that permits the
+merge: line 1487 sat inside `# M3 — systems depth`, the milestone spec body, not an append-only
+history section, and F-226's home is `# Open findings worth dispatching as tasks` where the other
+block lives. So the M3 copy is gone and its content is folded into the surviving block under one
+heading, which is the one `agent brief` should serve.
+
+Nothing was deleted. The close-out prose is kept, because it is the evidence for why the fix is
+believed — including the two facts the M3 copy uniquely held: the `.uid` in the claim, and the
+non-obvious note that `tools/wave_director_check.gd` drives `current_cycle()` through a *direct*
+`EVENT_BUS.emit_cycle_advanced()`, bypasses `CycleService`, and **would have PASSED with F-226's bug
+present**. That is a real statement about that check's coverage and would have been lost.
+
+**Part 2 — generalised, and it is what stops the class.** `tools/decision_ref_check.py` gains
+`duplicate_spec_headings()` over `docs/SPECS.md`, reported as `spec_duplicate=N` and counted in
+`failures`. The pattern is `^## (F-\d+|\d+\.\d+[a-z]*)\s*·`, and the trailing `[a-z]*` is the whole
+point: `## 3.8` and `## 3.8b` are different tasks, and the naive `[0-9]+\.[0-9]+` capture this entry
+warned about reports them as one. The failure message names both line numbers and says why it
+matters — `agent brief` slices by heading and serves whichever it reaches first.
+
+Left alone deliberately: `docs/FINDINGS.md`'s three duplicate `### F-NNN` headings (F-012, F-055,
+F-056). The new detector reads SPECS only, so they need no exception — `findings_numbering_check.gd`
+remains the file's own guard and still forbids the collision only inside `## Open`.
+
+**Verified** `python3 tools/decision_ref_check.py --self-test` — **11/11**, up from 7, with four new
+cases: a clean SPECS fixture reports nothing, `3.8`/`3.8b` are not a collision, a repeated `## F-100`
+is flagged, and the report names both of its heading lines. Both directions asserted against fixtures
+differing in exactly one respect, matching F-283's own negative-control discipline. Against the real
+repo the check now reports `spec_duplicate=0`, which is the merge above being true.
+
+**Noticed while here, not fixed and not mine:** `decision_ref_check` reports 21 dangling `D-215`
+citations at HEAD — `docs/ITEMS.md` and `docs/FINDINGS.md` cite a decision that has no heading in
+`docs/DECISIONS.md`. Pre-existing (present at HEAD in both directions) and unrelated to this entry;
+filed separately.
 
 ### F-516 · Nothing pre-warms shipped materials, so every player pays shader/pipeline compilation as hitches during their first minutes of play
 
