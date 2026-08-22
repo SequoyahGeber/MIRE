@@ -3613,6 +3613,104 @@ four stale-or-vacuous assertions today on paths everyone assumed were covered.
 
 ---
 
+### F-606 · Nobody has measured what today's pressure work costs, and the target is an M1 Air
+
+**Area:** perf · **Severity:** high · **Found:** 2026-08-22 by wick1c650c
+
+Sequoyah is about to play a co-op session with a friend on an **M1 MacBook Air**, and between several
+agents today the world got substantially busier with no measurement taken:
+
+  ambient enemies      4 -> 18, x1.6 at full corruption (up to ~29 bodies)
+  enemy_nest markers   5 -> 12
+  scatter colliders    +307 collision shapes across 210 groups (F-586, mine)
+  mire_spread_multiplier 1.0 -> 2.0
+  hazard fields, status effects, fauna assets
+
+Three properties of that machine matter and two are invisible to the benchmark this project runs:
+
+  · **Fanless.** It thermally throttles after roughly 5-10 minutes of sustained load. `perf_probe`
+    samples for ~40 seconds, so it can never see it — a short green benchmark is not evidence about
+    this target, and any claim needs to state whether it came from a long run or a short one.
+  · **Integrated GPU, 7-8 cores** — roughly a third of the M-series Pro this project is developed on.
+    Everything measured here understates the cost by a large factor.
+  · **Unified memory, commonly 8 GB.** VRAM is system RAM competing with everything else he has open,
+    so mesh and texture residency is a real budget rather than a footnote.
+
+The structural half of this is answerable headlessly and today: node counts, physics bodies,
+collision shapes, draw calls and VRAM all survive without a renderer, and they are exactly what a
+population change moves. Draw calls are the figure to lead with — an integrated GPU is where
+submission cost shows first, and F-090 already treated a 5.1k -> 6.0k drift as a real regression.
+
+Frame times are NOT answerable here. They need his display, his machine, the foreground, and a run
+long enough to thermally throttle. That is a hand-off to be asked for, not attempted — a windowed
+run on this machine measures a backgrounded window and is worthless (F-457).
+
+Reported in FPS and percentages, never milliseconds (F-592).
+
+---
+
+### F-607 · A first co-op session cannot reach the cheapest unlock: measured 20-50 Salvage against a 75 floor
+
+**Area:** progression · **Severity:** high · **Found:** 2026-08-22 by larchcc2572
+
+**Measured, not derived.** Numbers read from the shipped constants and content, with the arithmetic
+shown so anyone can check it.
+
+**The clock is the deciding factor, not the payout.**
+
+    day_length_seconds (rule default)   900 s
+    CycleService.DAYS_PER_CYCLE           3
+    => one Cycle                         45 real minutes
+
+So a run shorter than 45 minutes never leaves **Cycle 1**, whatever the party does.
+
+**What Cycle 1 pays:**
+
+    SalvageService.CYCLE_BASE * cycle^1.6  =  10 * 1^1.6  =  10
+    + TIER_REACHED_BONUS   8 per tool rung  (1-2 rungs realistic in a first run)
+    + WELLSPRING_CAP_BONUS 20 per cap       (optional fight, may not happen)
+    => a Cycle-1 extraction banks 10-46, and 10-26 is the likely case
+    => a WIPE banks DEATH_BANK_FRACTION 0.5 of that: 5-13
+
+**What the cheapest unlock costs:** `unlock_loping_gait` at **75**. The rest: 100, 150, 175, 300,
+400, 500.
+
+**A realistic two-hour first session** is two or three runs, all inside Cycle 1, some ending in a
+wipe: **20-50 Salvage total. The cheapest unlock is 75.** The party finishes their first session
+having banked real progress and being unable to buy anything with it. At a steady 10 per extraction
+the first purchase is **7-8 runs**, i.e. several sessions.
+
+**It is worse than that for run one specifically,** because extraction itself is not cheap:
+`ExtractionShip.REPAIR_COSTS` totals **10 log, 10 iron ingot, 4 iron ore, 3 fibre bundle** across
+three stages. Iron ingots need smelting, so a party's FIRST run must complete a real tech climb
+before it can extract at all. A first run that fails to extract banks half of ten — **5 Salvage**.
+
+**This is not a bug in any system.** Banking works (verified two-process today, host and client),
+the curve is correctly superlinear per DESIGN §5.2, and every constant carries an honest
+"placeholder-tuned, never playtested" comment. It is the third instance today of the same species:
+**a system that is built, correct, and set to a rate nobody in one sitting can perceive** — after the
+Mire at 25 m/Cycle and the ambient field at 4 bodies.
+
+**Recommended fix, and it is one number:** `SalvageService.CYCLE_BASE` from **10 to 25**.
+
+    cycle 1:  10 ->  25        cycle 3:  58 -> 145
+    cycle 2:  30 ->  76        cycle 9: 336 -> 839
+
+`CYCLE_EXPONENT` is untouched, so the curve stays exactly as superlinear as DESIGN §5.2 requires
+("Cycle 9 worth much more than 3x Cycle 3" — still 5.8x). Two or three Cycle-1 runs then bank 50-100
+and the first unlock lands inside a first session, which is the point: the meta-progression has to
+*visibly* pay out once before a player believes it exists.
+
+Alternatives considered and not recommended: cutting the cheapest unlock to 40 fixes only the first
+purchase and leaves the curve mismatched; shortening `day_length_seconds` reaches later Cycles faster
+but changes wave pacing, night frequency and Mire spread all at once, which is a playfeel change
+rather than an economy one.
+
+**Sequoyah's call, not mine** — same shape as the `mire_spread_multiplier` knob. Bringing the
+measurement and a recommendation rather than retuning quietly.
+
+---
+
 ## Resolved
 
 ### F-596 · Fauna Phase 2 — the ordinary six have no models, rigs or clips — **fixed**
