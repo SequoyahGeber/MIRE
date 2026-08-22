@@ -126,13 +126,6 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "docs/FINDINGS.md": {
-      "agent": "moss8598bb",
-      "at": "2026-08-22T06:50:48+00:00",
-      "dirty_at_claim": true,
-      "task": "F-291",
-      "token": "CLAUDE_CODE_SESSION_ID:ba8e8bdc-1c55-4638-b9e8-b5fc2b5623fd"
-    },
     "tools/blender/build_deep_materials.py": {
       "agent": "birche6b40e",
       "at": "2026-08-21T23:53:11+00:00",
@@ -169,25 +162,11 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "tools/blocking_ui_event_check.gd": {
-      "agent": "moss8598bb",
-      "at": "2026-08-22T06:50:48+00:00",
-      "dirty_at_claim": true,
-      "task": "F-291",
-      "token": "CLAUDE_CODE_SESSION_ID:ba8e8bdc-1c55-4638-b9e8-b5fc2b5623fd"
-    },
     "tools/item_icons_check.gd": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:52:45+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
-    },
-    "tools/terminal_focus_check.gd": {
-      "agent": "moss8598bb",
-      "at": "2026-08-22T06:50:48+00:00",
-      "dirty_at_claim": false,
-      "task": "F-291",
-      "token": "CLAUDE_CODE_SESSION_ID:ba8e8bdc-1c55-4638-b9e8-b5fc2b5623fd"
     }
   },
   "in_flight": {
@@ -208,26 +187,6 @@
       "notes": [],
       "started": "2026-08-21T17:13:34+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
-    },
-    "F-236": {
-      "agent": "moss8598bb",
-      "files": [
-        "docs/FINDINGS.md"
-      ],
-      "notes": [],
-      "started": "2026-08-22T06:07:08+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:ba8e8bdc-1c55-4638-b9e8-b5fc2b5623fd"
-    },
-    "F-291": {
-      "agent": "moss8598bb",
-      "files": [
-        "tools/blocking_ui_event_check.gd",
-        "docs/FINDINGS.md",
-        "tools/terminal_focus_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-22T06:20:03+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:ba8e8bdc-1c55-4638-b9e8-b5fc2b5623fd"
     },
     "F-473": {
       "agent": "birche6b40e",
@@ -266,13 +225,13 @@
   },
   "recent": {
     ".agent/bin/agent": {
-      "agent": "cinder9818da",
-      "at": "2026-08-22T05:54:43+00:00",
-      "claimed_at": "2026-08-22T05:42:27+00:00",
+      "agent": "nettled7199c",
+      "at": "2026-08-22T06:59:02+00:00",
+      "claimed_at": "2026-08-22T06:56:16+00:00",
       "dirty_at_claim": false,
-      "hash": "110c01eede7980c5202c406bd28dae88683b702849dc8cbb12a6eb056962e0a3",
-      "task": "F-289",
-      "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
+      "hash": "9d1264b59c2fbe72209bcdec4bd05ad922f91acc3cdbae338806c2a9a148babc",
+      "task": "F-550",
+      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
     },
     ".gitignore": {
       "agent": "quill3c83cf",
@@ -3021,8 +2980,10 @@
     },
     "docs/FINDINGS.md": {
       "agent": "moss8598bb",
-      "at": "2026-08-22T06:53:25+00:00",
-      "hash": null,
+      "at": "2026-08-22T06:55:00+00:00",
+      "claimed_at": "",
+      "dirty_at_claim": false,
+      "hash": "038d7c389f5d44cea5d895c00f08d5aa9abcddb333ada5ca1111ccc8445b9a16",
       "task": "F-236",
       "token": "CLAUDE_CODE_SESSION_ID:ba8e8bdc-1c55-4638-b9e8-b5fc2b5623fd"
     },
@@ -3665,6 +3626,15 @@
       "task": "F-447",
       "token": "CLAUDE_CODE_SESSION_ID:befff3a8-a6a1-4d91-94f4-b2a596f5844a"
     },
+    "tools/blocking_ui_event_check.gd": {
+      "agent": "moss8598bb",
+      "at": "2026-08-22T06:54:51+00:00",
+      "claimed_at": "2026-08-22T06:50:48+00:00",
+      "dirty_at_claim": true,
+      "hash": "ee1fd9ca93cbcb3f2c566bb30eeea65c44602cbd933cbb7b65e03549bf8d955b",
+      "task": "F-291",
+      "token": "CLAUDE_CODE_SESSION_ID:ba8e8bdc-1c55-4638-b9e8-b5fc2b5623fd"
+    },
     "tools/bootstrap_reachability_check.gd": {
       "agent": "tine5ad92a",
       "at": "2026-08-22T04:26:25+00:00",
@@ -3866,6 +3836,15 @@
       "hash": "4a2f73cd854aa322f093b586931c05e3fdeb6c44fa5796962f42b479764d62cf",
       "task": "F-492",
       "token": "CLAUDE_CODE_SESSION_ID:8cd39394-33bb-4c4d-bb07-095501bfbdd5"
+    },
+    "tools/findings_numbering_check.gd": {
+      "agent": "nettled7199c",
+      "at": "2026-08-22T06:59:02+00:00",
+      "claimed_at": "2026-08-22T06:56:16+00:00",
+      "dirty_at_claim": false,
+      "hash": "11a07af932e8caed17af0f484f8bfa98627e35fa5ef54557fe499c142ba8125a",
+      "task": "F-550",
+      "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
     },
     "tools/focus_prompt_check.gd": {
       "agent": "hollowe6edef",
@@ -4280,13 +4259,6 @@
       "task": "F-514",
       "token": "CODEX_SESSION_ID:01a02772-862e-7242-889a-a20257660bfa"
     },
-    "tools/settings_render_check.gd": {
-      "agent": "coil995fd7",
-      "at": "2026-08-21T06:57:54+00:00",
-      "hash": "94ff31d4dc5adb326826f5afb17eaa7ea1cf983ea86ca952b7e7448972056632",
-      "task": "F-416",
-      "token": "CLAUDE_CODE_SESSION_ID:44f62a84-7862-455b-a776-2e1c5eb11d39"
-    },
     "tools/settings_screen_check.gd": {
       "agent": "hollowe6edef",
       "at": "2026-08-22T03:35:54+00:00",
@@ -4346,13 +4318,13 @@
       "token": "CLAUDE_CODE_SESSION_ID:b95e039a-4098-45fa-89d9-110729466e4a"
     },
     "tools/terminal_focus_check.gd": {
-      "agent": "onyxbe8065",
-      "at": "2026-08-22T05:57:23+00:00",
-      "claimed_at": "2026-08-22T05:27:47+00:00",
+      "agent": "moss8598bb",
+      "at": "2026-08-22T06:54:51+00:00",
+      "claimed_at": "2026-08-22T06:50:48+00:00",
       "dirty_at_claim": false,
-      "hash": "99c8def8d4cd9437184978c26cef491ac3e57ee935d72618dae61451f9cad31b",
-      "task": "F-321",
-      "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
+      "hash": "7202a10f84dc72701f5859f2c3b7ad249a9f658fc1f6e90c6449f378e5b495a4",
+      "task": "F-291",
+      "token": "CLAUDE_CODE_SESSION_ID:ba8e8bdc-1c55-4638-b9e8-b5fc2b5623fd"
     },
     "tools/terrain_check.gd": {
       "agent": "birchcf39ce",
@@ -4790,7 +4762,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1590,
+  "rev": 1598,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -8351,9 +8323,11 @@
       "title": "A telegraphed attack's reach and tell length cannot deny \"just take one step back\" \u2014 no `EnemyDef` field makes retreating-through-a-tell fail, so that pressure isn't available to future enemy content"
     },
     "F-236": {
+      "done_at": "2026-08-22T06:55:00+00:00",
+      "done_by": "moss8598bb",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Three shipped systems have essentially no content in them: the Cycle Modifier deck holds 1 card, the unlock tree 1 unlock, the ranged rack 1 weapon"
     },
@@ -8943,9 +8917,11 @@
       "title": "wave_spawner_cycle_net_check can parse its result file mid-rewrite and emit an undeclared ERROR while reporting failures=0"
     },
     "F-291": {
+      "done_at": "2026-08-22T06:54:51+00:00",
+      "done_by": "moss8598bb",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "A `--script` check that fires a real `EventBus` event as a state-setup shortcut can be broken by an unrelated later feature that subscribes to the same event \u2014 **fixed in `tools/unlock_check.gd`, same class not yet swept project-wide**"
     },
@@ -10982,6 +10958,36 @@
       "status": "todo",
       "tier": "F",
       "title": "EnvironmentVfx does per-node work for all 44,000 nodes a traversal adds, and 1,821 of them raise a backtraced warning"
+    },
+    "F-548": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "A long Godot-lock hold is indistinguishable from a wedged lock, and 'agent verify' is the worst possible shape to hold it in"
+    },
+    "F-549": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "world_contract_check has 3 failures at a clean HEAD \u2014 the [shipped] map publishes no ground and no Undergrowth, and the procedural map builds two extraction ships"
+    },
+    "F-550": {
+      "done_at": "2026-08-22T06:59:02+00:00",
+      "done_by": "nettled7199c",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "The locked D-number allocator exists and nobody uses it, because it is in no help text and no check catches a hand-appended entry"
+    },
+    "F-551": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Two checks fail at clean HEAD with nobody owning them \u2014 ranged_combat_check (1) and attunement_restart_check (3)"
     }
   },
   "version": 1

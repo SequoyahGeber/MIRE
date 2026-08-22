@@ -10043,3 +10043,39 @@ Unified the layout spawn record on {pos,yaw}; migrated hollowmere + its generato
 Files: `world/gen/layouts/hollowmere.json`, `tools/mapgen/hollowmere_layout.py`, `tools/hollowmere_check.gd`, `tools/world_contract_check.gd`
 
 Commit at time of writing: `35fb1eea`
+
+---
+
+### DONE · F-291 · moss8598bb · 2026-08-22T06:54:51+00:00
+
+**A `--script` check that fires a real `EventBus` event as a state-setup shortcut can be broken by an unrelated later feature that subscribes to the same event — **fixed in `tools/unlock_check.gd`, same class not yet swept project-wide****
+
+tools/blocking_ui_event_check.gd — derives the latching event set from shipped subscribers, walks every tools/*_check.gd in call order, requires latch-ok: on deliberate latch assertions. failures=0.
+
+Files: `tools/blocking_ui_event_check.gd`, `docs/FINDINGS.md`, `tools/terminal_focus_check.gd`
+
+Commit at time of writing: `b83fb93c`
+
+---
+
+### DONE · F-236 · moss8598bb · 2026-08-22T06:55:00+00:00
+
+**Three shipped systems have essentially no content in them: the Cycle Modifier deck holds 1 card, the unlock tree 1 unlock, the ranged rack 1 weapon**
+
+All three content rows past the bar: cycle_modifiers 7, unlocks 7, ranged_weapons 5 across 4 ammo types. F-482 remains open on the art half.
+
+Files: `docs/FINDINGS.md`
+
+Commit at time of writing: `b83fb93c`
+
+---
+
+### DONE · F-550 · nettled7199c · 2026-08-22T06:59:02+00:00
+
+**The locked D-number allocator exists and nobody uses it, because it is in no help text and no check catches a hand-appended entry**
+
+agent decision added to agent help; findings_numbering_check gained trap 3 (duplicate D-numbers in DECISIONS.md). Found 6 pre-existing collisions (D-186..D-191, twelve entries) recorded as LEGACY_DUPLICATE_DECISIONS debt rather than failed on, because disambiguating their 18 citations across 8 files is another agent's record to touch. Regression proven both directions.
+
+Files: `.agent/bin/agent`, `tools/findings_numbering_check.gd`
+
+Commit at time of writing: `8d6ef703`
