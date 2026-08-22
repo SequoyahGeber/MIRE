@@ -3937,6 +3937,18 @@ the vertex stage.
 
 ## Resolved
 
+### F-503 · Resolution selector silently does nothing outside windowed mode — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by galedc2f76
+
+The live DISPLAY page exposes an enabled Resolution dropdown in WINDOWED, BORDERLESS, and FULLSCREEN. SettingsService persists set_resolution_index(), but _apply_display() calls DisplayServer.window_set_size() only for mode 0, so the other two modes silently ignore the player's selection while the UI and save claim it succeeded. Existing settings_check.gd asserts only the stored index, never DisplayServer.window_get_size(), so it cannot catch this. Make the resolution control truthful for the selected mode and add a windowed runtime-size assertion.
+
+**Resolved 2026-08-22 by galedc2f76.** Made the Resolution dropdown truthful: it remains enabled in WINDOWED, where SettingsService applies the selected size, and disables immediately in BORDERLESS/FULLSCREEN, where the display's native resolution wins. Added UI mode-state coverage and upgraded the service check from a stored-index assertion to a real DisplayServer.window_get_size() assertion.
+
+Verified:
+- `.agent/bin/agent godot --script tools/settings_screen_check.gd` -> SETTINGS_SCREEN_CHECK failures=0; resolution disables in borderless/fullscreen and re-enables in windowed.
+- `.agent/bin/agent godot --windowed --script tools/settings_check.gd` -> SETTINGS_CHECK failures=0; Metal window measured exactly (1152, 648).
+
 ### F-502 · Benchmark seed leaks into later gameplay — **fixed**
 
 **Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by kilne8b941
