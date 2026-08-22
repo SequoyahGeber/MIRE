@@ -79,6 +79,24 @@ func _run() -> void:
 				check(definition.get(&"yield_item_id") == yields[asset],
 					"%s yields %s" % [asset, yields[asset]])
 
+	print("\n== HarvestWorld wires a scattered holder for each of them ==")
+	if harvest != null:
+		var scene := Node3D.new()
+		scene.name = "ForageWireScene"
+		root.add_child(scene)
+		for asset: StringName in FOOD:
+			var holder := Node3D.new()
+			holder.name = "Harvest_%03d" % (FOOD.keys().find(asset) + 1)
+			holder.set_meta(&"asset", asset)
+			var visual := Node3D.new()
+			visual.name = "Visual"
+			holder.add_child(visual)
+			scene.add_child(holder)
+			harvest.call("_wire_holder", holder, scene)
+			check(holder.get_node_or_null(^"Harvestable") != null,
+				"%s holder becomes a live Harvestable" % asset)
+		scene.queue_free()
+
 	var scatter_defs: Array = registry.get(&"scatter_tables").values()
 	var biome_defs: Array = registry.get(&"biomes").values()
 	for world_seed: int in SEEDS:
