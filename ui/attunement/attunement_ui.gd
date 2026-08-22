@@ -29,6 +29,17 @@ extends CanvasLayer
 ## driven from BOTH `run_restarted` and `selection_changed`, because on a client the host's clearing
 ## broadcast and the re-derived `run_restarted` can land in either order.
 ##
+## F-321/D-185: the F-297 timeout below bounds ONE request; it does not bound the panel. A client
+## whose host quits while the picker is up never gets `selection_confirmed`, so the timeout re-enables
+## the buttons, the player presses one, `request_select()` goes to a peer that no longer exists,
+## `_picking` latches, and eight seconds later it re-enables — forever. That is worse than F-307's
+## stuck overlay, because it looks alive. The panel never leaves `blocks_gameplay_input`, so D-032's
+## interlock refuses MainMenu/SettingsMenu/LobbyMenu/UnlockMenu the whole time and the player cannot
+## even quit to the menu. `NetSession.session_ended` is this panel's second input for exactly the
+## reason it is DefeatHUD's: "the host will answer" is a fact about a LIVE session, and this file read
+## it once, at open. On session end there is no run left to pick an Attunement FOR, so the panel
+## closes outright rather than degrading to a dismissable state — D-185's reasoning, transposed.
+##
 ## F-297: `_picking` is a bounded wait, not a latch. A mandatory panel — no Esc, no dismiss path,
 ## `blocks_gameplay_input` while open — that disables every button until an answer that may never
 ## come is a soft-lock with no way back to gameplay, so an unanswered request expires after
@@ -38,6 +49,10 @@ const EVENT_BUS := preload("res://core/events/event_bus.gd")
 
 const BLOCKING_UI_GROUP: StringName = &"blocks_gameplay_input"
 const PLAYERS_GROUP: StringName = &"players"
+## Standing rule 1 (F-011/F-046): NetSession by PATH, never as a bare identifier — this file is an
+## autoload that every `--script` harness loads at compile time, and most of them install no session
+## at all. A missing node here means "no session to end", which is exactly right for solo.
+const NET_SESSION_PATH := ^"/root/NetSession"
 const POLL_INTERVAL_SEC: float = 0.5
 ## F-297: how long an unanswered `request_select()` may keep the buttons disabled. Generous enough
 ## that a normal host round-trip (one reliable RPC each way) never trips it, short enough that a
@@ -91,10 +106,19 @@ func _ready() -> void:
 	add_child(_request_timer)
 
 	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
+	# F-321. Connected once here rather than per-open: the picker can be open across a session end in
+	# either order, and a subscription that only exists while the panel is showing would miss the end
+	# that arrives on the same frame the panel opens.
+	var session: Node = get_node_or_null(NET_SESSION_PATH)
+	if session != null:
+		session.connect(&"session_ended", Callable(self, "_on_session_ended"))
 
 
 func _exit_tree() -> void:
 	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
+	var session: Node = get_node_or_null(NET_SESSION_PATH)
+	if session != null and session.is_connected(&"session_ended", Callable(self, "_on_session_ended")):
+		session.disconnect(&"session_ended", Callable(self, "_on_session_ended"))
 
 
 ## A blocking cursor panel owns the mouse for its entire showing, not only on the frame it opens.
@@ -215,6 +239,28 @@ func _close_picker() -> void:
 	_center.visible = false
 	if _restore_mouse_captured:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+## F-321. The session this picker opened under is over: close it, unconditionally and without waiting
+## for an answer that can no longer come.
+##
+## Closing outright rather than leaving it open-but-dismissable is D-185's call transposed. There is
+## no world left to pick an Attunement for — `PlayerNet` clears on disconnect — so a picker that
+## stayed up would be asking a question about a run that no longer exists. Leaving the blocking group
+## is the part that actually matters: until this runs, D-032's interlock refuses every menu, so this
+## is what gives an orphaned client its way back to the main menu.
+##
+## The mouse is deliberately left VISIBLE rather than restored to `_restore_mouse_captured`. That flag
+## records what gameplay wanted at the instant the picker opened, and gameplay is what just went away;
+## re-capturing the cursor here would hand a menu-bound player a hidden pointer at the exact moment
+## they need to click their way out.
+func _on_session_ended(_reason: int, _detail: String) -> void:
+	_request_timer.stop()
+	_picking = false
+	if not _open:
+		return
+	_restore_mouse_captured = false
+	_close_picker()
 
 
 # ── AttunementService signals ───────────────────────────────────────────────────────────────────

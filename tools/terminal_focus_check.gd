@@ -41,7 +41,11 @@ const PORT: int = 47451
 ## F-307's two children get their own ports and their own result files: a phase that hosts again
 ## after the previous one's socket has only just closed is the kind of thing that fails once in
 ## twenty runs on a loaded machine, and a stale result file from an earlier phase reads as a pass.
-const ORPHAN_PORTS: Dictionary = {"defeat": 47452, "extraction": 47453}
+## F-321 adds "attunement". It is not a terminal run-summary overlay like the other two — it is the
+## run-START picker — but it is the same CLASS of bug and the same phase-3 driver proves it: a
+## mandatory panel in `blocks_gameplay_input` that reads "the host will answer" exactly once and has
+## no way out when that stops being true.
+const ORPHAN_PORTS: Dictionary = {"defeat": 47452, "extraction": 47453, "attunement": 47454}
 const BLOCKING_UI_GROUP: StringName = &"blocks_gameplay_input"
 const RESULT_PATH: String = "user://terminal_focus_client.json"
 ## F-290: the client rewrites its result file repeatedly while the driver polls it, and a plain
@@ -112,6 +116,7 @@ func _run_driver() -> void:
 	await _check_client_overlays()
 	await _check_orphaned_client("defeat")
 	await _check_orphaned_client("extraction")
+	await _check_orphaned_client("attunement")
 	print("\nTERMINAL_FOCUS_CHECK failures=%d" % failures)
 	_finish()
 
@@ -282,7 +287,9 @@ func _find_button(node: Node) -> Button:
 ## both `DefeatHud` and `ExtractionHud`. Their two `_refresh_restart_button()` bodies are deliberate
 ## duplicates (see either file's header), which is exactly why both need proving separately.
 func _check_orphaned_client(which: String) -> void:
-	print("\n== F-307 · the host leaves under the %s summary: the screen still has a way out ==" % which)
+	# Not "%s summary": F-321's case is the run-START picker, not a run summary. The phase is about
+	# the mandatory-panel CLASS, so the label has to name the panel rather than assume its kind.
+	print("\n== F-307/F-321 · the host leaves under the %s panel: the screen still has a way out ==" % which)
 	result_path = "user://terminal_orphan_%s.json" % which
 	result_tmp_path = "%s.tmp" % result_path
 	_clear_result()
@@ -314,7 +321,11 @@ func _check_orphaned_client(which: String) -> void:
 	# `NetSession.end_session()`, the documented graceful close, which ends as HOST_CLOSED almost
 	# immediately. Fire-and-forget on the coroutine is safe and documented: `net_host_closing.rpc()`
 	# goes out before its first await.
-	if which == "defeat":
+	# "extraction" is the only one that takes the graceful close; "defeat" and "attunement" both take
+	# `NetTransport.leave()`, the harsher CONNECTION_LOST path that only ends after the rejoin ladder
+	# gives up. F-321's new subscriber has to survive that one specifically — it is the shape a host
+	# alt-F4 produces, and it is the longest a client can sit believing an answer is still coming.
+	if which != "extraction":
 		transport.call("leave")
 	else:
 		var session: Node = root.get_node_or_null(^"NetSession")
@@ -356,6 +367,10 @@ func _run_orphan_client(which: String) -> void:
 	if not joined or bool(transport.call("is_host")):
 		_write_result({"done": true, "error": "orphan probe never connected as a non-host peer"})
 		_finish()
+		return
+
+	if which == "attunement":
+		await _run_orphan_attunement_client(checks)
 		return
 
 	var session: Node = root.get_node_or_null(^"NetSession")
@@ -435,6 +450,99 @@ func _run_orphan_client(which: String) -> void:
 	checks.append({
 		"ok": bool(main_menu.call(&"is_open")),
 		"what": "F-307: ui_accept on that control opens the main menu — the terminal screen has a real exit",
+	})
+
+	_write_result({"done": true, "checks": checks})
+	_finish()
+
+
+## F-321's half of phase 3. Same driver, same host-leaves seam, different panel and therefore a
+## different set of assertions — `AttunementUI` has no restart button to re-enable, so what has to be
+## true afterwards is that the panel is GONE and the interlock it held is released.
+##
+## The picker is opened through its real trigger, not by calling `_open_picker()`: D-071 opens it off
+## the first `&"players"` group member this peer has authority over, so a stand-in Node3D in that
+## group is the whole prerequisite, and `poll_now()` is the file's own seam for running that poll
+## immediately instead of waiting out POLL_INTERVAL_SEC.
+##
+## The `choose()` in the middle matters and is not padding. It puts the panel in exactly the state
+## the finding describes — `_picking` latched, every button disabled, an 8 s timer running against a
+## host that is about to vanish — so what this proves is not "a freshly-opened panel closes" but "the
+## panel closes out of the latched state that used to loop forever".
+func _run_orphan_attunement_client(checks: Array) -> void:
+	var session: Node = root.get_node_or_null(^"NetSession")
+	var main_menu: Node = root.get_node_or_null(^"MainMenu")
+	var picker: Node = root.get_node_or_null(^"AttunementUI")
+	if session == null or main_menu == null or picker == null:
+		_write_result({"done": true, "error": "NetSession, MainMenu and AttunementUI must all exist"})
+		_finish()
+		return
+
+	var ended: Dictionary = {"yes": false}
+	session.connect(&"session_ended", func(_reason: int, _detail: String) -> void:
+		ended["yes"] = true)
+
+	# D-071's real open condition: a body in the players group that THIS peer has authority over.
+	var body := Node3D.new()
+	body.name = "OrphanProbePlayer"
+	body.add_to_group(&"players")
+	body.set_multiplayer_authority(get_multiplayer().get_unique_id())
+	root.add_child(body)
+	picker.call(&"poll_now")
+	await process_frame
+
+	checks.append({
+		"ok": bool(picker.get("_open")),
+		"what": "the picker opens for the joined client, so this is the real panel and not a stand-in",
+	})
+	checks.append({
+		"ok": picker.is_in_group(BLOCKING_UI_GROUP),
+		"what": "before the host leaves, the picker blocks gameplay input (D-032), as task 3.9 shipped it",
+	})
+	main_menu.call(&"set_open", true)
+	checks.append({
+		"ok": not bool(main_menu.call(&"is_open")),
+		"what": "before the host leaves, D-032's interlock correctly refuses a menu over the live picker",
+	})
+
+	# Latch it, exactly as a player pressing CHOOSE the instant before the host quits would.
+	picker.call(&"choose", &"warden")
+	checks.append({
+		"ok": bool(picker.get("_picking")),
+		"what": "the request latches _picking and disables the buttons — F-297's bounded wait, armed",
+	})
+
+	_write_result({"ready": true})
+
+	var over: bool = await _until(func() -> bool: return bool(ended["yes"]), ORPHAN_TIMEOUT_SEC)
+	checks.append({"ok": over, "what": "NetSession.session_ended fires on the orphaned peer"})
+	if not over:
+		_write_result({"done": true, "checks": checks})
+		_finish()
+		return
+	await process_frame
+
+	checks.append({
+		"ok": not bool(picker.get("_open")),
+		"what": "F-321: the picker closes when the session ends — there is no run left to pick for (D-185)",
+	})
+	checks.append({
+		"ok": not bool(picker.get("_picking")),
+		"what": "F-321: the pending request is cleared, so the 8 s timer cannot re-arm the loop it used to",
+	})
+	checks.append({
+		"ok": not picker.is_in_group(BLOCKING_UI_GROUP),
+		"what": "F-321: the picker leaves blocks_gameplay_input, which is what actually frees the player",
+	})
+	checks.append({
+		"ok": Input.mouse_mode == Input.MOUSE_MODE_VISIBLE,
+		"what": "F-321: the cursor stays visible — gameplay is gone, so re-capturing it would hide the pointer the player needs",
+	})
+	# The soft-lock in one assertion: the thing that was impossible for the whole run is now possible.
+	main_menu.call(&"set_open", true)
+	checks.append({
+		"ok": bool(main_menu.call(&"is_open")),
+		"what": "F-321: the main menu opens over the dead session — the orphaned client has a way out",
 	})
 
 	_write_result({"done": true, "checks": checks})
