@@ -3052,6 +3052,61 @@ stops paying 92 seconds a run in the meantime.
 
 ---
 
+### F-561 · Every renderer instrument measures the FRONT END and labels it 'the shipped main scene', because ProbeScene.resolve() still trusts run/main_scene
+
+**Area:** performance · **Severity:** high · **Found:** 2026-08-22 by hollowbfcf67
+
+Raised by bram937a51 as unswept scope while fixing F-549, and confirmed here by running the
+instrument.
+
+`tools/probe_scene.gd` resolves the scene every renderer instrument measures by reading
+`application/run/main_scene` at runtime. That setting is `res://levels/frontend.tscn` since MENU-3's
+cutover. So the instruments now point at the front end, and — this is the part that makes it
+dangerous rather than merely wrong — they *say* they are pointing at the game:
+
+    === MIRE frame cost — res://levels/frontend.tscn (the shipped main scene) ===
+    FRAME_COST draw_calls_median=2206 primitives_median=538344 vram_mb=470.9 frame_ms_median=35.71
+
+That is `tools/frame_cost_check.gd` run through `agent godot --windowed` at HEAD. `35.71 ms` is
+28 fps, and it is being published under a label asserting it describes the shipped game.
+
+**`probe_scene.gd`'s own docstring is a warning about this exact failure**, written the last time it
+happened:
+
+> the numbers those tools reported (4,864 draw calls, 1.17M primitives, 278 MB VRAM, 9.35 ms)
+> described a retired authored fixture while being quoted as the shipped game's performance. A
+> performance claim about a world nobody boots is worse than no claim, because it reads as evidence.
+
+The fix then was "read `main_scene` at runtime rather than copying it". That fix is what is now
+wrong, because `main_scene` stopped naming a map.
+
+**What the number actually describes is not even stable.** Under `--script` the front end's `_ready()`
+bypasses straight into the world (`_launch_bypasses_frontend()`), and `change_scene_to_file` is
+deferred — so an instrument that instantiates `frontend.tscn` and starts sampling is racing a scene
+change, and may measure the front end, the world, or both in the tree at once. F-549 is the proof
+that "both at once" really happens: `world_contract_check` counted every group twice that way —
+wellsprings 4→8, chests 62→124 — because the bypassed-into world is a SIBLING of the instantiated
+node and survives freeing it.
+
+**Blast radius.** Sixteen files under `tools/` read `application/run/main_scene`. The instruments
+built on `ProbeScene` are the ones that matter, because their output is quoted as evidence in
+findings that drive decisions — F-174 (no machine can stand in for mid-range), F-454 (the felt
+problem is chunk streaming, not rendering), F-457 (traversal hitches to a 17 fps 1% low). Every
+number in those was taken through this resolver. They need re-taking, or explicitly marking as
+suspect, before anything else is concluded from them.
+
+This got sharper tonight, not softer: F-556 made `agent verify` launch `frame_cost_check` with a
+framebuffer, so it now runs in the suite and reports a confident, wrong number every time instead of
+skipping.
+
+**Fix:** `ProbeScene.resolve()` must answer *"which map does a launched process end up in?"*, not
+*"what is the main scene?"*. F-549 already built that: `Frontend._world_scene_path()` is `static`
+precisely so a harness can ask without instantiating a front end that would bypass. `resolve()`
+should follow the front end through to its world scene the same way, and `describe()` should stop
+calling whatever it found "the shipped main scene" unless it really is a map.
+
+---
+
 ## Resolved
 
 ### F-560 · SfxDirector's local-peer fallback answers HOST_PEER_ID while a client is still connecting, so host-owned cues briefly test as the local player's own — **fixed**
