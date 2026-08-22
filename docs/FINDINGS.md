@@ -3526,57 +3526,6 @@ than a constant, and it should be its own task rather than a tuning pass.
 
 ---
 
-### F-604 · Cooking Tier 1 is unbuilt: the cooking spit opens an empty list and five shipped food models are unreachable
-
-**Area:** content · **Severity:** medium · **Found:** 2026-08-22 by birch1db63e
-
-`docs/COOKING.md` (6b718ad2) reconciled what Tier 1 cooking actually blocks on, and the answer is
-nothing: **every ingredient for six recipes already ships.** The work has stalled twice because each
-previous attempt hit a missing ingredient and stopped, and nobody had checked which ones resolve
-today.
-
-Two visible costs right now:
-
-  · **`cooking_spit` is a station a player pays log 6 + fibre 3 + stone 4 + coal 2 for, and it opens
-    an EMPTY recipe list.** No recipe in `content/recipes/` names it. That is F-575's bug in a
-    different family — a station that gives you strictly nothing for real resources.
-  · **Five of the thirteen models in `assets/food/exports/` are reachable from nothing** —
-    `cooked_meat`, `meat_skewer`, `hearty_stew`, `healing_stew`, `honey_jar` — built during A-012 and
-    never given an item, a recipe or an icon. Same species as F-580's unread stats, F-585's
-    unimplemented resonances, F-595's enemy loot and F-601's sling: **authored content with no
-    producer.** That is now five instances in one day and is worth sweeping for as a pattern rather
-    than finding one at a time.
-
-Tier 1, all ingredients shipped:
-
-    Cooked Meat   campfire      1 raw_meat
-    Meat Skewer   cooking_spit  1 raw_meat + 1 branch
-    Hearty Stew   cooking_spit  2 raw_meat + 1 wild_onion + 2 mushroom
-    Healing Stew  cooking_spit  2 raw_meat + 2 herb
-    Honey Jar     campfire      2 honey + 1 clay
-
-No systems code is needed: `ItemDef` already carries `hunger_restore` and `hp_restore`, and
-`PlayerHealth.request_consume_item()` already works. Per ITEMS.md §4.4 every food stays hunger
-and/or hp and nothing else until the timed-surge runtime exists.
-
-**One call this forces, and it is one line.** `cooking_spit` is family `fire` tier 2 and `campfire`
-is family `fire` tier 1 — the same shape as `workbench`/`workbench_upgraded`. Post-D-217 substitution
-is DECLARED and never inferred, and the spit does not declare `upgrades_from` today. So a player who
-builds the better fire **loses the ability to make charcoal**, which is F-575 exactly. It needs
-deciding deliberately rather than inheriting: the anvil is the counterexample — `forge` runs
-furnace (1) then anvil (2) and an anvil cannot smelt.
-
-**Not attempted, and deliberately so.** Tier 3 (`suspicious_sludge`, `pale_draught`) needs Blight
-Residue, which does not exist, and every buff food waits on the timed-surge runtime. Tier 2
-(Bog Loaf, Cooked Fish) each need a new harvestable. Shipping a stub for any of them would be the
-same authored-content-with-no-producer bug this finding is about.
-
-**Known and expected:** `raw_meat` has no source yet — no huntable animals — so four of these five
-are craftable in principle rather than in practice until fauna lands. Sequoyah confirmed a cow is
-being designed, which is the supply for both meat and the leather F-601 wants.
-
----
-
 ### F-605 · Nothing proves a client that DIES gets back into the run — the two-process checks stop at revive
 
 **Area:** net · **Severity:** high · **Found:** 2026-08-22 by wick3d4184
@@ -3709,9 +3658,121 @@ rather than an economy one.
 **Sequoyah's call, not mine** — same shape as the `mire_spread_multiplier` knob. Bringing the
 measurement and a recommendation rather than retuning quietly.
 
+**Correction folded in after filing, and it makes the gap WIDER.** `mire_spread_multiplier` now
+defaults to **2.0** (director's measured sweep: the Mire reaches the island origin at 34 minutes at
+2.0x, against 65 at 1.0x). The 20-50 figure above implicitly assumed a leisurely run. With that
+pressure a first session's runs end **earlier**, so more of them end in a wipe at
+`DEATH_BANK_FRACTION` 0.5 rather than in an extraction — and a Cycle-1 wipe banks **5**. The
+realistic first-session total is therefore at the low end of 20-50 or below it. This strengthens the
+recommendation rather than changing it.
+
 ---
 
 ## Resolved
+
+### F-604 · Cooking Tier 1 is unbuilt: the cooking spit opens an empty list and five shipped food models are unreachable — **fixed**
+
+**Area:** content · **Severity:** medium · **Found:** 2026-08-22 by birch1db63e
+
+`docs/COOKING.md` (6b718ad2) reconciled what Tier 1 cooking actually blocks on, and the answer is
+nothing: **every ingredient for six recipes already ships.** The work has stalled twice because each
+previous attempt hit a missing ingredient and stopped, and nobody had checked which ones resolve
+today.
+
+Two visible costs right now:
+
+  · **`cooking_spit` is a station a player pays log 6 + fibre 3 + stone 4 + coal 2 for, and it opens
+    an EMPTY recipe list.** No recipe in `content/recipes/` names it. That is F-575's bug in a
+    different family — a station that gives you strictly nothing for real resources.
+  · **Five of the thirteen models in `assets/food/exports/` are reachable from nothing** —
+    `cooked_meat`, `meat_skewer`, `hearty_stew`, `healing_stew`, `honey_jar` — built during A-012 and
+    never given an item, a recipe or an icon. Same species as F-580's unread stats, F-585's
+    unimplemented resonances, F-595's enemy loot and F-601's sling: **authored content with no
+    producer.** That is now five instances in one day and is worth sweeping for as a pattern rather
+    than finding one at a time.
+
+Tier 1, all ingredients shipped:
+
+    Cooked Meat   campfire      1 raw_meat
+    Meat Skewer   cooking_spit  1 raw_meat + 1 branch
+    Hearty Stew   cooking_spit  2 raw_meat + 1 wild_onion + 2 mushroom
+    Healing Stew  cooking_spit  2 raw_meat + 2 herb
+    Honey Jar     campfire      2 honey + 1 clay
+
+No systems code is needed: `ItemDef` already carries `hunger_restore` and `hp_restore`, and
+`PlayerHealth.request_consume_item()` already works. Per ITEMS.md §4.4 every food stays hunger
+and/or hp and nothing else until the timed-surge runtime exists.
+
+**One call this forces, and it is one line.** `cooking_spit` is family `fire` tier 2 and `campfire`
+is family `fire` tier 1 — the same shape as `workbench`/`workbench_upgraded`. Post-D-217 substitution
+is DECLARED and never inferred, and the spit does not declare `upgrades_from` today. So a player who
+builds the better fire **loses the ability to make charcoal**, which is F-575 exactly. It needs
+deciding deliberately rather than inheriting: the anvil is the counterexample — `forge` runs
+furnace (1) then anvil (2) and an anvil cannot smelt.
+
+**Not attempted, and deliberately so.** Tier 3 (`suspicious_sludge`, `pale_draught`) needs Blight
+Residue, which does not exist, and every buff food waits on the timed-surge runtime. Tier 2
+(Bog Loaf, Cooked Fish) each need a new harvestable. Shipping a stub for any of them would be the
+same authored-content-with-no-producer bug this finding is about.
+
+**Known and expected:** `raw_meat` has no source yet — no huntable animals — so four of these five
+are craftable in principle rather than in practice until fauna lands. Sequoyah confirmed a cow is
+being designed, which is the supply for both meat and the leather F-601 wants.
+
+---
+
+**Resolved 2026-08-22 by birch1db63e (fixed).** **Fixed in ecb20dd7. Five items, five recipes, five icons, and `cooking_spit` no longer opens an
+empty list.**
+
+    Cooked Meat   campfire      1 raw_meat                              20 hunger,  4 hp
+    Honey Jar     campfire      2 honey + 1 clay                        32 hunger, 12 hp
+    Meat Skewer   cooking_spit  1 raw_meat + 1 branch                   26 hunger,  6 hp
+    Hearty Stew   cooking_spit  2 raw_meat + 1 wild_onion + 2 mushroom  48 hunger,  8 hp
+    Healing Stew  cooking_spit  2 raw_meat + 2 herb                     22 hunger, 34 hp
+
+No new harvestable, no systems code — every ingredient already shipped, `ItemDef` already carries
+both restore fields and `PlayerHealth.request_consume_item()` already works. Values are grounded in
+the shipped consumables rather than invented: `raw_meat` is 8 hunger so cooking roughly doubles it,
+`herb` is 8 hp each so two carry Healing Stew's 34, `honey` is 14 hunger + 4 hp each. The two stews
+are the filling one and the mending one, so they stay distinguishable at a glance.
+
+**D-221 — the call this forced, and it was the important part.** `cooking_spit` is family `fire`
+tier 2 against `campfire`'s tier 1, structurally identical to `workbench`/`workbench_upgraded`, and
+post-D-217 substitution is DECLARED and never inferred. The spit now declares
+`upgrades_from = &"campfire"`. **The test is physical containment, not tier order:** a spit IS a fire
+with a rack over it, so anything a campfire does it does. `forge` is the counterexample and the
+reason this is not a general rule about tier 2 following tier 1 — it runs furnace (1) then anvil (2),
+and an anvil has no fire and cannot smelt. Without the declaration, a player who paid log 6 + fibre 3
++ stone 4 + coal 2 for the better fire would have **lost the ability to make charcoal**, which is
+F-575's bug one family over.
+
+**Better than expected on supply.** The finding assumed these would be craftable in principle only,
+since `raw_meat` has no huntable source. It drops from `content/loot/common.tres`, so all five are
+craftable in PRACTICE during the playtest. `progression_reachability_check` reports **51 of 51 items
+on all five seeds, failures=0**, with the five new foods inside the closure.
+
+**Evidence the models came alive:** `asset_usage_check`'s `food` family drops from 13 unused to 8,
+and the remaining 8 are exactly the Tier 2 and Tier 3 sets — `bog_loaf`, `cooked_fish`, `raw_fish`,
+`fired_flask`, `healing_draught`, `pale_draught`, `stamina_tonic`, `suspicious_sludge`.
+
+**Not attempted, deliberately, and this is the other half of the finding.** Tier 3
+(`suspicious_sludge`, `pale_draught`) needs Blight Residue, which does not exist, and every buff food
+waits on the timed-surge runtime. Tier 2 (Bog Loaf, Cooked Fish) each need a new harvestable — a
+reed bed and a fish shoal, whose art is already built and unplaced. Shipping a stub for any of them
+would have been the same authored-content-with-no-producer bug this finding was filed about.
+
+**Mushroom Skewer was dropped from the batch.** COOKING.md offers it as "reuse `meat_skewer`,
+retinted — or defer". A second item pointing at the same GLB with the same silhouette is two
+indistinguishable things in a hotbar, which is the argument D-219 already made about marshwort. It
+wants its own model or nothing.
+
+**One housekeeping note worth carrying:** `render_item_icons.py` rewrites all 76 icons on every run
+with no byte guarantee (F-468), so the 71 unrelated ones were reverted rather than swept into this
+commit. Anyone adding an icon should expect to do the same until F-468 lands.
+
+Verified: `item_icons_check` PASS, `recipe_station_check` 0, `station_tier_check` 0,
+`crafting_check` confirmations=7 failures=0, `loot_content_check` 0,
+`progression_reachability_check` 0.
 
 ### F-596 · Fauna Phase 2 — the ordinary six have no models, rigs or clips — **fixed**
 
