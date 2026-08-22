@@ -127,6 +127,23 @@ extends Resource
 ## the same lesson and the reason a Bloatcap is worth shooting rather than charging.
 @export_range(0.0, 1.0, 0.05) var death_burst_fraction: float = 0.0
 
+@export_group("Aura")
+## docs/ENEMIES.md §7.2 — the tier-5 Mire Herald's corruption aura. While this enemy is alive, it
+## adds this much corruption per second to the Mire grid around itself. 0.0 — the default — means it
+## leaves the ground alone, which is every other kind.
+##
+## It is the ladder's bookend. Tier 1 corrupts a patch of ground BY DYING; tier 5 does not have to
+## die, and does not stop. The island is the health bar (`DESIGN.md` §4.1), and this is the first
+## thing in the game that attacks it directly rather than attacking the people standing on it.
+##
+## What it does to play is break every habit the four rungs below it taught. Walking it off, circling
+## it, getting behind it, backing out of a burst — all of them are answers made of TIME and
+## DISTANCE, and against this one both are paid for in land. Kiting a Herald across your own
+## territory is how you lose the territory.
+@export_range(0.0, 1.0, 0.01) var aura_corruption_per_second: float = 0.0
+## How wide the aura reaches, falling off to nothing at the edge.
+@export_range(0.0, 40.0, 0.5) var aura_corruption_radius_m: float = 0.0
+
 @export_group("Death")
 ## docs/ENEMIES.md §3.5 — how much corruption this kind pours into the Mire grid where it dies, and
 ## how wide. 0.0 — the default — means it leaves nothing, so every `EnemyDef` authored before the
@@ -193,4 +210,8 @@ func validation_errors() -> PackedStringArray:
 	# authoring slip the two pairs above are guarded against.
 	if death_burst_fraction > 0.0 and burst_radius_m <= 0.0:
 		errors.append("death_burst_fraction needs a burst_radius_m to burst into")
+	# The same pair-of-fields slip once more: an aura with no radius, or a radius with no rate, is
+	# an aura that silently does nothing.
+	if (aura_corruption_per_second > 0.0) != (aura_corruption_radius_m > 0.0):
+		errors.append("aura_corruption_per_second and aura_corruption_radius_m must both be set or neither")
 	return errors

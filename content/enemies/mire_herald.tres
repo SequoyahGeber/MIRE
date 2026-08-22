@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="EnemyDef" format=3]
+
+[ext_resource type="PackedScene" path="res://assets/enemies/exports/enemy_mire_herald.glb" id="1_mrhld"]
+[ext_resource type="Script" path="res://systems/enemies/enemy_def.gd" id="2_d3gob"]
+
+[resource]
+script = ExtResource("2_d3gob")
+id = &"mire_herald"
+display_name = "Mire Herald"
+model = ExtResource("1_mrhld")
+model_yaw_offset_degrees = 180.0
+radius_m = 1.1
+height_m = 2.7
+max_health = 260
+corpse_seconds = 8.0
+move_speed = 2.9
+stop_distance_m = 3.6
+turn_speed_rad = 2.0
+aggro_radius_m = 34.0
+deaggro_radius_m = 80.0
+attack_range_m = 4.2
+attack_damage = 34
+attack_tell_seconds = 0.65
+attack_seconds = 0.5
+attack_recovery_seconds = 1.5
+lunge_speed_m_s = 4.0
+aura_corruption_per_second = 0.05
+aura_corruption_radius_m = 9.0
+vision_angle_deg = 220.0
+alert_radius_m = 34.0
+max_concurrent_attackers = 1

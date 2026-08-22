@@ -75,6 +75,50 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-21 — 5.11: the enemy ladder is complete, tiers 4 and 5 (ember5da2c4)
+
+All five rungs are authored. `roster_order` is now
+`[fen_stalker, bog_bulwark, bloatcap, mire_herald, bog_crawler]`, with `peatling` as `enemy_id`, so
+the night pool walks the ladder at `roster_unlock_stride` = 2 — nights 4, 10, 16 and 22.
+
+**Tier 4, the Bloatcap** (walking puffball, 12-bone rig):
+
+```gdscript
+burst_radius_m: float        # attack becomes an AREA hit centred on the enemy; 0.0 = single-target
+death_burst_fraction: float  # what fraction of attack_damage the same radius takes when it DIES
+```
+
+`Enemy._burst()` goes out through the SAME `EventBus` event a single-target hit uses, once per
+player, so `PlayerHealth` needed no change and dodge i-frames/Blight/downed all treat a burst hit
+like any other hit. Measured horizontally, like every distance decision in that class.
+
+**Tier 5, the Mire Herald** (Irish elk, 20-bone rig, 3.36 m antler span):
+
+```gdscript
+aura_corruption_per_second: float   # corruption added to the Mire grid while ALIVE
+aura_corruption_radius_m: float
+```
+
+`Enemy._tick_aura()` runs on a 1 s interval from `_physics_process` — **outside the `match state`
+block**, and that placement is the mechanic. It is not something the creature does while chasing or
+attacking, it is something it does while existing; the first pass put the call inside `_tick_attack()`
+where it only ran during TELL/ATTACK/RECOVER, and an idle Herald corrupted nothing at all. If you add
+another always-on behaviour, put it in the same place and for the same reason.
+
+It reuses `MireGrid.host_add_corruption()`, the seam tier 1's death stain uses. That sharing is
+deliberate and `tools/enemy_mire_herald_check.gd` asserts it still holds.
+
+**Six new `EnemyDef` mechanics in total, every one defaulting to off**, so task 5.2's five kinds are
+unchanged byte for byte: `death_corruption_*`, `ambush_damage_multiplier`, `armor_arc_degrees` /
+`armor_damage_multiplier`, `burst_radius_m` / `death_burst_fraction`, `aura_corruption_*`. Each pair
+is guarded in `validation_errors()` against the one-of-two authoring slip, which fails silently and
+is the way a kind's whole identity goes missing.
+
+**What is NOT done and is the obvious next task on this line:** none of the five has a loot table, a
+sound, or a spawn-weight pass, and none has been balanced against a real playtest — every number in
+`content/enemies/` is authored-by-eye and wants `5.10` (combat balance across the Cycle curve) run
+over it. F-498 (the deflect cue) is the one known gap in a shipped mechanic.
+
 ### 2026-08-21 — 5.11: the enemy ladder, tier 3, and red eyes everywhere (ember5da2c4)
 
 The **Bog Bulwark** — alligator-snapping-turtle-shaped, 3.03 m long, 20-bone rig,

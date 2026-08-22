@@ -260,3 +260,47 @@ whose facing assertion is the *opposite* of the others' — it has no front, and
 everyone inside the radius including a player who was never targeted, nobody outside it, height not
 saving you, the death burst, and a kind with no burst authored still resolving exactly one
 single-target hit.
+
+
+---
+
+# The Mire Herald (enemy ladder, tier 5)
+
+Task 5.11, `docs/ENEMIES.md` §7. The sixth and last rigged family here, and the top of the ladder.
+
+| Asset | Family | Contents |
+|---|---|---|
+| `enemy_mire_herald` | enemy | Bog-preserved giant deer — skinned mesh, 20-bone rig, the same 6 clips |
+| `enemy_mire_herald_fragment_antler` | debris | A broken palm with two points and a crystal on it |
+| `enemy_mire_herald_fragment_hide` | debris | Sodden hide and a length of rib |
+
+**3.36 m across the antlers**, 3.10 m long, 2.73 m tall, 688 polygons. The largest thing in the game.
+
+Modelled on *Megaloceros giganteus*, whose best-preserved remains come out of peat bogs. The antlers
+are **palmate** — flattened palms with points along the outer edge, spanning up to 3.5 m and weighing
+around 40 kg — and the hump over the shoulders is the elongated vertebrae that carry them: **the hump
+is the anatomical reason the antlers are allowed to exist**, and a model without it wears its rack
+like a hat.
+
+Two things this family learned the hard way, both worth knowing:
+
+* **Span is the read, and height is not span.** The first pass ran the palms up to z 2.62 and the
+  rack came back looking tall rather than wide. Every centimetre spent going up is one not spent
+  going sideways.
+* **Sweep the palms FORWARD of the beam.** Swept back, the same geometry lies across the creature's
+  own shoulders and reads as cargo; swept forward it frames the head like a pair of open hands,
+  which is the iconic read and also the one that puts the points between the animal and whatever it
+  is facing.
+
+Its preview is shot nearly head-on, unlike every other family here, for the same reason.
+
+```bash
+Blender --background --python tools/blender/build_enemy_mire_herald.py
+.agent/bin/agent godot --headless --script tools/enemy_mire_herald_check.gd
+```
+
+The check covers the import, the antler span and the yaw offset, and the aura over TIME rather than
+at an instant: standing still corrupts the ground and keeps corrupting it, walking corrupts a trail
+rather than a spot, a corpse stops, and a kind with no aura authored never touches the grid. It also
+asserts that tier 1 still corrupts by dying — the two rungs share `MireGrid.host_add_corruption()`
+deliberately, and if they ever stop sharing it the ladder has stopped being a ladder.

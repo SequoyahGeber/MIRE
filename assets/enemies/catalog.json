@@ -193,5 +193,62 @@
       "MIRE_FungusEdible",
       "MIRE_MireGlow"
     ]
+  },
+  {
+    "name": "enemy_mire_herald",
+    "family": "enemy",
+    "width_m": 3.356,
+    "depth_m": 3.096,
+    "height_m": 2.732,
+    "mesh_parts": 1,
+    "polygons": 688,
+    "bones": 20,
+    "animations": [
+      "idle-loop",
+      "locomotion-loop",
+      "attack_tell",
+      "attack",
+      "hit",
+      "death"
+    ],
+    "materials": [
+      "MIRE_Bone",
+      "MIRE_Critical",
+      "MIRE_Crystal",
+      "MIRE_Peat",
+      "MIRE_WoodCharred",
+      "MIRE_WoodDeadCut"
+    ]
+  },
+  {
+    "name": "enemy_mire_herald_fragment_antler",
+    "family": "debris",
+    "width_m": 0.769,
+    "depth_m": 0.499,
+    "height_m": 0.322,
+    "mesh_parts": 4,
+    "polygons": 25,
+    "bones": 0,
+    "animations": [],
+    "materials": [
+      "MIRE_Crystal",
+      "MIRE_WoodDeadCut"
+    ]
+  },
+  {
+    "name": "enemy_mire_herald_fragment_hide",
+    "family": "debris",
+    "width_m": 0.47,
+    "depth_m": 0.389,
+    "height_m": 0.182,
+    "mesh_parts": 3,
+    "polygons": 46,
+    "bones": 0,
+    "animations": [],
+    "materials": [
+      "MIRE_Bone",
+      "MIRE_Peat",
+      "MIRE_WoodCharred"
+    ]
   }
 ]

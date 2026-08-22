@@ -64,6 +64,14 @@ const DISSOLVE_HOLD_FRACTION: float = 0.35
 ## someone to chase (F-099). Both trade at most a fifth of a second of reaction for not hammering
 ## the navigation server and the group system every tick; the attack itself always measures live
 ## positions, so neither affects whether a hit lands.
+## docs/ENEMIES.md §7.2 — how often a kind with a corruption aura stamps the Mire grid. One second,
+## not every physics tick: `MireGrid.host_add_corruption()` walks a square of cells per call, the
+## grid itself only publishes on its own 2 s cadence, and a field that grows in one-second steps is
+## indistinguishable from one that grows continuously at the speed a player can actually perceive.
+## The rate is authored per SECOND and multiplied by this interval, so changing the interval changes
+## the cost and not the corruption.
+const AURA_INTERVAL_SEC: float = 1.0
+
 const REPATH_DISTANCE_M: float = 1.0
 ## How often an agent whose map is not live yet re-asks for it. A streamed world bakes its first
 ## chunk region some frames after the level loads, so an enemy that spawns into that window would
@@ -142,6 +150,8 @@ var _target_node: Node3D
 ## when the target is lost. Host-only state; it changes a damage number the host was already
 ## deciding, so there is nothing here to replicate.
 var _ambush_ready: bool = true
+## Seconds accumulated toward the next `AURA_INTERVAL_SEC` stamp. Host-only, like the aura itself.
+var _aura_elapsed: float = 0.0
 var _rescan_wait: float = 0.0
 ## Where the nav agent was last asked to path to. Re-pathing only when the goal has moved more than
 ## REPATH_DISTANCE_M keeps a moving target from forcing a repath every physics tick (F-099).
@@ -245,6 +255,39 @@ func host_apply_damage(amount: int, instigator_peer_id: int) -> bool:
 	return true
 
 
+## docs/ENEMIES.md §7.2 — a kind whose `EnemyDef` asks for it corrupts the ground it is standing on,
+## continuously, for as long as it is alive.
+##
+## Called from `_physics_process` and therefore already behind this class's host-only gate; a client
+## never runs it, and `MireGrid.host_add_corruption()` refuses one again on its own. Nothing here
+## replicates — the corruption does, through `WorldDeltaLog`, exactly as it does for the Peatling's
+## death stain (§3.5). This function and that one are the same mechanic at two different scales,
+## which is deliberate: it is the ladder's first lesson arriving again at the end as a catastrophe.
+##
+## Skipped while DEAD. A corpse lies on the ground for `corpse_seconds` and it must not keep eating
+## the island while it does — the aura is what the creature does, not what its body is.
+func _tick_aura(delta: float) -> void:
+	if state == State.DEAD or definition.aura_corruption_radius_m <= 0.0:
+		return
+	_aura_elapsed += delta
+	if _aura_elapsed < AURA_INTERVAL_SEC:
+		return
+	var owed: float = _aura_elapsed
+	_aura_elapsed = 0.0
+	var mire_grid: Node = get_node_or_null(^"/root/MireGrid")
+	if mire_grid == null:
+		return
+	# `owed`, not `AURA_INTERVAL_SEC`: a frame that overshoots the interval has still passed, and
+	# paying only the interval would make the aura quietly weaker on a slow machine. Same accumulator
+	# discipline `MireGrid._physics_process()` itself uses for the spread.
+	mire_grid.call(
+		&"host_add_corruption",
+		global_position,
+		definition.aura_corruption_radius_m,
+		definition.aura_corruption_per_second * owed,
+	)
+
+
 ## docs/ENEMIES.md §5.2. Whether `instigator_peer_id` is standing inside this enemy's armoured arc.
 ##
 ## Measured horizontally only — a hit from a rooftop is still a hit from the front — and against the
@@ -313,6 +356,15 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= _gravity * delta
 	else:
 		velocity.y = minf(velocity.y, 0.0)
+
+	# Before the state machine, and OUTSIDE it. The corruption aura (docs/ENEMIES.md §7.2) is not
+	# something this creature does while chasing or while attacking — it is something it does while
+	# EXISTING, including while standing in an empty field with nobody within a hundred metres, which
+	# is exactly the case that matters: a Herald nobody is fighting is still eating the island. The
+	# first pass put this call inside `_tick_attack()`, where it only ran during TELL/ATTACK/RECOVER,
+	# so an idle Herald corrupted nothing at all and the tier's whole mechanic was invisible in play.
+	if definition.aura_corruption_per_second > 0.0:
+		_tick_aura(delta)
 
 	match state:
 		State.DEAD:

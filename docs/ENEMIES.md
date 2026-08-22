@@ -35,12 +35,12 @@ lunge or with a mechanic, never with a bigger `attack_range_m`.
 | 2 | **Fen Stalker** | Cycle 2 (night 4) | You cannot stand in the open | Strikes *through* your retreat — the first kind in the game that lunges — and its first strike out of ambush hits far harder |
 | 3 | **Bog Bulwark** | Cycle 4 (night 10) | You cannot trade hits head-on | Armoured through a 160-degree frontal arc, and it never stops following you |
 | 4 | **Bloatcap** | Cycle 6 (night 16) | You cannot just close the distance | An area burst that ignores facing and dodging entirely — and it bursts again when it dies |
-| 5 | *tier 5* | Cycle 8 (night 22) | The night stops being survivable by habit | (authored at tier 5) |
+| 5 | **Mire Herald** | Cycle 8 (night 22) | The night stops being survivable by habit | It corrupts the ground it walks on, continuously, without having to die — so every habit made of time and distance is now paid for in land |
 
-Tiers 2–5 are named and specified in full **in their own pass**, one at a time, each one authored and
-verified before the next is designed. The verbs above are the contract those passes have to meet; the
-rest is deliberately not written yet, because writing five designs at once is how you get five
-variations of one design.
+All five are now authored — each one designed, built, verified and committed before the next was
+begun, because writing five designs at once is how you get five variations of one design. Each has
+its own generator in `tools/blender/`, its own headless check in `tools/`, and its own `.tres` in
+`content/enemies/`.
 
 **Cadence.** `WaveSpawner` unlocks one entry of `roster_order` per Cycle advance and a Cycle is
 `CycleService.DAYS_PER_CYCLE` = 3 nights, which would put all five in the pool by night 13. That is
@@ -514,3 +514,126 @@ happened to them.
 | `alert_radius_m` | 18 | Wide. Two Bloatcaps that go off together cover 9 m, and there is no answer to that but not being there. |
 | `max_concurrent_attackers` | 3 | They *do* stack. This is the rung where a night stops being a series of fights and becomes a problem of spacing. |
 | `vision_angle_deg` | 360 | It has no front. See §6.3. |
+
+
+---
+
+## 7. Tier 5 — **Mire Herald**
+
+> A giant deer the colour of the peat it came out of, three and a half metres of pale palmate antler
+> above a body with its ribs showing, and the Mire growing on the crown like frost.
+
+**The verb: the night stops being survivable by habit.** Look at what the ladder has taught by now.
+Walk the Peatling off your ground. Circle the Stalker instead of retreating. Get behind the Bulwark.
+Back out of the Bloatcap's radius. **Every one of those answers is made of time and distance** — and
+against the Herald both are paid for in *land*, because the ground it stands on corrupts while it
+stands there, and the ground it walks over corrupts as it passes.
+
+Kiting it across your own territory is how you lose the territory. Ignoring it is how you lose the
+territory faster, because it does not need you: it corrupts an empty field just as well. There is no
+version of this fight where the answer is "later".
+
+And it is genuinely dangerous while you are solving that: 260 health, 34 damage through a four-metre
+antler sweep, and an alert radius of 34 m, which means a Herald arriving does not arrive alone — it
+wakes everything between it and you.
+
+**It is the wall.** It enters at Cycle 8, inside `DESIGN.md` §5.3's own "the wall lands around Cycle
+8–12" window, and that is not a coincidence: the top of the ladder is supposed to be the thing that
+ends runs.
+
+### 7.1 The real thing it is modelled on
+
+*Megaloceros giganteus*, the Irish elk — a giant deer whose best-preserved remains come out of **peat
+bogs**, which is not a coincidence this project was going to pass up either.
+
+- The antlers are **palmate**: flattened palms with points along the outer edge, not a branching
+  tree. They span up to **3.5 m** and weigh about 40 kg. Ours measures 3.36 m tip to tip, and
+  `tools/enemy_mire_herald_check.gd` asserts the span, because if a future tweak quietly costs it
+  that number it has stopped being the thing this rung is for.
+- The shoulder stands around **2.1 m** and head-to-body runs over three metres.
+- The skull is extra thick and the neck vertebrae unusually sturdy — both adaptations for carrying
+  the rack, and both worth reading as *mass* in the model.
+- The vertebrae over the shoulders are **elongated**, forming a hump of muscle whose job is holding
+  those antlers off the ground. **The hump is the anatomical reason the antlers are allowed to
+  exist**, and a model without it wears its rack like a hat.
+
+### 7.2 The mechanic: the aura
+
+Two new `EnemyDef` fields, both defaulting to "no aura":
+
+- `aura_corruption_per_second` — how much corruption it adds to the Mire grid around itself, per
+  second, while alive.
+- `aura_corruption_radius_m` — how far, falling off to nothing at the edge.
+
+It runs on a 1 s interval from `Enemy._physics_process` — **outside the state machine**, which is the
+whole point. This is not something the creature does while chasing or attacking; it is something it
+does while *existing*, including standing in an empty field with nobody within a hundred metres. A
+Herald nobody is fighting is still eating the island. (The first implementation put the tick inside
+`_tick_attack()`, where it only ran during TELL/ATTACK/RECOVER, and an idle Herald corrupted nothing
+at all — the tier's entire mechanic was invisible.)
+
+It is the **same `MireGrid.host_add_corruption()` seam the tier-1 Peatling's death stain uses**. That
+is deliberate and it is the ladder's bookend: rung one corrupts a patch of ground by dying, rung five
+does not have to die and does not stop. The check asserts both still share that seam, because if they
+ever stop, the ladder has stopped being a ladder.
+
+A corpse stops corrupting. The aura is what the creature *does*, not what its body is — and a
+carcass that kept eating the island for its eight-second corpse timer would be a bug that read as a
+mechanic.
+
+### 7.3 The asset (`assets/enemies/exports/enemy_mire_herald.glb`)
+
+**3.36 m across the antlers, 3.10 m long, 2.73 m tall.** 688 polygons on a 20-bone rig. The largest
+thing in the game by a wide margin, and it is meant to be the moment a player stops thinking about
+this night and starts thinking about the run.
+
+Its preview is shot nearly head-on, unlike every other family's three-quarter view, because this
+creature's whole read is the **span** and a three-quarter shot foreshortens one palm into its own
+shoulders. Its palette closes the loop the ladder opened: `peat` hide over `wood_charred` shadow with
+`bone` ribs and hooves showing through, pale antlers that are the brightest thing on it from any
+distance, and the Mire's purple as crystal on the antler palms and nowhere else. The corruption is
+wearing the crown — and it is the same purple the creature leaves on the ground behind it.
+
+| Clip | Length | Loops | What it does |
+|---|---:|---|---|
+| `idle` | 3.53 s | yes | It breathes, and the rack moves like weather. Every other idle in the roster is a creature waiting; this is a creature that has never once needed to hurry. A few degrees of head sway is an enormous amount of movement at three and a half metres of span. |
+| `locomotion` | 1.60 s | yes | A four-beat walk — three feet down at all times, back-left, front-left, back-right, front-right. The body pitches nose-to-tail rather than rolling, because the mass is high and forward over the hump. |
+| `attack_tell` | 0.63 s | no | **It raises the crown.** Head up and back until the palms are above its own shoulders, forelegs planted, weight loaded onto the hind pair. The largest silhouette change in the game — a Herald winding up is readable by somebody who is not even in the fight. |
+| `attack` | 0.47 s | no | The sweep. It drives the rack down and across in one motion; a real deer's antler strike is a shove of the whole *body* through the neck, never a swing of the head, so the spine leads and the palms scythe through the space in front of its forelegs. |
+| `hit` | 0.30 s | no | It does not stagger. It **looks at you** — the head lifts and turns toward the hit, which at this size is a threat rather than a flinch. |
+| `death` | 2.00 s | no | The longest death in the game and it earns it. The front legs go first, as they always do on a heavy-headed animal, so the chest comes down and the rack drives into the ground ahead of it; only then does the back fold and the whole length roll onto its side. The head is last, and slow, because there is nothing left holding it up. |
+
+Companions: `enemy_mire_herald_fragment_antler` — a broken palm with two points and a crystal still
+growing on it, nearly a metre across, and the only debris piece in the roster a player would want to
+*keep* — and `enemy_mire_herald_fragment_hide`, sodden hide and a length of rib, the way a bog gives
+a body back.
+
+### 7.4 Stats (`content/enemies/mire_herald.tres`)
+
+| Field | Value | Why that number |
+|---|---:|---|
+| `max_health` | 260 | The deepest pool in the roster. It is not armoured — that is tier 3 — it is simply an enormous amount of animal. |
+| `aura_corruption_per_second` | 0.05 over 9 m | Slow enough that one Herald is a problem rather than a disaster, and fast enough that ignoring it for a night is not a plan. |
+| `attack_damage` | 34 | The heaviest hit in the game, through a 4.2 m sweep. |
+| `move_speed` | 2.9 | Below a walk. It does not need to catch you — everywhere it goes is worse afterwards. |
+| `lunge_speed_m_s` | 4.0 | It still closes during its own tell. Slow does not mean safe to stand near. |
+| `alert_radius_m` | 34 | The widest in the roster. A Herald arriving brings the night with it. |
+| `deaggro_radius_m` | 80 | It gives up eventually — unlike the Bulwark — because a Herald that follows you forever is a Herald whose aura follows you forever, and that is not a fight, it is an eviction. |
+| `max_concurrent_attackers` | 1 | There is only ever going to be one of these committing at a time. That is mercy, and it is the only mercy in the row. |
+
+---
+
+## 8. The ladder, finished
+
+| Tier | Kind | Model | Rig | Polys | Its mechanic |
+|---|---|---|---|---:|---|
+| 1 | Peatling | slime mould | 8 bones | 502 | Dies into a stain of corruption |
+| 2 | Fen Stalker | heron / bittern | 19 bones | 578 | Lunges through your retreat; doubled opener out of ambush |
+| 3 | Bog Bulwark | snapping turtle | 20 bones | 721 | 160° of frontal armour, and it never lets go |
+| 4 | Bloatcap | puffball | 12 bones | 592 | Area burst, and it bursts again when it dies |
+| 5 | Mire Herald | Irish elk | 20 bones | 688 | Corrupts the ground it walks on, without dying and without stopping |
+
+Six new `EnemyDef` mechanics, every one of them defaulting to off, so the five kinds task 5.2
+authored are unchanged byte for byte. Five generators, five headless checks, five real animals
+researched before anything was modelled. Each rung changes what the player has to *do*; none of them
+is the rung below it with more health.

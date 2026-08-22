@@ -3937,30 +3937,6 @@ the vertex stage.
 
 ## Resolved
 
-### F-505 · verify_setup rejects the shipped frontend main scene — **fixed**
-
-**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by galedc2f76
-
-project.godot now intentionally boots res://levels/frontend.tscn, but tools/verify_setup.gd still requires application/run/main_scene itself to contain WorldEnvironment, DirectionalLight3D, and CharacterBody3D or be procedural_world.gd. The smoke check therefore reports three failures even though the frontend is the correct title/menu entry point and launches the gameplay scene through its own contract. Update the verifier to recognize and prove the frontend-to-gameplay seam while preserving the direct playable-scene assertions for any non-frontend main scene.
-
-**Resolved 2026-08-22 by galedc2f76.** Updated verify_setup's main-scene contract to recognize the intentional Frontend boot scene, follow the same _world_scene_path() seam used by PLAY, and apply the existing environment, directional-light, and player assertions to that routed gameplay scene. Direct gameplay main scenes retain the same structural checks.
-
-Verified:
-- `.agent/bin/agent godot --script tools/verify_setup.gd` -> all checks passed; frontend route, routed PackedScene, WorldEnvironment, DirectionalLight3D, and player all reported ok.
-- `.agent/bin/agent godot --script tools/title_check.gd` -> TITLE_CHECK failures=0.
-
-### F-503 · Resolution selector silently does nothing outside windowed mode — **fixed**
-
-**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by galedc2f76
-
-The live DISPLAY page exposes an enabled Resolution dropdown in WINDOWED, BORDERLESS, and FULLSCREEN. SettingsService persists set_resolution_index(), but _apply_display() calls DisplayServer.window_set_size() only for mode 0, so the other two modes silently ignore the player's selection while the UI and save claim it succeeded. Existing settings_check.gd asserts only the stored index, never DisplayServer.window_get_size(), so it cannot catch this. Make the resolution control truthful for the selected mode and add a windowed runtime-size assertion.
-
-**Resolved 2026-08-22 by galedc2f76.** Made the Resolution dropdown truthful: it remains enabled in WINDOWED, where SettingsService applies the selected size, and disables immediately in BORDERLESS/FULLSCREEN, where the display's native resolution wins. Added UI mode-state coverage and upgraded the service check from a stored-index assertion to a real DisplayServer.window_get_size() assertion.
-
-Verified:
-- `.agent/bin/agent godot --script tools/settings_screen_check.gd` -> SETTINGS_SCREEN_CHECK failures=0; resolution disables in borderless/fullscreen and re-enables in windowed.
-- `.agent/bin/agent godot --windowed --script tools/settings_check.gd` -> SETTINGS_CHECK failures=0; Metal window measured exactly (1152, 648).
-
 ### F-502 · Benchmark seed leaks into later gameplay — **fixed**
 
 **Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by kilne8b941
