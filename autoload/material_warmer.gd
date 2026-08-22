@@ -56,6 +56,8 @@ extends Node
 
 ## Off-screen target size. Deliberately tiny: the pipeline is compiled by the DRAW happening at all,
 ## not by how many pixels it covers, so anything larger is pure fill-rate spent for nothing.
+const THREADED_LOAD_REGISTRY := preload("res://core/loading/threaded_load_registry.gd")
+
 const WARM_VIEWPORT_SIZE := Vector2i(32, 32)
 ## Where `exports/` directories live. Every art domain in this project follows
 ## `assets/<kit>/exports/<asset>.glb` (see `assets/enemies/README.md` and its siblings).
@@ -213,8 +215,16 @@ func _pump_requests() -> void:
 	while _active.size() < REQUESTS_IN_FLIGHT and not _pending.is_empty():
 		var path: String = _pending[0]
 		_pending.remove_at(0)
-		if ResourceLoader.load_threaded_request(path) == OK:
+		# F-591: through the registry, never `ResourceLoader` directly. This pump walks a SUPERSET of
+		# what `ResourceScatterField`'s own warm pump loads, so the two genuinely want the same paths
+		# in a real session — and two threaded lifecycles over one path is the heap corruption
+		# Sequoyah's crash report caught. A refusal means the scatter field has it in flight, so this
+		# path goes to the back of the queue and gets warmed once that closes.
+		if THREADED_LOAD_REGISTRY.request(path):
 			_active.append(path)
+		else:
+			_pending.append(path)
+			break
 
 
 func _draw_completed() -> void:
@@ -223,13 +233,16 @@ func _draw_completed() -> void:
 		if drawn >= DRAWS_PER_FRAME:
 			break
 		var path: String = _active[index]
-		var status: int = ResourceLoader.load_threaded_get_status(path)
+		var status: int = THREADED_LOAD_REGISTRY.status(path)
 		if status == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
 			continue
 		_active.remove_at(index)
 		if status != ResourceLoader.THREAD_LOAD_LOADED:
+			# Released even on failure: a failed load holds the path in the registry exactly as a
+			# successful one does, and leaking the claim would block it for the rest of the process.
+			THREADED_LOAD_REGISTRY.retrieve(path)
 			continue
-		var scene: PackedScene = ResourceLoader.load_threaded_get(path) as PackedScene
+		var scene: PackedScene = THREADED_LOAD_REGISTRY.retrieve(path) as PackedScene
 		if scene == null:
 			continue
 		var instance: Node = scene.instantiate()

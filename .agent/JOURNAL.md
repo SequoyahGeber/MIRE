@@ -10460,3 +10460,15 @@ already fixed out-of-band by F-561's probe_scene change; verified windowed and h
 Files: `tools/graphics_quality_check.gd`
 
 Commit at time of writing: `08fe2ddb`
+
+---
+
+### DONE · F-592 · wick1c650c · 2026-08-22T18:08:55+00:00
+
+**Performance is reported in milliseconds, which is not a unit the person deciding can judge**
+
+All perf output converted to FPS/% via new tools/perf_format.gd; perf_format_check failures=0. Call sites parse-verified only — all need --windowed and no perf run was consented to.
+
+Files: `tools/perf_format.gd`, `tools/perf_format_check.gd`, `tools/perf_probe.gd`, `docs/PERFORMANCE.md`, `tools/frame_cost_check.gd`, `tools/traversal_profile.gd`, `tools/revisit_probe.gd`, `tools/chunk_stream_check.gd`
+
+Commit at time of writing: `54ef06d3`

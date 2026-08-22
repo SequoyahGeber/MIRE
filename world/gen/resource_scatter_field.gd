@@ -91,6 +91,7 @@ extends Node3D
 ## nothing yet instantiates `ChunkStreamer`/`ResourceScatterField` in the shipped game at all; whichever
 ## task adds one must anchor the host's pair to every connected peer's position, not only its own.
 
+const THREADED_LOAD_REGISTRY := preload("res://core/loading/threaded_load_registry.gd")
 const ResourceScatterLib := preload("res://world/gen/resource_scatter.gd")
 const HarvestLib := preload("res://systems/harvesting/harvest_library.gd")
 const DrawPolicy := preload("res://world/environment/draw_policy.gd")
@@ -571,23 +572,36 @@ func _pump_asset_warm() -> void:
 	while _warm_active.size() < WARM_REQUESTS_IN_FLIGHT and not _warm_pending.is_empty():
 		var pair: Array = _warm_pending.pop_front()
 		var path := "res://assets/%s/exports/%s.glb" % [pair[0], pair[1]]
-		if ResourceLoader.load_threaded_request(path) == OK:
+		# F-591: through the registry, never `ResourceLoader` directly. A refusal means someone else
+		# already has this path in flight (`MaterialWarmer` warms a superset of these), so the pair
+		# goes back on the queue to be picked up once that lifecycle closes — a second request over
+		# one path is the heap corruption this guards.
+		if THREADED_LOAD_REGISTRY.request(path):
 			_warm_active.append([pair[0], pair[1], path])
+		else:
+			_warm_pending.append(pair)
+			break
 
 	var folded: int = 0
 	for index: int in range(_warm_active.size() - 1, -1, -1):
 		if folded >= WARM_COMPLETIONS_PER_FRAME:
 			break
 		var active: Array = _warm_active[index]
-		var status: int = ResourceLoader.load_threaded_get_status(active[2])
+		var status: int = THREADED_LOAD_REGISTRY.status(active[2])
 		if status == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
 			continue
 		_warm_active.remove_at(index)
 		if status != ResourceLoader.THREAD_LOAD_LOADED:
+			# Still release it: a failed load owns the path in the registry exactly as a successful
+			# one does, and leaking the claim would block every later request for it forever.
+			THREADED_LOAD_REGISTRY.retrieve(active[2])
 			continue
 		# Retrieving it is what puts the resource in the cache; `_load_mesh_parts` then only has to
-		# instantiate, which is the part that cannot leave the main thread.
-		ResourceLoader.load_threaded_get(active[2])
+		# instantiate, which is the part that cannot leave the main thread. F-591: the retrieve must
+		# happen BEFORE `_load_mesh_parts`, because that function's own load goes through the
+		# registry too — leaving the request live here would make it take the blocking-takeover path
+		# for a resource we are three lines from having in hand.
+		THREADED_LOAD_REGISTRY.retrieve(active[2])
 		_load_mesh_parts(active[0], active[1])
 		folded += 1
 
@@ -1180,7 +1194,12 @@ func _load_mesh_parts(kit: String, asset: String) -> Array:
 	if _mesh_cache.has(cache_key):
 		return _mesh_cache[cache_key]
 	var path := "res://assets/%s/exports/%s.glb" % [kit, asset]
-	var packed: PackedScene = load(path) as PackedScene
+	# F-591: NOT a bare `load()`. A chunk build can reach this for an asset whose warm request is
+	# still in flight — the pump and the dressing pass run in the same frame budget — and a blocking
+	# `load()` racing a live threaded request over one path is what corrupted the heap. The registry
+	# takes the existing request over instead, which blocks for the same time the load would have and
+	# retires the worker's task cleanly.
+	var packed: PackedScene = THREADED_LOAD_REGISTRY.blocking_load(path) as PackedScene
 	if packed == null:
 		push_error("ResourceScatterField could not load %s" % path)
 		_mesh_cache[cache_key] = []

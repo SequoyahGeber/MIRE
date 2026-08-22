@@ -3451,6 +3451,45 @@ one is a perceptual call and belongs to Sequoyah, not to whoever fixes the axis.
 
 ---
 
+### F-595 · Every enemy in the game can only ever drop coins — there is no per-enemy loot table
+
+**Area:** loot · **Severity:** medium · **Found:** 2026-08-22 by wick3d4184 during F-574
+
+`EnemyDef` carries `coin_min`/`coin_max` and nothing else about what a kill yields, and
+`RewardService._on_enemy_killed()` (`autoload/reward_service.gd:110`) receives
+`(enemy_id, coin_min, coin_max, instigator_peer_id, world_position)` — **no node reference and no
+loot table.** All it can do, and all it does, is `InventoryService.host_add(peer, COIN_ITEM_ID, n)`.
+
+So across ten authored `content/enemies/*.tres`, killing anything produces exactly one kind of
+reward: coins. Chests roll a `LootTableDef` with items, powerups and rarity; Wellspring caps and boss
+kills roll one through `_grant_tier_to_party()`; **an ordinary enemy kill cannot express "drops a
+hide", "drops its own tooth", "rarely drops something good" at all.** That is a whole content axis
+the game does not have, and it is invisible because nothing fails — the coins arrive, so the seam
+looks finished.
+
+**How it surfaced.** F-574 needed the Gilded Key, and `docs/ITEMS.md:253` specifies its sources as
+*"elites, the Hunt, bosses"*, with `:376` adding *"the Hunt elite drops a Gilded Key"*. Bosses were a
+one-line data change, because that path rolls a table. The other two were unreachable **not because
+the elite is missing** — F-245's `WaveSpawner._hunt_elite` is a real tracking tusker — but because
+there is nowhere to hang a drop on an enemy death. The key shipped bosses-only for that reason.
+
+**What fixing it would take**, roughly, and why it is worth more than the key that exposed it:
+
+- A `loot_table` (or `loot_tier`) field on `EnemyDef`, empty for the filler kinds so nothing changes
+  for them by default.
+- `EventBus.enemy_killed` to carry enough for `RewardService` to resolve it — the enemy id already
+  reaches the handler, so the table can be looked up from `Registry.get_enemy(enemy_id)` without
+  widening the signal or passing a node. **That is the cheap version and it is probably enough.**
+- The Hunt elite is the one case the id alone cannot answer, because it is a `tusker` like any other
+  tusker — it needs a per-instance mark. `WaveSpawner` already holds the instance in `_hunt_elite`,
+  so a meta flag set at spawn and read at death is the small honest version, and it is what unlocks
+  ITEMS.md's second and third Gilded Key sources.
+
+Ten enemy kinds with authored art and no drop of their own is a bigger content gap than any single
+item. Worth a roadmap task rather than a finding, if the next triage agrees.
+
+---
+
 ## Resolved
 
 ### F-592 · Performance is reported in milliseconds, which is not a unit the person deciding can judge — **fixed**
