@@ -124,8 +124,20 @@ signal local_hunger_changed(hunger: float, max_hunger: float)
 signal local_stamina_changed(stamina: float, max_stamina: float)
 ## Host-side observer hook, mirrors InventoryService.host_inventory_changed — checks and any future
 ## host-only HUD read this instead of reaching into the private state dictionary.
+## UNCONSUMED, and kept for that reason (F-576). Nothing in the shipped tree connects it, but
+## it is the SOLE publisher of this fact — there is no other path by which another peer's health reaches a
+## local observer — `local_health_changed` beside it is the LOCAL player only, a different fact.
+## That makes it an unfinished feature rather than dead code, the same shape as
+## `systems/loot/item_drop.gd`'s `collected`, which F-576 nearly deleted a week before
+## F-581 turned it into the pickup feed. Delete it only along with the feature.
 signal host_health_changed(peer_id: int, hp: int, max_hp: int, state: int, revision: int)
 ## Host-side observer hook for the periodic, advisory stamina report — see the class doc.
+## UNCONSUMED, and kept for that reason (F-576). Nothing in the shipped tree connects it, but
+## it is the SOLE publisher of this fact — there is no other path by which another peer's stamina is
+## observable at all.
+## That makes it an unfinished feature rather than dead code, the same shape as
+## `systems/loot/item_drop.gd`'s `collected`, which F-576 nearly deleted a week before
+## F-581 turned it into the pickup feed. Delete it only along with the feature.
 signal host_stamina_reported(peer_id: int, stamina: float)
 ## Broadcast to every peer, including the downed peer itself: teammates must see who needs help.
 signal downed_flag_changed(peer_id: int, downed: bool)

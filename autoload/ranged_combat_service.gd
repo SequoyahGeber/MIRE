@@ -46,11 +46,16 @@ enum Phase { IDLE, WIND_UP, COMMIT, RECOVERY }
 
 ## Local presentation only — the frame the owner pressed attack, not the frame the host agreed.
 signal shot_started(weapon_id: StringName)
-signal shot_phase_changed(phase: Phase)
 ## A host-resolved connect, broadcast to every peer. Cosmetic consumers only.
 signal shot_landed(peer_id: int, position: Vector3, damage: int, target_name: StringName)
 signal shot_missed(peer_id: int, position: Vector3)
 ## Host-side rejection reaching the peer that asked. Feeds a UI line, nothing else.
+## UNCONSUMED, and kept for that reason (F-576). Nothing in the shipped tree connects it, but
+## it is the SOLE publisher of this fact — there is no other path by which the host's refusal reason reaches the
+## player who asked.
+## That makes it an unfinished feature rather than dead code, the same shape as
+## `systems/loot/item_drop.gd`'s `collected`, which F-576 nearly deleted a week before
+## F-581 turned it into the pickup feed. Delete it only along with the feature.
 signal shot_rejected(request_id: int, detail: String)
 
 var _gravity: float = 9.8
@@ -498,7 +503,6 @@ func _set_local_phase(phase: Phase) -> void:
 	if _local_phase == phase:
 		return
 	_local_phase = phase
-	shot_phase_changed.emit(phase)
 
 
 func _spawn_visual_projectile(
