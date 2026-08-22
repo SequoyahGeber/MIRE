@@ -388,7 +388,35 @@ func _enter_death(instigator_peer_id: int) -> void:
 	collision_layer = 0
 	remove_from_group(DAMAGEABLE_GROUP)
 	_maybe_bloom_split()
+	_stain_ground()
 	died.emit(instigator_peer_id)
+
+
+## docs/ENEMIES.md §3.5 — a kind whose `EnemyDef` asks for it pours corruption into the Mire grid
+## where it died. Tier 1's Peatling is the first, and the point of it is that killing one is not
+## free: the island is the health bar (DESIGN.md §4.1), and this is the first enemy that pushes it
+## the wrong way whether you win the fight or not.
+##
+## Ordered AFTER `_maybe_bloom_split()` on purpose. Under the `bloom` Cycle Modifier a Peatling
+## splits into two children that will each stain again when they die, so a bloomed Peatling costs
+## the ground three stains, not one. That is the correct reading of two modifiers stacking
+## (DESIGN.md §5.4) and it falls out of the order rather than needing a rule.
+##
+## Host-only twice over: this is only ever reached through `host_apply_damage()`'s authority gate,
+## and `MireGrid.host_add_corruption()` refuses a client again on its own. Nothing here replicates —
+## the corruption itself does, through `WorldDeltaLog`.
+func _stain_ground() -> void:
+	if definition == null or definition.death_corruption_amount <= 0.0:
+		return
+	var mire_grid: Node = get_node_or_null(^"/root/MireGrid")
+	if mire_grid == null:
+		return
+	mire_grid.call(
+		&"host_add_corruption",
+		global_position,
+		definition.death_corruption_radius_m,
+		definition.death_corruption_amount,
+	)
 
 
 ## Cycle Modifier `bloom` (F-245, content/cycle_modifiers/bloom.tres): an enemy that dies while it is

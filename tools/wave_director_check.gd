@@ -84,8 +84,15 @@ func _run() -> void:
 	print("\n== composition: _roll_roster() is weighted toward the most-recently-unlocked archetype ==")
 	EVENT_BUS.emit_cycle_advanced(1)  # Reset so later assertions are not reading Cycle 6's state.
 	await process_frame
+	# 5.11 gave the roster a stride (`roster_unlock_stride`, docs/ENEMIES.md §2), so an unlock now
+	# costs more than one advance. Forced to 1 for the composition test below, which is about
+	# `_roll_roster()`'s WEIGHTING and has no opinion about pacing; the stride itself is asserted on
+	# its own further down.
+	var authored_stride: int = int(wave.get(&"roster_unlock_stride"))
+	wave.set(&"roster_unlock_stride", 1)
 	var unlocked: StringName = StringName(wave.call(&"host_unlock_next_enemy"))
 	check(unlocked == &"bog_crawler", "one archetype unlocked for the roll test (bog_crawler)")
+	wave.set(&"roster_unlock_stride", authored_stride)
 	var far_away := Vector3(5000.0, 0.0, 5000.0)  # No Mire corruption out here — an uncontaminated roll.
 	var sample_size: int = 600
 	var spawned_sample: int = int(wave.call(
@@ -99,7 +106,7 @@ func _run() -> void:
 		if def == null:
 			continue
 		var id := StringName(def.get(&"id"))
-		if id == &"crawler":
+		if id == wave.get(&"enemy_id"):
 			base_count_seen += 1
 		elif id == &"bog_crawler":
 			unlocked_count_seen += 1
@@ -115,6 +122,33 @@ func _run() -> void:
 		% unlocked_share)
 	world.call("host_despawn_all")
 	await process_frame
+
+	print("\n== ladder cadence: roster_unlock_stride spends more than one Cycle per unlock (5.11) ==")
+	# Two entries, because a one-entry roster cannot tell "skipped by the stride" apart from
+	# "exhausted" — both return &"". The ids are stand-ins for ladder rungs; this test is about the
+	# CADENCE, and it must not start failing the day tiers 2-5 are authored into roster_order.
+	var real_roster: Array = wave.get(&"roster_order")
+	var ladder: Array[StringName] = [&"bog_crawler", &"tusker"]
+	wave.call(&"host_reset_for_new_run")
+	wave.set(&"roster_order", ladder)
+	wave.set(&"roster_unlock_stride", 2)
+	check(StringName(wave.call(&"host_unlock_next_enemy")) == &"bog_crawler",
+		"the FIRST advance unlocks, so tier 2 lands on Cycle 2 and not Cycle 3")
+	check(StringName(wave.call(&"host_unlock_next_enemy")) == &"",
+		"the second advance unlocks nothing — the stride is actually spent")
+	check(StringName(wave.call(&"host_unlock_next_enemy")) == &"tusker",
+		"the third advance unlocks the next rung")
+	check(StringName(wave.call(&"host_unlock_next_enemy")) == &"",
+		"and the fourth spends the stride again")
+	check(int(wave.call(&"unlocked_enemy_pool").size()) == 2, "exactly two rungs came out of four advances")
+	# A restarted run walks the same curve from the beginning — the stride counter is run state, and
+	# leaving it behind would put the new run's first unlock on the wrong Cycle (F-259's shape).
+	wave.call(&"host_reset_for_new_run")
+	check(StringName(wave.call(&"host_unlock_next_enemy")) == &"bog_crawler",
+		"a restarted run unlocks on ITS first advance, not on the ended run's parity")
+	wave.call(&"host_reset_for_new_run")
+	wave.set(&"roster_order", real_roster)
+	wave.set(&"roster_unlock_stride", authored_stride)
 
 	# Sampling above spawns real bog_crawler bodies, so F-158's visual_tint (systems/enemies/enemy.gd
 	# `_apply_visual_tint()`) runs for real and provokes the dummy renderer's own harmless

@@ -75,6 +75,50 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-21 — 5.11: the enemy ladder, tier 1 (ember5da2c4)
+
+`docs/ENEMIES.md` is the ladder — five authored enemies, one rung per two Cycles (D-204). Tier 1,
+the **Peatling**, has shipped in full: its own generator, model, rig, six clips, stats and mechanic.
+Tiers 2-5 are named by verb only and are authored one at a time; the next pass on this line takes
+tier 2 and nothing else.
+
+**Two new APIs the rest of the ladder builds on.**
+
+```gdscript
+# systems/enemies/enemy_def.gd — new @export_group("Death"). Both default 0.0; a kind that leaves
+# nothing behind is unchanged, bit for bit. validation_errors() rejects one set without the other.
+death_corruption_amount: float      # 0..1 added per cell at the centre
+death_corruption_radius_m: float    # falls off linearly to nothing at the edge
+
+# world/mire/mire_grid.gd — host-only, and the first REAL-GAMEPLAY writer to the corruption grid
+# (host_set_corruption_at() above it stays a test seam). Does not flush: _tick() publishes on its
+# own 2 s cadence, which is what batches a wave's worth of deaths into one broadcast.
+MireGrid.host_add_corruption(world_position: Vector3, radius_m: float, amount: float) -> void
+```
+
+`Enemy._stain_ground()` is the only caller, from `_enter_death()`, after `_maybe_bloom_split()` — so
+a bloomed Peatling costs the ground three stains, not one, which falls out of the ordering rather
+than needing a rule.
+
+**Trap, paid for once:** `MireGridSim.CELL_SIZE_M` is 4.6 m at the shipped island radius, so a stain
+radius smaller than a cell missed every cell centre *including its own* and landed nowhere, silently.
+`stain_radius()` now always gives the cell the death happened in the full amount whatever the radius.
+If you add another radius-based grid stamp, give it the same floor.
+
+**`WaveSpawner` changed twice.** `enemy_id` is now `&"peatling"` (the crawler is still
+`EnemyWorld.ambient_enemy`, the daytime field), and `roster_unlock_stride` — default 2 — decides how
+many Cycle advances one `roster_order` unlock costs. The stride is counted off this file's own call
+count, NOT off `_current_cycle`: `CycleService` both calls `host_unlock_next_enemy()` and emits
+`cycle_advanced`, and nothing pins their order. It is run state, so `host_reset_for_new_run()` clears
+it. **When tier 2 is authored, it goes at the front of `roster_order`.**
+
+`tools/enemy_peatling_check.gd` is the proof — import, and the yaw-offset question (F-039: Blender's
+-Y "forward" arrives as glTF +Z, which is *backward* to Godot, so an authored model needs 180 degrees
+of `model_yaw_offset_degrees`) measured off the mesh instead of remembered, and the stain end to end
+from a real kill through the real damage seam. Measure vertex arrays across **every surface**; a
+multi-material mesh has one surface per material and `surface_get_arrays(0)` is a fraction of it.
+
+
 ### 2026-08-21 — F-478: the procedural river has water in it (vaneabd52b)
 
 Sequoyah, on a play capture of a wide carved valley with sand on its floor: *"if we have a river i

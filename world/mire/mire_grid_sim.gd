@@ -301,6 +301,50 @@ static func _is_warded(cell_x: int, cell_z: int, ward_circles: Array) -> bool:
 	return false
 
 
+## docs/ENEMIES.md §3.5 — the Peatling's stain. Adds corruption in a radius, strongest at the centre
+## and falling linearly to nothing at the edge, so a stain has a soft boundary the way a spill does
+## rather than the hard disc a Wellspring's clear leaves.
+##
+## ADDITIVE and clamped, deliberately unlike `_stamp_cluster()`'s `maxf`. Two Peatlings killed on the
+## same spot really have poured twice as much into it, and under `maxf` the second kill would be free
+## — which would quietly make "kill them all in one place" the optimal play, the exact opposite of
+## what the mechanic is for.
+##
+## Reads only from `grid` and writes only to the returned copy, like every other function here, so it
+## cannot interact with a `tick()` in flight.
+static func stain_radius(
+	grid: PackedFloat32Array, world_position: Vector2, radius_m: float, amount: float
+) -> PackedFloat32Array:
+	var next: PackedFloat32Array = grid.duplicate()
+	if radius_m <= 0.0 or amount <= 0.0:
+		return next
+	var cell_span: int = ceili(radius_m / CELL_SIZE_M) + 1
+	var center_cell: Vector2i = world_to_cell(world_position.x, world_position.y)
+	for delta_z: int in range(-cell_span, cell_span + 1):
+		for delta_x: int in range(-cell_span, cell_span + 1):
+			var cell_x: int = center_cell.x + delta_x
+			var cell_z: int = center_cell.y + delta_z
+			if cell_x < 0 or cell_x >= CELLS_PER_SIDE or cell_z < 0 or cell_z >= CELLS_PER_SIDE:
+				continue
+			# The cell the position is IN always takes the full amount, whatever the radius. A cell
+			# is `CELL_SIZE_M` across — 4.6 m at the shipped island radius — and its CENTRE can be
+			# most of that away from the position, so a stain smaller than a cell would otherwise
+			# fail the distance test against every cell including its own and land nowhere at all.
+			# That is not a hypothetical: it is what the first pass did, silently, and the enemy
+			# whose entire identity is this mechanic simply had no effect. Radius still governs how
+			# far the stain REACHES; it must never govern whether it exists.
+			var is_center: bool = cell_x == center_cell.x and cell_z == center_cell.y
+			var falloff: float = 1.0
+			if not is_center:
+				var distance: float = cell_to_world_center(cell_x, cell_z).distance_to(world_position)
+				if distance > radius_m:
+					continue
+				falloff = 1.0 - distance / radius_m
+			var idx: int = cell_index(cell_x, cell_z)
+			next[idx] = clampf(next[idx] + amount * falloff, 0.0, 1.0)
+	return next
+
+
 ## DESIGN.md §4.2: a capped Wellspring clears corruption in a radius around itself. Zeroes rather
 ## than subtracting — "local corruption cleared" is the exact word DESIGN uses, and a partial clear
 ## would just regrow from its own remaining seed on the very next tick.

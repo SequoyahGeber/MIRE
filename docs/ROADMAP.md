@@ -246,6 +246,7 @@ building them properly.
 | 5.8 | Boss 3 — deep-Cycle threat (appears Cycle 7+) | T0 | 5 |
 | 5.9 | Wave director: Cycle-aware pacing, composition, player-count scaling | T1 | 3 |
 | 5.10 | Combat balance pass **across the Cycle curve**, not at one difficulty | T0 | 3 |
+| 5.11 | **Tiered enemy ladder:** 5 authored enemies — own model, rig, clips, unique attack, stats — one per escalation step, entering the night pool as Cycles advance (`docs/ENEMIES.md`) | T1 | 10 |
 
 ---
 

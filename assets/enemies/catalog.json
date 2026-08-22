@@ -75,5 +75,63 @@
       "MIRE_ChitinDark",
       "MIRE_ChitinLight"
     ]
+  },
+  {
+    "name": "enemy_peatling",
+    "family": "enemy",
+    "width_m": 0.611,
+    "depth_m": 0.868,
+    "height_m": 0.324,
+    "mesh_parts": 1,
+    "polygons": 462,
+    "bones": 8,
+    "animations": [
+      "idle-loop",
+      "locomotion-loop",
+      "attack_tell",
+      "attack",
+      "hit",
+      "death"
+    ],
+    "materials": [
+      "MIRE_Bone",
+      "MIRE_Mire",
+      "MIRE_MireBlack",
+      "MIRE_MireFlesh",
+      "MIRE_MireGlow",
+      "MIRE_Stone",
+      "MIRE_WoodDead"
+    ]
+  },
+  {
+    "name": "enemy_peatling_fragment_gel",
+    "family": "debris",
+    "width_m": 0.218,
+    "depth_m": 0.158,
+    "height_m": 0.09,
+    "mesh_parts": 3,
+    "polygons": 46,
+    "bones": 0,
+    "animations": [],
+    "materials": [
+      "MIRE_Mire",
+      "MIRE_MireFlesh",
+      "MIRE_MireGlow"
+    ]
+  },
+  {
+    "name": "enemy_peatling_fragment_husk",
+    "family": "debris",
+    "width_m": 0.278,
+    "depth_m": 0.21,
+    "height_m": 0.103,
+    "mesh_parts": 3,
+    "polygons": 32,
+    "bones": 0,
+    "animations": [],
+    "materials": [
+      "MIRE_MireBlack",
+      "MIRE_Stone"
+    ]
   }
 ]

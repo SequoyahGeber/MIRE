@@ -82,3 +82,48 @@ a 17-bone skeleton and a skinned mesh, that all six clips arrive under their eng
 exactly `idle` and `locomotion` loop, and that the other three assets import as plain static meshes.
 
 Godot scene wiring, collision, and the enemy's actual behaviour remain Sequoyah's work in the editor.
+
+---
+
+# The Peatling (enemy ladder, tier 1)
+
+Task 5.11, `docs/ENEMIES.md` §3. The second rigged family in `assets/enemies/`, built by its own
+generator and sharing this directory's `catalog.json` with A-006 — each generator now REPLACES only
+its own rows and leaves the other's alone, so either can be re-run without erasing the other.
+
+| Asset | Family | Contents |
+|---|---|---|
+| `enemy_peatling` | enemy | Slime-mould blob — skinned mesh, 8-bone rig, the same 6 clips |
+| `enemy_peatling_fragment_gel` | debris | A gobbet of gel with a dying vein in it |
+| `enemy_peatling_fragment_husk` | debris | The dried film it leaves, and the pebble it never digested |
+
+0.61 m wide, 0.87 m deep and **0.32 m tall**: knee height, low and wide, under the player's natural
+aim line. 462 polygons.
+
+The subject is *Physarum polycephalum*, the acellular slime mould, not a generic RPG slime — a
+migrating plasmodium is fan-shaped at its leading edge with the mass trailing behind it, organises
+into a network of vein-like tubules that are thick at the base and fine toward the margin, and moves
+by **shuttle streaming**: cytoplasm surges one way for a few seconds, stops, and reverses. The fan is
+the silhouette, the veins are the surface detail and the only emissive, and the reversal is why the
+idle clip is deliberately asymmetric rather than a symmetric throb — a symmetric throb reads as
+breathing, and this thing has no lungs.
+
+**Scale is a keyed channel on this rig**, unlike A-006's. A crawler is plates on a skeleton and never
+changes volume; a slime is a bag of fluid, and squash is its entire animation language. The tell is
+therefore a *silhouette* change — it hauls itself up into a column, the tallest it ever gets — which
+is the only readable telegraph available to something knee-high in fog.
+
+Every clip is authored **shorter than or equal to** the `EnemyDef` window it plays under, so `Enemy`
+never cuts one mid-motion. See `content/enemies/peatling.tres`.
+
+```bash
+Blender --background --python tools/blender/build_enemy_peatling.py
+.agent/bin/agent godot --headless --script tools/enemy_peatling_check.gd
+```
+
+The check covers the import (rig, skin, all six clips under their engine-side names, exactly two
+looping), **which way the model actually faces** — measured off the vertex arrays of every surface
+and asserted against the `.tres`'s `model_yaw_offset_degrees`, so F-039's "the exporter turns
+Blender's -Y forward into a model that faces backward" is a fact the suite knows rather than one
+every author re-derives — and the corruption stain end to end, from a real kill through the real
+damage seam to the Mire grid.

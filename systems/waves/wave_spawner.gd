@@ -37,13 +37,30 @@ const CORRUPTED_SPAWN_CAP_PROBABILITY: float = 0.75
 @export_range(0, 128, 1) var base_count: int = 4
 @export_range(0, 32, 1) var per_player: int = 2
 @export_range(0.0, 20.0, 0.25) var scatter_m: float = 4.0
-@export var enemy_id: StringName = &"crawler"
+## Tier 1 of the enemy ladder (docs/ENEMIES.md §2), and the only entry that is in the night pool from
+## night one. It was `crawler` until 5.11 — the crawler is still the ambient DAYTIME field
+## (`EnemyWorld.ambient_enemy`) and still the substitution target several systems name by id, but the
+## night roster is a ladder now and the bottom rung of a ladder has to be the thing that teaches you.
+## The Peatling is slower than a walk and cannot meaningfully hurt you; what it does is corrupt the
+## ground where it dies, which is a lesson about WHERE you fight, and it wants to be learnt on night
+## one when the cost of learning it late is still recoverable.
+@export var enemy_id: StringName = &"peatling"
 ## Task 6.1's "enemy roster expands" (DESIGN.md §5.1): archetypes that join the night pool alongside
 ## `enemy_id`, one per `host_unlock_next_enemy()` call, in order. `bog_crawler` already exists as a
 ## distinct-stats archetype (task 4.11 authored it for corrupted-spawn substitution); no new content
 ## was authored for this task — AGENTS.md forbids bulk-generating `.tres` content, and task 5.2 ("8-12
 ## enemy types") is the one that grows this list with real new archetypes. See D-100.
 @export var roster_order: Array[StringName] = [&"bog_crawler"]
+## How many Cycle advances one roster unlock costs (docs/ENEMIES.md §2). 1 is the pre-5.11 behaviour
+## — a new archetype every Cycle.
+##
+## 2 because a Cycle is `CycleService.DAYS_PER_CYCLE` = 3 nights, and one archetype per Cycle puts a
+## five-rung ladder entirely in the pool by night 13. Each tier needs a few nights of being THE new
+## problem before the next one lands on top of it, or the player never learns any of them — they just
+## experience "the nights got busier". At a stride of 2 the tiers arrive on nights 4, 10, 16 and 22,
+## and the last one lands inside DESIGN.md §5.3's own "the wall is around Cycle 8-12" window, which
+## is the correct place for the top of the ladder to be: the last tier IS the wall.
+@export_range(1, 6, 1) var roster_unlock_stride: int = 2
 
 ## Cycle-aware pacing (task 5.9, DESIGN.md §5.3's "comfortable -> contested -> desperate -> the end"
 ## curve). Additive, not compounding like `CycleService.SPREAD_ESCALATION_PER_CYCLE` — DESIGN.md
@@ -89,6 +106,10 @@ var _hunt_retarget_elapsed: float = 0.0
 ## elite per Cycle between them, in whichever order they arrive. 0 means "never this run" — a Cycle
 ## is always >= 1 — so `host_reset_for_new_run()` clears it back to 0, not to 1.
 var _hunt_spawned_cycle: int = 0
+## How many times `host_unlock_next_enemy()` has been asked this run — the input to
+## `roster_unlock_stride`. Per-RUN, so `host_reset_for_new_run()` clears it; a restarted run has to
+## walk the same unlock curve from the beginning, exactly like `_unlocked_pool` itself.
+var _unlock_calls: int = 0
 
 
 func _ready() -> void:
@@ -178,6 +199,7 @@ func host_reset_for_new_run() -> void:
 	if not _owns_wave_director():
 		return
 	_unlocked_pool.clear()
+	_unlock_calls = 0
 	_current_cycle = 1
 	_hunt_elite = null
 	_hunt_retarget_elapsed = 0.0
@@ -416,7 +438,20 @@ func _roll_roster() -> StringName:
 ## director) — `CycleService` treats either the same way DayNight's crossing already does when a
 ## downstream system is missing: nothing to do, not an error.
 func host_unlock_next_enemy() -> StringName:
-	if not _owns_wave_director() or _unlocked_pool.size() >= roster_order.size():
+	if not _owns_wave_director():
+		return &""
+	# Counted here rather than read off `_current_cycle`, deliberately. `CycleService` both calls
+	# this and emits `cycle_advanced`, and nothing pins their order — deciding "is this Cycle an
+	# unlock Cycle?" from a cached Cycle number would make the answer depend on which of the two
+	# happened to run first. Counting our own calls cannot drift from how many times we were asked.
+	#
+	# `% stride == 1` and not `== 0`, so the FIRST advance unlocks: the ladder's tier 2 belongs on
+	# Cycle 2, not Cycle 3. At stride 1 the modulo is always 0 == 0 is false, so the branch below
+	# short-circuits on `stride <= 1` instead of trying to express "never skip" as arithmetic.
+	_unlock_calls += 1
+	if roster_unlock_stride > 1 and _unlock_calls % roster_unlock_stride != 1:
+		return &""
+	if _unlocked_pool.size() >= roster_order.size():
 		return &""
 	var next_id: StringName = roster_order[_unlocked_pool.size()]
 	_unlocked_pool.append(next_id)

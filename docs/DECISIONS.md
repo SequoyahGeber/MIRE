@@ -6847,3 +6847,48 @@ Two checks hold the line, and both must stay green:
 **Corollary — fuel comes before the furnace.** Charcoal used to be made *from coal* at the furnace
 whose own cost was coal. It is now made from logs at the campfire, a tier-1 station, so the chain
 reads campfire → charcoal → furnace → ingots → anvil. Flint is knapped from stone at the workbench.
+
+---
+
+### D-204 · 2026-08-21 · The night roster is a ladder of five authored enemies, one rung per two Cycles
+
+Sequoyah: *"i think there should be tiers of monsters, starting with a slime like enemy, then every
+5 or so nights added a more difficult enemy into the spawn pool ... the enemies are very important to
+the game."*
+
+**Five kinds, each with its own model, rig, clips, unique mechanic and stats — not five stat variants
+of one model.** Task 5.2 shipped the latter honestly and under D-073's "no new art for a stats task"
+rule: `crawler`, `bog_crawler`, `strider`, `tusker` and `broodcaller` all wear `enemy_crawler.glb`
+under a `visual_tint`. Those stay, as the ambient daytime field and as the substitution targets
+several systems name by id. The *night* roster is now a separate, authored thing, specified in
+`docs/ENEMIES.md` and built one rung at a time.
+
+**The rule each rung has to meet: it must change what the player has to DO, not what the numbers
+say.** A tier that is the previous tier with more health is not a tier. Each entry is written as a
+verb first and its stats exist to serve that verb; if a rung can be beaten by the same habit that
+beat the one below it, it goes back. This is why the rungs are authored one at a time and each one is
+finished — asset, animation, mechanic, stats, headless proof — before the next is designed. Five
+designs written at once produce five variations of one design.
+
+**Cadence: `WaveSpawner.roster_unlock_stride`, default 2.** A Cycle is `CycleService.DAYS_PER_CYCLE`
+= 3 nights, and the pre-existing one-unlock-per-Cycle rate would put a five-rung ladder entirely in
+the pool by night 13. At a stride of 2 the rungs land on nights 4, 10, 16 and 22 — about six nights
+apart, which is what Sequoyah asked for — and the top rung arrives inside `DESIGN.md` §5.3's own
+"the wall lands around Cycle 8-12" window. **The last tier is the wall.** Nothing ever leaves the
+pool; `_roll_roster()` already weights later unlocks more heavily, so a deep-Cycle night is mostly
+the top of the ladder with the bottom of it still underfoot.
+
+**Tier 1 is `peatling`, and it is the night pool's base `enemy_id`** — the crawler was, and is still
+the ambient daytime field. The bottom rung of a ladder has to be the thing that teaches you, and what
+the Peatling teaches is *where* to fight: it is slower than a player's walk and nearly harmless, and
+**killing one pours corruption into the Mire grid where it died** (`EnemyDef.death_corruption_amount`
+/ `_radius_m`, both defaulting to 0.0 so no existing kind moved a byte). Farm them at your camp on
+night one and by night three the camp is standing in the Mire — trees rotting, Blight ticking, its
+own wave rolls substituting corrupted spawns. Nothing warns you, the lesson arrives late, and it is
+entirely your fault. The counterplay is cheap once seen: they cannot catch you, so lead them off the
+ground you care about, or kill them on ground that is already lost.
+
+That mechanic deliberately needed **no new system** — no hazard volume, no VFX, no RPC. Corruption
+already replicates through `WorldDeltaLog`, already stains the ground through `terrain_flat.gdshader`,
+already thickens the fog and already ticks Blight. The tier-1 enemy is the game's own signature
+mechanic handed to the player as a weapon pointed the wrong way.

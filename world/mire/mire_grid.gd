@@ -330,6 +330,29 @@ func host_set_corruption_at(world_position: Vector3, value: float) -> void:
 	_field_dirty = true
 
 
+## docs/ENEMIES.md §3.5 — the tier-1 Peatling dies into a stain of corruption. Host-only, like every
+## other mutation of this grid.
+##
+## This is REAL GAMEPLAY, unlike `host_set_corruption_at()` above, which stays a test seam: it is the
+## first thing in the project other than the Mire's own spread that grows corruption, and it exists
+## so an enemy can push the island's health bar the wrong way without any of its own machinery. It
+## needs no hazard volume, no VFX and no RPC — a stain is corruption, and corruption already
+## replicates through `WorldDeltaLog`, already stains the ground through `terrain_flat.gdshader`,
+## already thickens the fog, and already ticks Blight on whoever stands in it.
+##
+## Deliberately does NOT flush. `_tick()` publishes on its own 2 s cadence and a stain is not urgent
+## to the frame — batching a wave's worth of deaths into one broadcast is the whole reason
+## `_emit_changed_deltas()` quantizes in the first place (R4, the replication-chattiness risk).
+func host_add_corruption(world_position: Vector3, radius_m: float, amount: float) -> void:
+	if not _owns_simulation():
+		return
+	if radius_m <= 0.0 or amount <= 0.0:
+		return
+	ensure_ready()
+	_grid = SIM.stain_radius(_grid, Vector2(world_position.x, world_position.z), radius_m, amount)
+	_field_dirty = true
+
+
 ## Host-only: publishes whatever `host_set_corruption_at()`/`_tick()` changed since the last flush.
 ## `_tick()` already calls this itself; exposed so a check can force an immediate broadcast after
 ## `host_set_corruption_at()` without waiting a full `TICK_INTERVAL_SEC`.

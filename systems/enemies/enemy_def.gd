@@ -73,6 +73,23 @@ extends Resource
 ## distance pursuit itself stops at, so a lunge cannot carry the enemy through its own target.
 @export_range(0.0, 20.0, 0.1) var lunge_speed_m_s: float = 0.0
 
+@export_group("Death")
+## docs/ENEMIES.md §3.5 — how much corruption this kind pours into the Mire grid where it dies, and
+## how wide. 0.0 — the default — means it leaves nothing, so every `EnemyDef` authored before the
+## ladder behaves bit-for-bit as it did.
+##
+## This is the tier-1 Peatling's whole identity, and it is deliberately expressed as data on the
+## `EnemyDef` rather than as a Peatling-shaped special case in `Enemy`: "dies into corrupted ground"
+## is a property a later kind may well want too, and D-006 ("content is data, not code") is what
+## keeps that from becoming a second special case.
+##
+## Host-only in effect: `Enemy._enter_death()` is only ever reached through `host_apply_damage()`'s
+## own authority gate, and `MireGrid.host_add_corruption()` refuses a client a second time. Nothing
+## is replicated from here — the resulting corruption replicates itself, through `WorldDeltaLog`.
+@export_range(0.0, 1.0, 0.01) var death_corruption_amount: float = 0.0
+## Falls off linearly to nothing at this radius, so the stain has a soft edge.
+@export_range(0.0, 24.0, 0.5) var death_corruption_radius_m: float = 0.0
+
 @export_group("Perception")
 ## The full arc, centred on the enemy's own facing, it can ACQUIRE a new target within. 360 means
 ## omnidirectional — Enemy v1's original behaviour, and still the default: a value below 360 gives
@@ -109,4 +126,9 @@ func validation_errors() -> PackedStringArray:
 		errors.append("deaggro_radius_m must be >= aggro_radius_m or aggro flickers on the boundary")
 	if stop_distance_m > attack_range_m:
 		errors.append("stop_distance_m must be <= attack_range_m or the enemy stops out of reach")
+	# Either both death-corruption fields are set or neither is. One alone is always an authoring
+	# slip — an amount with no radius stains nothing and a radius with no amount stains nothing, and
+	# both fail SILENTLY, which is the worst way for a kind's entire identity to go missing.
+	if (death_corruption_amount > 0.0) != (death_corruption_radius_m > 0.0):
+		errors.append("death_corruption_amount and death_corruption_radius_m must both be set or both be zero")
 	return errors

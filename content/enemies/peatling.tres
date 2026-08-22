@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="EnemyDef" format=3]
+
+[ext_resource type="PackedScene" path="res://assets/enemies/exports/enemy_peatling.glb" id="1_ptlng"]
+[ext_resource type="Script" path="res://systems/enemies/enemy_def.gd" id="2_d3gob"]
+
+[resource]
+script = ExtResource("2_d3gob")
+id = &"peatling"
+display_name = "Peatling"
+model = ExtResource("1_ptlng")
+model_yaw_offset_degrees = 180.0
+radius_m = 0.34
+height_m = 0.3
+max_health = 14
+corpse_seconds = 3.5
+move_speed = 1.6
+stop_distance_m = 1.2
+turn_speed_rad = 2.5
+aggro_radius_m = 12.0
+deaggro_radius_m = 20.0
+attack_range_m = 1.6
+attack_damage = 5
+attack_tell_seconds = 0.45
+attack_seconds = 0.35
+attack_recovery_seconds = 0.9
+death_corruption_amount = 0.35
+death_corruption_radius_m = 6.0
+alert_radius_m = 0.0
+max_concurrent_attackers = 3
