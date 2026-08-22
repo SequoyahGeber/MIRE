@@ -2906,7 +2906,9 @@ stops paying 92 seconds a run in the meantime.
 
 ---
 
-### F-565 · graphics_quality_check asserts raw preset render scales while a user-settings-derived clamp caps them, so it fails on whatever resolution the machine happens to have saved
+## Resolved
+
+### F-565 · graphics_quality_check asserts raw preset render scales while a user-settings-derived clamp caps them, so it fails on whatever resolution the machine happens to have saved — **fixed**
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-22 by hollowbfcf67
 
@@ -2915,9 +2917,38 @@ Allocated first, body to follow (F-563's lesson on number collisions). Four fail
 derives a render-scale limit from the saved window mode and resolution, and every preset is clamped
 to it.
 
----
+**Resolved 2026-08-22 by hollowbfcf67.** **Fixed 2026-08-22 by hollowbfcf67.** Four failures, one cause.
 
-## Resolved
+`GraphicsQuality._maximum_render_scale()` is `min(preset_scale, _render_scale_limit)`, and that limit
+is written by `SettingsService._apply_fullscreen_render_resolution()` from the **saved window mode
+and resolution** — a person's options-menu choice, not a property of the code under test. On this
+machine it was **0.55**, so LOW (0.59), MEDIUM (0.77) and HIGH (1.0) all reached the viewport as 0.55
+and every render-scale assertion failed at once:
+
+    FAIL: LOW's render scale reaches the viewport
+    FAIL: MEDIUM's only F-377 exposure is its render scale (0.55)
+    FAIL: HIGH renders at full scale
+    FAIL: LOW still renders at a lower scale than MEDIUM
+
+The check would have passed or failed depending on what resolution the last person to open the
+options menu had picked. That is the defect — not the four assertions, which state F-377's preset
+contract correctly.
+
+**Fixed by lifting the clamp rather than relaxing the assertions.** The check captures
+`_render_scale_limit`, sets it to 1.0 for the preset walks, prints the value it found so a reader
+knows the machine was clamping, and restores it at the end.
+
+**And the clamp gets its own assertion, because removing it from the preset tests would otherwise
+have deleted the only coverage it had.** Two cases, both directions: a limit BELOW the preset wins
+(0.5 beats HIGH's 1.0), and a limit ABOVE it does not raise it (limit 1.0 leaves LOW at its own
+0.59). Both read the preset table through `_preset_table(gfx)` rather than restating numbers, so they
+track `GraphicsQuality.PRESETS` rather than drifting from it.
+
+**Verified**: `GRAPHICS_QUALITY_CHECK failures=0`, from 4, with the two new assertions passing and
+the log line reporting `render-scale limit was 0.55 (from the saved display settings)`.
+
+Like F-563, this check could not run headless at all before F-556, so these four failures had never
+been visible in a suite run.
 
 ### F-562 · Six more checks still have no verdict agent verify can read — two render near-miss wording, four print none at all — **fixed**
 

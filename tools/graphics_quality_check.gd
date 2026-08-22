@@ -102,6 +102,24 @@ func _run() -> void:
 		_finish()
 		return
 
+	# F-565. Every render-scale assertion below states a PRESET's number, and a preset's render scale
+	# is not what reaches the viewport on its own: `GraphicsQuality._maximum_render_scale()` is
+	# `min(preset_scale, _render_scale_limit)`, and that limit is written by
+	# `SettingsService._apply_fullscreen_render_resolution()` from the saved window mode and
+	# resolution. On this machine it was 0.55, so LOW (0.59), MEDIUM (0.77) and HIGH (1.0) all
+	# reached the viewport as 0.55 and all four assertions failed — on a check that asserts nothing
+	# about resolution settings at all. It would pass or fail depending on what the person running it
+	# last chose in the options menu, which is not a property of the code under test.
+	#
+	# Lifting the limit is the honest fix rather than relaxing the assertions: the subject is F-377's
+	# preset contract, so the clamp is removed for the duration and asserted separately, once, below.
+	var clamp_before: float = 0.0
+	if gfx.has_method(&"set_render_scale_limit"):
+		clamp_before = float(gfx.get(&"_render_scale_limit"))
+		gfx.call(&"set_render_scale_limit", 1.0)
+		print("render-scale limit was %.2f (from the saved display settings); lifted to 1.00 for the "
+			% clamp_before + "preset assertions (F-565)")
+
 	# Read before any preset touches the light, so every "restores the authored value" claim below
 	# is against the level's real numbers rather than against a preset's idea of them.
 	var authored: Dictionary = _sample_light(sun)
@@ -127,6 +145,23 @@ func _run() -> void:
 	await _check_unauthored_light(gfx, level)
 	await _check_ssao_gate(gfx, level)
 	await _measure_preset_frame_cost(gfx, level)
+
+	# F-565: the clamp lifted above is real behaviour and deserves one assertion of its own, or
+	# removing it for the preset tests would quietly delete the only coverage it had. A limit BELOW
+	# the preset must win; a limit above it must not raise the preset.
+	if gfx.has_method(&"set_render_scale_limit"):
+		gfx.call(&"apply", HIGH)
+		gfx.call(&"set_render_scale_limit", 0.5)
+		await process_frame
+		check(is_equal_approx(root.scaling_3d_scale, 0.5),
+			"a display-derived render-scale limit below the preset wins (got %.2f)"
+				% root.scaling_3d_scale)
+		gfx.call(&"set_render_scale_limit", 1.0)
+		gfx.call(&"apply", LOW)
+		await process_frame
+		check(is_equal_approx(root.scaling_3d_scale, float((_preset_table(gfx)[LOW] as Dictionary)["render_scale"])),
+			"and a limit above the preset does not raise it (got %.2f)" % root.scaling_3d_scale)
+		gfx.call(&"set_render_scale_limit", clamp_before if clamp_before > 0.0 else 1.0)
 
 	gfx.call(&"apply", HIGH)
 	_finish()
