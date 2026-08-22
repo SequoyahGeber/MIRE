@@ -88,6 +88,19 @@ SOURCES: list[tuple[str, str]] = [
     ("build_barricade_spike", "construction/exports/barricade_spike.glb"),
     ("build_ward", "wards/exports/ward_healthy.glb"),
     ("build_ward_post", "wards/exports/ward_boundary_post.glb"),
+    # --- crafting stations (F-477) --------------------------------------------
+    #
+    # F-477 made all eight stations buildable, which put eight more empty slots in
+    # the build menu — the same gap F-427 closed for the construction kit, and
+    # closed the same way: rendered from the exact GLB the piece places.
+    ("build_workbench", "crafting_stations/exports/station_workbench_primitive.glb"),
+    ("build_workbench_upgraded", "crafting_stations/exports/station_workbench_upgraded.glb"),
+    ("build_campfire", "crafting_stations/exports/station_campfire.glb"),
+    ("build_cooking_spit", "crafting_stations/exports/station_cooking_spit.glb"),
+    ("build_furnace", "crafting_stations/exports/station_stone_furnace.glb"),
+    ("build_anvil", "crafting_stations/exports/station_anvil.glb"),
+    ("build_repair_bench", "crafting_stations/exports/station_repair_bench.glb"),
+    ("build_woodcutting_block", "crafting_stations/exports/station_woodcutting_block.glb"),
 ]
 
 #: Yaw applied before framing, for assets whose default face is not their best one.
@@ -150,6 +163,16 @@ ROLL_OVERRIDE_DEG: dict[str, float] = {
     "build_barricade_spike": 0.0,
     "build_ward": 0.0,
     "build_ward_post": 0.0,
+    # F-477: stations are furniture, and furniture has a known up for the same
+    # reason architecture does — a forge lying on its side is not a forge.
+    "build_workbench": 0.0,
+    "build_workbench_upgraded": 0.0,
+    "build_campfire": 0.0,
+    "build_cooking_spit": 0.0,
+    "build_furnace": 0.0,
+    "build_anvil": 0.0,
+    "build_repair_bench": 0.0,
+    "build_woodcutting_block": 0.0,
 }
 
 

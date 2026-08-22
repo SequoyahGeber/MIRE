@@ -1,16 +1,94 @@
 {
   "claims": {
+    "assets/deep_materials/catalog.json": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:53:11+00:00",
+      "task": "F-473",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
     "assets/gatherables/catalog.json": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:16:22+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "assets/harvestables/catalog.json": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:59:20+00:00",
+      "task": "F-473",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "assets/icons/catalog.json": {
+      "agent": "cindere7060a",
+      "at": "2026-08-21T23:58:48+00:00",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
     "assets/pickups/catalog.json": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:31:01+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "assets/tools_weapons/catalog.json": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:42:44+00:00",
+      "task": "F-473",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "content/buildables/anvil.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-21T23:58:48+00:00",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "content/buildables/campfire.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-21T23:50:57+00:00",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "content/buildables/cooking_spit.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-21T23:50:57+00:00",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "content/buildables/furnace.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-21T23:50:57+00:00",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "content/buildables/repair_bench.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-21T23:50:57+00:00",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "content/buildables/woodcutting_block.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-21T23:50:57+00:00",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "content/buildables/workbench.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-21T23:50:57+00:00",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "content/buildables/workbench_upgraded.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-21T23:50:57+00:00",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "content/guide/place_workbench.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-21T23:53:26+00:00",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
     },
     "content/harvestables/apple_tree.tres": {
       "agent": "gale43d16e",
@@ -36,11 +114,95 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "content/stations/campfire.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-21T23:50:57+00:00",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "content/stations/cooking_spit.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-21T23:50:57+00:00",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "content/stations/repair_bench.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-21T23:50:57+00:00",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "content/stations/woodcutting_block.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-21T23:50:57+00:00",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "content/stations/workbench_upgraded.tres": {
+      "agent": "cindere7060a",
+      "at": "2026-08-21T23:50:57+00:00",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
     "docs/ASSET_TRACKER.md": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:13:34+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "levels/procedural_island.tscn": {
+      "agent": "vaneabd52b",
+      "at": "2026-08-21T23:51:13+00:00",
+      "task": "F-478",
+      "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
+    },
+    "scenes/buildables/campfire.tscn": {
+      "agent": "cindere7060a",
+      "at": "2026-08-21T23:50:57+00:00",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "scenes/buildables/cooking_spit.tscn": {
+      "agent": "cindere7060a",
+      "at": "2026-08-21T23:50:57+00:00",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "scenes/buildables/furnace.tscn": {
+      "agent": "cindere7060a",
+      "at": "2026-08-21T23:50:57+00:00",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "scenes/buildables/repair_bench.tscn": {
+      "agent": "cindere7060a",
+      "at": "2026-08-21T23:50:57+00:00",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "scenes/buildables/woodcutting_block.tscn": {
+      "agent": "cindere7060a",
+      "at": "2026-08-21T23:50:57+00:00",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "scenes/buildables/workbench.tscn": {
+      "agent": "cindere7060a",
+      "at": "2026-08-21T23:50:57+00:00",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "scenes/buildables/workbench_upgraded.tscn": {
+      "agent": "cindere7060a",
+      "at": "2026-08-21T23:50:57+00:00",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "tools/blender/build_deep_materials.py": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:53:11+00:00",
+      "task": "F-473",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
     "tools/blender/build_gatherable_plants.py": {
       "agent": "gale43d16e",
@@ -48,17 +210,77 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "tools/blender/build_harvestable_resources.py": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:59:20+00:00",
+      "task": "F-473",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
     "tools/blender/build_pickup_kit.py": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:31:01+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "tools/blender/build_tool_weapon_set.py": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:42:44+00:00",
+      "task": "F-473",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "tools/blender/mire_art.py": {
+      "agent": "birche6b40e",
+      "at": "2026-08-21T23:42:44+00:00",
+      "task": "F-473",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "tools/blender/render_item_icons.py": {
+      "agent": "cindere7060a",
+      "at": "2026-08-21T23:58:48+00:00",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
     "tools/item_icons_check.gd": {
       "agent": "gale43d16e",
       "at": "2026-08-21T17:52:45+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "tools/river_water_check.gd": {
+      "agent": "vaneabd52b",
+      "at": "2026-08-21T23:51:13+00:00",
+      "task": "F-478",
+      "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
+    },
+    "tools/station_buildable_check.gd": {
+      "agent": "cindere7060a",
+      "at": "2026-08-21T23:52:57+00:00",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "ui/building/build_bar.gd": {
+      "agent": "cindere7060a",
+      "at": "2026-08-21T23:53:26+00:00",
+      "task": "F-477",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "world/environment/river_water.gd": {
+      "agent": "vaneabd52b",
+      "at": "2026-08-21T23:51:13+00:00",
+      "task": "F-478",
+      "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
+    },
+    "world/gen/island_heightmap.gd": {
+      "agent": "vaneabd52b",
+      "at": "2026-08-21T23:51:13+00:00",
+      "task": "F-478",
+      "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
+    },
+    "world/gen/procedural_world.gd": {
+      "agent": "vaneabd52b",
+      "at": "2026-08-21T23:51:13+00:00",
+      "task": "F-478",
+      "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
     }
   },
   "in_flight": {
@@ -94,6 +316,73 @@
       "notes": [],
       "started": "2026-08-21T23:06:31+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:d746ee9f-11f0-4287-ac97-e49b90deb962"
+    },
+    "F-473": {
+      "agent": "birche6b40e",
+      "files": [
+        "tools/blender/mire_art.py",
+        "tools/blender/build_tool_weapon_set.py",
+        "assets/tools_weapons/catalog.json",
+        "tools/blender/build_deep_materials.py",
+        "assets/deep_materials/catalog.json",
+        "tools/blender/build_harvestable_resources.py",
+        "assets/harvestables/catalog.json"
+      ],
+      "notes": [],
+      "started": "2026-08-21T23:42:44+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
+    },
+    "F-477": {
+      "agent": "cindere7060a",
+      "files": [
+        "content/buildables/workbench.tres",
+        "content/buildables/workbench_upgraded.tres",
+        "content/buildables/campfire.tres",
+        "content/buildables/cooking_spit.tres",
+        "content/buildables/furnace.tres",
+        "content/buildables/repair_bench.tres",
+        "content/buildables/woodcutting_block.tres",
+        "scenes/buildables/workbench.tscn",
+        "scenes/buildables/workbench_upgraded.tscn",
+        "scenes/buildables/campfire.tscn",
+        "scenes/buildables/cooking_spit.tscn",
+        "scenes/buildables/furnace.tscn",
+        "scenes/buildables/repair_bench.tscn",
+        "scenes/buildables/woodcutting_block.tscn",
+        "content/stations/campfire.tres",
+        "content/stations/cooking_spit.tres",
+        "content/stations/repair_bench.tres",
+        "content/stations/woodcutting_block.tres",
+        "content/stations/workbench_upgraded.tres",
+        "tools/station_buildable_check.gd",
+        "ui/building/build_bar.gd",
+        "content/guide/place_workbench.tres",
+        "tools/blender/render_item_icons.py",
+        "content/buildables/anvil.tres",
+        "assets/icons/catalog.json"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-22T00:02:11+00:00",
+          "by": "cindere7060a",
+          "text": "Build-menu icons added after the fact, on Sequoyah's follow-up: eight new 256px renders (icon_build_workbench, _workbench_upgraded, _campfire, _cooking_spit, _furnace, _anvil, _repair_bench, _woodcutting_block) through tools/blender/render_item_icons.py, from the same GLB each piece places. The anvil had no icon either, so this closes all eight rather than the seven new ones. Verified in-engine: every registered buildable now resolves an icon (BAR_ICONS missing=[]), and the bar renders with an icon in all 22 slots at 1280x720. Note for whoever holds the tool_weapon GLBs: re-running the icon script re-rendered icon_{wooden,stone,iron}_pickaxe.png differently, because those source GLBs are modified and uncommitted in the shared tree. Those three were restored to HEAD rather than committed here."
+        }
+      ],
+      "started": "2026-08-21T23:50:57+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:1a0bbc21-432c-45e0-bddb-ee71a2745020"
+    },
+    "F-478": {
+      "agent": "vaneabd52b",
+      "files": [
+        "world/gen/island_heightmap.gd",
+        "world/gen/procedural_world.gd",
+        "world/environment/river_water.gd",
+        "levels/procedural_island.tscn",
+        "tools/river_water_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-21T23:51:13+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:ad9cbd9a-1730-4956-bc84-26195f1f54e9"
     }
   },
   "recent": {
@@ -4291,7 +4580,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:a6e22ee9-164f-487f-b0ef-2f4f63d9dd8f"
     }
   },
-  "rev": 969,
+  "rev": 983,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9822,7 +10111,7 @@
     "F-473": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "The tier-4 and tier-5 tools ship on placeholder art, and the bogsilver seam has none at all"
     },
@@ -9841,6 +10130,27 @@
       "status": "done",
       "tier": "F",
       "title": "The benchmark reports the 2D content-scale size as its resolution, and cries wolf about focus on a good fullscreen run"
+    },
+    "F-476": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Two sessions allocated F-473 at the same time, and the numbering check is red at HEAD"
+    },
+    "F-477": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Only the anvil is buildable \u2014 the other seven crafting stations can only be found, never made"
+    },
+    "F-478": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "The procedural river is a dry gully \u2014 nothing renders or reports water in the channel"
     }
   },
   "version": 1

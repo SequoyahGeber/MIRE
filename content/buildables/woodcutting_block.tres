@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="BuildableDef" format=3]
+
+[ext_resource type="Script" path="res://systems/building/buildable_def.gd" id="1_buildabledef"]
+[ext_resource type="PackedScene" path="res://scenes/buildables/woodcutting_block.tscn" id="2_scene"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_build_woodcutting_block.png" id="ic_woodcutting_block"]
+
+[resource]
+script = ExtResource("1_buildabledef")
+icon = ExtResource("ic_woodcutting_block")
+id = &"woodcutting_block"
+display_name = "Woodcutting Block"
+description = "A split round with an axe sunk in it. Rough timber worked down into something a bench can use."
+scene = ExtResource("2_scene")
+size = Vector3(2.063, 1.164, 1.24)
+snap_step = 0.5
+rotation_step_degrees = 45.0
+requires_support = true
+max_ground_slope_degrees = 15.0
+max_build_range_m = 5.0
+cost = Dictionary[StringName, int]({
+&"log": 6,
+&"stone": 4,
+&"flint": 2
+})
+refund_fraction = 0.5
+max_hp = 35

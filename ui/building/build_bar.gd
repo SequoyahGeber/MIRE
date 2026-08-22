@@ -39,6 +39,10 @@ const COLOUR_FOCUS := Color(0.55, 0.85, 0.95, 1.0)
 const COLOUR_SNAP_ON := COLOUR_READY
 ## Snapping OFF — muted, because free placement is the quieter mode, not an error.
 const COLOUR_SNAP_OFF := Color(0.60, 0.69, 0.62, 1.0)
+## Width the slot flow wraps at: eight 88 px slots plus their separations. Fixed rather than derived
+## from the viewport so the bar is the same shape on every machine, and narrow enough to fit a
+## 1280-wide window with the margins the panel adds.
+const ROW_WIDTH_PX: float = 8.0 * 88.0 + 7.0 * 4.0
 
 
 ## One registered buildable. Selecting never places anything — it only tells the player which piece
@@ -181,7 +185,7 @@ signal piece_selected(piece_id: StringName)
 var _root: Control
 var _bar_center: CenterContainer
 var _panel: PanelContainer
-var _row: HBoxContainer
+var _row: HFlowContainer
 var _hint_label: Label
 var _status_label: Label
 var _slots: Array[PieceSlot] = []
@@ -297,8 +301,15 @@ func _build_ui() -> void:
 	_bar_center = CenterContainer.new()
 	_bar_center.name = "BuildBarCenter"
 	_bar_center.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	# The band the bar occupies is pinned to its BOTTOM edge and sized to the panel, not fixed at
+	# one row's height. Before F-477 the set was 15 pieces and 76 px was always enough; a wrapped
+	# flow of 22 is ~340 px, and a CenterContainer given less height than its content centres the
+	# overflow — half of it below the screen edge, which is exactly how the first render of this
+	# change put four rows of stations under the hotbar. `_fit_bar_height()` keeps the top offset
+	# tied to what the panel actually needs.
 	_bar_center.offset_top = -172.0
 	_bar_center.offset_bottom = -96.0
+	_bar_center.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_bar_center.mouse_filter = Control.MOUSE_FILTER_STOP
 	_bar_center.visible = false
 	_root.add_child(_bar_center)
@@ -319,9 +330,17 @@ func _build_ui() -> void:
 	stack.add_theme_constant_override("separation", 4)
 	margin.add_child(stack)
 
-	_row = HBoxContainer.new()
+	# F-477 made every crafting station buildable, taking the set from 15 pieces to 22. A single
+	# HBoxContainer row of 88 px slots is 2 032 px wide at that count — wider than a 1080p screen,
+	# so the bar would run off both edges of the display it is centred on. An HFlowContainer with a
+	# fixed width wraps instead: the row count grows downward, which the bottom-anchored bar has
+	# room for, rather than sideways, which it does not. The focus chain below is unaffected — it
+	# wires the slots in order, and wrapped rows are still one linear order.
+	_row = HFlowContainer.new()
 	_row.name = "BuildSlots"
-	_row.add_theme_constant_override("separation", 4)
+	_row.add_theme_constant_override("h_separation", 4)
+	_row.add_theme_constant_override("v_separation", 4)
+	_row.custom_minimum_size = Vector2(ROW_WIDTH_PX, 0.0)
 	stack.add_child(_row)
 
 	_hint_label = Label.new()
@@ -372,11 +391,24 @@ func _populate_slots() -> void:
 		_slots.append(slot)
 		_row.add_child(slot)
 	_wire_horizontal_chain(_slots)
+	_panel.minimum_size_changed.connect(_fit_bar_height)
+	_fit_bar_height()
+
+
+## Keep the bar's bottom edge where it has always been (96 px above the screen bottom, clear of the
+## hotbar) and grow the band upward by however tall the wrapped slot flow turns out to be. Driven by
+## the panel's own combined minimum size rather than a slot count, so authoring another buildable
+## never needs a matching number changed here.
+func _fit_bar_height() -> void:
+	if _panel == null or _bar_center == null:
+		return
+	var needed: float = _panel.get_combined_minimum_size().y
+	_bar_center.offset_top = _bar_center.offset_bottom - maxf(needed, 76.0)
 
 
 ## F-217: same recipe F-209/F-216 gave every other panel's control chain (UnlockMenu's
 ## _wire_vertical_chain, AttunementUI's copy of it) — but horizontal, since the slots sit in one
-## HBoxContainer row rather than a stacked column, so ui_left/ui_right is the natural axis. Wraps
+## flow row rather than a stacked column, so ui_left/ui_right is the natural axis. Wraps
 ## first<->last like every other chain in this project. Built once here alongside the slots
 ## themselves (see this function's own doc comment on why slots are static).
 func _wire_horizontal_chain(slots: Array[PieceSlot]) -> void:

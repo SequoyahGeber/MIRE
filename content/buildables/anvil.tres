@@ -2,9 +2,11 @@
 
 [ext_resource type="Script" path="res://systems/building/buildable_def.gd" id="1_buildabledef"]
 [ext_resource type="PackedScene" path="res://scenes/buildables/anvil.tscn" id="2_scene"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_build_anvil.png" id="ic_anvil"]
 
 [resource]
 script = ExtResource("1_buildabledef")
+icon = ExtResource("ic_anvil")
 id = &"anvil"
 display_name = "Anvil"
 description = "The tier-3 station. Costs a Wellglass Shard, which means it costs a Wellspring — that is the point, not a price to be tuned away (D-200)."

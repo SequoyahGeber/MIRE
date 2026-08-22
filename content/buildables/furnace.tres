@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="BuildableDef" format=3]
+
+[ext_resource type="Script" path="res://systems/building/buildable_def.gd" id="1_buildabledef"]
+[ext_resource type="PackedScene" path="res://scenes/buildables/furnace.tscn" id="2_scene"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_build_furnace.png" id="ic_furnace"]
+
+[resource]
+script = ExtResource("1_buildabledef")
+icon = ExtResource("ic_furnace")
+id = &"furnace"
+display_name = "Stone Furnace"
+description = "A stone smelter with a coal bed. Ore goes in, ingots come out — the gate between stone tools and iron ones."
+scene = ExtResource("2_scene")
+size = Vector3(2.151, 2.093, 1.508)
+snap_step = 0.5
+rotation_step_degrees = 45.0
+requires_support = true
+max_ground_slope_degrees = 15.0
+max_build_range_m = 5.0
+cost = Dictionary[StringName, int]({
+&"stone": 20,
+&"flint": 4,
+&"coal": 4
+})
+refund_fraction = 0.5
+max_hp = 60

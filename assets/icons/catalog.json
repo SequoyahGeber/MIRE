@@ -408,5 +408,85 @@
     "roll_deg": 0.0,
     "ortho_scale_m": 2.3228,
     "source_polygons": 208
+  },
+  {
+    "id": "build_workbench",
+    "source": "assets/crafting_stations/exports/station_workbench_primitive.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 2.5365,
+    "source_polygons": 208
+  },
+  {
+    "id": "build_workbench_upgraded",
+    "source": "assets/crafting_stations/exports/station_workbench_upgraded.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 3.1138,
+    "source_polygons": 344
+  },
+  {
+    "id": "build_campfire",
+    "source": "assets/crafting_stations/exports/station_campfire.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 1.6904,
+    "source_polygons": 360
+  },
+  {
+    "id": "build_cooking_spit",
+    "source": "assets/crafting_stations/exports/station_cooking_spit.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 2.5031,
+    "source_polygons": 544
+  },
+  {
+    "id": "build_furnace",
+    "source": "assets/crafting_stations/exports/station_stone_furnace.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 2.8478,
+    "source_polygons": 388
+  },
+  {
+    "id": "build_anvil",
+    "source": "assets/crafting_stations/exports/station_anvil.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 1.7433,
+    "source_polygons": 140
+  },
+  {
+    "id": "build_repair_bench",
+    "source": "assets/crafting_stations/exports/station_repair_bench.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 2.6873,
+    "source_polygons": 492
+  },
+  {
+    "id": "build_woodcutting_block",
+    "source": "assets/crafting_stations/exports/station_woodcutting_block.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 1.8744,
+    "source_polygons": 168
   }
 ]

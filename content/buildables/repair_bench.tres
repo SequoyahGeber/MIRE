@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="BuildableDef" format=3]
+
+[ext_resource type="Script" path="res://systems/building/buildable_def.gd" id="1_buildabledef"]
+[ext_resource type="PackedScene" path="res://scenes/buildables/repair_bench.tscn" id="2_scene"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_build_repair_bench.png" id="ic_repair_bench"]
+
+[resource]
+script = ExtResource("1_buildabledef")
+icon = ExtResource("ic_repair_bench")
+id = &"repair_bench"
+display_name = "Repair Bench"
+description = "A vice and a whetstone on a heavy frame. Where worn gear is brought back rather than replaced."
+scene = ExtResource("2_scene")
+size = Vector3(2.15, 1.603, 0.9)
+snap_step = 0.5
+rotation_step_degrees = 45.0
+requires_support = true
+max_ground_slope_degrees = 15.0
+max_build_range_m = 5.0
+cost = Dictionary[StringName, int]({
+&"log": 8,
+&"stone": 6,
+&"iron_ingot": 3
+})
+refund_fraction = 0.5
+max_hp = 45

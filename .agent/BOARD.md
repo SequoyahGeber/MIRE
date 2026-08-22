@@ -10,12 +10,18 @@
 |---|---|---|---|
 | **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | gale43d16e | 2026-08-21 17:13 | `docs/ASSET_TRACKER.md`, `tools/blender/build_gatherable_plants.py`, `assets/gatherables/catalog.json`, `tools/blender/build_pickup_kit.py`, `assets/pickups/catalog.json`, `content/items/apple.tres`, `content/harvestables/berry_bush.tres`, `content/harvestables/apple_tree.tres`, `content/harvestables/mushroom_patch.tres`, `tools/item_icons_check.gd` |
 | **F-469** Four recent decisions use a heading shape decision_ref_check.py cannot see | coil26502f | 2026-08-21 23:06 | `systems/building/placement_validator.gd`, `systems/building/build_ghost.gd`, `autoload/build_service.gd`, `core/net/net_version.gd`, `core/net/rpc_manifest.gd`, `entities/player/player_controller.gd`, `ui/building/build_bar.gd` |
+| **F-473** The tier-4 and tier-5 tools ship on placeholder art, and the bogsilver seam has none at all | birche6b40e | 2026-08-21 23:42 | `tools/blender/mire_art.py`, `tools/blender/build_tool_weapon_set.py`, `assets/tools_weapons/catalog.json`, `tools/blender/build_deep_materials.py`, `assets/deep_materials/catalog.json`, `tools/blender/build_harvestable_resources.py`, `assets/harvestables/catalog.json` |
+| **F-477** Only the anvil is buildable — the other seven crafting stations can only be found, never made | cindere7060a | 2026-08-21 23:50 | `content/buildables/workbench.tres`, `content/buildables/workbench_upgraded.tres`, `content/buildables/campfire.tres`, `content/buildables/cooking_spit.tres`, `content/buildables/furnace.tres`, `content/buildables/repair_bench.tres`, `content/buildables/woodcutting_block.tres`, `scenes/buildables/workbench.tscn`, `scenes/buildables/workbench_upgraded.tscn`, `scenes/buildables/campfire.tscn`, `scenes/buildables/cooking_spit.tscn`, `scenes/buildables/furnace.tscn`, `scenes/buildables/repair_bench.tscn`, `scenes/buildables/woodcutting_block.tscn`, `content/stations/campfire.tres`, `content/stations/cooking_spit.tres`, `content/stations/repair_bench.tres`, `content/stations/woodcutting_block.tres`, `content/stations/workbench_upgraded.tres`, `tools/station_buildable_check.gd`, `ui/building/build_bar.gd`, `content/guide/place_workbench.tres`, `tools/blender/render_item_icons.py`, `content/buildables/anvil.tres`, `assets/icons/catalog.json` |
+| **F-478** The procedural river is a dry gully — nothing renders or reports water in the channel | vaneabd52b | 2026-08-21 23:51 | `world/gen/island_heightmap.gd`, `world/gen/procedural_world.gd`, `world/environment/river_water.gd`, `levels/procedural_island.tscn`, `tools/river_water_check.gd` |
+
+**F-477 notes:**
+- Build-menu icons added after the fact, on Sequoyah's follow-up: eight new 256px renders (icon_build_workbench, _workbench_upgraded, _campfire, _cooking_spit, _furnace, _anvil, _repair_bench, _woodcutting_block) through tools/blender/render_item_icons.py, from the same GLB each piece places. The anvil had no icon either, so this closes all eight rather than the seven new ones. Verified in-engine: every registered buildable now resolves an icon (BAR_ICONS missing=[]), and the bar renders with an icon in all 22 slots at 1280x720. Note for whoever holds the tool_weapon GLBs: re-running the icon script re-rendered icon_{wooden,stone,iron}_pickaxe.png differently, because those source GLBs are modified and uncommitted in the shared tree. Those three were restored to HEAD rather than committed here.
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `████████░░` 395/479 | 84 |
+| Findings | `████████░░` 395/482 | 87 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -131,8 +137,11 @@
 | ⬜ | **F-468** Re-running either art generator rewrites every asset it owns with no pixel or vertex change, so a one-piece addition looks like a 48-file rebuild | todo |
 | 🔵 | **F-469** Four recent decisions use a heading shape decision_ref_check.py cannot see | in_flight |
 | ⬜ | **F-470** The fullscreen benchmark harness does not take focus, so its own runs are void | todo |
-| ⬜ | **F-473** The tier-4 and tier-5 tools ship on placeholder art, and the bogsilver seam has none at all | todo |
+| 🔵 | **F-473** The tier-4 and tier-5 tools ship on placeholder art, and the bogsilver seam has none at all | in_flight |
 | ⬜ | **F-474** Bogsilver is a plain item, so tier 4 lost its two-player carry | todo |
+| ⬜ | **F-476** Two sessions allocated F-473 at the same time, and the numbering check is red at HEAD | todo |
+| 🔵 | **F-477** Only the anvil is buildable — the other seven crafting stations can only be found, never made | in_flight |
+| 🔵 | **F-478** The procedural river is a dry gully — nothing renders or reports water in the channel | in_flight |
 
 ## Done
 

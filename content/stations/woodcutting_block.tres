@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="StationDef" format=3]
+
+[ext_resource type="Script" path="res://systems/crafting/station_def.gd" id="1_stationdef"]
+
+[resource]
+script = ExtResource("1_stationdef")
+id = &"woodcutting_block"
+display_name = "Woodcutting Block"
+world_scene = &"station_woodcutting_block"
+tier = 1

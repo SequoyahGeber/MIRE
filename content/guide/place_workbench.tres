@@ -6,7 +6,7 @@
 script = ExtResource("1_place_workbench")
 id = &"place_workbench"
 kind = 0
-text = "Get to a workbench — stone tools are made there."
+text = "Build a workbench — stone tools are made there."
 order = 40
 require = 1
 require_arg = &"log"

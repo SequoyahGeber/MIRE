@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="BuildableDef" format=3]
+
+[ext_resource type="Script" path="res://systems/building/buildable_def.gd" id="1_buildabledef"]
+[ext_resource type="PackedScene" path="res://scenes/buildables/workbench_upgraded.tscn" id="2_scene"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_build_workbench_upgraded.png" id="ic_workbench_upgraded"]
+
+[resource]
+script = ExtResource("1_buildabledef")
+icon = ExtResource("ic_workbench_upgraded")
+id = &"workbench_upgraded"
+display_name = "Reinforced Workbench"
+description = "The workbench rebuilt with an iron-shod top and a tool rack. Same recipes, better light and more room — the tier-2 bench a settled camp earns."
+scene = ExtResource("2_scene")
+size = Vector3(2.25, 2.103, 1.045)
+snap_step = 0.5
+rotation_step_degrees = 45.0
+requires_support = true
+max_ground_slope_degrees = 15.0
+max_build_range_m = 5.0
+cost = Dictionary[StringName, int]({
+&"log": 12,
+&"fibre_bundle": 4,
+&"iron_ingot": 2
+})
+refund_fraction = 0.5
+max_hp = 50

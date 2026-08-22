@@ -3506,7 +3506,114 @@ theirs with `agent resolve`/re-file, and the allocator should be made to hold a 
 
 ---
 
+### F-478 · The procedural river is a dry gully — nothing renders or reports water in the channel
+
+**Area:** world · **Severity:** high · **Found:** 2026-08-21 by vaneabd52b
+
+`IslandHeightmap` carves a river across every island (task 4.14, D-142) and the carve is good — a
+bed running monotonically downhill from +1.2 m at the source to -1.2 m at the mouth, with banks
+F-372 softened to something you walk down. What it has never had is WATER. `ProceduralWorld.
+water_surface_at()` returns the flat `SEA_LEVEL` for every point on the map with the comment "this
+generator has exactly one body of water", and `levels/procedural_island.tscn` draws exactly one
+water mesh, the 1400 m Ocean plane at y = 0. The channel bed is above y = 0 for the first ~81% of
+its length, so the ocean plane does not reach into it.
+
+The result in play (Sequoyah, 2026-08-21, screenshot): a wide carved valley running down to the sea
+with dry rock and sand on its floor. "if we have a river i feel like there should prolly be water
+inside". It reads as a quarry or a road cut, not as a river — which is the same class of failure
+F-372 recorded ("a random ravine in the middle of the island"), one level up: the shape is now
+right and the substance is missing.
+
+It is also a gameplay hole, not only a look: `PlayerController` derives wading and swimming depth
+from `water_surface_at()` (F-284), and `GroundFog` places its layer against the same seam. Both are
+told the river is dry ground.
+
+---
+
+### F-479 · Five crafting stations are now buildable but have no recipes — the panel opens empty
+
+**Area:** content · **Severity:** medium · **Found:** 2026-08-21 by cindere7060a
+
+Follow-up to F-477, which made all eight stations buildable. Recipes are still authored for only
+three station ids: `workbench` (12 recipes, the default), `furnace` (3) and `anvil` (4). A player who
+spends 12 log, 4 fibre bundle and 2 iron ingot on a Reinforced Workbench, or 6 log / 4 stone / 2
+flint on a Woodcutting Block, gets a station that opens a crafting panel with nothing in it.
+
+Stations with a StationDef and zero recipes: `workbench_upgraded`, `campfire`, `cooking_spit`,
+`repair_bench`, `woodcutting_block`.
+
+Each wants its own recipe set, and each set is a design question rather than a data chore —
+`cooking_spit` implies cooked food items that do not exist yet (`raw_meat` has no cooked counterpart
+in content/items), and `repair_bench` implies a durability-restoring action, which is a system, not a
+recipe. `campfire` and `woodcutting_block` are the cheap ones: cooked food and plank/charcoal-style
+intermediates. `workbench_upgraded` most likely wants tier-2 recipes gated off the primitive bench
+rather than a duplicate of its list.
+
+---
+
 ## Resolved
+
+### F-477 · Only the anvil is buildable — the other seven crafting stations can only be found, never made — **fixed**
+
+**Area:** content · **Severity:** medium · **Found:** 2026-08-21 by cindere7060a
+
+Sequoyah, 2026-08-21: "yea all the crafting stations should be buildable and take resources of course".
+
+`content/buildables/` ships 15 pieces, of which exactly one is a station: `anvil.tres`. The
+workbench, upgraded workbench, campfire, cooking spit, stone furnace, repair bench and woodcutting
+block exist as art (`assets/crafting_stations/exports/*.glb`, A-003) and are placed by mapgen as
+world markers, but a player cannot make one. That leaves the crafting loop dependent on whatever the
+generator happened to drop, which is wrong for an endless run where a party wants its own camp.
+
+Fix: author a `BuildableDef` + piece scene for each of the seven, priced in resources on the same
+tier curve the anvil sets (D-200: the anvil costs a Wellglass Shard, which means it costs a
+Wellspring — that price stands and is not to be undercut by a cheaper station that does the same
+work).
+
+---
+
+**Resolved 2026-08-21 by cindere7060a.** All eight crafting stations are buildable and priced. Seven new `BuildableDef`s
+(content/buildables/{workbench,workbench_upgraded,campfire,cooking_spit,furnace,repair_bench,woodcutting_block}.tres)
+with a piece scene each in scenes/buildables/, built on the anvil's pattern: footprint taken from
+`assets/crafting_stations/catalog.json` so the declared box is the measured art, 0.5 m snap, 45°
+rotation, support required, 15° max slope, 0.5 refund.
+
+Costs run on a tier curve under D-200's anvil, which is untouched: workbench 8 log / 2 fibre bundle;
+campfire 10 stone / 5 branch; woodcutting block 6 log / 4 stone / 2 flint; cooking spit 6 log /
+3 fibre bundle / 4 stone; furnace 20 stone / 4 flint / 4 coal; repair bench 8 log / 6 stone /
+3 iron ingot; reinforced workbench 12 log / 4 fibre bundle / 2 iron ingot. Nothing tier-2 is
+affordable before the furnace, and nothing undercuts the anvil.
+
+Five stations had art and a mapgen marker but no `StationDef`, which is what the 2026-08-19 loop
+audit recorded as "scenery": `campfire`, `cooking_spit`, `repair_bench`, `woodcutting_block`,
+`workbench_upgraded` now have one. Registry boots 8 stations, 22 buildables.
+
+**Two things the change turned up that were not the ask.**
+
+The build bar could not hold the set. `ui/building/build_bar.gd` laid 88 px slots in one
+HBoxContainer inside a fixed 76 px CenterContainer band: at 22 pieces that row is 2 032 px wide, and
+the first render put half the bar off the bottom of a 1280x720 screen. It is now an HFlowContainer
+wrapping at a fixed 732 px, and the band is pinned to its bottom edge and sized from the panel's own
+combined minimum height (`_fit_bar_height`, re-run on `minimum_size_changed`) rather than a constant
+— so authoring a 23rd buildable needs no number changed here. Verified by render at 1280x720: five
+wrapped rows, entirely on screen, clear of the hotbar.
+
+`content/guide/place_workbench.tres` said "Get to a workbench", because getting to one was all a
+player could do. It now says "Build a workbench"; the step was always satisfied by
+`station_count(&"workbench")`, which counts a built one.
+
+New check: `tools/station_buildable_check.gd`. It asserts every StationDef has a buildable that costs
+something, and — the assertion that matters — instantiates each piece scene and puts it through
+`CraftingService.station_count()`, because the piece's `metadata/asset` and the StationDef's
+`world_scene` agree only by convention and nothing else in the codebase compares them. A typo there
+builds fine and never opens a panel.
+
+Verified headless: station_buildable (8 stations, 0 failures), buildable_content (22 defs, 22 with
+art, footprints measured), build, construction, crafting, crafting_ui, gamepad, guide,
+poi_required_station (132 seeds) — all zero failures.
+
+Follow-up filed as F-479: five of the newly buildable stations have no recipes yet, so their panel
+opens empty.
 
 ### F-475 · The benchmark reports the 2D content-scale size as its resolution, and cries wolf about focus on a good fullscreen run — **fixed**
 
