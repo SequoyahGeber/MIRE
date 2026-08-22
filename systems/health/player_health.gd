@@ -1396,6 +1396,15 @@ func _tick_blight(peer_id: int, downed_state: DOWNED_STATE, delta: float) -> boo
 	# large resist — §4.4 says *safely*, and six slots committed to one family should buy the
 	# sentence it promised. Below the corruption threshold this function has already returned, so
 	# there is no interaction with that early exit.
+	#
+	# DECIDED, not overlooked: Blood's Greater Resonance ("you take double damage") does NOT apply to
+	# Blight. Blight drains HP through this accumulator rather than through `host_apply_damage()`, so
+	# it never passes `_damage_taken_for()` where that doubling lives. Leaving it that way is the
+	# call: Fungal 6 exists to zero this drain, and having Blood 6 double the same number would make
+	# the two Resonances silently fight over one quantity that neither of their DESIGN.md §4.4
+	# descriptions mentions. Every other incoming-damage path — melee, ranged, enemy attacks and fall
+	# damage, which routes through `host_apply_damage()` precisely so it inherits the general
+	# `damage_taken` handling — does take the doubling.
 	var resonance: Node = get_node_or_null(^"/root/ResonanceService")
 	if resonance != null:
 		drain_per_sec = maxf(float(resonance.call(&"modify_blight_rate", peer_id, drain_per_sec)), 0.0)

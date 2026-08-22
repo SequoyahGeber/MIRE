@@ -3304,6 +3304,58 @@ practice on a populated island, not only in theory.
 
 ---
 
+### F-591 · The scatter/material warm pumps corrupt the heap — a real data race, not a flaky check (supersedes F-495's framing)
+
+**Area:** world · **Severity:** high · **Found:** 2026-08-22 by larchcc2572
+
+**Supersedes the FRAMING of F-495**, which reads as "a check segfaults about one run in six". The
+evidence Sequoyah captured on 2026-08-22 ~18:00 Vancouver time says it is a threading defect that
+corrupts the process heap, and that a player can hit it in a real session.
+
+From his crash report:
+
+    Triggered by Thread 2 :: WorkerThread 0
+    EXC_BREAKPOINT (SIGABRT)
+    BUG IN CLIENT OF LIBMALLOC: memory corruption of free block
+
+with the **main thread simultaneously inside `_realloc`** (frames 11-15) while `WorkerThread 0`
+aborts. That is not a null dereference and it is not the known macOS shutdown crash. It is two
+threads in the allocator at once, and one of them freeing or resizing a block the other still holds.
+
+**Three signatures, one bug.** Today produced all of these against the same code:
+
+  · `signal 11` in `_load_mesh_parts()` -> `_pump_asset_warm()` (F-495's original report)
+  · `signal 5` (SIGTRAP) in ZSTD decompression frames, reproduced here in a clean worktree
+  · `SIGABRT` in libmalloc, from `WorkerThread 0`, in Sequoyah's report
+
+Heap corruption aborts wherever the damaged block is next touched, so the signature varies with
+timing. Treating these as three flaky checks is how this stayed "medium" for as long as it has.
+
+**The two racing sites**, both doing the same thing:
+
+  · `world/gen/resource_scatter_field.gd:574` — `ResourceLoader.load_threaded_request()`, with a
+    `WorkerThreadPool.add_task()` at :669, and a blocking main-thread `load()` in
+    `_load_mesh_parts()` for a path that may still have a threaded request in flight.
+  · `autoload/material_warmer.gd:216` — the same `load_threaded_request()` pattern.
+
+**Why this is not a tools/ problem.** `MaterialWarmer` is an autoload and the scatter warm pump runs
+from `_process()` during ordinary world generation. Both run in a shipped session. A player standing
+in a freshly streamed chunk is running the same race a headless check is; they just get a crashed
+game instead of a red check.
+
+**Not fixed here, deliberately.** Landing F-585 and fixing a threading defect in the same pass is how
+one of them gets done badly. This wants its own claim and its own owner.
+
+**Bookkeeping mismatch worth someone's attention while they are in this file:** F-495's entry sits
+under `## Resolved` in docs/FINDINGS.md, but `agent reopen F-495` refuses with "already todo", so the
+tracker and the document disagree about its status. Whoever takes this should reconcile the two with
+`agent resolve`/`agent reopen` rather than hand-editing the section (F-134).
+
+Credit: diagnosed by the director chat from Sequoyah's crash report; the ZSTD-frame reproduction and
+the F-586 A/B are mine (larchcc2572).
+
+---
+
 ## Resolved
 
 ### F-588 · resource_scatter_check's harvest-yield assertion fails at a clean HEAD — **fixed**
