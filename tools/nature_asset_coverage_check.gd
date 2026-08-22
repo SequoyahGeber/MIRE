@@ -9,6 +9,7 @@ extends SceneTree
 ##  · placed by a `content/scatter/*.tres` table, or
 ##  · a damage/depleted STATE that a `content/harvestables/*.tres` definition swaps in (those are
 ##    never scattered themselves — they appear when the intact prop is worked), or
+##  · assembled into a POI structure by `world/gen/poi_structures.gd` (the ruins, F-493), or
 ##  · placed by a hand-authored layout in `world/gen/layouts/` — which is where the architecture
 ##    inside the `environment` kit lives (ruins, the wood and stone building sets, fences). Those
 ##    are reported separately: they are shipped, but only the authored maps place them, so a
@@ -26,6 +27,7 @@ const NATURE_KITS: PackedStringArray = [
 const EXEMPT: Dictionary = {}
 
 const SCATTER := preload("res://world/gen/resource_scatter.gd")
+const STRUCTURES := preload("res://world/gen/poi_structures.gd")
 const SEEDS: Array[int] = [20260821, 4242]
 const CHUNK_RADIUS: int = 7
 ## How many props a table must have placed in the sample before "this entry never landed" is an
@@ -55,6 +57,7 @@ func _run() -> void:
 
 	var state_art: Dictionary = _states_used_by_definitions()
 	var authored: Dictionary = _assets_named_by_layouts()
+	var structural: Dictionary = _assets_used_by_structures()
 
 	for kit: String in NATURE_KITS:
 		var names: PackedStringArray = _catalog_names(kit)
@@ -62,7 +65,7 @@ func _run() -> void:
 		var authored_only := PackedStringArray()
 		for name: String in names:
 			var asset := StringName(name)
-			if scattered.has(asset) or state_art.has(asset) or EXEMPT.has(name):
+			if scattered.has(asset) or state_art.has(asset) or structural.has(asset) or EXEMPT.has(name):
 				continue
 			if authored.has(asset):
 				authored_only.append(name)
@@ -155,6 +158,18 @@ func _states_used_by_definitions() -> Dictionary:
 			if packed == null:
 				continue
 			used[StringName(packed.resource_path.get_file().get_basename())] = file
+	return used
+
+
+## Every asset a POI structure builds with, sampled across enough site seeds that a piece used only
+## occasionally still shows up (F-493).
+func _assets_used_by_structures() -> Dictionary:
+	var used: Dictionary = {}
+	for structure_id: StringName in STRUCTURES.BUILDERS:
+		var builder: Script = STRUCTURES.BUILDERS[structure_id]
+		for site_seed: int in range(200):
+			for piece: Dictionary in builder.call(&"pieces_for_site", site_seed * 131):
+				used[StringName(String(piece["asset"]))] = structure_id
 	return used
 
 

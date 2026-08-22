@@ -3732,6 +3732,105 @@ short-range throw — a nuisance, not a bow substitute.
 
 ---
 
+### F-493 · Procedural islands have no ruins: the environment kit's ruin walls, columns and arches are only ever placed by the two authored layouts
+
+**Area:** world · **Severity:** medium · **Found:** 2026-08-22 by tine0bda72
+
+`assets/environment` ships ten ruin pieces (`ruin_wall_a-d`, `ruin_column_a-d`, `ruin_arch_a-b`)
+and they appear only in `world/gen/layouts/hollowmere.json` and `playtest_hollow.json`. A procedural
+run — which is what ships — contains no ruin anywhere.
+
+Sequoyah, told that 34 architecture pieces were authored-map-only: "we could have some ruins but we
+dont really need fences, and it would probably be better for me to design structures that can be
+used during map generation."
+
+So: ruins get a procedural home now, built from the pieces that already exist. Fences stay out.
+Purpose-designed structures are his to author later, and this should leave a hook they can use
+rather than hard-coding one ruin.
+
+**Resolved 2026-08-22 by tine0bda72.**
+
+`world/gen/ruin_site.gd` lays out a ruined hall on a 13.4 x 9 m rectangle — the footprint the pieces
+themselves measure — as a pure function of the site seed: three wall bays a side, two per end, an
+arch as the doorway on one end, corner and spine columns, roughly a third of the segments gone, a
+couple of walls lying flat OUTSIDE the line they stood on, one column toppled pointing away from
+the middle. Standing pieces sink 8-30 cm into the turf; a piece on its side is lifted by half its
+own thickness so it rests on the ground rather than through it.
+
+`world/gen/poi_structures.gd` turns that list into nodes with meshes, draw distance and — unlike
+scatter's flora — collision on every piece, because a ruin wall you can walk through is not a wall.
+`PoiDef.structure_id` names the builder, so **a new structure is a script with one static function,
+a line in `BUILDERS`, and a `.tres`** — nobody has to touch `procedural_world.gd` to try one. That
+hook is deliberate: Sequoyah intends to design structures for map generation, and this is what they
+plug into.
+
+`content/poi/ruins.tres` asks for 4 sites an island in grassland, heath and forest, 150 m apart, on
+ground flat enough for a building. Measured: 49-56 structure pieces per island across three seeds.
+
+Fences are deliberately still unplaced, per his call. `tools/nature_asset_coverage_check.gd` now
+counts structure-built assets, so the "authored-layout only" list is down to the wood/stone building
+sets and the fences — which is the list of things worth designing FOR map generation rather than
+scattering.
+
+Verified with `tools/ruin_site_check.gd` (layout, determinism, 40 seeds produce 40 distinct ruins,
+all ten kit pieces reachable, every built piece carries mesh + collision and sits on its surface)
+and looked at in-game with `tools/ruin_look_probe.gd` — `assets/audit/terrain/ruin_site_*.png`.
+
+---
+
+### F-494 · EnemyWorld's navmesh bake segfaults Godot in a worker thread — every headless check that reaches bootstrap crashes
+
+**Area:** content · **Severity:** high · **Found:** 2026-08-22 by dusk544993
+
+**Symptom.** Godot 4.7.1 dies with `handle_crash: Program crashed with signal 11` (SIGSEGV, byte
+write to a null-ish `+0x88`, always on a `WorkerThread`) roughly five seconds into almost any
+headless check that lets `EnemyWorld._physics_process` reach its bootstrap. 22 macOS crash reports
+were generated in a single 40-minute stretch on 2026-08-21, one per check run, across
+`resource_scatter_check.gd`, `enemy_content_check.gd`, `run_restart_check.gd`, `cycle_check.gd` and
+others — enough that the OS crash dialog was popping up on Sequoyah's screen continuously.
+
+**Where.** The last line before the fault is always
+`[info] content: EnemyWorld: navmesh baked N polygons`, printed at the very end of
+`EnemyWorld.bake_navigation()` (`autoload/enemy_world.gd`), which `_physics_process` calls once
+`BOOTSTRAP_DELAY_SEC` has elapsed. The bake itself SUCCEEDS — 18 polygons in the reproduction — and
+the crash lands a few milliseconds later on a NavigationServer worker thread, i.e. during the
+asynchronous map sync that `_region.navigation_mesh = nav_mesh` kicks off, not inside the bake call
+the main thread already returned from.
+
+**Reproduction** (deterministic, every run):
+
+    agent godot --headless --script tools/resource_scatter_check.gd
+
+Every `PASS:` line prints first — the checks themselves are fine and their assertions all hold. The
+process then dies before it can report an exit status, so a green check is indistinguishable from a
+broken one to anything reading the exit code.
+
+**Not symbolicated.** Godot's own crash handler reaches `Dumping the backtrace` and then hangs in
+`fgets` on the helper it shells out to for symbols (visible as `WorkerThread 8` parked in
+`__read_nocancel`/`fgets` in the macOS report), so the engine-side backtrace never prints. The macOS
+`.ips` reports in `~/Library/Logs/DiagnosticReports/Godot-*.ips` carry the real stack, unsymbolicated.
+
+**Two suspicious inputs**, both flagged by the engine on every bake, both ours:
+
+    WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+    WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+
+`bake_navigation()` sets `cell_size = NAV_CELL_SIZE_M` (0.25) but never sets `cell_height`, so the
+default 0.25 quantises `agent_height` 0.7 -> 0.75 and `agent_max_climb` 0.6 -> 0.5. Whether the
+quantisation is the trigger or merely adjacent is untested; it is the first thing to try, because it
+is the only part of this the repo controls.
+
+**Why it matters beyond the noise.** Every headless verification the protocol depends on is running
+against an engine that dies before exit. `agent godot` cannot report a real exit status for those
+checks, which means "my check passed" is currently being read off printed PASS lines by hand, and a
+check that fails AFTER bootstrap looks identical to one that crashed.
+
+**Not caused by concurrency.** `agent godot` serialises correctly — sampling the process table for
+60s showed exactly one Godot binary alive at a time with peer sessions' wrappers queued behind the
+lock, so F-044's shared-import-cache race is not this.
+
+---
+
 ## Resolved
 ### F-486 · Pine and willow read wrong against their real subjects; birch is the standard both should meet — **fixed**
 

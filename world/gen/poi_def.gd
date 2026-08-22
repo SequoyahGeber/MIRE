@@ -24,6 +24,16 @@ extends Resource
 ## site either way; only the instancing caller cares.
 @export_file("*.tscn", "*.glb") var scene_path: String = ""
 
+## A STRUCTURE laid out by code from this site's own seed, instead of (or as well as) a packed
+## scene — see `world/gen/poi_structures.gd` for the list and how to add one. `&"ruins"` builds a
+## ruined hall out of the `environment` kit's wall, column and arch pieces.
+##
+## The distinction that matters (F-493): `scene_path` is one authored arrangement, so every island
+## gets the identical building; a structure is a FUNCTION of the seed, so every island gets its own.
+## For anything a player walks up to twice in a run — a ruin, a camp, a shrine — that difference is
+## the whole reason to reach for this instead.
+@export var structure_id: StringName = &""
+
 ## What this site IS to the world services (task 4.15, D-143): the `kind` meta the composer stamps
 ## on the site's `authored_world_marker`. The vocabulary is the services' own — `objective`
 ## (WellspringService), `shipwreck` (ExtractionService), `enemy_nest` (EnemyWorld), plus the chest

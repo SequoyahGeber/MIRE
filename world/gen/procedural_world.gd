@@ -23,6 +23,7 @@ extends Node3D
 const IslandHeightmapScript := preload("res://world/gen/island_heightmap.gd")
 const BiomeMapScript := preload("res://world/gen/biome_map.gd")
 const PoiMapScript := preload("res://world/gen/poi_map.gd")
+const PoiStructuresScript := preload("res://world/gen/poi_structures.gd")
 const ChunkStreamerScript := preload("res://world/chunk/chunk_streamer.gd")
 const ChunkMesherScript := preload("res://world/chunk/chunk_mesher.gd")
 const NavBakerScript := preload("res://world/chunk/nav_baker.gd")
@@ -92,6 +93,10 @@ var poi_sites: Array[Dictionary] = []
 var spawn_position: Vector3 = Vector3.ZERO
 
 var _markers_built: int = 0
+## F-493. Structure pieces instanced across every POI site this build — ruin walls and columns
+## today. Reported in the build log so a seed that produced no building is visible without a
+## screenshot.
+var _structure_pieces: int = 0
 var _scenes_instanced: int = 0
 var _void_accum: float = 0.0
 ## How many times this world has pulled a body back out from under itself. Read by the check; a
@@ -143,8 +148,8 @@ func _ready() -> void:
 
 	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
 
-	MireLog.info(&"world", "ProceduralWorld: seed %d — %d POI site(s), %d marker(s), spawn %s" % [
-		world_seed, poi_sites.size(), _markers_built, spawn_position])
+	MireLog.info(&"world", "ProceduralWorld: seed %d — %d POI site(s), %d marker(s), %d structure piece(s), spawn %s" % [
+		world_seed, poi_sites.size(), _markers_built, _structure_pieces, spawn_position])
 
 
 func _exit_tree() -> void:
@@ -189,6 +194,7 @@ func rebuild_for_seed(seed_value: int) -> void:
 	world_seed = seed_value
 	_teardown_derived()
 	_markers_built = 0
+	_structure_pieces = 0
 	_scenes_instanced = 0
 	poi_sites.clear()
 
@@ -209,8 +215,8 @@ func rebuild_for_seed(seed_value: int) -> void:
 	# every scene-keyed consumer already watches, and "rebuilt in place" is the fact this announces.
 	EVENT_BUS.emit_world_rebuilt()
 
-	MireLog.info(&"world", "ProceduralWorld: rebuilt on seed %d — %d POI site(s), %d marker(s), spawn %s" % [
-		world_seed, poi_sites.size(), _markers_built, spawn_position])
+	MireLog.info(&"world", "ProceduralWorld: rebuilt on seed %d — %d POI site(s), %d marker(s), %d structure piece(s), spawn %s" % [
+		world_seed, poi_sites.size(), _markers_built, _structure_pieces, spawn_position])
 
 
 ## Frees every node this file derived from the previous seed, and nothing else. Named children, not
@@ -397,6 +403,16 @@ func _build_poi_sites() -> void:
 			if packed is PackedScene:
 				site_root.add_child((packed as PackedScene).instantiate())
 				_scenes_instanced += 1
+
+		# F-493: a site whose content names a structure gets one built out of kit pieces, laid out
+		# from the site's own seed. `site_id` is the seed: it is already unique per site and already
+		# derived from the world seed, so two peers on the same seed build the identical ruin and
+		# two ruins on one island are not twins.
+		var structure_id: StringName = &"" if def == null else StringName(String(def.get(&"structure_id")))
+		if PoiStructuresScript.has_structure(structure_id):
+			_structure_pieces += PoiStructuresScript.build(
+				site_root, structure_id, hash(String(site.get("site_id", ""))), height_at
+			)
 
 		# The marker IS the contract. Kind comes from content; an empty kind is scenery and gets
 		# no marker — same as an authored map simply not placing one.

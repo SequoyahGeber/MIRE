@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="PoiDef" format=3]
+
+[ext_resource type="Script" path="res://world/gen/poi_def.gd" id="1_ruins"]
+
+[resource]
+script = ExtResource("1_ruins")
+id = &"ruins"
+display_name = "Ruins"
+scene_path = ""
+structure_id = &"ruins"
+marker_kind = &""
+placement_priority = 60
+target_count = 4
+min_spacing_m = 150.0
+clearance_m = 26.0
+biomes = Array[StringName]([&"grassland", &"heath", &"forest"])
+height_min = 3.0
+height_max = 70.0
+radius_min_fraction = 0.1
+radius_max_fraction = 0.9
+max_slope_m = 2.2
+flatness_probe_m = 7.0
