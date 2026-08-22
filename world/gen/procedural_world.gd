@@ -136,6 +136,7 @@ func _ready() -> void:
 	_build_river_water()
 	_build_poi_sites()
 	spawn_position = _pick_spawn()
+	scatter_field.set(&"spawn_clear_center", spawn_position)
 	_publish_spawn_marker()
 	# BEFORE the player, and unconditionally (F-324). Unconditional because the spawn point is a
 	# published contract, not a private argument to `_build_player()`: offline this file stands a
@@ -205,6 +206,7 @@ func rebuild_for_seed(seed_value: int) -> void:
 	_build_river_water()
 	_build_poi_sites()
 	spawn_position = _pick_spawn()
+	scatter_field.set(&"spawn_clear_center", spawn_position)
 	_publish_spawn_marker()
 	_prime_ground_at(spawn_position)
 	_replace_players()

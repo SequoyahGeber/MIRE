@@ -7,7 +7,7 @@
 script = ExtResource("1_entry")
 asset = &"tree_willow_a"
 kit = "flora"
-weight = 0.25
+weight = 0.05
 min_scale = 0.8
 max_scale = 1.05
 
@@ -15,7 +15,7 @@ max_scale = 1.05
 script = ExtResource("1_entry")
 asset = &"tree_willow_b"
 kit = "flora"
-weight = 0.25
+weight = 0.05
 min_scale = 0.8
 max_scale = 1.05
 
@@ -23,7 +23,7 @@ max_scale = 1.05
 script = ExtResource("1_entry")
 asset = &"tree_willow_c"
 kit = "flora"
-weight = 0.25
+weight = 0.05
 min_scale = 0.8
 max_scale = 1.05
 
@@ -95,9 +95,9 @@ max_scale = 1.2
 script = ExtResource("2_def")
 id = &"forest_canopy"
 biome_id = &"forest"
-cell_size_m = 7.5
+cell_size_m = 9.0
 jitter_fraction = 0.72
-coverage = 0.46
+coverage = 0.34
 min_height = 0.8
 max_height = 1000
 entries = Array[ExtResource("1_entry")]([SubResource("Resource_00_tree_willow_a"), SubResource("Resource_01_tree_willow_b"), SubResource("Resource_02_tree_willow_c"), SubResource("Resource_03_mire_broadleaf_tree"), SubResource("Resource_04_tree_pine_a"), SubResource("Resource_05_tree_pine_b"), SubResource("Resource_06_tree_pine_c"), SubResource("Resource_07_tree_birch_d"), SubResource("Resource_08_tree_snag_a"), SubResource("Resource_90_apple_tree_full"), SubResource("Resource_98_resin_node")])

@@ -9454,3 +9454,18 @@ The enemy ladder: five authored enemies, one per escalation step. Peatling (slim
 Files: `docs/ENEMIES.md`, `tools/blender/build_enemy_peatling.py`, `assets/enemies/catalog.json`, `world/mire/mire_grid.gd`, `world/mire/mire_grid_sim.gd`, `systems/enemies/enemy_def.gd`, `systems/enemies/enemy.gd`, `systems/waves/wave_spawner.gd`, `content/enemies/peatling.tres`, `assets/enemies/README.md`, `tools/wave_director_check.gd`, `tools/enemy_peatling_check.gd`, `tools/blender/build_enemy_fen_stalker.py`, `content/enemies/fen_stalker.tres`, `tools/enemy_fen_stalker_check.gd`, `tools/blender/build_enemy_bog_bulwark.py`, `content/enemies/bog_bulwark.tres`, `tools/enemy_bog_bulwark_check.gd`, `tools/blender/build_enemy_crawler.py`, `tools/blender/build_enemy_bloatcap.py`, `content/enemies/bloatcap.tres`, `tools/enemy_bloatcap_check.gd`, `tools/blender/build_enemy_mire_herald.py`, `content/enemies/mire_herald.tres`, `tools/enemy_mire_herald_check.gd`
 
 Commit at time of writing: `2f659a4f`
+
+---
+
+### DONE · F-508 · birchf37d06 · 2026-08-22T03:26:34+00:00
+
+**Playtest Hollow presentation is visually noisy and obscures traversal**
+
+Second visual pass: deterministic 10 m spawn clearing on every peer, rarer willows and broken-tree silhouettes, wider canopy spacing, and shorter/sparser reeds and turf. resource_scatter_check failures=0; Forward+ spawn/orbit/shore captures written and inspected.
+
+Notes along the way:
+- Second-pass decision: scatter density was not the root fix. Every peer now applies the same deterministic 10 m scatter exclusion around the procedural spawn; stronger canopy/ground-cover hierarchy remains on top.
+
+Files: `content/scatter/forest_canopy.tres`, `content/scatter/marsh_canopy.tres`, `content/scatter/marsh_reeds.tres`, `content/scatter/grassland_turf.tres`, `world/gen/resource_scatter_field.gd`, `world/gen/procedural_world.gd`, `assets/audit/terrain/island_spawn_view.png`, `assets/audit/terrain/island_orbit.png`, `assets/audit/terrain/island_shore_look.png`
+
+Commit at time of writing: `968f329a`

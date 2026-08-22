@@ -114,35 +114,11 @@
       "task": "F-482",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "content/scatter/forest_canopy.tres": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:23:24+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
-    },
-    "content/scatter/grassland_turf.tres": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:23:24+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
-    },
     "content/scatter/highland_rocks.tres": {
       "agent": "birche6b40e",
       "at": "2026-08-22T00:06:31+00:00",
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
-    },
-    "content/scatter/marsh_canopy.tres": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:23:24+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
-    },
-    "content/scatter/marsh_reeds.tres": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:23:24+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
     "docs/ASSET_TRACKER.md": {
       "agent": "gale43d16e",
@@ -192,17 +168,17 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
-    "world/gen/procedural_world.gd": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:24:48+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    "world/mire/mire_grid.gd": {
+      "agent": "vane99f1bb",
+      "at": "2026-08-22T03:24:51+00:00",
+      "task": "F-363",
+      "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     },
-    "world/gen/resource_scatter_field.gd": {
-      "agent": "birchf37d06",
-      "at": "2026-08-22T03:24:48+00:00",
-      "task": "F-508",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
+    "world/mire/mire_grid_sim.gd": {
+      "agent": "vane99f1bb",
+      "at": "2026-08-22T03:24:51+00:00",
+      "task": "F-363",
+      "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
   "in_flight": {
@@ -223,6 +199,16 @@
       "notes": [],
       "started": "2026-08-21T17:13:34+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
+    },
+    "F-363": {
+      "agent": "vane99f1bb",
+      "files": [
+        "world/mire/mire_grid.gd",
+        "world/mire/mire_grid_sim.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-22T03:24:51+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     },
     "F-469": {
       "agent": "coil26502f",
@@ -272,20 +258,6 @@
       "notes": [],
       "started": "2026-08-22T00:29:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
-    },
-    "F-508": {
-      "agent": "birchf37d06",
-      "files": [
-        "content/scatter/forest_canopy.tres",
-        "content/scatter/marsh_canopy.tres",
-        "content/scatter/marsh_reeds.tres",
-        "content/scatter/grassland_turf.tres",
-        "world/gen/resource_scatter_field.gd",
-        "world/gen/procedural_world.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-22T03:23:24+00:00",
-      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     }
   },
   "recent": {
@@ -998,8 +970,8 @@
     },
     "assets/audit/terrain/island_orbit.png": {
       "agent": "birchf37d06",
-      "at": "2026-08-22T03:21:11+00:00",
-      "hash": "115dc74ca320222da1671e6871f586728e532a4d0e28f88e0dd6ced814e8bfc2",
+      "at": "2026-08-22T03:26:34+00:00",
+      "hash": "e14d9c059abfaa3b6b563dc71c8b3cc98dc936ae12ed9ab43478833857a97c48",
       "task": "F-508",
       "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
@@ -1012,15 +984,15 @@
     },
     "assets/audit/terrain/island_shore_look.png": {
       "agent": "birchf37d06",
-      "at": "2026-08-22T03:21:11+00:00",
-      "hash": "a42c324cda0077de1d2fca465649a6cf91f7563449ca01a5d582144056ca405d",
+      "at": "2026-08-22T03:26:34+00:00",
+      "hash": "f99a74f1e1f930fcc0183c639e11de028b6a444b1301416309c566b19dbfb6ba",
       "task": "F-508",
       "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
     "assets/audit/terrain/island_spawn_view.png": {
       "agent": "birchf37d06",
-      "at": "2026-08-22T03:21:11+00:00",
-      "hash": "9ca6af55e11cdc933d18c02ea285f69ba643d630e8da17a9740ebbc0b8027e9f",
+      "at": "2026-08-22T03:26:34+00:00",
+      "hash": "39aff0a0fe372a2b70818eb7405b5ca9b5c7f9539d98da847fa8f6d9a8cf7a5b",
       "task": "F-508",
       "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
@@ -3210,8 +3182,8 @@
     },
     "content/scatter/forest_canopy.tres": {
       "agent": "birchf37d06",
-      "at": "2026-08-22T03:21:11+00:00",
-      "hash": "7737660694362ce4bdb42bb42a550ccc1fbeeb8484c2c7c51694e092f2ac58e7",
+      "at": "2026-08-22T03:26:34+00:00",
+      "hash": "cac87c6fb9163ffd575e8d71c433502bcbf42fc0f444cb0afd6d6f1fd65eb4a0",
       "task": "F-508",
       "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
@@ -3280,8 +3252,8 @@
     },
     "content/scatter/grassland_turf.tres": {
       "agent": "birchf37d06",
-      "at": "2026-08-22T03:21:11+00:00",
-      "hash": "a69d10398e5d60ad2f3801bfe1c9ed7972bde730e68e04a47e42fba3e7637276",
+      "at": "2026-08-22T03:26:34+00:00",
+      "hash": "6efa5ab12b2117c645a716827efb2389c8dfbeaf70102652bcd1a5972f18578f",
       "task": "F-508",
       "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
@@ -3357,8 +3329,8 @@
     },
     "content/scatter/marsh_canopy.tres": {
       "agent": "birchf37d06",
-      "at": "2026-08-22T03:21:11+00:00",
-      "hash": "e06fe6a01108a0071f9e07ccfe1bcd4ffacc54f58dda57b2717a0415c794779b",
+      "at": "2026-08-22T03:26:34+00:00",
+      "hash": "00fc2ac350fea68db539b3fda0989111db055dc346067b7c714616ab7e5d9825",
       "task": "F-508",
       "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
@@ -3378,8 +3350,8 @@
     },
     "content/scatter/marsh_reeds.tres": {
       "agent": "birchf37d06",
-      "at": "2026-08-22T03:21:11+00:00",
-      "hash": "0a5ab97b1c9deb8390acab15705685156d2df24d52d834f3a52e4fc4cd77903b",
+      "at": "2026-08-22T03:26:34+00:00",
+      "hash": "a730a2060ed96bfc4264b7b2f6ccbda9ac3490578b4768549cbcc9e0e0fde52e",
       "task": "F-508",
       "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
@@ -5113,11 +5085,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:ebbc2e14-dd26-4f81-97f6-44b9199c6555"
     },
     "world/gen/procedural_world.gd": {
-      "agent": "nettlee11674",
-      "at": "2026-08-22T03:04:15+00:00",
-      "hash": "57a3b3c4c46a29eda16ebd4e0b491e3a81268bcad2ad3922febf831552bd955c",
-      "task": "F-507",
-      "token": "CODEX_SESSION_ID:01a02768-cbb6-7920-9096-4e48e878c5ec"
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:26:34+00:00",
+      "hash": "cac309ac960024c9e2707fafe0550da2f3c7df6babfddd412a04a103e59ca3c9",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
     "world/gen/prop_collider.gd": {
       "agent": "kiln384569",
@@ -5134,11 +5106,11 @@
       "token": "CODEX_SESSION_ID:01a0276b-4bee-7931-9a83-6fd6ab5c5c86"
     },
     "world/gen/resource_scatter_field.gd": {
-      "agent": "vane99f1bb",
-      "at": "2026-08-22T01:50:20+00:00",
-      "hash": "e6e25f418683f97d95ad832a7a99f1d18b1c72ed65fe66673ede22d7719da833",
-      "task": "F-496",
-      "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
+      "agent": "birchf37d06",
+      "at": "2026-08-22T03:26:34+00:00",
+      "hash": "448abbc31b94037fbcd4cba9b6d304e42091d2a543484c5d450bf8b4750fb245",
+      "task": "F-508",
+      "token": "CODEX_SESSION_ID:01a02769-ccfc-7f62-8495-5f4bf3ac45c8"
     },
     "world/gen/ruin_site.gd": {
       "agent": "tine0bda72",
@@ -5183,7 +5155,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:3e4b25c9-1828-42db-b5e9-84d7dd38e4d2"
     }
   },
-  "rev": 1327,
+  "rev": 1334,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -9905,7 +9877,7 @@
     "F-363": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "The Mire tick still costs most of a frame at saturation, on the host main thread"
     },
@@ -11015,9 +10987,11 @@
       "title": "Procedural ocean plane ends inside the playable view, leaving half the ocean missing"
     },
     "F-508": {
+      "done_at": "2026-08-22T03:26:34+00:00",
+      "done_by": "birchf37d06",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Playtest Hollow presentation is visually noisy and obscures traversal"
     },

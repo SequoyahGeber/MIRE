@@ -224,6 +224,11 @@ const COLLIDER_MIN_HEIGHT_M: float = PROP_COLLIDER.COLLIDER_MIN_HEIGHT_M
 const FOLIAGE_MATERIAL_PREFIXES: PackedStringArray = PROP_COLLIDER.FOLIAGE_MATERIAL_PREFIXES
 
 @export var world_seed: int = 0
+## Keep the run's arrival point readable and traversable. The procedural world assigns this after
+## choosing its deterministic spawn and before streaming begins, so every peer rejects the same
+## placements without adding network state.
+var spawn_clear_center: Vector3 = Vector3.ZERO
+var spawn_clear_radius_m: float = 10.0
 ## `Registry.scatter_tables.values()`, assigned by whoever builds this field.
 var scatter_defs: Array = []
 ## `Registry.biomes.values()`, same convention `BiomeMap.biome_at()` callers already follow.
@@ -293,6 +298,8 @@ class PlacementJob extends RefCounted:
 	## them (`placements_for_chunk()` duplicates before sorting, `make_terrain_table()` before its own).
 	var scatter_defs: Array = []
 	var biome_defs: Array = []
+	var spawn_clear_center: Vector3 = Vector3.ZERO
+	var spawn_clear_radius_m: float = 0.0
 	var task_id: int = -1
 	var finished: bool = false
 	## Set when the main thread has already dressed this chunk synchronously while the job ran.
@@ -305,12 +312,19 @@ class PlacementJob extends RefCounted:
 
 	func run() -> void:
 		grouped = PlacementJob.group(ResourceScatterLib.placements_for_chunk(
-			coord.x, coord.y, world_seed, scatter_defs, biome_defs))
+			coord.x, coord.y, world_seed, scatter_defs, biome_defs),
+			spawn_clear_center, spawn_clear_radius_m)
 
 	## Shared with `_build_chunk()`'s synchronous path so both produce the identical grouping.
-	static func group(placements: Array) -> Dictionary:
+	static func group(
+		placements: Array, clear_center: Vector3 = Vector3.ZERO, clear_radius_m: float = 0.0
+	) -> Dictionary:
 		var by_asset: Dictionary = {}
 		for placement: Dictionary in placements:
+			var position: Vector3 = placement["position"]
+			if clear_radius_m > 0.0 and Vector2(position.x - clear_center.x,
+				position.z - clear_center.z).length_squared() < clear_radius_m * clear_radius_m:
+				continue
 			var key := "%s|%s" % [String(placement["kit"]), String(placement["asset"])]
 			(by_asset.get_or_add(key, [] as Array) as Array).append(placement)
 		return by_asset
@@ -631,7 +645,8 @@ func _build_chunk(coord: Vector2i, with_proxies: bool, immediate: bool = false) 
 		if _placement_jobs.has(coord):
 			_placement_jobs[coord].superseded = true
 		var grouped: Dictionary = PlacementJob.group(ResourceScatterLib.placements_for_chunk(
-			coord.x, coord.y, world_seed, scatter_defs, biome_defs))
+			coord.x, coord.y, world_seed, scatter_defs, biome_defs),
+			spawn_clear_center, spawn_clear_radius_m)
 		_chunk_placements[coord] = grouped
 		for key: String in grouped:
 			var parts := key.split("|")
@@ -649,6 +664,8 @@ func _build_chunk(coord: Vector2i, with_proxies: bool, immediate: bool = false) 
 	job.world_seed = world_seed
 	job.scatter_defs = scatter_defs
 	job.biome_defs = biome_defs
+	job.spawn_clear_center = spawn_clear_center
+	job.spawn_clear_radius_m = spawn_clear_radius_m
 	job.task_id = WorkerThreadPool.add_task(job.run)
 	_placement_jobs[coord] = job
 
