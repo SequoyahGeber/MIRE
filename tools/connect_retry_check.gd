@@ -11,7 +11,7 @@ extends SceneTree
 ## fails on anything else:
 ##   grep 'ERROR:' | grep -vE 'connect to .* timed out|is outside 1024..65535' | wc -l   → must be 0
 ##
-## Exits non-zero on failure. Takes about 15 seconds — most of it one real 3 s LOCAL timeout, which is
+## Exits non-zero on failure. Takes about 30 seconds — most of it one real 3 s LOCAL timeout, which is
 ## the point: the classification it checks is produced by the watchdog actually firing, not asserted.
 ##
 ## WHAT THIS PROVES, AND WHAT IT CANNOT. F-023 happens on Windows, over Steam, against a live lobby.
@@ -21,7 +21,8 @@ extends SceneTree
 ##   proved here   the per-mode budget table · that an expired deadline is classified CONNECT_TIMEOUT
 ##                 and not CONNECT_FAILED · that a synchronous failure does not inherit the previous
 ##                 attempt's ending · that a successful connect records its own duration · that
-##                 NetSession declines to retry a mode whose retry it does not own
+##                 NetSession retries a timed-out LAN first join and still declines LOCAL, whose
+##                 retry is DevLaunch's (F-024)
 ##
 ##   NOT proved    that the Steam retry recovers a real rendezvous, or that 20 s is the right budget.
 ##                 Both need task 1.12's physical run. The "connected … in N.NNs" line this adds to
@@ -36,6 +37,9 @@ const DEAD_PORT: int = 47422
 
 ## Well under ENet's own connect timeout, so the deadline that expires is unambiguously ours.
 const TIMEOUT_WAIT_SEC: float = 6.0
+
+## LAN keeps ENet's 10 s budget, so its deadline needs more room than LOCAL's 3 s one.
+const LAN_TIMEOUT_WAIT_SEC: float = 14.0
 
 const CHILD_UP_TIMEOUT_SEC: float = 20.0
 const CONNECT_WAIT_SEC: float = 10.0
@@ -121,6 +125,7 @@ func _run_driver() -> void:
 	await _check_successful_connect_is_measured()
 	await _check_timeout_is_classified_and_not_retried()
 	await _check_synchronous_failure_does_not_inherit_a_timeout()
+	await _check_lan_first_join_is_retried()
 
 	if _host_pid != 0:
 		OS.kill(_host_pid)
@@ -202,12 +207,13 @@ func _check_timeout_is_classified_and_not_retried() -> void:
 		_failure_reasons[0] if _failure_reasons.size() >= 1 else "nothing emitted")
 	_check("a timeout does not fabricate a measurement", int(_transport.last_connect_msec()) == -1)
 
-	# NetSession retries STEAM only, because only a timed-out STEAM attempt is still holding the lobby
-	# membership its retry depends on. LOCAL and LAN first joins belong to DevLaunch — see F-024.
+	# LOCAL is the one mode NetSession still declines: it is reachable only from DevLaunch, whose own
+	# cold-start loop serves it better, and two loops would double every attempt (F-024). Section 5
+	# proves the other side of that split.
 	await process_frame
 	await process_frame
 	_check("NetSession did not retry a LOCAL first join", not bool(_session.is_connect_retrying()),
-		"LOCAL/LAN retry is DevLaunch's, and two loops would double every attempt")
+		"LOCAL's retry is DevLaunch's, and two loops would double every attempt")
 	_check("the retry policy is on by default", bool(_session.auto_connect_retry))
 
 
@@ -230,6 +236,33 @@ func _check_synchronous_failure_does_not_inherit_a_timeout() -> void:
 	await process_frame
 	await process_frame
 	_check("so nothing retried it", not bool(_session.is_connect_retrying()))
+
+
+## Section 5 (F-024). The retry gate is per-mode, and the split is load-bearing in both directions:
+## LAN has a shipped entry point coming and must recover, LOCAL is reachable only from DevLaunch and
+## must NOT, or the two loops double every attempt. Section 3 already proved the LOCAL half; this is
+## the other one, against a real expired LAN deadline.
+func _check_lan_first_join_is_retried() -> void:
+	print("\n-- a LAN first join that times out IS retried --")
+	# TEST-NET-1 (RFC 5737). Guaranteed unroutable, so the attempt runs to our own deadline rather
+	# than being refused — the same shape as a host that has not finished coming up.
+	_transport.join(NetConfig.Mode.LAN, "192.0.2.1", HOST_PORT)
+	var resolved: bool = await _until(
+		func() -> bool: return not bool(_transport.is_connecting()), LAN_TIMEOUT_WAIT_SEC
+	)
+	_check("the LAN attempt resolved", resolved)
+	_check("classified CONNECT_TIMEOUT", int(_transport.last_end_kind()) == _kind(&"CONNECT_TIMEOUT"),
+		"end kind %d" % int(_transport.last_end_kind()))
+
+	await process_frame
+	await process_frame
+	_check("NetSession retried it", bool(_session.is_connect_retrying()),
+		"before F-024 only DevLaunch did, and DevLaunch is debug-only")
+
+	# Stop the loop rather than sitting through two more 10 s LAN deadlines.
+	_session.auto_connect_retry = false
+	_transport.leave()
+	await process_frame
 
 
 # ── Plumbing ──────────────────────────────────────────────────────────────────────────────────────

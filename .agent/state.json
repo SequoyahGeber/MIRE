@@ -198,6 +198,12 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:87b6e317-a7ae-4dea-92d1-2b5f6e69185f"
     },
+    "entities/player/player_controller.gd": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:35:28+00:00",
+      "task": "F-542",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
+    },
     "systems/loot/chest.gd": {
       "agent": "nettled7199c",
       "at": "2026-08-22T05:26:31+00:00",
@@ -281,6 +287,12 @@
       "at": "2026-08-22T05:31:41+00:00",
       "task": "F-516",
       "token": "CLAUDE_CODE_SESSION_ID:9adb259e-f3f5-4a07-97a7-36e222eeecbb"
+    },
+    "tools/remote_held_item_check.gd": {
+      "agent": "ivyf16b98",
+      "at": "2026-08-22T05:35:28+00:00",
+      "task": "F-542",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     },
     "tools/terminal_focus_check.gd": {
       "agent": "onyxbe8065",
@@ -392,6 +404,22 @@
       "notes": [],
       "started": "2026-08-22T05:26:31+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:0b600d22-61fc-456a-82a5-1aa2ca54f9e0"
+    },
+    "F-542": {
+      "agent": "ivyf16b98",
+      "files": [
+        "entities/player/player_controller.gd",
+        "tools/remote_held_item_check.gd"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-22T05:35:28+00:00",
+          "by": "ivyf16b98",
+          "text": "Authority: the owning client publishes only its selected hotbar item id through the existing Player MultiplayerSynchronizer; every peer instantiates that ItemDef.world_model on the remote body. Inventory contents remain host-authoritative and are not exposed through this presentation flag."
+        }
+      ],
+      "started": "2026-08-22T05:35:28+00:00",
+      "token": "CODEX_SESSION_ID:01a027d6-3a11-7aa3-81e1-d8eb390260c1"
     }
   },
   "recent": {
@@ -3083,6 +3111,13 @@
       "task": "F-462",
       "token": "CLAUDE_CODE_SESSION_ID:69349eca-dbe0-4f38-acb5-4963099820ae"
     },
+    "core/dev/dev_launch.gd": {
+      "agent": "cinder9818da",
+      "at": "2026-08-22T05:37:24+00:00",
+      "hash": "f840f5bf7e743f1465e18045e86dee4a120241b058118ac7335118f95ae97f96",
+      "task": "F-024",
+      "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
+    },
     "core/dev/dev_loadout.gd": {
       "agent": "ivyf16b98",
       "at": "2026-08-22T05:25:50+00:00",
@@ -3099,9 +3134,9 @@
     },
     "core/net/net_session.gd": {
       "agent": "cinder9818da",
-      "at": "2026-08-22T05:33:45+00:00",
-      "hash": "b3e3c41c282722a4fda9f18793f4017b6da6753a1fbbeed58cd49e56211370d4",
-      "task": "F-020",
+      "at": "2026-08-22T05:37:24+00:00",
+      "hash": "f89f513260d01f14e46471439644f3e0d9076a967e101059384ba4ca1c3fb372",
+      "task": "F-024",
       "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
     },
     "core/net/net_version.gd": {
@@ -3817,6 +3852,13 @@
       "hash": "29e5a53fd6d27cf683764a4e3bbd3ae66d457f6ceeebf55f7d02002238606c9b",
       "task": "F-534",
       "token": "CLAUDE_CODE_SESSION_ID:c6081344-5cdb-423d-8314-804698ccf35c"
+    },
+    "tools/connect_retry_check.gd": {
+      "agent": "cinder9818da",
+      "at": "2026-08-22T05:37:24+00:00",
+      "hash": "d614f36c64797947dcd4b9be9ac251eab0d62ef1ca9f235cabffe068b8f0521e",
+      "task": "F-024",
+      "token": "CLAUDE_CODE_SESSION_ID:bb874091-6dbc-45c4-9fbb-69bb784b5ff0"
     },
     "tools/construction_check.gd": {
       "agent": "coil26502f",
@@ -4848,7 +4890,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1505,
+  "rev": 1514,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -6543,9 +6585,11 @@
       "title": "Windows Steam first join intermittently exceeds the hard 10-second connection timeout"
     },
     "F-024": {
+      "done_at": "2026-08-22T05:37:24+00:00",
+      "done_by": "cinder9818da",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "A shipped LAN first join has no retry \u2014 only the debug launcher does"
     },
@@ -10972,6 +11016,13 @@
       "status": "in_flight",
       "tier": "F",
       "title": "Chest tiers: only three loot tiers are actually placeable and only three chest silhouettes exist"
+    },
+    "F-542": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Remote players do not visibly display the item they are holding"
     }
   },
   "version": 1

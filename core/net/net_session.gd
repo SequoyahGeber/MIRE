@@ -541,16 +541,26 @@ func _should_retry_connect() -> bool:
 	if NetTransport.last_end_kind() != NetTransport.EndKind.CONNECT_TIMEOUT:
 		return false
 
-	# STEAM only, and for a specific reason rather than caution. A timed-out attempt tears down
-	# WITHOUT announcing, so SteamLobby never sees `disconnected`, never calls _leave_lobby(), and we
-	# are still a member of the lobby — which is the one precondition connect_to_lobby() has. That is
-	# what makes the retry a plain NetTransport.join() and NOT the rejoin-after-drop case, where the
+	# STEAM and LAN, and LOCAL deliberately not (F-024).
+	#
+	# On STEAM the retry rests on a Steam-specific invariant: a timed-out attempt tears down WITHOUT
+	# announcing, so SteamLobby never sees `disconnected`, never calls _leave_lobby(), and we are
+	# still a member of the lobby — which is the one precondition connect_to_lobby() has. That is what
+	# makes the retry a plain NetTransport.join() and NOT the rejoin-after-drop case, where the
 	# session WAS announced, the lobby WAS left, and getting back in means re-entering the lobby
 	# first — that is what _rejoin_steam_lobby() does (F-020).
 	#
-	# LOCAL and LAN first joins are retried by DevLaunch instead, which is debug-only — see F-024 for
-	# the gap that leaves in a shipped LAN join, which M6's join screen has to close.
-	if NetTransport.last_target_mode() != NetConfig.Mode.STEAM:
+	# LAN needs no invariant at all: an address and a port do not expire, so asking again is simply
+	# asking again. It is here because M6's join screen is a SHIPPED entry point, and without this a
+	# player typing an address at a host that is still coming up gets one attempt and a dead end
+	# while the same failure over Steam quietly recovers.
+	#
+	# LOCAL stays DevLaunch's. It has no shipped entry point — loopback is reachable only from the
+	# two-window dev launcher — and that launcher's cold start is a client racing its own host, which
+	# its six short attempts serve better than two long ones. DevLaunch defers to us on LAN and STEAM
+	# instead, so no mode ever runs both loops.
+	var mode: NetConfig.Mode = NetTransport.last_target_mode()
+	if mode != NetConfig.Mode.STEAM and mode != NetConfig.Mode.LAN:
 		return false
 	return NetTransport.has_rejoin_target()
 
@@ -591,7 +601,11 @@ func _run_connect_retry() -> void:
 	# Hand the lobby back before giving up. We stayed a member on purpose so the retries could use it,
 	# but a member with no session is a trap: SteamLobby.join_by_id() refuses while _state is IN_LOBBY,
 	# so leaving it held would make the player's own manual retry fail with "already in a lobby".
-	_leave_steam_lobby()
+	#
+	# STEAM only — there is no membership behind a LAN join, and SteamLobby.leave() also calls
+	# NetTransport.leave(), which a LAN give-up has no business doing.
+	if NetTransport.last_target_mode() == NetConfig.Mode.STEAM:
+		_leave_steam_lobby()
 	connect_failed.emit(detail)
 
 

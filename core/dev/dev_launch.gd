@@ -253,12 +253,14 @@ func _on_connected_to_host() -> void:
 
 
 func _on_connection_failed(reason: String) -> void:
-	# A Steam client's retry belongs to NetSession (F-023), not here: it is the half that knows a
-	# timed-out attempt left us still holding lobby membership, so it can simply join() again. A
-	# second loop here would double every attempt — which is why STEAM is excluded from _retry_join.
+	# A timed-out STEAM or LAN client join belongs to NetSession, not here (F-023, F-024). Those are
+	# the two modes that have — or will have — a shipped entry point, so the retry has to live in the
+	# game rather than in a debug launcher, and a second loop here would double every attempt.
+	# LOCAL stays ours: it is reachable only from this launcher, and its cold start is a client racing
+	# its own host, which six short attempts serve better than NetSession's two long ones.
 	# It is reported as a warning rather than an error because it is not yet an ending, and the logs
 	# this line lands in are the evidence a cross-platform run is judged on.
-	if _role == Role.CLIENT and _mode == LaunchMode.STEAM \
+	if _role == Role.CLIENT and _mode != LaunchMode.LOCAL \
 			and NetTransport.last_end_kind() == NetTransport.EndKind.CONNECT_TIMEOUT:
 		MireLog.warn(NetConfig.LOG_CHANNEL, "%s connect timed out (%s) — NetSession retries from here" % [
 			_tag(), reason

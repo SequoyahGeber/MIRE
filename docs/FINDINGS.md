@@ -300,24 +300,6 @@ rendered machine is contaminated**, and the fix may belong in the pump rather th
 
 ---
 
-### F-024 · A shipped LAN first join has no retry — only the debug launcher does
-
-**Area:** netcode · **Severity:** medium · **Found:** 2026-08-16 by vane during F-023
-
-F-023's retry is deliberately STEAM-only, because it rests on a Steam-specific invariant: a timed-out
-attempt tears down without announcing, so lobby membership survives and the retry is a plain `join()`.
-LOCAL and LAN first joins are retried too — but by `core/dev/dev_launch.gd`, which is the two-window
-dev launcher and is debug-only. Nothing in a shipped build retries a LAN join that times out.
-
-Today that costs nothing: LAN has no player-facing entry point yet, so the only way to reach it is
-DevLaunch, which does retry. It becomes real the moment M6 builds a join screen — a player typing an
-address at a host that is still coming up gets one attempt and a dead end, while the same failure over
-Steam quietly recovers. Fix it with the join UI rather than now, and the shape is already there:
-`NetSession._should_retry_connect()` needs its mode gate widened plus a decision about whether
-DevLaunch then defers to it, since two retry loops would double every attempt.
-
----
-
 ### F-025 · Steam's callback pump runs once per rendered frame, so a slow frame rate slows the handshake
 
 **Area:** netcode · **Severity:** high · **Found:** 2026-08-16 by vane, from Sequoyah's Mac ↔ Windows session
@@ -3545,7 +3527,58 @@ silhouette, escalating powerup/loot odds, and escalating coin cost to open.
 
 ---
 
+### F-542 · Remote players do not visibly display the item they are holding
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by ivyf16b98
+
+In multiplayer, each player sees their own first-person held item, but other clients see only the remote debug body with no equipped tool, weapon, or resource. Add an authoritative/replicated held-item identity and a third-person hand attachment so peers can read one another's current equipment; verify host and client changes converge without exposing first-person viewmodels remotely.
+
+---
+
 ## Resolved
+
+### F-024 · A shipped LAN first join has no retry — only the debug launcher does — **fixed**
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-16 by vane during F-023
+
+F-023's retry is deliberately STEAM-only, because it rests on a Steam-specific invariant: a timed-out
+attempt tears down without announcing, so lobby membership survives and the retry is a plain `join()`.
+LOCAL and LAN first joins are retried too — but by `core/dev/dev_launch.gd`, which is the two-window
+dev launcher and is debug-only. Nothing in a shipped build retries a LAN join that times out.
+
+Today that costs nothing: LAN has no player-facing entry point yet, so the only way to reach it is
+DevLaunch, which does retry. It becomes real the moment M6 builds a join screen — a player typing an
+address at a host that is still coming up gets one attempt and a dead end, while the same failure over
+Steam quietly recovers. Fix it with the join UI rather than now, and the shape is already there:
+`NetSession._should_retry_connect()` needs its mode gate widened plus a decision about whether
+DevLaunch then defers to it, since two retry loops would double every attempt.
+
+---
+
+**Resolved 2026-08-22 by cinder9818da.** **Fixed 2026-08-21 by cinder9818da.** The retry gate is widened rather than moved: `NetSession`
+now retries a timed-out first join on **STEAM and LAN**, and `DevLaunch` defers to it on both.
+
+LAN needs no Steam-style invariant to make this safe — an address and a port do not expire, so
+asking again is simply asking again. What it needed was a reason, and M6's join screen is it: a
+shipped entry point where a player types an address at a host still coming up, and today gets one
+attempt and a dead end while the same failure over Steam quietly recovers.
+
+**LOCAL deliberately stays DevLaunch's**, which is the decision the finding left open. It has no
+shipped entry point — loopback is reachable only from the two-window dev launcher — and that
+launcher's cold start is a client racing its own host, which six attempts at 0.4 s serve better than
+`NetSession`'s two at 0.5 s and 2.0 s. So the split is per-mode and no mode runs both loops:
+`DevLaunch._on_connection_failed()` hands off on any non-LOCAL client `CONNECT_TIMEOUT`, and keeps
+its own `_retry_join` for LOCAL and for the synchronous failures `NetSession` never sees.
+
+Fixed in passing: the give-up path's `_leave_steam_lobby()` is now STEAM-gated. There is no
+membership behind a LAN join, and `SteamLobby.leave()` also calls `NetTransport.leave()`, which a LAN
+give-up has no business doing.
+
+**Verified** `tools/connect_retry_check.gd` — PASS, 21 checks, with a new section 5 that drives a real
+expired LAN deadline against TEST-NET-1 (RFC 5737, guaranteed unroutable, so it runs to our own
+deadline rather than being refused) and asserts `is_connect_retrying()`. Section 3's opposite
+assertion — that a LOCAL first join is still NOT retried — is what makes the split a test rather
+than a one-way claim. `tools/steam_rejoin_check.gd` re-run, PASS, no regression to F-020.
 
 ### F-535 · Harvested items should drop on the ground and be picked up, not credited instantly — **fixed**
 
