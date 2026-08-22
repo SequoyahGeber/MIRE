@@ -498,9 +498,16 @@ func _build_unarmed() -> WeaponDef:
 	weapon.wind_up_seconds = 0.14
 	weapon.commit_seconds = 0.08
 	weapon.recovery_seconds = 0.22
-	weapon.range_m = 1.8
+	# F-519: the reach has to cover what the look-at prompt already promises. Every bare-hands plant
+	# authors `request_range_m = 3.0`, and `ui/hud/focus_prompt.gd` offers a harvestable at exactly
+	# that — so at 1.8 m (2.55 m with HOST_RANGE_TOLERANCE_M) the HUD read "Gather Bush with Bare
+	# Hands" while the swing silently missed, which is the entry tier of the whole tool tree failing.
+	# 2.3 + 0.75 = 3.05 clears it and is still the shortest reach in the game (the cleaver is 2.4).
+	# The vertical band matches WeaponDef's own default for the same reason: a scattered plant's
+	# origin sits at your feet, 1.5 m below the eye the reach is measured from.
+	weapon.range_m = 2.3
 	weapon.arc_degrees = 80.0
-	weapon.vertical_reach_m = 2.0
+	weapon.vertical_reach_m = 2.4
 	weapon.damage = 1
 	# Bare hands are `Tool.NONE` with power 1: they pull sticks off a bush, which asks for no tool,
 	# and floor to zero against anything that wants an axe or a pickaxe (F-113).

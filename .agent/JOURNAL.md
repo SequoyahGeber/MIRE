@@ -9556,3 +9556,15 @@ Notes along the way:
 Files: `core/dev/dev_loadout.gd`, `tools/dev_loadout_check.gd`
 
 Commit at time of writing: `18e78f7f`
+
+---
+
+### DONE · F-519 · tine5ad92a · 2026-08-22T04:16:14+00:00
+
+**Bare hands cannot reach what the prompt says they can harvest**
+
+unarmed reach 1.8->2.3 m and vertical 2.0->2.4 so bare hands reach every plant the prompt offers; tools/bare_hands_reach_check.gd guards it
+
+Files: `autoload/combat_service.gd`
+
+Commit at time of writing: `30c88c4f`

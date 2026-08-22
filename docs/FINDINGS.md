@@ -3350,7 +3350,89 @@ the export-time half of the same problem and should be read alongside this.
 
 ---
 
+### F-519 · Bare hands cannot reach what the prompt says they can harvest
+
+**Area:** combat · **Severity:** high · **Found:** 2026-08-22 by tine5ad92a
+
+Reported from play: "harvesting with bare hands does not work for bushes or twig trees etc".
+
+Two separate causes, one of them a real bug.
+
+**The bug — the bare-hands reach is shorter than the prompt's promise.** `ui/hud/focus_prompt.gd`
+offers a harvestable at its definition's `request_range_m`, which is 3.0 m for every bare-hands
+plant (`bush`, `sapling`, `nettle`, `berry_bush`, `medicinal_herb`, `mushroom_patch`, ...).
+`CombatService._best_target()` reaches `weapon.range_m + HOST_RANGE_TOLERANCE_M`, and the unarmed
+`WeaponDef` built in `autoload/combat_service.gd::_build_unarmed()` had `range_m = 1.8` → 2.55 m,
+with a `vertical_reach_m` of 2.0 rather than the 2.4 every authored weapon uses. So the HUD read
+"Gather Bush with Bare Hands" from 3.0 m while the swing silently missed from 2.55 m out — and
+worse in practice, because a scattered plant's origin sits at the player's feet, 1.5 m below the
+eye the reach is measured from, leaving only sqrt(2.55² − 1.5²) ≈ 2.06 m of horizontal reach.
+Every authored weapon is 2.4–3.1 m and clears 3.0 m with the tolerance, so the mismatch existed
+*only* bare-handed, which is exactly the tier the report is about.
+
+Verified with `tools/bare_hands_reach_check.gd` against `levels/procedural_island.tscn`: before
+the fix, unarmed connected on a bush at 0.6/1.2/1.8 m and missed at 2.4 m; after it, every
+`required_tool = 0` prop the seed scattered is reachable at all four sample distances and the
+swing loop depletes each one (bush 3 swings, sapling 4, nettle 2, herb and onion 1). That check
+is now the regression guard, and it asserts the invariant directly: the unarmed reach plus
+`HOST_RANGE_TOLERANCE_M` must be at least the 3.0 m the prompt offers.
+
+Fixed by giving unarmed `range_m = 2.3` (2.3 + 0.75 = 3.05 ≥ 3.0) and `vertical_reach_m = 2.4`.
+It stays the shortest reach in the game — the cleaver is 2.4 — so this is not a combat buff so
+much as removing an outlier that broke the entry tier of the tool tree.
+
+**Not a bug — "twig trees".** The bare, twiggy `tree_bare_*` exports classify as `wild_tree`
+(`HarvestLibrary.HARVEST_RULES`' `tree_` prefix), whose `required_tool` is CHOP. Bare hands are
+`Tool.NONE` power 1, and `HarvestableDef.damage_from_tool()` floors `1 × 0.34` to 0, so they can
+never chip it. That is F-113's deliberate design ("you need an axe for this", without a tutorial),
+and the prompt correctly says "Needs an axe". If the twiggy silhouette is reading as gatherable
+rather than as a tree, that is an art/legibility call for Sequoyah, not a code fix.
+
+---
+
+### F-520 · Steam invite is a silent no-op and opening a lobby captures the mouse behind the menu
+
+**Area:** net · **Severity:** high · **Found:** 2026-08-22 by reed8d5690
+
+Reported from a Steam-launched play session: "starting a lobby seems to maybe work but clicking
+invite friends does nothing, some lobby buttons lock up the game forcing a return to titlescreen
+to un-freeze the game."
+
+Both symptoms reproduced headlessly against the live Steam client (tools/lobby_live_probe.gd).
+
+1. INVITE DOES NOTHING. `Steam.isOverlayEnabled()` reports FALSE, so
+   `activateGameOverlayInviteDialog()` is a silent no-op — yet `SteamLobby.open_invite_overlay()`
+   returns true regardless, so the dock believes it succeeded and prints no status at all. The
+   overlay is off because the build runs as App ID 480 (Spacewar) and is not launched by Steam as
+   that app; on macOS the overlay also does not inject into Godot 4 reliably. There is no fallback
+   invite path, so the player is left with a button that does nothing and no explanation.
+
+2. THE FREEZE. Pressing OPEN A LOBBY on the dock creates the lobby and immediately hosts the
+   session (correct — a lobby nobody can connect to is useless). NetSession.session_opened then
+   reaches PlayerNet._on_session_opened(), which spawns the local player body while the FRONT END
+   scene is still up (probe logged "no current scene — spawning at world origin"). The body is a
+   PlayerController, and its _ready() calls _capture_mouse(true) for the local authority, setting
+   Input.mouse_mode = CAPTURED. The menu is still drawn but the cursor is gone and every click
+   lands nowhere — exactly "locked up". Backing out to the title changes the scene and restores
+   the cursor, which is why that un-freezes it.
+
+Fix direction: players spawn on landfall, never in the front end; the mouse capture is refused
+while a blocking UI is open; and the invite path reports the overlay honestly and falls back to
+the join code.
+
+---
+
 ## Resolved
+
+### F-518 · Fresh runs should start each player with 50 coins so the chest economy is immediately usable — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by tine7d9d62
+
+core/dev/dev_loadout.gd currently grants tools and materials but zero coins, while the placed Bog Chests cost 25 coins and Strongboxes cost 60. Sequoyah directed that a fresh player should begin with 50 coins, making two Bog Chest choices immediately available. Add coins to the authoritative per-player starting loadout and extend tools/dev_loadout_check.gd to prove the exact amount and duplicate-grant protection.
+
+---
+
+**Resolved 2026-08-22 by tine7d9d62.** Added 50 coins to the host-authoritative per-player DevLoadout as a backpack stack, preserving the full eight-slot action hotbar. Extended tools/dev_loadout_check.gd to assert the exact starting amount and prove a refused second grant cannot duplicate it. Verified with `.agent/bin/agent godot --script tools/dev_loadout_check.gd`: all loadout assertions passed and DEV_LOADOUT_CHECK reported failures=0; the run also emitted the already-tracked dummy-renderer RID noise from procedural scatter.
 
 **AMENDED 2026-08-22 by vane99f1bb — pre-warming was built, twice, and neither version moved the
 number. Do not start from the fix shape above; start from re-checking the premise.**

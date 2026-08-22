@@ -30,12 +30,6 @@
       "task": "F-473",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "autoload/combat_service.gd": {
-      "agent": "tine5ad92a",
-      "at": "2026-08-22T04:13:40+00:00",
-      "task": "F-519",
-      "token": "CLAUDE_CODE_SESSION_ID:477892e7-5d82-480a-a521-2a01185a8c00"
-    },
     "autoload/player_net.gd": {
       "agent": "reed8d5690",
       "at": "2026-08-22T04:14:00+00:00",
@@ -197,6 +191,12 @@
       "at": "2026-08-22T04:14:00+00:00",
       "task": "F-520",
       "token": "CLAUDE_CODE_SESSION_ID:d83b3646-0972-4048-bb3e-180c6c8ce54e"
+    },
+    "ui/lobby/lobby_menu.gd": {
+      "agent": "reed8d5690",
+      "at": "2026-08-22T04:15:29+00:00",
+      "task": "F-520",
+      "token": "CLAUDE_CODE_SESSION_ID:d83b3646-0972-4048-bb3e-180c6c8ce54e"
     }
   },
   "in_flight": {
@@ -267,22 +267,14 @@
       "started": "2026-08-22T00:29:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:cb3fcf45-50ae-4641-9de5-eba004768381"
     },
-    "F-519": {
-      "agent": "tine5ad92a",
-      "files": [
-        "autoload/combat_service.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-22T04:13:40+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:477892e7-5d82-480a-a521-2a01185a8c00"
-    },
     "F-520": {
       "agent": "reed8d5690",
       "files": [
         "autoload/steam_lobby.gd",
         "ui/frontend/expedition_screen.gd",
         "autoload/player_net.gd",
-        "entities/player/player_controller.gd"
+        "entities/player/player_controller.gd",
+        "ui/lobby/lobby_menu.gd"
       ],
       "notes": [],
       "started": "2026-08-22T04:14:00+00:00",
@@ -1521,6 +1513,13 @@
       "hash": "e4200e86516607cb86c8833893f3c0873caf0b712e6139294ba9f78f133f228f",
       "task": "F-504",
       "token": "CODEX_SESSION_ID:01a02757-7a2b-7441-aade-0d362325e85b"
+    },
+    "autoload/combat_service.gd": {
+      "agent": "tine5ad92a",
+      "at": "2026-08-22T04:16:14+00:00",
+      "hash": "634bb17de965cf08dfdfef497ab597f74e7140bf333d799d7d11b112f12eef11",
+      "task": "F-519",
+      "token": "CLAUDE_CODE_SESSION_ID:477892e7-5d82-480a-a521-2a01185a8c00"
     },
     "autoload/crafting_service.gd": {
       "agent": "birche6b40e",
@@ -5205,7 +5204,7 @@
       "token": "CLAUDE_CODE_SESSION_ID:26359043-59a3-4a3f-a00e-0ac1692d98ed"
     }
   },
-  "rev": 1384,
+  "rev": 1387,
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -11134,9 +11133,11 @@
       "title": "Fresh runs should start each player with 50 coins so the chest economy is immediately usable"
     },
     "F-519": {
+      "done_at": "2026-08-22T04:16:14+00:00",
+      "done_by": "tine5ad92a",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Bare hands cannot reach what the prompt says they can harvest"
     },
