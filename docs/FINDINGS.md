@@ -3935,7 +3935,134 @@ the vertex stage.
 
 ---
 
+### F-500 · tools/wave_director_check.gd's Cycle 6 live-count assertion is intermittently red
+
+**Area:** waves · **Severity:** low · **Found:** 2026-08-22 by ember5da2c4
+
+Seen once during task 5.11, then not again in four consecutive runs (three at the same working tree,
+one `agent baseline` at HEAD):
+
+    ERROR: FAIL: Cycle 6 field actually holds that many live enemies
+    WAVE_DIRECTOR_CHECK failures=1
+
+`host_start_wave()` had returned the expected count — the assertion immediately above it passed — so
+the wave really was created at the right size and `EnemyWorld.live_count()` disagreed with it on that
+one run. That is the shape of a body that had not entered the tree yet, or one that had left it, on
+the single frame the count was taken.
+
+The failing run and the passing ones were the same code. A check that is red one run in five is worse
+than a check that is red every run: the next person to see it will re-run it, watch it pass, and
+conclude they imagined it — which is exactly what nearly happened here.
+
+Already in the file, added while chasing this: the assertion is now preceded by a diagnostic that
+prints `spawned`, `expected`, `live` and the per-id breakdown of what is actually on the field, and
+it prints ONLY when the counts disagree. So the next occurrence arrives with evidence attached rather
+than as a bare boolean, and whoever sees it will be able to tell "one body short" from "one body
+extra" — which are different bugs (a spawn that did not land, versus something else spawning into the
+same frame, e.g. the Hunt elite).
+
+To resolve: get one failing run's diagnostic line, then either await an extra frame between
+`host_start_wave()` and the count, or fix whatever the diagnostic names.
+
+---
+
 ## Resolved
+
+### F-501 · ChunkStreamer rebuilds every mesh it has already built — nothing is cached, on a machine using 1.1% of its memory — **fixed**
+
+**Area:** performance · **Severity:** high · **Found:** 2026-08-22 by vane99f1bb
+
+Found 2026-08-21 by vane99f1bb, from `tools/hardware_census.gd`'s capacity numbers and Sequoyah's
+reading of them: *"if we got the hardware we should be using it to improve performance."*
+
+`ChunkJob.run()` calls `ChunkMesher.build_mesh(coord.x, coord.y, world_seed, biome_defs, lod)`, which
+is a **pure function** of those four arguments — the same chunk at the same LOD produces the same
+`ArrayMesh` every time, forever, for a given run seed. `_unload_chunk()` then calls `queue_free()` on
+the `MeshInstance3D`, which drops the only reference to that mesh. Walk away and walk back and the
+whole build runs again on a worker thread.
+
+This is not only about backtracking. `_desired_lod()` moves a chunk between LOD tiers as the player
+crosses ring boundaries, and every tier change is a full rebuild of geometry the streamer has
+already produced at that tier. `HYSTERESIS_CHUNKS` (1) damps the boundary but does not remove the
+churn — it only requires a full chunk of travel to re-cross.
+
+The capacity to fix this is sitting unused. `tools/hardware_census.gd` on an M5 Pro, settled world
+then a 30 s walk:
+
+    CPU memory   resident 245 MB -> 269 MB (peak 352 MB) of 24576 MB physical — 1.1%
+    GPU memory   video 690 MB -> 700 MB (textures 466 MB)
+    Streaming    289 -> 322 chunk(s) resident
+
+269 MB of 24 GB, and the number does not climb over traversal — there is no leak, and there is also
+no cache. Every byte of terrain geometry this game has ever generated is thrown away the moment it
+leaves the ring.
+
+`tools/revisit_probe.gd` (F-459) already measures the scenario: a first visit settles in 201-213
+frames and a return to the same place in 144-150. A mesh cache should take the return most of the way
+to zero, because on a revisit there is no worker job to dispatch or wait for — only an upload.
+
+Fix shape: keep the built `ArrayMesh` keyed by `(coord, lod)` in an LRU whose capacity is derived
+from `OS.get_memory_info()` rather than hard-coded, so it scales down on the low-end target this
+project actually ships to (F-174) instead of assuming a 24 GB machine. `_request_chunk()` checks the
+cache before dispatching a job; a hit skips the worker entirely and goes straight to the budgeted
+upload. Invalidated wholesale on a run reseed, since the seed is part of the key's meaning.
+
+**Resolved 2026-08-22 by vane99f1bb.** **Resolved 2026-08-21 by vane99f1bb — return trips settle 2.4x faster, for a cache that measures
+essentially free.**
+
+`ChunkStreamer` now keeps every mesh it builds, keyed `Vector3i(coord.x, coord.y, lod)`, and
+`_request_chunk()` checks it before dispatching a worker job. A hit goes into `_jobs` already
+finished and uploads against the same frame budget as any other result — deliberately NOT inline,
+because `_request_chunk()` is reached from `_evaluate_rings()`, which runs outside the deadline, and
+an unbudgeted upload there would trade a worker job for a main-thread spike.
+
+**The per-entry cost is measured, not guessed.** `tools/chunk_mesh_weight.gd` (new) builds 120 chunks
+per tier, holds them all so nothing is collected, and divides the resident-memory delta:
+
+    LOD 0    53.1 KB/chunk    1217 verts, 2304 tris
+    LOD 1    16.3 KB/chunk     353 verts,  640 tris
+    LOD 2     6.2 KB/chunk     113 verts,  192 tris
+
+Capacity is `clamp(available_memory * 4%, 16 MB, 192 MB) / 54 KB`, read once from
+`OS.get_memory_info()`. Every entry is budgeted at the LOD0 worst case, so the cache is always
+smaller than its own estimate rather than larger. Sizing it as a share of what the machine has means
+it scales down on the low-end target (F-174) without anyone tuning a constant.
+
+**Results.** `tools/revisit_probe.gd`, same scenario as F-459's, M5 Pro:
+
+    frames to settle       before      after
+    first visit            201-213     207     (nothing cached yet — unchanged, as expected)
+    return to same place   144-150      61     2.4x
+
+    cache: 305 hit(s), 816 miss(es) — 27% hit rate, 816/3728 entries
+
+`tools/chunk_stream_check.gd`'s 500 m sprint acceptance test, which walks in ONE direction and so
+gets its hits purely from LOD tier churn rather than backtracking:
+
+    before   mean 7.801 ms | worst 1046.549 ms | hitches 48
+    after    mean 6.900 ms | worst   19.768 ms | hitches  8
+
+0 functional failures, including every LOD/hysteresis/collision assertion. (The 1046 ms outlier is a
+first-frame one-off and the machine is shared, so read the hitch COUNT — 48 to 8 — rather than the
+worst frame.)
+
+**What it actually costs.** Almost nothing, and less than `mesh_cache_bytes()` reports.
+`tools/hardware_census.gd` before and after: resident 269.3 MB -> 271.7 MB after a 30 s walk, peak
+352 MB -> 352 MB. The reason is that a cache entry is a second REFERENCE to the `ArrayMesh` the live
+`MeshInstance3D` is already rendering, not a second copy, so most entries cost zero while their chunk
+is resident and only become real memory once it unloads. The estimator over-reports on purpose —
+that is the direction an over-run has to err in.
+
+**Safety.** A `Mesh` is a shareable resource and nothing mutates one after `build_mesh()` returns
+(`Mesher.collision_faces()` only reads), so handing the same mesh to a new `MeshInstance3D` is
+sound. `world_seed` is checked on every lookup and store: a reseed empties the cache rather than
+serving geometry from a previous island, which would have been a silent, seed-shaped corruption
+rather than a crash. `ProceduralWorld` normally rebuilds this node on a reseed anyway; the guard is
+for the caller that does not.
+
+**What this does NOT fix.** A first visit is unchanged — there is nothing to hit. The traversal
+hitch of F-454/F-457, which is walking into ground nobody has built yet, is untouched by definition.
+This is a revisit and LOD-churn fix, and those are most of ordinary play.
 
 ### F-496 · ResourceScatterField fills every MultiMesh one Variant-boxed set_instance_transform() at a time, on the main thread, per chunk — **measured and rejected: the proposed fix is 2.5x slower**
 

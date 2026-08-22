@@ -210,6 +210,13 @@ func _verdict(first: Dictionary, second: Dictionary) -> void:
 	print("  frames   first %d  vs  second %d to settle"
 		% [first["settle_frames"], second["settle_frames"]])
 	print("  nodes    first %d  vs  second %d" % [first_nodes, second_nodes])
+	if _streamer != null and _streamer.has_method(&"mesh_cache_stats"):
+		var stats: Array = _streamer.call(&"mesh_cache_stats")
+		print("  F-501 mesh cache: %d hit(s), %d miss(es) — %.0f%% hit rate | %d/%d entries (~%.1f MB)"
+			% [stats[0], stats[1],
+				100.0 * float(stats[0]) / maxf(float(stats[0] + stats[1]), 1.0),
+				stats[2], stats[3],
+				float(_streamer.call(&"mesh_cache_bytes")) / 1048576.0])
 
 	# Which number decides. NOT the 1% low: an arrival window is a handful of large frames in a sea
 	# of ordinary ones, so its tail is dominated by the single worst frame and moves 20-30% between

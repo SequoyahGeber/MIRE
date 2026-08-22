@@ -78,6 +78,38 @@ const RING_EVAL_INTERVAL_SEC: float = 0.2
 ## frame — shared by both the upload pass and the lazy-collision pass below, in that order.
 const FRAME_BUDGET_MS: float = 4.0
 
+## ── F-501 · the mesh cache ────────────────────────────────────────────────────────────────────
+##
+## `ChunkMesher.build_mesh()` is a pure function of `(coord, lod, world_seed, biome_defs)`, so a
+## chunk this streamer has already built is a chunk it never needs to build again for the life of a
+## run. Before this, `_unload_chunk()` freed the `MeshInstance3D` and dropped the only reference to
+## the mesh, and walking back into ground you had already crossed re-ran the whole worker job. So did
+## every LOD tier change, which `HYSTERESIS_CHUNKS` damps but does not remove.
+##
+## Sequoyah, on `tools/hardware_census.gd`'s capacity numbers (269 MB resident of 24 GB, 1.1%):
+## "if we got the hardware we should be using it to improve performance." This is that trade — hold
+## the geometry, skip the rebuild.
+##
+## **The per-entry cost is measured, not guessed.** `tools/chunk_mesh_weight.gd` builds 120 chunks
+## per tier, holds them all so nothing is collected, and divides the resident-memory delta:
+##
+##     LOD 0    53.1 KB/chunk    1217 verts, 2304 tris
+##     LOD 1    16.3 KB/chunk     353 verts,  640 tris
+##     LOD 2     6.2 KB/chunk     113 verts,  192 tris
+##
+## LOD0 is the worst case and every entry is budgeted at it, so the real cache is always smaller than
+## its own estimate rather than larger — the direction an over-run has to err in.
+const MESH_CACHE_BYTES_PER_ENTRY: int = 54000
+## What share of the memory this process can actually get is worth spending on cached geometry.
+## Deliberately small: this project targets the WORST computer (F-174, docs/PERFORMANCE.md), and a
+## cache sized as a fraction of what is available scales down on a machine that has little without
+## anyone tuning it. The floor and ceiling bound both ends — a floor so a memory-starved machine
+## still gets a useful cache, a ceiling so a 64 GB machine does not hold a gigabyte of terrain it
+## will never revisit.
+const MESH_CACHE_MEMORY_SHARE: float = 0.04
+const MESH_CACHE_MIN_BYTES: int = 16 * 1024 * 1024
+const MESH_CACHE_MAX_BYTES: int = 192 * 1024 * 1024
+
 ## Sentinel: a job's `superseded_lod` has not been touched since it was queued.
 const NOT_SUPERSEDED: int = -2
 
@@ -140,6 +172,18 @@ var _cost_emit_usec: int = 0
 ## on upload, cook and unload, so tracking it costs three one-line edits and makes the common case
 ## (nothing to cook) a single `is_empty()`.
 var _cook_pending: Dictionary[Vector2i, bool] = {}
+## F-501. Built meshes, keyed `Vector3i(coord.x, coord.y, lod)`. Godot dictionaries preserve
+## insertion order, which is the whole LRU: a hit re-inserts its key at the end, and an overflowing
+## insert evicts the first. Sized in `_ready()`; see [constant MESH_CACHE_BYTES_PER_ENTRY].
+var _mesh_cache: Dictionary[Vector3i, ArrayMesh] = {}
+var _mesh_cache_capacity: int = 0
+## The seed every cached mesh was built under. `world_seed` is set by the owner
+## (`ProceduralWorld`), which normally tears this node down and rebuilds it on a reseed — but a
+## caller that instead reassigns the field would otherwise be served last run's island, which is a
+## silent, seed-shaped corruption rather than a crash. Checked on every lookup.
+var _mesh_cache_seed: int = 0
+var _mesh_cache_hits: int = 0
+var _mesh_cache_misses: int = 0
 ## How many chunks the most recent `_process()` uploaded and how many colliders it cooked — the
 ## per-frame counts that turn a phase cost into a per-chunk cost.
 var _uploads_this_frame: int = 0
@@ -193,6 +237,21 @@ func _ready() -> void:
 	# weather state, a debug view, `tools/grade_probe.gd`'s sweep — still has its lever here.
 	_shared_material.set_shader_parameter(&"albedo_color", Color(1.0, 1.0, 1.0))
 	_bind_mire_field()
+	_size_mesh_cache()
+
+
+## F-501. Capacity from what this machine actually has, read once. `available` is what the process
+## can still get, which is the honest number — `physical` on a machine already running something
+## else would size a cache against memory nobody is going to hand over.
+func _size_mesh_cache() -> void:
+	var memory: Dictionary = OS.get_memory_info()
+	var available: int = int(memory.get("available", 0))
+	var budget: int = MESH_CACHE_MIN_BYTES
+	if available > 0:
+		budget = clampi(
+			int(float(available) * MESH_CACHE_MEMORY_SHARE),
+			MESH_CACHE_MIN_BYTES, MESH_CACHE_MAX_BYTES)
+	_mesh_cache_capacity = maxi(1, budget / MESH_CACHE_BYTES_PER_ENTRY)
 
 
 ## F-435. Hands the terrain shader the live corruption field so blighted ground reads purple. Bound
@@ -521,7 +580,21 @@ func _request_chunk(coord: Vector2i, lod: int) -> void:
 	job.lod = lod
 	job.world_seed = world_seed
 	job.biome_defs = biome_defs
-	job.task_id = WorkerThreadPool.add_task(job.run)
+
+	# F-501. A cache hit skips the worker entirely: the job goes straight into `_jobs` already
+	# finished, and `_drain_ready_jobs()` uploads it against the same frame budget as any other
+	# result. Deliberately NOT uploaded inline here — `_request_chunk()` is called from
+	# `_evaluate_rings()`, which runs OUTSIDE the deadline, and dropping an unbudgeted upload there
+	# would trade a worker job for a main-thread spike. `task_id` stays -1; every path that waits on
+	# a task already guards on `finished` first, which is true here.
+	var cached: ArrayMesh = _cached_mesh(coord, lod)
+	if cached != null:
+		job.result_mesh = cached
+		job.finished = true
+		_mesh_cache_hits += 1
+	else:
+		_mesh_cache_misses += 1
+		job.task_id = WorkerThreadPool.add_task(job.run)
 	_jobs[coord] = job
 
 
@@ -546,6 +619,59 @@ func _unload_chunk(coord: Vector2i) -> void:
 		# Frees the collision StaticBody3D too — it is a child of the mesh instance, not a sibling.
 		entry.mesh_instance.queue_free()
 	chunk_unloaded.emit(coord)
+
+
+# ── F-501 · mesh cache ────────────────────────────────────────────────────────────────────────
+
+
+## The cached mesh for this chunk at this LOD, or null. A seed change empties the cache rather than
+## returning geometry from a different island — see `_mesh_cache_seed`.
+func _cached_mesh(coord: Vector2i, lod: int) -> ArrayMesh:
+	if _mesh_cache_seed != world_seed:
+		_mesh_cache.clear()
+		_mesh_cache_seed = world_seed
+		return null
+	var key := Vector3i(coord.x, coord.y, lod)
+	if not _mesh_cache.has(key):
+		return null
+	var mesh: ArrayMesh = _mesh_cache[key]
+	# Move to the most-recent end. Godot dictionaries preserve insertion order, so erase-then-insert
+	# IS the LRU touch — there is no separate recency list to keep in step with this one.
+	_mesh_cache.erase(key)
+	_mesh_cache[key] = mesh
+	return mesh
+
+
+## Remembers a built mesh, evicting the least recently used entry if that puts the cache over
+## capacity. Storing the SAME `ArrayMesh` the live `MeshInstance3D` is rendering is intentional and
+## safe: a `Mesh` is a shareable resource, nothing here mutates one after it is built, and
+## `Mesher.collision_faces()` only reads. It also means a resident chunk costs the cache nothing
+## extra — the entry is a second reference, not a second copy.
+func _cache_mesh(coord: Vector2i, lod: int, mesh: ArrayMesh) -> void:
+	if mesh == null or _mesh_cache_capacity <= 0:
+		return
+	if _mesh_cache_seed != world_seed:
+		_mesh_cache.clear()
+		_mesh_cache_seed = world_seed
+	var key := Vector3i(coord.x, coord.y, lod)
+	if _mesh_cache.has(key):
+		_mesh_cache.erase(key)
+	_mesh_cache[key] = mesh
+	while _mesh_cache.size() > _mesh_cache_capacity:
+		_mesh_cache.erase(_mesh_cache.keys()[0])
+
+
+## `[hits, misses, entries, capacity]`. For `tools/chunk_stream_check.gd`, and for anyone asking
+## whether the cache is actually being hit rather than merely present.
+func mesh_cache_stats() -> Array[int]:
+	return [_mesh_cache_hits, _mesh_cache_misses, _mesh_cache.size(), _mesh_cache_capacity] \
+		as Array[int]
+
+
+## Estimated resident cost of the cache, in bytes, at [constant MESH_CACHE_BYTES_PER_ENTRY] — the
+## LOD0 worst case, so this over-reports rather than under-reports.
+func mesh_cache_bytes() -> int:
+	return _mesh_cache.size() * MESH_CACHE_BYTES_PER_ENTRY
 
 
 # ── Budgeted main-thread work ─────────────────────────────────────────────────────────────────
@@ -606,6 +732,7 @@ func _upload_chunk(job: ChunkJob) -> void:
 		_cook_pending[job.coord] = true
 	else:
 		_cook_pending.erase(job.coord)
+	_cache_mesh(job.coord, job.lod, job.result_mesh)
 	# F-456: this emit is synchronous and its listeners are not cheap. See `_cost_emit_usec`.
 	var emit_start_usec: int = Time.get_ticks_usec()
 	chunk_mesh_ready.emit(job.coord, job.lod)
