@@ -18,8 +18,10 @@ const GUIDE_STEP := preload("res://systems/guide/guide_step_def.gd")
 ## (`docs/PROGRESSION.md` §5.1). Asserted as an ORDER, not as a set: which line comes first is the
 ## entire design, and a re-authored `order` field that shuffles them is a regression even though
 ## every individual step still validates.
+## F-522 reordered the first four: the workbench is now the FIRST thing built, because its cost is
+## the only one bare hands can pay and every tool recipe names it as its station.
 const EXPECTED_OPENING: Array[String] = [
-	"gather_fibre", "craft_first_axe", "chop_a_tree", "place_workbench"
+	"gather_fibre", "place_workbench", "craft_first_axe", "chop_a_tree"
 ]
 
 var failures: int = 0

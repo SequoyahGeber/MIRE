@@ -6,10 +6,10 @@
 script = ExtResource("1_craft_first_axe")
 id = &"craft_first_axe"
 kind = 0
-text = "Craft a wooden axe. No station needed — open your inventory."
-order = 20
-require = 1
-require_arg = &"fibre_bundle"
+text = "Craft a wooden axe at the workbench. Nothing else will fell a tree."
+order = 30
+require = 3
+require_arg = &"workbench"
 require_count = 1
 satisfied_by = 2
 satisfied_count = 1

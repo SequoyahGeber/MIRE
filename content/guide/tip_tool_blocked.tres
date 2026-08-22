@@ -6,7 +6,7 @@
 script = ExtResource("1_tip_tool_blocked")
 id = &"tip_tool_blocked"
 kind = 1
-text = "Bare hands will not fell a tree. Craft an axe — a branch and some fibre."
+text = "Bare hands will not fell a tree. Build a workbench from branches and fibre, and craft an axe there."
 order = 0
 require = 0
 require_count = 1

@@ -3454,6 +3454,39 @@ hand-off, not caution.
 
 ---
 
+### F-524 · Handcrafting is described everywhere and implemented nowhere
+
+**Area:** crafting · **Severity:** medium · **Found:** 2026-08-22 by tine5ad92a
+
+`docs/PROGRESSION.md` §5.1, `content/guide/craft_first_axe.tres` and `content/guide/tip_tool_blocked.tres`
+all described a first wooden axe crafted **with no station** — "No station needed — open your
+inventory". Nothing implements that:
+
+- `RecipeDef.station` defaults to `&"workbench"` and every recipe in `content/recipes/` names a real
+  station; none is `&""`.
+- `CraftingService._definition_data()` rejects a recipe whose station does not resolve
+  (`Registry.has_station(&"")` is false), and `_process_craft()` then demands `_station_in_range()`.
+- `ui/crafting/crafting_ui.gd` is driven end to end by `nearby_station_id()`: `_in_range`,
+  `try_open_station()`, `_rebuild_rows()` and `poll_station()`'s walk-away close all key off a
+  station being nearby, so there is no surface a station-less recipe could appear on.
+
+D-209 worked around it for now by making the workbench itself bare-hands payable and reordering the
+guide, so the run opens and no content lies to the player. Handcrafting remains the more standard
+design and is worth building properly.
+
+The one real question it needs answered first is **where it lives**, and that is a taste call for
+Sequoyah rather than something to infer: the inventory panel (which is what the old guide text
+promised) or the existing crafting panel opening with no station in range. The latter is cheaper in
+code and worse in feel — `CraftingUI._input()` binds `interact`, so opening on empty air would put a
+crafting window in front of every press of E anywhere in the world.
+
+Once it lands: the wooden axe and pickaxe move to `station = &""`, `_definition_data()` and
+`_process_craft()` skip the station checks for an empty station id, `local_recipe_status()` reports
+`at_station` true for it, and the workbench can go back to costing logs — by then the axe really does
+come first.
+
+---
+
 ## Resolved
 
 ### F-520 · Steam invite is a silent no-op and opening a lobby captures the mouse behind the menu — **fixed**

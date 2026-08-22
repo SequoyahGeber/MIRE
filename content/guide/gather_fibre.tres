@@ -6,7 +6,7 @@
 script = ExtResource("1_gather_fibre")
 id = &"gather_fibre"
 kind = 0
-text = "Punch a bush and a sapling — you need fibre and a branch."
+text = "Punch bushes and nettles. Branches and fibre are all bare hands will take."
 order = 10
 require = 0
 require_count = 1

@@ -164,10 +164,17 @@ player wait.
 One line, always present, bottom-left above the hotbar. It names *the next thing*, and only ever
 one:
 
-> *Punch a bush for fibre* → *Craft a wooden axe* → *Chop a tree* → *Place a workbench* →
+> *Punch a bush for fibre* → *Place a workbench* → *Craft a wooden axe* → *Chop a tree* →
 > *Craft a stone pickaxe* → *Find a bog-iron node* → *Smelt iron at a furnace* →
 > *Cap the Wellspring — the marker is on your compass* → *Haul a bogsilver chunk to an anvil* →
 > *Kill the guardian* → *Repair the wreck, or push one more Cycle*
+
+The workbench comes before the axe, and that ordering is load-bearing rather than cosmetic (F-522).
+Every harvestable declares a `required_tool`, and bare hands only satisfy `Tool.NONE` — which is
+`branch` (bushes, saplings), `fibre_bundle` (nettles, sedge) and the foods. `log` wants an axe and
+`stone` wants a pickaxe, and both tools are workbench recipes, so a workbench costing logs is a
+circular lock that closes the run on the first minute. Its cost is therefore branches and fibre, and
+the first rung of this ladder must never name an ingredient whose harvestable is tool-gated.
 
 It is a priority-ordered list of steps; the service shows the highest-priority step whose
 precondition holds and whose completion test does not. Once the list is exhausted — roughly, once

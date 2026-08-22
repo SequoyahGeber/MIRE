@@ -9580,3 +9580,15 @@ Fixed the front-end mouse capture (PlayerNet defers spawns to landfall) and the 
 Files: `autoload/steam_lobby.gd`, `ui/frontend/expedition_screen.gd`, `autoload/player_net.gd`, `entities/player/player_controller.gd`, `ui/lobby/lobby_menu.gd`
 
 Commit at time of writing: `5f32ffb5`
+
+---
+
+### DONE · F-522 · tine5ad92a · 2026-08-22T04:26:25+00:00
+
+**The workbench costs logs, so a run cannot craft its first axe**
+
+workbench costs branch 10 + fibre 4 so bare hands can pay for it; guide ladder reordered to workbench-before-axe; tools/bootstrap_reachability_check.gd closes the progression graph from an empty inventory
+
+Files: `content/buildables/workbench.tres`, `content/buildables/workbench_upgraded.tres`, `content/guide/place_workbench.tres`, `content/guide/craft_first_axe.tres`, `content/guide/gather_fibre.tres`, `content/guide/tip_tool_blocked.tres`, `tools/bootstrap_reachability_check.gd`, `content/guide/chop_a_tree.tres`, `tools/guide_check.gd`, `docs/PROGRESSION.md`, `docs/DECISIONS.md`
+
+Commit at time of writing: `d970f512`

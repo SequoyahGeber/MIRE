@@ -7064,3 +7064,39 @@ held for task 5.11 through this session. Nothing else about it is open.
 the low-end target to stay on the frame — `tools/bench_mire.gd` is the instrument and its 22 ms
 ceiling is the line. Or a consumer appearing that genuinely cannot tolerate a one-tick-stale read,
 which would make the ordering rule above the wrong trade rather than a free one.
+
+---
+
+### D-209 · 2026-08-22 · The workbench is paid for in branches and fibre, and it is built BEFORE the first axe
+
+Sequoyah, from play: *"we need to be able to harvest the base resource to get the first tools and
+workbench without any tools."* The run could not open at all (F-522): the workbench cost `log` 8,
+every `log` source is `required_tool = 1` (CHOP), and the axe that satisfies CHOP is a workbench
+recipe. You needed an axe to build the workbench that makes the axe.
+
+Bare hands are `Tool.NONE` with power 1 and therefore reach exactly three things: `branch` (bushes,
+saplings), `fibre_bundle` (nettles, sedge, fibre plants) and the foods. `stone` is no escape — every
+stone source is `required_tool = 2` and the pickaxe is also a workbench recipe. So the tier-1
+workbench now costs `branch` 10 + `fibre_bundle` 4, and the objective ladder in `PROGRESSION.md`
+§5.1 reorders to *punch a bush → place a workbench → craft an axe → chop a tree*.
+
+**The alternative was rejected, but it is the more standard design and it should be revisited.**
+`PROGRESSION.md` §5.1, `content/guide/craft_first_axe.tres` ("No station needed — open your
+inventory") and the tool-blocked tip all described a wooden axe **handcrafted from the inventory
+with no station at all**, which is how Valheim and most of the genre open. Nothing implements it:
+`RecipeDef.station` defaults to `&"workbench"`, `CraftingService._definition_data()` rejects any
+recipe whose station does not resolve in the Registry, and `ui/crafting/crafting_ui.gd` is driven
+entirely by `nearby_station_id()` — there is no surface that shows a station-less recipe. Adding one
+is not a data change: it needs a decision about *where* handcrafting lives (the inventory panel, or
+the crafting panel opening on empty air, which would hijack `interact` everywhere you stand). That
+is a taste call, so this decision ships the data fix that makes the run openable today and leaves
+the design open. F-524 carries it.
+
+**What must not happen:** the first rung of the ladder naming an ingredient whose harvestable is
+tool-gated. `tools/bootstrap_reachability_check.gd` closes the progression graph forward from an
+empty inventory and fails if the workbench or either starter tool falls outside it — it reproduces
+the lock exactly (0 buildables reachable) when the log cost is put back.
+
+**Would change my mind:** handcrafting landing. If a station-less recipe becomes craftable, the
+wooden axe moves to it and the workbench can go back to costing logs, since by then the axe genuinely
+precedes it.

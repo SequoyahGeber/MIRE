@@ -6,10 +6,10 @@
 script = ExtResource("1_place_workbench")
 id = &"place_workbench"
 kind = 0
-text = "Build a workbench — stone tools are made there."
-order = 40
+text = "Build a workbench from branches and fibre. Every tool is made there."
+order = 20
 require = 1
-require_arg = &"log"
+require_arg = &"branch"
 require_count = 1
 satisfied_by = 3
 satisfied_arg = &"workbench"
