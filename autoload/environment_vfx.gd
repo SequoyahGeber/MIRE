@@ -75,6 +75,11 @@ const PARTICLE_SHADER := preload("res://world/environment/particle_billboard.gds
 ## register one of their own. See `_emitter_host`.
 const EMITTER_HOST_META: StringName = &"mire_vfx_emitter_host"
 
+## F-547: asset ids already reported as publishing no `placements`, so the warning is raised once
+## per asset rather than once per batch node. Never read for behaviour — purely to keep a
+## per-generator fault from being reported eighteen hundred times in one walk.
+var _placements_warned: Dictionary[String, bool] = {}
+
 ## How often the nearest-first emitter assignment is recomputed. Sites number in the hundreds and
 ## the player walks at 4.4 m/s, so four times a second is far below anything visible.
 const BUDGET_INTERVAL: float = 0.25
@@ -394,12 +399,28 @@ func _is_fire(emitter: AssetVfx.Emitter) -> bool:
 
 
 func _on_node_added(node: Node) -> void:
-	if node is GeometryInstance3D:
-		# Through the untyped shim, not `_apply_node` itself (F-194): a node freed between this
-		# signal and the deferred call arrives as a freed Object, and a `GeometryInstance3D`-typed
-		# parameter rejects it AT MARSHALLING — one engine error per freed node, 136 in a single
-		# netted check run — before `_apply_node`'s own is_instance_valid guard can ever run.
-		call_deferred("_apply_node_deferred", node)
+	if not (node is GeometryInstance3D):
+		return
+	# F-547: reject what cannot possibly want dressing BEFORE paying for a deferred call.
+	#
+	# A 45-second traversal of the shipped world adds 44,049 nodes, and every one of them used to
+	# buy a `call_deferred` — on the exact per-chunk path F-454 measures as the source of the
+	# hitches (99 nodes added on a hitch frame against 5 on a quiet one). These two tests are
+	# synchronous, allocate nothing, and are the same two `_apply_node` opens with, so anything they
+	# reject was going to be discarded a frame later anyway. The scatter generators now stamp
+	# `VFX_META` on the mesh parts they have already dressed through part 0 (see
+	# `world/gen/undergrowth.gd`), which is most of a chunk's MultiMeshInstance3D nodes.
+	#
+	# Deliberately NOT moved here: `_asset_id_for()`'s ancestor walk. It is the other half of the
+	# per-node cost, but it reads meta off ancestors and is the part most likely to behave
+	# differently one frame earlier. Measuring that is its own task.
+	if node is GPUParticles3D or node.has_meta(VFX_META):
+		return
+	# Through the untyped shim, not `_apply_node` itself (F-194): a node freed between this
+	# signal and the deferred call arrives as a freed Object, and a `GeometryInstance3D`-typed
+	# parameter rejects it AT MARSHALLING — one engine error per freed node, 136 in a single
+	# netted check run — before `_apply_node`'s own is_instance_valid guard can ever run.
+	call_deferred("_apply_node_deferred", node)
 
 
 ## Deferred landing pad. The parameter is a bare Variant on purpose, and it cannot be tightened:
@@ -726,8 +747,23 @@ func _register_emitter(
 		# live in the RenderingServer, and under `--headless` — which is every way an agent can
 		# verify anything (F-077) — the buffer is empty and every read returns identity. Silently
 		# collapsing a hundred crystals onto the world origin is exactly what that looked like.
-		push_warning("EnvironmentVfx: %s has an emitter but no `placements` meta; skipping"
-			% node.name)
+		# F-547: ONCE per asset, not once per node. `push_warning` captures and formats a GDScript
+		# backtrace on every call, and this fired 1,821 times in a single 45-second walk — during
+		# traversal, which is the path that already collapses the 1% low from 81 fps to 13.
+		#
+		# The condition it reports is per-GENERATOR, not per-node: either a generator publishes
+		# `placements` for an asset's batches or it does not, so the thousandth warning carries no
+		# information the first did not. Keyed by asset id where there is one, because that is what
+		# a reader has to act on; node names here are per-cell (`tree_birch_d_0_3_-4`) and would
+		# defeat the dedupe entirely.
+		var warn_key: String = asset_id if not asset_id.is_empty() else node.name
+		if not _placements_warned.has(warn_key):
+			_placements_warned[warn_key] = true
+			push_warning(
+				"EnvironmentVfx: %s has an emitter but no `placements` meta; skipping "
+				% warn_key
+				+ "(reported once per asset — see F-547)"
+			)
 		return
 	else:
 		# ONE site per prop, not one per mesh part. A GLB tree arrives as around forty separate

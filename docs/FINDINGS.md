@@ -2676,40 +2676,6 @@ that its output reads as background. It is not a detection gap; it is an unread 
 
 ---
 
-### F-547 · EnvironmentVfx does per-node work for all 44,000 nodes a traversal adds, and 1,821 of them raise a backtraced warning
-
-**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by onyxbe8065
-
-Found while measuring F-454 with `tools/traversal_profile.gd` (windowed, 45 s walk, shipped world).
-
-`EnvironmentVfx._ready()` connects `SceneTree.node_added` and calls
-`call_deferred("_apply_node_deferred", node)` for EVERY `GeometryInstance3D`
-(autoload/environment_vfx.gd:396). A 45-second traversal adds 44,049 nodes, so that is 44,049
-deferred calls, each resolving an asset id by walking ancestors — on the exact per-chunk path
-F-454 measures as the source of the hitches (99 nodes added per hitch frame vs 5 per quiet frame).
-
-Worse, 1,821 of those reached:
-
-    push_warning("EnvironmentVfx: %s has an emitter but no `placements` meta; skipping")
-
-`push_warning` captures and formats a GDScript backtrace on each call. 1,821 of them in one walk.
-
-Two distinct faults:
-
-  1. Cost. Per-node deferred work plus 1,821 backtraced warnings during traversal, which is the
-     path that already collapses the 1% low from 81 fps to 13 fps.
-  2. Correctness. The warning's own comment says "a batch with no published placements is a
-     generator that has not honoured the contract" — so scatter `MultiMeshInstance3D` batches are
-     not publishing `placements` meta, and every one of those props is silently getting NO vfx.
-     The warning is telling the truth and nothing is acting on it. Asset ids seen include
-     tree_birch_b/c/d and tree_crooked_a, i.e. ordinary scatter trees, not an edge case.
-
-Fix (1) by making the emitter path skip non-emitter nodes before the deferred hop, and by not
-raising a per-node warning for a condition that is per-GENERATOR. Fix (2) in whatever builds those
-batches, so `placements` is published and the vfx actually attach.
-
----
-
 ### F-548 · A long Godot-lock hold is indistinguishable from a wedged lock, and 'agent verify' is the worst possible shape to hold it in
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-22 by larch543bba
@@ -3009,6 +2975,115 @@ declared `@verify none` would also solve the probe half honestly.
 ---
 
 ## Resolved
+
+### F-547 · EnvironmentVfx does per-node work for all 44,000 nodes a traversal adds, and 1,821 of them raise a backtraced warning — **fixed**
+
+**Area:** ? · **Severity:** medium · **Found:** 2026-08-22 by onyxbe8065
+
+Found while measuring F-454 with `tools/traversal_profile.gd` (windowed, 45 s walk, shipped world).
+
+`EnvironmentVfx._ready()` connects `SceneTree.node_added` and calls
+`call_deferred("_apply_node_deferred", node)` for EVERY `GeometryInstance3D`
+(autoload/environment_vfx.gd:396). A 45-second traversal adds 44,049 nodes, so that is 44,049
+deferred calls, each resolving an asset id by walking ancestors — on the exact per-chunk path
+F-454 measures as the source of the hitches (99 nodes added per hitch frame vs 5 per quiet frame).
+
+Worse, 1,821 of those reached:
+
+    push_warning("EnvironmentVfx: %s has an emitter but no `placements` meta; skipping")
+
+`push_warning` captures and formats a GDScript backtrace on each call. 1,821 of them in one walk.
+
+Two distinct faults:
+
+  1. Cost. Per-node deferred work plus 1,821 backtraced warnings during traversal, which is the
+     path that already collapses the 1% low from 81 fps to 13 fps.
+  2. Correctness. The warning's own comment says "a batch with no published placements is a
+     generator that has not honoured the contract" — so scatter `MultiMeshInstance3D` batches are
+     not publishing `placements` meta, and every one of those props is silently getting NO vfx.
+     The warning is telling the truth and nothing is acting on it. Asset ids seen include
+     tree_birch_b/c/d and tree_crooked_a, i.e. ordinary scatter trees, not an edge case.
+
+Fix (1) by making the emitter path skip non-emitter nodes before the deferred hop, and by not
+raising a per-node warning for a condition that is per-GENERATOR. Fix (2) in whatever builds those
+batches, so `placements` is published and the vfx actually attach.
+
+---
+
+**Resolved 2026-08-22 by bram937a51.** **Both faults fixed** by bram937a51, 2026-08-22. The correctness half turned out to be larger than
+the finding states, and the performance half is deliberately NOT claimed — see the last section.
+
+### Fault 2 (correctness) — no scattered tree on the shipped island has ever had falling leaves
+
+`AssetVfxLibrary` maps the `tree_` prefix to `Emitter.LEAF_FALL`. Neither `world/gen/undergrowth.gd`
+nor `world/gen/resource_scatter_field.gd` published `placements` meta on the
+`MultiMeshInstance3D` batches it builds — only `world/gen/authored_world.gd` ever did. So
+`_register_emitter()` took the warn-and-return branch for **every scatter batch on the procedural
+map**, and the feature was not degraded, it was absent. The warning was reporting this correctly the
+whole time and nothing acted on it.
+
+Both generators now publish the origins they already hold. Two details that decide correctness:
+
+- **Instance-local space, not world.** `_register_emitter` multiplies every published origin by
+  `node.global_transform`. `undergrowth`'s instances carry `position = centre`, so publishing
+  world-space origins would add `centre` twice; `rebase` already removes it, so the published value
+  is `(rebase * transforms[i]).origin`. `resource_scatter_field`'s instances sit at identity under a
+  `group_holder` that is itself at identity, so `transforms[i].origin` is published directly.
+  Verified by reading both holder constructions rather than assuming — neither sets `.position`.
+- **Part 0 only.** A flora GLB emits one `MultiMeshInstance3D` per mesh part and every part resolves
+  the same asset id, so publishing on all of them would register the same emitter two to four times.
+  The remaining parts are stamped with `VFX_META` instead, which doubles as a cost win because
+  `_on_node_added` can then reject them synchronously.
+
+### Fault 1 (cost)
+
+- `_on_node_added` now rejects `GPUParticles3D` and anything already carrying `VFX_META` **before**
+  paying for a `call_deferred`. These are the same two tests `_apply_node` opens with, so anything
+  rejected was going to be discarded a frame later regardless.
+- The `placements` warning is raised **once per asset** rather than once per node. `push_warning`
+  captures and formats a GDScript backtrace on every call, and the condition it reports is
+  per-generator: the thousandth warning carries nothing the first did not.
+
+**Deliberately not done:** `_asset_id_for()`'s ancestor walk is still per-node and still inside the
+deferred call. It is the other half of the cost this finding names, but it reads meta off ancestors
+and is the part most likely to behave differently one frame earlier. Moving it wants its own
+measurement rather than a guess, and it is left for that.
+
+### How it was verified
+
+`ENVIRONMENT_VFX_HOLLOWMERE_CHECK failures=0` (the authored path, unregressed).
+`WORLD_CONTRACT_CHECK failures=0`, with `has an emitter but no placements meta` warnings going from
+**132 to 0** on the same check and the same map. Zero rather than "deduped to a few" is the load-
+bearing number: it means the branch is not reached at all, so this is the contract being honoured
+and not the warning being suppressed.
+
+A probe over the booted procedural world reports **72 registered `LEAF_FALL` sites** (Emitter 7)
+where the warn branch previously returned before appending one.
+
+Full 45-second traversal A/B, `tools/traversal_profile.gd`, windowed — before via `agent baseline`
+at `63947d8a`, after against this tree:
+
+                                    before        after
+    `placements` warnings            1,921            0
+    frames >= 25 ms                     37           33
+    hitch time (wall clock)           4.2%         3.7%
+    worst frame                  305.60 ms    224.45 ms
+    total hitch time             1,896.74 ms  1,654.35 ms
+    median / mean frame        4.68 / 5.24   4.76 / 5.30
+    nodes added over the walk       44,229       44,442
+
+### The performance numbers above are NOT a performance claim
+
+Only the warning count is a real result. The frame figures are one run against one run, in a 64x64
+offscreen window, on a machine doing other work — and the walks were not even over the same ground
+(44,229 nodes against 44,442). Median and mean moved slightly the *wrong* way, which is the clearest
+evidence available that the spread here is noise rather than signal.
+
+`docs/PERFORMANCE.md`'s method is fullscreen on a real display, one variable at a time, reporting 1%
+lows. Nothing in this table meets that bar, and quoting it as though it did would be exactly the
+mistake F-342 and F-561 are both about — a number that describes something other than what it
+claims. If the hitch reduction is real it needs that measurement, on Sequoyah's hardware, and F-454
+is where it belongs.
 
 ### F-563 · terrain_texture_check photographs open ocean where the world's own height_at() reports 32 m of land, on the shipped procedural island — **fixed**
 

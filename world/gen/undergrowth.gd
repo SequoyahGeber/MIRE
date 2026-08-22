@@ -643,6 +643,30 @@ func _emit(asset: String, cells: Dictionary) -> void:
 			instance.multimesh = multimesh
 			instance.set_meta(&"asset", asset)
 			instance.position = centre
+			# F-547: publish the per-instance origins EnvironmentVfx needs to place an emitter.
+			#
+			# Without this, `_register_emitter()` finds no `placements` meta on a MultiMeshInstance3D
+			# and skips the batch — and it cannot recover the positions itself, because instance
+			# transforms live in the RenderingServer and read back as identity under `--headless`.
+			# Every scatter asset whose id starts `tree_` maps to `Emitter.LEAF_FALL`, so the effect
+			# was that NO scattered tree on the procedural island has ever had falling leaves. The
+			# generator has the transforms right here; publishing them is the contract.
+			#
+			# In the instance's OWN local space (`rebase` already removes `centre`), because
+			# `_register_emitter` multiplies each origin by `node.global_transform` — publishing
+			# world-space origins here would add `centre` twice.
+			#
+			# Part 0 only. A flora GLB emits one MultiMeshInstance3D per mesh part, and all of them
+			# resolve the same asset id, so publishing on every part would register the same emitter
+			# two to four times over. The other parts are marked as already-dressed instead, which
+			# also lets `_on_node_added` reject them before the deferred hop.
+			if part_index == 0:
+				var origins := PackedVector3Array()
+				for index: int in transforms.size():
+					origins.append((rebase * (transforms[index] as Transform3D)).origin)
+				instance.set_meta(&"placements", origins)
+			else:
+				instance.set_meta(&"mire_environment_vfx_applied", true)
 			instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if short_plant \
 				else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 			instance.visibility_range_end = range_end

@@ -917,6 +917,24 @@ func _build_asset_group(
 		instance.name = "%s_%d" % [asset, part_index]
 		instance.multimesh = multimesh
 		instance.set_meta(&"asset", asset_id)
+		# F-547: the per-instance origins EnvironmentVfx needs to place an emitter. Same contract,
+		# same reason, as `world/gen/undergrowth.gd` — a MultiMeshInstance3D with no `placements`
+		# meta is skipped by `_register_emitter()`, which cannot recover the transforms itself
+		# because they live in the RenderingServer and read back as identity under `--headless`.
+		# Every `tree_*` asset maps to `Emitter.LEAF_FALL`, so scattered trees here had no leaf fall.
+		#
+		# `transforms` are already in this instance's own space (it sits at identity under
+		# `group_holder`), and `_register_emitter` applies `node.global_transform` itself.
+		#
+		# Part 0 only, with the rest marked already-dressed: every part resolves the same asset id,
+		# so publishing on all of them would register the emitter once per mesh part.
+		if part_index == 0:
+			var origins := PackedVector3Array()
+			for index: int in transforms.size():
+				origins.append((transforms[index] as Transform3D).origin)
+			instance.set_meta(&"placements", origins)
+		else:
+			instance.set_meta(&"mire_environment_vfx_applied", true)
 		# F-369: the per-prop draw distance the authored map has always had and this one never did.
 		# Decided from the prop's own height, then scaled by the graphics preset — so a grass tuft
 		# stops drawing at 80 m and a willow at 260, and a weak machine pulls all of it in.
