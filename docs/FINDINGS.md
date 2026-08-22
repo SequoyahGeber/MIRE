@@ -3050,62 +3050,6 @@ procedural marker is ever named `Chest_sunken_*`, so that rung only exists on th
 
 ---
 
-### F-575 · Four buildable crafting stations have zero recipes bound to them
-
-**Area:** content · **Severity:** high · **Found:** 2026-08-22 by wick3d4184 during a
-never-runs audit
-
-> **Severity raised medium -> high 2026-08-22 by wick3d4184,** after F-578's root cause was folded
-> in below. As filed this was a content gap — three stations nobody wrote recipes for, which ships
-> shabby but not broken. The `workbench_upgraded` half is a different animal: the player spends real
-> resources on an advertised upgrade and ends up with *strictly less* than the tier-1 bench it
-> replaces. That is "ships broken" by this file's own table, and it is a code bug rather than
-> missing content, so it can be fixed without authoring a single recipe.
-
-Across all of `content/recipes/*.tres` the `station` field only ever takes four values:
-`anvil` (10 recipes), `workbench` (7), `furnace` (2) and `campfire` (1, and that one is
-`content/recipes/charcoal.tres`, not food).
-
-That leaves **`cooking_spit`, `repair_bench`, `woodcutting_block` and `workbench_upgraded`** with
-nothing bound to them. All four ship a `StationDef` (`content/stations/`), a `BuildableDef`
-(`content/buildables/`), and a resource cost the player pays. `CraftingService._station_in_range()`
-(`autoload/crafting_service.gd:321`) is never asked about any of them, because the question is only
-ever raised by a recipe. Outside the content files their ids appear in the shipped tree in exactly
-one place: `world/environment/asset_vfx_library.gd:200` gives `station_cooking_spit` an ember
-emitter. So a player can spend real resources building a station that renders, emits sparks, and
-does nothing.
-
-This is the code-side twin of the asset-side gap wick410d34 catalogued under F-439: the food kit has
-13 unplaced models and there are zero cooking recipes. The cooking spit is where those two meet.
-`workbench_upgraded` is the more surprising one — it is a *tier-two* station whose whole purpose is
-to unlock recipes the primitive workbench cannot make, and there are none.
-
-**Root cause for that one, added 2026-08-22 by wick410d34 (F-578, folded in here).** It is not
-missing content — it is wired wrong. `content/stations/workbench_upgraded.tres` declares
-`family = &"workbench"` and `tier = 2`, and `content/stations/workbench.tres` is the same family at
-tier 1. But `autoload/crafting_service.gd:85` matches with `recipe.station == station`, an exact id
-comparison, and `family`/`tier` appear nowhere else in that file or in any other script — `grep -n
-'family\|tier' autoload/crafting_service.gd` returns two comment lines. So the tier-2 workbench does
-not satisfy a recipe that asks for `workbench`: **a player who builds the upgrade gets a station
-that unlocks strictly LESS than the one it replaces**, which reads as a broken game rather than as
-missing content.
-
-That splits the fix in two, and only the second half is authoring:
-
-* **The tier rule.** `recipes_for_station()` and `local_station_in_range()` should resolve a
-  recipe's station through family+tier — a station satisfies a recipe when `family` matches and
-  `tier >=` the required tier — rather than by id. That is the shape `StationDef` was authored for
-  and it matches Sequoyah's stated design (tiered station families, the first tier of every family
-  buildable from base gathered resources). It makes every future upgraded station work, not just
-  this one.
-* **The missing cooking content.** All seven CONSUMABLE items are raw forage (`apple`, `berry`,
-  `mushroom`, `raw_meat`, `herb`, `honey`, `wild_onion`); `raw_meat` has no cooked counterpart.
-  `ItemDef` already carries `hunger_restore`/`hp_restore` and `PlayerHealth.request_consume_item()`
-  already works, and `assets/food/exports/` has held all thirteen cooked/tonic models since A-012,
-  so this is item defs, icons and recipes — not systems work.
-
----
-
 ### F-576 · Twenty-two signals are emitted every run with nothing in the shipped tree connected
 
 **Area:** architecture · **Severity:** low · **Found:** 2026-08-22 by wick3d4184 during a
@@ -3390,6 +3334,84 @@ exists and, since F-575, is finally read by something — this is a second legit
 ---
 
 ## Resolved
+
+### F-575 · Four buildable crafting stations have zero recipes bound to them — **partly fixed**
+
+**Area:** content · **Severity:** high · **Found:** 2026-08-22 by wick3d4184 during a
+never-runs audit
+
+> **Severity raised medium -> high 2026-08-22 by wick3d4184,** after F-578's root cause was folded
+> in below. As filed this was a content gap — three stations nobody wrote recipes for, which ships
+> shabby but not broken. The `workbench_upgraded` half is a different animal: the player spends real
+> resources on an advertised upgrade and ends up with *strictly less* than the tier-1 bench it
+> replaces. That is "ships broken" by this file's own table, and it is a code bug rather than
+> missing content, so it can be fixed without authoring a single recipe.
+
+Across all of `content/recipes/*.tres` the `station` field only ever takes four values:
+`anvil` (10 recipes), `workbench` (7), `furnace` (2) and `campfire` (1, and that one is
+`content/recipes/charcoal.tres`, not food).
+
+That leaves **`cooking_spit`, `repair_bench`, `woodcutting_block` and `workbench_upgraded`** with
+nothing bound to them. All four ship a `StationDef` (`content/stations/`), a `BuildableDef`
+(`content/buildables/`), and a resource cost the player pays. `CraftingService._station_in_range()`
+(`autoload/crafting_service.gd:321`) is never asked about any of them, because the question is only
+ever raised by a recipe. Outside the content files their ids appear in the shipped tree in exactly
+one place: `world/environment/asset_vfx_library.gd:200` gives `station_cooking_spit` an ember
+emitter. So a player can spend real resources building a station that renders, emits sparks, and
+does nothing.
+
+This is the code-side twin of the asset-side gap wick410d34 catalogued under F-439: the food kit has
+13 unplaced models and there are zero cooking recipes. The cooking spit is where those two meet.
+`workbench_upgraded` is the more surprising one — it is a *tier-two* station whose whole purpose is
+to unlock recipes the primitive workbench cannot make, and there are none.
+
+**Root cause for that one, added 2026-08-22 by wick410d34 (F-578, folded in here).** It is not
+missing content — it is wired wrong. `content/stations/workbench_upgraded.tres` declares
+`family = &"workbench"` and `tier = 2`, and `content/stations/workbench.tres` is the same family at
+tier 1. But `autoload/crafting_service.gd:85` matches with `recipe.station == station`, an exact id
+comparison, and `family`/`tier` appear nowhere else in that file or in any other script — `grep -n
+'family\|tier' autoload/crafting_service.gd` returns two comment lines. So the tier-2 workbench does
+not satisfy a recipe that asks for `workbench`: **a player who builds the upgrade gets a station
+that unlocks strictly LESS than the one it replaces**, which reads as a broken game rather than as
+missing content.
+
+That splits the fix in two, and only the second half is authoring:
+
+* **The tier rule.** `recipes_for_station()` and `local_station_in_range()` should resolve a
+  recipe's station through family+tier — a station satisfies a recipe when `family` matches and
+  `tier >=` the required tier — rather than by id. That is the shape `StationDef` was authored for
+  and it matches Sequoyah's stated design (tiered station families, the first tier of every family
+  buildable from base gathered resources). It makes every future upgraded station work, not just
+  this one.
+* **The missing cooking content.** All seven CONSUMABLE items are raw forage (`apple`, `berry`,
+  `mushroom`, `raw_meat`, `herb`, `honey`, `wild_onion`); `raw_meat` has no cooked counterpart.
+  `ItemDef` already carries `hunger_restore`/`hp_restore` and `PlayerHealth.request_consume_item()`
+  already works, and `assets/food/exports/` has held all thirteen cooked/tonic models since A-012,
+  so this is item defs, icons and recipes — not systems work.
+
+---
+
+**Resolved 2026-08-22 by wick410d34 (partly fixed).** The mechanism half is fixed and reviewed; the content half is not, and the finding stays open on it.
+
+FIXED (2fdb7a9b, 525419e4, reviewed independently by hollowbfcf67 and birch1db63e):
+`workbench_upgraded` satisfied none of the seven workbench recipes, so a player who paid for the
+upgrade got strictly LESS than the bench it replaces. `StationDef.family`/`tier` were read by nothing
+that runs. Substitution is now declared via a new `StationDef.upgrades_from` and resolved
+transitively by `CraftingService.station_satisfies()`; `tools/station_tier_check.gd` asserts the rule
+in both directions and pins the two ingot recipes at the furnace.
+
+STILL OPEN — three of the four stations this finding names:
+`cooking_spit`, `repair_bench` and `woodcutting_block` still have zero recipes bound. The recipe
+census is unchanged at anvil 10 / workbench 7 / furnace 2 / campfire 1. That needs authored content,
+and the cooking pair presupposes a food design that is not settled — all seven CONSUMABLE items are
+raw forage, `raw_meat` has no cooked counterpart, and `assets/food/exports/`'s thirteen cooked models
+(A-012) still have no item def naming them. See F-439 for the art side of the same hole.
+
+ALSO STILL OPEN, and worth reading before anyone calls this done: birch1db63e's review catch. With
+the fix in, no recipe requires `workbench_upgraded` at all, so the upgrade now grants exactly PARITY
+with the bench it replaces rather than an improvement. Parity is not an upgrade. That is a design
+call — exclusive recipes, or a benefit field on StationDef — filed separately by them, along with the
+tie-break trap the fix arms in `nearby_station_id()`.
 
 ### F-580 · 30 of 72 powerups are fully inert — the stat name they modify has no consumer — **fixed**
 
