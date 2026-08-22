@@ -2932,6 +2932,36 @@ instead of an artefact of it.
 
 ---
 
+### F-569 · terrain_texture_check's 90 m contrast gate sits inside its own run-to-run variance, so it flakes
+
+**Area:** tooling · **Severity:** low · **Found:** 2026-08-22 by hollowbfcf67
+
+Observed 2026-08-22 by hollowbfcf67, immediately after F-563 made this check able to photograph the
+ground at all. Four consecutive windowed runs of the 90 m shot:
+
+    +0.0067   pass
+    +0.0071   pass
+    +0.0057   FAIL — gate 0.0059
+    (gate is max(MIN_CONTRAST_FLOOR, contrast_before * MIN_CONTRAST_FRACTION) = 0.0731 * 0.08)
+
+The assertion is that adding ground detail raises local contrast by at least 8% of the contrast that
+was already there. At 7 m and 30 m the margin is comfortable. At 90 m the measured gain and the gate
+are within about 3% of each other, and the run-to-run spread — the camera frames slightly different
+ground each run, because `_pick_slope()` and the streamed set are not pinned to the pixel — is wider
+than that margin. So the 90 m row is a coin flip.
+
+**Not tuned, deliberately.** Widening `MIN_CONTRAST_FRACTION` until it passes is the move F-292
+explicitly warns against, and it would spend the only assertion that says the detail is still visible
+at distance. The honest options are to pin the shot so the variance goes away (the seed is already
+pinned at 20260819; the framing is not), or to sample more than one 90 m view and assert the median.
+Either is real work and neither should be done by someone tuning a number until a check turns green.
+
+Worth knowing that this became visible only tonight: before F-556 the check could not run headless at
+all, and before F-563 it photographed open sea, so no run has ever exercised this gate against real
+ground until now. A gate nobody could reach was never going to look flaky.
+
+---
+
 ## Resolved
 
 ### F-568 · environment_vfx_reseed_check has a real pre-existing failure: sway_asset_count does not carry the ended island's dressed meshes — **fixed**
