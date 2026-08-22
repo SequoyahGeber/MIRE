@@ -190,6 +190,31 @@ def _(harness):
     return r.stdout
 
 
+@case("agent godot refuses --check-only with no script (F-582)")
+def _(harness):
+    """The combination cannot work and used to wedge the shared lock indefinitely.
+
+    A bare guard with no test is what gets "simplified" later by someone who does not know why it
+    exists, so both directions are asserted: it fires with no script, and it does NOT fire with one.
+    Neither case takes the godot lock — the refusal happens before it, and the positive case is
+    checked by argv construction rather than by running the engine."""
+    d = build_repo(harness)
+    r = run([".agent/bin/agent", "godot", "--check-only"], d)
+    assert r.returncode != 0, (
+        "agent godot --check-only with no script was accepted — it boots the game headless and "
+        "never exits, holding the shared lock (F-582)")
+    assert "needs a script" in (r.stdout + r.stderr), (
+        "refused, but not with the F-582 explanation: %s" % brief(r.stdout + r.stderr))
+    # And the legitimate form must still be built. This one would take the lock if it ran, so it is
+    # only checked as far as the refusal: the guard must not fire.
+    r2 = run([".agent/bin/agent", "godot", "--check-only", "--script", "tools/x_check.gd"], d,
+             godot_bin="/nonexistent-godot-for-this-case")
+    assert "needs a script" not in (r2.stdout + r2.stderr), (
+        "the guard fired on a VALID --check-only --script invocation: %s"
+        % brief(r2.stdout + r2.stderr))
+    return brief(r.stdout + r.stderr)
+
+
 @case("the harness edits survive in the working tree, unstaged")
 def _(harness):
     d = build_repo(harness)
